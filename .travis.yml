@@ -14,5 +14,7 @@ matrix:
     env: TEST_SUITE='verify -P standalone-integration-tests -DskipUTs'
 script:
   - mvn $TEST_SUITE -B
+after_success:
+  - mvn test jacoco:report coveralls:report -B
 services:
   - docker
