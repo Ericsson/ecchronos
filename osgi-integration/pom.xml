@@ -27,7 +27,7 @@
     <artifactId>osgi-integration</artifactId>
 
     <properties>
-        <it.cassandra.memory>536870912</it.cassandra.memory>
+        <it.cassandra.memory>1073741824</it.cassandra.memory>
         <it.cassandra.heap>256M</it.cassandra.heap>
         <it.cassandra.ring.delay.ms>2000</it.cassandra.ring.delay.ms>
     </properties>
