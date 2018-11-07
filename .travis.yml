@@ -1,8 +1,10 @@
+sudo: required
 language: java
 jdk: oraclejdk8
 cache:
   directories:
   - $HOME/.m2
 script:
-  - mvn test integration-test -B
-
+  - mvn test integration-test -P osgi-integration-tests,standalone-integration-tests -B
+services:
+  - docker
