@@ -1,4 +1,5 @@
 # ecChronos
+[![build](https://travis-ci.org/Ericsson/ecchronos.svg?branch=master)](https://travis-ci.org/Ericsson/ecchronos)
 
 ecChronos is a decentralized scheduling framework primarily focused on performing automatic repairs in Apache Cassandra.
 
