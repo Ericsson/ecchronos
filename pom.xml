@@ -71,6 +71,9 @@
         <jcip.version>1.0</jcip.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <skipTests>false</skipTests>
+        <skipUTs>${skipTests}</skipUTs>
     </properties>
 
     <dependencyManagement>
@@ -266,6 +269,13 @@
     <build>
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.22.1</version>
+                    <configuration>
+                        <skipTests>${skipUTs}</skipTests>
+                    </configuration>
+                </plugin>
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.8.0</version>

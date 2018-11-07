@@ -9,9 +9,9 @@ matrix:
   - name: "Unit tests"
     env: TEST_SUITE='test'
   - name: "OSGi integration"
-    env: TEST_SUITE='integration-test verify -P osgi-integration-tests'
+    env: TEST_SUITE='verify -P osgi-integration-tests -DskipUTs'
   - name: "Standalone integration"
-    env: TEST_SUITE='integration-test verify -P standalone-integration-tests'
+    env: TEST_SUITE='verify -P standalone-integration-tests -DskipUTs'
 script:
   - mvn $TEST_SUITE -B
 services:
