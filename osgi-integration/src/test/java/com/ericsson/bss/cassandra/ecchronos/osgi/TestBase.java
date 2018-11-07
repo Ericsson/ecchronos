@@ -81,7 +81,7 @@ public class TestBase
                         .frameworkUrl(karafArtifactUrl)
                         .unpackDirectory(topDirectory)
                         .useDeployFolder(false),
-                logLevel(LogLevelOption.LogLevel.DEBUG),
+                logLevel(LogLevelOption.LogLevel.INFO),
                 features(karafStandardUrl, "scr", "standard"),
                 editConfigurationFilePut("etc/org.apache.karaf.shell.cfg", "sshHost", "localhost"),
                 editConfigurationFilePut("etc/org.apache.karaf.shell.cfg", "sshPort", "8888"),
