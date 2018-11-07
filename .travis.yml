@@ -4,7 +4,15 @@ jdk: oraclejdk8
 cache:
   directories:
   - $HOME/.m2
+matrix:
+  include:
+  - name: "Unit tests"
+    env: TEST_SUITE='test'
+  - name: "OSGi integration"
+    env: TEST_SUITE='integration-test -P osgi-integration-tests'
+  - name: "Standalone integration"
+    env: TEST_SUITE='integration-test -P standalone-integration-tests'
 script:
-  - mvn test integration-test -P osgi-integration-tests,standalone-integration-tests -B
+  - mvn $TEST_SUITE -B
 services:
   - docker
