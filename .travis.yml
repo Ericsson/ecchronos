@@ -1,8 +1,18 @@
+sudo: required
 language: java
 jdk: oraclejdk8
 cache:
   directories:
   - $HOME/.m2
+matrix:
+  include:
+  - name: "Unit tests"
+    env: TEST_SUITE='test'
+  - name: "OSGi integration"
+    env: TEST_SUITE='verify -P osgi-integration-tests -DskipUTs'
+  - name: "Standalone integration"
+    env: TEST_SUITE='verify -P standalone-integration-tests -DskipUTs'
 script:
-  - mvn test integration-test -B
-
+  - mvn $TEST_SUITE -B
+services:
+  - docker
