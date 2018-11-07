@@ -26,7 +26,7 @@
     <logger name="com.datastax" level="ERROR" />
     <logger name="io.netty" level="WARN" />
 
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>

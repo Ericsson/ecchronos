@@ -250,7 +250,7 @@ public class RepairTask implements NotificationListener, ScheduledJob.ScheduledT
                     throw new ScheduledJobException(msg);
                 }
 
-                LOG.info("{} - {} completed successfully", this, completedRanges);
+                LOG.debug("{} - {} completed successfully", this, completedRanges);
             }
             catch (InterruptedException e)
             {
