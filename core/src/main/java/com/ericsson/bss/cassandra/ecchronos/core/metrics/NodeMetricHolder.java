@@ -1,0 +1,125 @@
+/*
+ * Copyright 2018 Telefonaktiebolaget LM Ericsson
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.ericsson.bss.cassandra.ecchronos.core.metrics;
+
+import java.io.Closeable;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.RatioGauge;
+import com.codahale.metrics.Timer;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+
+/**
+ * A holder class for repair metrics related to this node.
+ *
+ * The top-level holder is an aggregated view of the different {@link TableMetricHolder}
+ */
+public class NodeMetricHolder implements Closeable
+{
+    static final String REPAIRED_TABLES = "TableRepairState";
+    static final String REPAIRED_DATA = "DataRepairState";
+    static final String REPAIR_TIMING_SUCCESS = "RepairSuccessTime";
+    static final String REPAIR_TIMING_FAILED = "RepairFailedTime";
+
+    private final ConcurrentHashMap<TableReference, Double> myTableRepairRatio = new ConcurrentHashMap<>();
+
+    private final MetricRegistry myMetricRegistry;
+
+    public NodeMetricHolder(MetricRegistry metricRegistry, TableStorageStates tableStorageStates)
+    {
+        myMetricRegistry = metricRegistry;
+
+        // Initialize metrics
+        timer(REPAIR_TIMING_SUCCESS);
+        timer(REPAIR_TIMING_FAILED);
+
+        myMetricRegistry.gauge(REPAIRED_TABLES, () -> new RatioGauge()
+        {
+            @Override
+            protected Ratio getRatio()
+            {
+                int tables = 0;
+                double repairRatio = 0;
+
+                for (Double ratio : myTableRepairRatio.values())
+                {
+                    tables++;
+                    repairRatio += ratio;
+                }
+
+                return Ratio.of(repairRatio, tables);
+            }
+        });
+
+        myMetricRegistry.gauge(REPAIRED_DATA, () -> new RatioGauge()
+        {
+            @Override
+            protected Ratio getRatio()
+            {
+                List<TableReference> repairedTables = myTableRepairRatio.entrySet().stream()
+                        .filter(e -> e.getValue() > 0)
+                        .map(Map.Entry::getKey)
+                        .collect(Collectors.toList());
+
+                long totalDataSize = tableStorageStates.getDataSize();
+                double dataSize = 0;
+
+                for (TableReference tableReference : repairedTables)
+                {
+                    dataSize += tableStorageStates.getDataSize(tableReference) * myTableRepairRatio.get(tableReference);
+                }
+
+                return Ratio.of(dataSize, totalDataSize);
+            }
+        });
+    }
+
+    public void repairState(TableReference tableReference, double repairRatio)
+    {
+        myTableRepairRatio.put(tableReference, repairRatio);
+    }
+
+    public void repairTiming(long timeTaken, TimeUnit timeUnit, boolean successful)
+    {
+        if (successful)
+        {
+            timer(REPAIR_TIMING_SUCCESS).update(timeTaken, timeUnit);
+        }
+        else
+        {
+            timer(REPAIR_TIMING_FAILED).update(timeTaken, timeUnit);
+        }
+    }
+
+    private Timer timer(String name)
+    {
+        return myMetricRegistry.timer(name, Timer::new);
+    }
+
+    @Override
+    public void close()
+    {
+        myMetricRegistry.remove(REPAIR_TIMING_SUCCESS);
+        myMetricRegistry.remove(REPAIR_TIMING_FAILED);
+        myMetricRegistry.remove(REPAIRED_TABLES);
+        myMetricRegistry.remove(REPAIRED_DATA);
+    }
+}
