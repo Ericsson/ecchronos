@@ -48,6 +48,7 @@
         <bundle.symbolicName>${project.groupId}.${project.artifactId}</bundle.symbolicName>
         <bundle.namespace>${project.groupId}.${project.artifactId}</bundle.namespace>
 
+        <!-- Dependency versions -->
         <io.netty.version>4.0.47.Final</io.netty.version>
         <io.dropwizard.metrics.version>3.2.2</io.dropwizard.metrics.version>
         <cassandra.driver.core.version>3.4.0</cassandra.driver.core.version>
@@ -70,13 +71,25 @@
         <awaitility.version>3.0.0</awaitility.version>
         <jcip.version>1.0</jcip.version>
 
+        <!-- Plugin versions -->
+        <org.apache.maven.plugins.maven-compiler-plugin.version>3.8.0</org.apache.maven.plugins.maven-compiler-plugin.version>
+        <org.apache.maven.plugins.maven-install-plugin.version>2.5.2</org.apache.maven.plugins.maven-install-plugin.version>
+        <org.apache.maven.plugins.maven-surefire-plugin.version>2.22.1</org.apache.maven.plugins.maven-surefire-plugin.version>
+        <org.apache.maven.plugins.maven-failsafe-plugin.version>2.22.1</org.apache.maven.plugins.maven-failsafe-plugin.version>
+        <org.apache.maven.plugins.maven-assembly-plugin.version>3.1.0</org.apache.maven.plugins.maven-assembly-plugin.version>
+        <org.apache.maven.plugins-maven-dependency-plugin.version>3.1.1</org.apache.maven.plugins-maven-dependency-plugin.version>
+        <org.apache.felix.maven-bundle-plugin.version>3.2.0</org.apache.felix.maven-bundle-plugin.version>
+        <com.mycila.license-maven-plugin.version>3.0</com.mycila.license-maven-plugin.version>
+        <io.fabric8.docker-maven-plugin.version>0.26.0</io.fabric8.docker-maven-plugin.version>
+        <org.apache.servicemix.tooling.depends-maven-plugin.version>1.2</org.apache.servicemix.tooling.depends-maven-plugin.version>
+        <org.apache.karaf.tooling.karaf-maven-plugin.version>3.0.3</org.apache.karaf.tooling.karaf-maven-plugin.version>
+        <org.eluder.coveralls.coveralls-maven-plugin.version>4.3.0</org.eluder.coveralls.coveralls-maven-plugin.version>
+        <org.codehaus.mojo.cobertura-maven-plugin.version>2.7</org.codehaus.mojo.cobertura-maven-plugin.version>
+
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <skipTests>false</skipTests>
         <skipUTs>${skipTests}</skipUTs>
-
-        <org.eluder.coveralls.coveralls-maven-plugin.version>4.3.0</org.eluder.coveralls.coveralls-maven-plugin.version>
-        <org.codehaus.mojo.cobertura-maven-plugin.version>2.7</org.codehaus.mojo.cobertura-maven-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -282,42 +295,78 @@
                         <aggregate>true</aggregate>
                     </configuration>
                 </plugin>
+
                 <plugin>
                     <groupId>org.eluder.coveralls</groupId>
                     <artifactId>coveralls-maven-plugin</artifactId>
                     <version>${org.eluder.coveralls.coveralls-maven-plugin.version}</version>
                 </plugin>
+
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.22.1</version>
+                    <version>${org.apache.maven.plugins.maven-surefire-plugin.version}</version>
                     <configuration>
                         <skipTests>${skipUTs}</skipTests>
                     </configuration>
                 </plugin>
+
+                <plugin>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${org.apache.maven.plugins.maven-failsafe-plugin.version}</version>
+                </plugin>
+
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.8.0</version>
+                    <version>${org.apache.maven.plugins.maven-compiler-plugin.version}</version>
                 </plugin>
+
                 <plugin>
                     <artifactId>maven-install-plugin</artifactId>
-                    <version>2.5.2</version>
+                    <version>${org.apache.maven.plugins.maven-install-plugin.version}</version>
                 </plugin>
+
                 <plugin>
                     <artifactId>maven-assembly-plugin</artifactId>
-                    <version>3.1.0</version>
+                    <version>${org.apache.maven.plugins.maven-assembly-plugin.version}</version>
                     <configuration>
                         <skipAssembly>true</skipAssembly>
                     </configuration>
                 </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>${org.apache.maven.plugins-maven-dependency-plugin.version}</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.karaf.tooling</groupId>
+                    <artifactId>karaf-maven-plugin</artifactId>
+                    <version>${org.apache.karaf.tooling.karaf-maven-plugin.version}</version>
+                </plugin>
+
                 <plugin>
                     <groupId>org.apache.felix</groupId>
                     <artifactId>maven-bundle-plugin</artifactId>
-                    <version>3.2.0</version>
+                    <version>${org.apache.felix.maven-bundle-plugin.version}</version>
                 </plugin>
+
+                <plugin>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>docker-maven-plugin</artifactId>
+                    <version>${io.fabric8.docker-maven-plugin.version}</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.servicemix.tooling</groupId>
+                    <artifactId>depends-maven-plugin</artifactId>
+                    <version>${org.apache.servicemix.tooling.depends-maven-plugin.version}</version>
+                </plugin>
+
                 <plugin>
                     <groupId>com.mycila</groupId>
                     <artifactId>license-maven-plugin</artifactId>
-                    <version>3.0</version>
+                    <version>${com.mycila.license-maven-plugin.version}</version>
                     <configuration>
                         <inlineHeader><![CDATA[
 Copyright 2018 Telefonaktiebolaget LM Ericsson
