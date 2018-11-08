@@ -7,7 +7,7 @@ cache:
 matrix:
   include:
   - name: "Unit tests"
-    env: TEST_SUITE='test'
+    env: TEST_SUITE='test cobertura:cobertura coveralls:report -B'
   - name: "OSGi integration"
     env: TEST_SUITE='verify -P osgi-integration-tests -DskipUTs'
   - name: "Standalone integration"
