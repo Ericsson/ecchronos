@@ -64,8 +64,8 @@ This can be done by running either `mvn clean install -P osgi-integration-tests`
 
 | Property                   | Default    | Description                                              |
 |----------------------------|------------|----------------------------------------------------------|
-| it.cassandra.memory        | 2147483648 | Memory limit for the docker instance                     |
-| it.cassandra.heap          | 1G         | Amount of heap memory Cassandra should use at most       |
+| it.cassandra.memory        | 1073741824 | Memory limit for the docker instance                     |
+| it.cassandra.heap          | 256M       | Amount of heap memory Cassandra should use at most       |
 | it.cassandra.ring.delay.ms | 2000       | Bootstrap delay in Cassandra (-Dcassandra.ring_delay_ms) |
 
 ### Running within IDEA/Eclipse
