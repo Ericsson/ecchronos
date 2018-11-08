@@ -19,7 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-public class RepairProperties
+public final class RepairProperties
 {
     private static final String CONFIG_REPAIR_INTERVAL_BASE = "repair.interval";
     private static final String CONFIG_REPAIR_TYPE = "repair.type";

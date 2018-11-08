@@ -17,7 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 import java.io.File;
 import java.util.Properties;
 
-public class StatisticsProperties
+public final class StatisticsProperties
 {
     private static final String CONFIG_STATISTICS_ENABLED = "statistics.enabled";
     private static final String CONFIG_STATISTICS_DIRECTORY = "statistics.directory";

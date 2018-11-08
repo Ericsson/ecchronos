@@ -16,7 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 
 import java.util.Properties;
 
-public class ConnectionProperties
+public final class ConnectionProperties
 {
     private static final String CONFIG_CONNECTION_NATIVE_HOST = "connection.native.host";
     private static final String CONFIG_CONNECTION_NATIVE_PORT = "connection.native.port";

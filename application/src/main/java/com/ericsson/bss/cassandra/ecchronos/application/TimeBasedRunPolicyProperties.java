@@ -16,7 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 
 import java.util.Properties;
 
-public class TimeBasedRunPolicyProperties
+public final class TimeBasedRunPolicyProperties
 {
     private static final String CONFIG_KEYSPACE = "runpolicy.timebased.keyspace";
     private static final String DEFAULT_KEYSPACE = "ecchronos";
