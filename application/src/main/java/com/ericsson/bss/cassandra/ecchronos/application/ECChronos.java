@@ -138,7 +138,7 @@ public class ECChronos implements Closeable
     {
         boolean foreground = false;
 
-        if (args.length >= 1 && "-f".equals(args[0]))
+        if (args.length >= 1 && "-f".equals(args[0])) // NOPMD
         {
             foreground = true;
         }

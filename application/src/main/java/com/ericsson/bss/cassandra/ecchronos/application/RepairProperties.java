@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 
+import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -94,7 +95,7 @@ public final class RepairProperties
 
         try
         {
-            repairType = RepairOptions.RepairType.valueOf(properties.getProperty(CONFIG_REPAIR_TYPE, DEFAULT_REPAIR_TYPE).toUpperCase());
+            repairType = RepairOptions.RepairType.valueOf(properties.getProperty(CONFIG_REPAIR_TYPE, DEFAULT_REPAIR_TYPE).toUpperCase(Locale.US));
         }
         catch (IllegalArgumentException e)
         {
@@ -105,7 +106,7 @@ public final class RepairProperties
 
         try
         {
-            repairParallelism = RepairOptions.RepairParallelism.valueOf(properties.getProperty(CONFIG_REPAIR_PARALLELISM, DEFAULT_REPAIR_PARALLELISM).toUpperCase());
+            repairParallelism = RepairOptions.RepairParallelism.valueOf(properties.getProperty(CONFIG_REPAIR_PARALLELISM, DEFAULT_REPAIR_PARALLELISM).toUpperCase(Locale.US));
         }
         catch (IllegalArgumentException e)
         {
@@ -136,7 +137,7 @@ public final class RepairProperties
 
         try
         {
-            intervalTimeUnit = TimeUnit.valueOf(properties.getProperty(timeUnitProperty, defaultTimeUnit).toUpperCase());
+            intervalTimeUnit = TimeUnit.valueOf(properties.getProperty(timeUnitProperty, defaultTimeUnit).toUpperCase(Locale.US));
         }
         catch (IllegalArgumentException e)
         {

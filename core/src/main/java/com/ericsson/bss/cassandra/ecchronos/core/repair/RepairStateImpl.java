@@ -62,6 +62,7 @@ public class RepairStateImpl implements RepairState
     private final SimpleDateFormat myDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
 
     private static final long MAX_WAIT_BETWEEN_NODES_IN_MS = TimeUnit.HOURS.toMillis(1);
+    private static final int MIN_REPLICAS_FOR_REPAIR = 2;
 
     private final TableReference myTableReference;
     private final Host myHost;
@@ -192,7 +193,7 @@ public class RepairStateImpl implements RepairState
 
                     boolean rangeReduced = entry.getValue().removeAll(unavailableReplicas);
 
-                    if (entry.getValue().size() < 2)
+                    if (entry.getValue().size() < MIN_REPLICAS_FOR_REPAIR)
                     {
                         LOG.warn("Range {} does not have enough replicas available for repair", entry.getKey());
                         iterator.remove();
@@ -338,7 +339,7 @@ public class RepairStateImpl implements RepairState
         {
             Set<Host> hosts = hostsForPartialRepair();
 
-            if (hosts.size() >= 2)
+            if (hosts.size() >= MIN_REPLICAS_FOR_REPAIR)
             {
                 newState = new NotRepairedRunnableState(lastRepairedAt, hosts, nonRepairedRanges);
             }

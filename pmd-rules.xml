@@ -35,4 +35,14 @@
 
     <rule ref="category/java/bestpractices.xml">
     </rule>
+
+    <rule ref="category/java/errorprone.xml">
+        <exclude name="BeanMembersShouldSerialize" />
+        <exclude name="DataflowAnomalyAnalysis" />
+        <exclude name="AvoidBranchingStatementAsLastInLoop" />
+        <exclude name="NullAssignment" />
+        <exclude name="MissingSerialVersionUID" />
+        <exclude name="InvalidSlf4jMessageFormat" />
+        <exclude name="AvoidFieldNameMatchingMethodName" />
+    </rule>
 </ruleset>
