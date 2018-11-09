@@ -26,6 +26,8 @@ import com.datastax.driver.core.Metadata;
  */
 public final class KeyspaceHelper
 {
+    private static final String REPLICATION_CLASS = "class";
+
     private KeyspaceHelper()
     {
         // No instances
@@ -45,13 +47,13 @@ public final class KeyspaceHelper
         Set<String> datacenters = new HashSet<>();
 
         Map<String, String> replication = metadata.getKeyspace(keyspace).getReplication();
-        String replicationClass = replication.get("class");
+        String replicationClass = replication.get(REPLICATION_CLASS);
 
         if (replicationClass.endsWith("NetworkTopologyStrategy"))
         {
             for (String key : replication.keySet())
             {
-                if (!"class".equals(key))
+                if (!REPLICATION_CLASS.equals(key))
                 {
                     datacenters.add(key);
                 }

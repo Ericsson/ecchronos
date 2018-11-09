@@ -293,7 +293,7 @@ public class ScheduledRepairJob extends ScheduledJob
     {
         for (String dataCenter : dataCenters)
         {
-            if (getTableRepairLockCount(lockFactory, dataCenter) > 1)
+            if (getTableRepairLockCount(lockFactory, dataCenter) > MAX_PARALLEL)
             {
                 releaseLocks(locks);
                 try

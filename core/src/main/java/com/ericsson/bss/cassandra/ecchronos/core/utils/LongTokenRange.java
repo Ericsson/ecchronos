@@ -34,6 +34,7 @@ public class LongTokenRange implements Comparable<LongTokenRange>
         this.end = end;
     }
 
+    @Override
     public String toString()
     {
         return String.format("(%s,%s]", start, end);

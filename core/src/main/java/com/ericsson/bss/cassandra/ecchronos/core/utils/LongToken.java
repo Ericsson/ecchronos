@@ -31,6 +31,7 @@ public class LongToken implements Comparable<LongToken>
         return value;
     }
 
+    @Override
     public String toString()
     {
         return Long.toString(getValue());

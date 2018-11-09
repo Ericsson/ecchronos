@@ -16,7 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 
 import java.util.Properties;
 
-public class CASLockFactoryProperties
+public final class CASLockFactoryProperties
 {
     private static final String CONFIG_KEYSPACE = "lockfactory.cas.keyspace";
     private static final String DEFAULT_KEYSPACE = "ecchronos";

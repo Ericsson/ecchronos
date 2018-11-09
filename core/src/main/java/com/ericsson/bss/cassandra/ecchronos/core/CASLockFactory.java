@@ -81,6 +81,11 @@ public class CASLockFactory implements LockFactory, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CASLockFactory.class);
 
+    private static final String COLUMN_RESOURCE = "resource";
+    private static final String COLUMN_NODE = "node";
+    private static final String COLUMN_METADATA = "metadata";
+    private static final String COLUMN_PRIORITY = "priority";
+
     private static final int LOCK_TIME_IN_SECONDS = 600;
     private static final long LOCK_UPDATE_TIME_IN_SECONDS = 60;
     private static final int FAILED_LOCK_RETRY_ATTEMPTS = (int) (LOCK_TIME_IN_SECONDS / LOCK_UPDATE_TIME_IN_SECONDS) - 1;
@@ -117,34 +122,34 @@ public class CASLockFactory implements LockFactory, Closeable
         verifySchemasExists();
 
         Insert insertLockStatement = QueryBuilder.insertInto(myKeyspaceName, TABLE_LOCK)
-                .value("resource", bindMarker())
-                .value("node", bindMarker())
-                .value("metadata", bindMarker())
+                .value(COLUMN_RESOURCE, bindMarker())
+                .value(COLUMN_NODE, bindMarker())
+                .value(COLUMN_METADATA, bindMarker())
                 .ifNotExists();
 
-        Select.Where getLockMetadataStatement = QueryBuilder.select("metadata")
+        Select.Where getLockMetadataStatement = QueryBuilder.select(COLUMN_METADATA)
                 .from(myKeyspaceName, TABLE_LOCK)
-                .where(eq("resource", bindMarker()));
+                .where(eq(COLUMN_RESOURCE, bindMarker()));
 
         Delete.Conditions removeLockStatement = QueryBuilder.delete()
                 .from(myKeyspaceName, TABLE_LOCK)
-                .where(eq("resource", bindMarker()))
-                .onlyIf(eq("node", bindMarker()));
+                .where(eq(COLUMN_RESOURCE, bindMarker()))
+                .onlyIf(eq(COLUMN_NODE, bindMarker()));
 
         Update.Conditions updateLockStatement = QueryBuilder.update(myKeyspaceName, TABLE_LOCK)
-                .with(set("node", bindMarker()))
-                .and(set("metadata", bindMarker()))
-                .where(eq("resource", bindMarker()))
-                .onlyIf(eq("node", bindMarker()));
+                .with(set(COLUMN_NODE, bindMarker()))
+                .and(set(COLUMN_METADATA, bindMarker()))
+                .where(eq(COLUMN_RESOURCE, bindMarker()))
+                .onlyIf(eq(COLUMN_NODE, bindMarker()));
 
         Insert competeStatement = QueryBuilder.insertInto(myKeyspaceName, TABLE_LOCK_PRIORITY)
-                .value("resource", bindMarker())
-                .value("node", bindMarker())
-                .value("priority", bindMarker());
+                .value(COLUMN_RESOURCE, bindMarker())
+                .value(COLUMN_NODE, bindMarker())
+                .value(COLUMN_PRIORITY, bindMarker());
 
-        Select.Where getPriorityStatement = QueryBuilder.select("priority")
+        Select.Where getPriorityStatement = QueryBuilder.select(COLUMN_PRIORITY)
                 .from(myKeyspaceName, TABLE_LOCK_PRIORITY)
-                .where(eq("resource", bindMarker()));
+                .where(eq(COLUMN_RESOURCE, bindMarker()));
 
         myLockStatement = mySession.prepare(insertLockStatement)
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
@@ -458,6 +463,7 @@ public class CASLockFactory implements LockFactory, Closeable
             }
         }
 
+        @Override
         public void close()
         {
             ScheduledFuture<?> future = myUpdateFuture.get();

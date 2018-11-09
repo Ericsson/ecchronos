@@ -76,6 +76,7 @@ public interface LockFactory
         /**
          * Releases the locked resource.
          */
+        @Override
         void close();
     }
 }
