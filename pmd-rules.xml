@@ -32,4 +32,7 @@
         <exclude name="SimplifyBooleanReturns" />
         <exclude name="CyclomaticComplexity" />
     </rule>
+
+    <rule ref="category/java/bestpractices.xml">
+    </rule>
 </ruleset>

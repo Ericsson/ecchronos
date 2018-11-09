@@ -21,6 +21,7 @@ import org.osgi.service.component.annotations.Component;
 @Component(service = StatementDecorator.class)
 public class DefaultStatementDecorator implements StatementDecorator
 {
+    @Override
     public Statement apply(Statement statement)
     {
         return statement;

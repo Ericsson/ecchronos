@@ -98,21 +98,25 @@ public class RepairStateImpl implements RepairState
             // Not used by sub-states
         }
 
+        @Override
         public Collection<LongTokenRange> getAllRanges()
         {
             return getLocalRanges();
         }
 
+        @Override
         public Collection<LongTokenRange> getLocalRangesForRepair()
         {
             return Sets.newHashSet();
         }
 
+        @Override
         public Set<Host> getReplicas()
         {
             return Sets.newHashSet();
         }
 
+        @Override
         public Collection<String> getDatacentersForRepair()
         {
             Collection<String> dataCenters = new HashSet<>();
@@ -139,6 +143,7 @@ public class RepairStateImpl implements RepairState
             return dataCenters;
         }
 
+        @Override
         public Map<LongTokenRange, Collection<Host>> getRangeToReplicas()
         {
             Map<LongTokenRange, Collection<Host>> rangeToReplicas = getAllRangeToReplicas();
@@ -278,6 +283,7 @@ public class RepairStateImpl implements RepairState
         return myState.get().getRangeToReplicas();
     }
 
+    @Override
     public Collection<String> getDatacentersForRepair()
     {
         return myState.get().getDatacentersForRepair();

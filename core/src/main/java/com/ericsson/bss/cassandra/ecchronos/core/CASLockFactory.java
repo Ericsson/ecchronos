@@ -458,6 +458,7 @@ public class CASLockFactory implements LockFactory, Closeable
             }
         }
 
+        @Override
         public void close()
         {
             ScheduledFuture<?> future = myUpdateFuture.get();
