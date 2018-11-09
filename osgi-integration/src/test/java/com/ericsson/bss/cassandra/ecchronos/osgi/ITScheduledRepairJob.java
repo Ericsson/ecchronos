@@ -138,7 +138,7 @@ public class ITScheduledRepairJob extends TestBase
         injectRepairHistory(tableReference, System.currentTimeMillis() - TimeUnit.HOURS.toMillis(2));
         createTable(tableReference);
 
-        await().pollInterval(1, TimeUnit.SECONDS).atMost(60, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference, startTime));
+        await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference, startTime));
 
         verifyTableRepairedSince(tableReference, startTime);
     }
@@ -162,8 +162,8 @@ public class ITScheduledRepairJob extends TestBase
         createTable(tableReference);
         createTable(tableReference2);
 
-        await().pollInterval(1, TimeUnit.SECONDS).atMost(60, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference, startTime));
-        await().pollInterval(1, TimeUnit.SECONDS).atMost(60, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference2, startTime));
+        await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference, startTime));
+        await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference2, startTime));
 
         verifyTableRepairedSince(tableReference, startTime);
         verifyTableRepairedSince(tableReference2, startTime);
@@ -195,7 +195,7 @@ public class ITScheduledRepairJob extends TestBase
 
         createTable(tableReference);
 
-        await().pollInterval(1, TimeUnit.SECONDS).atMost(60, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference, startTime, expectedRepairedRanges));
+        await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference, startTime, expectedRepairedRanges));
 
         verifyTableRepairedSince(tableReference, expectedRepairedInterval, expectedRepairedRanges);
     }
