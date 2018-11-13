@@ -12,13 +12,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.repair;
+package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-
-import java.util.concurrent.TimeUnit;
-
-public interface RepairStateFactory
+/**
+ * Interface used by TableRepairJob to maintain the current repair state.
+ */
+public interface RepairState
 {
-    RepairState create(TableReference tableReference, long runInterval, TimeUnit timeUnit);
+    /**
+     * Update the repair state for the table.
+     */
+    void update();
+
+    /**
+     * Get an immutable copy of the current repair state.
+     *
+     * @return The immutable copy.
+     */
+    RepairStateSnapshot getSnapshot();
 }

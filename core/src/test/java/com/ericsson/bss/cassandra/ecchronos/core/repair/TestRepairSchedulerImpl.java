@@ -28,6 +28,9 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import java.util.concurrent.TimeUnit;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

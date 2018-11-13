@@ -12,31 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.repair;
+package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-/**
- * Enum containing the different statuses a repair session can have.
- */
-public enum RepairStatus
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+
+import java.util.concurrent.TimeUnit;
+
+public interface RepairStateFactory
 {
-    STARTED,
-    SUCCESS,
-    FAILED,
-    UNKNOWN;
-
-    public static RepairStatus getFromStatus(String status)
-    {
-        RepairStatus repairStatus;
-
-        try
-        {
-            repairStatus = RepairStatus.valueOf(status);
-        }
-        catch (IllegalArgumentException e)
-        {
-            repairStatus = RepairStatus.UNKNOWN;
-        }
-
-        return repairStatus;
-    }
+    RepairState create(TableReference tableReference, long runInterval, TimeUnit timeUnit);
 }

@@ -12,22 +12,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.repair;
+package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 /**
- * Interface used by TableRepairJob to maintain the current repair state.
+ * Enum containing the different statuses a repair session can have.
  */
-public interface RepairState
+public enum RepairStatus
 {
-    /**
-     * Update the repair state for the table.
-     */
-    void update();
+    STARTED,
+    SUCCESS,
+    FAILED,
+    UNKNOWN;
 
-    /**
-     * Get an immutable copy of the current repair state.
-     *
-     * @return The immutable copy.
-     */
-    RepairStateSnapshot getSnapshot();
+    public static RepairStatus getFromStatus(String status)
+    {
+        RepairStatus repairStatus;
+
+        try
+        {
+            repairStatus = RepairStatus.valueOf(status);
+        }
+        catch (IllegalArgumentException e)
+        {
+            repairStatus = RepairStatus.UNKNOWN;
+        }
+
+        return repairStatus;
+    }
 }

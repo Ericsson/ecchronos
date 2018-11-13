@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.repair;
+package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.google.common.collect.Sets;

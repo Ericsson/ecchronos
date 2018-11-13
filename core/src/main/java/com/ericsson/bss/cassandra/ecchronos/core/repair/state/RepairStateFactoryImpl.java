@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.repair;
+package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Metadata;
