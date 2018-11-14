@@ -14,15 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
-
-import com.datastax.driver.core.Host;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-
 /**
  * An immutable copy of the repair state.
  */
@@ -30,21 +21,15 @@ public class RepairStateSnapshot
 {
     private final boolean canRepair;
     private final long myLastRepairedAt;
-    private final ImmutableSet<Host> myReplicas;
-    private final ImmutableSet<LongTokenRange> myLocalRangesForRepair;
-    private final ImmutableSet<LongTokenRange> myRanges;
-    private final ImmutableMap<LongTokenRange, Collection<Host>> myRangeToReplicas;
-    private final ImmutableSet<String> myDataCenters;
+    private final ReplicaRepairGroup myReplicaRepairGroup;
+    private final VnodeRepairStates myVnodeRepairStates;
 
     private RepairStateSnapshot(Builder builder)
     {
         canRepair = builder.canRepair;
         myLastRepairedAt = builder.myLastRepairedAt;
-        myReplicas = builder.myReplicas;
-        myLocalRangesForRepair = builder.myLocalRangesForRepair;
-        myRanges = builder.myRanges;
-        myRangeToReplicas = builder.myRangeToReplicas;
-        myDataCenters = builder.myDataCenters;
+        myReplicaRepairGroup = builder.myReplicaRepairGroup;
+        myVnodeRepairStates = builder.myVnodeRepairStates;
     }
 
     /**
@@ -67,56 +52,20 @@ public class RepairStateSnapshot
         return myLastRepairedAt;
     }
 
-    /**
-     * Get the replicas that should be part of the repair.
-     *
-     * This method will return an empty Set if all hosts should be part of the repair.
-     *
-     * @return The set of replicas that should be part of the repair.
-     */
-    public Set<Host> getReplicas()
+    public ReplicaRepairGroup getRepairGroup()
     {
-        return myReplicas;
+        return myReplicaRepairGroup;
     }
 
-    /**
-     * Get the ranges that needs to be repaired for the table.
-     *
-     * @return The ranges that should be repaired.
-     */
-    public Collection<LongTokenRange> getLocalRangesForRepair()
+    public VnodeRepairStates getVnodeRepairStates()
     {
-        return myLocalRangesForRepair;
+        return myVnodeRepairStates;
     }
 
-    /**
-     * Get all the local ranges for the node.
-     *
-     * @return The local ranges for the node.
-     */
-    public Collection<LongTokenRange> getAllRanges()
+    @Override
+    public String toString()
     {
-        return myRanges;
-    }
-
-    /**
-     * Get a map of the ranges and hosts associated to those ranges that needs to be repaired.
-     *
-     * @return The ranges in combination with the hosts to repair.
-     */
-    public Map<LongTokenRange, Collection<Host>> getRangeToReplicas()
-    {
-        return myRangeToReplicas;
-    }
-
-    /**
-     * Get a collection of all data centers that should be part of the repair.
-     *
-     * @return The collection of data centers.
-     */
-    public Collection<String> getDatacentersForRepair()
-    {
-        return myDataCenters;
+        return String.format("(canRepair=%b,lastRepaired=%d,replicaRepairGroup=%s)", canRepair, myLastRepairedAt, myReplicaRepairGroup);
     }
 
     public static Builder newBuilder()
@@ -128,11 +77,8 @@ public class RepairStateSnapshot
     {
         private Boolean canRepair;
         private Long myLastRepairedAt;
-        private ImmutableSet<Host> myReplicas;
-        private ImmutableSet<LongTokenRange> myLocalRangesForRepair;
-        private ImmutableSet<LongTokenRange> myRanges;
-        private ImmutableMap<LongTokenRange, Collection<Host>> myRangeToReplicas;
-        private ImmutableSet<String> myDataCenters;
+        private ReplicaRepairGroup myReplicaRepairGroup;
+        private VnodeRepairStates myVnodeRepairStates;
 
         public Builder canRepair(boolean canRepair)
         {
@@ -146,33 +92,15 @@ public class RepairStateSnapshot
             return this;
         }
 
-        public Builder withReplicas(Collection<Host> replicas)
+        public Builder withReplicaRepairGroup(ReplicaRepairGroup replicaRepairGroup)
         {
-            myReplicas = ImmutableSet.copyOf(replicas);
+            myReplicaRepairGroup = replicaRepairGroup;
             return this;
         }
 
-        public Builder withLocalRangesForRepair(Collection<LongTokenRange> localRangesForRepair)
+        public Builder withVnodeRepairStates(VnodeRepairStates vnodeRepairStates)
         {
-            myLocalRangesForRepair = ImmutableSet.copyOf(localRangesForRepair);
-            return this;
-        }
-
-        public Builder withRanges(Collection<LongTokenRange> ranges)
-        {
-            myRanges = ImmutableSet.copyOf(ranges);
-            return this;
-        }
-
-        public Builder withRangeToReplica(Map<LongTokenRange, Collection<Host>> rangeToReplica)
-        {
-            myRangeToReplicas = ImmutableMap.copyOf(rangeToReplica);
-            return this;
-        }
-
-        public Builder withDataCenters(Collection<String> dataCenters)
-        {
-            myDataCenters = ImmutableSet.copyOf(dataCenters);
+            myVnodeRepairStates = vnodeRepairStates;
             return this;
         }
 

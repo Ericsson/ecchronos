@@ -19,6 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.DummyLock;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
@@ -34,9 +35,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -102,7 +102,9 @@ public class TestRepairGroup
     @Test
     public void testGetLockForNoDataCenters()
     {
-        doReturn(Collections.emptySet()).when(myRepairState).getDatacentersForRepair();
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(Sets.newHashSet(), Collections.emptyList());
+
+        doReturn(replicaRepairGroup).when(myRepairState).getRepairGroup();
 
         try (LockFactory.DistributedLock lock = myRepairGroup.getLock(myLockFactory))
         {
@@ -118,7 +120,7 @@ public class TestRepairGroup
     public void testGetRepairTask()
     {
         // setup
-        Host host = mock(Host.class);
+        Host host = mockHost("DC1");
         LongTokenRange range = new LongTokenRange(1, 2);
 
         Set<Host> hosts = new HashSet<>();
@@ -127,12 +129,10 @@ public class TestRepairGroup
         Set<LongTokenRange> ranges = new HashSet<>();
         ranges.add(range);
 
-        Map<LongTokenRange, Collection<Host>> rangeToReplicas = new HashMap<>();
-        rangeToReplicas.put(new LongTokenRange(1, 2), Sets.newHashSet(host));
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(hosts, Collections.singletonList(range));
 
         // mock
-        doReturn(ranges).when(myRepairState).getLocalRangesForRepair();
-        doReturn(rangeToReplicas).when(myRepairState).getRangeToReplicas();
+        doReturn(replicaRepairGroup).when(myRepairState).getRepairGroup();
 
         Collection<RepairTask> repairTasks = myRepairGroup.getRepairTasks();
 
@@ -151,35 +151,22 @@ public class TestRepairGroup
     public void testGetPartialRepairTasks()
     {
         // setup
-        Host host = mock(Host.class);
-        Host host2 = mock(Host.class);
-        Host host3 = mock(Host.class);
-        Host host4 = mock(Host.class);
+        Host host = mockHost("DC1");
+        Host host2 = mockHost("DC1");
 
-        Set<Host> hosts = new HashSet<>();
-        hosts.add(host);
-        hosts.add(host2);
-        hosts.add(host3);
-        hosts.add(host4);
+        List<LongTokenRange> vnodes = Arrays.asList(
+                new LongTokenRange(1, 2),
+                new LongTokenRange(2, 3),
+                new LongTokenRange(4, 5));
 
-        Set<LongTokenRange> ranges = new HashSet<>();
-        ranges.add(new LongTokenRange(0, 1));
-        ranges.add(new LongTokenRange(2, 3));
-        ranges.add(new LongTokenRange(4, 5));
-        ranges.add(new LongTokenRange(6, 7));
-
-        Map<LongTokenRange, Collection<Host>> rangeToReplicas = new HashMap<>();
-        rangeToReplicas.put(new LongTokenRange(0, 1), Sets.newHashSet(host, host2));
-        rangeToReplicas.put(new LongTokenRange(2, 3), Sets.newHashSet(host2, host3));
-        rangeToReplicas.put(new LongTokenRange(4, 5), Sets.newHashSet(host3, host4));
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(Sets.newHashSet(host, host2), vnodes);
 
         // mock
-        doReturn(ranges).when(myRepairState).getLocalRangesForRepair();
-        doReturn(rangeToReplicas).when(myRepairState).getRangeToReplicas();
+        doReturn(replicaRepairGroup).when(myRepairState).getRepairGroup();
 
         Collection<RepairTask> tasks = myRepairGroup.getRepairTasks();
 
-        assertThat(tasks.size()).isEqualTo(rangeToReplicas.size());
+        assertThat(tasks.size()).isEqualTo(3);
 
         Set<LongTokenRange> repairTaskRanges = new HashSet<>();
 
@@ -189,20 +176,25 @@ public class TestRepairGroup
             LongTokenRange range = repairTask.getTokenRanges().iterator().next();
             repairTaskRanges.add(range);
 
-            assertThat(repairTask.getReplicas()).isEqualTo(rangeToReplicas.get(range));
+            assertThat(repairTask.getReplicas()).containsExactlyInAnyOrder(host, host2);
             assertThat(repairTask.getTableReference()).isEqualTo(tableReference);
             assertThat(repairTask.getRepairConfiguration().getRepairParallelism()).isEqualTo(RepairOptions.RepairParallelism.PARALLEL);
             assertThat(repairTask.getRepairConfiguration().getRepairType()).isEqualTo(RepairOptions.RepairType.VNODE);
             assertThat(repairTask.isVnodeRepair()).isTrue();
         }
 
-        assertThat(repairTaskRanges).isEqualTo(rangeToReplicas.keySet());
+        assertThat(repairTaskRanges).containsExactlyElementsOf(vnodes);
     }
 
     @Test
-    public void testGetLockForTwoDatacentersSecondFailing() throws LockException
+    public void testGetLockForTwoDatacentersOneFailing() throws LockException
     {
-        doReturn(Sets.newHashSet("dc1", "dc2")).when(myRepairState).getDatacentersForRepair();
+        Host host1 = mockHost("DC1");
+        Host host2 = mockHost("DC2");
+        LongTokenRange range = new LongTokenRange(1, 2);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(Sets.newHashSet(host1, host2), Collections.singletonList(range));
+
+        doReturn(replicaRepairGroup).when(myRepairState).getRepairGroup();
         doReturn(true).when(myLockFactory).sufficientNodesForLocking(anyString(), anyString());
 
         doReturn(new DummyLock())
@@ -218,16 +210,21 @@ public class TestRepairGroup
             assertThat(e).hasMessage(String.format("Lock resources exhausted for Repair job of %s.%s", keyspaceName, tableName));
         }
 
-        verify(myLockFactory).tryLock(eq("dc1"), eq("RepairResource-dc1-1"), anyInt(), anyMapOf(String.class, String.class));
-        verify(myLockFactory).tryLock(eq("dc2"), eq("RepairResource-dc2-1"), anyInt(), anyMapOf(String.class, String.class));
-        verify(myLockFactory).sufficientNodesForLocking(eq("dc1"), eq("RepairResource-dc1-1"));
-        verify(myLockFactory).sufficientNodesForLocking(eq("dc2"), eq("RepairResource-dc2-1"));
+        verify(myLockFactory).tryLock(eq("DC1"), eq("RepairResource-DC1-1"), anyInt(), anyMapOf(String.class, String.class));
+        verify(myLockFactory).tryLock(eq("DC2"), eq("RepairResource-DC2-1"), anyInt(), anyMapOf(String.class, String.class));
+        verify(myLockFactory).sufficientNodesForLocking(eq("DC1"), eq("RepairResource-DC1-1"));
+        verify(myLockFactory).sufficientNodesForLocking(eq("DC2"), eq("RepairResource-DC2-1"));
     }
 
     @Test
     public void testGetLockForNoLeasableDataCenters()
     {
-        doReturn(Arrays.asList("dc1", "dc2")).when(myRepairState).getDatacentersForRepair();
+        Host host1 = mockHost("DC1");
+        LongTokenRange range = new LongTokenRange(1, 2);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(Sets.newHashSet(host1), Collections.singletonList(range));
+
+        doReturn(replicaRepairGroup).when(myRepairState).getRepairGroup();
+
         doReturn(null).when(myLockFactory).getLockMetadata(anyString(), anyString());
         doReturn(false).when(myLockFactory).sufficientNodesForLocking(anyString(), anyString());
 
@@ -237,24 +234,27 @@ public class TestRepairGroup
         }
         catch (LockException e)
         {
-            assertThat(e).hasMessage("Data center dc1 not lockable. Repair will be retried later.");
+            assertThat(e).hasMessage("Data center DC1 not lockable. Repair will be retried later.");
         }
 
-        verify(myLockFactory).sufficientNodesForLocking(eq("dc1"), eq("RepairResource-dc1-1"));
+        verify(myLockFactory).sufficientNodesForLocking(eq("DC1"), eq("RepairResource-DC1-1"));
     }
 
     @Test
     public void testGetLockForOneDataCenterNotLeasable() throws LockException
     {
-        String dc1 = "dc1";
-        String dc2 = "dc2";
-        String resource1 = "RepairResource-dc1-1";
-        String resource2 = "RepairResource-dc2-1";
+        Host host1 = mockHost("DC1");
+        Host host2 = mockHost("DC2");
+        LongTokenRange range = new LongTokenRange(1, 2);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(Sets.newHashSet(host1, host2), Collections.singletonList(range));
 
-        doReturn(Arrays.asList("dc2", "dc1")).when(myRepairState).getDatacentersForRepair();
-        doReturn(true).when(myLockFactory).sufficientNodesForLocking(dc2, resource2);
-        doReturn(false).when(myLockFactory).sufficientNodesForLocking(dc1, resource1);
-        doReturn(new DummyLock()).when(myLockFactory).tryLock(eq(dc2), eq(resource2), anyInt(), anyMapOf(String.class, String.class));
+        String resource1 = "RepairResource-DC1-1";
+        String resource2 = "RepairResource-DC2-1";
+
+        doReturn(replicaRepairGroup).when(myRepairState).getRepairGroup();
+        doReturn(true).when(myLockFactory).sufficientNodesForLocking(eq("DC2"), eq(resource2));
+        doReturn(false).when(myLockFactory).sufficientNodesForLocking(eq("DC1"), eq(resource1));
+        doReturn(new DummyLock()).when(myLockFactory).tryLock(eq("DC2"), eq(resource2), anyInt(), anyMapOf(String.class, String.class));
 
         try (LockFactory.DistributedLock lock = myRepairGroup.getLock(myLockFactory))
         {
@@ -262,17 +262,22 @@ public class TestRepairGroup
         }
         catch (LockException e)
         {
-            assertThat(e).hasMessage("Data center dc1 not lockable. Repair will be retried later.");
+            assertThat(e).hasMessage("Data center DC1 not lockable. Repair will be retried later.");
         }
 
-        verify(myLockFactory).sufficientNodesForLocking(eq(dc2), eq(resource2));
-        verify(myLockFactory).sufficientNodesForLocking(eq(dc1), eq(resource1));
+        verify(myLockFactory).sufficientNodesForLocking(eq("DC2"), eq(resource2));
+        verify(myLockFactory).sufficientNodesForLocking(eq("DC1"), eq(resource1));
     }
 
     @Test
     public void testGetLockForTwoDatacenters() throws LockException
     {
-        doReturn(Sets.newHashSet("dc1", "dc2")).when(myRepairState).getDatacentersForRepair();
+        Host host1 = mockHost("DC1");
+        Host host2 = mockHost("DC2");
+        LongTokenRange range = new LongTokenRange(1, 2);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(Sets.newHashSet(host1, host2), Collections.singletonList(range));
+
+        doReturn(replicaRepairGroup).when(myRepairState).getRepairGroup();
 
         doReturn(null).when(myLockFactory).getLockMetadata(anyString(), anyString());
         doReturn(true).when(myLockFactory).sufficientNodesForLocking(anyString(), anyString());
@@ -280,11 +285,18 @@ public class TestRepairGroup
 
         myRepairGroup.getLock(myLockFactory);
 
-        verify(myLockFactory).tryLock(eq("dc1"), eq("RepairResource-dc1-1"), anyInt(), anyMapOf(String.class, String.class));
-        verify(myLockFactory).tryLock(eq("dc2"), eq("RepairResource-dc2-1"), anyInt(), anyMapOf(String.class, String.class));
-        verify(myLockFactory).getLockMetadata(eq("dc1"), eq("RepairResource-dc1-1"));
-        verify(myLockFactory).getLockMetadata(eq("dc2"), eq("RepairResource-dc2-1"));
-        verify(myLockFactory).sufficientNodesForLocking(eq("dc1"), eq("RepairResource-dc1-1"));
-        verify(myLockFactory).sufficientNodesForLocking(eq("dc2"), eq("RepairResource-dc2-1"));
+        verify(myLockFactory).tryLock(eq("DC1"), eq("RepairResource-DC1-1"), anyInt(), anyMapOf(String.class, String.class));
+        verify(myLockFactory).tryLock(eq("DC2"), eq("RepairResource-DC2-1"), anyInt(), anyMapOf(String.class, String.class));
+        verify(myLockFactory).getLockMetadata(eq("DC1"), eq("RepairResource-DC1-1"));
+        verify(myLockFactory).getLockMetadata(eq("DC2"), eq("RepairResource-DC2-1"));
+        verify(myLockFactory).sufficientNodesForLocking(eq("DC1"), eq("RepairResource-DC1-1"));
+        verify(myLockFactory).sufficientNodesForLocking(eq("DC2"), eq("RepairResource-DC2-1"));
+    }
+
+    private Host mockHost(String dataCenter)
+    {
+        Host host = mock(Host.class);
+        doReturn(dataCenter).when(host).getDatacenter();
+        return host;
     }
 }

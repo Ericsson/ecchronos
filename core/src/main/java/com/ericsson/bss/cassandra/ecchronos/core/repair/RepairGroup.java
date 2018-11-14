@@ -21,6 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
@@ -77,6 +78,7 @@ public class RepairGroup extends ScheduledTask
     @Override
     public boolean execute()
     {
+        LOG.info("Table {} running repair job {}", myTableReference, myRepairStateSnapshot.getRepairGroup());
         boolean successful = true;
 
         for (RepairTask repairTask : getRepairTasks())
@@ -102,7 +104,7 @@ public class RepairGroup extends ScheduledTask
     @Override
     public LockFactory.DistributedLock getLock(LockFactory lockFactory) throws LockException
     {
-        Collection<String> dataCenters = myRepairStateSnapshot.getDatacentersForRepair();
+        Collection<String> dataCenters = myRepairStateSnapshot.getRepairGroup().getDataCenters();
         for (String dc : dataCenters)
         {
             if (!lockFactory.sufficientNodesForLocking(dc, getResource(dc, 1)))
@@ -146,30 +148,28 @@ public class RepairGroup extends ScheduledTask
 
         if (vnodeRepair)
         {
-            Map<LongTokenRange, Collection<Host>> rangeToReplicaMap = myRepairStateSnapshot.getRangeToReplicas();
+            ReplicaRepairGroup replicaRepairGroup = myRepairStateSnapshot.getRepairGroup();
 
-            for (LongTokenRange range : myRepairStateSnapshot.getLocalRangesForRepair())
+            for (LongTokenRange range : replicaRepairGroup)
             {
-                Collection<Host> replicas = rangeToReplicaMap.get(range);
+                builder.withTokenRanges(Collections.singletonList(range))
+                        .withReplicas(replicaRepairGroup.getReplicas());
 
-                if (replicas != null)
-                {
-                    builder.withTokenRanges(Collections.singletonList(range));
-                    builder.withReplicas(replicas);
-                    tasks.add(builder.build());
-                }
+                tasks.add(builder.build());
             }
         }
         else
         {
-            Set<Host> replicas = myRepairStateSnapshot.getReplicas();
+            ReplicaRepairGroup replicaRepairGroup = myRepairStateSnapshot.getRepairGroup();
+
+            Set<Host> replicas = replicaRepairGroup.getReplicas();
 
             if (!replicas.isEmpty())
             {
                 builder.withReplicas(replicas);
             }
 
-            builder.withTokenRanges(myRepairStateSnapshot.getAllRanges());
+            builder.withTokenRanges(replicaRepairGroup.getVnodes());
             tasks.add(builder.build());
         }
 
