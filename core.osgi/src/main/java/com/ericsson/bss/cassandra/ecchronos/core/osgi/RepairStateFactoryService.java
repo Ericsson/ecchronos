@@ -19,6 +19,7 @@ import com.datastax.driver.core.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
@@ -32,8 +33,6 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
-
-import java.util.concurrent.TimeUnit;
 
 @Component(service = RepairStateFactory.class)
 public class RepairStateFactoryService implements RepairStateFactory
@@ -75,8 +74,8 @@ public class RepairStateFactoryService implements RepairStateFactory
     }
 
     @Override
-    public RepairState create(TableReference tableReference, long runInterval, TimeUnit timeUnit)
+    public RepairState create(TableReference tableReference, RepairConfiguration repairConfiguration)
     {
-        return myDelegateRepairStateFactory.create(tableReference, runInterval, timeUnit);
+        return myDelegateRepairStateFactory.create(tableReference, repairConfiguration);
     }
 }

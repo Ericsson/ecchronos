@@ -18,6 +18,7 @@ import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
 import java.util.concurrent.TimeUnit;
@@ -40,7 +41,7 @@ public class RepairStateFactoryImpl implements RepairStateFactory
     }
 
     @Override
-    public RepairState create(TableReference tableReference, long runInterval, TimeUnit timeUnit)
+    public RepairState create(TableReference tableReference, RepairConfiguration repairConfiguration)
     {
         return new RepairStateImpl.Builder()
                 .withTableReference(tableReference)
@@ -48,7 +49,7 @@ public class RepairStateFactoryImpl implements RepairStateFactory
                 .withHost(myHost)
                 .withHostStates(myHostStates)
                 .withRepairHistoryProvider(myRepairHistoryProvider)
-                .withRunInterval(runInterval, timeUnit)
+                .withRunInterval(repairConfiguration.getRepairIntervalInMs(), TimeUnit.MILLISECONDS)
                 .withRepairMetrics(myTableRepairMetrics)
                 .build();
     }

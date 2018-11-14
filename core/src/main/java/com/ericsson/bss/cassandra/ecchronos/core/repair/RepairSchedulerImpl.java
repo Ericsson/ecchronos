@@ -150,7 +150,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
                 .withRunInterval(repairIntervalInMs, TimeUnit.MILLISECONDS)
                 .build();
 
-        RepairState repairState = myRepairStateFactory.create(tableReference, repairIntervalInMs, TimeUnit.MILLISECONDS);
+        RepairState repairState = myRepairStateFactory.create(tableReference, repairConfiguration);
 
         TableRepairJob job = new TableRepairJob.Builder()
                 .withConfiguration(configuration)

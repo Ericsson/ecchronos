@@ -15,7 +15,6 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
@@ -47,8 +46,6 @@ import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 @RunWith (MockitoJUnitRunner.class)
 public class TestRepairSchedulerImpl
 {
-    private static final long DEFAULT_REPAIR_INTERVAL_IN_MS = TimeUnit.DAYS.toMillis(7);
-
     private static final TableReference TABLE_REFERENCE = new TableReference("keyspace", "table");
 
     @Mock
@@ -76,7 +73,7 @@ public class TestRepairSchedulerImpl
     public void init()
     {
         doReturn(myRepairStateSnapshot).when(myRepairState).getSnapshot();
-        doReturn(myRepairState).when(myRepairStateFactory).create(eq(TABLE_REFERENCE), anyLong(), any(TimeUnit.class));
+        doReturn(myRepairState).when(myRepairStateFactory).create(eq(TABLE_REFERENCE), any());
     }
 
     @Test
@@ -88,7 +85,7 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(DEFAULT_REPAIR_INTERVAL_IN_MS), eq(TimeUnit.MILLISECONDS));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
         verify(myRepairState, atLeastOnce()).update();
 
         repairSchedulerImpl.close();
@@ -106,7 +103,7 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(DEFAULT_REPAIR_INTERVAL_IN_MS), eq(TimeUnit.MILLISECONDS));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
         verify(myRepairState, atLeastOnce()).update();
 
         repairSchedulerImpl.removeConfiguration(TABLE_REFERENCE);
@@ -133,14 +130,14 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(DEFAULT_REPAIR_INTERVAL_IN_MS), eq(TimeUnit.MILLISECONDS));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
         verify(myRepairState, atLeastOnce()).update();
 
         repairSchedulerImpl.putConfiguration(TABLE_REFERENCE, updatedRepairConfiguration);
 
         verify(scheduleManager, timeout(1000).times(2)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, timeout(1000)).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(expectedUpdatedRepairInterval), eq(TimeUnit.MILLISECONDS));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(updatedRepairConfiguration));
         verify(myRepairState, atLeastOnce()).update();
 
         repairSchedulerImpl.close();
@@ -158,7 +155,7 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(DEFAULT_REPAIR_INTERVAL_IN_MS), eq(TimeUnit.MILLISECONDS));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
         verify(myRepairState, atLeastOnce()).update();
 
         repairSchedulerImpl.putConfiguration(TABLE_REFERENCE, RepairConfiguration.DEFAULT);

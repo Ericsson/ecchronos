@@ -14,11 +14,10 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-
-import java.util.concurrent.TimeUnit;
 
 public interface RepairStateFactory
 {
-    RepairState create(TableReference tableReference, long runInterval, TimeUnit timeUnit);
+    RepairState create(TableReference tableReference, RepairConfiguration repairConfiguration);
 }
