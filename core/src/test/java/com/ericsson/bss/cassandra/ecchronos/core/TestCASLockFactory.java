@@ -15,7 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -132,48 +132,31 @@ public class TestCASLockFactory extends AbstractCassandraTest
         assertPriorityListEmpty("lock");
     }
 
-    @Test (expected = LockException.class)
-    public void testGlobalLockTakenThrowsException() throws LockException
+    @Test
+    public void testGlobalLockTakenThrowsException()
     {
         execute(myLockStatement.bind("lock", UUID.randomUUID(), new HashMap<>()));
 
-        try (DistributedLock lock = myLockFactory.tryLock(null, "lock", 1, new HashMap<String, String>()))
-        {
-        }
-        finally
-        {
-            assertPrioritiesInList("lock", 1);
-        }
+        assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(null, "lock", 1, new HashMap<>()));
+        assertPrioritiesInList("lock", 1);
     }
 
-    @Test (expected = LockException.class)
-    public void testGetLockWithLowerPriority() throws LockException
+    @Test
+    public void testGetLockWithLowerPriority()
     {
         execute(myCompeteStatement.bind("lock", UUID.randomUUID(), 2));
 
-        try (DistributedLock lock = myLockFactory.tryLock(DATA_CENTER, "lock", 1, new HashMap<String, String>()))
-        {
-
-        }
-        finally
-        {
-            assertPrioritiesInList("lock", 1, 2);
-        }
+        assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(DATA_CENTER, "lock", 1, new HashMap<>()));
+        assertPrioritiesInList("lock", 1, 2);
     }
 
-    @Test (expected = LockException.class)
-    public void testGetAlreadyTakenLock() throws LockException
+    @Test
+    public void testGetAlreadyTakenLock()
     {
         execute(myLockStatement.bind("lock", UUID.randomUUID(), new HashMap<>()));
 
-        try (DistributedLock lock = myLockFactory.tryLock(DATA_CENTER, "lock", 1, new HashMap<String, String>()))
-        {
-
-        }
-        finally
-        {
-            assertPrioritiesInList("lock", 1);
-        }
+        assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(DATA_CENTER, "lock", 1, new HashMap<>()));
+        assertPrioritiesInList("lock", 1);
     }
 
     @Test
@@ -240,28 +223,17 @@ public class TestCASLockFactory extends AbstractCassandraTest
     @Test
     public void testActivateWithoutAllTablesCausesIllegalStateException()
     {
-        try
-        {
-            mySession.execute(String.format("DROP TABLE %s.%s", myKeyspaceName, TABLE_LOCK));
-            try
-            {
-                CASLockFactory casLockFactory = new CASLockFactory.Builder()
+        mySession.execute(String.format("DROP TABLE %s.%s", myKeyspaceName, TABLE_LOCK));
+
+        assertThatExceptionOfType(IllegalStateException.class)
+                .isThrownBy(() -> new CASLockFactory.Builder()
                         .withNativeConnectionProvider(getNativeConnectionProvider())
                         .withHostStates(hostStates)
                         .withStatementDecorator(s -> s)
                         .withKeyspaceName(myKeyspaceName)
-                        .build();
-                fail();
-            }
-            catch (IllegalStateException e)
-            {
-                // Expected exception
-            }
-        }
-        finally
-        {
-            mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (resource text, node uuid, metadata map<text,text>, PRIMARY KEY(resource)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0", myKeyspaceName, TABLE_LOCK));
-        }
+                        .build());
+
+        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (resource text, node uuid, metadata map<text,text>, PRIMARY KEY(resource)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0", myKeyspaceName, TABLE_LOCK));
     }
 
     @Test
@@ -275,33 +247,26 @@ public class TestCASLockFactory extends AbstractCassandraTest
         doReturn(cluster).when(session).getCluster();
 
         // test
-        try
-        {
-            CASLockFactory casLockFactory = new CASLockFactory.Builder()
-                    .withNativeConnectionProvider(new NativeConnectionProvider()
-                    {
-                        @Override
-                        public Session getSession()
+        assertThatExceptionOfType(NoHostAvailableException.class)
+                .isThrownBy(() -> new CASLockFactory.Builder()
+                        .withNativeConnectionProvider(new NativeConnectionProvider()
                         {
-                            return session;
-                        }
+                            @Override
+                            public Session getSession()
+                            {
+                                return session;
+                            }
 
-                        @Override
-                        public Host getLocalHost()
-                        {
-                            return null;
-                        }
-                    })
-                    .withHostStates(hostStates)
-                    .withStatementDecorator(s -> s)
-                    .withKeyspaceName(myKeyspaceName)
-                    .build();
-            fail();
-        }
-        catch (NoHostAvailableException e)
-        {
-            // Expected exception
-        }
+                            @Override
+                            public Host getLocalHost()
+                            {
+                                return null;
+                            }
+                        })
+                        .withHostStates(hostStates)
+                        .withStatementDecorator(s -> s)
+                        .withKeyspaceName(myKeyspaceName)
+                        .build());
     }
 
     private void assertPriorityListEmpty(String resource)

@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -64,12 +65,13 @@ public class TestHostStatesImpl
         myHostStates.close();
     }
 
-    @Test (expected = IllegalArgumentException.class)
+    @Test
     public void testUseNullJmxProxyFactoryShouldThrow()
     {
-        HostStatesImpl.builder()
-                .withJmxProxyFactory(null)
-                .build();
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> HostStatesImpl.builder()
+                        .withJmxProxyFactory(null)
+                        .build());
     }
 
     @Test

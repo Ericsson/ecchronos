@@ -21,6 +21,7 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class TestRepairProperties
 {
@@ -160,78 +161,86 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(expectedAlarmErrorInMs);
     }
 
-    @Test (expected = ConfigurationException.class)
-    public void testSetInvalidType() throws ConfigurationException
+    @Test
+    public void testSetInvalidType()
     {
         Properties properties = new Properties();
         properties.put("repair.type", "nonexisting");
 
-        RepairProperties.from(properties);
+        assertThatExceptionOfType(ConfigurationException.class)
+                .isThrownBy(() -> RepairProperties.from(properties));
     }
 
-    @Test (expected = ConfigurationException.class)
-    public void testSetInvalidParallelism() throws ConfigurationException
+    @Test
+    public void testSetInvalidParallelism()
     {
         Properties properties = new Properties();
         properties.put("repair.parallelism", "nonexisting");
 
-        RepairProperties.from(properties);
+        assertThatExceptionOfType(ConfigurationException.class)
+                .isThrownBy(() -> RepairProperties.from(properties));
     }
 
-    @Test (expected = ConfigurationException.class)
-    public void testSetOnlyIntervalTimeUnit() throws ConfigurationException
+    @Test
+    public void testSetOnlyIntervalTimeUnit()
     {
         Properties properties = new Properties();
         properties.put("repair.interval.time.unit", "days");
 
-        RepairProperties.from(properties);
+        assertThatExceptionOfType(ConfigurationException.class)
+                .isThrownBy(() -> RepairProperties.from(properties));
     }
 
-    @Test (expected = ConfigurationException.class)
-    public void testSetOnlyAlarmWarnTimeUnit() throws ConfigurationException
+    @Test
+    public void testSetOnlyAlarmWarnTimeUnit()
     {
         Properties properties = new Properties();
         properties.put("repair.alarm.warn.time.unit", "days");
 
-        RepairProperties.from(properties);
+        assertThatExceptionOfType(ConfigurationException.class)
+                .isThrownBy(() -> RepairProperties.from(properties));
     }
 
-    @Test (expected = ConfigurationException.class)
-    public void testSetOnlyAlarmErrorTimeUnit() throws ConfigurationException
+    @Test
+    public void testSetOnlyAlarmErrorTimeUnit()
     {
         Properties properties = new Properties();
         properties.put("repair.alarm.error.time.unit", "days");
 
-        RepairProperties.from(properties);
+        assertThatExceptionOfType(ConfigurationException.class)
+                .isThrownBy(() -> RepairProperties.from(properties));
     }
 
-    @Test (expected = ConfigurationException.class)
-    public void testSetInvalidIntervalTimeUnit() throws ConfigurationException
+    @Test
+    public void testSetInvalidIntervalTimeUnit()
     {
         Properties properties = new Properties();
         properties.put("repair.interval.time.unit", "nonexisting");
         properties.put("repair.interval.time", "1");
 
-        RepairProperties.from(properties);
+        assertThatExceptionOfType(ConfigurationException.class)
+                .isThrownBy(() -> RepairProperties.from(properties));
     }
 
-    @Test (expected = ConfigurationException.class)
-    public void testSetInvalidAlarmWarnTimeUnit() throws ConfigurationException
+    @Test
+    public void testSetInvalidAlarmWarnTimeUnit()
     {
         Properties properties = new Properties();
         properties.put("repair.alarm.warn.time.unit", "nonexisting");
         properties.put("repair.alarm.warn.time", "1");
 
-        RepairProperties.from(properties);
+        assertThatExceptionOfType(ConfigurationException.class)
+                .isThrownBy(() -> RepairProperties.from(properties));
     }
 
-    @Test (expected = ConfigurationException.class)
-    public void testSetInvalidAlarmErrorTimeUnit() throws ConfigurationException
+    @Test
+    public void testSetInvalidAlarmErrorTimeUnit()
     {
         Properties properties = new Properties();
         properties.put("repair.alarm.error.time.unit", "nonexisting");
         properties.put("repair.alarm.warn.time", "1");
 
-        RepairProperties.from(properties);
+        assertThatExceptionOfType(ConfigurationException.class)
+                .isThrownBy(() -> RepairProperties.from(properties));
     }
 }

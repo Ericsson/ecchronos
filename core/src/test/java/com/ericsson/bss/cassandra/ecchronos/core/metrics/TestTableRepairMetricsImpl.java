@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 
@@ -55,12 +56,13 @@ public class TestTableRepairMetricsImpl
                 .build();
     }
 
-    @Test (expected = IllegalArgumentException.class)
+    @Test
     public void testBuildWithNullTableStorageStates()
     {
-        TableRepairMetricsImpl.builder()
-                .withTableStorageStates(null)
-                .build();
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> TableRepairMetricsImpl.builder()
+                        .withTableStorageStates(null)
+                        .build());
     }
 
     @Test

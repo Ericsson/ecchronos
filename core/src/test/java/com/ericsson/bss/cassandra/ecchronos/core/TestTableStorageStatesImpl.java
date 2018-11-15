@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -69,22 +70,24 @@ public class TestTableStorageStatesImpl
         myTableStorageeStatesImpl.close();
     }
 
-    @Test (expected = IllegalArgumentException.class)
+    @Test
     public void testBuildWithNullReplicatedTableProvider()
     {
-        TableStorageStatesImpl.builder()
-                .withJmxProxyFactory(myJmxProxyFactory)
-                .withReplicatedTableProvider(null)
-                .build();
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> TableStorageStatesImpl.builder()
+                        .withJmxProxyFactory(myJmxProxyFactory)
+                        .withReplicatedTableProvider(null)
+                        .build());
     }
 
-    @Test (expected = IllegalArgumentException.class)
+    @Test
     public void testBuildWithNullJmxProxyFactory()
     {
-        TableStorageStatesImpl.builder()
-                .withJmxProxyFactory(null)
-                .withReplicatedTableProvider(myReplicatedTableProviderMock)
-                .build();
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> TableStorageStatesImpl.builder()
+                        .withJmxProxyFactory(null)
+                        .withReplicatedTableProvider(myReplicatedTableProviderMock)
+                        .build());
     }
 
     @Test

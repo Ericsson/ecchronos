@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.connection;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.times;
@@ -115,20 +116,28 @@ public class TestDataCenterAwarePolicy
         DataCenterAwarePolicy.builder().withChildPolicy(myChildPolicy).withLocalDc(myLocalDc).build();
     }
 
-    @Test (expected = IllegalArgumentException.class)
+    @Test
     public void testBuilderWithChildPolicyAsNull()
     {
         LoadBalancingPolicy childPolicy = null;
 
-        DataCenterAwarePolicy.builder().withChildPolicy(childPolicy).withLocalDc(myLocalDc).build();
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> DataCenterAwarePolicy.builder()
+                        .withChildPolicy(childPolicy)
+                        .withLocalDc(myLocalDc)
+                        .build());
     }
 
-    @Test (expected = IllegalArgumentException.class)
+    @Test
     public void testBuilderWithLocalDcAsNull()
     {
         String localDc = null;
 
-        DataCenterAwarePolicy.builder().withChildPolicy(myChildPolicy).withLocalDc(localDc).build();
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() ->
+                        DataCenterAwarePolicy.builder()
+                                .withChildPolicy(myChildPolicy)
+                                .withLocalDc(localDc).build());
     }
 
     @Test

@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -251,25 +252,22 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(DEFAULT_REJECT_TIME);
     }
 
-    @Test (expected = IllegalStateException.class)
+    @Test
     public void testBuildWithoutAllTablesCausesIllegalStateException()
     {
-        try
-        {
-            mySession.execute(String.format("DROP TABLE %s.%s", myKeyspaceName, TABLE_REJECT_CONFIGURATION));
-            TimeBasedRunPolicy.builder()
-                    .withSession(getNativeConnectionProvider().getSession())
-                    .withStatementDecorator(s -> s)
-                    .withKeyspaceName(myKeyspaceName)
-                    .build();
-        }
-        finally
-        {
-            mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (keyspace_name text, table_name text, start_hour int, start_minute int, end_hour int, end_minute int, PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute))", myKeyspaceName, TABLE_REJECT_CONFIGURATION));
-        }
+        mySession.execute(String.format("DROP TABLE %s.%s", myKeyspaceName, TABLE_REJECT_CONFIGURATION));
+
+        assertThatExceptionOfType(IllegalStateException.class)
+                .isThrownBy(() -> TimeBasedRunPolicy.builder()
+                        .withSession(getNativeConnectionProvider().getSession())
+                        .withStatementDecorator(s -> s)
+                        .withKeyspaceName(myKeyspaceName)
+                        .build());
+
+        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (keyspace_name text, table_name text, start_hour int, start_minute int, end_hour int, end_minute int, PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute))", myKeyspaceName, TABLE_REJECT_CONFIGURATION));
     }
 
-    @Test (expected = NoHostAvailableException.class)
+    @Test
     public void testActivateWithoutCassandraCausesNoHostAvailableException()
     {
         // mock
@@ -280,10 +278,11 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
         doReturn(cluster).when(session).getCluster();
 
         // test
-        TimeBasedRunPolicy.builder()
-                .withSession(session)
-                .withStatementDecorator(s -> s)
-                .build();
+        assertThatExceptionOfType(NoHostAvailableException.class)
+                .isThrownBy(() -> TimeBasedRunPolicy.builder()
+                        .withSession(session)
+                        .withStatementDecorator(s -> s)
+                        .build());
     }
 
     private void insertEntry(String keyspace, String table, DateTime start, DateTime end)

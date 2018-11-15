@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class TestStatisticsProperties
 {
@@ -103,7 +104,7 @@ public class TestStatisticsProperties
         assertThat(statisticsProperties.getStatisticsDirectory()).isEqualTo(expectedStatisticsDirectory);
     }
 
-    @Test (expected = ConfigurationException.class)
+    @Test
     public void testEnabledAndInvalidStatisticsPath() throws IOException, ConfigurationException
     {
         File expectedNonExistingStatisticsDirectory = myTemporaryFolder.newFolder();
@@ -113,7 +114,8 @@ public class TestStatisticsProperties
         properties.put("statistics.enabled", "true");
         properties.put("statistics.directory", expectedNonExistingStatisticsDirectory.toURI().toString());
 
-        StatisticsProperties.from(properties);
+        assertThatExceptionOfType(ConfigurationException.class)
+                .isThrownBy(() -> StatisticsProperties.from(properties));
     }
 
     @Test
