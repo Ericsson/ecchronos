@@ -28,7 +28,6 @@
         <exclude name="ExcessiveImports" />
         <exclude name="AvoidCatchingGenericException" />
         <exclude name="SimplifiedTernary" />
-        <exclude name="GodClass" /> <!-- TODO: Fix this-->
         <exclude name="SimplifyBooleanReturns" />
         <exclude name="CyclomaticComplexity" />
     </rule>
