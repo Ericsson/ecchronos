@@ -52,6 +52,7 @@ public class TableRepairJob extends ScheduledJob
     private final RepairState myRepairState;
     private final RepairFaultReporter myFaultReporter;
     private final RepairConfiguration myRepairConfiguration;
+    private final RepairLockType myRepairLockType;
 
     private final TableRepairMetrics myTableRepairMetrics;
 
@@ -67,6 +68,7 @@ public class TableRepairJob extends ScheduledJob
         myFaultReporter = builder.faultReporter;
         myTableRepairMetrics = builder.tableRepairMetrics;
         myRepairConfiguration = builder.repairConfiguration;
+        myRepairLockType = builder.repairLockType;
     }
 
     public TableReference getTableReference()
@@ -87,7 +89,7 @@ public class TableRepairJob extends ScheduledJob
         {
             return Collections.<ScheduledTask>singletonList(new RepairGroup(getRealPriority(), myTableReference, myRepairConfiguration,
                     myRepairState.getSnapshot(), myJmxProxyFactory, myTableRepairMetrics,
-                    RepairLockType.DATA_CENTER.getLockFactory(),
+                    myRepairLockType.getLockFactory(),
                     new RepairLockFactoryImpl()))
                     .iterator();
         }
@@ -214,6 +216,7 @@ public class TableRepairJob extends ScheduledJob
         private RepairFaultReporter faultReporter;
         private TableRepairMetrics tableRepairMetrics = null;
         private RepairConfiguration repairConfiguration = RepairConfiguration.DEFAULT;
+        private RepairLockType repairLockType;
 
         public Builder withConfiguration(Configuration configuration)
         {
@@ -254,6 +257,12 @@ public class TableRepairJob extends ScheduledJob
         public Builder withRepairConfiguration(RepairConfiguration repairConfiguration)
         {
             this.repairConfiguration = repairConfiguration;
+            return this;
+        }
+
+        public Builder withRepairLockType(RepairLockType repairLockType)
+        {
+            this.repairLockType = repairLockType;
             return this;
         }
 

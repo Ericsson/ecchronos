@@ -21,7 +21,6 @@ import static org.mockito.Mockito.ignoreStubs;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -148,6 +147,7 @@ public class TestTableRepairJobIntegration
                 .withFaultReporter(myFaultReporter)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairConfiguration(repairConfiguration)
+                .withRepairLockType(RepairLockType.VNODE)
                 .build();
 
         myTableRepairJob.setClock(myClock);

@@ -19,9 +19,12 @@ import java.util.function.Supplier;
 /**
  * The type of locking to use for repair jobs.
  */
-enum RepairLockType
+public enum RepairLockType
 {
-    DATA_CENTER(DataCenterRepairResourceFactory::new);
+    DATA_CENTER(DataCenterRepairResourceFactory::new),
+    VNODE(VnodeRepairResourceFactory::new),
+    DATA_CENTER_AND_VNODE(() -> new CombinedRepairResourceFactory(new DataCenterRepairResourceFactory(),
+            new VnodeRepairResourceFactory()));
 
     final Supplier<RepairResourceFactory> myRepairLockingFactoryProvider;
 

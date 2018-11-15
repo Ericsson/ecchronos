@@ -173,6 +173,7 @@ public class TestRepairSchedulerImpl
                 .withFaultReporter(myFaultReporter)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withScheduleManager(scheduleManager)
-                .withRepairStateFactory(myRepairStateFactory);
+                .withRepairStateFactory(myRepairStateFactory)
+                .withRepairLockType(RepairLockType.VNODE);
     }
 }
