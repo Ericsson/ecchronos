@@ -25,13 +25,17 @@ import static org.mockito.Mockito.when;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
+import com.datastax.driver.core.Row;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import org.junit.After;
 import org.junit.Before;
@@ -70,6 +74,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
     private static PreparedStatement myLockStatement;
     private static PreparedStatement myRemoveLockStatement;
     private static PreparedStatement myCompeteStatement;
+    private static PreparedStatement myGetPrioritiesStatement;
 
     private static HostStates hostStates;
 
@@ -97,6 +102,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
                 .setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
         myRemoveLockStatement = mySession.prepare(String.format("DELETE FROM %s.%s WHERE resource=?", myKeyspaceName, TABLE_LOCK));
         myCompeteStatement = mySession.prepare(String.format("INSERT INTO %s.%s (resource, node, priority) VALUES (?, ?, ?)", myKeyspaceName, TABLE_LOCK_PRIORITY));
+        myGetPrioritiesStatement = mySession.prepare(String.format("SELECT * FROM %s.%s WHERE resource=?", myKeyspaceName, TABLE_LOCK_PRIORITY));
     }
 
     @After
@@ -113,18 +119,17 @@ public class TestCASLockFactory extends AbstractCassandraTest
         try (DistributedLock lock = myLockFactory.tryLock(DATA_CENTER, "lock", 1, new HashMap<String, String>()))
         {
         }
+
+        assertPriorityListEmpty("lock");
     }
 
     @Test
-    public void testGetGlobalLock()
+    public void testGetGlobalLock() throws LockException
     {
         try (DistributedLock lock = myLockFactory.tryLock(null, "lock", 1, new HashMap<String, String>()))
         {
         }
-        catch (LockException e)
-        {
-            fail("Should not get exception");
-        }
+        assertPriorityListEmpty("lock");
     }
 
     @Test (expected = LockException.class)
@@ -135,6 +140,8 @@ public class TestCASLockFactory extends AbstractCassandraTest
         try (DistributedLock lock = myLockFactory.tryLock(null, "lock", 1, new HashMap<String, String>()))
         {
         }
+
+        assertPriortiesInList("lock", 1);
     }
 
     @Test (expected = LockException.class)
@@ -146,6 +153,8 @@ public class TestCASLockFactory extends AbstractCassandraTest
         {
 
         }
+
+        assertPriortiesInList("lock", 1, 2);
     }
 
     @Test (expected = LockException.class)
@@ -157,6 +166,8 @@ public class TestCASLockFactory extends AbstractCassandraTest
         {
 
         }
+
+        assertPriortiesInList("lock", 1);
     }
 
     @Test
@@ -171,6 +182,8 @@ public class TestCASLockFactory extends AbstractCassandraTest
 
             assertThat(actualMetadata).isEqualTo(expectedMetadata);
         }
+
+        assertPriorityListEmpty("lock");
     }
 
     @Test
@@ -283,6 +296,24 @@ public class TestCASLockFactory extends AbstractCassandraTest
         {
             // Expected exception
         }
+    }
+
+    private void assertPriorityListEmpty(String resource)
+    {
+        assertThat(getPriorties(resource)).isEmpty();
+    }
+
+    private void assertPriortiesInList(String resource, Integer... priorities)
+    {
+        assertThat(getPriorties(resource)).containsExactlyInAnyOrder(priorities);
+    }
+
+    private Set<Integer> getPriorties(String resource)
+    {
+        ResultSet resultSet = execute(myGetPrioritiesStatement.bind(resource));
+        List<Row> rows = resultSet.all();
+
+        return rows.stream().map(r -> r.getInt("priority")).collect(Collectors.toSet());
     }
 
     private ResultSet execute(Statement statement)

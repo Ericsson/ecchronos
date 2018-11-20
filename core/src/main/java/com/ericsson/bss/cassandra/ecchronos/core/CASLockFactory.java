@@ -108,6 +108,7 @@ public class CASLockFactory implements LockFactory, Closeable
     private final PreparedStatement myGetLockMetadataStatement;
     private final PreparedStatement myRemoveLockStatement;
     private final PreparedStatement myUpdateLockStatement;
+    private final PreparedStatement myRemoveLockPriorityStatement;
 
     private CASLockFactory(Builder builder)
     {
@@ -151,6 +152,11 @@ public class CASLockFactory implements LockFactory, Closeable
                 .from(myKeyspaceName, TABLE_LOCK_PRIORITY)
                 .where(eq(COLUMN_RESOURCE, bindMarker()));
 
+        Delete.Where removeLockPriorityStatement = QueryBuilder.delete()
+                .from(myKeyspaceName, TABLE_LOCK_PRIORITY)
+                .where(eq(COLUMN_RESOURCE, bindMarker()))
+                .and(eq(COLUMN_NODE, bindMarker()));
+
         myLockStatement = mySession.prepare(insertLockStatement)
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
                 .setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
@@ -170,6 +176,8 @@ public class CASLockFactory implements LockFactory, Closeable
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
 
         myGetPriorityStatement = mySession.prepare(getPriorityStatement)
+                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+        myRemoveLockPriorityStatement = mySession.prepare(removeLockPriorityStatement)
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
 
         UUID hostId = builder.myNativeConnectionProvider.getLocalHost().getHostId();
@@ -471,6 +479,7 @@ public class CASLockFactory implements LockFactory, Closeable
             {
                 future.cancel(true);
                 execute(myDataCenter, myRemoveLockStatement.bind(myResource, myUuid));
+                execute(myDataCenter, myRemoveLockPriorityStatement.bind(myResource, myUuid));
             }
         }
 
