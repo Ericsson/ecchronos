@@ -177,6 +177,7 @@ public class CASLockFactory implements LockFactory, Closeable
 
         myGetPriorityStatement = mySession.prepare(getPriorityStatement)
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+
         myRemoveLockPriorityStatement = mySession.prepare(removeLockPriorityStatement)
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
 

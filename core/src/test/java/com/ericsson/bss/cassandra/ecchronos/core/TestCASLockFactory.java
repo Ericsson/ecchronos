@@ -140,8 +140,10 @@ public class TestCASLockFactory extends AbstractCassandraTest
         try (DistributedLock lock = myLockFactory.tryLock(null, "lock", 1, new HashMap<String, String>()))
         {
         }
-
-        assertPriortiesInList("lock", 1);
+        finally
+        {
+            assertPrioritiesInList("lock", 1);
+        }
     }
 
     @Test (expected = LockException.class)
@@ -153,8 +155,10 @@ public class TestCASLockFactory extends AbstractCassandraTest
         {
 
         }
-
-        assertPriortiesInList("lock", 1, 2);
+        finally
+        {
+            assertPrioritiesInList("lock", 1, 2);
+        }
     }
 
     @Test (expected = LockException.class)
@@ -166,8 +170,10 @@ public class TestCASLockFactory extends AbstractCassandraTest
         {
 
         }
-
-        assertPriortiesInList("lock", 1);
+        finally
+        {
+            assertPrioritiesInList("lock", 1);
+        }
     }
 
     @Test
@@ -300,15 +306,15 @@ public class TestCASLockFactory extends AbstractCassandraTest
 
     private void assertPriorityListEmpty(String resource)
     {
-        assertThat(getPriorties(resource)).isEmpty();
+        assertThat(getPriorities(resource)).isEmpty();
     }
 
-    private void assertPriortiesInList(String resource, Integer... priorities)
+    private void assertPrioritiesInList(String resource, Integer... priorities)
     {
-        assertThat(getPriorties(resource)).containsExactlyInAnyOrder(priorities);
+        assertThat(getPriorities(resource)).containsExactlyInAnyOrder(priorities);
     }
 
-    private Set<Integer> getPriorties(String resource)
+    private Set<Integer> getPriorities(String resource)
     {
         ResultSet resultSet = execute(myGetPrioritiesStatement.bind(resource));
         List<Row> rows = resultSet.all();
