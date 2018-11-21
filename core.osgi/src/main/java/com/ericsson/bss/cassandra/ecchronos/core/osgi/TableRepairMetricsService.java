@@ -35,7 +35,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 @Designate(ocd = TableRepairMetricsService.Configuration.class)
 public final class TableRepairMetricsService implements TableRepairMetrics
 {
-    private static final String DEFAULT_STATISTICS_DIRECTORY = "/var/lib/cassandra/repair/metrics/";
     private static final long DEFAULT_STATISTICS_REPORT_INTERVAL_IN_SECONDS = 60L;
 
     @Reference(service = TableStorageStates.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
@@ -85,7 +84,7 @@ public final class TableRepairMetricsService implements TableRepairMetrics
     public @interface Configuration
     {
         @AttributeDefinition(name = "Metrics directory", description = "The directory which the repair metrics will be stored in")
-        String metricsDirectory() default DEFAULT_STATISTICS_DIRECTORY;
+        String metricsDirectory();
 
         @AttributeDefinition(name = "Report interval in seconds", description = "The interval in which the metrics will be reported")
         long metricsReportIntervalInSeconds() default DEFAULT_STATISTICS_REPORT_INTERVAL_IN_SECONDS;

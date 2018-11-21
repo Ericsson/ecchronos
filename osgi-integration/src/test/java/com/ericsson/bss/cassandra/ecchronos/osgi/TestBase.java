@@ -40,7 +40,7 @@ public class TestBase
     protected static final String CASSANDRA_NATIVE_PORT = System.getProperty("it-cassandra.native.port");
     protected static final String CASSANDRA_JMX_PORT = System.getProperty("it-cassandra.jmx.port");
 
-    protected static final String REPAIR_METRICS_PID = "com.ericsson.bss.cassandra.ecchronos.core.metrics.osgi.TableRepairMetricsService";
+    protected static final String REPAIR_METRICS_PID = "com.ericsson.bss.cassandra.ecchronos.core.osgi.TableRepairMetricsService";
 
     protected static final String NATIVE_CONNECTION_PID = "com.ericsson.bss.cassandra.ecchronos.connection.impl.OSGiLocalNativeConnectionProvider";
     protected static final String JMX_CONNECTION_PID = "com.ericsson.bss.cassandra.ecchronos.connection.impl.OSGiLocalJmxConnectionProvider";
