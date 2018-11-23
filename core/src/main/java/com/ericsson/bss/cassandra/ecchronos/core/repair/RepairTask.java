@@ -37,7 +37,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.JmxProxy;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import org.slf4j.Logger;
@@ -53,7 +52,7 @@ import com.google.common.collect.Sets;
  * <p>
  * If the repair failed the {@link #getUnknownRanges()} can be used to retrieve the ranges that have an unknown status during the repair.
  */
-public class RepairTask implements NotificationListener, ScheduledJob.ScheduledTask
+public class RepairTask implements NotificationListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairTask.class);
 
@@ -63,7 +62,7 @@ public class RepairTask implements NotificationListener, ScheduledJob.ScheduledT
 
     private final ScheduledExecutorService myExecutor = Executors.newScheduledThreadPool(1);
 
-    private final Set<LongTokenRange> completedRanges = Collections.synchronizedSet(new HashSet<LongTokenRange>());
+    private final Set<LongTokenRange> completedRanges = Collections.synchronizedSet(new HashSet<>());
     private final CountDownLatch myLatch = new CountDownLatch(1);
 
     private final Set<LongTokenRange> myTokenRanges;
@@ -92,7 +91,6 @@ public class RepairTask implements NotificationListener, ScheduledJob.ScheduledT
         myRepairConfiguration = builder.repairConfiguration;
     }
 
-    @Override
     public void execute() throws ScheduledJobException
     {
         long start = System.nanoTime();
@@ -123,7 +121,6 @@ public class RepairTask implements NotificationListener, ScheduledJob.ScheduledT
         }
     }
 
-    @Override
     public void cleanup()
     {
         myExecutor.shutdown();

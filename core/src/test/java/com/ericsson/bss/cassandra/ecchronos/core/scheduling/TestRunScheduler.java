@@ -193,7 +193,7 @@ public class TestRunScheduler
 
         assertThat(job.hasRun()).isFalse();
         assertThat(queue.size()).isEqualTo(2);
-        verify(myLockFactory).tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class));
+        verify(myLockFactory, times(2)).tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class));
     }
 
     @Test (timeout = 2000L)
@@ -253,15 +253,16 @@ public class TestRunScheduler
             return Arrays.<ScheduledTask> asList(new LongRunningTask()).iterator();
         }
 
+        @Override
         public String toString()
         {
             return "LongRunningJob " + getPriority();
         }
 
-        public class LongRunningTask implements ScheduledTask
+        public class LongRunningTask extends ScheduledTask
         {
             @Override
-            public void execute()
+            public boolean execute()
             {
                 hasStarted = true;
                 try
@@ -273,6 +274,7 @@ public class TestRunScheduler
                     // Intentionally left empty
                 }
                 hasRun = true;
+                return true;
             }
 
             @Override

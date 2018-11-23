@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
+import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
@@ -66,7 +67,7 @@ public class TestScheduledJobQueue
     }
 
     @Test
-    public void testNonRunnableQueueIsEmpty()
+    public void testNonRunnableQueueIsEmpty() throws ScheduledJobException
     {
         final int nJobs = 10;
 
@@ -77,7 +78,7 @@ public class TestScheduledJobQueue
 
         for (ScheduledJob job : queue)
         {
-            job.execute();
+            job.postExecute(true);
         }
 
         assertThat(queue.iterator()).isEmpty();
@@ -131,6 +132,7 @@ public class TestScheduledJobQueue
             return new ArrayList<ScheduledTask>().iterator();
         }
 
+        @Override
         public String toString()
         {
             return "RunnableOnce " + getPriority();

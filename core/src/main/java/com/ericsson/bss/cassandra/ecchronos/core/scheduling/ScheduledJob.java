@@ -14,23 +14,13 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.scheduling;
 
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
-import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
 
 /**
  * A scheduled job that should be managed by the {@link ScheduleManager}.
  */
-public abstract class ScheduledJob implements Iterable<ScheduledJob.ScheduledTask>
+public abstract class ScheduledJob implements Iterable<ScheduledTask>
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ScheduledJob.class);
-
     public static final long DEFAULT_WAIT_BETWEEN_UNSUCCESSFUL_RUNS_IN_MILLISECONDS = TimeUnit.MINUTES.toMillis(30);
 
     private final Priority myPriority;
@@ -44,55 +34,6 @@ public abstract class ScheduledJob implements Iterable<ScheduledJob.ScheduledTas
         myPriority = configuration.priority;
         myRunIntervalInMs = configuration.runIntervalInMs;
         myLastSuccessfulRun = System.currentTimeMillis() - myRunIntervalInMs;
-    }
-
-    /**
-     * Execute the scheduled job.
-     */
-    public void execute()
-    {
-        if (!preValidate())
-        {
-            return;
-        }
-
-        Iterator<ScheduledTask> taskIterator = iterator();
-
-        boolean successful = true;
-
-        while (taskIterator.hasNext())
-        {
-            ScheduledTask task = taskIterator.next();
-            try
-            {
-                task.execute();
-            }
-            catch (ScheduledJobException e)
-            {
-                LOG.warn("Error while running task {}", task, e);
-                successful = false;
-            }
-            finally
-            {
-                task.cleanup();
-            }
-        }
-
-        postExecute(successful);
-    }
-
-    /**
-     * Check before starting the run to see if the job really needs to be run.
-     * <p>
-     * This method is called before the execution of the job but after the lock(s) have been acquired.
-     * <p>
-     * Subclasses can override this method to prevent the job from running.
-     *
-     * @return True if the job should be run.
-     */
-    public boolean preValidate()
-    {
-        return true;
     }
 
     /**
@@ -114,19 +55,6 @@ public abstract class ScheduledJob implements Iterable<ScheduledJob.ScheduledTas
         {
             myNextRunTime = System.currentTimeMillis() + DEFAULT_WAIT_BETWEEN_UNSUCCESSFUL_RUNS_IN_MILLISECONDS;
         }
-    }
-
-    /**
-     * Get the lock used by this scheduled job.
-     *
-     * @param lockFactory
-     *            The lock factory to use.
-     * @return The lock used by this scheduled job.
-     * @throws LockException Thrown when it's not possible to get the lock.
-     */
-    public LockFactory.DistributedLock getLock(LockFactory lockFactory) throws LockException
-    {
-        return lockFactory.tryLock(null, "SCHEDULE_LOCK", getRealPriority(), new HashMap<String, String>());
     }
 
     /**
@@ -194,24 +122,6 @@ public abstract class ScheduledJob implements Iterable<ScheduledJob.ScheduledTas
         int hours = (int) (diff / 3600000) + 1;
 
         return hours * myPriority.getValue();
-    }
-
-    /**
-     * A scheduled task run by the scheduled job.
-     */
-    public interface ScheduledTask
-    {
-        /**
-         * Run the task.
-         * @throws ScheduledJobException
-         *             if anything went wrong during running.
-         */
-        void execute() throws ScheduledJobException;
-
-        /**
-         * Cleanup of the task that should be run after the task has been executed.
-         */
-        void cleanup();
     }
 
     /**

@@ -40,17 +40,19 @@ public class DummyJob extends ScheduledJob
         return Arrays.<ScheduledTask> asList(new DummyTask()).iterator();
     }
 
+    @Override
     public String toString()
     {
         return "DummyJob " + getPriority();
     }
 
-    public class DummyTask implements ScheduledTask
+    public class DummyTask extends ScheduledTask
     {
         @Override
-        public void execute() throws ScheduledJobException
+        public boolean execute()
         {
             hasRun = true;
+            return true;
         }
 
         @Override

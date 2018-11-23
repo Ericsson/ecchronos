@@ -160,7 +160,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
                 .withRepairConfiguration(repairConfiguration)
                 .build();
 
-        job.preValidate();
+        job.runnable();
 
         return job;
     }
