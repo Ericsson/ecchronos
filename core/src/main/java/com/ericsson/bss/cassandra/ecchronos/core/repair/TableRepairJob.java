@@ -48,9 +48,9 @@ import com.google.common.annotations.VisibleForTesting;
  * <p>
  * When run this job will create {@link RepairTask RepairTasks} that repairs the table.
  */
-public class ScheduledRepairJob extends ScheduledJob
+public class TableRepairJob extends ScheduledJob
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ScheduledRepairJob.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TableRepairJob.class);
 
     private static final int MAX_PARALLEL = 1;
 
@@ -64,7 +64,7 @@ public class ScheduledRepairJob extends ScheduledJob
 
     private final AtomicReference<Clock> myClock = new AtomicReference<>(Clock.DEFAULT);
 
-    ScheduledRepairJob(Builder builder)
+    TableRepairJob(Builder builder)
     {
         super(builder.configuration);
 
@@ -516,7 +516,7 @@ public class ScheduledRepairJob extends ScheduledJob
             return this;
         }
 
-        public ScheduledRepairJob build()
+        public TableRepairJob build()
         {
             if (tableReference == null)
             {
@@ -534,7 +534,7 @@ public class ScheduledRepairJob extends ScheduledJob
             {
                 throw new IllegalArgumentException("Metric interface not set");
             }
-            return new ScheduledRepairJob(this);
+            return new TableRepairJob(this);
         }
     }
 

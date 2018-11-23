@@ -51,7 +51,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJobQueue;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 
 @RunWith (MockitoJUnitRunner.class)
-public class TestScheduleRepairJobIntegration
+public class TestTableRepairJobIntegration
 {
     private static final String keyspaceName = "keyspace";
     private static final String tableName = "table";
@@ -103,7 +103,7 @@ public class TestScheduleRepairJobIntegration
 
     private RunScheduler myRunScheduler;
 
-    private ScheduledRepairJob myScheduledRepairJob;
+    private TableRepairJob myTableRepairJob;
 
     @Before
     public void setup()
@@ -135,7 +135,7 @@ public class TestScheduleRepairJobIntegration
                 .withRepairErrorTime(10, TimeUnit.DAYS)
                 .build();
 
-        myScheduledRepairJob = new ScheduledRepairJob.Builder()
+        myTableRepairJob = new TableRepairJob.Builder()
                 .withConfiguration(configuration)
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withTableReference(new TableReference(keyspaceName, tableName))
@@ -145,9 +145,9 @@ public class TestScheduleRepairJobIntegration
                 .withRepairConfiguration(repairConfiguration)
                 .build();
 
-        myScheduledRepairJob.setClock(myClock);
+        myTableRepairJob.setClock(myClock);
 
-        myScheduledJobQueue.add(myScheduledRepairJob);
+        myScheduledJobQueue.add(myTableRepairJob);
     }
 
     @After
@@ -170,7 +170,7 @@ public class TestScheduleRepairJobIntegration
     public void testWarningAlarm()
     {
         // setup
-        doReturn(1L).when(myRunPolicy).validate(eq(myScheduledRepairJob));
+        doReturn(1L).when(myRunPolicy).validate(eq(myTableRepairJob));
 
         long start = System.currentTimeMillis();
         long lastRepairedWarning = start - TimeUnit.DAYS.toMillis(2);
