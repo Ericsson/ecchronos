@@ -18,7 +18,6 @@ import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.DummyLock;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
@@ -64,9 +63,6 @@ public class TestRepairGroup
     private static final long GC_GRACE_DAYS = 10;
 
     @Mock
-    private RepairStateSnapshot myRepairState;
-
-    @Mock
     private LockFactory myLockFactory;
 
     @Mock
@@ -81,29 +77,23 @@ public class TestRepairGroup
     @Mock
     private RepairLockFactory myRepairLockFactory;
 
-    private RepairGroup myRepairGroup;
+    private RepairConfiguration repairConfiguration;
 
     @Before
     public void init()
     {
-        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
+        repairConfiguration = RepairConfiguration.newBuilder()
                 .withParallelism(RepairOptions.RepairParallelism.PARALLEL)
                 .withType(RepairOptions.RepairType.VNODE)
                 .withRepairWarningTime(RUN_INTERVAL_IN_DAYS * 2, TimeUnit.DAYS)
                 .withRepairErrorTime(GC_GRACE_DAYS, TimeUnit.DAYS)
                 .build();
-
-
-        myRepairGroup = new RepairGroup(priority, tableReference,
-                repairConfiguration, myRepairState, myJmxProxyFactory, myTableRepairMetrics,
-                myRepairResourceFactory, myRepairLockFactory);
     }
 
     @After
     public void finalVerification()
     {
         verifyNoMoreInteractions(ignoreStubs(myLockFactory));
-        verifyNoMoreInteractions(ignoreStubs(myRepairState));
         verifyNoMoreInteractions(ignoreStubs(myJmxProxyFactory));
         verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
     }
@@ -117,11 +107,14 @@ public class TestRepairGroup
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(Sets.newHashSet(), Collections.emptyList());
         Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1", "my-resource"));
 
-        doReturn(replicaRepairGroup).when(myRepairState).getRepairGroup();
         doReturn(repairResources).when(myRepairResourceFactory).getRepairResources(eq(replicaRepairGroup));
         doReturn(new DummyLock()).when(myRepairLockFactory).getLock(eq(myLockFactory), eq(repairResources), eq(metadata), eq(priority));
 
-        myRepairGroup.getLock(myLockFactory);
+        RepairGroup repairGroup = new RepairGroup(priority, tableReference,
+                repairConfiguration, replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
+                myRepairResourceFactory, myRepairLockFactory);
+
+        repairGroup.getLock(myLockFactory);
 
         verify(myRepairResourceFactory).getRepairResources(eq(replicaRepairGroup));
         verify(myRepairLockFactory).getLock(eq(myLockFactory), eq(repairResources), eq(metadata), eq(priority));
@@ -136,11 +129,14 @@ public class TestRepairGroup
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(Sets.newHashSet(), Collections.emptyList());
         Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1", "my-resource"));
 
-        doReturn(replicaRepairGroup).when(myRepairState).getRepairGroup();
         doReturn(repairResources).when(myRepairResourceFactory).getRepairResources(eq(replicaRepairGroup));
         doThrow(LockException.class).when(myRepairLockFactory).getLock(eq(myLockFactory), eq(repairResources), eq(metadata), eq(priority));
 
-        assertThatExceptionOfType(LockException.class).isThrownBy(() -> myRepairGroup.getLock(myLockFactory));
+        RepairGroup repairGroup = new RepairGroup(priority, tableReference,
+                repairConfiguration, replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
+                myRepairResourceFactory, myRepairLockFactory);
+
+        assertThatExceptionOfType(LockException.class).isThrownBy(() -> repairGroup.getLock(myLockFactory));
 
         verify(myRepairResourceFactory).getRepairResources(eq(replicaRepairGroup));
         verify(myRepairLockFactory).getLock(eq(myLockFactory), eq(repairResources), eq(metadata), eq(priority));
@@ -161,10 +157,11 @@ public class TestRepairGroup
 
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(hosts, Collections.singletonList(range));
 
-        // mock
-        doReturn(replicaRepairGroup).when(myRepairState).getRepairGroup();
+        RepairGroup repairGroup = new RepairGroup(priority, tableReference,
+                repairConfiguration, replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
+                myRepairResourceFactory, myRepairLockFactory);
 
-        Collection<RepairTask> repairTasks = myRepairGroup.getRepairTasks();
+        Collection<RepairTask> repairTasks = repairGroup.getRepairTasks();
 
         assertThat((repairTasks).isEmpty()).isFalse();
         RepairTask repairTask = repairTasks.iterator().next();
@@ -191,10 +188,11 @@ public class TestRepairGroup
 
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(Sets.newHashSet(host, host2), vnodes);
 
-        // mock
-        doReturn(replicaRepairGroup).when(myRepairState).getRepairGroup();
+        RepairGroup repairGroup = new RepairGroup(priority, tableReference,
+                repairConfiguration, replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
+                myRepairResourceFactory, myRepairLockFactory);
 
-        Collection<RepairTask> tasks = myRepairGroup.getRepairTasks();
+        Collection<RepairTask> tasks = repairGroup.getRepairTasks();
 
         assertThat(tasks.size()).isEqualTo(3);
 

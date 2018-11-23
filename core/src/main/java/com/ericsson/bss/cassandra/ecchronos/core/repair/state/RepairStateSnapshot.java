@@ -14,13 +14,17 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
+import com.google.common.collect.ImmutableList;
+
+import java.util.List;
+
 /**
  * An immutable copy of the repair state.
  *
  * The repair state describes the current state of repairs for a table.
  * <ul>
  *     <li>When the table was last repaired - {@link #lastRepairedAt()}</li>
- *     <li>The next repair to run - {@link #getRepairGroup()}</li>
+ *     <li>The next repair(s) to run - {@link #getRepairGroups()}</li>
  *     <li>The vnodes for the table and when they were last repaired - {@link #getVnodeRepairStates()}</li>
  *     <li>If there is a repair available - {@link #canRepair()}</li>
  * </ul>
@@ -29,7 +33,7 @@ public class RepairStateSnapshot
 {
     private final boolean canRepair;
     private final long myLastRepairedAt;
-    private final ReplicaRepairGroup myReplicaRepairGroup;
+    private final ImmutableList<ReplicaRepairGroup> myReplicaRepairGroup;
     private final VnodeRepairStates myVnodeRepairStates;
 
     private RepairStateSnapshot(Builder builder)
@@ -38,7 +42,7 @@ public class RepairStateSnapshot
         myReplicaRepairGroup = builder.myReplicaRepairGroup;
         myVnodeRepairStates = builder.myVnodeRepairStates;
 
-        canRepair = myReplicaRepairGroup != null;
+        canRepair = !myReplicaRepairGroup.isEmpty();
     }
 
     /**
@@ -62,11 +66,11 @@ public class RepairStateSnapshot
     }
 
     /**
-     * Information needed to run the next repair.
+     * Information needed to run the next repair(s).
      *
-     * @return The next repair or null if none can be run.
+     * @return The next repair(s) or an empty list if none can be run.
      */
-    public ReplicaRepairGroup getRepairGroup()
+    public List<ReplicaRepairGroup> getRepairGroups()
     {
         return myReplicaRepairGroup;
     }
@@ -90,7 +94,7 @@ public class RepairStateSnapshot
     public static class Builder
     {
         private Long myLastRepairedAt;
-        private ReplicaRepairGroup myReplicaRepairGroup;
+        private ImmutableList<ReplicaRepairGroup> myReplicaRepairGroup;
         private VnodeRepairStates myVnodeRepairStates;
 
         public Builder withLastRepairedAt(long lastRepairedAt)
@@ -99,9 +103,9 @@ public class RepairStateSnapshot
             return this;
         }
 
-        public Builder withReplicaRepairGroup(ReplicaRepairGroup replicaRepairGroup)
+        public Builder withReplicaRepairGroups(List<ReplicaRepairGroup> replicaRepairGroup)
         {
-            myReplicaRepairGroup = replicaRepairGroup;
+            myReplicaRepairGroup = ImmutableList.copyOf(replicaRepairGroup);
             return this;
         }
 

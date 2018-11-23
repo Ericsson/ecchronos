@@ -19,7 +19,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
@@ -45,7 +44,7 @@ public class RepairGroup extends ScheduledTask
 
     private final TableReference myTableReference;
     private final RepairConfiguration myRepairConfiguration;
-    private final RepairStateSnapshot myRepairStateSnapshot;
+    private final ReplicaRepairGroup myReplicaRepairGroup;
     private final JmxProxyFactory myJmxProxyFactory;
     private final TableRepairMetrics myTableRepairMetrics;
     private final RepairResourceFactory myRepairResourceFactory;
@@ -54,7 +53,7 @@ public class RepairGroup extends ScheduledTask
     public RepairGroup(int priority,
                        TableReference tableReference,
                        RepairConfiguration repairConfiguration,
-                       RepairStateSnapshot repairStateSnapshot,
+                       ReplicaRepairGroup replicaRepairGroup,
                        JmxProxyFactory jmxProxyFactory,
                        TableRepairMetrics tableRepairMetrics,
                        RepairResourceFactory repairResourceFactory,
@@ -64,7 +63,7 @@ public class RepairGroup extends ScheduledTask
 
         myTableReference = tableReference;
         myRepairConfiguration = repairConfiguration;
-        myRepairStateSnapshot = repairStateSnapshot;
+        myReplicaRepairGroup = replicaRepairGroup;
         myJmxProxyFactory = jmxProxyFactory;
         myTableRepairMetrics = tableRepairMetrics;
         myRepairResourceFactory = repairResourceFactory;
@@ -72,15 +71,9 @@ public class RepairGroup extends ScheduledTask
     }
 
     @Override
-    public boolean preValidate()
-    {
-        return myRepairStateSnapshot.canRepair();
-    }
-
-    @Override
     public boolean execute()
     {
-        LOG.info("Table {} running repair job {}", myTableReference, myRepairStateSnapshot.getRepairGroup());
+        LOG.info("Table {} running repair job {}", myTableReference, myReplicaRepairGroup);
         boolean successful = true;
 
         for (RepairTask repairTask : getRepairTasks())
@@ -110,7 +103,7 @@ public class RepairGroup extends ScheduledTask
         metadata.put(LOCK_METADATA_KEYSPACE, myTableReference.getKeyspace());
         metadata.put(LOCK_METADATA_TABLE, myTableReference.getTable());
 
-        Set<RepairResource> repairResources = myRepairResourceFactory.getRepairResources(myRepairStateSnapshot.getRepairGroup());
+        Set<RepairResource> repairResources = myRepairResourceFactory.getRepairResources(myReplicaRepairGroup);
         return myRepairLockFactory.getLock(lockFactory, repairResources, metadata, myPriority);
     }
 
@@ -136,28 +129,24 @@ public class RepairGroup extends ScheduledTask
 
         if (vnodeRepair)
         {
-            ReplicaRepairGroup replicaRepairGroup = myRepairStateSnapshot.getRepairGroup();
-
-            for (LongTokenRange range : replicaRepairGroup)
+            for (LongTokenRange range : myReplicaRepairGroup)
             {
                 builder.withTokenRanges(Collections.singletonList(range))
-                        .withReplicas(replicaRepairGroup.getReplicas());
+                        .withReplicas(myReplicaRepairGroup.getReplicas());
 
                 tasks.add(builder.build());
             }
         }
         else
         {
-            ReplicaRepairGroup replicaRepairGroup = myRepairStateSnapshot.getRepairGroup();
-
-            Set<Host> replicas = replicaRepairGroup.getReplicas();
+            Set<Host> replicas = myReplicaRepairGroup.getReplicas();
 
             if (!replicas.isEmpty())
             {
                 builder.withReplicas(replicas);
             }
 
-            builder.withTokenRanges(replicaRepairGroup.getVnodes());
+            builder.withTokenRanges(myReplicaRepairGroup.getVnodes());
             tasks.add(builder.build());
         }
 

@@ -99,7 +99,7 @@ public class TestVnodeRepairStateFactoryImpl
 
         RepairStateSnapshot previousRepairState = RepairStateSnapshot.newBuilder()
                 .withLastRepairedAt(1)
-                .withReplicaRepairGroup(null)
+                .withReplicaRepairGroups(Collections.emptyList())
                 .withVnodeRepairStates(expectedVnodeRepairStates)
                 .build();
 

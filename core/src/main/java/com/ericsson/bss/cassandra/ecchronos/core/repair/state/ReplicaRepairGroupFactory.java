@@ -22,14 +22,15 @@ import java.util.List;
 public interface ReplicaRepairGroupFactory
 {
     /**
-     * Generate a {@link ReplicaRepairGroup} based on the provided {@link VnodeRepairState}.
+     * Generate a sorted list of {@link ReplicaRepairGroup} based on the provided {@link VnodeRepairState}.
      *
      * It is assumed that all vnodes passed to this method should be repaired (now).
      *
-     * Which vnodes/replicas are included in the {@link ReplicaRepairGroup} is up to the specific implementation.
+     * Which vnodes/replicas are included in the {@link ReplicaRepairGroup} is up to the specific implementation but
+     * the list should be sorted with the most urgent {@link ReplicaRepairGroup} first.
      *
      * @param availableVnodeRepairStates The currently repairable vnodes.
-     * @return The repair group based on the provided vnodes.
+     * @return The repair groups based on the provided vnodes.
      */
-    ReplicaRepairGroup generateReplicaRepairGroup(List<VnodeRepairState> availableVnodeRepairStates);
+    List<ReplicaRepairGroup> generateReplicaRepairGroups(List<VnodeRepairState> availableVnodeRepairStates);
 }

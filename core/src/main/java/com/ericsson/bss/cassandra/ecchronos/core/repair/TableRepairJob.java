@@ -14,15 +14,18 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.ericsson.bss.cassandra.ecchronos.core.Clock;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
@@ -87,11 +90,17 @@ public class TableRepairJob extends ScheduledJob
         RepairStateSnapshot repairStateSnapshot = myRepairState.getSnapshot();
         if (repairStateSnapshot.canRepair())
         {
-            return Collections.<ScheduledTask>singletonList(new RepairGroup(getRealPriority(), myTableReference, myRepairConfiguration,
-                    myRepairState.getSnapshot(), myJmxProxyFactory, myTableRepairMetrics,
-                    myRepairLockType.getLockFactory(),
-                    new RepairLockFactoryImpl()))
-                    .iterator();
+            List<ScheduledTask> taskList = new ArrayList<>();
+
+            for (ReplicaRepairGroup replicaRepairGroup : repairStateSnapshot.getRepairGroups())
+            {
+                taskList.add(new RepairGroup(getRealPriority(), myTableReference, myRepairConfiguration,
+                        replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
+                        myRepairLockType.getLockFactory(),
+                        new RepairLockFactoryImpl()));
+            }
+
+            return taskList.iterator();
         }
         else
         {

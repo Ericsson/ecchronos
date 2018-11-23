@@ -17,9 +17,10 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -39,24 +40,30 @@ public final class VnodeRepairGroupFactory implements ReplicaRepairGroupFactory
     }
 
     @Override
-    public ReplicaRepairGroup generateReplicaRepairGroup(List<VnodeRepairState> availableVnodeRepairStates)
+    public List<ReplicaRepairGroup> generateReplicaRepairGroups(List<VnodeRepairState> availableVnodeRepairStates)
     {
-        Optional<VnodeRepairState> optionalVnodeRepairState = availableVnodeRepairStates.stream()
-                .min(Comparator.comparingLong(VnodeRepairState::lastRepairedAt));
-
-        if (!optionalVnodeRepairState.isPresent())
-        {
-            return null;
-        }
-
-        VnodeRepairState vnodeRepairState = optionalVnodeRepairState.get();
-        Set<Host> replicas = vnodeRepairState.getReplicas();
-
-        List<LongTokenRange> commonVnodes = availableVnodeRepairStates.stream()
-                .filter(v -> v.getReplicas().equals(replicas))
-                .map(VnodeRepairState::getTokenRange)
+        List<VnodeRepairState> sortedVnodeRepairStates = availableVnodeRepairStates.stream()
+                .sorted(Comparator.comparingLong(VnodeRepairState::lastRepairedAt))
                 .collect(Collectors.toList());
 
-        return new ReplicaRepairGroup(replicas, commonVnodes);
+        List<ReplicaRepairGroup> sortedRepairGroups = new ArrayList<>();
+        Set<Set<Host>> countedReplicaGroups = new HashSet<>();
+
+        for (VnodeRepairState vnodeRepairState : sortedVnodeRepairStates)
+        {
+            Set<Host> replicas = vnodeRepairState.getReplicas();
+
+            if (countedReplicaGroups.add(replicas))
+            {
+                List<LongTokenRange> commonVnodes = availableVnodeRepairStates.stream()
+                        .filter(v -> v.getReplicas().equals(replicas))
+                        .map(VnodeRepairState::getTokenRange)
+                        .collect(Collectors.toList());
+
+                sortedRepairGroups.add(new ReplicaRepairGroup(replicas, commonVnodes));
+            }
+        }
+
+        return sortedRepairGroups;
     }
 }
