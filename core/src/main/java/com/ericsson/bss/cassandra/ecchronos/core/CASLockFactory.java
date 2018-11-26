@@ -215,7 +215,7 @@ public class CASLockFactory implements LockFactory, Closeable
         }
         catch (Exception e)
         {
-            LOG.error("Unable to lock resource {} in data center {}", resource, dataCenter, e);
+            LOG.warn("Unable to lock resource {} in data center {} - {}", resource, dataCenter, e.getMessage());
             throw new LockException(e);
         }
 
