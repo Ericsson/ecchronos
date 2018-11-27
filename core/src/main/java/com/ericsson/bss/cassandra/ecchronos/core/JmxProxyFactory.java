@@ -22,7 +22,9 @@ public interface JmxProxyFactory
      * Connect to the local Cassandra node and get a proxy instance.
      * <p>
      * The returned {@link JmxProxy} must be closed by the caller.
-     * @throws IOException if we are unable to connect
+     *
+     * @return The connected {@link JmxProxy}.
+     * @throws IOException Thrown when unable to connect.
      */
     JmxProxy connect() throws IOException;
 }

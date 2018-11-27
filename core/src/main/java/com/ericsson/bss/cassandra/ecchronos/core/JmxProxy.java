@@ -31,6 +31,8 @@ public interface JmxProxy extends Closeable
     /**
      * Add a listener to the storage service interface.
      *
+     * @param listener
+     *            The listener to add.
      * @see #removeStorageServiceListener(NotificationListener)
      */
     void addStorageServiceListener(NotificationListener listener);
@@ -38,6 +40,7 @@ public interface JmxProxy extends Closeable
     /**
      * Get a list of textual representations of IP addresses of the current live nodes.
      *
+     * @return A list of the live nodes.
      * @see #getUnreachableNodes()
      */
     List<String> getLiveNodes();
@@ -45,6 +48,7 @@ public interface JmxProxy extends Closeable
     /**
      * Get a list of textual representations of IP addresses of the current unreachable nodes.
      *
+     * @return A list of the unreachable nodes.
      * @see #getLiveNodes()
      */
     List<String> getUnreachableNodes();
@@ -72,12 +76,18 @@ public interface JmxProxy extends Closeable
     /**
      * Remove a listener from the storage service interface.
      *
+     * @param listener
+     *            The listener to remove.
+     *
      * @see #addStorageServiceListener(NotificationListener)
      */
     void removeStorageServiceListener(NotificationListener listener);
 
     /**
+     * Get the live disk space used for the provided table.
+     *
      * @param tableReference
+     *            The table to get the live disk space for.
      * @return The live disk space used by the provided table.
      */
     long liveDiskSpaceUsed(TableReference tableReference);

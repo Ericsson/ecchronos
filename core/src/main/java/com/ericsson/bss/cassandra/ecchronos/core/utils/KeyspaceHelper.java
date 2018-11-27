@@ -73,6 +73,8 @@ public final class KeyspaceHelper
     /**
      * Get all the data centers in the cluster.
      *
+     * @param metadata
+     *            The cluster metadata.
      * @return The set of data centers available.
      */
     public static Set<String> getDatacenters(Metadata metadata)

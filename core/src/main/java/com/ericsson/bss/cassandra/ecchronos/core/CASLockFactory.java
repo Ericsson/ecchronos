@@ -61,12 +61,13 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.set;
  * Lock factory using Cassandras LWT (Compare-And-Set operations) to create and maintain locks.
  *
  * Expected keyspace/tables:
+ * <pre>
  * CREATE KEYSPACE IF NOT EXISTS ecchronos WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 1};
  *
  * CREATE TABLE IF NOT EXISTS ecchronos.lock (
  * resource text,
  * node uuid,
- * metadata map<text,text>,
+ * metadata map&lt;text,text&gt;,
  * PRIMARY KEY(resource))
  * WITH default_time_to_live = 600 AND gc_grace_seconds = 0;
  *
@@ -76,6 +77,7 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.set;
  * priority int,
  * PRIMARY KEY(resource, node))
  * WITH default_time_to_live = 600 AND gc_grace_seconds = 0;
+ * </pre>
  */
 public class CASLockFactory implements LockFactory, Closeable
 {
