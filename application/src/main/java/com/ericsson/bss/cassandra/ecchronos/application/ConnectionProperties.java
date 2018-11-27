@@ -14,67 +14,70 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
+import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
+
 import java.util.Properties;
 
 public final class ConnectionProperties
 {
-    private static final String CONFIG_CONNECTION_NATIVE_HOST = "connection.native.host";
-    private static final String CONFIG_CONNECTION_NATIVE_PORT = "connection.native.port";
-    private static final String CONFIG_CONNECTION_JMX_HOST = "connection.jmx.host";
-    private static final String CONFIG_CONNECTION_JMX_PORT = "connection.jmx.port";
+    private static final String CONFIG_CONNECTION_NATIVE_CLASS = "connection.native.class";
+    private static final String CONFIG_STATEMENT_DECORATOR_CLASS = "connection.native.decorator.class";
+    private static final String CONFIG_CONNECTION_JMX_CLASS = "connection.jmx.class";
 
-    private static final String DEFAULT_NATIVE_HOST = "localhost";
-    private static final String DEFAULT_NATIVE_PORT = "9042";
-    private static final String DEFAULT_JMX_HOST = "localhost";
-    private static final String DEFAULT_JMX_PORT = "7199";
+    private static final String DEFAULT_CONNECTION_NATIVE_CLASS = DefaultNativeConnectionProvider.class.getName();
+    private static final String DEFAULT_STATEMENT_DECORATOR_CLASS = DefaultJmxConnectionProvider.class.getName();
+    private static final String DEFAULT_CONNECTION_JMX_CLASS = DefaultStatementDecorator.class.getName();
 
-    private final String myNativeHost;
-    private final String myJmxHost;
-    private final int myNativePort;
-    private final int myJmxPort;
+    private final Class<? extends NativeConnectionProvider> myNativeConnectionProviderClass;
+    private final Class<? extends JmxConnectionProvider> myJmxConnectionProviderClass;
+    private final Class<? extends StatementDecorator> myStatementDecoratorClass;
 
-    private ConnectionProperties(String nativeHost, int nativePort,
-                                 String jmxHost, int jmxPort)
+    private ConnectionProperties(Class<? extends NativeConnectionProvider> nativeConnectionProviderClass,
+                                 Class<? extends JmxConnectionProvider> jmxConnectionProviderClass,
+                                 Class<? extends StatementDecorator> statementDecoratorClass)
     {
-        myNativeHost = nativeHost;
-        myNativePort = nativePort;
-        myJmxHost = jmxHost;
-        myJmxPort = jmxPort;
+        myNativeConnectionProviderClass = nativeConnectionProviderClass;
+        myJmxConnectionProviderClass = jmxConnectionProviderClass;
+        myStatementDecoratorClass = statementDecoratorClass;
     }
 
-    public String getNativeHost()
+    public Class<? extends NativeConnectionProvider> getNativeConnectionProviderClass()
     {
-        return myNativeHost;
+        return myNativeConnectionProviderClass;
     }
 
-    public int getNativePort()
+    public Class<? extends JmxConnectionProvider> getJmxConnectionProviderClass()
     {
-        return myNativePort;
+        return myJmxConnectionProviderClass;
     }
 
-    public String getJmxHost()
+    public Class<? extends StatementDecorator> getStatementDecoratorClass()
     {
-        return myJmxHost;
-    }
-
-    public int getJmxPort()
-    {
-        return myJmxPort;
+        return myStatementDecoratorClass;
     }
 
     @Override
     public String toString()
     {
-        return String.format("(native=%s:%d, jmx=%s:%d)", myNativeHost, myNativePort, myJmxHost, myJmxPort);
+        return String.format("Connection(native=%s, jmx=%s, statementDecorator=%s)", myNativeConnectionProviderClass,
+                myJmxConnectionProviderClass, myStatementDecoratorClass);
     }
 
-    public static ConnectionProperties from(Properties properties)
+    public static ConnectionProperties from(Properties properties) throws ConfigurationException
     {
-        String nativeHost = properties.getProperty(CONFIG_CONNECTION_NATIVE_HOST, DEFAULT_NATIVE_HOST);
-        int nativePort = Integer.parseInt(properties.getProperty(CONFIG_CONNECTION_NATIVE_PORT, DEFAULT_NATIVE_PORT));
-        String jmxHost = properties.getProperty(CONFIG_CONNECTION_JMX_HOST, DEFAULT_JMX_HOST);
-        int jmxPort = Integer.parseInt(properties.getProperty(CONFIG_CONNECTION_JMX_PORT, DEFAULT_JMX_PORT));
+        Class<? extends NativeConnectionProvider> nativeConnectionProviderClass = getClassOfType(properties, CONFIG_CONNECTION_NATIVE_CLASS, DEFAULT_CONNECTION_NATIVE_CLASS, NativeConnectionProvider.class);
+        Class<? extends JmxConnectionProvider> jmxConnectionProviderClass = getClassOfType(properties, CONFIG_CONNECTION_JMX_CLASS, DEFAULT_STATEMENT_DECORATOR_CLASS, JmxConnectionProvider.class);
+        Class<? extends StatementDecorator> statementDecoratorClass = getClassOfType(properties, CONFIG_STATEMENT_DECORATOR_CLASS, DEFAULT_CONNECTION_JMX_CLASS, StatementDecorator.class);
 
-        return new ConnectionProperties(nativeHost, nativePort, jmxHost, jmxPort);
+        return new ConnectionProperties(nativeConnectionProviderClass, jmxConnectionProviderClass, statementDecoratorClass);
+    }
+
+    private static <T> Class<? extends T> getClassOfType(Properties properties, String property, String defaultClass, Class<T> wantedType) throws ConfigurationException
+    {
+        String className = properties.getProperty(property, defaultClass);
+
+        return ReflectionUtils.resolveClassOfType(className, wantedType, Properties.class);
     }
 }
