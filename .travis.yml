@@ -9,7 +9,7 @@ matrix:
   - name: "PMD"
     env: TEST_SUITE='pmd:pmd pmd:cpd pmd:check pmd:cpd-check'
   - name: "Javadoc"
-    env: TEST_SUITE='javadoc:jar -Dquiet'
+    env: TEST_SUITE='javadoc:jar'
   - name: "Unit tests"
     env: TEST_SUITE='test cobertura:cobertura coveralls:report'
   - name: "OSGi integration"

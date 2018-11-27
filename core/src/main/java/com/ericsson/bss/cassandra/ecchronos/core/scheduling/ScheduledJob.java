@@ -163,7 +163,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledJob.ScheduledTas
     /**
      * Get the configured priority of this job.
      *
-     * @return The base priority of this job.
+     * @return The priority of this job.
      * @see #getRealPriority()
      */
     public Priority getPriority()
