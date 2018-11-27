@@ -75,13 +75,15 @@ public class RepairOptions
 
         private final String myName;
 
-        private RepairParallelism(String name)
+        RepairParallelism(String name)
         {
             myName = name;
         }
 
         /**
-         * Get the name of the repair type.
+         * Get the name of the repair parallelism.
+         *
+         * @return The repair parallelism name.
          */
         public String getName()
         {

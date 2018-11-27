@@ -166,6 +166,7 @@ public class DataCenterAwarePolicy implements ChainableLoadBalancingPolicy
      * Return the {@link HostDistance} for the provided host according to the selected data center.
      *
      * @param host the host of which to return the distance of.
+     * @param dataCenter the selected data center.
      * @return the HostDistance to {@code host}.
      */
     public HostDistance distance(Host host, String dataCenter)

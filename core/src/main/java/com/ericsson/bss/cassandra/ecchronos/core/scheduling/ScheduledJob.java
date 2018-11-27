@@ -122,7 +122,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledJob.ScheduledTas
      * @param lockFactory
      *            The lock factory to use.
      * @return The lock used by this scheduled job.
-     * @throws LockException
+     * @throws LockException Thrown when it's not possible to get the lock.
      */
     public LockFactory.DistributedLock getLock(LockFactory lockFactory) throws LockException
     {
@@ -152,6 +152,8 @@ public abstract class ScheduledJob implements Iterable<ScheduledJob.ScheduledTas
 
     /**
      * Get the unix timestamp of the last time this job was run.
+     *
+     * @return The last time the job ran successfully.
      */
     public long getLastSuccessfulRun()
     {
@@ -161,6 +163,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledJob.ScheduledTas
     /**
      * Get the configured priority of this job.
      *
+     * @return The base priority of this job.
      * @see #getRealPriority()
      */
     public Priority getPriority()

@@ -22,12 +22,16 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 public interface TableStorageStates
 {
     /**
-     * @param tableReference
+     * Get the data size of the provided table on the local node.
+     *
+     * @param tableReference The table to get the data size of.
      * @return The data size of the provided table on this node.
      */
     long getDataSize(TableReference tableReference);
 
     /**
+     * Get the total data size of all tables on the local node.
+     *
      * @return The data size of all tables on this node.
      */
     long getDataSize();

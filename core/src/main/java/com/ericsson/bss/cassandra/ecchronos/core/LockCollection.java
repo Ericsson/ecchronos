@@ -33,9 +33,6 @@ public class LockCollection implements LockFactory.DistributedLock
 
     private final List<LockFactory.DistributedLock> myLocks;
 
-    /**
-     * Construct a new lock collection covering the provided underlying locks.
-     */
     public LockCollection(Collection<? extends LockFactory.DistributedLock> locks)
     {
         myLocks = new ArrayList<>(locks);

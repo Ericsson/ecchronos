@@ -34,11 +34,19 @@ public interface TableRepairMetrics
 
     /**
      * Report the time the table was last repaired.
+     *
+     * @param tableReference The table to update the last repaired at value for.
+     * @param lastRepairedAt The last time the table was repaired.
      */
     void lastRepairedAt(TableReference tableReference, long lastRepairedAt);
 
     /**
      * Report the time it took to issue one repair command (session) and whether it was successful or not.
+     *
+     * @param tableReference The table the repair was performed on.
+     * @param timeTaken The time it took to perform the repair.
+     * @param timeUnit The {@link TimeUnit} used for the time taken.
+     * @param successful If the repair was successful or not.
      */
     void repairTiming(TableReference tableReference, long timeTaken, TimeUnit timeUnit, boolean successful);
 }

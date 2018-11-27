@@ -87,6 +87,12 @@
         <org.eluder.coveralls.coveralls-maven-plugin.version>4.3.0</org.eluder.coveralls.coveralls-maven-plugin.version>
         <org.codehaus.mojo.cobertura-maven-plugin.version>2.7</org.codehaus.mojo.cobertura-maven-plugin.version>
 
+        <org.apache.maven.plugins.maven-release-plugin.version>2.5.3</org.apache.maven.plugins.maven-release-plugin.version>
+        <org.apache.maven.plugins.maven-deploy-plugin.version>2.8.2</org.apache.maven.plugins.maven-deploy-plugin.version>
+        <org.apache.maven.plugins.maven-source-plugin.version>3.0.1</org.apache.maven.plugins.maven-source-plugin.version>
+        <org.apache.maven.plugins.maven-javadoc-plugin.version>3.0.1</org.apache.maven.plugins.maven-javadoc-plugin.version>
+        <org.apache.maven.plugins.maven-gpg-plugin.version>1.6</org.apache.maven.plugins.maven-gpg-plugin.version>
+
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <skipTests>false</skipTests>
@@ -329,6 +335,10 @@
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${org.apache.maven.plugins.maven-compiler-plugin.version}</version>
+                    <configuration>
+                        <source>1.8</source>
+                        <target>1.8</target>
+                    </configuration>
                 </plugin>
 
                 <plugin>
@@ -406,8 +416,41 @@ limitations under the License.
                             <exclude>src/test/resources/cassandra-rackdc.properties</exclude>
                             <exclude>**/*.cql</exclude>
                             <exclude>**/*.txt</exclude>
+                            <exclude>**/pom.xml.tag</exclude>
+                            <exclude>**/pom.xml.releaseBackup</exclude>
+                            <exclude>release.properties</exclude>
                         </excludes>
                     </configuration>
+                </plugin>
+
+                <plugin>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>${org.apache.maven.plugins.maven-release-plugin.version}</version>
+                    <configuration>
+                        <useReleaseProfile>false</useReleaseProfile>
+                        <releaseProfiles>release</releaseProfiles>
+                        <goals>deploy</goals>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>${org.apache.maven.plugins.maven-deploy-plugin.version}</version>
+                </plugin>
+
+                <plugin>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>${org.apache.maven.plugins.maven-source-plugin.version}</version>
+                </plugin>
+
+                <plugin>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>${org.apache.maven.plugins.maven-javadoc-plugin.version}</version>
+                </plugin>
+
+                <plugin>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>${org.apache.maven.plugins.maven-gpg-plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -434,13 +477,94 @@ limitations under the License.
 
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <quiet>true</quiet>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
+    <organization>
+        <name>Ericsson AB</name>
+        <url>http://www.ericsson.com</url>
+    </organization>
+
+    <developers>
+        <developer>
+            <name>Marcus Olsson</name>
+            <email>marcus.olsson@ericsson.com</email>
+            <organization>Ericsson AB</organization>
+            <organizationUrl>http://www.ericsson.com</organizationUrl>
+        </developer>
+        <developer>
+            <name>Per Otterström</name>
+            <email>per.otterstrom@ericsson.com</email>
+            <organization>Ericsson AB</organization>
+            <organizationUrl>http://www.ericsson.com</organizationUrl>
+        </developer>
+    </developers>
 
     <scm>
         <url>https://github.com/ericsson/ecchronos</url>
