@@ -14,7 +14,7 @@ PLACEHOLDER
 
 ### Installing
 
-After running `mvn clean package assembly:single` in the project root unpack the file `application/target/ecChronos-<version>-binary.tar.gz`.
+After running `mvn package` in the project root unpack the file `application/target/ecChronos-<version>-binary.tar.gz`.
 The root directory should contain the following:
 ```
 bin/
