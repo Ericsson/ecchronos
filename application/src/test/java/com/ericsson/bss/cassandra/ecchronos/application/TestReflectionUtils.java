@@ -75,6 +75,27 @@ public class TestReflectionUtils
                 .isThrownBy(() -> ReflectionUtils.resolveClassOfType(NonOverridingClass.class.getName(), TestInterface.class));
     }
 
+    @Test
+    public void testConstructClassWithPrivateConstructor()
+    {
+        assertThatExceptionOfType(ConfigurationException.class)
+                .isThrownBy(() -> ReflectionUtils.construct(ClassWithPrivateConstructor.class));
+    }
+
+    @Test
+    public void testConstructAbstractClass()
+    {
+        assertThatExceptionOfType(ConfigurationException.class)
+                .isThrownBy(() -> ReflectionUtils.construct(AbstractClass.class));
+    }
+
+    @Test
+    public void testConstructWithThrowingConstructor()
+    {
+        assertThatExceptionOfType(ConfigurationException.class)
+                .isThrownBy(() -> ReflectionUtils.construct(ThrowingConstructor.class));
+    }
+
     interface TestInterface
     {
         int getValue();
@@ -125,5 +146,24 @@ public class TestReflectionUtils
 
     static class NonOverridingClass
     {
+    }
+
+    static class ClassWithPrivateConstructor
+    {
+        private ClassWithPrivateConstructor()
+        {
+        }
+    }
+
+    static abstract class AbstractClass
+    {
+    }
+
+    static class ThrowingConstructor
+    {
+        public ThrowingConstructor()
+        {
+            throw new IllegalStateException();
+        }
     }
 }

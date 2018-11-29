@@ -39,7 +39,7 @@ public class TestConnectionProperties
 
         assertThat(connectionProperties.getNativeConnectionProviderClass()).isEqualTo(DefaultNativeConnectionProvider.class);
         assertThat(connectionProperties.getJmxConnectionProviderClass()).isEqualTo(DefaultJmxConnectionProvider.class);
-        assertThat(connectionProperties.getStatementDecoratorClass()).isEqualTo(DefaultStatementDecorator.class);
+        assertThat(connectionProperties.getStatementDecoratorClass()).isEqualTo(NoopStatementDecorator.class);
     }
 
     @Test

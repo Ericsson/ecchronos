@@ -19,6 +19,6 @@ Examples of implementations can be found in:
   * Which uses [LocalNativeConnectionProvider](../connection.impl/src/main/java/com/ericsson/bss/cassandra/ecchronos/connection/impl/LocalNativeConnectionProvider.java)
 * [DefaultJmxConnectionProvider](../application/src/main/java/com/ericsson/bss/cassandra/ecchronos/application/DefaultJmxConnectionProvider.java)
   * Which uses [LocalJmxConnectionProvider](../connection.impl/src/main/java/com/ericsson/bss/cassandra/ecchronos/connection/impl/LocalJmxConnectionProvider.java)
-* [DefaultStatementDecorator](../application/src/main/java/com/ericsson/bss/cassandra/ecchronos/application/DefaultStatementDecorator.java)
+* [NoopStatementDecorator](../application/src/main/java/com/ericsson/bss/cassandra/ecchronos/application/NoopStatementDecorator.java)
 
 In order to use the custom connection providers simply drop in the jar file in the `lib` directory of ecChronos and specify the full class name of the respective connection providers.

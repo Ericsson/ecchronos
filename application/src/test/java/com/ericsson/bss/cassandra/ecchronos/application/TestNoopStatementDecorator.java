@@ -15,20 +15,25 @@
 package com.ericsson.bss.cassandra.ecchronos.application;
 
 import com.datastax.driver.core.Statement;
-import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.Properties;
 
-public class DefaultStatementDecorator implements StatementDecorator
-{
-    public DefaultStatementDecorator(Properties properties) // NOPMD
-    {
-        // Nothing to do
-    }
+import static org.assertj.core.api.Assertions.assertThat;
 
-    @Override
-    public Statement apply(Statement statement)
+@RunWith(MockitoJUnitRunner.class)
+public class TestNoopStatementDecorator
+{
+    @Mock
+    private Statement mockStatement;
+
+    @Test
+    public void testApplyPreservesStatement()
     {
-        return statement;
+        NoopStatementDecorator noopStatementDecorator = new NoopStatementDecorator(new Properties());
+        assertThat(noopStatementDecorator.apply(mockStatement)).isEqualTo(mockStatement);
     }
 }

@@ -28,7 +28,7 @@ public final class ConnectionProperties
 
     private static final String DEFAULT_CONNECTION_NATIVE_CLASS = DefaultNativeConnectionProvider.class.getName();
     private static final String DEFAULT_STATEMENT_DECORATOR_CLASS = DefaultJmxConnectionProvider.class.getName();
-    private static final String DEFAULT_CONNECTION_JMX_CLASS = DefaultStatementDecorator.class.getName();
+    private static final String DEFAULT_CONNECTION_JMX_CLASS = NoopStatementDecorator.class.getName();
 
     private final Class<? extends NativeConnectionProvider> myNativeConnectionProviderClass;
     private final Class<? extends JmxConnectionProvider> myJmxConnectionProviderClass;
