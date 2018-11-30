@@ -69,7 +69,7 @@ public final class ReflectionUtils
      * @param wantedClass The wanted class type.
      * @param parameterClasses The expected parameters for the constructor.
      * @param <T> The wanted class
-     * @return
+     * @return The resolved class that extends &lt;T&gt; and has the provided constructor.
      * @throws ConfigurationException
      *     Thrown if either:
      *     <ul>
