@@ -18,18 +18,23 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <name>${project.groupId}.${project.artifactId}</name>
     <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
     <artifactId>parent</artifactId>
     <version>1.0.0-alpha.3-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>Ericsson Cassandra Chronos</name>
+    <description>
+        A distributed repair scheduler for Apache Cassandra.
+    </description>
+    <url>https://github.com/ericsson/ecchronos</url>
+
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
             <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
         </license>
     </licenses>
-
-    <packaging>pom</packaging>
 
     <modules>
         <module>fm</module>
