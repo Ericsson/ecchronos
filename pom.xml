@@ -21,7 +21,7 @@
     <name>${project.groupId}.${project.artifactId}</name>
     <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
     <artifactId>parent</artifactId>
-    <version>1.0.0-alpha.2-SNAPSHOT</version>
+    <version>1.0.0-alpha.2</version>
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
@@ -571,6 +571,6 @@ limitations under the License.
         <url>https://github.com/ericsson/ecchronos</url>
         <connection>scm:git:git@github.com:ericsson/ecchronos.git</connection>
         <developerConnection>scm:git:git@github.com:ericsson/ecchronos.git</developerConnection>
-      <tag>HEAD</tag>
+      <tag>ecchronos-1.0.0-alpha.2</tag>
   </scm>
 </project>
