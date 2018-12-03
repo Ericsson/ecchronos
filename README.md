@@ -39,6 +39,9 @@ To get started the connection properties needs to match your local setup:
 #connection.jmx.port=7199
 ```
 
+If additional properties like SSL or authentication are needed it's possible to create custom connection providers.
+More information about the custom connection provider can be found [here](docs/STANDALONE.md).
+
 Update the replication in `standalone-integration/src/main/resources/create_keyspaces.cql` to match your configuration.
 The keyspace `ecchronos` must be replicated to all data centers.
 After the file has been modified run the following command:

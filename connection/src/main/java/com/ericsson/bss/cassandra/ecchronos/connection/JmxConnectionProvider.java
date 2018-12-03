@@ -14,13 +14,17 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection;
 
+import java.io.Closeable;
 import java.io.IOException;
 import javax.management.remote.JMXConnector;
 
 /**
  * Cassandra JMX proxy interface used to interact with the local Cassandra node using JMX.
  */
-public interface JmxConnectionProvider
+public interface JmxConnectionProvider extends Closeable
 {
     JMXConnector getJmxConnector() throws IOException;
+
+    @Override
+    default void close() throws IOException {}
 }

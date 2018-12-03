@@ -34,9 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
-import com.ericsson.bss.cassandra.ecchronos.connection.impl.DefaultStatementDecorator;
-import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalJmxConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter;
 
@@ -57,11 +54,10 @@ public class ECChronos implements Closeable
 
     public ECChronos(Properties configuration, RepairFaultReporter repairFaultReporter,
                      NativeConnectionProvider nativeConnectionProvider,
-                     JmxConnectionProvider jmxConnectionProvider) throws ConfigurationException
+                     JmxConnectionProvider jmxConnectionProvider,
+                     StatementDecorator statementDecorator) throws ConfigurationException
     {
         myConfiguration = configuration;
-
-        StatementDecorator statementDecorator = new DefaultStatementDecorator();
 
         myECChronosInternals = new ECChronosInternals(configuration, nativeConnectionProvider,jmxConnectionProvider, statementDecorator);
 
@@ -143,8 +139,9 @@ public class ECChronos implements Closeable
             foreground = true;
         }
 
-        LocalNativeConnectionProvider nativeConnectionProvider = null;
-        LocalJmxConnectionProvider jmxConnectionProvider = null;
+        NativeConnectionProvider nativeConnectionProvider = null;
+        JmxConnectionProvider jmxConnectionProvider = null;
+        StatementDecorator statementDecorator;
 
         try
         {
@@ -154,13 +151,11 @@ public class ECChronos implements Closeable
 
             LOG.info("Using connection properties {}", connectionProperties);
 
-            nativeConnectionProvider = LocalNativeConnectionProvider.builder()
-                    .withLocalhost(connectionProperties.getNativeHost())
-                    .withPort(connectionProperties.getNativePort())
-                    .build();
-            jmxConnectionProvider = new LocalJmxConnectionProvider(connectionProperties.getJmxHost(), connectionProperties.getJmxPort());
+            nativeConnectionProvider = getNativeConnectionProvider(configuration, connectionProperties);
+            jmxConnectionProvider = getJmxConnectionProvider(configuration, connectionProperties);
+            statementDecorator = getStatementDecorator(configuration, connectionProperties);
 
-            ECChronos ecChronos = new ECChronos(configuration, new LoggingFaultReporter(), nativeConnectionProvider, jmxConnectionProvider);
+            ECChronos ecChronos = new ECChronos(configuration, new LoggingFaultReporter(), nativeConnectionProvider, jmxConnectionProvider, statementDecorator);
 
             start(ecChronos, foreground, nativeConnectionProvider, jmxConnectionProvider);
         }
@@ -179,8 +174,8 @@ public class ECChronos implements Closeable
     }
 
     private static void start(ECChronos ecChronos, boolean foreground,
-                              LocalNativeConnectionProvider nativeConnectionProvider,
-                              LocalJmxConnectionProvider jmxConnectionProvider)
+                              NativeConnectionProvider nativeConnectionProvider,
+                              JmxConnectionProvider jmxConnectionProvider)
     {
         try
         {
@@ -218,7 +213,7 @@ public class ECChronos implements Closeable
         return configuration;
     }
 
-    private static void shutdown(ECChronos ecChronos, LocalNativeConnectionProvider nativeConnectionProvider, LocalJmxConnectionProvider jmxConnectionProvider)
+    private static void shutdown(ECChronos ecChronos, NativeConnectionProvider nativeConnectionProvider, JmxConnectionProvider jmxConnectionProvider)
     {
         try
         {
@@ -230,5 +225,20 @@ public class ECChronos implements Closeable
         {
             LOG.error("Unexpected exception while stopping", e);
         }
+    }
+
+    private static NativeConnectionProvider getNativeConnectionProvider(Properties configuration, ConnectionProperties connectionProperties) throws ConfigurationException
+    {
+        return ReflectionUtils.construct(connectionProperties.getNativeConnectionProviderClass(), configuration);
+    }
+
+    private static JmxConnectionProvider getJmxConnectionProvider(Properties configuration, ConnectionProperties connectionProperties) throws ConfigurationException
+    {
+        return ReflectionUtils.construct(connectionProperties.getJmxConnectionProviderClass(), configuration);
+    }
+
+    private static StatementDecorator getStatementDecorator(Properties configuration, ConnectionProperties connectionProperties) throws ConfigurationException
+    {
+        return ReflectionUtils.construct(connectionProperties.getStatementDecoratorClass(), configuration);
     }
 }
