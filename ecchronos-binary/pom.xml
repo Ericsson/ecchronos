@@ -51,6 +51,7 @@
                                 <descriptor>src/assembly/assembly.xml</descriptor>
                             </descriptors>
                             <skipAssembly>false</skipAssembly>
+                            <appendAssemblyId>false</appendAssemblyId>
                         </configuration>
                     </execution>
                 </executions>
