@@ -39,6 +39,7 @@
         <module>connection.impl</module>
         <module>fm.impl</module>
         <module>application</module>
+        <module>ecchronos-binary</module>
         <module>karaf-feature</module>
         <module>osgi-integration</module>
         <module>standalone-integration</module>
