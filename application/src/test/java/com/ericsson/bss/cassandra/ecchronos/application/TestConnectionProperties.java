@@ -14,115 +14,203 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
+import com.datastax.driver.core.Host;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.Statement;
+import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import org.junit.Test;
 
+import javax.management.remote.JMXConnector;
 import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class TestConnectionProperties
 {
-    private static final String DEFAULT_NATIVE_HOST = "localhost";
-    private static final String DEFAULT_JMX_HOST = "localhost";
-    private static final int DEFAULT_NATIVE_PORT = 9042;
-    private static final int DEFAULT_JMX_PORT = 7199;
-
     @Test
-    public void testDefaultValues()
+    public void testDefaultValues() throws ConfigurationException
     {
         Properties properties = new Properties();
 
         ConnectionProperties connectionProperties = ConnectionProperties.from(properties);
 
-        assertThat(connectionProperties.getNativeHost()).isEqualTo(DEFAULT_NATIVE_HOST);
-        assertThat(connectionProperties.getJmxHost()).isEqualTo(DEFAULT_JMX_HOST);
-        assertThat(connectionProperties.getNativePort()).isEqualTo(DEFAULT_NATIVE_PORT);
-        assertThat(connectionProperties.getJmxPort()).isEqualTo(DEFAULT_JMX_PORT);
+        assertThat(connectionProperties.getNativeConnectionProviderClass()).isEqualTo(DefaultNativeConnectionProvider.class);
+        assertThat(connectionProperties.getJmxConnectionProviderClass()).isEqualTo(DefaultJmxConnectionProvider.class);
+        assertThat(connectionProperties.getStatementDecoratorClass()).isEqualTo(NoopStatementDecorator.class);
     }
 
     @Test
-    public void testSetNativeHost()
+    public void testSetNativeConnectionProviderClass() throws ConfigurationException
     {
-        String expectedNativeHost = "127.0.0.1";
-
         Properties properties = new Properties();
-        properties.put("connection.native.host", expectedNativeHost);
+        properties.put("connection.native.class", WorkingNativeConnectionProvider.class.getName());
 
         ConnectionProperties connectionProperties = ConnectionProperties.from(properties);
 
-        assertThat(connectionProperties.getNativeHost()).isEqualTo(expectedNativeHost);
-        assertThat(connectionProperties.getJmxHost()).isEqualTo(DEFAULT_JMX_HOST);
-        assertThat(connectionProperties.getNativePort()).isEqualTo(DEFAULT_NATIVE_PORT);
-        assertThat(connectionProperties.getJmxPort()).isEqualTo(DEFAULT_JMX_PORT);
+        assertThat(connectionProperties.getNativeConnectionProviderClass()).isEqualTo(WorkingNativeConnectionProvider.class);
     }
 
     @Test
-    public void testSetJmxHost()
+    public void testSetNativeConnectionProviderClassWithInvalidConstructor()
     {
-        String expectedJmxHost = "127.0.0.1";
-
         Properties properties = new Properties();
-        properties.put("connection.jmx.host", expectedJmxHost);
+        properties.put("connection.native.class", NativeConnectionProviderWithInvalidConstructor.class.getName());
 
-        ConnectionProperties connectionProperties = ConnectionProperties.from(properties);
-
-        assertThat(connectionProperties.getNativeHost()).isEqualTo(DEFAULT_NATIVE_HOST);
-        assertThat(connectionProperties.getJmxHost()).isEqualTo(expectedJmxHost);
-        assertThat(connectionProperties.getNativePort()).isEqualTo(DEFAULT_NATIVE_PORT);
-        assertThat(connectionProperties.getJmxPort()).isEqualTo(DEFAULT_JMX_PORT);
+        assertThatExceptionOfType(ConfigurationException.class).isThrownBy(() -> ConnectionProperties.from(properties));
     }
 
     @Test
-    public void testSetNativePort()
+    public void testSetNativeConnectionProviderClassWithInvalidClass()
     {
-        int expectedNativePort = 9999;
-
         Properties properties = new Properties();
-        properties.put("connection.native.port", Integer.toString(expectedNativePort));
+        properties.put("connection.native.class", NonOverridingProviderClass.class.getName());
 
-        ConnectionProperties connectionProperties = ConnectionProperties.from(properties);
-
-        assertThat(connectionProperties.getNativeHost()).isEqualTo(DEFAULT_NATIVE_HOST);
-        assertThat(connectionProperties.getJmxHost()).isEqualTo(DEFAULT_JMX_HOST);
-        assertThat(connectionProperties.getNativePort()).isEqualTo(expectedNativePort);
-        assertThat(connectionProperties.getJmxPort()).isEqualTo(DEFAULT_JMX_PORT);
+        assertThatExceptionOfType(ConfigurationException.class).isThrownBy(() -> ConnectionProperties.from(properties));
     }
 
     @Test
-    public void testSetJmxPort()
+    public void testSetJmxConnectionProviderClass() throws ConfigurationException
     {
-        int expectedJmxPort = 7100;
-
         Properties properties = new Properties();
-        properties.put("connection.jmx.port", Integer.toString(expectedJmxPort));
+        properties.put("connection.jmx.class", WorkingJmxConnectionProvider.class.getName());
 
         ConnectionProperties connectionProperties = ConnectionProperties.from(properties);
 
-        assertThat(connectionProperties.getNativeHost()).isEqualTo(DEFAULT_NATIVE_HOST);
-        assertThat(connectionProperties.getJmxHost()).isEqualTo(DEFAULT_JMX_HOST);
-        assertThat(connectionProperties.getNativePort()).isEqualTo(DEFAULT_NATIVE_PORT);
-        assertThat(connectionProperties.getJmxPort()).isEqualTo(expectedJmxPort);
+        assertThat(connectionProperties.getJmxConnectionProviderClass()).isEqualTo(WorkingJmxConnectionProvider.class);
     }
 
     @Test
-    public void testSetAll()
+    public void testSetJmxConnectionProviderClassWithInvalidConstructor()
     {
-        String expectedNativeHost = "127.0.0.1";
-        String expectedJmxHost = "127.0.0.1";
-        int expectedNativePort = 9999;
-        int expectedJmxPort = 7100;
-
         Properties properties = new Properties();
-        properties.put("connection.native.host", expectedNativeHost);
-        properties.put("connection.jmx.host", expectedJmxHost);
-        properties.put("connection.native.port", Integer.toString(expectedNativePort));
-        properties.put("connection.jmx.port", Integer.toString(expectedJmxPort));
+        properties.put("connection.jmx.class", JmxConnectionProviderWithInvalidConstructor.class.getName());
+
+        assertThatExceptionOfType(ConfigurationException.class).isThrownBy(() -> ConnectionProperties.from(properties));
+    }
+
+    @Test
+    public void testSetJmxConnectionProviderClassWithInvalidClass()
+    {
+        Properties properties = new Properties();
+        properties.put("connection.jmx.class", NonOverridingProviderClass.class.getName());
+
+        assertThatExceptionOfType(ConfigurationException.class).isThrownBy(() -> ConnectionProperties.from(properties));
+    }
+
+    @Test
+    public void testSetStatementDecoratorClass() throws ConfigurationException
+    {
+        Properties properties = new Properties();
+        properties.put("connection.native.decorator.class", WorkingStatementDecorator.class.getName());
 
         ConnectionProperties connectionProperties = ConnectionProperties.from(properties);
 
-        assertThat(connectionProperties.getNativeHost()).isEqualTo(expectedNativeHost);
-        assertThat(connectionProperties.getJmxHost()).isEqualTo(expectedJmxHost);
-        assertThat(connectionProperties.getNativePort()).isEqualTo(expectedNativePort);
-        assertThat(connectionProperties.getJmxPort()).isEqualTo(expectedJmxPort);
+        assertThat(connectionProperties.getStatementDecoratorClass()).isEqualTo(WorkingStatementDecorator.class);
+    }
+
+    @Test
+    public void testSetStatementDecoratorClassWithInvalidConstructor()
+    {
+        Properties properties = new Properties();
+        properties.put("connection.native.decorator.class", StatementDecoratorWithInvalidConstructor.class.getName());
+
+        assertThatExceptionOfType(ConfigurationException.class).isThrownBy(() -> ConnectionProperties.from(properties));
+    }
+
+    @Test
+    public void testSetStatementDecoratorClassWithInvalidClass()
+    {
+        Properties properties = new Properties();
+        properties.put("connection.native.decorator.class", NonOverridingProviderClass.class.getName());
+
+        assertThatExceptionOfType(ConfigurationException.class).isThrownBy(() -> ConnectionProperties.from(properties));
+    }
+
+    static class WorkingNativeConnectionProvider implements NativeConnectionProvider
+    {
+        WorkingNativeConnectionProvider(Properties properties)
+        {
+        }
+
+        @Override
+        public Session getSession()
+        {
+            return null;
+        }
+
+        @Override
+        public Host getLocalHost()
+        {
+            return null;
+        }
+    }
+
+    static class NativeConnectionProviderWithInvalidConstructor implements NativeConnectionProvider
+    {
+        @Override
+        public Session getSession()
+        {
+            return null;
+        }
+
+        @Override
+        public Host getLocalHost()
+        {
+            return null;
+        }
+    }
+
+    static class WorkingJmxConnectionProvider implements JmxConnectionProvider
+    {
+        WorkingJmxConnectionProvider(Properties properties)
+        {
+        }
+
+        @Override
+        public JMXConnector getJmxConnector()
+        {
+            return null;
+        }
+    }
+
+    static class JmxConnectionProviderWithInvalidConstructor implements JmxConnectionProvider
+    {
+        @Override
+        public JMXConnector getJmxConnector()
+        {
+            return null;
+        }
+    }
+
+    static class WorkingStatementDecorator implements StatementDecorator
+    {
+        WorkingStatementDecorator(Properties properties)
+        {
+        }
+
+        @Override
+        public Statement apply(Statement statement)
+        {
+            return null;
+        }
+    }
+
+    static class StatementDecoratorWithInvalidConstructor implements StatementDecorator
+    {
+        @Override
+        public Statement apply(Statement statement)
+        {
+            return null;
+        }
+    }
+
+    static class NonOverridingProviderClass
+    {
+        NonOverridingProviderClass(Properties properties)
+        {
+        }
     }
 }

@@ -14,7 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection.impl;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 
-public class LocalJmxConnectionProvider implements JmxConnectionProvider, Closeable
+public class LocalJmxConnectionProvider implements JmxConnectionProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(LocalJmxConnectionProvider.class);
 

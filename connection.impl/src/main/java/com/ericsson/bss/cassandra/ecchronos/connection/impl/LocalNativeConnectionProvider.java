@@ -14,7 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection.impl;
 
-import java.io.Closeable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -31,7 +30,7 @@ import com.datastax.driver.core.policies.TokenAwarePolicy;
 import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 
-public class LocalNativeConnectionProvider implements NativeConnectionProvider, Closeable
+public class LocalNativeConnectionProvider implements NativeConnectionProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(LocalNativeConnectionProvider.class);
 

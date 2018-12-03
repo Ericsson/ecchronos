@@ -12,23 +12,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.connection;
+package com.ericsson.bss.cassandra.ecchronos.application;
 
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Session;
+import com.datastax.driver.core.Statement;
+import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 
-import java.io.Closeable;
-import java.io.IOException;
+import java.util.Properties;
 
-/**
- * Provider for native connections
- */
-public interface NativeConnectionProvider extends Closeable
+public class NoopStatementDecorator implements StatementDecorator
 {
-    Session getSession();
-
-    Host getLocalHost();
+    public NoopStatementDecorator(Properties properties) // NOPMD
+    {
+        // Nothing to do
+    }
 
     @Override
-    default void close() throws IOException {}
+    public Statement apply(Statement statement)
+    {
+        return statement;
+    }
 }
