@@ -15,17 +15,15 @@
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
-import com.ericsson.bss.cassandra.ecchronos.core.TokenUtil;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -36,98 +34,135 @@ import com.datastax.driver.core.Host;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.TableMetadata;
-import com.datastax.driver.core.TokenRange;
-import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestReplicatedTableProviderImpl
 {
+    private static final String LOCAL_DATACENTER = "DC1";
+
     @Mock
     private Metadata myMetadata;
 
-    @Mock
-    private Host myLocalhost;
-
-    @Mock
-    private Host myRemoteHost;
-
     private List<KeyspaceMetadata> myKeyspaces = new ArrayList<>();
-
-    private Set<Host> myHosts = new HashSet<>();
-
-    private Set<TokenRange> tokenRanges = new HashSet<>();
 
     private ReplicatedTableProviderImpl myReplicatedTableProviderImpl;
 
     @Before
-    public void init() throws Exception
+    public void init()
     {
-        tokenRanges.add(TokenUtil.getRange(1, 2));
+        Host localHost = mockHost(LOCAL_DATACENTER);
 
-        myHosts.add(myLocalhost);
-        myHosts.add(myRemoteHost);
+        when(myMetadata.getKeyspaces()).thenReturn(myKeyspaces);
 
-        doReturn(myKeyspaces).when(myMetadata).getKeyspaces();
-
-        myReplicatedTableProviderImpl = new ReplicatedTableProviderImpl(myLocalhost, myMetadata);
+        myReplicatedTableProviderImpl = new ReplicatedTableProviderImpl(localHost, myMetadata);
     }
 
     @Test
-    public void testAcceptTableForLocalDC()
+    public void testAcceptSimpleNonReplicatedKeyspaceSingleDC()
     {
-        String keyspace = "keyspace";
+        mockKeyspace("user_keyspace", simpleStrategy(1), "table1");
 
-        doReturn(myHosts).when(myMetadata).getReplicas(eq(keyspace), any(TokenRange.class));
-        doReturn(tokenRanges).when(myMetadata).getTokenRanges(eq(keyspace), eq(myLocalhost));
-
-        assertThat(myReplicatedTableProviderImpl.accept(keyspace)).isTrue();
+        assertThat(myReplicatedTableProviderImpl.accept("user_keyspace")).isFalse();
     }
 
     @Test
-    public void testDoesNotAcceptTableForOtherDC()
+    public void testAcceptNetworkTopologyNonReplicatedKeyspaceSingleDC()
     {
-        String keyspace = "keyspace";
+        Map<String, String> replication = networkTopologyStrategy();
+        replication.put("DC1", "1");
 
-        // No local ranges for the keyspace and verify it isn't retrieved for scheduling
-        doReturn(myHosts).when(myMetadata).getReplicas(eq(keyspace), any(TokenRange.class));
-        doReturn(Sets.newHashSet()).when(myMetadata).getTokenRanges(eq(keyspace), eq(myLocalhost));
+        mockKeyspace("user_keyspace", replication, "table1");
 
-        assertThat(myReplicatedTableProviderImpl.accept(keyspace)).isFalse();
-
-        // Add local ranges for the keyspace and verify it is retrieved for scheduling
-        doReturn(tokenRanges).when(myMetadata).getTokenRanges(eq(keyspace), eq(myLocalhost));
-
-        assertThat(myReplicatedTableProviderImpl.accept(keyspace)).isTrue();
+        assertThat(myReplicatedTableProviderImpl.accept("user_keyspace")).isFalse();
     }
 
     @Test
-    public void testAcceptSystemAuth()
+    public void testAcceptSimpleReplicatedKeyspaceSingleDC()
     {
-        String keyspace = "system_auth";
+        mockKeyspace("user_keyspace", simpleStrategy(3), "table1");
 
-        doReturn(myHosts).when(myMetadata).getReplicas(eq(keyspace), any(TokenRange.class));
-        doReturn(tokenRanges).when(myMetadata).getTokenRanges(eq(keyspace), eq(myLocalhost));
-
-        assertThat(myReplicatedTableProviderImpl.accept(keyspace)).isTrue();
+        assertThat(myReplicatedTableProviderImpl.accept("user_keyspace")).isTrue();
     }
 
     @Test
-    public void testDoesNotAcceptSystemDistributed()
+    public void testAcceptNetworkTopologyReplicatedKeyspaceSingleDC()
     {
-        String keyspace = "system_distributed";
+        Map<String, String> replication = networkTopologyStrategy();
+        replication.put("DC1", "3");
 
-        doReturn(myHosts).when(myMetadata).getReplicas(eq(keyspace), any(TokenRange.class));
-        doReturn(tokenRanges).when(myMetadata).getTokenRanges(eq(keyspace), eq(myLocalhost));
+        mockKeyspace("user_keyspace", replication, "table1");
 
-        assertThat(myReplicatedTableProviderImpl.accept(keyspace)).isFalse();
+        assertThat(myReplicatedTableProviderImpl.accept("user_keyspace")).isTrue();
     }
 
     @Test
-    public void testGetAllJobs()
+    public void testAcceptSimpleReplicatedKeyspaceMultipleDC()
     {
-        mockReplicatedKeyspace("system_auth", "roles", "role_members", "role_permissions");
-        mockReplicatedKeyspace("system_distributed", "parent_repair_history", "repair_history");
-        mockReplicatedKeyspace("user_keyspace", "table1", "table2");
+        mockKeyspace("user_keyspace", simpleStrategy(3), "table1");
+
+        assertThat(myReplicatedTableProviderImpl.accept("user_keyspace")).isTrue();
+    }
+
+    @Test
+    public void testAcceptNetworkTopologyReplicatedKeyspaceMultipleDC()
+    {
+        Map<String, String> replication = networkTopologyStrategy();
+        replication.put("DC1", "1");
+        replication.put("DC2", "1");
+        replication.put("DC3", "1");
+
+
+        mockKeyspace("user_keyspace", replication, "table1");
+
+        assertThat(myReplicatedTableProviderImpl.accept("user_keyspace")).isTrue();
+    }
+
+    @Test
+    public void testAcceptNonLocallyReplicatedTable()
+    {
+        Map<String, String> replication = networkTopologyStrategy();
+        replication.put("DC2", "1");
+        replication.put("DC3", "1");
+
+
+        mockKeyspace("user_keyspace", replication, "table1");
+
+        assertThat(myReplicatedTableProviderImpl.accept("user_keyspace")).isFalse();
+    }
+
+    @Test
+    public void testAcceptLocalNodeDCIsUnavailableNetworkTopology()
+    {
+        Host localHost = mockHost(null);
+
+        Map<String, String> replication = networkTopologyStrategy();
+        replication.put("DC1", "3");
+
+        mockKeyspace("user_keyspace", replication, "table1");
+
+        ReplicatedTableProviderImpl replicatedTableProviderImpl = new ReplicatedTableProviderImpl(localHost, myMetadata);
+        assertThat(replicatedTableProviderImpl.accept("user_keyspace")).isFalse();
+    }
+
+    @Test
+    public void testAcceptLocalNodeDCIsUnavailableSimple()
+    {
+        Host localHost = mockHost(null);
+        mockKeyspace("user_keyspace", simpleStrategy(3), "table1");
+
+        ReplicatedTableProviderImpl replicatedTableProviderImpl = new ReplicatedTableProviderImpl(localHost, myMetadata);
+        assertThat(replicatedTableProviderImpl.accept("user_keyspace")).isTrue();
+    }
+
+    @Test
+    public void testGetAllSingleDCNoSystemOnlyKeyspaces()
+    {
+        Map<String, String> replication = networkTopologyStrategy();
+        replication.put("DC1", "3");
+
+        mockKeyspace("system_auth", replication, "roles", "role_members", "role_permissions");
+        mockKeyspace("system_distributed", replication, "parent_repair_history", "repair_history");
+        mockKeyspace("user_keyspace", replication, "table1", "table2");
 
         TableReference[] expectedTableReferences = new TableReference[] {
                 new TableReference("system_auth", "roles"),
@@ -140,11 +175,65 @@ public class TestReplicatedTableProviderImpl
         assertThat(myReplicatedTableProviderImpl.getAll()).containsExactlyInAnyOrder(expectedTableReferences);
     }
 
-    private void mockReplicatedKeyspace(String keyspace, String... tables)
+    @Test
+    public void testGetAllMultipleDCNoSystemOnlyKeyspaces()
+    {
+        Map<String, String> replication = networkTopologyStrategy();
+        replication.put("DC1", "1");
+        replication.put("DC2", "1");
+        replication.put("DC3", "1");
+
+        mockKeyspace("system_auth", replication, "roles", "role_members", "role_permissions");
+        mockKeyspace("system_distributed", replication, "parent_repair_history", "repair_history");
+        mockKeyspace("user_keyspace", replication, "table1", "table2");
+
+        TableReference[] expectedTableReferences = new TableReference[] {
+                new TableReference("system_auth", "roles"),
+                new TableReference("system_auth", "role_members"),
+                new TableReference("system_auth", "role_permissions"),
+                new TableReference("user_keyspace", "table1"),
+                new TableReference("user_keyspace", "table2")
+        };
+
+        assertThat(myReplicatedTableProviderImpl.getAll()).containsExactlyInAnyOrder(expectedTableReferences);
+    }
+
+    @Test
+    public void testAcceptUnknownKeyspace()
+    {
+        assertThat(myReplicatedTableProviderImpl.accept("nonexistingkeyspace")).isFalse();
+    }
+
+    private Map<String, String> simpleStrategy(int replicationFactor)
+    {
+        Map<String, String> replication = new HashMap<>();
+        replication.put("class", "org.apache.cassandra.locator.SimpleStrategy");
+        replication.put("replication_factor", Integer.toString(replicationFactor));
+
+        return replication;
+    }
+
+    private Map<String, String> networkTopologyStrategy()
+    {
+        Map<String, String> replication = new HashMap<>();
+        replication.put("class", "org.apache.cassandra.locator.NetworkTopologyStrategy");
+        return replication;
+    }
+
+    private Host mockHost(String dataCenter)
+    {
+        Host host = mock(Host.class);
+
+        when(host.getDatacenter()).thenReturn(dataCenter);
+
+        return host;
+    }
+
+    private void mockKeyspace(String keyspace, Map<String, String> replication, String... tables)
     {
         KeyspaceMetadata keyspaceMetadata = mock(KeyspaceMetadata.class);
 
-        doReturn(keyspace).when(keyspaceMetadata).getName();
+        when(keyspaceMetadata.getName()).thenReturn(keyspace);
 
         List<TableMetadata> tableMetadatas = new ArrayList<>();
 
@@ -152,17 +241,17 @@ public class TestReplicatedTableProviderImpl
         {
             TableMetadata tableMetadata = mock(TableMetadata.class);
 
-            doReturn(table).when(tableMetadata).getName();
-            doReturn(keyspaceMetadata).when(tableMetadata).getKeyspace();
+            when(tableMetadata.getName()).thenReturn(table);
+            when(tableMetadata.getKeyspace()).thenReturn(keyspaceMetadata);
 
             tableMetadatas.add(tableMetadata);
         }
 
-        doReturn(tableMetadatas).when(keyspaceMetadata).getTables();
-
-        doReturn(myHosts).when(myMetadata).getReplicas(eq(keyspace), any(TokenRange.class));
-        doReturn(tokenRanges).when(myMetadata).getTokenRanges(eq(keyspace), eq(myLocalhost));
+        when(keyspaceMetadata.getTables()).thenReturn(tableMetadatas);
 
         myKeyspaces.add(keyspaceMetadata);
+        when(myMetadata.getKeyspace(eq(keyspace))).thenReturn(keyspaceMetadata);
+
+        when(keyspaceMetadata.getReplication()).thenReturn(replication);
     }
 }
