@@ -32,6 +32,8 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
     private static final String SIMPLE_STRATEGY = "org.apache.cassandra.locator.SimpleStrategy";
     private static final String NETWORK_TOPOLOGY_STRATEGY = "org.apache.cassandra.locator.NetworkTopologyStrategy";
 
+    private static final String SIMPLE_STRATEGY_REPLICATION_FACTOR = "replication_factor";
+
     private static final String SYSTEM_AUTH_KEYSPACE = "system_auth";
 
     private final Host myLocalhost;
@@ -85,7 +87,7 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
 
     private boolean validateSimpleStrategy(Map<String, String> replication)
     {
-        int replicationFactor = Integer.parseInt(replication.get("replication_factor"));
+        int replicationFactor = Integer.parseInt(replication.get(SIMPLE_STRATEGY_REPLICATION_FACTOR));
 
         return replicationFactor > 1;
     }
