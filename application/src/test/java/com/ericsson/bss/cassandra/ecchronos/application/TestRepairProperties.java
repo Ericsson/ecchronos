@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import org.junit.Test;
 
@@ -30,6 +31,7 @@ public class TestRepairProperties
     private static final long DEFAULT_REPAIR_INTERVAL_IN_MS = TimeUnit.DAYS.toMillis(7);
     private static final long DEFAULT_ALARM_WARN_IN_MS = TimeUnit.DAYS.toMillis(8);
     private static final long DEFAULT_ALARM_ERROR_IN_MS = TimeUnit.DAYS.toMillis(10);
+    private static final RepairLockType DEFAULT_REPAIR_LOCK_TYPE = RepairLockType.VNODE;
 
     @Test
     public void testDefaultValues() throws ConfigurationException
@@ -43,6 +45,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairParallelism()).isEqualTo(DEFAULT_REPAIR_PARALLELISM);
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
+        assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
     }
 
     @Test
@@ -61,6 +64,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairParallelism()).isEqualTo(DEFAULT_REPAIR_PARALLELISM);
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
+        assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
     }
 
     @Test
@@ -78,6 +82,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairParallelism()).isEqualTo(DEFAULT_REPAIR_PARALLELISM);
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
+        assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
     }
 
     @Test
@@ -95,6 +100,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairParallelism()).isEqualTo(expectedParallelism);
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
+        assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
     }
 
     @Test
@@ -113,6 +119,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairParallelism()).isEqualTo(DEFAULT_REPAIR_PARALLELISM);
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(expectedAlarmWarnInMs);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
+        assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
     }
 
     @Test
@@ -131,6 +138,25 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairParallelism()).isEqualTo(DEFAULT_REPAIR_PARALLELISM);
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(expectedAlarmErrorInMs);
+        assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
+    }
+
+    @Test
+    public void testSetRepairLockType() throws ConfigurationException
+    {
+        long expectedAlarmErrorInMs = TimeUnit.DAYS.toMillis(9);
+
+        Properties properties = new Properties();
+        properties.put("repair.lock.type", "datacenter_and_vnode");
+
+        RepairProperties repairProperties = RepairProperties.from(properties);
+
+        assertThat(repairProperties.getRepairIntervalInMs()).isEqualTo(DEFAULT_REPAIR_INTERVAL_IN_MS);
+        assertThat(repairProperties.getRepairType()).isEqualTo(DEFAULT_REPAIR_TYPE);
+        assertThat(repairProperties.getRepairParallelism()).isEqualTo(DEFAULT_REPAIR_PARALLELISM);
+        assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
+        assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
+        assertThat(repairProperties.getRepairLockType()).isEqualTo(RepairLockType.DATACENTER_AND_VNODE);
     }
 
     @Test
@@ -151,6 +177,7 @@ public class TestRepairProperties
         properties.put("repair.alarm.warn.time", "5");
         properties.put("repair.alarm.error.time.unit", "days");
         properties.put("repair.alarm.error.time", "7");
+        properties.put("repair.lock.type", "datacenter");
 
         RepairProperties repairProperties = RepairProperties.from(properties);
 
@@ -159,6 +186,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairParallelism()).isEqualTo(expectedParallelism);
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(expectedAlarmWarnInMs);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(expectedAlarmErrorInMs);
+        assertThat(repairProperties.getRepairLockType()).isEqualTo(RepairLockType.DATACENTER);
     }
 
     @Test
@@ -239,6 +267,16 @@ public class TestRepairProperties
         Properties properties = new Properties();
         properties.put("repair.alarm.error.time.unit", "nonexisting");
         properties.put("repair.alarm.warn.time", "1");
+
+        assertThatExceptionOfType(ConfigurationException.class)
+                .isThrownBy(() -> RepairProperties.from(properties));
+    }
+
+    @Test
+    public void testSetInvalidRepairLockType()
+    {
+        Properties properties = new Properties();
+        properties.put("repair.lock.type", "nonexisting");
 
         assertThatExceptionOfType(ConfigurationException.class)
                 .isThrownBy(() -> RepairProperties.from(properties));

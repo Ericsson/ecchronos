@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 
 import java.util.Locale;
@@ -27,6 +28,7 @@ public final class RepairProperties
     private static final String CONFIG_REPAIR_PARALLELISM = "repair.parallelism";
     private static final String CONFIG_REPAIR_ALARM_WARN_BASE = "repair.alarm.warn";
     private static final String CONFIG_REPAIR_ALARM_ERROR_BASE = "repair.alarm.error";
+    private static final String CONFIG_REPAIR_LOCK_TYPE = "repair.lock.type";
 
     private static final String DEFAULT_REPAIR_INTERVAL_TIMEUNIT = "days";
     private static final String DEFAULT_REPAIR_INTERVAL_DURATION = "7";
@@ -36,22 +38,25 @@ public final class RepairProperties
     private static final String DEFAULT_REPAIR_WARN_DURATION = "8";
     private static final String DEFAULT_REPAIR_ERROR_TIMEUNIT = "days";
     private static final String DEFAULT_REPAIR_ERROR_DURATION = "10";
+    private static final String DEFAULT_REPAIR_LOCK_TYPE = "vnode";
 
     private final long myRepairIntervalInMs;
     private final RepairOptions.RepairType myRepairType;
     private final RepairOptions.RepairParallelism myRepairParallelism;
     private final long myRepairAlarmWarnInMs;
     private final long myRepairAlarmErrorInMs;
+    private final RepairLockType myRepairLockType;
 
     private RepairProperties(long repairIntervalInMs,
                              RepairOptions.RepairType repairType, RepairOptions.RepairParallelism repairParallelism,
-                             long repairAlarmWarnInMs, long repairAlarmErrorInMs)
+                             long repairAlarmWarnInMs, long repairAlarmErrorInMs, RepairLockType repairLockType)
     {
         myRepairIntervalInMs = repairIntervalInMs;
         myRepairType = repairType;
         myRepairParallelism = repairParallelism;
         myRepairAlarmWarnInMs = repairAlarmWarnInMs;
         myRepairAlarmErrorInMs = repairAlarmErrorInMs;
+        myRepairLockType = repairLockType;
     }
 
     public long getRepairIntervalInMs()
@@ -77,6 +82,11 @@ public final class RepairProperties
     public long getRepairAlarmErrorInMs()
     {
         return myRepairAlarmErrorInMs;
+    }
+
+    public RepairLockType getRepairLockType()
+    {
+        return myRepairLockType;
     }
 
     @Override
@@ -118,8 +128,19 @@ public final class RepairProperties
         long repairAlarmErrorInMs = parseTimeUnitToMs(properties, CONFIG_REPAIR_ALARM_ERROR_BASE,
                 DEFAULT_REPAIR_ERROR_DURATION, DEFAULT_REPAIR_ERROR_TIMEUNIT);
 
+        RepairLockType repairLockType;
+
+        try
+        {
+            repairLockType = RepairLockType.valueOf(properties.getProperty(CONFIG_REPAIR_LOCK_TYPE, DEFAULT_REPAIR_LOCK_TYPE).toUpperCase(Locale.US));
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new ConfigurationException("Unknown repair lock type specified in '" + CONFIG_REPAIR_LOCK_TYPE + "'", e);
+        }
+
         return new RepairProperties(repairIntervalInMs, repairType, repairParallelism, repairAlarmWarnInMs,
-                repairAlarmErrorInMs);
+                repairAlarmErrorInMs, repairLockType);
     }
 
     private static long parseTimeUnitToMs(Properties properties, String baseProperty,

@@ -26,7 +26,6 @@ import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairSchedulerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactoryImpl;
@@ -45,8 +44,6 @@ public class ECChronos implements Closeable
     private static final String CONFIGURATION_FILE_PATH = "ecchronos.config";
     private static final String DEFAULT_CONFIGURATION_FILE = "./ecChronos.cfg";
 
-    private final Properties myConfiguration;
-
     private final ECChronosInternals myECChronosInternals;
 
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
@@ -58,8 +55,6 @@ public class ECChronos implements Closeable
                      JmxConnectionProvider jmxConnectionProvider,
                      StatementDecorator statementDecorator) throws ConfigurationException
     {
-        myConfiguration = configuration;
-
         myECChronosInternals = new ECChronosInternals(configuration, nativeConnectionProvider,jmxConnectionProvider, statementDecorator);
 
         Host host = nativeConnectionProvider.getLocalHost();
@@ -83,20 +78,22 @@ public class ECChronos implements Closeable
                 .withKeyspaceName(timeBasedRunPolicyProperties.getKeyspaceName())
                 .build();
 
+        RepairProperties repairProperties = RepairProperties.from(configuration);
+
         myRepairSchedulerImpl = RepairSchedulerImpl.builder()
                 .withJmxProxyFactory(myECChronosInternals.getJmxProxyFactory())
                 .withFaultReporter(repairFaultReporter)
                 .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
                 .withScheduleManager(myECChronosInternals.getScheduleManager())
                 .withRepairStateFactory(repairStateFactoryImpl)
-                .withRepairLockType(RepairLockType.VNODE)
+                .withRepairLockType(repairProperties.getRepairLockType())
                 .build();
 
         myDefaultRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()
                 .withRepairScheduler(myRepairSchedulerImpl)
                 .withCluster(nativeConnectionProvider.getSession().getCluster())
                 .withReplicatedTableProvider(myECChronosInternals.getReplicatedTableProvider())
-                .withDefaultRepairConfiguration(getRepairConfiguration())
+                .withDefaultRepairConfiguration(getRepairConfiguration(repairProperties))
                 .build();
     }
 
@@ -117,10 +114,8 @@ public class ECChronos implements Closeable
         myECChronosInternals.close();
     }
 
-    private RepairConfiguration getRepairConfiguration() throws ConfigurationException
+    private RepairConfiguration getRepairConfiguration(RepairProperties repairProperties)
     {
-        RepairProperties repairProperties = RepairProperties.from(myConfiguration);
-
         LOG.debug("Using repair properties {}", repairProperties);
 
         return RepairConfiguration.newBuilder()
