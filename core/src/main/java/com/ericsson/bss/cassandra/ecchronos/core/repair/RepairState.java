@@ -22,7 +22,7 @@ import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 
 /**
- * Interface used by ScheduledRepairJob to maintain the current repair state.
+ * Interface used by TableRepairJob to maintain the current repair state.
  */
 public interface RepairState
 {

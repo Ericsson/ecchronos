@@ -25,7 +25,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
-import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import org.joda.time.DateTime;
 import org.junit.After;
@@ -64,12 +64,12 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
     @Parameterized.Parameter
     public String myKeyspaceName;
 
-    private ScheduledRepairJob myRepairJobMock;
+    private TableRepairJob myRepairJobMock;
 
     @Before
     public void initialize()
     {
-        myRepairJobMock = mock(ScheduledRepairJob.class);
+        myRepairJobMock = mock(TableRepairJob.class);
         mySession.execute(String.format("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {'class': 'NetworkTopologyStrategy', 'DC1': 1}", myKeyspaceName));
         mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.reject_configuration (keyspace_name text, table_name text, start_hour int, start_minute int, end_hour int, end_minute int, PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute))", myKeyspaceName));
 
@@ -89,7 +89,7 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
     }
 
     @Test
-    public void testNonScheduledRepairJob()
+    public void testNonTableRepairJob()
     {
         ScheduledJob testJob = mock(ScheduledJob.class);
 

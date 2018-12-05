@@ -70,7 +70,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 @RunWith (MockitoJUnitRunner.class)
-public class TestScheduledRepairJob
+public class TestTableRepairJob
 {
     private static final String keyspaceName = "keyspace";
     private static final String tableName = "table";
@@ -105,7 +105,7 @@ public class TestScheduledRepairJob
     @Mock
     private RepairFaultReporter myFaultReporter;
 
-    private ScheduledRepairJob myRepairJob;
+    private TableRepairJob myRepairJob;
 
     private MockedClock myClock = new MockedClock();
 
@@ -135,7 +135,7 @@ public class TestScheduledRepairJob
                 .withRepairErrorTime(GC_GRACE_DAYS, TimeUnit.DAYS)
                 .build();
 
-        myRepairJob = new ScheduledRepairJob.Builder()
+        myRepairJob = new TableRepairJob.Builder()
                 .withConfiguration(configuration)
                 .withTableReference(myTableReference)
                 .withJmxProxyFactory(myJmxProxyFactory)

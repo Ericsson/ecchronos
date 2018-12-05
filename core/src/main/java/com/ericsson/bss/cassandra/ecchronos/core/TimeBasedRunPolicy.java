@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -101,9 +101,9 @@ public class TimeBasedRunPolicy implements RunPolicy, Closeable
     @Override
     public long validate(ScheduledJob job)
     {
-        if (job instanceof ScheduledRepairJob)
+        if (job instanceof TableRepairJob)
         {
-            ScheduledRepairJob repairJob = (ScheduledRepairJob) job;
+            TableRepairJob repairJob = (TableRepairJob) job;
 
             return getRejectionsForTable(repairJob.getTableReference());
         }

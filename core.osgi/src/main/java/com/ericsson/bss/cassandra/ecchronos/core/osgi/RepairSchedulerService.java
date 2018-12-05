@@ -19,7 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairStateFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairSchedulerImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairJob;
 
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
@@ -33,7 +33,7 @@ import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 
 /**
- * A factory creating {@link ScheduledRepairJob}'s for tables that replicates data over multiple nodes.
+ * A factory creating {@link TableRepairJob}'s for tables that replicates data over multiple nodes.
  * <p>
  * This factory will schedule new jobs automatically when new tables are added.
  */
