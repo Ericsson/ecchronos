@@ -224,6 +224,28 @@
                                                             <port>9042</port>
                                                         </ports>
                                                     </tcp>
+                                                </wait>
+                                            </run>
+                                        </image>
+                                        <image>
+                                            <name>cassandra:3.0</name>
+                                            <alias>cassandra4</alias>
+                                            <run>
+                                                <memory>${it.cassandra.memory}</memory>
+                                                <memorySwap>-1</memorySwap>
+                                                <env>
+                                                    <LOCAL_JMX>no</LOCAL_JMX>
+                                                    <CASSANDRA_SEEDS>$${docker.container.seed.ip}</CASSANDRA_SEEDS>
+                                                    <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap} -Xmn100M -Dcassandra.ring_delay_ms=${it.cassandra.ring.delay.ms}</JVM_OPTS>
+                                                    <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false</JVM_EXTRA_OPTS>
+                                                </env>
+                                                <wait>
+                                                    <time>120000</time>
+                                                    <tcp>
+                                                        <ports>
+                                                            <port>9042</port>
+                                                        </ports>
+                                                    </tcp>
                                                     <exec>
                                                         <postStart>cqlsh -f /media/test/create_keyspaces.cql</postStart>
                                                     </exec>
