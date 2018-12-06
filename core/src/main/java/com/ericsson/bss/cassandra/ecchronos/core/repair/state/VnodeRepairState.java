@@ -22,6 +22,9 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * A class representing the repair state of a single vnode.
+ */
 public class VnodeRepairState
 {
     public static final long UNREPAIRED = -1L;
@@ -52,6 +55,14 @@ public class VnodeRepairState
         return myLastRepairedAt;
     }
 
+    /**
+     * Check if the vnodes are the same.
+     *
+     * The vnodes are the same if both token range and replicas match.
+     *
+     * @param other The vnode to compare to.
+     * @return True if it represents the same vnode.
+     */
     public boolean isSameVnode(VnodeRepairState other)
     {
         return getTokenRange().equals(other.getTokenRange()) && getReplicas().equals(other.getReplicas());

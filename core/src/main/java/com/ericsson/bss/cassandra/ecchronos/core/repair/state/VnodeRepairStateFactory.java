@@ -16,14 +16,19 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
+/**
+ * A factory to create {@link VnodeRepairStates} for a specific table.
+ */
 public interface VnodeRepairStateFactory
 {
     /**
+     * Calculate the current repair state based on the previous.
      *
+     * If the previous repair state is unknown it should be calculated from start.
      *
-     * @param tableReference
-     * @param previous
-     * @return
+     * @param tableReference The table to calculate the new repair state for vnodes.
+     * @param previous The previous repair state or null if non exists.
+     * @return The calculated repair state.
      */
     VnodeRepairStates calculateNewState(TableReference tableReference, RepairStateSnapshot previous);
 }

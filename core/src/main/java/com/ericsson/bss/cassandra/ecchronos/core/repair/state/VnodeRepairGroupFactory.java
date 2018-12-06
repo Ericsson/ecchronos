@@ -23,6 +23,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * A factory for {@link ReplicaRepairGroup} that creates a repair group for all vnodes with common replicas.
+ *
+ * The generated {@link ReplicaRepairGroup} will contain the vnode which is most urgent to repair and all other vnodes
+ * which have common replicas.
+ */
 public final class VnodeRepairGroupFactory implements ReplicaRepairGroupFactory
 {
     public static final VnodeRepairGroupFactory INSTANCE = new VnodeRepairGroupFactory();
@@ -33,9 +39,9 @@ public final class VnodeRepairGroupFactory implements ReplicaRepairGroupFactory
     }
 
     @Override
-    public ReplicaRepairGroup generateReplicaRepairGroup(List<VnodeRepairState> availableVnodeRepairStatess)
+    public ReplicaRepairGroup generateReplicaRepairGroup(List<VnodeRepairState> availableVnodeRepairStates)
     {
-        Optional<VnodeRepairState> optionalVnodeRepairState = availableVnodeRepairStatess.stream()
+        Optional<VnodeRepairState> optionalVnodeRepairState = availableVnodeRepairStates.stream()
                 .min(Comparator.comparingLong(VnodeRepairState::lastRepairedAt));
 
         if (!optionalVnodeRepairState.isPresent())
@@ -46,7 +52,7 @@ public final class VnodeRepairGroupFactory implements ReplicaRepairGroupFactory
         VnodeRepairState vnodeRepairState = optionalVnodeRepairState.get();
         Set<Host> replicas = vnodeRepairState.getReplicas();
 
-        List<LongTokenRange> commonVnodes = availableVnodeRepairStatess.stream()
+        List<LongTokenRange> commonVnodes = availableVnodeRepairStates.stream()
                 .filter(v -> v.getReplicas().equals(replicas))
                 .map(VnodeRepairState::getTokenRange)
                 .collect(Collectors.toList());

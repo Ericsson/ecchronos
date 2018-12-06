@@ -14,6 +14,12 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
+/**
+ * Utility class to determine collective repaired at information for {@link VnodeRepairStates}.
+ *
+ * A value of {@link Long#MAX_VALUE} indicates that no repair information is available.
+ * A value of {@link VnodeRepairState#UNREPAIRED} indicates that the status is unknown.
+ */
 public final class RepairedAt
 {
     private final long myMinRepairedAt;
@@ -25,21 +31,41 @@ public final class RepairedAt
         myMaxRepairedAt = maxRepairedAt;
     }
 
+    /**
+     * Check if all vnodes have repaired at information.
+     *
+     * @return True if all vnodes have repaired at information.
+     */
     public boolean isRepaired()
     {
         return myMinRepairedAt != Long.MAX_VALUE && myMinRepairedAt != VnodeRepairState.UNREPAIRED;
     }
 
+    /**
+     * Check if only some vnodes have repaired at information.
+     *
+     * @return
+     */
     public boolean isPartiallyRepaired()
     {
         return myMinRepairedAt == VnodeRepairState.UNREPAIRED && myMaxRepairedAt != myMinRepairedAt;
     }
 
+    /**
+     * Get the highest repaired at for the vnodes.
+     *
+     * @return The highest repaired at.
+     */
     public long getMaxRepairedAt()
     {
         return myMaxRepairedAt;
     }
 
+    /**
+     * Get the lowest repaired at for the vnodes.
+     *
+     * @return The lowest repaired at.
+     */
     public long getMinRepairedAt()
     {
         return myMinRepairedAt;

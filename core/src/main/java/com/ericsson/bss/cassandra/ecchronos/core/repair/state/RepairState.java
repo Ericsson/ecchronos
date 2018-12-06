@@ -15,7 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 /**
- * Interface used by TableRepairJob to maintain the current repair state.
+ * Interface used by TableRepairJob to update and get a snapshot of the current repair state of a table.
  */
 public interface RepairState
 {

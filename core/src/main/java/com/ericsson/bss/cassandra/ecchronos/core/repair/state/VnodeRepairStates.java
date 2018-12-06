@@ -22,6 +22,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * A collection of {@link VnodeRepairState VnodeRepairStates} that contains utilities to easily combine with new entries.
+ */
 public class VnodeRepairStates
 {
     private final ImmutableMap<LongTokenRange, VnodeRepairState> myVnodeRepairStatuses;
@@ -36,6 +39,14 @@ public class VnodeRepairStates
         return myVnodeRepairStatuses.values();
     }
 
+    /**
+     * Create a new vnode repair states object with the minimum repaired at set to the provided value.
+     *
+     * Entries which contain a higher repaired at will keep that value.
+     *
+     * @param repairedAt The minimum repaired at to use.
+     * @return The created state.
+     */
     public VnodeRepairStates combineWithRepairedAt(long repairedAt)
     {
         Builder builder = newBuilder().combineVnodeRepairStates(getVnodeRepairStates());
@@ -80,6 +91,7 @@ public class VnodeRepairStates
         private final Map<LongTokenRange, VnodeRepairState> myVnodeRepairStatuses = new HashMap<>();
 
         /**
+         * Combine a collection of vnode repair states into this collection.
          *
          * @param vnodeRepairStates The vnode repair statuses to add.
          * @return This builder
@@ -97,6 +109,10 @@ public class VnodeRepairStates
         /**
          * Combine the provided {@link VnodeRepairState} with the current representation.
          * If there already was a higher timestamp recorded for the vnode, no change will be made.
+         *
+         * An entry will be replaced on the following conditions:
+         * - The new entry has a higher repaired at
+         * - The old vnode repair state does not represent the same vnode ({@link VnodeRepairState#isSameVnode(VnodeRepairState)}).
          *
          * @param vnodeRepairState The vnode repair status to add.
          * @return This builder

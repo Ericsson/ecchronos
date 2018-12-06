@@ -24,6 +24,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * A group of replicas and ranges that should be repaired together.
+ */
 public class ReplicaRepairGroup implements Iterable<LongTokenRange>
 {
     private final ImmutableSet<Host> myReplicas;

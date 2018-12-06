@@ -27,6 +27,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * A repair state factory which uses a {@link RepairHistoryProvider} to determine repair state.
+ */
 public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(VnodeRepairStateFactoryImpl.class);
@@ -67,16 +70,16 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
     {
         VnodeRepairStates.Builder vnodeRepairStatusesBuilder = VnodeRepairStates.newBuilder();
 
+        if (previous != null)
+        {
+            vnodeRepairStatusesBuilder.combineVnodeRepairStates(previous.getVnodeRepairStates().getVnodeRepairStates());
+        }
+
         for (Map.Entry<LongTokenRange, ImmutableSet<Host>> entry : tokenRangeToReplicaMap.entrySet())
         {
             LongTokenRange longTokenRange = entry.getKey();
             Set<Host> replicas = entry.getValue();
             vnodeRepairStatusesBuilder.combineVnodeRepairState(new VnodeRepairState(longTokenRange, replicas, lastRepairedAt));
-        }
-
-        if (previous != null)
-        {
-            vnodeRepairStatusesBuilder.combineVnodeRepairStates(previous.getVnodeRepairStates().getVnodeRepairStates());
         }
 
         while(repairEntryIterator.hasNext())

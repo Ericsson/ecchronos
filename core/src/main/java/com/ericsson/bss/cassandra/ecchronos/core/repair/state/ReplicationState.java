@@ -25,6 +25,9 @@ import com.google.common.collect.ImmutableSet;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Utility class to generate a token -> replicas map for a specific table.
+ */
 public class ReplicationState
 {
     private final Metadata myMetadata;
