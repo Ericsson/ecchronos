@@ -42,6 +42,9 @@ public class RepairGroup extends ScheduledTask
 
     private static final int MAX_PARALLEL = 1;
 
+    private static final String LOCK_METADATA_KEYSPACE = "keyspace";
+    private static final String LOCK_METADATA_TABLE = "table";
+
     private final TableReference myTableReference;
     private final RepairConfiguration myRepairConfiguration;
     private final RepairStateSnapshot myRepairStateSnapshot;
@@ -103,7 +106,7 @@ public class RepairGroup extends ScheduledTask
         {
             if (!lockFactory.sufficientNodesForLocking(dc, getResource(dc, 1)))
             {
-                throw new LockException("Data center " + dc + " not lockable. Repair will be retried later");
+                throw new LockException("Data center " + dc + " not lockable. Repair will be retried later.");
             }
         }
 
@@ -277,8 +280,8 @@ public class RepairGroup extends ScheduledTask
     private LockFactory.DistributedLock getLockForDatacenter(LockFactory lockFactory, String dataCenter, int priority) throws LockException
     {
         Map<String, String> metadata = new HashMap<>();
-        metadata.put("keyspace", myTableReference.getKeyspace());
-        metadata.put("table", myTableReference.getTable());
+        metadata.put(LOCK_METADATA_KEYSPACE, myTableReference.getKeyspace());
+        metadata.put(LOCK_METADATA_TABLE, myTableReference.getTable());
 
         LockFactory.DistributedLock myLock;
 
@@ -322,8 +325,8 @@ public class RepairGroup extends ScheduledTask
             Map<String, String> lockMetadata = lockFactory.getLockMetadata(dataCenter, getResource(dataCenter, i + 1));
 
             if (lockMetadata != null
-                    && myTableReference.getKeyspace().equals(lockMetadata.get("keyspace"))
-                    && myTableReference.getTable().equals(lockMetadata.get("table")))
+                    && myTableReference.getKeyspace().equals(lockMetadata.get(LOCK_METADATA_KEYSPACE))
+                    && myTableReference.getTable().equals(lockMetadata.get(LOCK_METADATA_TABLE)))
             {
                 ret++;
             }

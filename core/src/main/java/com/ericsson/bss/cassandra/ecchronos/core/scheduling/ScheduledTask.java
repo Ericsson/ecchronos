@@ -24,6 +24,8 @@ import java.util.HashMap;
  */
 public abstract class ScheduledTask
 {
+    private static final String DEFAULT_SCHEDULE_RESOURCE = "SCHEDULE_LOCK";
+
     protected final int myPriority;
 
     protected ScheduledTask()
@@ -66,6 +68,6 @@ public abstract class ScheduledTask
      */
     public LockFactory.DistributedLock getLock(LockFactory lockFactory) throws LockException
     {
-        return lockFactory.tryLock(null, "SCHEDULE_LOCK", myPriority, new HashMap<>());
+        return lockFactory.tryLock(null, DEFAULT_SCHEDULE_RESOURCE, myPriority, new HashMap<>());
     }
 }
