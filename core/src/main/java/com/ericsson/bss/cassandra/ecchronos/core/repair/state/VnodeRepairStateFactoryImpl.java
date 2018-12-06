@@ -126,6 +126,12 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
 
     private boolean acceptRepairEntries(RepairEntry repairEntry, Map<LongTokenRange, ImmutableSet<Host>> tokenRangeToReplicaMap)
     {
+        if (RepairStatus.SUCCESS != repairEntry.getStatus())
+        {
+            LOG.debug("Ignoring entry {}, repair was not successful({})", repairEntry.getStatus());
+            return false;
+        }
+
         LongTokenRange repairedRange = repairEntry.getRange();
 
         ImmutableSet<Host> hosts = tokenRangeToReplicaMap.get(repairedRange);
