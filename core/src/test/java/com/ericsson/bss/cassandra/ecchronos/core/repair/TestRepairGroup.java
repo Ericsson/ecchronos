@@ -236,7 +236,7 @@ public class TestRepairGroup
         }
         catch (LockException e)
         {
-            assertThat(e).hasMessage("Data center dc1 not lockable. Repair will be retried later");
+            assertThat(e).hasMessage("Data center dc1 not lockable. Repair will be retried later.");
         }
 
         verify(myLockFactory).sufficientNodesForLocking(eq("dc1"), eq("RepairResource-dc1-1"));
@@ -261,7 +261,7 @@ public class TestRepairGroup
         }
         catch (LockException e)
         {
-            assertThat(e).hasMessage("Data center dc1 not lockable. Repair will be retried later");
+            assertThat(e).hasMessage("Data center dc1 not lockable. Repair will be retried later.");
         }
 
         verify(myLockFactory).sufficientNodesForLocking(eq(dc2), eq(resource2));
