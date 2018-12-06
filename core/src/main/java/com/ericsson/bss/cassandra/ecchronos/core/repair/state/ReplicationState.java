@@ -26,7 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Utility class to generate a token -> replicas map for a specific table.
+ * Utility class to generate a token -&gt; replicas map for a specific table.
  */
 public class ReplicationState
 {

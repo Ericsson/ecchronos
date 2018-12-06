@@ -45,6 +45,8 @@ public abstract class ScheduledTask
 
     /**
      * Run the task.
+     *
+     * @return True if the task was executed successfully.
      * @throws ScheduledJobException
      *             if anything went wrong during running.
      */

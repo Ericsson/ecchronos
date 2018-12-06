@@ -44,7 +44,7 @@ public final class RepairedAt
     /**
      * Check if only some vnodes have repaired at information.
      *
-     * @return
+     * @return True if some vnodes have been repaired but not all.
      */
     public boolean isPartiallyRepaired()
     {
