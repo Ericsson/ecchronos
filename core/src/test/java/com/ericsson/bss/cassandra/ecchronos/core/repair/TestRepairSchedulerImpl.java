@@ -66,9 +66,13 @@ public class TestRepairSchedulerImpl
     @Mock
     private RepairState myRepairState;
 
+    @Mock
+    private RepairStateSnapshot myRepairStateSnapshot;
+
     @Before
     public void init()
     {
+        doReturn(myRepairStateSnapshot).when(myRepairState).getSnapshot();
         doReturn(myRepairState).when(myRepairStateFactory).create(eq(TABLE_REFERENCE), anyLong(), any(TimeUnit.class));
     }
 

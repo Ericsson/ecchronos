@@ -76,6 +76,9 @@ public class TestTableRepairJobIntegration
     private RepairState myRepairState;
 
     @Mock
+    private RepairStateSnapshot myRepairStateSnapshot;
+
+    @Mock
     private JmxProxyFactory myJmxProxyFactory;
 
     @Mock
@@ -111,11 +114,12 @@ public class TestTableRepairJobIntegration
         initKeyspaceMetadata();
 
         doNothing().when(myRepairState).update();
-        doReturn(Collections.emptySet()).when(myRepairState).getLocalRangesForRepair();
+        doReturn(myRepairStateSnapshot).when(myRepairState).getSnapshot();
+        doReturn(Collections.emptySet()).when(myRepairStateSnapshot).getLocalRangesForRepair();
 
         doReturn(System.currentTimeMillis()).when(myClock).getTime();
 
-        doReturn(true).when(myRepairState).canRepair();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
 
         myRunScheduler = RunScheduler.builder()
                 .withQueue(myScheduledJobQueue)
@@ -182,21 +186,21 @@ public class TestTableRepairJobIntegration
 
         // mock
         doReturn(start).when(myClock).getTime();
-        doReturn(lastRepairedWarning).when(myRepairState).lastRepairedAt();
+        doReturn(lastRepairedWarning).when(myRepairStateSnapshot).lastRepairedAt();
 
         // Run warning
         myRunScheduler.run();
         verify(myFaultReporter).raise(eq(RepairFaultReporter.FaultCode.REPAIR_WARNING), eq(expectedData));
 
         // Run error
-        doReturn(lastRepairedError).when(myRepairState).lastRepairedAt();
+        doReturn(lastRepairedError).when(myRepairStateSnapshot).lastRepairedAt();
 
         myRunScheduler.run();
         verify(myFaultReporter).raise(eq(RepairFaultReporter.FaultCode.REPAIR_ERROR), eq(expectedData));
 
         // Run clear
 
-        doReturn(start).when(myRepairState).lastRepairedAt();
+        doReturn(start).when(myRepairStateSnapshot).lastRepairedAt();
 
         myRunScheduler.run();
         verify(myFaultReporter).cease(eq(RepairFaultReporter.FaultCode.REPAIR_WARNING), eq(expectedData));

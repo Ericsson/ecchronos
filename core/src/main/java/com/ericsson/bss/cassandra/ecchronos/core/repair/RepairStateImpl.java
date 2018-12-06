@@ -89,6 +89,21 @@ public class RepairStateImpl implements RepairState
         }
 
         @Override
+        public RepairStateSnapshot getSnapshot()
+        {
+            return RepairStateSnapshot.newBuilder()
+                    .withLastRepairedAt(lastRepairedAt())
+                    .canRepair(canRepair())
+                    .withDataCenters(getDatacentersForRepair())
+                    .withLocalRangesForRepair(getLocalRangesForRepair())
+                    .withRanges(getAllRanges())
+                    .withReplicas(getReplicas())
+                    .withRangeToReplica(getRangeToReplicas())
+                    .build();
+        }
+
+        public abstract boolean canRepair();
+
         public final long lastRepairedAt()
         {
             return myLastRepairedAt;
@@ -99,29 +114,25 @@ public class RepairStateImpl implements RepairState
             // Not used by sub-states
         }
 
-        @Override
         public Collection<LongTokenRange> getAllRanges()
         {
             return getLocalRanges();
         }
 
-        @Override
         public Collection<LongTokenRange> getLocalRangesForRepair()
         {
             return Sets.newHashSet();
         }
 
-        @Override
         public Set<Host> getReplicas()
         {
             return Sets.newHashSet();
         }
 
-        @Override
         public Collection<String> getDatacentersForRepair()
         {
             Collection<String> dataCenters = new HashSet<>();
-            if (this.canRepair())
+            if (canRepair())
             {
                 Collection<Host> replicas = getReplicas();
 
@@ -144,7 +155,6 @@ public class RepairStateImpl implements RepairState
             return dataCenters;
         }
 
-        @Override
         public Map<LongTokenRange, Collection<Host>> getRangeToReplicas()
         {
             Map<LongTokenRange, Collection<Host>> rangeToReplicas = getAllRangeToReplicas();
@@ -225,21 +235,9 @@ public class RepairStateImpl implements RepairState
     }
 
     @Override
-    public boolean canRepair()
+    public RepairStateSnapshot getSnapshot()
     {
-        return myState.get().canRepair();
-    }
-
-    @Override
-    public long lastRepairedAt()
-    {
-        return myState.get().lastRepairedAt();
-    }
-
-    @Override
-    public Set<Host> getReplicas()
-    {
-        return myState.get().getReplicas();
+        return myState.get().getSnapshot();
     }
 
     @Override
@@ -266,26 +264,44 @@ public class RepairStateImpl implements RepairState
         }
     }
 
-    @Override
-    public Collection<LongTokenRange> getLocalRangesForRepair()
+    @VisibleForTesting
+    boolean canRepair()
+    {
+        return myState.get().canRepair();
+    }
+
+    @VisibleForTesting
+    long lastRepairedAt()
+    {
+        return myState.get().lastRepairedAt();
+    }
+
+    @VisibleForTesting
+    Set<Host> getReplicas()
+    {
+        return myState.get().getReplicas();
+    }
+
+    @VisibleForTesting
+    Collection<LongTokenRange> getLocalRangesForRepair()
     {
         return myState.get().getLocalRangesForRepair();
     }
 
-    @Override
-    public Collection<LongTokenRange> getAllRanges()
+    @VisibleForTesting
+    Collection<LongTokenRange> getAllRanges()
     {
         return myState.get().getAllRanges();
     }
 
-    @Override
-    public Map<LongTokenRange, Collection<Host>> getRangeToReplicas()
+    @VisibleForTesting
+    Map<LongTokenRange, Collection<Host>> getRangeToReplicas()
     {
         return myState.get().getRangeToReplicas();
     }
 
-    @Override
-    public Collection<String> getDatacentersForRepair()
+    @VisibleForTesting
+    Collection<String> getDatacentersForRepair()
     {
         return myState.get().getDatacentersForRepair();
     }
@@ -305,7 +321,7 @@ public class RepairStateImpl implements RepairState
     private State nextState()
     {
         long now = myClock.get().getTime();
-        long previousLastRepairedAt = lastRepairedAt();
+        long previousLastRepairedAt = myState.get().lastRepairedAt();
 
         Iterator<RepairEntry> iterator = myRepairHistoryProvider.iterate(myTableReference, now, previousLastRepairedAt, new FullyRepairedRepairEntryPredicate(getAllRangeToReplicas()));
 
@@ -814,5 +830,4 @@ public class RepairStateImpl implements RepairState
             return new RepairStateImpl(this);
         }
     }
-
 }

@@ -109,9 +109,8 @@ public class RunScheduler
         {
             for (ScheduledJob next : myQueue)
             {
-                if (validate(next))
+                if (validate(next) && tryRunTasks(next))
                 {
-                    tryRunJob(next);
                     break;
                 }
             }
@@ -131,33 +130,50 @@ public class RunScheduler
             return true;
         }
 
-        private void tryRunJob(ScheduledJob job)
+        private boolean tryRunTasks(ScheduledJob next)
         {
-            LOG.debug("Trying to acquire lock for {}", job);
-            try (LockFactory.DistributedLock lock = job.getLock(myLockFactory))
+            for (ScheduledTask task : next)
             {
-                runJob(job);
+                if (tryRunTask(next, task))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private boolean tryRunTask(ScheduledJob job, ScheduledTask task)
+        {
+            LOG.debug("Trying to acquire lock for {}", task);
+            try (LockFactory.DistributedLock lock = task.getLock(myLockFactory))
+            {
+                boolean successful = runTask(task);
+                job.postExecute(successful);
+                return true;
             }
             catch (LockException e)
             {
                 if (e.getCause() != null)
                 {
-                    LOG.warn("Unable to get schedule lock on job", job, e);
+                    LOG.warn("Unable to get schedule lock on task", task, e);
                 }
+                return false;
             }
         }
 
-        private void runJob(ScheduledJob job)
+        private boolean runTask(ScheduledTask task)
         {
             try
             {
-                LOG.info("Running scheduled job {}", job);
-                job.execute();
+                LOG.info("Running scheduled task {}", task);
+                return task.execute();
             }
             catch (Exception e)
             {
-                LOG.warn("Unable to run job {}", job, e);
+                LOG.warn("Unable to run task {}", task, e);
             }
+
+            return false;
         }
     }
 

@@ -15,37 +15,26 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyMapOf;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.ignoreStubs;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.MockedClock;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.DummyLock;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,20 +42,16 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.datastax.driver.core.Host;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.TableOptionsMetadata;
 import com.datastax.driver.core.exceptions.OverloadedException;
-import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter.FaultCode;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 @RunWith (MockitoJUnitRunner.class)
@@ -100,6 +85,9 @@ public class TestTableRepairJob
     private RepairState myRepairState;
 
     @Mock
+    private RepairStateSnapshot myRepairStateSnapshot;
+
+    @Mock
     private TableRepairMetrics myTableRepairMetrics;
 
     @Mock
@@ -114,8 +102,9 @@ public class TestTableRepairJob
     @Before
     public void startup()
     {
-        doReturn(Sets.newHashSet()).when(myRepairState).getLocalRangesForRepair();
-        doReturn(-1L).when(myRepairState).lastRepairedAt();
+        doReturn(Sets.newHashSet()).when(myRepairStateSnapshot).getLocalRangesForRepair();
+        doReturn(-1L).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(myRepairStateSnapshot).when(myRepairState).getSnapshot();
 
         doNothing().when(myRepairState).update();
 
@@ -160,83 +149,79 @@ public class TestTableRepairJob
     }
 
     @Test
-    public void testPrevalidateNotRepairable() throws Exception
+    public void testPrevalidateNotRepairable()
     {
         // mock
-        doReturn(false).when(myRepairState).canRepair();
+        doReturn(false).when(myRepairStateSnapshot).canRepair();
 
-        assertThat(myRepairJob.preValidate()).isFalse();
+        assertThat(myRepairJob.runnable()).isFalse();
 
         verify(myRepairState, times(1)).update();
-        verify(myRepairState, times(1)).canRepair();
+        verify(myRepairStateSnapshot, times(1)).canRepair();
     }
 
     @Test
-    public void testPrevalidateNeedRepair() throws Exception
+    public void testPrevalidateNeedRepair()
     {
         // mock
-        doReturn(true).when(myRepairState).canRepair();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
 
-        assertThat(myRepairJob.preValidate()).isTrue();
+        assertThat(myRepairJob.runnable()).isTrue();
 
         verify(myRepairState, times(1)).update();
-        verify(myRepairState, times(1)).canRepair();
+        verify(myRepairStateSnapshot, times(1)).canRepair();
     }
 
     @Test
     public void testPrevalidateNotRepairableThenRepairable()
     {
         // mock
-        doReturn(false).doReturn(true).when(myRepairState).canRepair();
+        doReturn(false).doReturn(true).when(myRepairStateSnapshot).canRepair();
 
-        assertThat(myRepairJob.preValidate()).isFalse();
-        assertThat(myRepairJob.preValidate()).isTrue();
+        assertThat(myRepairJob.runnable()).isFalse();
+        assertThat(myRepairJob.runnable()).isTrue();
 
         verify(myRepairState, times(2)).update();
-        verify(myRepairState, times(2)).canRepair();
+        verify(myRepairStateSnapshot, times(2)).canRepair();
     }
 
     @Test
     public void testPrevalidateUpdateThrowsOverloadException()
     {
         // mock
-        doReturn(false).when(myRepairState).canRepair();
+        doReturn(false).when(myRepairStateSnapshot).canRepair();
         doThrow(new OverloadedException(null, "Expected exception")).when(myRepairState).update();
 
-        assertThat(myRepairJob.preValidate()).isFalse();
+        assertThat(myRepairJob.runnable()).isFalse();
 
-        verify(myRepairState, times(1)).canRepair();
+        verify(myRepairStateSnapshot, times(1)).canRepair();
     }
 
     @Test
     public void testPrevalidateUpdateThrowsException()
     {
         // mock
-        doReturn(false).when(myRepairState).canRepair();
+        doReturn(false).when(myRepairStateSnapshot).canRepair();
         doThrow(new RuntimeException("Expected exception")).when(myRepairState).update();
 
-        assertThat(myRepairJob.preValidate()).isFalse();
+        assertThat(myRepairJob.runnable()).isFalse();
 
-        verify(myRepairState, times(1)).canRepair();
+        verify(myRepairStateSnapshot, times(1)).canRepair();
     }
 
     @Test
     public void testPostExecuteRepaired()
     {
-        Map<String, Object> expectedData = new HashMap<>();
-        expectedData.put(RepairFaultReporter.FAULT_KEYSPACE, keyspaceName);
-        expectedData.put(RepairFaultReporter.FAULT_TABLE, tableName);
-
         // mock
         long repairedAt = System.currentTimeMillis();
-        doReturn(repairedAt).when(myRepairState).lastRepairedAt();
-        doReturn(false).when(myRepairState).canRepair();
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(false).when(myRepairStateSnapshot).canRepair();
 
         myRepairJob.postExecute(true);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(repairedAt);
         verify(myRepairState, times(1)).update();
-        verify(myRepairState, times(1)).canRepair();
+        verify(myRepairStateSnapshot, times(1)).canRepair();
     }
 
     @Test
@@ -244,21 +229,21 @@ public class TestTableRepairJob
     {
         // mock
         long repairedAt = System.currentTimeMillis();
-        doReturn(repairedAt).when(myRepairState).lastRepairedAt();
-        doReturn(false).when(myRepairState).canRepair();
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(false).when(myRepairStateSnapshot).canRepair();
 
         myRepairJob.postExecute(false);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(repairedAt);
         verify(myRepairState, times(1)).update();
-        verify(myRepairState, times(1)).canRepair();
+        verify(myRepairStateSnapshot, times(1)).canRepair();
     }
 
     @Test
     public void testPostExecuteNotRepaired()
     {
         // mock
-        doReturn(true).when(myRepairState).canRepair();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
 
         long lastRun = myRepairJob.getLastSuccessfulRun();
 
@@ -266,14 +251,14 @@ public class TestTableRepairJob
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(lastRun);
         verify(myRepairState, times(1)).update();
-        verify(myRepairState, times(1)).canRepair();
+        verify(myRepairStateSnapshot, times(1)).canRepair();
     }
 
     @Test
     public void testPostExecuteNotRepairedWithFailure()
     {
         // mock
-        doReturn(true).when(myRepairState).canRepair();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
 
         long lastRun = myRepairJob.getLastSuccessfulRun();
 
@@ -281,7 +266,7 @@ public class TestTableRepairJob
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(lastRun);
         verify(myRepairState, times(1)).update();
-        verify(myRepairState, times(1)).canRepair();
+        verify(myRepairStateSnapshot, times(1)).canRepair();
     }
 
     @Test
@@ -310,11 +295,11 @@ public class TestTableRepairJob
         expectedData.put(RepairFaultReporter.FAULT_TABLE, tableName);
 
         // mock - not repaired
-        doReturn(lastRepaired).when(myRepairState).lastRepairedAt();
-        doReturn(true).when(myRepairState).canRepair();
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
         myClock.setTime(start);
 
-        assertThat(myRepairJob.preValidate()).isTrue();
+        assertThat(myRepairJob.runnable()).isTrue();
 
         // verify - not repaired
         verify(myFaultReporter).raise(eq(RepairFaultReporter.FaultCode.REPAIR_WARNING), eq(expectedData));
@@ -324,11 +309,11 @@ public class TestTableRepairJob
         start = System.currentTimeMillis();
 
         // mock - repaired
-        doReturn(lastRepaired).when(myRepairState).lastRepairedAt();
-        doReturn(false).when(myRepairState).canRepair();
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(false).when(myRepairStateSnapshot).canRepair();
         myClock.setTime(start);
 
-        myRepairJob.preValidate();
+        myRepairJob.runnable();
 
         // verify alarm ceased in preValidate
         verify(myFaultReporter).cease(eq(RepairFaultReporter.FaultCode.REPAIR_WARNING), eq(expectedData));
@@ -353,11 +338,11 @@ public class TestTableRepairJob
         expectedData.put(RepairFaultReporter.FAULT_TABLE, tableName);
 
         // mock - not repaired
-        doReturn(lastRepaired).when(myRepairState).lastRepairedAt();
-        doReturn(true).when(myRepairState).canRepair();
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
         myClock.setTime(start);
 
-        assertThat(myRepairJob.preValidate()).isTrue();
+        assertThat(myRepairJob.runnable()).isTrue();
 
         // verify - not repaired
         verify(myFaultReporter).raise(eq(RepairFaultReporter.FaultCode.REPAIR_WARNING), eq(expectedData));
@@ -367,11 +352,11 @@ public class TestTableRepairJob
         start = System.currentTimeMillis();
 
         // mock - repaired
-        doReturn(lastRepaired).when(myRepairState).lastRepairedAt();
-        doReturn(false).when(myRepairState).canRepair();
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(false).when(myRepairStateSnapshot).canRepair();
         myClock.setTime(start);
 
-        assertThat(myRepairJob.preValidate()).isFalse();
+        assertThat(myRepairJob.runnable()).isFalse();
 
         // verify - repaired
         verify(myFaultReporter).cease(eq(RepairFaultReporter.FaultCode.REPAIR_WARNING), eq(expectedData));
@@ -390,11 +375,11 @@ public class TestTableRepairJob
         expectedData.put(RepairFaultReporter.FAULT_TABLE, tableName);
 
         // mock - not repaired
-        doReturn(lastRepaired).when(myRepairState).lastRepairedAt();
-        doReturn(true).when(myRepairState).canRepair();
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
         myClock.setTime(start);
 
-        assertThat(myRepairJob.preValidate()).isTrue();
+        assertThat(myRepairJob.runnable()).isTrue();
 
         // verify - not repaired
         verify(myFaultReporter).raise(eq(RepairFaultReporter.FaultCode.REPAIR_ERROR), eq(expectedData));
@@ -404,8 +389,8 @@ public class TestTableRepairJob
         start = System.currentTimeMillis();
 
         // mock - repaired
-        doReturn(lastRepaired).when(myRepairState).lastRepairedAt();
-        doReturn(false).when(myRepairState).canRepair();
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(false).when(myRepairStateSnapshot).canRepair();
         myClock.setTime(start);
 
         myRepairJob.postExecute(true);
@@ -427,11 +412,11 @@ public class TestTableRepairJob
         expectedData.put(RepairFaultReporter.FAULT_TABLE, tableName);
 
         // mock - not repaired
-        doReturn(lastRepaired).when(myRepairState).lastRepairedAt();
-        doReturn(true).when(myRepairState).canRepair();
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
         myClock.setTime(start);
 
-        assertThat(myRepairJob.preValidate()).isTrue();
+        assertThat(myRepairJob.runnable()).isTrue();
 
         // verify - not repaired
         verify(myFaultReporter).raise(eq(RepairFaultReporter.FaultCode.REPAIR_ERROR), eq(expectedData));
@@ -441,11 +426,11 @@ public class TestTableRepairJob
         start = System.currentTimeMillis();
 
         // mock - repaired
-        doReturn(lastRepaired).when(myRepairState).lastRepairedAt();
-        doReturn(false).when(myRepairState).canRepair();
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(false).when(myRepairStateSnapshot).canRepair();
         myClock.setTime(start);
 
-        myRepairJob.preValidate();
+        myRepairJob.runnable();
 
         // verify - repaired
         verify(myFaultReporter).cease(eq(RepairFaultReporter.FaultCode.REPAIR_WARNING), eq(expectedData));
@@ -462,219 +447,14 @@ public class TestTableRepairJob
 
         // mock - not repaired
         doReturn(tableGcGrace).when(myTableOptionsMetadata).getGcGraceInSeconds();
-        doReturn(lastRepaired).when(myRepairState).lastRepairedAt();
-        doReturn(true).when(myRepairState).canRepair();
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
         myClock.setTime(start);
 
-        assertThat(myRepairJob.preValidate()).isTrue();
+        assertThat(myRepairJob.runnable()).isFalse();
 
         // verify - not repaired
         verify(myFaultReporter, never()).raise(any(RepairFaultReporter.FaultCode.class), anyMapOf(String.class, Object.class));
-    }
-
-    @Test
-    public void testGetRepairTask()
-    {
-        // setup
-        Host host = mock(Host.class);
-        LongTokenRange range = new LongTokenRange(1, 2);
-
-        Set<Host> hosts = new HashSet<>();
-        hosts.add(host);
-
-        Set<LongTokenRange> ranges = new HashSet<>();
-        ranges.add(range);
-
-        Map<LongTokenRange, Collection<Host>> rangeToReplicas = new HashMap<>();
-        rangeToReplicas.put(new LongTokenRange(1, 2), Sets.newHashSet(host));
-
-        // mock
-        doReturn(hosts).when(myRepairState).getReplicas();
-        doReturn(ranges).when(myRepairState).getLocalRangesForRepair();
-        doReturn(rangeToReplicas).when(myRepairState).getRangeToReplicas();
-
-        Iterator<ScheduledJob.ScheduledTask> iterator = myRepairJob.iterator();
-
-        assertThat(iterator.hasNext()).isTrue();
-        ScheduledJob.ScheduledTask task = iterator.next();
-        assertThat(task).isInstanceOf(RepairTask.class);
-
-        RepairTask repairTask = (RepairTask) task;
-
-        assertThat(repairTask.getReplicas()).isEqualTo(hosts);
-        assertThat(repairTask.getTokenRanges()).isEqualTo(ranges);
-        assertThat(repairTask.getTableReference()).isEqualTo(myTableReference);
-        assertThat(repairTask.getRepairConfiguration().getRepairParallelism()).isEqualTo(RepairOptions.RepairParallelism.PARALLEL);
-        assertThat(repairTask.getRepairConfiguration().getRepairType()).isEqualTo(RepairOptions.RepairType.VNODE);
-        assertThat(repairTask.isVnodeRepair()).isTrue();
-    }
-
-    @Test
-    public void testGetPartialRepairTasks()
-    {
-        // setup
-        Host host = mock(Host.class);
-        Host host2 = mock(Host.class);
-        Host host3 = mock(Host.class);
-        Host host4 = mock(Host.class);
-
-        Set<Host> hosts = new HashSet<>();
-        hosts.add(host);
-        hosts.add(host2);
-        hosts.add(host3);
-        hosts.add(host4);
-
-        Set<LongTokenRange> ranges = new HashSet<>();
-        ranges.add(new LongTokenRange(0, 1));
-        ranges.add(new LongTokenRange(2, 3));
-        ranges.add(new LongTokenRange(4, 5));
-        ranges.add(new LongTokenRange(6, 7));
-
-        Map<LongTokenRange, Collection<Host>> rangeToReplicas = new HashMap<>();
-        rangeToReplicas.put(new LongTokenRange(0, 1), Sets.newHashSet(host, host2));
-        rangeToReplicas.put(new LongTokenRange(2, 3), Sets.newHashSet(host2, host3));
-        rangeToReplicas.put(new LongTokenRange(4, 5), Sets.newHashSet(host3, host4));
-
-        // mock
-        doReturn(hosts).when(myRepairState).getReplicas();
-        doReturn(ranges).when(myRepairState).getLocalRangesForRepair();
-        doReturn(rangeToReplicas).when(myRepairState).getRangeToReplicas();
-
-        List<ScheduledJob.ScheduledTask> tasks = Lists.newArrayList(myRepairJob.iterator());
-
-        assertThat(tasks.size()).isEqualTo(rangeToReplicas.size());
-
-        Set<LongTokenRange> repairTaskRanges = new HashSet<>();
-
-        for (ScheduledJob.ScheduledTask task : tasks)
-        {
-            assertThat(task).isInstanceOf(RepairTask.class);
-            RepairTask repairTask = (RepairTask) task;
-
-            assertThat(repairTask.getTokenRanges().size()).isEqualTo(1);
-            LongTokenRange range = repairTask.getTokenRanges().iterator().next();
-            repairTaskRanges.add(range);
-
-            assertThat(repairTask.getReplicas()).isEqualTo(rangeToReplicas.get(range));
-            assertThat(repairTask.getTableReference()).isEqualTo(myTableReference);
-            assertThat(repairTask.getRepairConfiguration().getRepairParallelism()).isEqualTo(RepairOptions.RepairParallelism.PARALLEL);
-            assertThat(repairTask.getRepairConfiguration().getRepairType()).isEqualTo(RepairOptions.RepairType.VNODE);
-            assertThat(repairTask.isVnodeRepair()).isTrue();
-        }
-
-        assertThat(repairTaskRanges).isEqualTo(rangeToReplicas.keySet());
-    }
-
-    @Test
-    public void testGetLockForTwoDatacenters() throws LockException
-    {
-        doReturn(Sets.newHashSet("dc1", "dc2")).when(myRepairState).getDatacentersForRepair();
-
-        doReturn(null).when(myLockFactory).getLockMetadata(anyString(), anyString());
-        doReturn(true).when(myLockFactory).sufficientNodesForLocking(anyString(), anyString());
-        doReturn(new DummyLock()).when(myLockFactory).tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class));
-
-        myRepairJob.getLock(myLockFactory);
-
-        verify(myLockFactory).tryLock(eq("dc1"), eq("RepairResource-dc1-1"), anyInt(), anyMapOf(String.class, String.class));
-        verify(myLockFactory).tryLock(eq("dc2"), eq("RepairResource-dc2-1"), anyInt(), anyMapOf(String.class, String.class));
-        verify(myLockFactory).getLockMetadata(eq("dc1"), eq("RepairResource-dc1-1"));
-        verify(myLockFactory).getLockMetadata(eq("dc2"), eq("RepairResource-dc2-1"));
-        verify(myLockFactory).sufficientNodesForLocking(eq("dc1"), eq("RepairResource-dc1-1"));
-        verify(myLockFactory).sufficientNodesForLocking(eq("dc2"), eq("RepairResource-dc2-1"));
-    }
-
-    @Test
-    public void testGetLockForTwoDatacentersSecondFailing() throws LockException
-    {
-        doReturn(Sets.newHashSet("dc1", "dc2")).when(myRepairState).getDatacentersForRepair();
-        doReturn(true).when(myLockFactory).sufficientNodesForLocking(anyString(), anyString());
-
-        doReturn(new DummyLock())
-                .doThrow(LockException.class)
-                .when(myLockFactory).tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class));
-
-        try (LockFactory.DistributedLock lock = myRepairJob.getLock(myLockFactory))
-        {
-            fail("Lock should not be obtained");
-        }
-        catch (LockException e)
-        {
-            assertThat(e).hasMessage(String.format("Lock resources exhausted for Repair job of %s.%s", keyspaceName, tableName));
-        }
-
-        verify(myLockFactory).tryLock(eq("dc1"), eq("RepairResource-dc1-1"), anyInt(), anyMapOf(String.class, String.class));
-        verify(myLockFactory).tryLock(eq("dc2"), eq("RepairResource-dc2-1"), anyInt(), anyMapOf(String.class, String.class));
-        verify(myLockFactory).sufficientNodesForLocking(eq("dc1"), eq("RepairResource-dc1-1"));
-        verify(myLockFactory).sufficientNodesForLocking(eq("dc2"), eq("RepairResource-dc2-1"));
-    }
-
-    @Test
-    public void testGetLockForNoDataCenters() throws LockException
-    {
-        doReturn(Collections.emptySet()).when(myRepairState).getDatacentersForRepair();
-
-        try (LockFactory.DistributedLock lock = myRepairJob.getLock(myLockFactory))
-        {
-            fail("Lock should not be obtained");
-        }
-        catch (LockException e)
-        {
-            assertThat(e).hasMessage(String.format("No data centers to lock for Repair job of %s.%s", keyspaceName, tableName));
-        }
-    }
-
-    @Test
-    public void testGetLockForOneDataCenterNotLeasable() throws LockException
-    {
-        String dc1 = "dc1";
-        String dc2 = "dc2";
-        String resource1 = "RepairResource-dc1-1";
-        String resource2 = "RepairResource-dc2-1";
-
-        Map<String, Object> expectedData = new HashMap<>();
-        expectedData.put(RepairFaultReporter.FAULT_KEYSPACE, keyspaceName);
-        expectedData.put(RepairFaultReporter.FAULT_TABLE, tableName);
-
-        doReturn(Sets.newHashSet("dc2", "dc1")).when(myRepairState).getDatacentersForRepair();
-        doReturn(true).when(myLockFactory).sufficientNodesForLocking(dc2, resource2);
-        doReturn(false).when(myLockFactory).sufficientNodesForLocking(dc1, resource1);
-        doReturn(new DummyLock()).when(myLockFactory).tryLock(eq(dc2), eq(resource2), anyInt(), anyMapOf(String.class, String.class));
-
-        try (LockFactory.DistributedLock lock = myRepairJob.getLock(myLockFactory))
-        {
-        }
-
-        verify(myLockFactory).sufficientNodesForLocking(eq(dc2), eq(resource2));
-        verify(myLockFactory).sufficientNodesForLocking(eq(dc1), eq(resource1));
-        verify(myLockFactory).tryLock(eq(dc2), eq(resource2), anyInt(), anyMapOf(String.class, String.class));
-        verify(myLockFactory).getLockMetadata(eq(dc2), eq(resource2));
-        verify(myFaultReporter).raise(eq(FaultCode.REPAIR_WARNING), eq(expectedData));
-    }
-
-    @Test
-    public void testGetLockForNoLeasableDataCenters() throws LockException
-    {
-        Map<String, Object> expectedData = new HashMap<>();
-        expectedData.put(RepairFaultReporter.FAULT_KEYSPACE, keyspaceName);
-        expectedData.put(RepairFaultReporter.FAULT_TABLE, tableName);
-
-        doReturn(Sets.newHashSet("dc1", "dc2")).when(myRepairState).getDatacentersForRepair();
-        doReturn(null).when(myLockFactory).getLockMetadata(anyString(), anyString());
-        doReturn(false).when(myLockFactory).sufficientNodesForLocking(anyString(), anyString());
-
-        try (LockFactory.DistributedLock lock = myRepairJob.getLock(myLockFactory))
-        {
-            fail("Lock should not be tried to obtain");
-        }
-        catch (LockException e)
-        {
-            assertThat(e).hasMessage(String.format("No data centers to lock for Repair job of %s.%s", keyspaceName, tableName));
-        }
-
-        verify(myLockFactory).sufficientNodesForLocking(eq("dc1"), eq("RepairResource-dc1-1"));
-        verify(myLockFactory).sufficientNodesForLocking(eq("dc2"), eq("RepairResource-dc2-1"));
-        verify(myFaultReporter, times(2)).raise(eq(FaultCode.REPAIR_WARNING), eq(expectedData));
     }
 
     @Test
@@ -688,8 +468,8 @@ public class TestTableRepairJob
         myClock.setTime(now);
 
         // We have waited 2 days to repair, send alarm and run repair
-        doReturn(lastRepairedAtWarning).when(myRepairState).lastRepairedAt();
-        doReturn(true).when(myRepairState).canRepair();
+        doReturn(lastRepairedAtWarning).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
 
         assertThat(myRepairJob.runnable()).isTrue();
 
@@ -699,8 +479,8 @@ public class TestTableRepairJob
         reset(myFaultReporter);
 
         // Repair has been completed
-        doReturn(lastRepairedAtAfterRepair).when(myRepairState).lastRepairedAt();
-        doReturn(false).when(myRepairState).canRepair();
+        doReturn(lastRepairedAtAfterRepair).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(false).when(myRepairStateSnapshot).canRepair();
 
         myRepairJob.postExecute(true);
 
@@ -709,7 +489,7 @@ public class TestTableRepairJob
 
         // After 10 ms we can repair again
         myClock.setTime(now + timeOffset);
-        doReturn(true).when(myRepairState).canRepair();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
 
         assertThat(myRepairJob.runnable()).isTrue();
 
