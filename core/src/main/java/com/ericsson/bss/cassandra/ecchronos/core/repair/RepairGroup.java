@@ -14,7 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
@@ -139,13 +138,6 @@ public class RepairGroup extends ScheduledTask
         }
         else
         {
-            Set<Host> replicas = myReplicaRepairGroup.getReplicas();
-
-            if (!replicas.isEmpty())
-            {
-                builder.withReplicas(replicas);
-            }
-
             builder.withTokenRanges(myReplicaRepairGroup.getVnodes());
             tasks.add(builder.build());
         }

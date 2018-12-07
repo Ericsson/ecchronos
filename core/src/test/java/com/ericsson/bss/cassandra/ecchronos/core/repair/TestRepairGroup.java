@@ -143,7 +143,7 @@ public class TestRepairGroup
     }
 
     @Test
-    public void testGetRepairTask()
+    public void testGetVnodeRepairTask()
     {
         // setup
         Host host = mockHost("DC1");
@@ -172,6 +172,45 @@ public class TestRepairGroup
         assertThat(repairTask.getRepairConfiguration().getRepairParallelism()).isEqualTo(RepairOptions.RepairParallelism.PARALLEL);
         assertThat(repairTask.getRepairConfiguration().getRepairType()).isEqualTo(RepairOptions.RepairType.VNODE);
         assertThat(repairTask.isVnodeRepair()).isTrue();
+    }
+
+    @Test
+    public void testGetIncrementalRepairTask()
+    {
+        // setup
+        Host host = mockHost("DC1");
+        LongTokenRange range = new LongTokenRange(1, 2);
+
+        Set<Host> hosts = new HashSet<>();
+        hosts.add(host);
+
+        Set<LongTokenRange> ranges = new HashSet<>();
+        ranges.add(range);
+
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(hosts, Collections.singletonList(range));
+
+        RepairConfiguration incrementalRepairConfiguration = RepairConfiguration.newBuilder()
+                .withParallelism(RepairOptions.RepairParallelism.PARALLEL)
+                .withType(RepairOptions.RepairType.INCREMENTAL)
+                .withRepairWarningTime(RUN_INTERVAL_IN_DAYS * 2, TimeUnit.DAYS)
+                .withRepairErrorTime(GC_GRACE_DAYS, TimeUnit.DAYS)
+                .build();;
+
+        RepairGroup repairGroup = new RepairGroup(priority, tableReference,
+                incrementalRepairConfiguration, replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
+                myRepairResourceFactory, myRepairLockFactory);
+
+        Collection<RepairTask> repairTasks = repairGroup.getRepairTasks();
+
+        assertThat((repairTasks).isEmpty()).isFalse();
+        RepairTask repairTask = repairTasks.iterator().next();
+
+        assertThat(repairTask.getReplicas()).isEmpty();
+        assertThat(repairTask.getTokenRanges()).isEqualTo(ranges);
+        assertThat(repairTask.getTableReference()).isEqualTo(tableReference);
+        assertThat(repairTask.getRepairConfiguration().getRepairParallelism()).isEqualTo(RepairOptions.RepairParallelism.PARALLEL);
+        assertThat(repairTask.getRepairConfiguration().getRepairType()).isEqualTo(RepairOptions.RepairType.INCREMENTAL);
+        assertThat(repairTask.isVnodeRepair()).isFalse();
     }
 
     @Test

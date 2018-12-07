@@ -25,7 +25,7 @@ public class RepairStateFactoryImpl implements RepairStateFactory
 {
     private final HostStates myHostStates;
     private final TableRepairMetrics myTableRepairMetrics;
-
+    private final ReplicationState myReplicationState;
     private final VnodeRepairStateFactoryImpl myVnodeRepairStateFactory;
 
     private RepairStateFactoryImpl(Builder builder)
@@ -33,8 +33,8 @@ public class RepairStateFactoryImpl implements RepairStateFactory
         myHostStates = builder.myHostStates;
         myTableRepairMetrics = builder.myTableRepairMetrics;
 
-        ReplicationState replicationState = new ReplicationState(builder.myMetadata, builder.myHost);
-        myVnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(replicationState, builder.myRepairHistoryProvider);
+        myReplicationState = new ReplicationState(builder.myMetadata, builder.myHost);
+        myVnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(myReplicationState, builder.myRepairHistoryProvider);
     }
 
     @Override
@@ -46,6 +46,9 @@ public class RepairStateFactoryImpl implements RepairStateFactory
         {
             case VNODE:
                 replicaRepairGroupFactory = VnodeRepairGroupFactory.INSTANCE;
+                break;
+            case INCREMENTAL:
+                replicaRepairGroupFactory = new IncrementalRepairGroupFactory(tableReference, myReplicationState);
                 break;
             default:
                 throw new IllegalArgumentException("Repair type " + repairConfiguration.getRepairType() + " not supported yet");
