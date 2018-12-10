@@ -54,7 +54,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter.FaultCode;
-import com.google.common.collect.Sets;
 
 @RunWith (MockitoJUnitRunner.class)
 public class TestTableRepairJob
@@ -133,6 +132,7 @@ public class TestTableRepairJob
                 .withFaultReporter(myFaultReporter)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairConfiguration(repairConfiguration)
+                .withRepairLockType(RepairLockType.VNODE)
                 .build();
 
         myRepairJob.setClock(myClock);

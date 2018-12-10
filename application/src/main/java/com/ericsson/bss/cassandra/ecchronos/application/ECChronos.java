@@ -26,6 +26,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairSchedulerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactoryImpl;
@@ -88,6 +89,7 @@ public class ECChronos implements Closeable
                 .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
                 .withScheduleManager(myECChronosInternals.getScheduleManager())
                 .withRepairStateFactory(repairStateFactoryImpl)
+                .withRepairLockType(RepairLockType.VNODE)
                 .build();
 
         myDefaultRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()

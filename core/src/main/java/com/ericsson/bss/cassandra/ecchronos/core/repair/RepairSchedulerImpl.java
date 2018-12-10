@@ -50,6 +50,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
     private final TableRepairMetrics myTableRepairMetrics;
     private final ScheduleManager myScheduleManager;
     private final RepairStateFactory myRepairStateFactory;
+    private final RepairLockType myRepairLockType;
 
     private RepairSchedulerImpl(Builder builder)
     {
@@ -59,6 +60,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
         myTableRepairMetrics = builder.myTableRepairMetrics;
         myScheduleManager = builder.myScheduleManager;
         myRepairStateFactory = builder.myRepairStateFactory;
+        myRepairLockType = builder.myRepairLockType;
     }
 
     @Override
@@ -160,6 +162,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
                 .withFaultReporter(myFaultReporter)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairConfiguration(repairConfiguration)
+                .withRepairLockType(myRepairLockType)
                 .build();
 
         job.runnable();
@@ -179,6 +182,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
         private TableRepairMetrics myTableRepairMetrics;
         private ScheduleManager myScheduleManager;
         private RepairStateFactory myRepairStateFactory;
+        private RepairLockType myRepairLockType;
 
         public Builder withFaultReporter(RepairFaultReporter repairFaultReporter)
         {
@@ -207,6 +211,12 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
         public Builder withRepairStateFactory(RepairStateFactory repairStateFactory)
         {
             myRepairStateFactory = repairStateFactory;
+            return this;
+        }
+
+        public Builder withRepairLockType(RepairLockType repairLockType)
+        {
+            myRepairLockType = repairLockType;
             return this;
         }
 
