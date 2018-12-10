@@ -113,10 +113,7 @@ public class RepairStateImpl implements RepairState
 
         ReplicaRepairGroup replicaRepairGroup = myReplicaRepairGroupFactory.generateReplicaRepairGroup(repairableVnodes);
 
-        boolean canRepair = replicaRepairGroup != null;
-
         return RepairStateSnapshot.newBuilder()
-                .canRepair(canRepair)
                 .withLastRepairedAt(repairedAt)
                 .withVnodeRepairStates(updatedVnodeRepairStates)
                 .withReplicaRepairGroup(replicaRepairGroup)

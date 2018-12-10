@@ -16,6 +16,14 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 /**
  * An immutable copy of the repair state.
+ *
+ * The repair state describes the current state of repairs for a table.
+ * <ul>
+ *     <li>When the table was last repaired - {@link #lastRepairedAt()}</li>
+ *     <li>The next repair to run - {@link #getRepairGroup()}</li>
+ *     <li>The vnodes for the table and when they were last repaired - {@link #getVnodeRepairStates()}</li>
+ *     <li>If there is a repair available - {@link #canRepair()}</li>
+ * </ul>
  */
 public class RepairStateSnapshot
 {
@@ -26,10 +34,11 @@ public class RepairStateSnapshot
 
     private RepairStateSnapshot(Builder builder)
     {
-        canRepair = builder.canRepair;
         myLastRepairedAt = builder.myLastRepairedAt;
         myReplicaRepairGroup = builder.myReplicaRepairGroup;
         myVnodeRepairStates = builder.myVnodeRepairStates;
+
+        canRepair = myReplicaRepairGroup != null;
     }
 
     /**
@@ -52,6 +61,11 @@ public class RepairStateSnapshot
         return myLastRepairedAt;
     }
 
+    /**
+     * Information needed to run the next repair.
+     *
+     * @return The next repair or null if none can be run.
+     */
     public ReplicaRepairGroup getRepairGroup()
     {
         return myReplicaRepairGroup;
@@ -75,16 +89,9 @@ public class RepairStateSnapshot
 
     public static class Builder
     {
-        private Boolean canRepair;
         private Long myLastRepairedAt;
         private ReplicaRepairGroup myReplicaRepairGroup;
         private VnodeRepairStates myVnodeRepairStates;
-
-        public Builder canRepair(boolean canRepair)
-        {
-            this.canRepair = canRepair;
-            return this;
-        }
 
         public Builder withLastRepairedAt(long lastRepairedAt)
         {
