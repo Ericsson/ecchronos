@@ -21,9 +21,9 @@ import java.util.function.Supplier;
  */
 public enum RepairLockType
 {
-    DATA_CENTER(DataCenterRepairResourceFactory::new),
+    DATACENTER(DataCenterRepairResourceFactory::new),
     VNODE(VnodeRepairResourceFactory::new),
-    DATA_CENTER_AND_VNODE(() -> new CombinedRepairResourceFactory(new DataCenterRepairResourceFactory(),
+    DATACENTER_AND_VNODE(() -> new CombinedRepairResourceFactory(new DataCenterRepairResourceFactory(),
             new VnodeRepairResourceFactory()));
 
     final Supplier<RepairResourceFactory> myRepairLockingFactoryProvider;

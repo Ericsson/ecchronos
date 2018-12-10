@@ -39,7 +39,7 @@ public class TestDataCenterAndVnodeRepairResourceFactory
         RepairResource repairResourceLegacy = new RepairResource("DC1", "DC1");
         ReplicaRepairGroup replicaRepairGroup = generateReplicaRepairGroup(host);
 
-        RepairResourceFactory repairResourceFactory = RepairLockType.DATA_CENTER_AND_VNODE.getLockFactory();
+        RepairResourceFactory repairResourceFactory = RepairLockType.DATACENTER_AND_VNODE.getLockFactory();
 
         assertThat(repairResourceFactory.getRepairResources(replicaRepairGroup)).containsExactlyInAnyOrder(repairResourceVnode, repairResourceLegacy);
     }
@@ -57,7 +57,7 @@ public class TestDataCenterAndVnodeRepairResourceFactory
         RepairResource repairResourceLegacyDc2 = new RepairResource("DC2", "DC2");
         ReplicaRepairGroup replicaRepairGroup = generateReplicaRepairGroup(host, host2);
 
-        RepairResourceFactory repairResourceFactory = RepairLockType.DATA_CENTER_AND_VNODE.getLockFactory();
+        RepairResourceFactory repairResourceFactory = RepairLockType.DATACENTER_AND_VNODE.getLockFactory();
 
         assertThat(repairResourceFactory.getRepairResources(replicaRepairGroup)).containsExactlyInAnyOrder(repairResourceVnodeDc1, repairResourceVnodeDc2,
                 repairResourceLegacyDc1, repairResourceLegacyDc2);
