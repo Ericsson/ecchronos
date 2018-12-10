@@ -14,22 +14,21 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+
 /**
- * Interface used by TableRepairJob to update and get a snapshot of the current repair state of a table.
- *
- * @see RepairStateSnapshot
+ * A factory to create {@link VnodeRepairStates} for a specific table.
  */
-public interface RepairState
+public interface VnodeRepairStateFactory
 {
     /**
-     * Update the repair state for the table.
-     */
-    void update();
-
-    /**
-     * Get an immutable copy of the current repair state.
+     * Calculate the current repair state based on the previous.
      *
-     * @return The immutable copy.
+     * If the previous repair state is unknown it should be calculated from start.
+     *
+     * @param tableReference The table to calculate the new repair state for vnodes.
+     * @param previous The previous repair state or null if non exists.
+     * @return The calculated repair state.
      */
-    RepairStateSnapshot getSnapshot();
+    VnodeRepairStates calculateNewState(TableReference tableReference, RepairStateSnapshot previous);
 }

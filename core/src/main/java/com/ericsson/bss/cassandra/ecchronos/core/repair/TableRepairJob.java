@@ -14,7 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -24,13 +23,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.ericsson.bss.cassandra.ecchronos.core.Clock;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,16 +82,22 @@ public class TableRepairJob extends ScheduledJob
     @Override
     public Iterator<ScheduledTask> iterator()
     {
-        return Collections.<ScheduledTask>singletonList(new RepairGroup(getRealPriority(), myTableReference, myRepairConfiguration,
-                myRepairState.getSnapshot(), myJmxProxyFactory, myTableRepairMetrics))
-                .iterator();
+        RepairStateSnapshot repairStateSnapshot = myRepairState.getSnapshot();
+        if (repairStateSnapshot.canRepair())
+        {
+            return Collections.<ScheduledTask>singletonList(new RepairGroup(getRealPriority(), myTableReference, myRepairConfiguration,
+                    repairStateSnapshot, myJmxProxyFactory, myTableRepairMetrics))
+                    .iterator();
+        }
+        else
+        {
+            return Collections.emptyIterator();
+        }
     }
 
     @Override
     public void postExecute(boolean successful)
     {
-        boolean realSuccessful = false;
-
         try
         {
             myRepairState.update();
@@ -101,19 +106,17 @@ public class TableRepairJob extends ScheduledJob
 
             long lastRepaired = repairStateSnapshot.lastRepairedAt();
 
-            if (lastRepaired != -1)
+            if (lastRepaired != VnodeRepairState.UNREPAIRED)
             {
-                sendOrCeaseAlarm(lastRepaired, repairStateSnapshot.getLocalRangesForRepair());
+                sendOrCeaseAlarm(lastRepaired);
             }
-
-            realSuccessful = !repairStateSnapshot.canRepair();
         }
         catch (Exception e)
         {
             LOG.warn("Unable to check repair history, {}", this, e);
         }
 
-        super.postExecute(realSuccessful);
+        super.postExecute(successful);
     }
 
     @Override
@@ -140,7 +143,7 @@ public class TableRepairJob extends ScheduledJob
         myFaultReporter.cease(FaultCode.REPAIR_WARNING, ceaseData);
     }
 
-    private void sendOrCeaseAlarm(long lastRepaired, Collection<LongTokenRange> nonRepairedRanges)
+    private void sendOrCeaseAlarm(long lastRepaired)
     {
         long msSinceLastRepair = myClock.get().getTime() - lastRepaired;
 
@@ -159,7 +162,7 @@ public class TableRepairJob extends ScheduledJob
         {
             raiseAlarm(faultCode);
         }
-        else if (nonRepairedRanges.isEmpty())
+        else
         {
             ceaseWarningAlarm();
         }
@@ -183,9 +186,9 @@ public class TableRepairJob extends ScheduledJob
 
         long lastRepaired = repairStateSnapshot.lastRepairedAt();
 
-        if (lastRepaired != -1)
+        if (lastRepaired != VnodeRepairState.UNREPAIRED)
         {
-            sendOrCeaseAlarm(lastRepaired, repairStateSnapshot.getLocalRangesForRepair());
+            sendOrCeaseAlarm(lastRepaired);
         }
 
         return repairStateSnapshot.canRepair() && super.runnable();

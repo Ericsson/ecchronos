@@ -117,7 +117,6 @@ public class TestTableRepairJobIntegration
 
         doNothing().when(myRepairState).update();
         doReturn(myRepairStateSnapshot).when(myRepairState).getSnapshot();
-        doReturn(Collections.emptySet()).when(myRepairStateSnapshot).getLocalRangesForRepair();
 
         doReturn(System.currentTimeMillis()).when(myClock).getTime();
 

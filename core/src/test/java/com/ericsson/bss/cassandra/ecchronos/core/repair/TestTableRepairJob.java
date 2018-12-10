@@ -104,7 +104,6 @@ public class TestTableRepairJob
     @Before
     public void startup()
     {
-        doReturn(Sets.newHashSet()).when(myRepairStateSnapshot).getLocalRangesForRepair();
         doReturn(-1L).when(myRepairStateSnapshot).lastRepairedAt();
         doReturn(myRepairStateSnapshot).when(myRepairState).getSnapshot();
 
@@ -223,7 +222,6 @@ public class TestTableRepairJob
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(repairedAt);
         verify(myRepairState, times(1)).update();
-        verify(myRepairStateSnapshot, times(1)).canRepair();
     }
 
     @Test
@@ -238,7 +236,6 @@ public class TestTableRepairJob
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(repairedAt);
         verify(myRepairState, times(1)).update();
-        verify(myRepairStateSnapshot, times(1)).canRepair();
     }
 
     @Test
@@ -253,7 +250,6 @@ public class TestTableRepairJob
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(lastRun);
         verify(myRepairState, times(1)).update();
-        verify(myRepairStateSnapshot, times(1)).canRepair();
     }
 
     @Test
@@ -268,7 +264,6 @@ public class TestTableRepairJob
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(lastRun);
         verify(myRepairState, times(1)).update();
-        verify(myRepairStateSnapshot, times(1)).canRepair();
     }
 
     @Test

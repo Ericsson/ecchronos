@@ -21,37 +21,37 @@ import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
-import java.util.concurrent.TimeUnit;
-
 public class RepairStateFactoryImpl implements RepairStateFactory
 {
-    private final Metadata myMetadata;
-    private final Host myHost;
     private final HostStates myHostStates;
-    private final RepairHistoryProvider myRepairHistoryProvider;
     private final TableRepairMetrics myTableRepairMetrics;
+
+    private final VnodeRepairStateFactoryImpl myVnodeRepairStateFactory;
 
     private RepairStateFactoryImpl(Builder builder)
     {
-        myMetadata = builder.myMetadata;
-        myHost = builder.myHost;
         myHostStates = builder.myHostStates;
-        myRepairHistoryProvider = builder.myRepairHistoryProvider;
         myTableRepairMetrics = builder.myTableRepairMetrics;
+
+        ReplicationState replicationState = new ReplicationState(builder.myMetadata, builder.myHost);
+        myVnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(replicationState, builder.myRepairHistoryProvider);
     }
 
     @Override
     public RepairState create(TableReference tableReference, RepairConfiguration repairConfiguration)
     {
-        return new RepairStateImpl.Builder()
-                .withTableReference(tableReference)
-                .withMetadata(myMetadata)
-                .withHost(myHost)
-                .withHostStates(myHostStates)
-                .withRepairHistoryProvider(myRepairHistoryProvider)
-                .withRunInterval(repairConfiguration.getRepairIntervalInMs(), TimeUnit.MILLISECONDS)
-                .withRepairMetrics(myTableRepairMetrics)
-                .build();
+        ReplicaRepairGroupFactory replicaRepairGroupFactory;
+
+        switch(repairConfiguration.getRepairType())
+        {
+            case VNODE:
+                replicaRepairGroupFactory = VnodeRepairGroupFactory.INSTANCE;
+                break;
+            default:
+                throw new IllegalArgumentException("Repair type " + repairConfiguration.getRepairType() + " not supported yet");
+        }
+
+        return new RepairStateImpl(tableReference, repairConfiguration, myVnodeRepairStateFactory, myHostStates, myTableRepairMetrics, replicaRepairGroupFactory);
     }
 
     public static Builder builder()
