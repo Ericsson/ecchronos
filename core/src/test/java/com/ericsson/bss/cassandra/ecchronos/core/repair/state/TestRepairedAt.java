@@ -36,8 +36,7 @@ public class TestRepairedAt
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, Sets.newHashSet(host1), 1234L);
         VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, Sets.newHashSet(host1), 1235L);
 
-        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder()
-                .combineVnodeRepairStates(Arrays.asList(vnodeRepairState, vnodeRepairState2))
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2))
                 .build();
 
         RepairedAt repairedAt = RepairedAt.generate(vnodeRepairStates);
@@ -58,8 +57,7 @@ public class TestRepairedAt
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, Sets.newHashSet(host1), 1234L);
         VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, Sets.newHashSet(host1), VnodeRepairState.UNREPAIRED);
 
-        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder()
-                .combineVnodeRepairStates(Arrays.asList(vnodeRepairState, vnodeRepairState2))
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2))
                 .build();
 
         RepairedAt repairedAt = RepairedAt.generate(vnodeRepairStates);
@@ -80,8 +78,7 @@ public class TestRepairedAt
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, Sets.newHashSet(host1), VnodeRepairState.UNREPAIRED);
         VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, Sets.newHashSet(host1), VnodeRepairState.UNREPAIRED);
 
-        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder()
-                .combineVnodeRepairStates(Arrays.asList(vnodeRepairState, vnodeRepairState2))
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2))
                 .build();
 
         RepairedAt repairedAt = RepairedAt.generate(vnodeRepairStates);

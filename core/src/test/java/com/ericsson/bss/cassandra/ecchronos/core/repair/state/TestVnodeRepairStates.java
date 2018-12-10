@@ -20,6 +20,7 @@ import com.google.common.collect.Sets;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -36,8 +37,7 @@ public class TestVnodeRepairStates
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, Sets.newHashSet(host1), VnodeRepairState.UNREPAIRED);
         VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, Sets.newHashSet(host1), VnodeRepairState.UNREPAIRED);
 
-        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder()
-                .combineVnodeRepairStates(Arrays.asList(vnodeRepairState, vnodeRepairState2))
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2))
                 .build();
 
         assertThat(vnodeRepairStates.getVnodeRepairStates()).containsExactlyInAnyOrder(vnodeRepairState, vnodeRepairState2);
@@ -52,10 +52,9 @@ public class TestVnodeRepairStates
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, Sets.newHashSet(host1), VnodeRepairState.UNREPAIRED);
         VnodeRepairState updatedVnodeRepairState = new VnodeRepairState(range, Sets.newHashSet(host1), 1234L);
 
-        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder()
-                .combineVnodeRepairState(vnodeRepairState)
-                .combineVnodeRepairState(updatedVnodeRepairState)
-                .combineVnodeRepairState(vnodeRepairState)
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Collections.singletonList(vnodeRepairState))
+                .updateVnodeRepairState(updatedVnodeRepairState)
+                .updateVnodeRepairState(vnodeRepairState)
                 .build();
 
         assertThat(vnodeRepairStates.getVnodeRepairStates()).containsExactly(updatedVnodeRepairState);
@@ -72,11 +71,10 @@ public class TestVnodeRepairStates
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, Sets.newHashSet(host1, host2), 1234L);
         VnodeRepairState updatedVnodeRepairState = new VnodeRepairState(range, Sets.newHashSet(host1, host3), VnodeRepairState.UNREPAIRED);
 
-        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder()
-                .combineVnodeRepairState(vnodeRepairState)
-                .combineVnodeRepairState(updatedVnodeRepairState)
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Collections.singletonList(vnodeRepairState))
+                .updateVnodeRepairState(updatedVnodeRepairState)
                 .build();
 
-        assertThat(vnodeRepairStates.getVnodeRepairStates()).containsExactly(updatedVnodeRepairState);
+        assertThat(vnodeRepairStates.getVnodeRepairStates()).containsExactly(vnodeRepairState);
     }
 }

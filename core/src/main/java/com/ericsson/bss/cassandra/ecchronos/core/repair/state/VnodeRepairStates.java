@@ -31,7 +31,7 @@ public class VnodeRepairStates
 
     private VnodeRepairStates(Builder builder)
     {
-        myVnodeRepairStatuses = ImmutableMap.copyOf(builder.myVnodeRepairStatuses);
+        myVnodeRepairStatuses = ImmutableMap.copyOf(builder.myVnodeRepairStates);
     }
 
     public Collection<VnodeRepairState> getVnodeRepairStates()
@@ -49,12 +49,12 @@ public class VnodeRepairStates
      */
     public VnodeRepairStates combineWithRepairedAt(long repairedAt)
     {
-        Builder builder = newBuilder().combineVnodeRepairStates(getVnodeRepairStates());
+        Builder builder = newBuilder(getVnodeRepairStates());
 
         for (VnodeRepairState vnodeRepairState : getVnodeRepairStates())
         {
             VnodeRepairState vnodeRepairStateWithRepairedAt = new VnodeRepairState(vnodeRepairState.getTokenRange(), vnodeRepairState.getReplicas(), repairedAt);
-            builder.combineVnodeRepairState(vnodeRepairStateWithRepairedAt);
+            builder.updateVnodeRepairState(vnodeRepairStateWithRepairedAt);
         }
 
         return builder.build();
@@ -66,9 +66,9 @@ public class VnodeRepairStates
         return myVnodeRepairStatuses.toString();
     }
 
-    public static Builder newBuilder()
+    public static Builder newBuilder(Collection<VnodeRepairState> vnodeRepairStates)
     {
-        return new Builder();
+        return new Builder(vnodeRepairStates);
     }
 
     @Override
@@ -88,20 +88,28 @@ public class VnodeRepairStates
 
     public static class Builder
     {
-        private final Map<LongTokenRange, VnodeRepairState> myVnodeRepairStatuses = new HashMap<>();
+        private final Map<LongTokenRange, VnodeRepairState> myVnodeRepairStates = new HashMap<>();
+
+        public Builder(Collection<VnodeRepairState> vnodeRepairStates)
+        {
+            for (VnodeRepairState vnodeRepairState : vnodeRepairStates)
+            {
+                myVnodeRepairStates.put(vnodeRepairState.getTokenRange(), vnodeRepairState);
+            }
+        }
 
         /**
          * Combine a collection of vnode repair states into this collection.
          *
-         * @param vnodeRepairStates The vnode repair statuses to add.
+         * @param vnodeRepairStates The vnode repair statuses to update.
          * @return This builder
-         * @see #combineVnodeRepairState(VnodeRepairState)
+         * @see #updateVnodeRepairState(VnodeRepairState)
          */
-        public Builder combineVnodeRepairStates(Collection<VnodeRepairState> vnodeRepairStates)
+        public Builder updateVnodeRepairStates(Collection<VnodeRepairState> vnodeRepairStates)
         {
             for (VnodeRepairState vnodeRepairState : vnodeRepairStates)
             {
-                combineVnodeRepairState(vnodeRepairState);
+                updateVnodeRepairState(vnodeRepairState);
             }
             return this;
         }
@@ -110,19 +118,18 @@ public class VnodeRepairStates
          * Combine the provided {@link VnodeRepairState} with the current representation.
          * If there already was a higher timestamp recorded for the vnode, no change will be made.
          *
-         * An entry will be replaced on the following conditions:
-         * - The new entry has a higher repaired at
-         * - The old vnode repair state does not represent the same vnode ({@link VnodeRepairState#isSameVnode(VnodeRepairState)}).
+         * An entry will be replaced if it has a higher timestamp.
+         * No new entries will be added.
          *
-         * @param vnodeRepairState The vnode repair status to add.
+         * @param vnodeRepairState The vnode repair status to update.
          * @return This builder
          */
-        public Builder combineVnodeRepairState(VnodeRepairState vnodeRepairState)
+        public Builder updateVnodeRepairState(VnodeRepairState vnodeRepairState)
         {
-            VnodeRepairState oldVnode = myVnodeRepairStatuses.get(vnodeRepairState.getTokenRange());
+            VnodeRepairState oldVnode = myVnodeRepairStates.get(vnodeRepairState.getTokenRange());
             if (shouldReplace(oldVnode, vnodeRepairState))
             {
-                myVnodeRepairStatuses.put(vnodeRepairState.getTokenRange(), vnodeRepairState);
+                myVnodeRepairStates.put(vnodeRepairState.getTokenRange(), vnodeRepairState);
             }
             return this;
         }
@@ -131,12 +138,12 @@ public class VnodeRepairStates
         {
             if (oldVnode == null)
             {
-                return true;
+                return false;
             }
 
             if (!oldVnode.isSameVnode(newVnode))
             {
-                return true;
+                return false;
             }
 
             return oldVnode.lastRepairedAt() < newVnode.lastRepairedAt();
