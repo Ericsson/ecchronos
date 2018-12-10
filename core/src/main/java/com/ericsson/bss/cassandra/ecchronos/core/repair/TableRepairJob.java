@@ -86,7 +86,9 @@ public class TableRepairJob extends ScheduledJob
         if (repairStateSnapshot.canRepair())
         {
             return Collections.<ScheduledTask>singletonList(new RepairGroup(getRealPriority(), myTableReference, myRepairConfiguration,
-                    repairStateSnapshot, myJmxProxyFactory, myTableRepairMetrics))
+                    myRepairState.getSnapshot(), myJmxProxyFactory, myTableRepairMetrics,
+                    RepairLockType.DATA_CENTER.getLockFactory(),
+                    new RepairLockFactoryImpl()))
                     .iterator();
         }
         else
