@@ -42,7 +42,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
 
         if (repairResources.isEmpty())
         {
-            String msg = String.format("No data centers to lock for %s", this);
+            String msg = String.format("No datacenters to lock for %s", this);
             LOG.warn(msg);
             throw new LockException(msg);
         }
@@ -110,7 +110,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
         }
         catch (LockException e)
         {
-            LOG.warn("Lock ({} in data center {}) got error {}", resource, dataCenter, e.getMessage());
+            LOG.warn("Lock ({} in datacenter {}) got error {}", resource, dataCenter, e.getMessage());
             throw e;
         }
     }
