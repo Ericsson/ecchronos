@@ -201,7 +201,7 @@ public class CASLockFactory implements LockFactory, Closeable
 
         if (!sufficientNodesForLocking(dataCenter, resource))
         {
-            LOG.error("Not sufficient nodes to lock resource {} in data center {}", resource, dataCenter);
+            LOG.error("Not sufficient nodes to lock resource {} in datacenter {}", resource, dataCenter);
             throw new LockException("Not sufficient nodes to lock");
         }
 
@@ -215,11 +215,11 @@ public class CASLockFactory implements LockFactory, Closeable
         }
         catch (Exception e)
         {
-            LOG.error("Unable to lock resource {} in data center {}", resource, dataCenter, e);
+            LOG.warn("Unable to lock resource {} in datacenter {} - {}", resource, dataCenter, e.getMessage());
             throw new LockException(e);
         }
 
-        throw new LockException(String.format("Unable to lock resource %s in data center %s", resource, dataCenter));
+        throw new LockException(String.format("Unable to lock resource %s in datacenter %s", resource, dataCenter));
     }
 
     @Override

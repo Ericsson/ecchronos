@@ -79,6 +79,16 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
             LOG.error("Interrupted while waiting for executor to shutdown", e);
             Thread.currentThread().interrupt();
         }
+
+        synchronized (myLock)
+        {
+            for (TableReference tableReference : myScheduledJobs.keySet())
+            {
+                deleteTableSchedule(tableReference);
+            }
+
+            myScheduledJobs.clear();
+        }
     }
 
     @Override

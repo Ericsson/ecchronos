@@ -42,7 +42,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
 
         if (repairResources.isEmpty())
         {
-            String msg = String.format("No data centers to lock for %s", this);
+            String msg = String.format("No datacenters to lock for %s", this);
             LOG.warn(msg);
             throw new LockException(msg);
         }
@@ -64,7 +64,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
             }
             catch (LockException e)
             {
-                LOG.warn("{} - Unable to get lock for data center {}, releasing previously acquired locks", this, repairResource, e);
+                LOG.warn("{} - Unable to get lock for repair resource '{}', releasing previously acquired locks - {}", this, repairResource, e.getMessage());
                 releaseLocks(locks);
                 throw e;
             }
@@ -103,14 +103,15 @@ public class RepairLockFactoryImpl implements RepairLockFactory
             {
                 return myLock;
             }
+
+            String msg = String.format("Lock resources exhausted for %s", repairResource);
+            LOG.warn(msg);
+            throw new LockException(msg);
         }
         catch (LockException e)
         {
-            LOG.warn("Lock ({} in data center {}) get error in {}", resource, dataCenter, this, e);
+            LOG.warn("Lock ({} in datacenter {}) got error {}", resource, dataCenter, e.getMessage());
+            throw e;
         }
-
-        String msg = String.format("Lock resources exhausted for %s", this);
-        LOG.warn(msg);
-        throw new LockException(msg);
     }
 }

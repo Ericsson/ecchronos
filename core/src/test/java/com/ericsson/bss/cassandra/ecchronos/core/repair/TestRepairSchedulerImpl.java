@@ -21,6 +21,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.ignoreStubs;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -89,6 +90,8 @@ public class TestRepairSchedulerImpl
         verify(myRepairState, atLeastOnce()).update();
 
         repairSchedulerImpl.close();
+        verify(scheduleManager).deschedule(any(ScheduledJob.class));
+
         verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
         verifyNoMoreInteractions(myRepairStateFactory);
         verifyNoMoreInteractions(scheduleManager);
@@ -141,6 +144,8 @@ public class TestRepairSchedulerImpl
         verify(myRepairState, atLeastOnce()).update();
 
         repairSchedulerImpl.close();
+        verify(scheduleManager, times(2)).deschedule(any(ScheduledJob.class));
+
         verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
         verifyNoMoreInteractions(myRepairStateFactory);
         verifyNoMoreInteractions(scheduleManager);
@@ -161,6 +166,8 @@ public class TestRepairSchedulerImpl
         repairSchedulerImpl.putConfiguration(TABLE_REFERENCE, RepairConfiguration.DEFAULT);
 
         repairSchedulerImpl.close();
+        verify(scheduleManager).deschedule(any(ScheduledJob.class));
+
         verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
         verifyNoMoreInteractions(myRepairStateFactory);
         verifyNoMoreInteractions(scheduleManager);
