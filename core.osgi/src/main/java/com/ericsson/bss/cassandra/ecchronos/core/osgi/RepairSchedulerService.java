@@ -32,6 +32,9 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 /**
  * A factory creating {@link TableRepairJob}'s for tables that replicates data over multiple nodes.
@@ -39,6 +42,7 @@ import org.osgi.service.component.annotations.ReferencePolicy;
  * This factory will schedule new jobs automatically when new tables are added.
  */
 @Component(service = RepairScheduler.class)
+@Designate(ocd = RepairSchedulerService.Configuration.class)
 public class RepairSchedulerService implements RepairScheduler
 {
     @Reference(service = RepairFaultReporter.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
@@ -59,7 +63,7 @@ public class RepairSchedulerService implements RepairScheduler
     private volatile RepairSchedulerImpl myDelegateRepairSchedulerImpl;
 
     @Activate
-    public synchronized void activate()
+    public synchronized void activate(Configuration configuration)
     {
         myDelegateRepairSchedulerImpl = RepairSchedulerImpl.builder()
                 .withFaultReporter(myFaultReporter)
@@ -67,7 +71,7 @@ public class RepairSchedulerService implements RepairScheduler
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withScheduleManager(myScheduleManager)
                 .withRepairStateFactory(myRepairStateFactory)
-                .withRepairLockType(RepairLockType.VNODE)
+                .withRepairLockType(configuration.repairLockType())
                 .build();
     }
 
@@ -88,5 +92,12 @@ public class RepairSchedulerService implements RepairScheduler
     public void removeConfiguration(TableReference tableReference)
     {
         myDelegateRepairSchedulerImpl.removeConfiguration(tableReference);
+    }
+
+    @ObjectClassDefinition
+    public @interface Configuration
+    {
+        @AttributeDefinition(name = "Type of repair lock", description = "The type of locks to take for repair jobs")
+        RepairLockType repairLockType() default RepairLockType.VNODE;
     }
 }
