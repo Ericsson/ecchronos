@@ -14,15 +14,26 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.datastax.driver.core.Host;
+import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.TokenRange;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ReplicatedTableProviderImpl.class);
+
+    private static final String STRATEGY_CLASS = "class";
+    private static final String SIMPLE_STRATEGY = "org.apache.cassandra.locator.SimpleStrategy";
+    private static final String NETWORK_TOPOLOGY_STRATEGY = "org.apache.cassandra.locator.NetworkTopologyStrategy";
+
+    private static final String SIMPLE_STRATEGY_REPLICATION_FACTOR = "replication_factor";
+
     private static final String SYSTEM_AUTH_KEYSPACE = "system_auth";
 
     private final Host myLocalhost;
@@ -52,14 +63,66 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
             return false;
         }
 
-        Set<TokenRange> tokenRanges = myMetadata.getTokenRanges(keyspace, myLocalhost);
+        KeyspaceMetadata keyspaceMetadata = myMetadata.getKeyspace(keyspace);
 
-        if (tokenRanges.isEmpty())
+        if (keyspaceMetadata != null)
         {
+            Map<String, String> replication = keyspaceMetadata.getReplication();
+            String replicationClass = replication.get(STRATEGY_CLASS);
+
+            switch(replicationClass)
+            {
+                case SIMPLE_STRATEGY:
+                    return validateSimpleStrategy(replication);
+                case NETWORK_TOPOLOGY_STRATEGY:
+                    return validateNetworkTopologyStrategy(keyspace, replication);
+                default:
+                    LOG.warn("Replication strategy of type {} is not supported", replicationClass);
+                    break;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean validateSimpleStrategy(Map<String, String> replication)
+    {
+        int replicationFactor = Integer.parseInt(replication.get(SIMPLE_STRATEGY_REPLICATION_FACTOR));
+
+        return replicationFactor > 1;
+    }
+
+    private boolean validateNetworkTopologyStrategy(String keyspace, Map<String, String> replication)
+    {
+        String localDc = myLocalhost.getDatacenter();
+
+        if (localDc == null)
+        {
+            LOG.error("Local data center is not defined, ignoring keyspace {}", keyspace);
             return false;
         }
 
-        TokenRange range = tokenRanges.iterator().next();
-        return myMetadata.getReplicas(keyspace, range).size() >= 2;
+        if (!replication.containsKey(localDc))
+        {
+            LOG.info("Keyspace {} not replicated by local node, ignoring.", keyspace);
+            return false;
+        }
+
+        return definedReplicationInNetworkTopologyStrategy(replication) > 1;
+    }
+
+    private int definedReplicationInNetworkTopologyStrategy(Map<String, String> replication)
+    {
+        int replicationFactor = 0;
+
+        for (Map.Entry<String, String> replicationEntry : replication.entrySet())
+        {
+            if (!STRATEGY_CLASS.equals(replicationEntry.getKey()))
+            {
+                replicationFactor += Integer.parseInt(replicationEntry.getValue());
+            }
+        }
+
+        return replicationFactor;
     }
 }
