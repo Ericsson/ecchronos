@@ -104,6 +104,7 @@ public class RepairStateImpl implements RepairState
     private RepairStateSnapshot generateSnapshotForVnode(VnodeRepairStates vnodeRepairStates)
     {
         long repairedAt = calculateRepairedAt(vnodeRepairStates);
+
         VnodeRepairStates updatedVnodeRepairStates = vnodeRepairStates.combineWithRepairedAt(repairedAt);
 
         List<VnodeRepairState> repairableVnodes = vnodeRepairStates.getVnodeRepairStates().stream()
@@ -111,12 +112,12 @@ public class RepairStateImpl implements RepairState
                 .filter(this::vnodeIsRepairable)
                 .collect(Collectors.toList());
 
-        ReplicaRepairGroup replicaRepairGroup = myReplicaRepairGroupFactory.generateReplicaRepairGroup(repairableVnodes);
+        List<ReplicaRepairGroup> replicaRepairGroups = myReplicaRepairGroupFactory.generateReplicaRepairGroups(repairableVnodes);
 
         return RepairStateSnapshot.newBuilder()
                 .withLastRepairedAt(repairedAt)
                 .withVnodeRepairStates(updatedVnodeRepairStates)
-                .withReplicaRepairGroup(replicaRepairGroup)
+                .withReplicaRepairGroups(replicaRepairGroups)
                 .build();
     }
 
