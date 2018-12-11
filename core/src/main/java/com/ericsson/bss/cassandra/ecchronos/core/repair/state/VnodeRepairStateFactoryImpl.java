@@ -22,7 +22,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -68,18 +70,20 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
 
     private VnodeRepairStates generateVnodeRepairStates(long lastRepairedAt, RepairStateSnapshot previous, Iterator<RepairEntry> repairEntryIterator, Map<LongTokenRange, ImmutableSet<Host>> tokenRangeToReplicaMap)
     {
-        VnodeRepairStates.Builder vnodeRepairStatusesBuilder = VnodeRepairStates.newBuilder();
-
-        if (previous != null)
-        {
-            vnodeRepairStatusesBuilder.combineVnodeRepairStates(previous.getVnodeRepairStates().getVnodeRepairStates());
-        }
+        List<VnodeRepairState> vnodeRepairStatesBase = new ArrayList<>();
 
         for (Map.Entry<LongTokenRange, ImmutableSet<Host>> entry : tokenRangeToReplicaMap.entrySet())
         {
             LongTokenRange longTokenRange = entry.getKey();
             Set<Host> replicas = entry.getValue();
-            vnodeRepairStatusesBuilder.combineVnodeRepairState(new VnodeRepairState(longTokenRange, replicas, lastRepairedAt));
+            vnodeRepairStatesBase.add(new VnodeRepairState(longTokenRange, replicas, lastRepairedAt));
+        }
+
+        VnodeRepairStates.Builder vnodeRepairStatusesBuilder = VnodeRepairStates.newBuilder(vnodeRepairStatesBase);
+
+        if (previous != null)
+        {
+            vnodeRepairStatusesBuilder.updateVnodeRepairStates(previous.getVnodeRepairStates().getVnodeRepairStates());
         }
 
         while(repairEntryIterator.hasNext())
@@ -90,7 +94,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
 
             VnodeRepairState vnodeRepairState = new VnodeRepairState(longTokenRange, replicas, repairEntry.getStartedAt());
 
-            vnodeRepairStatusesBuilder.combineVnodeRepairState(vnodeRepairState);
+            vnodeRepairStatusesBuilder.updateVnodeRepairState(vnodeRepairState);
         }
 
         return vnodeRepairStatusesBuilder.build();

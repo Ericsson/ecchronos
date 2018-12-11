@@ -29,6 +29,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -82,8 +83,7 @@ public class TestRepairStateImpl
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), Sets.newHashSet(host), VnodeRepairState.UNREPAIRED);
 
-        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder()
-                .combineVnodeRepairState(vnodeRepairState)
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Collections.singletonList(vnodeRepairState))
                 .build();
 
         when(mockVnodeRepairStateFactory.calculateNewState(eq(tableReference), isNull(RepairStateSnapshot.class))).thenReturn(vnodeRepairStates);
@@ -116,9 +116,7 @@ public class TestRepairStateImpl
         VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), Sets.newHashSet(host), VnodeRepairState.UNREPAIRED);
         VnodeRepairState repairedVnodeRepairState = new VnodeRepairState(new LongTokenRange(2, 3), Sets.newHashSet(host), now);
 
-        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder()
-                .combineVnodeRepairState(vnodeRepairState)
-                .combineVnodeRepairState(repairedVnodeRepairState)
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Arrays.asList(vnodeRepairState, repairedVnodeRepairState))
                 .build();
 
         when(mockVnodeRepairStateFactory.calculateNewState(eq(tableReference), isNull(RepairStateSnapshot.class))).thenReturn(vnodeRepairStates);
@@ -145,8 +143,7 @@ public class TestRepairStateImpl
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), Sets.newHashSet(mockHost("DC1")), expectedRepairedAt);
 
-        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder()
-                .combineVnodeRepairState(vnodeRepairState)
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Collections.singletonList(vnodeRepairState))
                 .build();
 
         when(mockVnodeRepairStateFactory.calculateNewState(eq(tableReference), isNull(RepairStateSnapshot.class))).thenReturn(vnodeRepairStates);
