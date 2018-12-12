@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 
@@ -29,6 +30,7 @@ public final class RepairProperties
     private static final String CONFIG_REPAIR_ALARM_WARN_BASE = "repair.alarm.warn";
     private static final String CONFIG_REPAIR_ALARM_ERROR_BASE = "repair.alarm.error";
     private static final String CONFIG_REPAIR_LOCK_TYPE = "repair.lock.type";
+    private static final String CONFIG_REPAIR_LAZINESS = "repair.laziness";
 
     private static final String DEFAULT_REPAIR_INTERVAL_TIMEUNIT = "days";
     private static final String DEFAULT_REPAIR_INTERVAL_DURATION = "7";
@@ -39,6 +41,7 @@ public final class RepairProperties
     private static final String DEFAULT_REPAIR_ERROR_TIMEUNIT = "days";
     private static final String DEFAULT_REPAIR_ERROR_DURATION = "10";
     private static final String DEFAULT_REPAIR_LOCK_TYPE = "vnode";
+    private static final String DEFAULT_REPAIR_LAZINESS = Double.toString(RepairConfiguration.NO_LAZY_SLEEP);
 
     private final long myRepairIntervalInMs;
     private final RepairOptions.RepairType myRepairType;
@@ -46,10 +49,12 @@ public final class RepairProperties
     private final long myRepairAlarmWarnInMs;
     private final long myRepairAlarmErrorInMs;
     private final RepairLockType myRepairLockType;
+    private final double myRepairLaziness;
 
     private RepairProperties(long repairIntervalInMs,
                              RepairOptions.RepairType repairType, RepairOptions.RepairParallelism repairParallelism,
-                             long repairAlarmWarnInMs, long repairAlarmErrorInMs, RepairLockType repairLockType)
+                             long repairAlarmWarnInMs, long repairAlarmErrorInMs, RepairLockType repairLockType,
+                             double repairLaziness)
     {
         myRepairIntervalInMs = repairIntervalInMs;
         myRepairType = repairType;
@@ -57,6 +62,7 @@ public final class RepairProperties
         myRepairAlarmWarnInMs = repairAlarmWarnInMs;
         myRepairAlarmErrorInMs = repairAlarmErrorInMs;
         myRepairLockType = repairLockType;
+        myRepairLaziness = repairLaziness;
     }
 
     public long getRepairIntervalInMs()
@@ -87,6 +93,11 @@ public final class RepairProperties
     public RepairLockType getRepairLockType()
     {
         return myRepairLockType;
+    }
+
+    public double getRepairLaziness()
+    {
+        return myRepairLaziness;
     }
 
     @Override
@@ -139,8 +150,10 @@ public final class RepairProperties
             throw new ConfigurationException("Unknown repair lock type specified in '" + CONFIG_REPAIR_LOCK_TYPE + "'", e);
         }
 
+        double repairLaziness = Double.parseDouble(properties.getProperty(CONFIG_REPAIR_LAZINESS, DEFAULT_REPAIR_LAZINESS));
+
         return new RepairProperties(repairIntervalInMs, repairType, repairParallelism, repairAlarmWarnInMs,
-                repairAlarmErrorInMs, repairLockType);
+                repairAlarmErrorInMs, repairLockType, repairLaziness);
     }
 
     private static long parseTimeUnitToMs(Properties properties, String baseProperty,

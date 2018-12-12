@@ -94,6 +94,8 @@ public class RepairTask implements NotificationListener
     public void execute() throws ScheduledJobException
     {
         long start = System.nanoTime();
+        long end;
+        long executionNanos;
         boolean successful = true;
 
         try (JmxProxy proxy = myJmxProxyFactory.connect())
@@ -115,9 +117,31 @@ public class RepairTask implements NotificationListener
                 myHangPreventFuture.cancel(false);
                 myHangPreventFuture = null;
             }
-            long end = System.nanoTime();
+            end = System.nanoTime();
+            executionNanos = end - start;
 
-            myTableRepairMetrics.repairTiming(myTableReference, end - start, TimeUnit.NANOSECONDS, successful);
+            myTableRepairMetrics.repairTiming(myTableReference, executionNanos, TimeUnit.NANOSECONDS, successful);
+        }
+
+        lazySleep(executionNanos);
+    }
+
+    private void lazySleep(long executionNanos) throws ScheduledJobException
+    {
+        if (myRepairConfiguration.getRepairLaziness() != RepairConfiguration.NO_LAZY_SLEEP)
+        {
+            double sleepDurationNanos = executionNanos * myRepairConfiguration.getRepairLaziness();
+            long sleepDurationMs = TimeUnit.NANOSECONDS.toMillis((long) sleepDurationNanos);
+
+            try
+            {
+                Thread.sleep(sleepDurationMs);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+                throw new ScheduledJobException(e);
+            }
         }
     }
 

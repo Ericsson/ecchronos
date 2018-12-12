@@ -68,6 +68,7 @@ public class DefaultRepairConfigurationProviderComponent
                     .withRepairInterval(repairInterval, TimeUnit.SECONDS)
                     .withRepairWarningTime(configuration.repairWarningSeconds(), TimeUnit.SECONDS)
                     .withRepairErrorTime(configuration.repairErrorSeconds(), TimeUnit.SECONDS)
+                    .withRepairLaziness(configuration.repairLaziness())
                     .build();
 
             myDelegateRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()
@@ -109,5 +110,8 @@ public class DefaultRepairConfigurationProviderComponent
 
         @AttributeDefinition (name = "Repair paralleism", description = "The repair parallelism to use")
         RepairOptions.RepairParallelism repairParallelism() default RepairOptions.RepairParallelism.PARALLEL;
+
+        @AttributeDefinition (name = "Repair laziness", description = "If set higher than 0.0 repair session will sleep between execution of new repair session. 0.01->1.0 means 1%->100% of repair time.")
+        double repairLaziness() default RepairConfiguration.NO_LAZY_SLEEP;
     }
 }

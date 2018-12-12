@@ -22,11 +22,14 @@ import java.util.concurrent.TimeUnit;
  */
 public class RepairConfiguration
 {
+    public static final double NO_LAZY_SLEEP = 0.0d;
+
     private static final long DEFAULT_REPAIR_INTERVAL_IN_MS = TimeUnit.DAYS.toMillis(7);
     private static final long DEFAULT_REPAIR_WARNING_TIME_IN_MS = TimeUnit.DAYS.toMillis(8);
     private static final long DEFAULT_REPAIR_ERROR_TIME_IN_MS = TimeUnit.DAYS.toMillis(10);
     private static final RepairOptions.RepairParallelism DEFAULT_REPAIR_PARALLELISM = RepairOptions.RepairParallelism.PARALLEL;
     private static final RepairOptions.RepairType DEFAULT_REPAIR_TYPE = RepairOptions.RepairType.VNODE;
+    private static final double DEFAULT_LAZINESS = NO_LAZY_SLEEP;
 
     public static final RepairConfiguration DEFAULT = newBuilder().build();
 
@@ -35,6 +38,7 @@ public class RepairConfiguration
     private final long myRepairIntervalInMs;
     private final long myRepairWarningTimeInMs;
     private final long myRepairErrorTimeInMs;
+    private final double myRepairLaziness;
 
     private RepairConfiguration(Builder builder)
     {
@@ -43,6 +47,7 @@ public class RepairConfiguration
         myRepairIntervalInMs = builder.myRepairIntervalInMs;
         myRepairWarningTimeInMs = builder.myRepairWarningTimeInMs;
         myRepairErrorTimeInMs = builder.myRepairErrorTimeInMs;
+        myRepairLaziness = builder.myRepairLaziness;
     }
 
     public RepairOptions.RepairParallelism getRepairParallelism()
@@ -68,6 +73,11 @@ public class RepairConfiguration
     public long getRepairErrorTimeInMs()
     {
         return myRepairErrorTimeInMs;
+    }
+
+    public double getRepairLaziness()
+    {
+        return myRepairLaziness;
     }
 
     public static Builder newBuilder(RepairConfiguration from)
@@ -117,6 +127,7 @@ public class RepairConfiguration
         private long myRepairIntervalInMs = DEFAULT_REPAIR_INTERVAL_IN_MS;
         private long myRepairWarningTimeInMs = DEFAULT_REPAIR_WARNING_TIME_IN_MS;
         private long myRepairErrorTimeInMs = DEFAULT_REPAIR_ERROR_TIME_IN_MS;
+        private double myRepairLaziness = DEFAULT_LAZINESS;
 
         public Builder()
         {
@@ -200,6 +211,12 @@ public class RepairConfiguration
         public Builder withRepairErrorTime(long repairErrorTime, TimeUnit timeUnit)
         {
             myRepairErrorTimeInMs = timeUnit.toMillis(repairErrorTime);
+            return this;
+        }
+
+        public Builder withRepairLaziness(double repairLaziness)
+        {
+            myRepairLaziness = repairLaziness;
             return this;
         }
 
