@@ -68,6 +68,7 @@ public class DefaultRepairConfigurationProviderComponent
                     .withRepairInterval(repairInterval, TimeUnit.SECONDS)
                     .withRepairWarningTime(configuration.repairWarningSeconds(), TimeUnit.SECONDS)
                     .withRepairErrorTime(configuration.repairErrorSeconds(), TimeUnit.SECONDS)
+                    .withRepairUnwindRatio(configuration.repairUnwindRatio())
                     .build();
 
             myDelegateRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()
@@ -109,5 +110,8 @@ public class DefaultRepairConfigurationProviderComponent
 
         @AttributeDefinition (name = "Repair paralleism", description = "The repair parallelism to use")
         RepairOptions.RepairParallelism repairParallelism() default RepairOptions.RepairParallelism.PARALLEL;
+
+        @AttributeDefinition (name = "Repair unwind ratio", description = "The ratio of time to wait before starting the next repair. The amount of time to wait is based on the time it took to perform the repair. A value of 1.0 gives 100% of the repair time as wait time.")
+        double repairUnwindRatio() default RepairConfiguration.NO_UNWIND;
     }
 }

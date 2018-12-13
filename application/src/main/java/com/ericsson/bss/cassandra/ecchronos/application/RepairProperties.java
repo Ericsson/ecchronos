@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 
@@ -29,6 +30,7 @@ public final class RepairProperties
     private static final String CONFIG_REPAIR_ALARM_WARN_BASE = "repair.alarm.warn";
     private static final String CONFIG_REPAIR_ALARM_ERROR_BASE = "repair.alarm.error";
     private static final String CONFIG_REPAIR_LOCK_TYPE = "repair.lock.type";
+    private static final String CONFIG_REPAIR_UNWIND_RATIO = "repair.unwind.ratio";
 
     private static final String DEFAULT_REPAIR_INTERVAL_TIMEUNIT = "days";
     private static final String DEFAULT_REPAIR_INTERVAL_DURATION = "7";
@@ -39,6 +41,7 @@ public final class RepairProperties
     private static final String DEFAULT_REPAIR_ERROR_TIMEUNIT = "days";
     private static final String DEFAULT_REPAIR_ERROR_DURATION = "10";
     private static final String DEFAULT_REPAIR_LOCK_TYPE = "vnode";
+    private static final String DEFAULT_REPAIR_UNWIND_RATIO = Double.toString(RepairConfiguration.NO_UNWIND);
 
     private final long myRepairIntervalInMs;
     private final RepairOptions.RepairType myRepairType;
@@ -46,10 +49,12 @@ public final class RepairProperties
     private final long myRepairAlarmWarnInMs;
     private final long myRepairAlarmErrorInMs;
     private final RepairLockType myRepairLockType;
+    private final double myRepairUnwindRatio;
 
     private RepairProperties(long repairIntervalInMs,
                              RepairOptions.RepairType repairType, RepairOptions.RepairParallelism repairParallelism,
-                             long repairAlarmWarnInMs, long repairAlarmErrorInMs, RepairLockType repairLockType)
+                             long repairAlarmWarnInMs, long repairAlarmErrorInMs, RepairLockType repairLockType,
+                             double repairUnwindRatio)
     {
         myRepairIntervalInMs = repairIntervalInMs;
         myRepairType = repairType;
@@ -57,6 +62,7 @@ public final class RepairProperties
         myRepairAlarmWarnInMs = repairAlarmWarnInMs;
         myRepairAlarmErrorInMs = repairAlarmErrorInMs;
         myRepairLockType = repairLockType;
+        myRepairUnwindRatio = repairUnwindRatio;
     }
 
     public long getRepairIntervalInMs()
@@ -89,11 +95,16 @@ public final class RepairProperties
         return myRepairLockType;
     }
 
+    public double getRepairUnwindRatio()
+    {
+        return myRepairUnwindRatio;
+    }
+
     @Override
     public String toString()
     {
-        return String.format("(intervalMs=%d,repairType=%s,repairParallelism=%s,repairWarnMs=%d,repairErrorMs=%d)", myRepairIntervalInMs,
-                myRepairType, myRepairParallelism, myRepairAlarmWarnInMs, myRepairAlarmErrorInMs);
+        return String.format("(intervalMs=%d,repairType=%s,repairParallelism=%s,repairWarnMs=%d,repairErrorMs=%d,repairUnwindRatio=%.2f)", myRepairIntervalInMs,
+                myRepairType, myRepairParallelism, myRepairAlarmWarnInMs, myRepairAlarmErrorInMs, myRepairUnwindRatio);
     }
 
     public static RepairProperties from(Properties properties) throws ConfigurationException
@@ -139,8 +150,10 @@ public final class RepairProperties
             throw new ConfigurationException("Unknown repair lock type specified in '" + CONFIG_REPAIR_LOCK_TYPE + "'", e);
         }
 
+        double repairUnwindRatio = Double.parseDouble(properties.getProperty(CONFIG_REPAIR_UNWIND_RATIO, DEFAULT_REPAIR_UNWIND_RATIO));
+
         return new RepairProperties(repairIntervalInMs, repairType, repairParallelism, repairAlarmWarnInMs,
-                repairAlarmErrorInMs, repairLockType);
+                repairAlarmErrorInMs, repairLockType, repairUnwindRatio);
     }
 
     private static long parseTimeUnitToMs(Properties properties, String baseProperty,
