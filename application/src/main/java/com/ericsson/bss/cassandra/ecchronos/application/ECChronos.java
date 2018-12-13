@@ -124,7 +124,7 @@ public class ECChronos implements Closeable
                 .withParallelism(repairProperties.getRepairParallelism())
                 .withRepairWarningTime(repairProperties.getRepairAlarmWarnInMs(), TimeUnit.MILLISECONDS)
                 .withRepairErrorTime(repairProperties.getRepairAlarmErrorInMs(), TimeUnit.MILLISECONDS)
-                .withRepairLaziness(repairProperties.getRepairLaziness())
+                .withUnwindRatio(repairProperties.getUnwindRatio())
                 .build();
     }
 

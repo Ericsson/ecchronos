@@ -22,14 +22,14 @@ import java.util.concurrent.TimeUnit;
  */
 public class RepairConfiguration
 {
-    public static final double NO_LAZY_SLEEP = 0.0d;
+    public static final double NO_UNWIND = 0.0d;
 
     private static final long DEFAULT_REPAIR_INTERVAL_IN_MS = TimeUnit.DAYS.toMillis(7);
     private static final long DEFAULT_REPAIR_WARNING_TIME_IN_MS = TimeUnit.DAYS.toMillis(8);
     private static final long DEFAULT_REPAIR_ERROR_TIME_IN_MS = TimeUnit.DAYS.toMillis(10);
     private static final RepairOptions.RepairParallelism DEFAULT_REPAIR_PARALLELISM = RepairOptions.RepairParallelism.PARALLEL;
     private static final RepairOptions.RepairType DEFAULT_REPAIR_TYPE = RepairOptions.RepairType.VNODE;
-    private static final double DEFAULT_LAZINESS = NO_LAZY_SLEEP;
+    private static final double DEFAULT_UNWIND_RATIO = NO_UNWIND;
 
     public static final RepairConfiguration DEFAULT = newBuilder().build();
 
@@ -38,7 +38,7 @@ public class RepairConfiguration
     private final long myRepairIntervalInMs;
     private final long myRepairWarningTimeInMs;
     private final long myRepairErrorTimeInMs;
-    private final double myRepairLaziness;
+    private final double myUnwindRatio;
 
     private RepairConfiguration(Builder builder)
     {
@@ -47,7 +47,7 @@ public class RepairConfiguration
         myRepairIntervalInMs = builder.myRepairIntervalInMs;
         myRepairWarningTimeInMs = builder.myRepairWarningTimeInMs;
         myRepairErrorTimeInMs = builder.myRepairErrorTimeInMs;
-        myRepairLaziness = builder.myRepairLaziness;
+        myUnwindRatio = builder.myUnwindRatio;
     }
 
     public RepairOptions.RepairParallelism getRepairParallelism()
@@ -75,9 +75,9 @@ public class RepairConfiguration
         return myRepairErrorTimeInMs;
     }
 
-    public double getRepairLaziness()
+    public double getUnwindRatio()
     {
-        return myRepairLaziness;
+        return myUnwindRatio;
     }
 
     public static Builder newBuilder(RepairConfiguration from)
@@ -93,12 +93,13 @@ public class RepairConfiguration
     @Override
     public String toString()
     {
-        return String.format("RepairConfiguration(interval=%dms,warning=%dms,error=%dms,parallelism=%s,type=%s)",
+        return String.format("RepairConfiguration(interval=%dms,warning=%dms,error=%dms,parallelism=%s,type=%s,unwindRatio=%.2f)",
                 myRepairIntervalInMs,
                 myRepairWarningTimeInMs,
                 myRepairErrorTimeInMs,
                 myRepairParallelism,
-                myRepairType);
+                myRepairType,
+                myUnwindRatio);
     }
 
     @Override
@@ -127,7 +128,7 @@ public class RepairConfiguration
         private long myRepairIntervalInMs = DEFAULT_REPAIR_INTERVAL_IN_MS;
         private long myRepairWarningTimeInMs = DEFAULT_REPAIR_WARNING_TIME_IN_MS;
         private long myRepairErrorTimeInMs = DEFAULT_REPAIR_ERROR_TIME_IN_MS;
-        private double myRepairLaziness = DEFAULT_LAZINESS;
+        private double myUnwindRatio = DEFAULT_UNWIND_RATIO;
 
         public Builder()
         {
@@ -214,9 +215,9 @@ public class RepairConfiguration
             return this;
         }
 
-        public Builder withRepairLaziness(double repairLaziness)
+        public Builder withUnwindRatio(double unwindRatio)
         {
-            myRepairLaziness = repairLaziness;
+            myUnwindRatio = unwindRatio;
             return this;
         }
 

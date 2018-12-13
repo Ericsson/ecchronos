@@ -32,7 +32,7 @@ public class TestRepairProperties
     private static final long DEFAULT_ALARM_WARN_IN_MS = TimeUnit.DAYS.toMillis(8);
     private static final long DEFAULT_ALARM_ERROR_IN_MS = TimeUnit.DAYS.toMillis(10);
     private static final RepairLockType DEFAULT_REPAIR_LOCK_TYPE = RepairLockType.VNODE;
-    private static final double DEFAULT_REPAIR_LAZINESS = 0.0d;
+    private static final double DEFAULT_REPAIR_UNWIND_RATIO = 0.0d;
 
     @Test
     public void testDefaultValues() throws ConfigurationException
@@ -47,7 +47,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
-        assertThat(repairProperties.getRepairLaziness()).isEqualTo(DEFAULT_REPAIR_LAZINESS);
+        assertThat(repairProperties.getUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
     }
 
     @Test
@@ -67,7 +67,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
-        assertThat(repairProperties.getRepairLaziness()).isEqualTo(DEFAULT_REPAIR_LAZINESS);
+        assertThat(repairProperties.getUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
     }
 
     @Test
@@ -86,7 +86,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
-        assertThat(repairProperties.getRepairLaziness()).isEqualTo(DEFAULT_REPAIR_LAZINESS);
+        assertThat(repairProperties.getUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
     }
 
     @Test
@@ -105,7 +105,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
-        assertThat(repairProperties.getRepairLaziness()).isEqualTo(DEFAULT_REPAIR_LAZINESS);
+        assertThat(repairProperties.getUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
     }
 
     @Test
@@ -125,7 +125,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(expectedAlarmWarnInMs);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
-        assertThat(repairProperties.getRepairLaziness()).isEqualTo(DEFAULT_REPAIR_LAZINESS);
+        assertThat(repairProperties.getUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
     }
 
     @Test
@@ -145,7 +145,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(expectedAlarmErrorInMs);
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
-        assertThat(repairProperties.getRepairLaziness()).isEqualTo(DEFAULT_REPAIR_LAZINESS);
+        assertThat(repairProperties.getUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
     }
 
     @Test
@@ -162,14 +162,14 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
         assertThat(repairProperties.getRepairLockType()).isEqualTo(RepairLockType.DATACENTER_AND_VNODE);
-        assertThat(repairProperties.getRepairLaziness()).isEqualTo(DEFAULT_REPAIR_LAZINESS);
+        assertThat(repairProperties.getUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
     }
 
     @Test
-    public void testSetRepairLaziness() throws ConfigurationException
+    public void testSetRepairUnwindRatio() throws ConfigurationException
     {
         Properties properties = new Properties();
-        properties.put("repair.laziness", "1.0");
+        properties.put("repair.unwind.ratio", "1.0");
 
         RepairProperties repairProperties = RepairProperties.from(properties);
 
@@ -179,7 +179,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
-        assertThat(repairProperties.getRepairLaziness()).isEqualTo(1.0d);
+        assertThat(repairProperties.getUnwindRatio()).isEqualTo(1.0d);
     }
 
     @Test
@@ -201,7 +201,7 @@ public class TestRepairProperties
         properties.put("repair.alarm.error.time.unit", "days");
         properties.put("repair.alarm.error.time", "7");
         properties.put("repair.lock.type", "datacenter");
-        properties.put("repair.laziness", "1.0");
+        properties.put("repair.unwind.ratio", "1.0");
 
         RepairProperties repairProperties = RepairProperties.from(properties);
 
@@ -211,7 +211,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(expectedAlarmWarnInMs);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(expectedAlarmErrorInMs);
         assertThat(repairProperties.getRepairLockType()).isEqualTo(RepairLockType.DATACENTER);
-        assertThat(repairProperties.getRepairLaziness()).isEqualTo(1.0d);
+        assertThat(repairProperties.getUnwindRatio()).isEqualTo(1.0d);
 
     }
 

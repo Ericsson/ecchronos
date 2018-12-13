@@ -30,7 +30,7 @@ public final class RepairProperties
     private static final String CONFIG_REPAIR_ALARM_WARN_BASE = "repair.alarm.warn";
     private static final String CONFIG_REPAIR_ALARM_ERROR_BASE = "repair.alarm.error";
     private static final String CONFIG_REPAIR_LOCK_TYPE = "repair.lock.type";
-    private static final String CONFIG_REPAIR_LAZINESS = "repair.laziness";
+    private static final String CONFIG_REPAIR_UNWIND_RATIO = "repair.unwind.ratio";
 
     private static final String DEFAULT_REPAIR_INTERVAL_TIMEUNIT = "days";
     private static final String DEFAULT_REPAIR_INTERVAL_DURATION = "7";
@@ -41,7 +41,7 @@ public final class RepairProperties
     private static final String DEFAULT_REPAIR_ERROR_TIMEUNIT = "days";
     private static final String DEFAULT_REPAIR_ERROR_DURATION = "10";
     private static final String DEFAULT_REPAIR_LOCK_TYPE = "vnode";
-    private static final String DEFAULT_REPAIR_LAZINESS = Double.toString(RepairConfiguration.NO_LAZY_SLEEP);
+    private static final String DEFAULT_REPAIR_UNWIND_RATIO = Double.toString(RepairConfiguration.NO_UNWIND);
 
     private final long myRepairIntervalInMs;
     private final RepairOptions.RepairType myRepairType;
@@ -49,12 +49,12 @@ public final class RepairProperties
     private final long myRepairAlarmWarnInMs;
     private final long myRepairAlarmErrorInMs;
     private final RepairLockType myRepairLockType;
-    private final double myRepairLaziness;
+    private final double myUnwindRatio;
 
     private RepairProperties(long repairIntervalInMs,
                              RepairOptions.RepairType repairType, RepairOptions.RepairParallelism repairParallelism,
                              long repairAlarmWarnInMs, long repairAlarmErrorInMs, RepairLockType repairLockType,
-                             double repairLaziness)
+                             double unwindRatio)
     {
         myRepairIntervalInMs = repairIntervalInMs;
         myRepairType = repairType;
@@ -62,7 +62,7 @@ public final class RepairProperties
         myRepairAlarmWarnInMs = repairAlarmWarnInMs;
         myRepairAlarmErrorInMs = repairAlarmErrorInMs;
         myRepairLockType = repairLockType;
-        myRepairLaziness = repairLaziness;
+        myUnwindRatio = unwindRatio;
     }
 
     public long getRepairIntervalInMs()
@@ -95,9 +95,9 @@ public final class RepairProperties
         return myRepairLockType;
     }
 
-    public double getRepairLaziness()
+    public double getUnwindRatio()
     {
-        return myRepairLaziness;
+        return myUnwindRatio;
     }
 
     @Override
@@ -150,10 +150,10 @@ public final class RepairProperties
             throw new ConfigurationException("Unknown repair lock type specified in '" + CONFIG_REPAIR_LOCK_TYPE + "'", e);
         }
 
-        double repairLaziness = Double.parseDouble(properties.getProperty(CONFIG_REPAIR_LAZINESS, DEFAULT_REPAIR_LAZINESS));
+        double unwindRatio = Double.parseDouble(properties.getProperty(CONFIG_REPAIR_UNWIND_RATIO, DEFAULT_REPAIR_UNWIND_RATIO));
 
         return new RepairProperties(repairIntervalInMs, repairType, repairParallelism, repairAlarmWarnInMs,
-                repairAlarmErrorInMs, repairLockType, repairLaziness);
+                repairAlarmErrorInMs, repairLockType, unwindRatio);
     }
 
     private static long parseTimeUnitToMs(Properties properties, String baseProperty,
