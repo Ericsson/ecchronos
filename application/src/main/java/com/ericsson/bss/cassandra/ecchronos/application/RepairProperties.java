@@ -49,12 +49,12 @@ public final class RepairProperties
     private final long myRepairAlarmWarnInMs;
     private final long myRepairAlarmErrorInMs;
     private final RepairLockType myRepairLockType;
-    private final double myUnwindRatio;
+    private final double myRepairUnwindRatio;
 
     private RepairProperties(long repairIntervalInMs,
                              RepairOptions.RepairType repairType, RepairOptions.RepairParallelism repairParallelism,
                              long repairAlarmWarnInMs, long repairAlarmErrorInMs, RepairLockType repairLockType,
-                             double unwindRatio)
+                             double repairUnwindRatio)
     {
         myRepairIntervalInMs = repairIntervalInMs;
         myRepairType = repairType;
@@ -62,7 +62,7 @@ public final class RepairProperties
         myRepairAlarmWarnInMs = repairAlarmWarnInMs;
         myRepairAlarmErrorInMs = repairAlarmErrorInMs;
         myRepairLockType = repairLockType;
-        myUnwindRatio = unwindRatio;
+        myRepairUnwindRatio = repairUnwindRatio;
     }
 
     public long getRepairIntervalInMs()
@@ -95,16 +95,16 @@ public final class RepairProperties
         return myRepairLockType;
     }
 
-    public double getUnwindRatio()
+    public double getRepairUnwindRatio()
     {
-        return myUnwindRatio;
+        return myRepairUnwindRatio;
     }
 
     @Override
     public String toString()
     {
-        return String.format("(intervalMs=%d,repairType=%s,repairParallelism=%s,repairWarnMs=%d,repairErrorMs=%d)", myRepairIntervalInMs,
-                myRepairType, myRepairParallelism, myRepairAlarmWarnInMs, myRepairAlarmErrorInMs);
+        return String.format("(intervalMs=%d,repairType=%s,repairParallelism=%s,repairWarnMs=%d,repairErrorMs=%d,repairUnwindRatio=%.2f)", myRepairIntervalInMs,
+                myRepairType, myRepairParallelism, myRepairAlarmWarnInMs, myRepairAlarmErrorInMs, myRepairUnwindRatio);
     }
 
     public static RepairProperties from(Properties properties) throws ConfigurationException
@@ -150,10 +150,10 @@ public final class RepairProperties
             throw new ConfigurationException("Unknown repair lock type specified in '" + CONFIG_REPAIR_LOCK_TYPE + "'", e);
         }
 
-        double unwindRatio = Double.parseDouble(properties.getProperty(CONFIG_REPAIR_UNWIND_RATIO, DEFAULT_REPAIR_UNWIND_RATIO));
+        double repairUnwindRatio = Double.parseDouble(properties.getProperty(CONFIG_REPAIR_UNWIND_RATIO, DEFAULT_REPAIR_UNWIND_RATIO));
 
         return new RepairProperties(repairIntervalInMs, repairType, repairParallelism, repairAlarmWarnInMs,
-                repairAlarmErrorInMs, repairLockType, unwindRatio);
+                repairAlarmErrorInMs, repairLockType, repairUnwindRatio);
     }
 
     private static long parseTimeUnitToMs(Properties properties, String baseProperty,

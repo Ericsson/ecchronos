@@ -41,7 +41,7 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairIntervalInMs()).isEqualTo(DEFAULT_REPAIR_INTERVAL_IN_MS);
         assertThat(repairConfiguration.getRepairWarningTimeInMs()).isEqualTo(DEFAULT_REPAIR_WARNING_TIME_IN_MS);
         assertThat(repairConfiguration.getRepairErrorTimeInMs()).isEqualTo(DEFAULT_REPAIR_ERROR_TIME_IN_MS);
-        assertThat(repairConfiguration.getUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
+        assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
     }
 
     @Test
@@ -56,7 +56,7 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairIntervalInMs()).isEqualTo(1000L);
         assertThat(repairConfiguration.getRepairWarningTimeInMs()).isEqualTo(DEFAULT_REPAIR_WARNING_TIME_IN_MS);
         assertThat(repairConfiguration.getRepairErrorTimeInMs()).isEqualTo(DEFAULT_REPAIR_ERROR_TIME_IN_MS);
-        assertThat(repairConfiguration.getUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
+        assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
     }
 
     @Test
@@ -71,7 +71,7 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairIntervalInMs()).isEqualTo(DEFAULT_REPAIR_INTERVAL_IN_MS);
         assertThat(repairConfiguration.getRepairWarningTimeInMs()).isEqualTo(1000L);
         assertThat(repairConfiguration.getRepairErrorTimeInMs()).isEqualTo(DEFAULT_REPAIR_ERROR_TIME_IN_MS);
-        assertThat(repairConfiguration.getUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
+        assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
     }
 
     @Test
@@ -86,7 +86,7 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairIntervalInMs()).isEqualTo(DEFAULT_REPAIR_INTERVAL_IN_MS);
         assertThat(repairConfiguration.getRepairWarningTimeInMs()).isEqualTo(DEFAULT_REPAIR_WARNING_TIME_IN_MS);
         assertThat(repairConfiguration.getRepairErrorTimeInMs()).isEqualTo(1000L);
-        assertThat(repairConfiguration.getUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
+        assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
     }
 
     @Test
@@ -101,14 +101,14 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairIntervalInMs()).isEqualTo(DEFAULT_REPAIR_INTERVAL_IN_MS);
         assertThat(repairConfiguration.getRepairWarningTimeInMs()).isEqualTo(DEFAULT_REPAIR_WARNING_TIME_IN_MS);
         assertThat(repairConfiguration.getRepairErrorTimeInMs()).isEqualTo(DEFAULT_REPAIR_ERROR_TIME_IN_MS);
-        assertThat(repairConfiguration.getUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
+        assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
     }
 
     @Test
     public void testSetRepairUnwindRatio()
     {
         RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
-                .withUnwindRatio(1.0d)
+                .withRepairUnwindRatio(1.0d)
                 .build();
 
         assertThat(repairConfiguration.getRepairParallelism()).isEqualTo(DEFAULT_REPAIR_PARALLELISM);
@@ -116,7 +116,7 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairIntervalInMs()).isEqualTo(DEFAULT_REPAIR_INTERVAL_IN_MS);
         assertThat(repairConfiguration.getRepairWarningTimeInMs()).isEqualTo(DEFAULT_REPAIR_WARNING_TIME_IN_MS);
         assertThat(repairConfiguration.getRepairErrorTimeInMs()).isEqualTo(DEFAULT_REPAIR_ERROR_TIME_IN_MS);
-        assertThat(repairConfiguration.getUnwindRatio()).isEqualTo(1.0d);
+        assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(1.0d);
     }
 
     @Test
@@ -137,6 +137,6 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairIntervalInMs()).isEqualTo(base.getRepairIntervalInMs());
         assertThat(repairConfiguration.getRepairWarningTimeInMs()).isEqualTo(1000L);
         assertThat(repairConfiguration.getRepairErrorTimeInMs()).isEqualTo(base.getRepairErrorTimeInMs());
-        assertThat(repairConfiguration.getUnwindRatio()).isEqualTo(base.getUnwindRatio());
+        assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(base.getRepairUnwindRatio());
     }
 }

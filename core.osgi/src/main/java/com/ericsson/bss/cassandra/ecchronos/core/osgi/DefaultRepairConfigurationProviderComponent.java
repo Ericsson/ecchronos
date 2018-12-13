@@ -68,7 +68,7 @@ public class DefaultRepairConfigurationProviderComponent
                     .withRepairInterval(repairInterval, TimeUnit.SECONDS)
                     .withRepairWarningTime(configuration.repairWarningSeconds(), TimeUnit.SECONDS)
                     .withRepairErrorTime(configuration.repairErrorSeconds(), TimeUnit.SECONDS)
-                    .withUnwindRatio(configuration.repairUnwindRatio())
+                    .withRepairUnwindRatio(configuration.repairUnwindRatio())
                     .build();
 
             myDelegateRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()

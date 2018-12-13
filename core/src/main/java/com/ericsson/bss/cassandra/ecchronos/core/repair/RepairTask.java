@@ -128,9 +128,9 @@ public class RepairTask implements NotificationListener
 
     private void lazySleep(long executionNanos) throws ScheduledJobException
     {
-        if (myRepairConfiguration.getUnwindRatio() != RepairConfiguration.NO_UNWIND)
+        if (myRepairConfiguration.getRepairUnwindRatio() != RepairConfiguration.NO_UNWIND)
         {
-            double sleepDurationNanos = executionNanos * myRepairConfiguration.getUnwindRatio();
+            double sleepDurationNanos = executionNanos * myRepairConfiguration.getRepairUnwindRatio();
             long sleepDurationMs = TimeUnit.NANOSECONDS.toMillis((long) sleepDurationNanos);
 
             sleepDurationMs = Math.max(sleepDurationMs, 1);

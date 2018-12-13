@@ -38,7 +38,7 @@ public class RepairConfiguration
     private final long myRepairIntervalInMs;
     private final long myRepairWarningTimeInMs;
     private final long myRepairErrorTimeInMs;
-    private final double myUnwindRatio;
+    private final double myRepairUnwindRatio;
 
     private RepairConfiguration(Builder builder)
     {
@@ -47,7 +47,7 @@ public class RepairConfiguration
         myRepairIntervalInMs = builder.myRepairIntervalInMs;
         myRepairWarningTimeInMs = builder.myRepairWarningTimeInMs;
         myRepairErrorTimeInMs = builder.myRepairErrorTimeInMs;
-        myUnwindRatio = builder.myUnwindRatio;
+        myRepairUnwindRatio = builder.myRepairUnwindRatio;
     }
 
     public RepairOptions.RepairParallelism getRepairParallelism()
@@ -75,9 +75,9 @@ public class RepairConfiguration
         return myRepairErrorTimeInMs;
     }
 
-    public double getUnwindRatio()
+    public double getRepairUnwindRatio()
     {
-        return myUnwindRatio;
+        return myRepairUnwindRatio;
     }
 
     public static Builder newBuilder(RepairConfiguration from)
@@ -99,7 +99,7 @@ public class RepairConfiguration
                 myRepairErrorTimeInMs,
                 myRepairParallelism,
                 myRepairType,
-                myUnwindRatio);
+                myRepairUnwindRatio);
     }
 
     @Override
@@ -128,7 +128,7 @@ public class RepairConfiguration
         private long myRepairIntervalInMs = DEFAULT_REPAIR_INTERVAL_IN_MS;
         private long myRepairWarningTimeInMs = DEFAULT_REPAIR_WARNING_TIME_IN_MS;
         private long myRepairErrorTimeInMs = DEFAULT_REPAIR_ERROR_TIME_IN_MS;
-        private double myUnwindRatio = DEFAULT_UNWIND_RATIO;
+        private double myRepairUnwindRatio = DEFAULT_UNWIND_RATIO;
 
         public Builder()
         {
@@ -215,9 +215,9 @@ public class RepairConfiguration
             return this;
         }
 
-        public Builder withUnwindRatio(double unwindRatio)
+        public Builder withRepairUnwindRatio(double repairUnwindRatio)
         {
-            myUnwindRatio = unwindRatio;
+            myRepairUnwindRatio = repairUnwindRatio;
             return this;
         }
 

@@ -47,7 +47,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
-        assertThat(repairProperties.getUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
+        assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
     }
 
     @Test
@@ -67,7 +67,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
-        assertThat(repairProperties.getUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
+        assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
     }
 
     @Test
@@ -86,7 +86,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
-        assertThat(repairProperties.getUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
+        assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
     }
 
     @Test
@@ -105,7 +105,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
-        assertThat(repairProperties.getUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
+        assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
     }
 
     @Test
@@ -125,7 +125,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(expectedAlarmWarnInMs);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
-        assertThat(repairProperties.getUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
+        assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
     }
 
     @Test
@@ -145,7 +145,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(expectedAlarmErrorInMs);
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
-        assertThat(repairProperties.getUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
+        assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
     }
 
     @Test
@@ -162,7 +162,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
         assertThat(repairProperties.getRepairLockType()).isEqualTo(RepairLockType.DATACENTER_AND_VNODE);
-        assertThat(repairProperties.getUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
+        assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
     }
 
     @Test
@@ -179,7 +179,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
-        assertThat(repairProperties.getUnwindRatio()).isEqualTo(1.0d);
+        assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(1.0d);
     }
 
     @Test
@@ -211,7 +211,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(expectedAlarmWarnInMs);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(expectedAlarmErrorInMs);
         assertThat(repairProperties.getRepairLockType()).isEqualTo(RepairLockType.DATACENTER);
-        assertThat(repairProperties.getUnwindRatio()).isEqualTo(1.0d);
+        assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(1.0d);
 
     }
 
