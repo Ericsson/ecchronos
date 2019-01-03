@@ -17,9 +17,11 @@ package com.ericsson.bss.cassandra.ecchronos.core;
 import java.io.Closeable;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -150,7 +152,7 @@ public class CASLockFactory implements LockFactory, Closeable
                 .value(COLUMN_NODE, bindMarker())
                 .value(COLUMN_PRIORITY, bindMarker());
 
-        Select.Where getPriorityStatement = QueryBuilder.select(COLUMN_PRIORITY)
+        Select.Where getPriorityStatement = QueryBuilder.select(COLUMN_PRIORITY, COLUMN_NODE)
                 .from(myKeyspaceName, TABLE_LOCK_PRIORITY)
                 .where(eq(COLUMN_RESOURCE, bindMarker()));
 
@@ -425,12 +427,20 @@ public class CASLockFactory implements LockFactory, Closeable
 
         private final AtomicInteger myFailedUpdateAttempts = new AtomicInteger();
 
+        private final int myLocallyHighestPriority;
+        private final int globalHighPriority;
+
         CASLock(String dataCenter, String resource, int priority, Map<String, String> metadata)
         {
             myDataCenter = dataCenter;
             myResource = resource;
             myPriority = priority;
             myMetadata = metadata;
+
+            List<NodePriority> nodePriorities = computePriorities();
+
+            myLocallyHighestPriority = nodePriorities.stream().filter(n -> n.getUuid().equals(myUuid)).map(NodePriority::getPriority).findFirst().orElse(myPriority);
+            globalHighPriority = nodePriorities.stream().filter(n -> !n.getUuid().equals(myUuid)).map(NodePriority::getPriority).max(Integer::compare).orElse(myPriority);
         }
 
         public boolean lock()
@@ -482,7 +492,15 @@ public class CASLockFactory implements LockFactory, Closeable
             {
                 future.cancel(true);
                 execute(myDataCenter, myRemoveLockStatement.bind(myResource, myUuid));
-                execute(myDataCenter, myRemoveLockPriorityStatement.bind(myResource, myUuid));
+
+                if (myLocallyHighestPriority <= myPriority)
+                {
+                    execute(myDataCenter, myRemoveLockPriorityStatement.bind(myResource, myUuid));
+                }
+                else
+                {
+                    LOG.debug("Locally highest priority ({}) is higher than current ({}), will not remove", myLocallyHighestPriority, myPriority);
+                }
             }
         }
 
@@ -498,11 +516,13 @@ public class CASLockFactory implements LockFactory, Closeable
 
         private boolean compete()
         {
-            insertPriority();
+            if (myLocallyHighestPriority <= myPriority)
+            {
+                insertPriority();
+            }
 
-            int highestPriority = getHighestPriority();
-            LOG.trace("Highest priority for resource {}: {}", myResource, highestPriority);
-            return myPriority >= highestPriority;
+            LOG.trace("Highest priority for resource {}: {}", myResource, globalHighPriority);
+            return myPriority >= globalHighPriority;
         }
 
         private void insertPriority()
@@ -515,28 +535,48 @@ public class CASLockFactory implements LockFactory, Closeable
             return execute(myDataCenter, myLockStatement.bind(myResource, myUuid, myMetadata)).wasApplied();
         }
 
-        private int getHighestPriority()
+        private List<NodePriority> computePriorities()
         {
-            int highest = -1;
+            List<NodePriority> nodePriorities = new ArrayList<>();
 
             ResultSet resultSet = execute(myDataCenter, myGetPriorityStatement.bind(myResource));
 
             for (Row row : resultSet)
             {
-                int priority = row.getInt("priority");
+                int priority = row.getInt(COLUMN_PRIORITY);
+                UUID hostId = row.getUUID(COLUMN_NODE);
 
-                if (priority > highest)
-                {
-                    highest = priority;
-                }
+                nodePriorities.add(new NodePriority(hostId, priority));
             }
 
-            return highest;
+            return nodePriorities;
         }
 
         int getFailedAttempts()
         {
             return myFailedUpdateAttempts.get();
+        }
+    }
+
+    public static final class NodePriority
+    {
+        private final UUID myNode;
+        private final int myPriority;
+
+        public NodePriority(UUID node, int priority)
+        {
+            myNode = node;
+            myPriority = priority;
+        }
+
+        public UUID getUuid()
+        {
+            return myNode;
+        }
+
+        public int getPriority()
+        {
+            return myPriority;
         }
     }
 }
