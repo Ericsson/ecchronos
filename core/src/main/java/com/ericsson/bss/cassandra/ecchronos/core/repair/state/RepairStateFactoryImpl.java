@@ -40,16 +40,7 @@ public class RepairStateFactoryImpl implements RepairStateFactory
     @Override
     public RepairState create(TableReference tableReference, RepairConfiguration repairConfiguration)
     {
-        ReplicaRepairGroupFactory replicaRepairGroupFactory;
-
-        switch(repairConfiguration.getRepairType())
-        {
-            case VNODE:
-                replicaRepairGroupFactory = VnodeRepairGroupFactory.INSTANCE;
-                break;
-            default:
-                throw new IllegalArgumentException("Repair type " + repairConfiguration.getRepairType() + " not supported yet");
-        }
+        ReplicaRepairGroupFactory replicaRepairGroupFactory = VnodeRepairGroupFactory.INSTANCE;
 
         return new RepairStateImpl(tableReference, repairConfiguration, myVnodeRepairStateFactory, myHostStates, myTableRepairMetrics, replicaRepairGroupFactory);
     }

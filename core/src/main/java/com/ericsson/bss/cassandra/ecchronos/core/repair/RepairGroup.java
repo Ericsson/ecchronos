@@ -124,35 +124,17 @@ public class RepairGroup extends ScheduledTask
     {
         Collection<RepairTask> tasks = new ArrayList<>();
 
-        boolean vnodeRepair = RepairOptions.RepairType.VNODE.equals(myRepairConfiguration.getRepairType());
-
         RepairTask.Builder builder = new RepairTask.Builder()
                 .withJMXProxyFactory(myJmxProxyFactory)
                 .withTableReference(myTableReference)
-                .withVnodeRepair(vnodeRepair)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairConfiguration(myRepairConfiguration);
 
-        if (vnodeRepair)
+        for (LongTokenRange range : myReplicaRepairGroup)
         {
-            for (LongTokenRange range : myReplicaRepairGroup)
-            {
-                builder.withTokenRanges(Collections.singletonList(range))
-                        .withReplicas(myReplicaRepairGroup.getReplicas());
+            builder.withTokenRanges(Collections.singletonList(range))
+                    .withReplicas(myReplicaRepairGroup.getReplicas());
 
-                tasks.add(builder.build());
-            }
-        }
-        else
-        {
-            Set<Host> replicas = myReplicaRepairGroup.getReplicas();
-
-            if (!replicas.isEmpty())
-            {
-                builder.withReplicas(replicas);
-            }
-
-            builder.withTokenRanges(myReplicaRepairGroup.getVnodes());
             tasks.add(builder.build());
         }
 

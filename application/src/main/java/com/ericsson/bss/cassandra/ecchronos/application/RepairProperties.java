@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 public final class RepairProperties
 {
     private static final String CONFIG_REPAIR_INTERVAL_BASE = "repair.interval";
-    private static final String CONFIG_REPAIR_TYPE = "repair.type";
     private static final String CONFIG_REPAIR_PARALLELISM = "repair.parallelism";
     private static final String CONFIG_REPAIR_ALARM_WARN_BASE = "repair.alarm.warn";
     private static final String CONFIG_REPAIR_ALARM_ERROR_BASE = "repair.alarm.error";
@@ -34,7 +33,6 @@ public final class RepairProperties
 
     private static final String DEFAULT_REPAIR_INTERVAL_TIMEUNIT = "days";
     private static final String DEFAULT_REPAIR_INTERVAL_DURATION = "7";
-    private static final String DEFAULT_REPAIR_TYPE = "vnode";
     private static final String DEFAULT_REPAIR_PARALLELISM = "parallel";
     private static final String DEFAULT_REPAIR_WARN_TIMEUNIT = "days";
     private static final String DEFAULT_REPAIR_WARN_DURATION = "8";
@@ -44,20 +42,17 @@ public final class RepairProperties
     private static final String DEFAULT_REPAIR_UNWIND_RATIO = Double.toString(RepairConfiguration.NO_UNWIND);
 
     private final long myRepairIntervalInMs;
-    private final RepairOptions.RepairType myRepairType;
     private final RepairOptions.RepairParallelism myRepairParallelism;
     private final long myRepairAlarmWarnInMs;
     private final long myRepairAlarmErrorInMs;
     private final RepairLockType myRepairLockType;
     private final double myRepairUnwindRatio;
 
-    private RepairProperties(long repairIntervalInMs,
-                             RepairOptions.RepairType repairType, RepairOptions.RepairParallelism repairParallelism,
+    private RepairProperties(long repairIntervalInMs, RepairOptions.RepairParallelism repairParallelism,
                              long repairAlarmWarnInMs, long repairAlarmErrorInMs, RepairLockType repairLockType,
                              double repairUnwindRatio)
     {
         myRepairIntervalInMs = repairIntervalInMs;
-        myRepairType = repairType;
         myRepairParallelism = repairParallelism;
         myRepairAlarmWarnInMs = repairAlarmWarnInMs;
         myRepairAlarmErrorInMs = repairAlarmErrorInMs;
@@ -68,11 +63,6 @@ public final class RepairProperties
     public long getRepairIntervalInMs()
     {
         return myRepairIntervalInMs;
-    }
-
-    public RepairOptions.RepairType getRepairType()
-    {
-        return myRepairType;
     }
 
     public RepairOptions.RepairParallelism getRepairParallelism()
@@ -103,25 +93,14 @@ public final class RepairProperties
     @Override
     public String toString()
     {
-        return String.format("(intervalMs=%d,repairType=%s,repairParallelism=%s,repairWarnMs=%d,repairErrorMs=%d,repairUnwindRatio=%.2f)", myRepairIntervalInMs,
-                myRepairType, myRepairParallelism, myRepairAlarmWarnInMs, myRepairAlarmErrorInMs, myRepairUnwindRatio);
+        return String.format("(intervalMs=%d,repairParallelism=%s,repairWarnMs=%d,repairErrorMs=%d,repairUnwindRatio=%.2f)", myRepairIntervalInMs,
+                myRepairParallelism, myRepairAlarmWarnInMs, myRepairAlarmErrorInMs, myRepairUnwindRatio);
     }
 
     public static RepairProperties from(Properties properties) throws ConfigurationException
     {
         long repairIntervalInMs = parseTimeUnitToMs(properties, CONFIG_REPAIR_INTERVAL_BASE,
                 DEFAULT_REPAIR_INTERVAL_DURATION, DEFAULT_REPAIR_INTERVAL_TIMEUNIT);
-
-        RepairOptions.RepairType repairType;
-
-        try
-        {
-            repairType = RepairOptions.RepairType.valueOf(properties.getProperty(CONFIG_REPAIR_TYPE, DEFAULT_REPAIR_TYPE).toUpperCase(Locale.US));
-        }
-        catch (IllegalArgumentException e)
-        {
-            throw new ConfigurationException("Unknown repair type specified in '" + CONFIG_REPAIR_TYPE + "'", e);
-        }
 
         RepairOptions.RepairParallelism repairParallelism;
 
@@ -152,7 +131,7 @@ public final class RepairProperties
 
         double repairUnwindRatio = Double.parseDouble(properties.getProperty(CONFIG_REPAIR_UNWIND_RATIO, DEFAULT_REPAIR_UNWIND_RATIO));
 
-        return new RepairProperties(repairIntervalInMs, repairType, repairParallelism, repairAlarmWarnInMs,
+        return new RepairProperties(repairIntervalInMs, repairParallelism, repairAlarmWarnInMs,
                 repairAlarmErrorInMs, repairLockType, repairUnwindRatio);
     }
 

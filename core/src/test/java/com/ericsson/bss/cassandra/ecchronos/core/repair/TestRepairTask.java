@@ -84,7 +84,7 @@ public class TestRepairTask
     }
 
     @Test
-    public void testRepairSuccessfully() throws IOException, ScheduledJobException, InterruptedException
+    public void testRepairSuccessfully() throws InterruptedException
     {
         Collection<LongTokenRange> ranges = new ArrayList<>();
         Collection<LongTokenRange> range1 = Collections.singleton(new LongTokenRange(1, 2));
@@ -94,7 +94,6 @@ public class TestRepairTask
         ranges.addAll(range2);
 
         final RepairTask repairTask = new RepairTask.Builder()
-                .withVnodeRepair(true)
                 .withJMXProxyFactory(jmxProxyFactory)
                 .withTableReference(myTableReference)
                 .withTokenRanges(ranges)
@@ -125,7 +124,7 @@ public class TestRepairTask
     }
 
     @Test
-    public void testRepairHalf() throws IOException, ScheduledJobException, InterruptedException
+    public void testRepairHalf() throws InterruptedException
     {
         Collection<LongTokenRange> ranges = new ArrayList<>();
         Collection<LongTokenRange> range1 = Collections.singleton(new LongTokenRange(1, 2));
@@ -135,7 +134,6 @@ public class TestRepairTask
         ranges.addAll(range2);
 
         final RepairTask repairTask = new RepairTask.Builder()
-                .withVnodeRepair(true)
                 .withJMXProxyFactory(jmxProxyFactory)
                 .withTableReference(myTableReference)
                 .withTokenRanges(ranges)
@@ -171,7 +169,6 @@ public class TestRepairTask
         ranges.addAll(range2);
 
         final RepairTask repairTask = new RepairTask.Builder()
-                .withVnodeRepair(true)
                 .withJMXProxyFactory(jmxProxyFactory)
                 .withTableReference(myTableReference)
                 .withTokenRanges(ranges)
@@ -202,7 +199,7 @@ public class TestRepairTask
     }
 
     @Test
-    public void testPartialRepair() throws IOException, ScheduledJobException, InterruptedException
+    public void testPartialRepair() throws InterruptedException
     {
         Collection<LongTokenRange> ranges = new ArrayList<>();
         Collection<LongTokenRange> range1 = Collections.singleton(new LongTokenRange(1, 2));
@@ -212,7 +209,6 @@ public class TestRepairTask
         ranges.addAll(range2);
 
         final RepairTask repairTask = new RepairTask.Builder()
-                .withVnodeRepair(true)
                 .withJMXProxyFactory(jmxProxyFactory)
                 .withTableReference(myTableReference)
                 .withTokenRanges(ranges)
@@ -248,7 +244,6 @@ public class TestRepairTask
         Collection<LongTokenRange> ranges = Collections.singleton(new LongTokenRange(1, 2));
 
         final RepairTask repairTask = new RepairTask.Builder()
-                .withVnodeRepair(true)
                 .withJMXProxyFactory(jmxProxyFactory)
                 .withTableReference(myTableReference)
                 .withTokenRanges(ranges)

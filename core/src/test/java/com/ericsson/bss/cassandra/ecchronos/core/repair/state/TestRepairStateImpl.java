@@ -18,7 +18,6 @@ import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.Sets;
@@ -76,7 +75,7 @@ public class TestRepairStateImpl
         long expectedAtLeastRepairedAt = System.currentTimeMillis();
         long repairIntervalInMs = TimeUnit.HOURS.toMillis(1);
 
-        RepairConfiguration repairConfiguration = vnodeRepairConfiguration(repairIntervalInMs);
+        RepairConfiguration repairConfiguration = repairConfiguration(repairIntervalInMs);
 
         Host host = mockHost("DC1");
         when(mockHostStates.isUp(eq(host))).thenReturn(true);
@@ -108,7 +107,7 @@ public class TestRepairStateImpl
         long repairIntervalInMs = TimeUnit.HOURS.toMillis(1);
         long expectedAtLeastRepairedAt = now - repairIntervalInMs;
 
-        RepairConfiguration repairConfiguration = vnodeRepairConfiguration(repairIntervalInMs);
+        RepairConfiguration repairConfiguration = repairConfiguration(repairIntervalInMs);
 
         Host host = mockHost("DC1");
         when(mockHostStates.isUp(eq(host))).thenReturn(true);
@@ -139,7 +138,7 @@ public class TestRepairStateImpl
         long expectedRepairedAt = System.currentTimeMillis();
         long repairIntervalInMs = TimeUnit.HOURS.toMillis(1);
 
-        RepairConfiguration repairConfiguration = vnodeRepairConfiguration(repairIntervalInMs);
+        RepairConfiguration repairConfiguration = repairConfiguration(repairIntervalInMs);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), Sets.newHashSet(mockHost("DC1")), expectedRepairedAt);
 
@@ -183,11 +182,10 @@ public class TestRepairStateImpl
         assertThat(repairStateSnapshot.getVnodeRepairStates()).isEqualTo(vnodeRepairStatesBase.combineWithRepairedAt(repairStateSnapshot.lastRepairedAt()));
     }
 
-    private RepairConfiguration vnodeRepairConfiguration(long repairIntervalInMs)
+    private RepairConfiguration repairConfiguration(long repairIntervalInMs)
     {
         return RepairConfiguration.newBuilder()
                 .withRepairInterval(repairIntervalInMs, TimeUnit.MILLISECONDS)
-                .withType(RepairOptions.RepairType.VNODE)
                 .build();
     }
 

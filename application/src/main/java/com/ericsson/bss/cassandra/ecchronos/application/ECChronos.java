@@ -120,7 +120,6 @@ public class ECChronos implements Closeable
 
         return RepairConfiguration.newBuilder()
                 .withRepairInterval(repairProperties.getRepairIntervalInMs(), TimeUnit.MILLISECONDS)
-                .withType(repairProperties.getRepairType())
                 .withParallelism(repairProperties.getRepairParallelism())
                 .withRepairWarningTime(repairProperties.getRepairAlarmWarnInMs(), TimeUnit.MILLISECONDS)
                 .withRepairErrorTime(repairProperties.getRepairAlarmErrorInMs(), TimeUnit.MILLISECONDS)

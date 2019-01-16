@@ -26,7 +26,6 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class TestRepairProperties
 {
-    private static final RepairOptions.RepairType DEFAULT_REPAIR_TYPE = RepairOptions.RepairType.VNODE;
     private static final RepairOptions.RepairParallelism DEFAULT_REPAIR_PARALLELISM = RepairOptions.RepairParallelism.PARALLEL;
     private static final long DEFAULT_REPAIR_INTERVAL_IN_MS = TimeUnit.DAYS.toMillis(7);
     private static final long DEFAULT_ALARM_WARN_IN_MS = TimeUnit.DAYS.toMillis(8);
@@ -42,7 +41,6 @@ public class TestRepairProperties
         RepairProperties repairProperties = RepairProperties.from(properties);
 
         assertThat(repairProperties.getRepairIntervalInMs()).isEqualTo(DEFAULT_REPAIR_INTERVAL_IN_MS);
-        assertThat(repairProperties.getRepairType()).isEqualTo(DEFAULT_REPAIR_TYPE);
         assertThat(repairProperties.getRepairParallelism()).isEqualTo(DEFAULT_REPAIR_PARALLELISM);
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
@@ -62,26 +60,6 @@ public class TestRepairProperties
         RepairProperties repairProperties = RepairProperties.from(properties);
 
         assertThat(repairProperties.getRepairIntervalInMs()).isEqualTo(expectedRepairIntervalInMs);
-        assertThat(repairProperties.getRepairType()).isEqualTo(DEFAULT_REPAIR_TYPE);
-        assertThat(repairProperties.getRepairParallelism()).isEqualTo(DEFAULT_REPAIR_PARALLELISM);
-        assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
-        assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
-        assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
-        assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
-    }
-
-    @Test
-    public void testSetType() throws ConfigurationException
-    {
-        RepairOptions.RepairType expectedType = RepairOptions.RepairType.INCREMENTAL;
-
-        Properties properties = new Properties();
-        properties.put("repair.type", "incremental");
-
-        RepairProperties repairProperties = RepairProperties.from(properties);
-
-        assertThat(repairProperties.getRepairIntervalInMs()).isEqualTo(DEFAULT_REPAIR_INTERVAL_IN_MS);
-        assertThat(repairProperties.getRepairType()).isEqualTo(expectedType);
         assertThat(repairProperties.getRepairParallelism()).isEqualTo(DEFAULT_REPAIR_PARALLELISM);
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
@@ -100,7 +78,6 @@ public class TestRepairProperties
         RepairProperties repairProperties = RepairProperties.from(properties);
 
         assertThat(repairProperties.getRepairIntervalInMs()).isEqualTo(DEFAULT_REPAIR_INTERVAL_IN_MS);
-        assertThat(repairProperties.getRepairType()).isEqualTo(DEFAULT_REPAIR_TYPE);
         assertThat(repairProperties.getRepairParallelism()).isEqualTo(expectedParallelism);
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
@@ -120,7 +97,6 @@ public class TestRepairProperties
         RepairProperties repairProperties = RepairProperties.from(properties);
 
         assertThat(repairProperties.getRepairIntervalInMs()).isEqualTo(DEFAULT_REPAIR_INTERVAL_IN_MS);
-        assertThat(repairProperties.getRepairType()).isEqualTo(DEFAULT_REPAIR_TYPE);
         assertThat(repairProperties.getRepairParallelism()).isEqualTo(DEFAULT_REPAIR_PARALLELISM);
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(expectedAlarmWarnInMs);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
@@ -140,7 +116,6 @@ public class TestRepairProperties
         RepairProperties repairProperties = RepairProperties.from(properties);
 
         assertThat(repairProperties.getRepairIntervalInMs()).isEqualTo(DEFAULT_REPAIR_INTERVAL_IN_MS);
-        assertThat(repairProperties.getRepairType()).isEqualTo(DEFAULT_REPAIR_TYPE);
         assertThat(repairProperties.getRepairParallelism()).isEqualTo(DEFAULT_REPAIR_PARALLELISM);
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(expectedAlarmErrorInMs);
@@ -157,7 +132,6 @@ public class TestRepairProperties
         RepairProperties repairProperties = RepairProperties.from(properties);
 
         assertThat(repairProperties.getRepairIntervalInMs()).isEqualTo(DEFAULT_REPAIR_INTERVAL_IN_MS);
-        assertThat(repairProperties.getRepairType()).isEqualTo(DEFAULT_REPAIR_TYPE);
         assertThat(repairProperties.getRepairParallelism()).isEqualTo(DEFAULT_REPAIR_PARALLELISM);
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
@@ -174,7 +148,6 @@ public class TestRepairProperties
         RepairProperties repairProperties = RepairProperties.from(properties);
 
         assertThat(repairProperties.getRepairIntervalInMs()).isEqualTo(DEFAULT_REPAIR_INTERVAL_IN_MS);
-        assertThat(repairProperties.getRepairType()).isEqualTo(DEFAULT_REPAIR_TYPE);
         assertThat(repairProperties.getRepairParallelism()).isEqualTo(DEFAULT_REPAIR_PARALLELISM);
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
@@ -186,7 +159,6 @@ public class TestRepairProperties
     public void testSetAll() throws ConfigurationException
     {
         long expectedRepairIntervalInMs = TimeUnit.DAYS.toMillis(1);
-        RepairOptions.RepairType expectedType = RepairOptions.RepairType.INCREMENTAL;
         RepairOptions.RepairParallelism expectedParallelism = RepairOptions.RepairParallelism.PARALLEL;
         long expectedAlarmWarnInMs = TimeUnit.DAYS.toMillis(5);
         long expectedAlarmErrorInMs = TimeUnit.DAYS.toMillis(7);
@@ -194,7 +166,6 @@ public class TestRepairProperties
         Properties properties = new Properties();
         properties.put("repair.interval.time.unit", "days");
         properties.put("repair.interval.time", "1");
-        properties.put("repair.type", "incremental");
         properties.put("repair.parallelism", "parallel");
         properties.put("repair.alarm.warn.time.unit", "days");
         properties.put("repair.alarm.warn.time", "5");
@@ -206,23 +177,12 @@ public class TestRepairProperties
         RepairProperties repairProperties = RepairProperties.from(properties);
 
         assertThat(repairProperties.getRepairIntervalInMs()).isEqualTo(expectedRepairIntervalInMs);
-        assertThat(repairProperties.getRepairType()).isEqualTo(expectedType);
         assertThat(repairProperties.getRepairParallelism()).isEqualTo(expectedParallelism);
         assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(expectedAlarmWarnInMs);
         assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(expectedAlarmErrorInMs);
         assertThat(repairProperties.getRepairLockType()).isEqualTo(RepairLockType.DATACENTER);
         assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(1.0d);
 
-    }
-
-    @Test
-    public void testSetInvalidType()
-    {
-        Properties properties = new Properties();
-        properties.put("repair.type", "nonexisting");
-
-        assertThatExceptionOfType(ConfigurationException.class)
-                .isThrownBy(() -> RepairProperties.from(properties));
     }
 
     @Test

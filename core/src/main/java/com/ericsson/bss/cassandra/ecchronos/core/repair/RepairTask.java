@@ -67,7 +67,6 @@ public class RepairTask implements NotificationListener
 
     private final Set<LongTokenRange> myTokenRanges;
     private final Set<Host> myReplicas;
-    private final boolean vnodeRepair;
     private final JmxProxyFactory myJmxProxyFactory;
     private final TableReference myTableReference;
     private final TableRepairMetrics myTableRepairMetrics;
@@ -86,7 +85,6 @@ public class RepairTask implements NotificationListener
         myTableReference = builder.tableReference;
         myTokenRanges = builder.tokenRanges;
         myReplicas = builder.replicas;
-        vnodeRepair = builder.vnodeRepair;
         myTableRepairMetrics = builder.tableRepairMetrics;
         myRepairConfiguration = builder.repairConfiguration;
     }
@@ -211,30 +209,27 @@ public class RepairTask implements NotificationListener
         options.put(RepairOptions.PARALLELISM_KEY, myRepairConfiguration.getRepairParallelism().getName());
         options.put(RepairOptions.PRIMARY_RANGE_KEY, Boolean.toString(false));
         options.put(RepairOptions.COLUMNFAMILIES_KEY, myTableReference.getTable());
-        options.put(RepairOptions.INCREMENTAL_KEY, Boolean.toString(myRepairConfiguration.getRepairType().equals(RepairOptions.RepairType.INCREMENTAL)));
+        options.put(RepairOptions.INCREMENTAL_KEY, Boolean.toString(false));
 
-        if (vnodeRepair)
+        StringBuilder rangesStringBuilder = new StringBuilder();
+
+        for (LongTokenRange range : myTokenRanges)
         {
-            StringBuilder sb = new StringBuilder();
-
-            for (LongTokenRange range : myTokenRanges)
-            {
-                sb.append(range.start).append(':').append(range.end).append(',');
-            }
-
-            options.put(RepairOptions.RANGES_KEY, sb.toString());
+            rangesStringBuilder.append(range.start).append(':').append(range.end).append(',');
         }
+
+        options.put(RepairOptions.RANGES_KEY, rangesStringBuilder.toString());
 
         if (myReplicas != null)
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder replicasStringBuilder = new StringBuilder();
 
             for (Host host : myReplicas)
             {
-                sb.append(host.getBroadcastAddress().getHostAddress()).append(',');
+                replicasStringBuilder.append(host.getBroadcastAddress().getHostAddress()).append(',');
             }
 
-            options.put(RepairOptions.HOSTS_KEY, sb.toString());
+            options.put(RepairOptions.HOSTS_KEY, replicasStringBuilder.toString());
         }
 
         return options;
@@ -362,20 +357,12 @@ public class RepairTask implements NotificationListener
      */
     public static class Builder
     {
-        private boolean vnodeRepair = true;
-
         private JmxProxyFactory jmxProxyFactory;
         private TableReference tableReference;
         private Set<LongTokenRange> tokenRanges;
         private Set<Host> replicas;
         private TableRepairMetrics tableRepairMetrics;
         private RepairConfiguration repairConfiguration = RepairConfiguration.DEFAULT;
-
-        public Builder withVnodeRepair(boolean vnodeRepair)
-        {
-            this.vnodeRepair = vnodeRepair;
-            return this;
-        }
 
         public Builder withJMXProxyFactory(JmxProxyFactory jmxProxyFactory)
         {
@@ -502,12 +489,6 @@ public class RepairTask implements NotificationListener
             return Collections.emptySet();
         }
         return Sets.newHashSet(myReplicas);
-    }
-
-    @VisibleForTesting
-    boolean isVnodeRepair()
-    {
-        return vnodeRepair;
     }
 
     @VisibleForTesting
