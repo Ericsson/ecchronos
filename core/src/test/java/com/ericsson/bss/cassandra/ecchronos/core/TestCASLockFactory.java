@@ -160,6 +160,32 @@ public class TestCASLockFactory extends AbstractCassandraTest
     }
 
     @Test
+    public void testGetLockWithLocallyHigherPriority() throws LockException
+    {
+        UUID localHostId = getNativeConnectionProvider().getLocalHost().getHostId();
+        execute(myCompeteStatement.bind("lock", localHostId, 2));
+
+        try (DistributedLock lock = myLockFactory.tryLock(DATA_CENTER, "lock", 1, new HashMap<>()))
+        {
+        }
+
+        assertPrioritiesInList("lock", 2);
+    }
+
+    @Test
+    public void testGetLockWithLocallyLowerPriority() throws LockException
+    {
+        UUID localHostId = getNativeConnectionProvider().getLocalHost().getHostId();
+        execute(myCompeteStatement.bind("lock", localHostId, 1));
+
+        try (DistributedLock lock = myLockFactory.tryLock(DATA_CENTER, "lock", 2, new HashMap<>()))
+        {
+        }
+
+        assertPriorityListEmpty("lock");
+    }
+
+    @Test
     public void testReadMetadata() throws LockException
     {
         Map<String, String> expectedMetadata = new HashMap<>();
