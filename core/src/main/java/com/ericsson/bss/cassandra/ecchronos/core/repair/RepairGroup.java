@@ -127,12 +127,12 @@ public class RepairGroup extends ScheduledTask
                 .withJMXProxyFactory(myJmxProxyFactory)
                 .withTableReference(myTableReference)
                 .withTableRepairMetrics(myTableRepairMetrics)
-                .withRepairConfiguration(myRepairConfiguration);
+                .withRepairConfiguration(myRepairConfiguration)
+                .withReplicas(myReplicaRepairGroup.getReplicas());
 
         for (LongTokenRange range : myReplicaRepairGroup)
         {
-            builder.withTokenRanges(Collections.singletonList(range))
-                    .withReplicas(myReplicaRepairGroup.getReplicas());
+            builder.withTokenRanges(Collections.singletonList(range));
 
             tasks.add(builder.build());
         }

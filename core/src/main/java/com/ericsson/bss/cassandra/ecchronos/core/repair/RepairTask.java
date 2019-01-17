@@ -28,6 +28,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.management.Notification;
 import javax.management.NotificationListener;
@@ -222,14 +223,11 @@ public class RepairTask implements NotificationListener
 
         if (myReplicas != null)
         {
-            StringBuilder replicasStringBuilder = new StringBuilder();
+            String replicasString = myReplicas.stream()
+                    .map(host -> host.getBroadcastAddress().getHostAddress())
+                    .collect(Collectors.joining(","));
 
-            for (Host host : myReplicas)
-            {
-                replicasStringBuilder.append(host.getBroadcastAddress().getHostAddress()).append(',');
-            }
-
-            options.put(RepairOptions.HOSTS_KEY, replicasStringBuilder.toString());
+            options.put(RepairOptions.HOSTS_KEY, replicasString);
         }
 
         return options;
