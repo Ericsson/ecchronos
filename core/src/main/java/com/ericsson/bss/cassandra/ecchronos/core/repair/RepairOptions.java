@@ -90,20 +90,4 @@ public class RepairOptions
             return myName;
         }
     }
-
-    /**
-     * The type of repair.
-     */
-    public enum RepairType
-    {
-        /**
-         * Only repair data that is new since the last performed repair.
-         */
-        INCREMENTAL,
-
-        /**
-         * Repair all data for the table one vnode at a time.
-         */
-        VNODE
-    }
 }

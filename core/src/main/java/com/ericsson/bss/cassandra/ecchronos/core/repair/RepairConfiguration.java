@@ -28,13 +28,11 @@ public class RepairConfiguration
     private static final long DEFAULT_REPAIR_WARNING_TIME_IN_MS = TimeUnit.DAYS.toMillis(8);
     private static final long DEFAULT_REPAIR_ERROR_TIME_IN_MS = TimeUnit.DAYS.toMillis(10);
     private static final RepairOptions.RepairParallelism DEFAULT_REPAIR_PARALLELISM = RepairOptions.RepairParallelism.PARALLEL;
-    private static final RepairOptions.RepairType DEFAULT_REPAIR_TYPE = RepairOptions.RepairType.VNODE;
     private static final double DEFAULT_UNWIND_RATIO = NO_UNWIND;
 
     public static final RepairConfiguration DEFAULT = newBuilder().build();
 
     private final RepairOptions.RepairParallelism myRepairParallelism;
-    private final RepairOptions.RepairType myRepairType;
     private final long myRepairIntervalInMs;
     private final long myRepairWarningTimeInMs;
     private final long myRepairErrorTimeInMs;
@@ -43,7 +41,6 @@ public class RepairConfiguration
     private RepairConfiguration(Builder builder)
     {
         myRepairParallelism = builder.myRepairParallelism;
-        myRepairType = builder.myRepairType;
         myRepairIntervalInMs = builder.myRepairIntervalInMs;
         myRepairWarningTimeInMs = builder.myRepairWarningTimeInMs;
         myRepairErrorTimeInMs = builder.myRepairErrorTimeInMs;
@@ -53,11 +50,6 @@ public class RepairConfiguration
     public RepairOptions.RepairParallelism getRepairParallelism()
     {
         return myRepairParallelism;
-    }
-
-    public RepairOptions.RepairType getRepairType()
-    {
-        return myRepairType;
     }
 
     public long getRepairIntervalInMs()
@@ -93,12 +85,11 @@ public class RepairConfiguration
     @Override
     public String toString()
     {
-        return String.format("RepairConfiguration(interval=%dms,warning=%dms,error=%dms,parallelism=%s,type=%s,unwindRatio=%.2f)",
+        return String.format("RepairConfiguration(interval=%dms,warning=%dms,error=%dms,parallelism=%s,unwindRatio=%.2f)",
                 myRepairIntervalInMs,
                 myRepairWarningTimeInMs,
                 myRepairErrorTimeInMs,
                 myRepairParallelism,
-                myRepairType,
                 myRepairUnwindRatio);
     }
 
@@ -111,20 +102,18 @@ public class RepairConfiguration
         return myRepairIntervalInMs == that.myRepairIntervalInMs &&
                 myRepairWarningTimeInMs == that.myRepairWarningTimeInMs &&
                 myRepairErrorTimeInMs == that.myRepairErrorTimeInMs &&
-                myRepairParallelism == that.myRepairParallelism &&
-                myRepairType == that.myRepairType;
+                myRepairParallelism == that.myRepairParallelism;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(myRepairParallelism, myRepairType, myRepairIntervalInMs, myRepairWarningTimeInMs, myRepairErrorTimeInMs);
+        return Objects.hash(myRepairParallelism, myRepairIntervalInMs, myRepairWarningTimeInMs, myRepairErrorTimeInMs);
     }
 
     public static class Builder
     {
         private RepairOptions.RepairParallelism myRepairParallelism = DEFAULT_REPAIR_PARALLELISM;
-        private RepairOptions.RepairType myRepairType = DEFAULT_REPAIR_TYPE;
         private long myRepairIntervalInMs = DEFAULT_REPAIR_INTERVAL_IN_MS;
         private long myRepairWarningTimeInMs = DEFAULT_REPAIR_WARNING_TIME_IN_MS;
         private long myRepairErrorTimeInMs = DEFAULT_REPAIR_ERROR_TIME_IN_MS;
@@ -138,7 +127,6 @@ public class RepairConfiguration
         public Builder(RepairConfiguration from)
         {
             myRepairParallelism = from.getRepairParallelism();
-            myRepairType = from.getRepairType();
             myRepairIntervalInMs = from.getRepairIntervalInMs();
             myRepairWarningTimeInMs = from.getRepairWarningTimeInMs();
             myRepairErrorTimeInMs = from.getRepairErrorTimeInMs();
@@ -153,18 +141,6 @@ public class RepairConfiguration
         public Builder withParallelism(RepairOptions.RepairParallelism parallelism)
         {
             myRepairParallelism = parallelism;
-            return this;
-        }
-
-        /**
-         * Set the type of repair to use.
-         *
-         * @param type The repair type.
-         * @return The builder
-         */
-        public Builder withType(RepairOptions.RepairType type)
-        {
-            myRepairType = type;
             return this;
         }
 

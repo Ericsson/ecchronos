@@ -63,7 +63,6 @@ public class DefaultRepairConfigurationProviderComponent
             long repairInterval = configuration.repairIntervalSeconds();
 
             RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
-                    .withType(configuration.repairType())
                     .withParallelism(configuration.repairParallelism())
                     .withRepairInterval(repairInterval, TimeUnit.SECONDS)
                     .withRepairWarningTime(configuration.repairWarningSeconds(), TimeUnit.SECONDS)
@@ -104,9 +103,6 @@ public class DefaultRepairConfigurationProviderComponent
 
         @AttributeDefinition (name = "Repair error time", description = "The wanted interval between successful repairs in seconds")
         long repairErrorSeconds() default DEFAULT_REPAIR_ERROR_SECONDS;
-
-        @AttributeDefinition (name = "Repair type", description = "The type of repair to perform")
-        RepairOptions.RepairType repairType() default RepairOptions.RepairType.VNODE;
 
         @AttributeDefinition (name = "Repair paralleism", description = "The repair parallelism to use")
         RepairOptions.RepairParallelism repairParallelism() default RepairOptions.RepairParallelism.PARALLEL;

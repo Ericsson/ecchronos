@@ -84,7 +84,6 @@ public class TestRepairGroup
     {
         repairConfiguration = RepairConfiguration.newBuilder()
                 .withParallelism(RepairOptions.RepairParallelism.PARALLEL)
-                .withType(RepairOptions.RepairType.VNODE)
                 .withRepairWarningTime(RUN_INTERVAL_IN_DAYS * 2, TimeUnit.DAYS)
                 .withRepairErrorTime(GC_GRACE_DAYS, TimeUnit.DAYS)
                 .build();
@@ -170,8 +169,6 @@ public class TestRepairGroup
         assertThat(repairTask.getTokenRanges()).isEqualTo(ranges);
         assertThat(repairTask.getTableReference()).isEqualTo(tableReference);
         assertThat(repairTask.getRepairConfiguration().getRepairParallelism()).isEqualTo(RepairOptions.RepairParallelism.PARALLEL);
-        assertThat(repairTask.getRepairConfiguration().getRepairType()).isEqualTo(RepairOptions.RepairType.VNODE);
-        assertThat(repairTask.isVnodeRepair()).isTrue();
     }
 
     @Test
@@ -207,8 +204,6 @@ public class TestRepairGroup
             assertThat(repairTask.getReplicas()).containsExactlyInAnyOrder(host, host2);
             assertThat(repairTask.getTableReference()).isEqualTo(tableReference);
             assertThat(repairTask.getRepairConfiguration().getRepairParallelism()).isEqualTo(RepairOptions.RepairParallelism.PARALLEL);
-            assertThat(repairTask.getRepairConfiguration().getRepairType()).isEqualTo(RepairOptions.RepairType.VNODE);
-            assertThat(repairTask.isVnodeRepair()).isTrue();
         }
 
         assertThat(repairTaskRanges).containsExactlyElementsOf(vnodes);

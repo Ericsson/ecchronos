@@ -119,7 +119,6 @@ public class TestTableRepairJob
 
         RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
                 .withParallelism(RepairOptions.RepairParallelism.PARALLEL)
-                .withType(RepairOptions.RepairType.VNODE)
                 .withRepairWarningTime(RUN_INTERVAL_IN_DAYS * 2, TimeUnit.DAYS)
                 .withRepairErrorTime(GC_GRACE_DAYS, TimeUnit.DAYS)
                 .build();

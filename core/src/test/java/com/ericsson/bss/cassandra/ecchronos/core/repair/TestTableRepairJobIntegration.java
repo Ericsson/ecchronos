@@ -134,7 +134,6 @@ public class TestTableRepairJobIntegration
 
         RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
                 .withParallelism(RepairOptions.RepairParallelism.PARALLEL)
-                .withType(RepairOptions.RepairType.INCREMENTAL)
                 .withRepairWarningTime(2, TimeUnit.DAYS)
                 .withRepairErrorTime(10, TimeUnit.DAYS)
                 .build();
