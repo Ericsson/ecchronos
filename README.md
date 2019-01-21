@@ -16,43 +16,7 @@ See the [STRUCTURE.md](docs/STRUCTURE.md) and [ARCHITECTURE.md](docs/ARCHITECTUR
 
 ### Installing
 
-After running `mvn package` in the project root unpack the file `application/target/ecchronos-binary-<version>.tar.gz`.
-The root directory should contain the following:
-```
-bin/
-conf/
-lib/
-licenses/
-statistics/
-LICENSE.txt
-NOTICE.txt
-```
-
-Change the configuration in `conf/ecChronos.cfg`.
-To get started the connection properties needs to match your local setup:
-
-```
-### Native connection properties
-#connection.native.host=localhost
-#connection.native.port=9042
-
-### JMX connection properties
-#connection.jmx.host=localhost
-#connection.jmx.port=7199
-```
-
-If additional properties like SSL or authentication are needed it's possible to create custom connection providers.
-More information about the custom connection provider can be found [here](docs/STANDALONE.md).
-
-Update the replication in `standalone-integration/src/main/resources/create_keyspaces.cql` to match your configuration.
-The keyspace `ecchronos` must be replicated to all data centers.
-After the file has been modified run the following command:
-```
-cqlsh -f standalone-integration/src/main/resources/create_keyspaces.cql
-```
-
-To run ecChronos execute `bin/ecChronos` from the root directory.
-With the default setup a logfile will be created in the root directory called `ecChronos.log`.
+For installation instructions see [SETUP.md](docs/SETUP.md).
 
 ## Running the tests
 
@@ -98,7 +62,7 @@ The `osgi-integration` tests runs in a OSGi environment to verify that all servi
 
 ## Deployment
 
-For deployment on a live system read [SETUP.md](SETUP.md) for details on how to setup your system to enable ecChronos to run.
+For deployment on a running system read [SETUP.md](docs/SETUP.md) for details on how to setup your system to enable ecChronos to run.
 
 ## Built with
 
