@@ -11,7 +11,8 @@ See the [STRUCTURE.md](docs/STRUCTURE.md) and [ARCHITECTURE.md](docs/ARCHITECTUR
 
 ### Prerequisites
 
-PLACEHOLDER
+* JDK8
+* Docker (for test setup)
 
 ### Installing
 
@@ -95,10 +96,6 @@ The test cases needs to be run with the following system properties set:
 The `standalone-integration` tests runs a setup similar to the standalone application to verify automated repairs.
 The `osgi-integration` tests runs in a OSGi environment to verify that all services are available and verifies automated repairs.
 
-### And coding style tests
-
-PLACEHOLDER
-
 ## Deployment
 
 For deployment on a live system read [SETUP.md](SETUP.md) for details on how to setup your system to enable ecChronos to run.
@@ -128,7 +125,3 @@ See also the list of [contributors](https://github.com/ericsson/ecchronos/contri
 ## License
 
 This project is licensed under the Apache License - see the [LICENSE.md](LICENSE.md) file for details
-
-## Acknowledgments
-
-PLACEHOLDER
