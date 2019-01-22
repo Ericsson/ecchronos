@@ -23,10 +23,8 @@ When the job is executed the work is split into one or more tasks.
 In the case of repairs one task could correspond to the repair of one virtual node.
 When all virtual nodes are repaired the job is considered to be finished and will be added back to the work queue.
 
-As repair is a resource intensive operation the leases are on a _data center level*_.
-This means that only a single repair session may run in the data center at a time.
-
-_\* Note: There are plans to change this to node level leases to improve concurrency_
+As repair is a resource intensive operation the leases are used to make sure that a node is only part of one repair at a time.
+It is configurable if the leases should be on a _data center level_ or on a _node level_.
 
 ### Leases
 
