@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS ecchronos.reject_configuration (
 ```
 
 A sample file is located in `conf/create_keyspace_sample.cql` which can be executed by running `cqlsh -f conf/create_keyspace_sample.cql`.
-It is recommended to modify `SimpleStrategy` to `NetworkTopologyStrategy` and replication factor according to your configuration.
+It is recommended to modify `SimpleStrategy` to `NetworkTopologyStrategy` with a replication factor according to your configuration.
 
 ## Installation
 
