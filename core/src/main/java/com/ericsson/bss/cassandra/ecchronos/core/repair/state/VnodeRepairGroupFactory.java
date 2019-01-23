@@ -25,10 +25,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * A factory for {@link ReplicaRepairGroup} that creates a repair group for all vnodes with common replicas.
+ * A factory for {@link ReplicaRepairGroup} that creates repair groups for all vnodes with common replicas.
  *
- * The generated {@link ReplicaRepairGroup} will contain the vnode which is most urgent to repair and all other vnodes
- * which have common replicas.
+ * The generated list will contain the vnode groups in a sorted order so that the most urgent vnode to
+ * repair is first in the list.
  */
 public final class VnodeRepairGroupFactory implements ReplicaRepairGroupFactory
 {
