@@ -64,7 +64,7 @@ public class TestScheduleManager
     @After
     public void cleanup()
     {
-        myScheduler.stop();
+        myScheduler.close();
     }
 
     @Test

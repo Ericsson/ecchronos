@@ -38,21 +38,16 @@ public class ScheduleManagerImpl implements ScheduleManager, Closeable
 
     private final ScheduledJobQueue myQueue = new ScheduledJobQueue(new DefaultJobComparator());
     private final Set<RunPolicy> myRunPolicies = Sets.newConcurrentHashSet();
-    private volatile ScheduledFuture<?> myRunFuture;
+    private final ScheduledFuture<?> myRunFuture;
 
-    private final ScheduleManagerImpl.JobRunTask myRunTask;
+    private final JobRunTask myRunTask = new JobRunTask();
     private final LockFactory myLockFactory;
-    private final ScheduledExecutorService myExecutor;
-
-    private final long myRunDelayInMs;
+    private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor();;
 
     private ScheduleManagerImpl(Builder builder)
     {
         myLockFactory = builder.myLockFactory;
-        myRunDelayInMs = builder.myRunIntervalInMs;
-        myRunTask = new JobRunTask();
-        myExecutor = Executors.newSingleThreadScheduledExecutor();
-        start();
+        myRunFuture = myExecutor.scheduleWithFixedDelay(myRunTask, builder.myRunIntervalInMs, builder.myRunIntervalInMs, TimeUnit.MILLISECONDS);
     }
 
     public boolean addRunPolicy(RunPolicy runPolicy)
@@ -82,29 +77,13 @@ public class ScheduleManagerImpl implements ScheduleManager, Closeable
     @Override
     public void close()
     {
-        stop();
-        myRunPolicies.clear();
-    }
-
-    /**
-     * Start the run scheduler.
-     */
-    public void start()
-    {
-        myRunFuture = myExecutor.scheduleWithFixedDelay(myRunTask, myRunDelayInMs, myRunDelayInMs, TimeUnit.MILLISECONDS);
-    }
-
-    /**
-     * Stop the run scheduler.
-     */
-    public void stop()
-    {
         if (myRunFuture != null)
         {
             myRunFuture.cancel(false);
         }
 
         myExecutor.shutdown();
+        myRunPolicies.clear();
     }
 
     @VisibleForTesting
@@ -137,7 +116,7 @@ public class ScheduleManagerImpl implements ScheduleManager, Closeable
      * <p>
      * Retrieves a job from the queue and tries to run it provided that it's possible to get the required locks.
      */
-    public class JobRunTask implements Runnable
+    private class JobRunTask implements Runnable
     {
         @Override
         public void run()
