@@ -42,7 +42,7 @@ public class ScheduleManagerImpl implements ScheduleManager, Closeable
 
     private final JobRunTask myRunTask = new JobRunTask();
     private final LockFactory myLockFactory;
-    private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor();;
+    private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor();
 
     private ScheduleManagerImpl(Builder builder)
     {
