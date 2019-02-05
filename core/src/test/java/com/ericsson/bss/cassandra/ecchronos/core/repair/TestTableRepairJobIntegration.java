@@ -29,6 +29,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.Clock;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
+import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManagerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import org.junit.After;
 import org.junit.Before;
@@ -46,7 +47,6 @@ import com.datastax.driver.core.TableOptionsMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.RunPolicy;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.RunScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJobQueue;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
@@ -103,11 +103,9 @@ public class TestTableRepairJobIntegration
     @Mock
     private Clock myClock;
 
-    private ScheduledJobQueue myScheduledJobQueue = new ScheduledJobQueue(new DefaultJobComparator());
-
-    private RunScheduler myRunScheduler;
-
     private TableRepairJob myTableRepairJob;
+
+    private ScheduleManagerImpl myScheduler;
 
     @Before
     public void setup()
@@ -120,12 +118,10 @@ public class TestTableRepairJobIntegration
         doReturn(System.currentTimeMillis()).when(myClock).getTime();
 
         doReturn(true).when(myRepairStateSnapshot).canRepair();
-
-        myRunScheduler = RunScheduler.builder()
-                .withQueue(myScheduledJobQueue)
+        myScheduler = ScheduleManagerImpl.builder()
                 .withLockFactory(myLockFactory)
-                .withRunPolicy(job -> myRunPolicy.validate(job))
                 .build();
+        myScheduler.addRunPolicy(job -> myRunPolicy.validate(job));
 
         ScheduledJob.Configuration configuration = new ScheduledJob.ConfigurationBuilder()
                 .withPriority(ScheduledJob.Priority.LOW)
@@ -151,7 +147,7 @@ public class TestTableRepairJobIntegration
 
         myTableRepairJob.setClock(myClock);
 
-        myScheduledJobQueue.add(myTableRepairJob);
+        myScheduler.schedule(myTableRepairJob);
     }
 
     @After
@@ -189,20 +185,20 @@ public class TestTableRepairJobIntegration
         doReturn(lastRepairedWarning).when(myRepairStateSnapshot).lastRepairedAt();
 
         // Run warning
-        myRunScheduler.run();
+        myScheduler.run();
         verify(myFaultReporter).raise(eq(RepairFaultReporter.FaultCode.REPAIR_WARNING), eq(expectedData));
 
         // Run error
         doReturn(lastRepairedError).when(myRepairStateSnapshot).lastRepairedAt();
 
-        myRunScheduler.run();
+        myScheduler.run();
         verify(myFaultReporter).raise(eq(RepairFaultReporter.FaultCode.REPAIR_ERROR), eq(expectedData));
 
         // Run clear
 
         doReturn(start).when(myRepairStateSnapshot).lastRepairedAt();
 
-        myRunScheduler.run();
+        myScheduler.run();
         verify(myFaultReporter).cease(eq(RepairFaultReporter.FaultCode.REPAIR_WARNING), eq(expectedData));
     }
 

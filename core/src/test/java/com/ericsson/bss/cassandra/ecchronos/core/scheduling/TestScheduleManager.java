@@ -39,7 +39,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith (MockitoJUnitRunner.class)
-public class TestRunScheduler
+public class TestScheduleManager
 {
     @Mock
     private LockFactory myLockFactory;
@@ -47,18 +47,15 @@ public class TestRunScheduler
     @Mock
     private RunPolicy myRunPolicy;
 
-    private ScheduledJobQueue queue = new ScheduledJobQueue(new DefaultJobComparator());
-
-    private RunScheduler myRunScheduler;
+    private ScheduleManagerImpl myScheduler;
 
     @Before
     public void startup() throws LockException
     {
-        myRunScheduler = RunScheduler.builder()
-                .withQueue(queue)
+        myScheduler = ScheduleManagerImpl.builder()
                 .withLockFactory(myLockFactory)
-                .withRunPolicy(job -> myRunPolicy.validate(job))
                 .build();
+        myScheduler.addRunPolicy(job -> myRunPolicy.validate(job));
 
         when(myRunPolicy.validate(any(ScheduledJob.class))).thenReturn(-1L);
         when(myLockFactory.tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class))).thenReturn(new DummyLock());
@@ -67,13 +64,13 @@ public class TestRunScheduler
     @After
     public void cleanup()
     {
-        myRunScheduler.stop();
+        myScheduler.close();
     }
 
     @Test
     public void testRunningNoJobs() throws LockException
     {
-        myRunScheduler.run();
+        myScheduler.run();
 
         verify(myLockFactory, never()).tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class));
     }
@@ -82,54 +79,54 @@ public class TestRunScheduler
     public void testRunningOneJob()
     {
         DummyJob job = new DummyJob(ScheduledJob.Priority.LOW);
-        queue.add(job);
+        myScheduler.schedule(job);
 
-        myRunScheduler.run();
+        myScheduler.run();
 
         assertThat(job.hasRun()).isTrue();
-        assertThat(queue.size()).isEqualTo(1);
+        assertThat(myScheduler.getQueueSize()).isEqualTo(1);
     }
 
     @Test
     public void testRunningJobWithFailingRunPolicy()
     {
         DummyJob job = new DummyJob(ScheduledJob.Priority.LOW);
-        queue.add(job);
+        myScheduler.schedule(job);
 
         when(myRunPolicy.validate(any(ScheduledJob.class))).thenReturn(1L);
 
-        myRunScheduler.run();
+        myScheduler.run();
 
         assertThat(job.hasRun()).isFalse();
-        assertThat(queue.size()).isEqualTo(1);
+        assertThat(myScheduler.getQueueSize()).isEqualTo(1);
     }
 
     @Test
     public void testRunningJobWithThrowingRunPolicy()
     {
         DummyJob job = new DummyJob(ScheduledJob.Priority.LOW);
-        queue.add(job);
+        myScheduler.schedule(job);
 
         when(myRunPolicy.validate(any(ScheduledJob.class))).thenThrow(new IllegalStateException());
 
-        myRunScheduler.run();
+        myScheduler.run();
 
         assertThat(job.hasRun()).isFalse();
-        assertThat(queue.size()).isEqualTo(1);
+        assertThat(myScheduler.getQueueSize()).isEqualTo(1);
     }
 
     @Test
     public void testRunningOneJobWithThrowingLock() throws LockException
     {
         DummyJob job = new DummyJob(ScheduledJob.Priority.LOW);
-        queue.add(job);
+        myScheduler.schedule(job);
 
         when(myLockFactory.tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class))).thenThrow(new LockException(""));
 
-        myRunScheduler.run();
+        myScheduler.run();
 
         assertThat(job.hasRun()).isFalse();
-        assertThat(queue.size()).isEqualTo(1);
+        assertThat(myScheduler.getQueueSize()).isEqualTo(1);
     }
 
     @Test (timeout = 2000L)
@@ -137,8 +134,8 @@ public class TestRunScheduler
     {
         LongRunningJob job = new LongRunningJob(ScheduledJob.Priority.HIGH);
         LongRunningJob job2 = new LongRunningJob(ScheduledJob.Priority.LOW);
-        queue.add(job);
-        queue.add(job2);
+        myScheduler.schedule(job);
+        myScheduler.schedule(job2);
 
         final CountDownLatch cdl = new CountDownLatch(1);
 
@@ -148,18 +145,18 @@ public class TestRunScheduler
             @Override
             public void run()
             {
-                myRunScheduler.run();
+                myScheduler.run();
                 cdl.countDown();
             }
         }.start();
 
-        myRunScheduler.run();
+        myScheduler.run();
 
         cdl.await();
 
         assertThat(job.hasRun()).isTrue();
         assertThat(job2.hasRun()).isFalse();
-        assertThat(queue.size()).isEqualTo(2);
+        assertThat(myScheduler.getQueueSize()).isEqualTo(2);
     }
 
     @Test
@@ -167,15 +164,15 @@ public class TestRunScheduler
     {
         DummyJob job = new DummyJob(ScheduledJob.Priority.LOW);
         DummyJob job2 = new DummyJob(ScheduledJob.Priority.LOW);
-        queue.add(job);
-        queue.add(job2);
+        myScheduler.schedule(job);
+        myScheduler.schedule(job2);
 
         when(myRunPolicy.validate(any(ScheduledJob.class))).thenReturn(1L);
 
-        myRunScheduler.run();
+        myScheduler.run();
 
         assertThat(job.hasRun()).isFalse();
-        assertThat(queue.size()).isEqualTo(2);
+        assertThat(myScheduler.getQueueSize()).isEqualTo(2);
         verify(myRunPolicy, times(2)).validate(any(ScheduledJob.class));
     }
 
@@ -184,15 +181,15 @@ public class TestRunScheduler
     {
         DummyJob job = new DummyJob(ScheduledJob.Priority.LOW);
         DummyJob job2 = new DummyJob(ScheduledJob.Priority.LOW);
-        queue.add(job);
-        queue.add(job2);
+        myScheduler.schedule(job);
+        myScheduler.schedule(job2);
 
         when(myLockFactory.tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class))).thenThrow(new LockException(""));
 
-        myRunScheduler.run();
+        myScheduler.run();
 
         assertThat(job.hasRun()).isFalse();
-        assertThat(queue.size()).isEqualTo(2);
+        assertThat(myScheduler.getQueueSize()).isEqualTo(2);
         verify(myLockFactory, times(2)).tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class));
     }
 
@@ -200,7 +197,7 @@ public class TestRunScheduler
     public void testRemoveLongRunningJob() throws InterruptedException
     {
         LongRunningJob job = new LongRunningJob(ScheduledJob.Priority.HIGH);
-        queue.add(job);
+        myScheduler.schedule(job);
 
         final CountDownLatch cdl = new CountDownLatch(1);
 
@@ -209,7 +206,7 @@ public class TestRunScheduler
             @Override
             public void run()
             {
-                myRunScheduler.run();
+                myScheduler.run();
                 cdl.countDown();
             }
         }.start();
@@ -219,12 +216,12 @@ public class TestRunScheduler
             Thread.sleep(10);
         }
 
-        queue.remove(job);
+        myScheduler.deschedule(job);
 
         cdl.await();
 
         assertThat(job.hasRun()).isTrue();
-        assertThat(queue.size()).isEqualTo(0);
+        assertThat(myScheduler.getQueueSize()).isEqualTo(0);
     }
 
     private class LongRunningJob extends ScheduledJob
