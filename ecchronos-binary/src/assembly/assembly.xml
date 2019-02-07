@@ -26,6 +26,11 @@
             <outputDirectory>bin</outputDirectory>
             <destName>ecc</destName>
         </file>
+        <file>
+            <source>${project.basedir}/src/bin/ecc-status.py</source>
+            <outputDirectory>bin</outputDirectory>
+            <destName>ecc-status</destName>
+        </file>
     </files>
     <fileSets>
         <fileSet>
@@ -36,6 +41,10 @@
                 <include>logback.xml</include>
                 <include>create_keyspace_sample.cql</include>
             </includes>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/src/pylib</directory>
+            <outputDirectory>pylib</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>.</directory>
