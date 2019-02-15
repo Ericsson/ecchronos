@@ -45,8 +45,8 @@ import org.osgi.service.component.runtime.ServiceComponentRuntime;
 import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO;
 import org.osgi.util.tracker.ServiceTracker;
 
-import static junit.framework.TestCase.assertNotNull;
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
@@ -85,7 +85,7 @@ public class ITTestECChronos extends TestBase
         LockFactory lockFactory = (LockFactory) serviceTracker.waitForService(TimeUnit.SECONDS.toMillis(10));
         serviceTracker.close();
 
-        assertNotNull(lockFactory);
+        assertThat(lockFactory).isNotNull();
     }
 
     @Test
@@ -97,7 +97,7 @@ public class ITTestECChronos extends TestBase
         HostStates hostStates = (HostStates) serviceTracker.waitForService(TimeUnit.SECONDS.toMillis(10));
         serviceTracker.close();
 
-        assertNotNull(hostStates);
+        assertThat(hostStates).isNotNull();
     }
 
     @Test
@@ -108,7 +108,7 @@ public class ITTestECChronos extends TestBase
         JmxProxyFactory jmxProxyFactory = (JmxProxyFactory) serviceTracker.waitForService(10000);
         serviceTracker.close();
 
-        assertNotNull(jmxProxyFactory);
+        assertThat(jmxProxyFactory).isNotNull();
     }
 
     @Test
@@ -119,7 +119,7 @@ public class ITTestECChronos extends TestBase
         ReplicatedTableProvider replicatedTableProvider = (ReplicatedTableProvider) serviceTracker.waitForService(10000);
         serviceTracker.close();
 
-        assertNotNull(replicatedTableProvider);
+        assertThat(replicatedTableProvider).isNotNull();
     }
 
     @Test
@@ -131,7 +131,7 @@ public class ITTestECChronos extends TestBase
         TableStorageStates tableStorageStates = (TableStorageStates) serviceTracker.waitForService(TimeUnit.SECONDS.toMillis(10));
         serviceTracker.close();
 
-        assertNotNull(tableStorageStates);
+        assertThat(tableStorageStates).isNotNull();
     }
 
     @Test
@@ -143,7 +143,7 @@ public class ITTestECChronos extends TestBase
         TableRepairMetrics tableRepairMetrics = (TableRepairMetrics) serviceTracker.waitForService(TimeUnit.SECONDS.toMillis(10));
         serviceTracker.close();
 
-        assertNotNull(tableRepairMetrics);
+        assertThat(tableRepairMetrics).isNotNull();
     }
 
     @Test
@@ -155,7 +155,7 @@ public class ITTestECChronos extends TestBase
         RepairStateFactory repairStateFactory = (RepairStateFactory) serviceTracker.waitForService(TimeUnit.SECONDS.toMillis(10));
         serviceTracker.close();
 
-        assertNotNull(repairStateFactory);
+        assertThat(repairStateFactory).isNotNull();
     }
 
     @Test
@@ -167,7 +167,7 @@ public class ITTestECChronos extends TestBase
         RepairScheduler repairScheduler = (RepairScheduler) serviceTracker.waitForService(TimeUnit.SECONDS.toMillis(10));
         serviceTracker.close();
 
-        assertNotNull(repairScheduler);
+        assertThat(repairScheduler).isNotNull();
     }
 
     @Test
@@ -194,18 +194,8 @@ public class ITTestECChronos extends TestBase
         {
             if (clazz.getCanonicalName().equals(desc.implementationClass))
             {
-                boolean pidFound = false;
-                for (String configPid : desc.configurationPid)
-                {
-                    if (pid.equals(configPid))
-                    {
-                        pidFound = true;
-                        break;
-                    }
-                }
-                assertTrue(pidFound);
-
-                assertTrue(myScrService.isComponentEnabled(desc));
+                assertThat(desc.configurationPid).contains(pid);
+                assertThat(myScrService.isComponentEnabled(desc)).isTrue();
 
                 return;
             }
