@@ -2,7 +2,7 @@
 
 ## Configuration
 
-The standalone ecChronos can be configured through the file `conf/ecChronos.cfg`.
+The standalone ecChronos can be configured through the file `conf/ecc.cfg`.
 
 ## Custom connection providers
 
@@ -11,7 +11,7 @@ In order to use custom connection providers in the standalone version of ecChron
 1. There must be a default constructor that takes `Properties` as an argument.
 2. The native connection provider must use `DataCenterAwarePolicy` which is located in the `connection` module.
 
-The provided properties argument is read from the file `ecChronos.cfg` so that custom connection providers could use the same configuration file if needed.
+The provided properties argument is read from the file `ecc.cfg` so that custom connection providers could use the same configuration file if needed.
 
 Examples of implementations can be found in:
 

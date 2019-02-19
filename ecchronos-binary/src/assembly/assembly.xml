@@ -22,9 +22,9 @@
     </formats>
     <files>
         <file>
-            <source>${project.basedir}/src/bin/ecChronos.sh</source>
+            <source>${project.basedir}/src/bin/ecc.sh</source>
             <outputDirectory>bin</outputDirectory>
-            <destName>ecChronos</destName>
+            <destName>ecc</destName>
         </file>
     </files>
     <fileSets>
@@ -32,7 +32,7 @@
             <directory>${project.basedir}/src/resources</directory>
             <outputDirectory>conf</outputDirectory>
             <includes>
-                <include>ecChronos.cfg</include>
+                <include>ecc.cfg</include>
                 <include>logback.xml</include>
                 <include>create_keyspace_sample.cql</include>
             </includes>

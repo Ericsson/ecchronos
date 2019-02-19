@@ -19,7 +19,7 @@ if [ "x$ECCHRONOS_HOME" = "x" ]; then
 fi
 
 CLASSPATH="$ECCHRONOS_HOME"/conf/
-JVM_ENV=-Decchronos.config="$ECCHRONOS_HOME"/conf/ecChronos.cfg
+JVM_ENV=-Decchronos.config="$ECCHRONOS_HOME"/conf/ecc.cfg
 
 for library in "$ECCHRONOS_HOME"/lib/*.jar
 do
