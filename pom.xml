@@ -108,6 +108,7 @@
         <!-- Integration tests -->
         <it.cassandra.memory>1073741824</it.cassandra.memory>
         <it.cassandra.heap>256M</it.cassandra.heap>
+        <it.cassandra.version>3.0</it.cassandra.version>
     </properties>
 
     <dependencyManagement>
@@ -575,7 +576,7 @@ limitations under the License.
                                     <configuration>
                                         <images>
                                             <image>
-                                                <name>cassandra:3.0</name>
+                                                <name>cassandra:${it.cassandra.version}</name>
                                                 <alias>cassandra1</alias>
                                                 <run>
                                                     <memory>${it.cassandra.memory}</memory>
@@ -597,7 +598,7 @@ limitations under the License.
                                                 </run>
                                             </image>
                                             <image>
-                                                <name>cassandra:3.0</name>
+                                                <name>cassandra:${it.cassandra.version}</name>
                                                 <alias>cassandra2</alias>
                                                 <run>
                                                     <memory>${it.cassandra.memory}</memory>
@@ -620,7 +621,7 @@ limitations under the License.
                                                 </run>
                                             </image>
                                             <image>
-                                                <name>cassandra:3.0</name>
+                                                <name>cassandra:${it.cassandra.version}</name>
                                                 <alias>cassandra3</alias>
                                                 <run>
                                                     <memory>${it.cassandra.memory}</memory>
@@ -642,7 +643,7 @@ limitations under the License.
                                                 </run>
                                             </image>
                                             <image>
-                                                <name>cassandra:3.0</name>
+                                                <name>cassandra:${it.cassandra.version}</name>
                                                 <alias>cassandra4</alias>
                                                 <run>
                                                     <memory>${it.cassandra.memory}</memory>
