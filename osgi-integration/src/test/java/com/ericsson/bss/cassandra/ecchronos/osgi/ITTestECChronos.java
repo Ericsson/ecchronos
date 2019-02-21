@@ -35,19 +35,18 @@ import org.junit.runner.RunWith;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
-import org.apache.felix.scr.Component;
-import org.apache.felix.scr.ScrService;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
 import org.osgi.framework.BundleContext;
+import org.osgi.service.component.runtime.ServiceComponentRuntime;
+import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO;
 import org.osgi.util.tracker.ServiceTracker;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertNotNull;
-import static org.awaitility.Awaitility.await;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
@@ -62,7 +61,7 @@ public class ITTestECChronos extends TestBase
     BundleContext myBundleContext;
 
     @Inject
-    ScrService myScrService;
+    ServiceComponentRuntime myScrService;
 
     @Configuration
     public Option[] configure() throws IOException
@@ -86,7 +85,7 @@ public class ITTestECChronos extends TestBase
         LockFactory lockFactory = (LockFactory) serviceTracker.waitForService(TimeUnit.SECONDS.toMillis(10));
         serviceTracker.close();
 
-        assertNotNull(lockFactory);
+        assertThat(lockFactory).isNotNull();
     }
 
     @Test
@@ -98,7 +97,7 @@ public class ITTestECChronos extends TestBase
         HostStates hostStates = (HostStates) serviceTracker.waitForService(TimeUnit.SECONDS.toMillis(10));
         serviceTracker.close();
 
-        assertNotNull(hostStates);
+        assertThat(hostStates).isNotNull();
     }
 
     @Test
@@ -109,7 +108,7 @@ public class ITTestECChronos extends TestBase
         JmxProxyFactory jmxProxyFactory = (JmxProxyFactory) serviceTracker.waitForService(10000);
         serviceTracker.close();
 
-        assertNotNull(jmxProxyFactory);
+        assertThat(jmxProxyFactory).isNotNull();
     }
 
     @Test
@@ -120,7 +119,7 @@ public class ITTestECChronos extends TestBase
         ReplicatedTableProvider replicatedTableProvider = (ReplicatedTableProvider) serviceTracker.waitForService(10000);
         serviceTracker.close();
 
-        assertNotNull(replicatedTableProvider);
+        assertThat(replicatedTableProvider).isNotNull();
     }
 
     @Test
@@ -132,7 +131,7 @@ public class ITTestECChronos extends TestBase
         TableStorageStates tableStorageStates = (TableStorageStates) serviceTracker.waitForService(TimeUnit.SECONDS.toMillis(10));
         serviceTracker.close();
 
-        assertNotNull(tableStorageStates);
+        assertThat(tableStorageStates).isNotNull();
     }
 
     @Test
@@ -144,7 +143,7 @@ public class ITTestECChronos extends TestBase
         TableRepairMetrics tableRepairMetrics = (TableRepairMetrics) serviceTracker.waitForService(TimeUnit.SECONDS.toMillis(10));
         serviceTracker.close();
 
-        assertNotNull(tableRepairMetrics);
+        assertThat(tableRepairMetrics).isNotNull();
     }
 
     @Test
@@ -156,7 +155,7 @@ public class ITTestECChronos extends TestBase
         RepairStateFactory repairStateFactory = (RepairStateFactory) serviceTracker.waitForService(TimeUnit.SECONDS.toMillis(10));
         serviceTracker.close();
 
-        assertNotNull(repairStateFactory);
+        assertThat(repairStateFactory).isNotNull();
     }
 
     @Test
@@ -168,7 +167,7 @@ public class ITTestECChronos extends TestBase
         RepairScheduler repairScheduler = (RepairScheduler) serviceTracker.waitForService(TimeUnit.SECONDS.toMillis(10));
         serviceTracker.close();
 
-        assertNotNull(repairScheduler);
+        assertThat(repairScheduler).isNotNull();
     }
 
     @Test
@@ -189,29 +188,19 @@ public class ITTestECChronos extends TestBase
         assertComponentIsActive(REPAIR_CONFIGURATION_PID, DefaultRepairConfigurationProviderComponent.class);
     }
 
-    private void assertComponentIsActive(String componentPid, Class clazz)
+    private void assertComponentIsActive(String pid, Class clazz)
     {
-        await().atMost(10, TimeUnit.SECONDS).until(() -> componentIsActive(componentPid, clazz));
+        for (ComponentDescriptionDTO desc : myScrService.getComponentDescriptionDTOs())
+        {
+            if (clazz.getCanonicalName().equals(desc.implementationClass))
+            {
+                assertThat(desc.configurationPid).contains(pid);
+                assertThat(myScrService.isComponentEnabled(desc)).isTrue();
 
-        assertEquals(Component.STATE_ACTIVE, getComponent(componentPid, clazz).getState());
-    }
-
-    private boolean componentIsActive(String componentPid, Class clazz)
-    {
-        return getComponent(componentPid, clazz).getState() == Component.STATE_ACTIVE;
-    }
-
-    private Component getComponent(String componentPid, Class clazz)
-    {
-        Component[] components = myScrService.getComponents(componentPid);
-
-        assertNotNull(components);
-        assertEquals(1, components.length);
-
-        Component component = components[0];
-        assertEquals(clazz.getCanonicalName(), component.getClassName());
-
-        return component;
+                return;
+            }
+        }
+        fail();
     }
 
     private void checkNativeConnection() throws InterruptedException
