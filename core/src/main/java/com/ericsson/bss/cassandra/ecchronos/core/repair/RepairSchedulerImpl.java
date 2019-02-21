@@ -15,7 +15,9 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import java.io.Closeable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -102,6 +104,15 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
     public void removeConfiguration(TableReference tableReference)
     {
         myExecutor.execute(() -> handleTableConfigurationRemoved(tableReference));
+    }
+
+    @Override
+    public List<RepairJobView> getCurrentRepairJobs()
+    {
+        synchronized (myLock)
+        {
+            return new ArrayList<>(myScheduledJobs.values());
+        }
     }
 
     private void handleTableConfigurationChange(TableReference tableReference, RepairConfiguration repairConfiguration)
