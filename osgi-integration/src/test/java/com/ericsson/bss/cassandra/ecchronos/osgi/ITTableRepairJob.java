@@ -14,8 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.osgi;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -208,7 +208,7 @@ public class ITTableRepairJob extends TestBase
     private void verifyTableRepairedSince(TableReference tableReference, long repairedSince, Set<LongTokenRange> expectedRepaired)
     {
         OptionalLong repairedAt = lastRepairedSince(tableReference, repairedSince);
-        assertTrue(repairedAt.isPresent());
+        assertThat(repairedAt).isPresent();
     }
 
     private boolean isRepairedSince(TableReference tableReference, long repairedSince)

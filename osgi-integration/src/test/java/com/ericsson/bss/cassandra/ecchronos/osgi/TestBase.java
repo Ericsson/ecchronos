@@ -91,6 +91,7 @@ public class TestBase
                 features(ecChronosKarafFeaturesMvnUrl, "karaf-feature"),
                 mavenBundle("com.ericsson.bss.cassandra.ecchronos", "connection.impl").versionAsInProject(),
                 mavenBundle("com.ericsson.bss.cassandra.ecchronos", "fm.impl").versionAsInProject(),
+                mavenBundle("org.assertj", "assertj-core").versionAsInProject(),
                 mavenBundle("org.awaitility", "awaitility").versionAsInProject(),
                 nativeConnectionOptions(),
                 jmxConnectionOptions(),
