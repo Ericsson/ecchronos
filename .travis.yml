@@ -15,9 +15,11 @@ matrix:
   - name: "Unit tests"
     env: TEST_SUITE='test cobertura:cobertura coveralls:report'
   - name: "OSGi integration"
-    env: TEST_SUITE='verify -P osgi-integration-tests -DskipUTs'
-  - name: "Standalone integration"
-    env: TEST_SUITE='verify -P standalone-integration-tests -DskipUTs'
+    env: TEST_SUITE='verify -P docker-integration-test,osgi-integration-tests -DskipUTs'
+  - name: "Standalone integration 3.0"
+    env: TEST_SUITE='verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=3.0 -DskipUTs'
+  - name: "Standalone integration 3.11"
+    env: TEST_SUITE='verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=3.11 -DskipUTs'
 script:
   - mvn $TEST_SUITE -B
 services:
