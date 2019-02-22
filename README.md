@@ -24,10 +24,10 @@ There are two different test suites that can be run.
 The first suite consist only of unit tests which can be run by `mvn clean install`.
 These test will in some cases use an embedded Apache Cassandra.
 
-The second suite consist of the unit tests as well as integration tests which can be run by `mvn clean install -P osgi-integration-tests,standalone-integration-tests`.
+The second suite consist of the unit tests as well as integration tests which can be run by `mvn clean install -P docker-integration-test,osgi-integration-tests,standalone-integration-tests`.
 The integration tests start docker instances of Apache Cassandra to get a cluster environment where repair can run.
 It is possible to run either OSGi integration tests or the standalone tests without the other.
-This can be done by running either `mvn clean install -P osgi-integration-tests` or `mvn clean install-P standalone-integration-tests`.
+This can be done by running either `mvn clean install -P docker-integration-test,osgi-integration-tests` or `mvn clean install-P docker-integration-test,standalone-integration-tests`.
 
 ### Maven configuration properties
 
@@ -35,7 +35,6 @@ This can be done by running either `mvn clean install -P osgi-integration-tests`
 |----------------------------|------------|----------------------------------------------------------|
 | it.cassandra.memory        | 1073741824 | Memory limit for the docker instance                     |
 | it.cassandra.heap          | 256M       | Amount of heap memory Cassandra should use at most       |
-| it.cassandra.ring.delay.ms | 2000       | Bootstrap delay in Cassandra (-Dcassandra.ring_delay_ms) |
 
 ### Running within IDEA/Eclipse
 

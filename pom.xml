@@ -104,6 +104,11 @@
 
         <skipTests>false</skipTests>
         <skipUTs>${skipTests}</skipUTs>
+
+        <!-- Integration tests -->
+        <it.cassandra.memory>1073741824</it.cassandra.memory>
+        <it.cassandra.heap>256M</it.cassandra.heap>
+        <it.cassandra.version>3.0</it.cassandra.version>
     </properties>
 
     <dependencyManagement>
@@ -538,6 +543,149 @@ limitations under the License.
                         </executions>
                     </plugin>
                 </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>docker-integration-test</id>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <artifactId>maven-failsafe-plugin</artifactId>
+                            <configuration>
+                                <systemPropertyVariables>
+                                    <it-cassandra.ip>${docker.container.seed.ip}</it-cassandra.ip>
+                                    <it-cassandra.jmx.port>7199</it-cassandra.jmx.port>
+                                    <it-cassandra.native.port>9042</it-cassandra.native.port>
+                                </systemPropertyVariables>
+                            </configuration>
+                        </plugin>
+
+                        <!-- Docker -->
+                        <plugin>
+                            <groupId>io.fabric8</groupId>
+                            <artifactId>docker-maven-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>start-it-cassandra</id>
+                                    <phase>pre-integration-test</phase>
+                                    <goals>
+                                        <goal>start</goal>
+                                    </goals>
+                                    <configuration>
+                                        <images>
+                                            <image>
+                                                <name>cassandra:${it.cassandra.version}</name>
+                                                <alias>cassandra1</alias>
+                                                <run>
+                                                    <memory>${it.cassandra.memory}</memory>
+                                                    <memorySwap>-1</memorySwap>
+                                                    <env>
+                                                        <LOCAL_JMX>no</LOCAL_JMX>
+                                                        <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap} -Xmn100M</JVM_OPTS>
+                                                        <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false</JVM_EXTRA_OPTS>
+                                                    </env>
+                                                    <exposedPropertyKey>seed</exposedPropertyKey>
+                                                    <wait>
+                                                        <time>60000</time>
+                                                        <tcp>
+                                                            <ports>
+                                                                <port>9042</port>
+                                                            </ports>
+                                                        </tcp>
+                                                    </wait>
+                                                </run>
+                                            </image>
+                                            <image>
+                                                <name>cassandra:${it.cassandra.version}</name>
+                                                <alias>cassandra2</alias>
+                                                <run>
+                                                    <memory>${it.cassandra.memory}</memory>
+                                                    <memorySwap>-1</memorySwap>
+                                                    <env>
+                                                        <LOCAL_JMX>no</LOCAL_JMX>
+                                                        <HOSTNAME>$HOSTNAME</HOSTNAME>
+                                                        <CASSANDRA_SEEDS>$${docker.container.seed.ip}</CASSANDRA_SEEDS>
+                                                        <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap} -Xmn100M -Dcassandra.auto_bootstrap=false</JVM_OPTS>
+                                                        <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false</JVM_EXTRA_OPTS>
+                                                    </env>
+                                                    <wait>
+                                                        <time>120000</time>
+                                                        <tcp>
+                                                            <ports>
+                                                                <port>9042</port>
+                                                            </ports>
+                                                        </tcp>
+                                                    </wait>
+                                                </run>
+                                            </image>
+                                            <image>
+                                                <name>cassandra:${it.cassandra.version}</name>
+                                                <alias>cassandra3</alias>
+                                                <run>
+                                                    <memory>${it.cassandra.memory}</memory>
+                                                    <memorySwap>-1</memorySwap>
+                                                    <env>
+                                                        <LOCAL_JMX>no</LOCAL_JMX>
+                                                        <CASSANDRA_SEEDS>$${docker.container.seed.ip}</CASSANDRA_SEEDS>
+                                                        <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap} -Xmn100M -Dcassandra.auto_bootstrap=false</JVM_OPTS>
+                                                        <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false</JVM_EXTRA_OPTS>
+                                                    </env>
+                                                    <wait>
+                                                        <time>120000</time>
+                                                        <tcp>
+                                                            <ports>
+                                                                <port>9042</port>
+                                                            </ports>
+                                                        </tcp>
+                                                    </wait>
+                                                </run>
+                                            </image>
+                                            <image>
+                                                <name>cassandra:${it.cassandra.version}</name>
+                                                <alias>cassandra4</alias>
+                                                <run>
+                                                    <memory>${it.cassandra.memory}</memory>
+                                                    <memorySwap>-1</memorySwap>
+                                                    <env>
+                                                        <LOCAL_JMX>no</LOCAL_JMX>
+                                                        <CASSANDRA_SEEDS>$${docker.container.seed.ip}</CASSANDRA_SEEDS>
+                                                        <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap} -Xmn100M -Dcassandra.auto_bootstrap=false</JVM_OPTS>
+                                                        <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false</JVM_EXTRA_OPTS>
+                                                    </env>
+                                                    <wait>
+                                                        <time>120000</time>
+                                                        <tcp>
+                                                            <ports>
+                                                                <port>9042</port>
+                                                            </ports>
+                                                        </tcp>
+                                                        <exec>
+                                                            <postStart>cqlsh -f /media/test/create_keyspaces.cql</postStart>
+                                                        </exec>
+                                                    </wait>
+                                                    <volumes>
+                                                        <bind>
+                                                            <volume>src/test/resources:/media/test/:ro</volume>
+                                                        </bind>
+                                                    </volumes>
+                                                </run>
+                                            </image>
+                                        </images>
+                                    </configuration>
+                                </execution>
+                                <execution>
+                                    <id>stop-it-cassandra</id>
+                                    <phase>post-integration-test</phase>
+                                    <goals>
+                                        <goal>stop</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
             </build>
         </profile>
     </profiles>
