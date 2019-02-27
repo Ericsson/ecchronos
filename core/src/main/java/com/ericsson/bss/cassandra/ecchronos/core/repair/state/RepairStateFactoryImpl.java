@@ -20,18 +20,23 @@ import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 
 public class RepairStateFactoryImpl implements RepairStateFactory
 {
     private final HostStates myHostStates;
     private final TableRepairMetrics myTableRepairMetrics;
+    private final RepairFaultReporter myFaultReporter;
 
     private final VnodeRepairStateFactoryImpl myVnodeRepairStateFactory;
+
+
 
     private RepairStateFactoryImpl(Builder builder)
     {
         myHostStates = builder.myHostStates;
         myTableRepairMetrics = builder.myTableRepairMetrics;
+        myFaultReporter = builder.myFaultReporter;
 
         ReplicationState replicationState = new ReplicationState(builder.myMetadata, builder.myHost);
         myVnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(replicationState, builder.myRepairHistoryProvider);
@@ -42,7 +47,9 @@ public class RepairStateFactoryImpl implements RepairStateFactory
     {
         ReplicaRepairGroupFactory replicaRepairGroupFactory = VnodeRepairGroupFactory.INSTANCE;
 
-        return new RepairStateImpl(tableReference, repairConfiguration, myVnodeRepairStateFactory, myHostStates, myTableRepairMetrics, replicaRepairGroupFactory);
+        PostUpdateHook postUpdateHook = new AlarmPostUpdateHook(tableReference, repairConfiguration, myFaultReporter);
+
+        return new RepairStateImpl(tableReference, repairConfiguration, myVnodeRepairStateFactory, myHostStates, myTableRepairMetrics, replicaRepairGroupFactory, postUpdateHook);
     }
 
     public static Builder builder()
@@ -57,6 +64,7 @@ public class RepairStateFactoryImpl implements RepairStateFactory
         private HostStates myHostStates;
         private RepairHistoryProvider myRepairHistoryProvider;
         private TableRepairMetrics myTableRepairMetrics;
+        private RepairFaultReporter myFaultReporter;
 
         public Builder withMetadata(Metadata metadata)
         {
@@ -85,6 +93,12 @@ public class RepairStateFactoryImpl implements RepairStateFactory
         public Builder withTableRepairMetrics(TableRepairMetrics tableRepairMetrics)
         {
             myTableRepairMetrics = tableRepairMetrics;
+            return this;
+        }
+
+        public Builder withFaultReporter(RepairFaultReporter faultReporter)
+        {
+            myFaultReporter = faultReporter;
             return this;
         }
 

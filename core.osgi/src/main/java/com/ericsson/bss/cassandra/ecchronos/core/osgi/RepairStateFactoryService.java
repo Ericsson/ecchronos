@@ -27,6 +27,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -37,6 +38,9 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 @Component(service = RepairStateFactory.class)
 public class RepairStateFactoryService implements RepairStateFactory
 {
+    @Reference(service = RepairFaultReporter.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    private volatile RepairFaultReporter myFaultReporter;
+
     @Reference(service = StatementDecorator.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile StatementDecorator myStatementDecorator;
 
@@ -60,6 +64,7 @@ public class RepairStateFactoryService implements RepairStateFactory
 
         myDelegateRepairStateFactory = RepairStateFactoryImpl.builder()
                 .withMetadata(metadata)
+                .withFaultReporter(myFaultReporter)
                 .withHost(host)
                 .withHostStates(myHostStates)
                 .withRepairHistoryProvider(repairHistoryProvider)

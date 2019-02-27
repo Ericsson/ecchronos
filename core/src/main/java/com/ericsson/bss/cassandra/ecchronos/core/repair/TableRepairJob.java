@@ -16,17 +16,12 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
-import com.ericsson.bss.cassandra.ecchronos.core.Clock;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
@@ -35,10 +30,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
-import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter.FaultCode;
-import com.google.common.annotations.VisibleForTesting;
 
 /**
  * A scheduled job that keeps track of the repair status of a single table. The table is considered repaired for this node if all the ranges this node
@@ -53,13 +44,10 @@ public class TableRepairJob extends ScheduledJob
     private final TableReference myTableReference;
     private final JmxProxyFactory myJmxProxyFactory;
     private final RepairState myRepairState;
-    private final RepairFaultReporter myFaultReporter;
     private final RepairConfiguration myRepairConfiguration;
     private final RepairLockType myRepairLockType;
 
     private final TableRepairMetrics myTableRepairMetrics;
-
-    private final AtomicReference<Clock> myClock = new AtomicReference<>(Clock.DEFAULT);
 
     TableRepairJob(Builder builder)
     {
@@ -68,7 +56,6 @@ public class TableRepairJob extends ScheduledJob
         myTableReference = builder.tableReference;
         myJmxProxyFactory = builder.jmxProxyFactory;
         myRepairState = builder.repairState;
-        myFaultReporter = builder.faultReporter;
         myTableRepairMetrics = builder.tableRepairMetrics;
         myRepairConfiguration = builder.repairConfiguration;
         myRepairLockType = builder.repairLockType;
@@ -114,15 +101,6 @@ public class TableRepairJob extends ScheduledJob
         try
         {
             myRepairState.update();
-
-            RepairStateSnapshot repairStateSnapshot = myRepairState.getSnapshot();
-
-            long lastRepaired = repairStateSnapshot.lastRepairedAt();
-
-            if (lastRepaired != VnodeRepairState.UNREPAIRED)
-            {
-                sendOrCeaseAlarm(lastRepaired);
-            }
         }
         catch (Exception e)
         {
@@ -136,49 +114,6 @@ public class TableRepairJob extends ScheduledJob
     public long getLastSuccessfulRun()
     {
         return myRepairState.getSnapshot().lastRepairedAt();
-    }
-
-    private void raiseAlarm(FaultCode faultCode)
-    {
-        Map<String, Object> faultData = new HashMap<>();
-        faultData.put(RepairFaultReporter.FAULT_KEYSPACE, myTableReference.getKeyspace());
-        faultData.put(RepairFaultReporter.FAULT_TABLE, myTableReference.getTable());
-
-        myFaultReporter.raise(faultCode, faultData);
-    }
-
-    private void ceaseWarningAlarm()
-    {
-        Map<String, Object> ceaseData = new HashMap<>();
-        ceaseData.put(RepairFaultReporter.FAULT_KEYSPACE, myTableReference.getKeyspace());
-        ceaseData.put(RepairFaultReporter.FAULT_TABLE, myTableReference.getTable());
-
-        myFaultReporter.cease(FaultCode.REPAIR_WARNING, ceaseData);
-    }
-
-    private void sendOrCeaseAlarm(long lastRepaired)
-    {
-        long msSinceLastRepair = myClock.get().getTime() - lastRepaired;
-
-        FaultCode faultCode = null;
-
-        if (msSinceLastRepair >= myRepairConfiguration.getRepairErrorTimeInMs())
-        {
-            faultCode = FaultCode.REPAIR_ERROR;
-        }
-        else if (msSinceLastRepair >= myRepairConfiguration.getRepairWarningTimeInMs())
-        {
-            faultCode = FaultCode.REPAIR_WARNING;
-        }
-
-        if (faultCode != null)
-        {
-            raiseAlarm(faultCode);
-        }
-        else
-        {
-            ceaseWarningAlarm();
-        }
     }
 
     @Override
@@ -195,16 +130,7 @@ public class TableRepairJob extends ScheduledJob
             }
         }
 
-        RepairStateSnapshot repairStateSnapshot = myRepairState.getSnapshot();
-
-        long lastRepaired = repairStateSnapshot.lastRepairedAt();
-
-        if (lastRepaired != VnodeRepairState.UNREPAIRED)
-        {
-            sendOrCeaseAlarm(lastRepaired);
-        }
-
-        return repairStateSnapshot.canRepair() && super.runnable();
+        return myRepairState.getSnapshot().canRepair() && super.runnable();
     }
 
     @Override
@@ -222,7 +148,6 @@ public class TableRepairJob extends ScheduledJob
         private TableReference tableReference;
         private JmxProxyFactory jmxProxyFactory;
         private RepairState repairState;
-        private RepairFaultReporter faultReporter;
         private TableRepairMetrics tableRepairMetrics = null;
         private RepairConfiguration repairConfiguration = RepairConfiguration.DEFAULT;
         private RepairLockType repairLockType;
@@ -251,12 +176,6 @@ public class TableRepairJob extends ScheduledJob
             return this;
         }
 
-        public Builder withFaultReporter(RepairFaultReporter faultReporter)
-        {
-            this.faultReporter = faultReporter;
-            return this;
-        }
-
         public Builder withTableRepairMetrics(TableRepairMetrics tableRepairMetrics)
         {
             this.tableRepairMetrics = tableRepairMetrics;
@@ -281,10 +200,6 @@ public class TableRepairJob extends ScheduledJob
             {
                 throw new IllegalArgumentException("Table reference cannot be null");
             }
-            if (faultReporter == null)
-            {
-                throw new IllegalArgumentException("Fault reporter cannot be null");
-            }
             if (jmxProxyFactory == null)
             {
                 throw new IllegalArgumentException("JMX Proxy factory cannot be null");
@@ -295,11 +210,5 @@ public class TableRepairJob extends ScheduledJob
             }
             return new TableRepairJob(this);
         }
-    }
-
-    @VisibleForTesting
-    void setClock(Clock clock)
-    {
-        myClock.set(clock);
     }
 }

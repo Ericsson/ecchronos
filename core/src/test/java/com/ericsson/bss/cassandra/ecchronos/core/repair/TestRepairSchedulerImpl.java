@@ -177,7 +177,6 @@ public class TestRepairSchedulerImpl
     {
         return RepairSchedulerImpl.builder()
                 .withJmxProxyFactory(jmxProxyFactory)
-                .withFaultReporter(myFaultReporter)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withScheduleManager(scheduleManager)
                 .withRepairStateFactory(myRepairStateFactory)

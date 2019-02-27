@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
-import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 
 /**
  * A factory creating {@link TableRepairJob}'s for tables based on the provided repair configuration.
@@ -45,7 +44,6 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
 
     private final ExecutorService myExecutor;
 
-    private final RepairFaultReporter myFaultReporter;
     private final JmxProxyFactory myJmxProxyFactory;
     private final TableRepairMetrics myTableRepairMetrics;
     private final ScheduleManager myScheduleManager;
@@ -55,7 +53,6 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
     private RepairSchedulerImpl(Builder builder)
     {
         myExecutor = Executors.newSingleThreadScheduledExecutor();
-        myFaultReporter = builder.myFaultReporter;
         myJmxProxyFactory = builder.myJmxProxyFactory;
         myTableRepairMetrics = builder.myTableRepairMetrics;
         myScheduleManager = builder.myScheduleManager;
@@ -169,7 +166,6 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withTableReference(tableReference)
                 .withRepairState(repairState)
-                .withFaultReporter(myFaultReporter)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairConfiguration(repairConfiguration)
                 .withRepairLockType(myRepairLockType)
@@ -187,18 +183,11 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
 
     public static class Builder
     {
-        private RepairFaultReporter myFaultReporter;
         private JmxProxyFactory myJmxProxyFactory;
         private TableRepairMetrics myTableRepairMetrics;
         private ScheduleManager myScheduleManager;
         private RepairStateFactory myRepairStateFactory;
         private RepairLockType myRepairLockType;
-
-        public Builder withFaultReporter(RepairFaultReporter repairFaultReporter)
-        {
-            myFaultReporter = repairFaultReporter;
-            return this;
-        }
 
         public Builder withJmxProxyFactory(JmxProxyFactory jmxProxyFactory)
         {

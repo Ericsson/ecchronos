@@ -45,9 +45,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 @Designate(ocd = RepairSchedulerService.Configuration.class)
 public class RepairSchedulerService implements RepairScheduler
 {
-    @Reference(service = RepairFaultReporter.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
-    private volatile RepairFaultReporter myFaultReporter;
-
     @Reference (service = JmxProxyFactory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile JmxProxyFactory myJmxProxyFactory;
 
@@ -66,7 +63,6 @@ public class RepairSchedulerService implements RepairScheduler
     public synchronized void activate(Configuration configuration)
     {
         myDelegateRepairSchedulerImpl = RepairSchedulerImpl.builder()
-                .withFaultReporter(myFaultReporter)
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withScheduleManager(myScheduleManager)
