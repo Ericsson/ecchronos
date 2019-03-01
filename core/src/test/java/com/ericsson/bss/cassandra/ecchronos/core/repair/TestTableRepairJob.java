@@ -15,25 +15,18 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyMapOf;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.ignoreStubs;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.MockedClock;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -52,8 +45,6 @@ import com.datastax.driver.core.exceptions.OverloadedException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
-import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
-import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter.FaultCode;
 
 @RunWith (MockitoJUnitRunner.class)
 public class TestTableRepairJob
@@ -77,12 +68,6 @@ public class TestTableRepairJob
     private KeyspaceMetadata myKeyspaceMetadata;
 
     @Mock
-    private TableMetadata myTableMetadata;
-
-    @Mock
-    private TableOptionsMetadata myTableOptionsMetadata;
-
-    @Mock
     private RepairState myRepairState;
 
     @Mock
@@ -93,8 +78,6 @@ public class TestTableRepairJob
 
     private TableRepairJob myRepairJob;
 
-    private MockedClock myClock = new MockedClock();
-
     private final TableReference myTableReference = new TableReference(keyspaceName, tableName);
 
     @Before
@@ -104,10 +87,6 @@ public class TestTableRepairJob
         doReturn(myRepairStateSnapshot).when(myRepairState).getSnapshot();
 
         doNothing().when(myRepairState).update();
-
-        doReturn(myTableOptionsMetadata).when(myTableMetadata).getOptions();
-        doReturn(myTableMetadata).when(myKeyspaceMetadata).getTable(eq(tableName));
-        doReturn(myKeyspaceMetadata).when(myMetadata).getKeyspace(eq(keyspaceName));
 
         ScheduledJob.Configuration configuration = new ScheduledJob.ConfigurationBuilder()
                 .withPriority(ScheduledJob.Priority.LOW)

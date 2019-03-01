@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.PostUpdateHook;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
@@ -27,7 +28,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -38,9 +38,6 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 @Component(service = RepairStateFactory.class)
 public class RepairStateFactoryService implements RepairStateFactory
 {
-    @Reference(service = RepairFaultReporter.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
-    private volatile RepairFaultReporter myFaultReporter;
-
     @Reference(service = StatementDecorator.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile StatementDecorator myStatementDecorator;
 
@@ -64,7 +61,6 @@ public class RepairStateFactoryService implements RepairStateFactory
 
         myDelegateRepairStateFactory = RepairStateFactoryImpl.builder()
                 .withMetadata(metadata)
-                .withFaultReporter(myFaultReporter)
                 .withHost(host)
                 .withHostStates(myHostStates)
                 .withRepairHistoryProvider(repairHistoryProvider)
@@ -79,8 +75,8 @@ public class RepairStateFactoryService implements RepairStateFactory
     }
 
     @Override
-    public RepairState create(TableReference tableReference, RepairConfiguration repairConfiguration)
+    public RepairState create(TableReference tableReference, RepairConfiguration repairConfiguration, PostUpdateHook postUpdateHook)
     {
-        return myDelegateRepairStateFactory.create(tableReference, repairConfiguration);
+        return myDelegateRepairStateFactory.create(tableReference, repairConfiguration, postUpdateHook);
     }
 }

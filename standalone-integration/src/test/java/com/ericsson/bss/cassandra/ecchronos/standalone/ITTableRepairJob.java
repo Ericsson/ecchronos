@@ -139,7 +139,6 @@ public class ITTableRepairJob extends TestBase
                         .withJmxProxyFactory(getJmxProxyFactory())
                         .build())
                 .withMetadata(myMetadata)
-                .withFaultReporter(myFaultReporter)
                 .withRepairHistoryProvider(myRepairHistoryProvider)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .build();
@@ -147,6 +146,7 @@ public class ITTableRepairJob extends TestBase
         myRepairSchedulerImpl = RepairSchedulerImpl.builder()
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .withTableRepairMetrics(myTableRepairMetrics)
+                .withFaultReporter(myFaultReporter)
                 .withScheduleManager(myScheduleManagerImpl)
                 .withRepairStateFactory(repairStateFactory)
                 .withRepairLockType(RepairLockType.VNODE)

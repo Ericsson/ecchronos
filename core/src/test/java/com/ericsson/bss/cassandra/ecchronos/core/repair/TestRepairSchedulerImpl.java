@@ -74,7 +74,7 @@ public class TestRepairSchedulerImpl
     public void init()
     {
         doReturn(myRepairStateSnapshot).when(myRepairState).getSnapshot();
-        doReturn(myRepairState).when(myRepairStateFactory).create(eq(TABLE_REFERENCE), any());
+        doReturn(myRepairState).when(myRepairStateFactory).create(eq(TABLE_REFERENCE), any(), any());
     }
 
     @Test
@@ -86,7 +86,7 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
         verify(myRepairState, atLeastOnce()).update();
 
         repairSchedulerImpl.close();
@@ -106,7 +106,7 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
         verify(myRepairState, atLeastOnce()).update();
 
         repairSchedulerImpl.removeConfiguration(TABLE_REFERENCE);
@@ -133,14 +133,14 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
         verify(myRepairState, atLeastOnce()).update();
 
         repairSchedulerImpl.putConfiguration(TABLE_REFERENCE, updatedRepairConfiguration);
 
         verify(scheduleManager, timeout(1000).times(2)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, timeout(1000)).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(updatedRepairConfiguration));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(updatedRepairConfiguration), any());
         verify(myRepairState, atLeastOnce()).update();
 
         repairSchedulerImpl.close();
@@ -160,7 +160,7 @@ public class TestRepairSchedulerImpl
 
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
-        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
         verify(myRepairState, atLeastOnce()).update();
 
         repairSchedulerImpl.putConfiguration(TABLE_REFERENCE, RepairConfiguration.DEFAULT);

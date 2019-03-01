@@ -67,7 +67,6 @@ public class ECChronos implements Closeable
                 .withHost(host)
                 .withHostStates(myECChronosInternals.getHostStates())
                 .withRepairHistoryProvider(repairHistoryProvider)
-                .withFaultReporter(repairFaultReporter)
                 .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
                 .build();
 
@@ -83,6 +82,7 @@ public class ECChronos implements Closeable
 
         myRepairSchedulerImpl = RepairSchedulerImpl.builder()
                 .withJmxProxyFactory(myECChronosInternals.getJmxProxyFactory())
+                .withFaultReporter(repairFaultReporter)
                 .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
                 .withScheduleManager(myECChronosInternals.getScheduleManager())
                 .withRepairStateFactory(repairStateFactoryImpl)

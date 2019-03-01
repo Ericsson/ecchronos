@@ -24,6 +24,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * A update hook that raises and ceases alarms based on the elapsed time without repair
+ */
 public class AlarmPostUpdateHook implements PostUpdateHook
 {
     private final RepairFaultReporter myFaultReporter;
@@ -31,7 +34,7 @@ public class AlarmPostUpdateHook implements PostUpdateHook
     private final RepairConfiguration myRepairConfiguration;
     private final AtomicReference<Clock> myClock = new AtomicReference<>(Clock.DEFAULT);
 
-    AlarmPostUpdateHook(TableReference tableReference, RepairConfiguration repairConfiguration, RepairFaultReporter faultReporter)
+    public AlarmPostUpdateHook(TableReference tableReference, RepairConfiguration repairConfiguration, RepairFaultReporter faultReporter)
     {
         myFaultReporter = faultReporter;
         myTableReference = tableReference;

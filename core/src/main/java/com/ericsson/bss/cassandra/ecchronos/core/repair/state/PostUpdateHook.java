@@ -14,8 +14,16 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
+/**
+ * Interface for injecting code to be executed after {@link RepairState#update()}
+ */
 @FunctionalInterface
-interface PostUpdateHook
+public interface PostUpdateHook
 {
+    /**
+     * Runs each time the {@link RepairState} is updated.
+     *
+     * @param repairStateSnapshot The current repair state snapshot
+     */
     void postUpdate(RepairStateSnapshot repairStateSnapshot);
 }
