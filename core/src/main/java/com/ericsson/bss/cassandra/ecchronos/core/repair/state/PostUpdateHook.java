@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Telefonaktiebolaget LM Ericsson
+ * Copyright 2019 Telefonaktiebolaget LM Ericsson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,16 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-
-public interface RepairStateFactory
+/**
+ * Interface for injecting code to be executed after {@link RepairState#update()}
+ */
+@FunctionalInterface
+public interface PostUpdateHook
 {
-    RepairState create(TableReference tableReference, RepairConfiguration repairConfiguration, PostUpdateHook postUpdateHook);
+    /**
+     * Runs each time the {@link RepairState} is updated.
+     *
+     * @param repairStateSnapshot The current repair state snapshot
+     */
+    void postUpdate(RepairStateSnapshot repairStateSnapshot);
 }

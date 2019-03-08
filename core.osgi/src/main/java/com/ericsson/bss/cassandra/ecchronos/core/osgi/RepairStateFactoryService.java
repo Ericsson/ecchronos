@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.PostUpdateHook;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
@@ -74,8 +75,8 @@ public class RepairStateFactoryService implements RepairStateFactory
     }
 
     @Override
-    public RepairState create(TableReference tableReference, RepairConfiguration repairConfiguration)
+    public RepairState create(TableReference tableReference, RepairConfiguration repairConfiguration, PostUpdateHook postUpdateHook)
     {
-        return myDelegateRepairStateFactory.create(tableReference, repairConfiguration);
+        return myDelegateRepairStateFactory.create(tableReference, repairConfiguration, postUpdateHook);
     }
 }

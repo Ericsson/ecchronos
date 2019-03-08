@@ -22,6 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.AlarmPostUpdateHook;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -161,15 +162,14 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
                 .withPriority(ScheduledJob.Priority.LOW)
                 .withRunInterval(repairIntervalInMs, TimeUnit.MILLISECONDS)
                 .build();
-
-        RepairState repairState = myRepairStateFactory.create(tableReference, repairConfiguration);
+        AlarmPostUpdateHook alarmPostUpdateHook = new AlarmPostUpdateHook(tableReference, repairConfiguration, myFaultReporter);
+        RepairState repairState = myRepairStateFactory.create(tableReference, repairConfiguration, alarmPostUpdateHook);
 
         TableRepairJob job = new TableRepairJob.Builder()
                 .withConfiguration(configuration)
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withTableReference(tableReference)
                 .withRepairState(repairState)
-                .withFaultReporter(myFaultReporter)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairConfiguration(repairConfiguration)
                 .withRepairLockType(myRepairLockType)

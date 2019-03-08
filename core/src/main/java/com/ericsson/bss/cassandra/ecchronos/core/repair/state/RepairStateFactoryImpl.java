@@ -28,6 +28,8 @@ public class RepairStateFactoryImpl implements RepairStateFactory
 
     private final VnodeRepairStateFactoryImpl myVnodeRepairStateFactory;
 
+
+
     private RepairStateFactoryImpl(Builder builder)
     {
         myHostStates = builder.myHostStates;
@@ -38,11 +40,11 @@ public class RepairStateFactoryImpl implements RepairStateFactory
     }
 
     @Override
-    public RepairState create(TableReference tableReference, RepairConfiguration repairConfiguration)
+    public RepairState create(TableReference tableReference, RepairConfiguration repairConfiguration, PostUpdateHook postUpdateHook)
     {
         ReplicaRepairGroupFactory replicaRepairGroupFactory = VnodeRepairGroupFactory.INSTANCE;
 
-        return new RepairStateImpl(tableReference, repairConfiguration, myVnodeRepairStateFactory, myHostStates, myTableRepairMetrics, replicaRepairGroupFactory);
+        return new RepairStateImpl(tableReference, repairConfiguration, myVnodeRepairStateFactory, myHostStates, myTableRepairMetrics, replicaRepairGroupFactory, postUpdateHook);
     }
 
     public static Builder builder()

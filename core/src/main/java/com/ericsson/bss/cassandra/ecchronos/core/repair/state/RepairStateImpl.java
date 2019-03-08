@@ -44,10 +44,12 @@ public class RepairStateImpl implements RepairState
     private final HostStates myHostStates;
     private final TableRepairMetrics myTableRepairMetrics;
     private final ReplicaRepairGroupFactory myReplicaRepairGroupFactory;
+    private final PostUpdateHook myPostUpdateHook;
 
     public RepairStateImpl(TableReference tableReference, RepairConfiguration repairConfiguration,
                            VnodeRepairStateFactory vnodeRepairStateFactory, HostStates hostStates,
-                           TableRepairMetrics tableRepairMetrics, ReplicaRepairGroupFactory replicaRepairGroupFactory)
+                           TableRepairMetrics tableRepairMetrics, ReplicaRepairGroupFactory replicaRepairGroupFactory,
+                           PostUpdateHook postUpdateHook)
     {
         myTableReference = tableReference;
         myRepairConfiguration = repairConfiguration;
@@ -55,6 +57,7 @@ public class RepairStateImpl implements RepairState
         myHostStates = hostStates;
         myTableRepairMetrics = tableRepairMetrics;
         myReplicaRepairGroupFactory = replicaRepairGroupFactory;
+        myPostUpdateHook = postUpdateHook;
 
         update();
     }
@@ -86,6 +89,7 @@ public class RepairStateImpl implements RepairState
         {
             LOG.debug("Table {} keeping repair state {}", myTableReference, oldRepairStateSnapshot);
         }
+        myPostUpdateHook.postUpdate(myRepairStateSnapshot.get());
     }
 
     @Override
