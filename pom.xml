@@ -92,6 +92,8 @@
         <org.apache.maven.plugins.maven-assembly-plugin.version>3.1.0</org.apache.maven.plugins.maven-assembly-plugin.version>
         <org.apache.maven.plugins-maven-dependency-plugin.version>3.1.1</org.apache.maven.plugins-maven-dependency-plugin.version>
         <org.apache.maven.plugins-maven-pmd-plugin.version>3.11.0</org.apache.maven.plugins-maven-pmd-plugin.version>
+        <org.apache.maven.plugins-maven-resources-plugin.version>3.1.0</org.apache.maven.plugins-maven-resources-plugin.version>
+        <org.apache.maven.plugins-maven-dependency-plugin.version>3.1.1</org.apache.maven.plugins-maven-dependency-plugin.version>
         <org.apache.felix.maven-bundle-plugin.version>3.2.0</org.apache.felix.maven-bundle-plugin.version>
         <com.mycila.license-maven-plugin.version>3.0</com.mycila.license-maven-plugin.version>
         <io.fabric8.docker-maven-plugin.version>0.26.0</io.fabric8.docker-maven-plugin.version>
@@ -99,6 +101,7 @@
         <org.apache.karaf.tooling.karaf-maven-plugin.version>3.0.3</org.apache.karaf.tooling.karaf-maven-plugin.version>
         <org.eluder.coveralls.coveralls-maven-plugin.version>4.3.0</org.eluder.coveralls.coveralls-maven-plugin.version>
         <org.codehaus.mojo.cobertura-maven-plugin.version>2.7</org.codehaus.mojo.cobertura-maven-plugin.version>
+        <org.codehaus.mojo.exec-maven-plugin.version>1.6.0</org.codehaus.mojo.exec-maven-plugin.version>
 
         <org.apache.maven.plugins.maven-release-plugin.version>2.5.3</org.apache.maven.plugins.maven-release-plugin.version>
         <org.apache.maven.plugins.maven-deploy-plugin.version>2.8.2</org.apache.maven.plugins.maven-deploy-plugin.version>
@@ -499,6 +502,7 @@ limitations under the License.
                             <exclude>**/pom.xml.tag</exclude>
                             <exclude>**/pom.xml.releaseBackup</exclude>
                             <exclude>release.properties</exclude>
+                            <exclude>**/*.feature</exclude>
                         </excludes>
                     </configuration>
                 </plugin>
@@ -531,6 +535,22 @@ limitations under the License.
                 <plugin>
                     <artifactId>maven-gpg-plugin</artifactId>
                     <version>${org.apache.maven.plugins.maven-gpg-plugin.version}</version>
+                </plugin>
+
+                <plugin>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>${org.apache.maven.plugins-maven-dependency-plugin.version}</version>
+                </plugin>
+
+                <plugin>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>${org.apache.maven.plugins-maven-resources-plugin.version}</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>${org.codehaus.mojo.exec-maven-plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>

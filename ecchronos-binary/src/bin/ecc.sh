@@ -15,7 +15,7 @@
 #
 
 if [ "x$ECCHRONOS_HOME" = "x" ]; then
-  ECCHRONOS_HOME="`dirname "$0"`/.."
+    ECCHRONOS_HOME="`dirname "$0"`/.."
 fi
 
 CLASSPATH="$ECCHRONOS_HOME"/conf/
@@ -26,8 +26,30 @@ do
     CLASSPATH="$CLASSPATH:$library"
 done
 
-if [ "$1" = "-f" ]; then
-    java $JVM_ENV -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.ECChronos $@
+FOREGROUND=""
+PIDFILE=""
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -f)
+            FOREGROUND="-f"
+            shift
+        ;;
+        -p)
+            PIDFILE="$2"
+            shift 2
+        ;;
+        *)
+            echo "Unknown argument '$1'" >&2
+            exit 1
+        ;;
+    esac
+done
+
+if [ "$FOREGROUND" = "-f" ]; then
+    java $JVM_ENV -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.ECChronos $FOREGROUND
+    [ ! -z "$PIDFILE" ] && echo "$!" > "$PIDFILE"
 else
     java $JVM_ENV -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.ECChronos $@ <&- &
+    [ ! -z "$PIDFILE" ] && echo "$!" > "$PIDFILE"
 fi

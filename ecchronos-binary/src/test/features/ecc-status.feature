@@ -1,0 +1,44 @@
+Feature: ecc-status
+
+  Scenario: List tables
+    Given we have access to ecc-status
+    When we list all tables
+    Then the output should contain a valid header
+    And the output should contain a row for test.table1
+    And the output should contain a row for test.table2
+    And the output should contain a row for test2.table1
+    And the output should contain a row for test2.table2
+    And the output should not contain more rows
+
+  Scenario: List tables with a limit
+    Given we have access to ecc-status
+    When we list all tables with a limit of 1
+    Then the output should contain a valid header
+    And the output should contain 1 row
+
+  Scenario: List tables for keyspace test
+    Given we have access to ecc-status
+    When we list all tables for keyspace test
+    Then the output should contain a valid header
+    And the output should contain a row for test.table1
+    And the output should contain a row for test.table2
+    And the output should not contain more rows
+
+  Scenario: List tables for keyspace test with a limit
+    Given we have access to ecc-status
+    When we list all tables for keyspace test with a limit of 1
+    Then the output should contain a valid header
+    And the output should contain a row for test..*
+    And the output should not contain more rows
+
+  Scenario: Show the table test.table1
+    Given we have access to ecc-status
+    When we show table test.table1
+    Then the expected header should be for test.table1
+    And the token list should contain 15 rows
+
+  Scenario: Show the table test.table1 with a limit
+    Given we have access to ecc-status
+    When we show table test.table1 with a limit of 5
+    Then the expected header should be for test.table1
+    And the token list should contain 5 rows
