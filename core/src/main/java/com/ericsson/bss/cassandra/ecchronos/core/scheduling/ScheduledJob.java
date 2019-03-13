@@ -79,6 +79,20 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     }
 
     /**
+     * Get current State of the job.
+     *
+     * @return current State
+     */
+    public State getState()
+    {
+        if (runnable())
+        {
+            return State.RUNNABLE;
+        }
+        return State.PARKED;
+    }
+
+    /**
      * Get the unix timestamp of the last time this job was run.
      *
      * @return The last time the job ran successfully.
@@ -164,6 +178,24 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         {
             return value;
         }
+    }
+
+    public enum State
+    {
+        /**
+         * Job is pending to be run.
+         */
+        RUNNABLE,
+
+        /**
+         * Job is finished and can be discarded
+         */
+        FINISHED,
+
+        /**
+         * The Job cannot be run currently.
+         */
+        PARKED
     }
 
     /**
