@@ -224,6 +224,43 @@ public class TestScheduleManager
         assertThat(myScheduler.getQueueSize()).isEqualTo(0);
     }
 
+    @Test
+    public void testRunOnceJobRemoved() throws LockException
+    {
+        RunOnceJob job = new RunOnceJob(ScheduledJob.Priority.LOW);
+        myScheduler.schedule(job);
+
+        myScheduler.run();
+
+        assertThat(job.hasRun()).isTrue();
+        assertThat(myScheduler.getQueueSize()).isEqualTo(1);
+
+        myScheduler.run();
+
+        assertThat(myScheduler.getQueueSize()).isEqualTo(0);
+    }
+
+
+
+    private class RunOnceJob extends DummyJob
+    {
+        RunOnceJob(Priority priority)
+        {
+            super(priority);
+        }
+
+        @Override
+        public State getState()
+        {
+            if(hasRun)
+            {
+                return State.FINISHED;
+            }
+            return super.getState();
+        }
+    }
+
+
     private class LongRunningJob extends ScheduledJob
     {
         private volatile boolean hasRun = false;

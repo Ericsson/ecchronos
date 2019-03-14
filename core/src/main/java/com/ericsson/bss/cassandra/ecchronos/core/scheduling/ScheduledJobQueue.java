@@ -137,7 +137,7 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
             {
                 ScheduledJob job = myBaseIterator.next();
 
-                if (job.runnable())
+                if (job.getState() != ScheduledJob.State.PARKED)
                 {
                     LOG.debug("Retrieving job: {}, Priority: {}", job, job.getPriority());
                     return job;

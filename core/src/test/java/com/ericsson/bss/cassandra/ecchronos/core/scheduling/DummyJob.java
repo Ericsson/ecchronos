@@ -22,7 +22,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobExceptio
 
 public class DummyJob extends ScheduledJob
 {
-    private volatile boolean hasRun = false;
+    volatile boolean hasRun = false;
 
     public DummyJob(Priority priority)
     {
