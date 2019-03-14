@@ -56,6 +56,21 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <id>licenses</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>dependencies</goal>
+                            <goal>licenses</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
