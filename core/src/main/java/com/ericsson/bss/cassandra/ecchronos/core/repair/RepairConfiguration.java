@@ -102,13 +102,14 @@ public class RepairConfiguration
         return myRepairIntervalInMs == that.myRepairIntervalInMs &&
                 myRepairWarningTimeInMs == that.myRepairWarningTimeInMs &&
                 myRepairErrorTimeInMs == that.myRepairErrorTimeInMs &&
-                myRepairParallelism == that.myRepairParallelism;
+                myRepairParallelism == that.myRepairParallelism &&
+                myRepairUnwindRatio == that.myRepairUnwindRatio;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(myRepairParallelism, myRepairIntervalInMs, myRepairWarningTimeInMs, myRepairErrorTimeInMs);
+        return Objects.hash(myRepairParallelism, myRepairIntervalInMs, myRepairWarningTimeInMs, myRepairErrorTimeInMs, myRepairUnwindRatio);
     }
 
     public static class Builder
@@ -130,6 +131,7 @@ public class RepairConfiguration
             myRepairIntervalInMs = from.getRepairIntervalInMs();
             myRepairWarningTimeInMs = from.getRepairWarningTimeInMs();
             myRepairErrorTimeInMs = from.getRepairErrorTimeInMs();
+            myRepairUnwindRatio = from.getRepairUnwindRatio();
         }
 
         /**
@@ -191,6 +193,14 @@ public class RepairConfiguration
             return this;
         }
 
+        /**
+         * Set the time used to wait after repair has been run.
+         *
+         * This is used to decrease the pressure repairs create by spreading out repairs over longer periods of time.
+         *
+         * @param repairUnwindRatio The ratio to use
+         * @return The builder
+         */
         public Builder withRepairUnwindRatio(double repairUnwindRatio)
         {
             myRepairUnwindRatio = repairUnwindRatio;
