@@ -41,7 +41,7 @@ public interface RepairScheduler
     void removeConfiguration(TableReference tableReference);
 
     /**
-     * Get a list of the currently scheduled (read-only) repair jobs.
+     * @return the list of the currently scheduled repair jobs.
      */
     List<RepairJobView> getCurrentRepairJobs();
 }

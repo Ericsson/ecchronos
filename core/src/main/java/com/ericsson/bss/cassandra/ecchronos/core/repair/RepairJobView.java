@@ -23,17 +23,17 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 public interface RepairJobView
 {
     /**
-     * Return the table this job is scheduled for.
+     * @return the table this job is scheduled for.
      */
     TableReference getTableReference();
 
     /**
-     * Returns the repair configuration used.
+     * @return the repair configuration used.
      */
     RepairConfiguration getRepairConfiguration();
 
     /**
-     * Returns a snapshot of the current repair state.
+     * @return a snapshot of the current repair state.
      */
     RepairStateSnapshot getRepairStateSnapshot();
 }

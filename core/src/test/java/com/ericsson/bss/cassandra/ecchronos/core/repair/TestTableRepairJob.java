@@ -78,6 +78,8 @@ public class TestTableRepairJob
 
     private TableRepairJob myRepairJob;
 
+    private RepairConfiguration myRepairConfiguration;
+
     private final TableReference myTableReference = new TableReference(keyspaceName, tableName);
 
     @Before
@@ -93,7 +95,7 @@ public class TestTableRepairJob
                 .withRunInterval(RUN_INTERVAL_IN_DAYS, TimeUnit.DAYS)
                 .build();
 
-        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
+        myRepairConfiguration = RepairConfiguration.newBuilder()
                 .withParallelism(RepairOptions.RepairParallelism.PARALLEL)
                 .withRepairWarningTime(RUN_INTERVAL_IN_DAYS * 2, TimeUnit.DAYS)
                 .withRepairErrorTime(GC_GRACE_DAYS, TimeUnit.DAYS)
@@ -105,7 +107,7 @@ public class TestTableRepairJob
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withRepairState(myRepairState)
                 .withTableRepairMetrics(myTableRepairMetrics)
-                .withRepairConfiguration(repairConfiguration)
+                .withRepairConfiguration(myRepairConfiguration)
                 .withRepairLockType(RepairLockType.VNODE)
                 .build();
     }
@@ -249,5 +251,13 @@ public class TestTableRepairJob
         myRepairJob.postExecute(true);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(lastRun);
+    }
+
+    @Test
+    public void testGetTableView()
+    {
+        assertThat(myRepairJob.getTableReference()).isEqualTo(myTableReference);
+        assertThat(myRepairJob.getRepairConfiguration()).isEqualTo(myRepairConfiguration);
+        assertThat(myRepairJob.getRepairStateSnapshot()).isEqualTo(myRepairStateSnapshot);
     }
 }
