@@ -99,6 +99,7 @@ public class TestTableRepairJob
     private MockedClock myClock = new MockedClock();
 
     private final TableReference myTableReference = new TableReference(keyspaceName, tableName);
+    private RepairConfiguration myRepairConfiguration;
 
     @Before
     public void startup()
@@ -117,7 +118,7 @@ public class TestTableRepairJob
                 .withRunInterval(RUN_INTERVAL_IN_DAYS, TimeUnit.DAYS)
                 .build();
 
-        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
+        myRepairConfiguration = RepairConfiguration.newBuilder()
                 .withParallelism(RepairOptions.RepairParallelism.PARALLEL)
                 .withRepairWarningTime(RUN_INTERVAL_IN_DAYS * 2, TimeUnit.DAYS)
                 .withRepairErrorTime(GC_GRACE_DAYS, TimeUnit.DAYS)
@@ -130,7 +131,7 @@ public class TestTableRepairJob
                 .withRepairState(myRepairState)
                 .withFaultReporter(myFaultReporter)
                 .withTableRepairMetrics(myTableRepairMetrics)
-                .withRepairConfiguration(repairConfiguration)
+                .withRepairConfiguration(myRepairConfiguration)
                 .withRepairLockType(RepairLockType.VNODE)
                 .build();
 
@@ -491,5 +492,16 @@ public class TestTableRepairJob
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(lastRepairedAtAfterRepair);
         verify(myFaultReporter, times(0)).raise(any(FaultCode.class), anyMapOf(String.class, Object.class));
+    }
+
+
+    @Test
+    public void testGetView()
+    {
+        RepairJobView repairJobView = myRepairJob.getView();
+
+        assertThat(repairJobView.getTableReference()).isEqualTo(myTableReference);
+        assertThat(repairJobView.getRepairConfiguration()).isEqualTo(myRepairConfiguration);
+        assertThat(repairJobView.getRepairStateSnapshot()).isEqualTo(myRepairStateSnapshot);
     }
 }

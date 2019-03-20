@@ -16,6 +16,8 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
+import java.util.List;
+
 /**
  * A factory which takes repair configuration and schedules tables for repair based on the provided configuration.
  *
@@ -37,4 +39,9 @@ public interface RepairScheduler
      * @param tableReference The table to remove configuration for.
      */
     void removeConfiguration(TableReference tableReference);
+
+    /**
+     * @return the list of the currently scheduled repair jobs.
+     */
+    List<RepairJobView> getCurrentRepairJobs();
 }

@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
@@ -35,6 +36,8 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
+
+import java.util.List;
 
 /**
  * A factory creating {@link TableRepairJob}'s for tables that replicates data over multiple nodes.
@@ -92,6 +95,12 @@ public class RepairSchedulerService implements RepairScheduler
     public void removeConfiguration(TableReference tableReference)
     {
         myDelegateRepairSchedulerImpl.removeConfiguration(tableReference);
+    }
+
+    @Override
+    public List<RepairJobView> getCurrentRepairJobs()
+    {
+        return myDelegateRepairSchedulerImpl.getCurrentRepairJobs();
     }
 
     @ObjectClassDefinition
