@@ -15,7 +15,6 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -39,8 +38,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.TableMetadata;
-import com.datastax.driver.core.TableOptionsMetadata;
 import com.datastax.driver.core.exceptions.OverloadedException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
@@ -78,6 +75,8 @@ public class TestTableRepairJob
 
     private TableRepairJob myRepairJob;
 
+    private RepairConfiguration myRepairConfiguration;
+
     private final TableReference myTableReference = new TableReference(keyspaceName, tableName);
 
     @Before
@@ -93,7 +92,7 @@ public class TestTableRepairJob
                 .withRunInterval(RUN_INTERVAL_IN_DAYS, TimeUnit.DAYS)
                 .build();
 
-        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
+        myRepairConfiguration = RepairConfiguration.newBuilder()
                 .withParallelism(RepairOptions.RepairParallelism.PARALLEL)
                 .withRepairWarningTime(RUN_INTERVAL_IN_DAYS * 2, TimeUnit.DAYS)
                 .withRepairErrorTime(GC_GRACE_DAYS, TimeUnit.DAYS)
@@ -105,7 +104,7 @@ public class TestTableRepairJob
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withRepairState(myRepairState)
                 .withTableRepairMetrics(myTableRepairMetrics)
-                .withRepairConfiguration(repairConfiguration)
+                .withRepairConfiguration(myRepairConfiguration)
                 .withRepairLockType(RepairLockType.VNODE)
                 .build();
     }
@@ -249,5 +248,15 @@ public class TestTableRepairJob
         myRepairJob.postExecute(true);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(lastRun);
+    }
+
+    @Test
+    public void testGetView()
+    {
+        RepairJobView repairJobView = myRepairJob.getView();
+
+        assertThat(repairJobView.getTableReference()).isEqualTo(myTableReference);
+        assertThat(repairJobView.getRepairConfiguration()).isEqualTo(myRepairConfiguration);
+        assertThat(repairJobView.getRepairStateSnapshot()).isEqualTo(myRepairStateSnapshot);
     }
 }
