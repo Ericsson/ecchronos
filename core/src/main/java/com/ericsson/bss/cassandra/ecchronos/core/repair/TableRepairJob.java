@@ -22,12 +22,12 @@ import java.util.concurrent.TimeUnit;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * When run this job will create {@link RepairTask RepairTasks} that repairs the table.
  */
-public class TableRepairJob extends ScheduledJob implements RepairJobView
+public class TableRepairJob extends ScheduledJob
 {
     private static final Logger LOG = LoggerFactory.getLogger(TableRepairJob.class);
 
@@ -61,22 +61,19 @@ public class TableRepairJob extends ScheduledJob implements RepairJobView
         myRepairLockType = builder.repairLockType;
     }
 
-    @Override
     public TableReference getTableReference()
     {
         return myTableReference;
     }
 
-    @Override
     public RepairConfiguration getRepairConfiguration()
     {
         return myRepairConfiguration;
     }
 
-    @Override
-    public RepairStateSnapshot getRepairStateSnapshot()
+    public RepairJobView getView()
     {
-        return myRepairState.getSnapshot();
+        return new RepairJobView(myTableReference, myRepairConfiguration, myRepairState.getSnapshot());
     }
 
     @Override

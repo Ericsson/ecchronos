@@ -15,7 +15,6 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -39,8 +38,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.TableMetadata;
-import com.datastax.driver.core.TableOptionsMetadata;
 import com.datastax.driver.core.exceptions.OverloadedException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
@@ -254,10 +251,12 @@ public class TestTableRepairJob
     }
 
     @Test
-    public void testGetTableView()
+    public void testGetView()
     {
-        assertThat(myRepairJob.getTableReference()).isEqualTo(myTableReference);
-        assertThat(myRepairJob.getRepairConfiguration()).isEqualTo(myRepairConfiguration);
-        assertThat(myRepairJob.getRepairStateSnapshot()).isEqualTo(myRepairStateSnapshot);
+        RepairJobView repairJobView = myRepairJob.getView();
+
+        assertThat(repairJobView.getTableReference()).isEqualTo(myTableReference);
+        assertThat(repairJobView.getRepairConfiguration()).isEqualTo(myRepairConfiguration);
+        assertThat(repairJobView.getRepairStateSnapshot()).isEqualTo(myRepairStateSnapshot);
     }
 }

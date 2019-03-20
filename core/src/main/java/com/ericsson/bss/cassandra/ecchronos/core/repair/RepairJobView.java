@@ -20,20 +20,40 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 /**
  * Read only view of a scheduled repair job.
  */
-public interface RepairJobView
+public class RepairJobView
 {
+    private final TableReference myTableReference;
+    private final RepairConfiguration myRepairConfiguration;
+    private final RepairStateSnapshot myRepairStateSnapshot;
+
+    public RepairJobView(TableReference tableReference, RepairConfiguration repairConfiguration, RepairStateSnapshot repairStateSnapshot)
+    {
+        myTableReference = tableReference;
+        myRepairConfiguration = repairConfiguration;
+        myRepairStateSnapshot = repairStateSnapshot;
+    }
+
     /**
      * @return the table this job is scheduled for.
      */
-    TableReference getTableReference();
+    public TableReference getTableReference()
+    {
+        return myTableReference;
+    }
 
     /**
      * @return the repair configuration used.
      */
-    RepairConfiguration getRepairConfiguration();
+    public RepairConfiguration getRepairConfiguration()
+    {
+        return myRepairConfiguration;
+    }
 
     /**
      * @return a snapshot of the current repair state.
      */
-    RepairStateSnapshot getRepairStateSnapshot();
+    public RepairStateSnapshot getRepairStateSnapshot()
+    {
+        return myRepairStateSnapshot;
+    }
 }
