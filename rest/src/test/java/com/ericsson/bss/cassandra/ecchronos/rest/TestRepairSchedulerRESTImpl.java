@@ -20,7 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.rest.types.CompleteRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.rest.types.ScheduledRepairJob;
-import com.ericsson.bss.cassandra.ecchronos.rest.types.VnodeState;
+import com.ericsson.bss.cassandra.ecchronos.rest.types.VirtualNodeState;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.assertj.core.util.Sets;
@@ -29,6 +29,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -43,6 +44,10 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class TestRepairSchedulerRESTImpl
 {
+    private static final Gson GSON = new Gson();
+
+    private static Type scheduledRepairJobListType = new TypeToken<List<ScheduledRepairJob>>(){}.getType();
+
     @Mock
     private RepairScheduler myRepairScheduler;
 
@@ -53,7 +58,7 @@ public class TestRepairSchedulerRESTImpl
 
         RepairSchedulerREST repairSchedulerService = new RepairSchedulerRESTImpl(myRepairScheduler);
 
-        List<ScheduledRepairJob> response = new Gson().fromJson(repairSchedulerService.list(), new TypeToken<List<ScheduledRepairJob>>(){}.getType());
+        List<ScheduledRepairJob> response = GSON.fromJson(repairSchedulerService.list(), scheduledRepairJobListType);
 
         assertThat(response).isEmpty();
     }
@@ -70,7 +75,7 @@ public class TestRepairSchedulerRESTImpl
 
         RepairSchedulerREST repairSchedulerService = new RepairSchedulerRESTImpl(myRepairScheduler);
 
-        List<ScheduledRepairJob> response = new Gson().fromJson(repairSchedulerService.list(), new TypeToken<List<ScheduledRepairJob>>(){}.getType());
+        List<ScheduledRepairJob> response = GSON.fromJson(repairSchedulerService.list(), scheduledRepairJobListType);
 
         assertThat(response).hasSize(1);
 
@@ -78,8 +83,8 @@ public class TestRepairSchedulerRESTImpl
 
         assertThat(scheduledRepairJob.keyspace).isEqualTo("ks");
         assertThat(scheduledRepairJob.table).isEqualTo("tb");
-        assertThat(scheduledRepairJob.lastRepairedAt).isEqualTo(expectedLastRepairedAt);
-        assertThat(scheduledRepairJob.repaired).isEqualTo(0.0d);
+        assertThat(scheduledRepairJob.lastRepairedAtInMs).isEqualTo(expectedLastRepairedAt);
+        assertThat(scheduledRepairJob.repairedRatio).isEqualTo(0.0d);
         assertThat(scheduledRepairJob.repairIntervalInMs).isEqualTo(expectedRepairInterval);
     }
 
@@ -90,7 +95,7 @@ public class TestRepairSchedulerRESTImpl
 
         RepairSchedulerREST repairSchedulerService = new RepairSchedulerRESTImpl(myRepairScheduler);
 
-        List<ScheduledRepairJob> response = new Gson().fromJson(repairSchedulerService.listKeyspace(""), new TypeToken<List<ScheduledRepairJob>>(){}.getType());
+        List<ScheduledRepairJob> response = GSON.fromJson(repairSchedulerService.listKeyspace(""), scheduledRepairJobListType);
 
         assertThat(response).isEmpty();
     }
@@ -107,7 +112,7 @@ public class TestRepairSchedulerRESTImpl
 
         RepairSchedulerREST repairSchedulerService = new RepairSchedulerRESTImpl(myRepairScheduler);
 
-        List<ScheduledRepairJob> response = new Gson().fromJson(repairSchedulerService.listKeyspace("nonexistingkeyspace"), new TypeToken<List<ScheduledRepairJob>>(){}.getType());
+        List<ScheduledRepairJob> response = GSON.fromJson(repairSchedulerService.listKeyspace("nonexistingkeyspace"), scheduledRepairJobListType);
 
         assertThat(response).isEmpty();
     }
@@ -124,7 +129,7 @@ public class TestRepairSchedulerRESTImpl
 
         RepairSchedulerREST repairSchedulerService = new RepairSchedulerRESTImpl(myRepairScheduler);
 
-        List<ScheduledRepairJob> response = new Gson().fromJson(repairSchedulerService.listKeyspace("ks"), new TypeToken<List<ScheduledRepairJob>>(){}.getType());
+        List<ScheduledRepairJob> response = GSON.fromJson(repairSchedulerService.listKeyspace("ks"), scheduledRepairJobListType);
 
         assertThat(response).hasSize(1);
 
@@ -132,8 +137,8 @@ public class TestRepairSchedulerRESTImpl
 
         assertThat(scheduledRepairJob.keyspace).isEqualTo("ks");
         assertThat(scheduledRepairJob.table).isEqualTo("tb");
-        assertThat(scheduledRepairJob.lastRepairedAt).isEqualTo(expectedLastRepairedAt);
-        assertThat(scheduledRepairJob.repaired).isEqualTo(0.0d);
+        assertThat(scheduledRepairJob.lastRepairedAtInMs).isEqualTo(expectedLastRepairedAt);
+        assertThat(scheduledRepairJob.repairedRatio).isEqualTo(0.0d);
         assertThat(scheduledRepairJob.repairIntervalInMs).isEqualTo(expectedRepairInterval);
     }
 
@@ -144,7 +149,7 @@ public class TestRepairSchedulerRESTImpl
 
         RepairSchedulerREST repairSchedulerService = new RepairSchedulerRESTImpl(myRepairScheduler);
 
-        Map<Object, Object> response = new Gson().fromJson(repairSchedulerService.get("ks", "tb"), new TypeToken<Map<Object, Object>>(){}.getType());
+        Map<Object, Object> response = GSON.fromJson(repairSchedulerService.get("ks", "tb"), new TypeToken<Map<Object, Object>>(){}.getType());
 
         assertThat(response).isEmpty();
     }
@@ -165,19 +170,19 @@ public class TestRepairSchedulerRESTImpl
 
         RepairSchedulerREST repairSchedulerService = new RepairSchedulerRESTImpl(myRepairScheduler);
 
-        CompleteRepairJob response = new Gson().fromJson(repairSchedulerService.get("ks", "tb"), CompleteRepairJob.class);
+        CompleteRepairJob response = GSON.fromJson(repairSchedulerService.get("ks", "tb"), CompleteRepairJob.class);
 
         assertThat(response.keyspace).isEqualTo("ks");
         assertThat(response.table).isEqualTo("tb");
-        assertThat(response.lastRepairedAt).isEqualTo(expectedLastRepairedAt);
-        assertThat(response.repaired).isEqualTo(0.0d);
+        assertThat(response.lastRepairedAtInMs).isEqualTo(expectedLastRepairedAt);
+        assertThat(response.repairedRatio).isEqualTo(0.0d);
         assertThat(response.repairIntervalInMs).isEqualTo(expectedRepairInterval);
-        assertThat(response.vnodeStates).hasSize(1);
+        assertThat(response.virtualNodeStates).hasSize(1);
 
-        VnodeState vnodeState = response.vnodeStates.get(0);
+        VirtualNodeState vnodeState = response.virtualNodeStates.get(0);
         assertThat(vnodeState.startToken).isEqualTo(longTokenRange.start.getValue());
         assertThat(vnodeState.endToken).isEqualTo(longTokenRange.end.getValue());
-        assertThat(vnodeState.lastRepairedAt).isEqualTo(expectedLastRepairedAt);
+        assertThat(vnodeState.lastRepairedAtInMs).isEqualTo(expectedLastRepairedAt);
         assertThat(vnodeState.replicas).isEqualTo(Sets.newLinkedHashSet(InetAddress.getLocalHost()));
     }
 }

@@ -25,8 +25,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -35,15 +35,21 @@ import static org.mockito.Mockito.when;
 public class TestVnodeState
 {
     @Mock
-    private Host myHost;
+    private Host myLocalHost;
 
-    private InetAddress myLocalHost;
+    @Mock
+    private Host myRemoteHost;
+
+    private InetAddress myLocalHostAddress;
+    private InetAddress myRemoteHostAddress;
 
     @Before
     public void init() throws UnknownHostException
     {
-        myLocalHost = InetAddress.getLocalHost();
-        when(myHost.getBroadcastAddress()).thenReturn(myLocalHost);
+        myLocalHostAddress = InetAddress.getByName("127.0.0.2");
+        myRemoteHostAddress = InetAddress.getByName("127.0.0.1");
+        when(myLocalHost.getBroadcastAddress()).thenReturn(myLocalHostAddress);
+        when(myRemoteHost.getBroadcastAddress()).thenReturn(myRemoteHostAddress);
     }
 
     @Test
@@ -52,15 +58,15 @@ public class TestVnodeState
         long repairedAfter = 1234;
         long repairedAt = 1235;
         LongTokenRange tokenRange = new LongTokenRange(1, 2);
-        Collection<Host> replicas = Collections.singletonList(myHost);
+        Collection<Host> replicas = Arrays.asList(myLocalHost, myRemoteHost);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(tokenRange, replicas, repairedAt);
-        VnodeState vnodeState = VnodeState.convert(vnodeRepairState, repairedAfter);
+        VirtualNodeState vnodeState = VirtualNodeState.convert(vnodeRepairState, repairedAfter);
 
         assertThat(vnodeState.startToken).isEqualTo(1);
         assertThat(vnodeState.endToken).isEqualTo(2);
-        assertThat(vnodeState.lastRepairedAt).isEqualTo(repairedAt);
-        assertThat(vnodeState.replicas).containsExactly(myLocalHost);
+        assertThat(vnodeState.lastRepairedAtInMs).isEqualTo(repairedAt);
+        assertThat(vnodeState.replicas).containsExactlyInAnyOrder(myLocalHostAddress, myRemoteHostAddress);
         assertThat(vnodeState.repaired).isTrue();
     }
 
@@ -70,15 +76,15 @@ public class TestVnodeState
         long repairedAfter = 1235;
         long repairedAt = 1234;
         LongTokenRange tokenRange = new LongTokenRange(1, 2);
-        Collection<Host> replicas = Collections.singletonList(myHost);
+        Collection<Host> replicas = Arrays.asList(myLocalHost, myRemoteHost);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(tokenRange, replicas, repairedAt);
-        VnodeState vnodeState = VnodeState.convert(vnodeRepairState, repairedAfter);
+        VirtualNodeState vnodeState = VirtualNodeState.convert(vnodeRepairState, repairedAfter);
 
         assertThat(vnodeState.startToken).isEqualTo(1);
         assertThat(vnodeState.endToken).isEqualTo(2);
-        assertThat(vnodeState.lastRepairedAt).isEqualTo(repairedAt);
-        assertThat(vnodeState.replicas).containsExactly(myLocalHost);
+        assertThat(vnodeState.lastRepairedAtInMs).isEqualTo(repairedAt);
+        assertThat(vnodeState.replicas).containsExactlyInAnyOrder(myLocalHostAddress, myRemoteHostAddress);
         assertThat(vnodeState.repaired).isFalse();
     }
 }

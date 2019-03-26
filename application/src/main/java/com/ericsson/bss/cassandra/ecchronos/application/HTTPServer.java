@@ -28,15 +28,15 @@ import org.glassfish.jersey.servlet.ServletContainer;
 import java.io.Closeable;
 import java.net.InetSocketAddress;
 
-public class RESTServer implements Closeable
+public class HTTPServer implements Closeable
 {
     private final Server myServer;
 
-    public RESTServer(RepairScheduler repairScheduler, ScheduleManager scheduleManager, InetSocketAddress inetSocketAddress)
+    public HTTPServer(RepairScheduler repairScheduler, ScheduleManager scheduleManager, InetSocketAddress inetSocketAddress)
     {
-        ResourceConfig config = new ResourceConfig();
-        config.packages(true, RepairSchedulerRESTImpl.class.getPackage().getName());
-        config.register(new MyBinder(repairScheduler, scheduleManager));
+        ResourceConfig config = new ResourceConfig()
+                .packages(true, RepairSchedulerRESTImpl.class.getPackage().getName())
+                .register(new MyBinder(repairScheduler, scheduleManager));
 
         ServletHolder servletHolder = new ServletHolder(new ServletContainer(config));
 
@@ -48,7 +48,7 @@ public class RESTServer implements Closeable
         context.addServlet(servletHolder, "/*");
     }
 
-    public void start() throws RESTServerException
+    public void start() throws HTTPServerException
     {
         try
         {
@@ -57,7 +57,7 @@ public class RESTServer implements Closeable
         }
         catch (Exception e)
         {
-            throw new RESTServerException("Unable to start REST server", e);
+            throw new HTTPServerException("Unable to start HTTP server", e);
         }
     }
 

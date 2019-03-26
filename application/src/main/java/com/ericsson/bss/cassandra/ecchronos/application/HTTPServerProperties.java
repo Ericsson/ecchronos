@@ -17,17 +17,17 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 import java.net.InetSocketAddress;
 import java.util.Properties;
 
-public final class RESTServerProperties
+public final class HTTPServerProperties
 {
-    private static final String CONFIG_HOST = "rest.host";
-    private static final String CONFIG_PORT = "rest.port";
+    private static final String CONFIG_HOST = "http.server.host";
+    private static final String CONFIG_PORT = "http.server.port";
 
     private static final String DEFAULT_HOST = "localhost";
     private static final String DEFAULT_PORT = "8080";
 
     private final InetSocketAddress myAddress;
 
-    private RESTServerProperties(InetSocketAddress address)
+    private HTTPServerProperties(InetSocketAddress address)
     {
         myAddress = address;
     }
@@ -43,13 +43,13 @@ public final class RESTServerProperties
         return String.format("(address=%s)", myAddress);
     }
 
-    public static RESTServerProperties from(Properties properties)
+    public static HTTPServerProperties from(Properties properties)
     {
         String host = properties.getProperty(CONFIG_HOST, DEFAULT_HOST);
         int port = Integer.parseInt(properties.getProperty(CONFIG_PORT, DEFAULT_PORT));
 
         InetSocketAddress address = new InetSocketAddress(host, port);
 
-        return new RESTServerProperties(address);
+        return new HTTPServerProperties(address);
     }
 }

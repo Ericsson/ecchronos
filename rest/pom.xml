@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2018 Telefonaktiebolaget LM Ericsson
+    Copyright 2019 Telefonaktiebolaget LM Ericsson
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@
         <artifactId>parent</artifactId>
         <version>1.0.1-SNAPSHOT</version>
     </parent>
-
     <artifactId>rest</artifactId>
+    <description>REST interface base classes</description>
 
     <dependencies>
         <!-- Internal -->

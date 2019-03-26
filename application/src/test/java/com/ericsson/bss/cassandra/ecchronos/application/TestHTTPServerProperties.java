@@ -20,8 +20,9 @@ import java.net.InetSocketAddress;
 import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-public class TestRESTServerProperties
+public class TestHTTPServerProperties
 {
     private static final String DEFAULT_HOST = "localhost";
     private static final int DEFAULT_PORT = 8080;
@@ -33,9 +34,9 @@ public class TestRESTServerProperties
 
         Properties properties = new Properties();
 
-        RESTServerProperties restServerProperties = RESTServerProperties.from(properties);
+        HTTPServerProperties httpServerProperties = HTTPServerProperties.from(properties);
 
-        assertThat(restServerProperties.getAddress()).isEqualTo(expectedAddress);
+        assertThat(httpServerProperties.getAddress()).isEqualTo(expectedAddress);
     }
 
     @Test
@@ -46,11 +47,23 @@ public class TestRESTServerProperties
         InetSocketAddress expectedAddress = new InetSocketAddress(host, port);
 
         Properties properties = new Properties();
-        properties.put("rest.host", host);
-        properties.put("rest.port", Integer.toString(port));
+        properties.put("http.server.host", host);
+        properties.put("http.server.port", Integer.toString(port));
 
-        RESTServerProperties restServerProperties = RESTServerProperties.from(properties);
+        HTTPServerProperties httpServerProperties = HTTPServerProperties.from(properties);
 
-        assertThat(restServerProperties.getAddress()).isEqualTo(expectedAddress);
+        assertThat(httpServerProperties.getAddress()).isEqualTo(expectedAddress);
+    }
+
+    @Test
+    public void testSetInvalidPort()
+    {
+        String host = "127.0.0.2";
+
+        Properties properties = new Properties();
+        properties.put("http.server.host", host);
+        properties.put("http.server.port", "abc");
+
+        assertThatExceptionOfType(NumberFormatException.class).isThrownBy(() -> HTTPServerProperties.from(properties));
     }
 }

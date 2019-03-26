@@ -23,6 +23,7 @@
         <version>1.0.1-SNAPSHOT</version>
     </parent>
     <artifactId>standalone-integration</artifactId>
+    <description>Integration tests for a standalone environment</description>
 
     <dependencies>
         <!-- Internal -->

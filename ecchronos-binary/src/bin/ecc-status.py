@@ -17,11 +17,14 @@
 #
 
 from argparse import ArgumentParser
+import os
 import sys
 try:
     from ecchronoslib import rest, table_formatter
 except ImportError:
-    sys.path.append('../pylib')
+    script_dir = os.path.dirname(__file__)
+    lib_dir = os.path.join(script_dir, "..", "pylib")
+    sys.path.append(lib_dir)
     from ecchronoslib import rest, table_formatter
 
 
@@ -29,7 +32,7 @@ def add_vnode_state_to_table(vnode_state, table):
     entry = list()
     entry.append(vnode_state.start_token)
     entry.append(vnode_state.end_token)
-    entry.append(vnode_state.replicas)
+    entry.append(', '.join(vnode_state.replicas))
     entry.append(vnode_state.get_last_repaired_at())
     entry.append(vnode_state.repaired)
 
@@ -48,7 +51,7 @@ def print_verbose_repair_job(repair_job, max_lines):
     vnode_state_table = list()
     vnode_state_table.append(["Start token", "End token", "Replicas", "Repaired at", "Repaired"])
 
-    sorted_vnode_states = sorted(repair_job.vnode_states, key=lambda vnode: vnode.last_repaired_at)
+    sorted_vnode_states = sorted(repair_job.vnode_states, key=lambda vnode: vnode.last_repaired_at_in_ms)
 
     if max_lines > -1:
         sorted_vnode_states = sorted_vnode_states[:max_lines]
@@ -73,7 +76,7 @@ def convert_repair_job(repair_job):
 def print_repair_jobs(repair_jobs, max_lines):
     repair_jobs_table = list()
     repair_jobs_table.append(["Keyspace", "Table", "Interval", "Repaired at", "Repaired(%)"])
-    sorted_repair_jobs = sorted(repair_jobs, key=lambda job: job.last_repaired_at)
+    sorted_repair_jobs = sorted(repair_jobs, key=lambda job: job.last_repaired_at_in_ms)
 
     if max_lines > -1:
         sorted_repair_jobs = sorted_repair_jobs[:max_lines]

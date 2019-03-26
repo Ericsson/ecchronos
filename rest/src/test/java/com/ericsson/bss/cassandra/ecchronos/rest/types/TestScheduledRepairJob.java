@@ -34,13 +34,13 @@ public class TestScheduledRepairJob
         long lastRepairedAt = System.currentTimeMillis();
         RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", lastRepairedAt, repairInterval);
 
-        ScheduledRepairJob scheduledRepairJob = ScheduledRepairJob.convert(repairJobView);
+        ScheduledRepairJob scheduledRepairJob = new ScheduledRepairJob(repairJobView);
 
         assertThat(scheduledRepairJob.keyspace).isEqualTo("ks");
         assertThat(scheduledRepairJob.table).isEqualTo("tb");
         assertThat(scheduledRepairJob.repairIntervalInMs).isEqualTo(repairInterval);
-        assertThat(scheduledRepairJob.repaired).isEqualTo(1.0d);
-        assertThat(scheduledRepairJob.lastRepairedAt).isEqualTo(lastRepairedAt);
+        assertThat(scheduledRepairJob.repairedRatio).isEqualTo(1.0d);
+        assertThat(scheduledRepairJob.lastRepairedAtInMs).isEqualTo(lastRepairedAt);
     }
 
     @Test
@@ -50,13 +50,13 @@ public class TestScheduledRepairJob
         long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(8);
         RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", lastRepairedAt, repairInterval);
 
-        ScheduledRepairJob scheduledRepairJob = ScheduledRepairJob.convert(repairJobView);
+        ScheduledRepairJob scheduledRepairJob = new ScheduledRepairJob(repairJobView);
 
         assertThat(scheduledRepairJob.keyspace).isEqualTo("ks");
         assertThat(scheduledRepairJob.table).isEqualTo("tb");
         assertThat(scheduledRepairJob.repairIntervalInMs).isEqualTo(repairInterval);
-        assertThat(scheduledRepairJob.repaired).isEqualTo(0.0d);
-        assertThat(scheduledRepairJob.lastRepairedAt).isEqualTo(lastRepairedAt);
+        assertThat(scheduledRepairJob.repairedRatio).isEqualTo(0.0d);
+        assertThat(scheduledRepairJob.lastRepairedAtInMs).isEqualTo(lastRepairedAt);
     }
 
     @Test
@@ -71,12 +71,12 @@ public class TestScheduledRepairJob
 
         RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", lastRepairedAt, repairInterval, Sets.newHashSet(vnodeRepairState, vnodeRepairState2));
 
-        ScheduledRepairJob scheduledRepairJob = ScheduledRepairJob.convert(repairJobView);
+        ScheduledRepairJob scheduledRepairJob = new ScheduledRepairJob(repairJobView);
 
         assertThat(scheduledRepairJob.keyspace).isEqualTo("ks");
         assertThat(scheduledRepairJob.table).isEqualTo("tb");
         assertThat(scheduledRepairJob.repairIntervalInMs).isEqualTo(repairInterval);
-        assertThat(scheduledRepairJob.repaired).isEqualTo(0.5d);
-        assertThat(scheduledRepairJob.lastRepairedAt).isEqualTo(lastRepairedAt);
+        assertThat(scheduledRepairJob.repairedRatio).isEqualTo(0.5d);
+        assertThat(scheduledRepairJob.lastRepairedAtInMs).isEqualTo(lastRepairedAt);
     }
 }

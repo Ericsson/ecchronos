@@ -23,6 +23,7 @@
         <version>1.0.1-SNAPSHOT</version>
     </parent>
     <artifactId>osgi-integration</artifactId>
+    <description>Integration tests for an OSGi environment</description>
 
     <dependencies>
         <!-- Internal dependencies -->

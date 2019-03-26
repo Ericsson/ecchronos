@@ -17,14 +17,16 @@ import datetime
 
 
 def parse_interval(time_in_ms):
-    time_in_ms = time_in_ms / 1000
-    seconds = int(time_in_ms % 60)
-    time_in_ms = time_in_ms / 60
-    minutes = int(time_in_ms % 60)
-    time_in_ms = time_in_ms / 60
-    hours = int(time_in_ms % 24)
-    time_in_ms = time_in_ms / 24
-    days = int(time_in_ms)
+    time = time_in_ms
+
+    time = time / 1000
+    seconds = int(time % 60)
+    time = time / 60
+    minutes = int(time % 60)
+    time = time / 60
+    hours = int(time % 24)
+    time = time / 24
+    days = int(time)
 
     return "{0:2d} day(s) {1:02d}h {2:02d}m {3:02d}s".format(days, hours, minutes, seconds)
 
@@ -34,11 +36,11 @@ class VnodeState:
         self.start_token = data["startToken"] if "startToken" in data else "UNKNOWN"
         self.end_token = data["endToken"] if "endToken" in data else "UNKNOWN"
         self.replicas = data["replicas"] if "replicas" in data else []
-        self.last_repaired_at = int(data["lastRepairedAt"] if "lastRepairedAt" in data else -1)
+        self.last_repaired_at_in_ms = int(data["lastRepairedAtInMs"] if "lastRepairedAtInMs" in data else -1)
         self.repaired = data["repaired"] if "repaired" in data else "False"
 
     def get_last_repaired_at(self):
-        return datetime.datetime.fromtimestamp(self.last_repaired_at / 1000).strftime('%Y-%m-%d %H:%M:%S')
+        return datetime.datetime.fromtimestamp(self.last_repaired_at_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
 
 
 class RepairJob:
@@ -46,14 +48,14 @@ class RepairJob:
         self.keyspace = data["keyspace"] if "keyspace" in data else "<UNKNOWN>"
         self.table = data["table"] if "table" in data else "<UNKNOWN>"
         self.repair_interval_in_ms = int(data["repairIntervalInMs"] if "repairIntervalInMs" in data else 0)
-        self.last_repaired_at = int(data["lastRepairedAt"] if "lastRepairedAt" in data else -1)
-        self.repaired = float(data["repaired"] if "repaired" in data else 0)
+        self.last_repaired_at_in_ms = int(data["lastRepairedAtInMs"] if "lastRepairedAtInMs" in data else -1)
+        self.repaired = float(data["repairedRatio"] if "repairedRatio" in data else 0)
 
     def get_interval(self):
         return parse_interval(self.repair_interval_in_ms)
 
     def get_last_repaired_at(self):
-        return datetime.datetime.fromtimestamp(self.last_repaired_at / 1000).strftime('%Y-%m-%d %H:%M:%S')
+        return datetime.datetime.fromtimestamp(self.last_repaired_at_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
 
     def get_repair_percentage(self):
         return "{0:.2f}".format(self.repaired * 100.0)
@@ -63,6 +65,6 @@ class VerboseRepairJob(RepairJob):
     def __init__(self, data):
         RepairJob.__init__(self, data)
         self.vnode_states = list()
-        if "vnodeStates" in data:
-            for vnode_data in data["vnodeStates"]:
+        if "virtualNodeStates" in data:
+            for vnode_data in data["virtualNodeStates"]:
                 self.vnode_states.append(VnodeState(vnode_data))

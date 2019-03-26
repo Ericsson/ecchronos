@@ -24,6 +24,7 @@
     </parent>
     <artifactId>fm.impl</artifactId>
     <packaging>bundle</packaging>
+    <description>A reference implementation of the fault reporter using logging to report faults</description>
 
     <dependencies>
         <!-- Internal -->

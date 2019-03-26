@@ -14,6 +14,9 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
+import com.ericsson.bss.cassandra.ecchronos.rest.types.CompleteRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.rest.types.ScheduledRepairJob;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -27,17 +30,35 @@ import javax.ws.rs.core.MediaType;
  */
 public interface RepairSchedulerREST
 {
+    /**
+     * Get details of a specific table repair job.
+     *
+     * @param keyspace The keyspace of the table
+     * @param table The table to get details of
+     * @return A JSON representation of {@link CompleteRepairJob}
+     */
     @GET
     @Path("/get/{keyspace}/{table}")
     @Produces(MediaType.APPLICATION_JSON)
     String get(@PathParam("keyspace") String keyspace,
-                      @PathParam("table") String table);
+               @PathParam("table") String table);
 
+    /**
+     * Get a list of the status of all repair jobs.
+     *
+     * @return A list of JSON representations of {@link ScheduledRepairJob}
+     */
     @GET
     @Path("/list")
     @Produces(MediaType.APPLICATION_JSON)
     String list();
 
+    /**
+     * Get a list of the status of all repair jobs for a specific keyspace.
+     *
+     * @param keyspace The keyspace to list
+     * @return A list of JSON representations of {@link ScheduledRepairJob}
+     */
     @GET
     @Path("/list/{keyspace}")
     @Produces(MediaType.APPLICATION_JSON)

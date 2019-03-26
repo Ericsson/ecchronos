@@ -24,6 +24,7 @@
     </parent>
     <artifactId>karaf-feature</artifactId>
     <packaging>feature</packaging>
+    <description>Utility module creating a feature file for OSGi</description>
 
     <dependencies>
         <dependency>

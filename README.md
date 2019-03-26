@@ -7,12 +7,14 @@ ecChronos is a decentralized scheduling framework primarily focused on performin
 
 ## Getting started
 
-See the [STRUCTURE.md](docs/STRUCTURE.md) and [ARCHITECTURE.md](docs/ARCHITECTURE.md) for details on ecChronos project structure and architecture.
+See the [ARCHITECTURE.md](docs/ARCHITECTURE.md) for details on ecChronos architecture.
 
 ### Prerequisites
 
+* Maven
 * JDK8
 * Docker (for test setup)
+* Python
 
 ### Installing
 
@@ -20,23 +22,41 @@ For installation instructions see [SETUP.md](docs/SETUP.md).
 
 ## Running the tests
 
-There are two different test suites that can be run.
-The first suite consist only of unit tests which can be run by `mvn clean install`.
-These test will in some cases use an embedded Apache Cassandra.
+There are a few different tests that can be run:
 
-The second suite consist of the unit tests as well as integration tests which can be run by `mvn clean install -P docker-integration-test,osgi-integration-tests,standalone-integration-tests`.
-The integration tests start docker instances of Apache Cassandra to get a cluster environment where repair can run.
+* Unit tests
+* Docker tests
+  * Integration tests
+  * Acceptance tests
+
+The full test suite can be run by `mvn verify -P docker-integration-test,osgi-integration-tests,standalone-integration-tests,python-integration-tests`.
+As Travis is used to verify pull requests the full test suite is shown in [.travis.yml](.travis.yml).
+
+### Unit tests
+
+The unit tests are run by `mvn clean test`.
+They are running simple tests that sometimes utilize a single embedded Cassandra node.
+
+### Docker tests
+
+The acceptance tests and integration tests use docker instances by default.
+The docker containers gets started when the `-P docker-integration-test` flag is used in maven.
+
+#### Integration tests
+
+The integration tests tries to start ecChronos with a cluster of nodes and verfiy that repairs are run.
+They are activated by using `-P osgi-integration-tests` or `-P standalone-integration-tests`.
 It is possible to run either OSGi integration tests or the standalone tests without the other.
-This can be done by running either `mvn clean install -P docker-integration-test,osgi-integration-tests` or `mvn clean install-P docker-integration-test,standalone-integration-tests`.
+This can be done by running either `mvn verify -P docker-integration-test,osgi-integration-tests` or `mvn verify -P docker-integration-test,standalone-integration-tests`.
 
-### Maven configuration properties
+##### Maven configuration properties
 
 | Property                   | Default    | Description                                              |
 |----------------------------|------------|----------------------------------------------------------|
 | it.cassandra.memory        | 1073741824 | Memory limit for the docker instance                     |
 | it.cassandra.heap          | 256M       | Amount of heap memory Cassandra should use at most       |
 
-### Running within IDEA/Eclipse
+##### Running within IDEA/Eclipse
 
 If you already have a three node cluster setup (through docker, ccm, etc) this can be used instead.
 
@@ -53,6 +73,10 @@ The test cases needs to be run with the following system properties set:
 | it-cassandra.native.port | The native port used                          |
 | it-cassandra.jmx.port    | The JMX port used                             |
 
+#### Acceptance tests
+
+The acceptance test use behave to verify the python scripts as well as the REST server in ecChronos.
+They are activated by using `-P python-integration-tests` in combination with the docker flag.
 
 ### Break down into end to end tests
 

@@ -35,6 +35,8 @@ import java.util.stream.Collectors;
 @Path("/repair-scheduler/v1")
 public class RepairSchedulerRESTImpl implements RepairSchedulerREST
 {
+    private static final Gson GSON = new Gson();
+
     private final RepairScheduler myRepairScheduler;
 
     @Inject
@@ -48,20 +50,18 @@ public class RepairSchedulerRESTImpl implements RepairSchedulerREST
     {
         Optional<RepairJobView> repairJobView = findRepairJob(new TableReference(keyspace, table));
 
-        if (repairJobView.isPresent())
-        {
-            return new Gson().toJson(CompleteRepairJob.convert(repairJobView.get()));
-        }
-
-        return new Gson().toJson(new HashMap<>());
+        return repairJobView
+                .map(CompleteRepairJob::new)
+                .map(GSON::toJson)
+                .orElse("{}");
     }
 
     @Override
     public String list()
     {
-        List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs((job) -> true);
+        List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(job -> true);
 
-        return new Gson().toJson(repairJobs);
+        return GSON.toJson(repairJobs);
     }
 
     @Override
@@ -69,7 +69,7 @@ public class RepairSchedulerRESTImpl implements RepairSchedulerREST
     {
         List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(job -> keyspace.equals(job.getTableReference().getKeyspace()));
 
-        return new Gson().toJson(repairJobs);
+        return GSON.toJson(repairJobs);
     }
 
     private List<ScheduledRepairJob> getScheduledRepairJobs(Predicate<RepairJobView> filter)
@@ -78,7 +78,8 @@ public class RepairSchedulerRESTImpl implements RepairSchedulerREST
 
         return repairJobViewList.stream()
                 .filter(filter)
-                .map(ScheduledRepairJob::convert).collect(Collectors.toList());
+                .map(ScheduledRepairJob::new)
+                .collect(Collectors.toList());
     }
 
     private Optional<RepairJobView> findRepairJob(TableReference tableReference)

@@ -28,34 +28,23 @@ public class ScheduledRepairJob
     public final String keyspace;
     public final String table;
     public final long repairIntervalInMs;
-    public final long lastRepairedAt;
-    public final double repaired;
+    public final long lastRepairedAtInMs;
+    public final double repairedRatio;
 
-    public ScheduledRepairJob(String keyspace, String table, long repairIntervalInMs, long lastRepairedAt, double repaired)
+    public ScheduledRepairJob(RepairJobView repairJobView)
     {
-        this.keyspace = keyspace;
-        this.table = table;
-        this.repairIntervalInMs = repairIntervalInMs;
-        this.lastRepairedAt = lastRepairedAt;
-        this.repaired = repaired;
-    }
+        this.keyspace = repairJobView.getTableReference().getKeyspace();
+        this.table = repairJobView.getTableReference().getTable();
+        this.repairIntervalInMs = repairJobView.getRepairConfiguration().getRepairIntervalInMs();
+        this.lastRepairedAtInMs = repairJobView.getRepairStateSnapshot().lastRepairedAt();
 
-    public static ScheduledRepairJob convert(RepairJobView repairJobView)
-    {
-        String keyspace = repairJobView.getTableReference().getKeyspace();
-        String table = repairJobView.getTableReference().getTable();
-        long repairIntervalInMs = repairJobView.getRepairConfiguration().getRepairIntervalInMs();
-        long lastRepairedAt = repairJobView.getRepairStateSnapshot().lastRepairedAt();
-
-        double repaired = calculateRepaired(repairJobView.getRepairStateSnapshot().getVnodeRepairStates(), repairIntervalInMs);
-
-        return new ScheduledRepairJob(keyspace, table, repairIntervalInMs, lastRepairedAt, repaired);
-    }
-
-    private static double calculateRepaired(VnodeRepairStates vnodeRepairStates, long repairIntervalInMs)
-    {
         long repairedAfter = System.currentTimeMillis() - repairIntervalInMs;
 
+        this.repairedRatio = calculateRepaired(repairJobView.getRepairStateSnapshot().getVnodeRepairStates(), repairedAfter);
+    }
+
+    private double calculateRepaired(VnodeRepairStates vnodeRepairStates, long repairedAfter)
+    {
         int nRepairedBefore = 0;
         int nRepairedAfter = 0;
 

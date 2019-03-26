@@ -14,9 +14,9 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
-public class RESTServerException extends Exception
+public class HTTPServerException extends Exception
 {
-    public RESTServerException(String message, Throwable cause)
+    public HTTPServerException(String message, Throwable cause)
     {
         super(message, cause);
     }

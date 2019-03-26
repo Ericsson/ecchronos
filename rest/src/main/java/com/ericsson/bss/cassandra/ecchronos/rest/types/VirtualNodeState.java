@@ -26,24 +26,24 @@ import java.util.stream.Collectors;
  *
  * Primarily used to to have a type to convert to JSON.
  */
-public class VnodeState
+public class VirtualNodeState
 {
     public final long startToken;
     public final long endToken;
     public final Set<InetAddress> replicas;
-    public final long lastRepairedAt;
+    public final long lastRepairedAtInMs;
     public final boolean repaired;
 
-    public VnodeState(long startToken, long endToken, Set<InetAddress> replicas, long lastRepairedAt, boolean repaired)
+    public VirtualNodeState(long startToken, long endToken, Set<InetAddress> replicas, long lastRepairedAtInMs, boolean repaired)
     {
         this.startToken = startToken;
         this.endToken = endToken;
         this.replicas = replicas;
-        this.lastRepairedAt = lastRepairedAt;
+        this.lastRepairedAtInMs = lastRepairedAtInMs;
         this.repaired = repaired;
     }
 
-    public static VnodeState convert(VnodeRepairState vnodeRepairState, long repairedAfter)
+    public static VirtualNodeState convert(VnodeRepairState vnodeRepairState, long repairedAfter)
     {
         long startToken = vnodeRepairState.getTokenRange().start.getValue();
         long endToken = vnodeRepairState.getTokenRange().end.getValue();
@@ -51,6 +51,6 @@ public class VnodeState
         long lastRepairedAt = vnodeRepairState.lastRepairedAt();
         boolean repaired = lastRepairedAt > repairedAfter;
 
-        return new VnodeState(startToken, endToken, replicas, lastRepairedAt, repaired);
+        return new VirtualNodeState(startToken, endToken, replicas, lastRepairedAt, repaired);
     }
 }

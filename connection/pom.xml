@@ -24,6 +24,7 @@
     </parent>
     <artifactId>connection</artifactId>
     <packaging>bundle</packaging>
+    <description>Interfaces that ecChronos rely on to connect to Apache Cassandra</description>
 
     <dependencies>
         <!-- Cassandra driver -->

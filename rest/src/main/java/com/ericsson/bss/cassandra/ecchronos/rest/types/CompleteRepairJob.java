@@ -15,7 +15,6 @@
 package com.ericsson.bss.cassandra.ecchronos.rest.types;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 
 import java.util.List;
@@ -28,58 +27,17 @@ import java.util.stream.Collectors;
  */
 public class CompleteRepairJob extends ScheduledRepairJob
 {
-    public final List<VnodeState> vnodeStates;
+    public final List<VirtualNodeState> virtualNodeStates;
 
-    public CompleteRepairJob(String keyspace, String table, long repairIntervalInMs, long lastRepairedAt, double repaired, List<VnodeState> vnodeStates)
+    public CompleteRepairJob(RepairJobView repairJobView)
     {
-        super(keyspace, table, repairIntervalInMs, lastRepairedAt, repaired);
-        this.vnodeStates = vnodeStates;
-    }
-
-    public static CompleteRepairJob convert(RepairJobView repairJobView)
-    {
-        String keyspace = repairJobView.getTableReference().getKeyspace();
-        String table = repairJobView.getTableReference().getTable();
-        long repairIntervalInMs = repairJobView.getRepairConfiguration().getRepairIntervalInMs();
-        long lastRepairedAt = repairJobView.getRepairStateSnapshot().lastRepairedAt();
-
-        VnodeRepairStates vnodeRepairStates = repairJobView.getRepairStateSnapshot().getVnodeRepairStates();
+        super(repairJobView);
 
         long repairedAfter = System.currentTimeMillis() - repairIntervalInMs;
+        VnodeRepairStates vnodeRepairStates = repairJobView.getRepairStateSnapshot().getVnodeRepairStates();
 
-        double repaired = calculateRepaired(vnodeRepairStates, repairedAfter);
-
-        List<VnodeState> vnodeStates = vnodeRepairStates.getVnodeRepairStates().stream()
-                .map(vrs -> VnodeState.convert(vrs, repairedAfter))
+        this.virtualNodeStates = vnodeRepairStates.getVnodeRepairStates().stream()
+                .map(vrs -> VirtualNodeState.convert(vrs, repairedAfter))
                 .collect(Collectors.toList());
-
-        return new CompleteRepairJob(keyspace, table, repairIntervalInMs, lastRepairedAt, repaired, vnodeStates);
-    }
-
-    private static double calculateRepaired(VnodeRepairStates vnodeRepairStates, long repairedAfter)
-    {
-        int nRepairedBefore = 0;
-        int nRepairedAfter = 0;
-
-        for (VnodeRepairState vnodeRepairState : vnodeRepairStates.getVnodeRepairStates())
-        {
-            if (vnodeRepairState.lastRepairedAt() < repairedAfter)
-            {
-                nRepairedBefore++;
-            }
-            else
-            {
-                nRepairedAfter++;
-            }
-        }
-
-        int nTotal = nRepairedAfter + nRepairedBefore;
-
-        if (nTotal == 0)
-        {
-            return 0;
-        }
-
-        return (double) nRepairedAfter / nTotal;
     }
 }

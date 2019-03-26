@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestCompleteScheduledRepairJob
+public class TestCompleteRepairJob
 {
     @Test
     public void testFullyRepairedJob()
@@ -38,13 +38,13 @@ public class TestCompleteScheduledRepairJob
 
         RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", lastRepairedAt, repairInterval, Collections.singletonList(vnodeRepairState));
 
-        CompleteRepairJob completeRepairJob = CompleteRepairJob.convert(repairJobView);
+        CompleteRepairJob completeRepairJob = new CompleteRepairJob(repairJobView);
 
         assertThat(completeRepairJob.keyspace).isEqualTo("ks");
         assertThat(completeRepairJob.table).isEqualTo("tb");
         assertThat(completeRepairJob.repairIntervalInMs).isEqualTo(repairInterval);
-        assertThat(completeRepairJob.repaired).isEqualTo(1.0d);
-        assertThat(completeRepairJob.lastRepairedAt).isEqualTo(lastRepairedAt);
+        assertThat(completeRepairJob.repairedRatio).isEqualTo(1.0d);
+        assertThat(completeRepairJob.lastRepairedAtInMs).isEqualTo(lastRepairedAt);
 
         assertVnodes(completeRepairJob, repairedAfter, vnodeRepairState);
     }
@@ -60,13 +60,13 @@ public class TestCompleteScheduledRepairJob
 
         RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", lastRepairedAt, repairInterval, Collections.singletonList(vnodeRepairState));
 
-        CompleteRepairJob completeRepairJob = CompleteRepairJob.convert(repairJobView);
+        CompleteRepairJob completeRepairJob = new CompleteRepairJob(repairJobView);
 
         assertThat(completeRepairJob.keyspace).isEqualTo("ks");
         assertThat(completeRepairJob.table).isEqualTo("tb");
         assertThat(completeRepairJob.repairIntervalInMs).isEqualTo(repairInterval);
-        assertThat(completeRepairJob.repaired).isEqualTo(0.0d);
-        assertThat(completeRepairJob.lastRepairedAt).isEqualTo(lastRepairedAt);
+        assertThat(completeRepairJob.repairedRatio).isEqualTo(0.0d);
+        assertThat(completeRepairJob.lastRepairedAtInMs).isEqualTo(lastRepairedAt);
 
         assertVnodes(completeRepairJob, repairedAfter, vnodeRepairState);
     }
@@ -84,26 +84,26 @@ public class TestCompleteScheduledRepairJob
 
         RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", lastRepairedAt, repairInterval, Arrays.asList(vnodeRepairState, vnodeRepairState2));
 
-        CompleteRepairJob completeRepairJob = CompleteRepairJob.convert(repairJobView);
+        CompleteRepairJob completeRepairJob = new CompleteRepairJob(repairJobView);
 
         assertThat(completeRepairJob.keyspace).isEqualTo("ks");
         assertThat(completeRepairJob.table).isEqualTo("tb");
         assertThat(completeRepairJob.repairIntervalInMs).isEqualTo(repairInterval);
-        assertThat(completeRepairJob.repaired).isEqualTo(0.5d);
-        assertThat(completeRepairJob.lastRepairedAt).isEqualTo(lastRepairedAt);
+        assertThat(completeRepairJob.repairedRatio).isEqualTo(0.5d);
+        assertThat(completeRepairJob.lastRepairedAtInMs).isEqualTo(lastRepairedAt);
 
         assertVnodes(completeRepairJob, repairedAfter, vnodeRepairState, vnodeRepairState2);
     }
 
     private void assertVnodes(CompleteRepairJob completeRepairJob, long repairedAfter, VnodeRepairState... vnodeRepairStates)
     {
-        assertThat(completeRepairJob.vnodeStates).hasSize(vnodeRepairStates.length);
+        assertThat(completeRepairJob.virtualNodeStates).hasSize(vnodeRepairStates.length);
 
         for (int i = 0; i < vnodeRepairStates.length; i++)
         {
-            VnodeState vnodeState = VnodeState.convert(vnodeRepairStates[i], repairedAfter);
+            VirtualNodeState vnodeState = VirtualNodeState.convert(vnodeRepairStates[i], repairedAfter);
 
-            assertThat(completeRepairJob.vnodeStates.get(i)).isEqualToComparingFieldByField(vnodeState);
+            assertThat(completeRepairJob.virtualNodeStates.get(i)).isEqualToComparingFieldByField(vnodeState);
         }
     }
 }
