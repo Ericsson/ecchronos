@@ -15,6 +15,7 @@ The interface is only exposing state for scheduled tables.
 When performing GET on `<host>/repair-scheduler/v1/get/mykeyspace/mytable` a JSON object of the RepairJob type will be returned.
 
 The vnodeStates field will be set when `get` is used.
+The schema can be found in [repair_job.json](../ecchronos-binary/src/test/features/repair_job.json)
 
 
 ### List
@@ -23,6 +24,7 @@ When performing GET on `<host>/repair-scheduler/v1/list` a JSON list of RepairJo
 When performing GET on `<host>/repair-scheduler/v1/list/mykeyspace` a JSON list of RepairJobs for that specific keyspace will be returned.
 
 The virtualNodeStates field will not be set when `list` is used.
+The schema can be found in [repair_job_list.json](../ecchronos-binary/src/test/features/repair_job_list.json)
 
 
 ### Types
