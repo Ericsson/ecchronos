@@ -23,7 +23,6 @@ import com.google.gson.Gson;
 
 import javax.inject.Inject;
 import javax.ws.rs.Path;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;

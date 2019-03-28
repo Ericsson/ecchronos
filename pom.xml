@@ -503,6 +503,7 @@ limitations under the License.
                             <exclude>**/pom.xml.releaseBackup</exclude>
                             <exclude>release.properties</exclude>
                             <exclude>**/*.feature</exclude>
+                            <exclude>**/*.pyc</exclude>
                         </excludes>
                     </configuration>
                 </plugin>
