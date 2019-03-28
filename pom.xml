@@ -660,6 +660,7 @@ limitations under the License.
                                                         <LOCAL_JMX>no</LOCAL_JMX>
                                                         <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap} -Xmn100M</JVM_OPTS>
                                                         <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false</JVM_EXTRA_OPTS>
+                                                        <CASSANDRA_NUM_TOKENS>16</CASSANDRA_NUM_TOKENS>
                                                     </env>
                                                     <exposedPropertyKey>seed</exposedPropertyKey>
                                                     <wait>
@@ -684,6 +685,7 @@ limitations under the License.
                                                         <CASSANDRA_SEEDS>$${docker.container.seed.ip}</CASSANDRA_SEEDS>
                                                         <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap} -Xmn100M -Dcassandra.auto_bootstrap=false</JVM_OPTS>
                                                         <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false</JVM_EXTRA_OPTS>
+                                                        <CASSANDRA_NUM_TOKENS>16</CASSANDRA_NUM_TOKENS>
                                                     </env>
                                                     <wait>
                                                         <time>120000</time>
@@ -706,6 +708,7 @@ limitations under the License.
                                                         <CASSANDRA_SEEDS>$${docker.container.seed.ip}</CASSANDRA_SEEDS>
                                                         <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap} -Xmn100M -Dcassandra.auto_bootstrap=false</JVM_OPTS>
                                                         <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false</JVM_EXTRA_OPTS>
+                                                        <CASSANDRA_NUM_TOKENS>16</CASSANDRA_NUM_TOKENS>
                                                     </env>
                                                     <wait>
                                                         <time>120000</time>
@@ -728,6 +731,7 @@ limitations under the License.
                                                         <CASSANDRA_SEEDS>$${docker.container.seed.ip}</CASSANDRA_SEEDS>
                                                         <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap} -Xmn100M -Dcassandra.auto_bootstrap=false</JVM_OPTS>
                                                         <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false</JVM_EXTRA_OPTS>
+                                                        <CASSANDRA_NUM_TOKENS>16</CASSANDRA_NUM_TOKENS>
                                                     </env>
                                                     <wait>
                                                         <time>120000</time>
