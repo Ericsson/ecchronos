@@ -32,24 +32,6 @@ public class TestLongTokenRange
     }
 
     @Test
-    public void testNullRangesEqual()
-    {
-        LongTokenRange range1 = new LongTokenRange(null, null);
-        LongTokenRange range2 = new LongTokenRange(null, null);
-
-        assertThat(range1).isEqualTo(range2);
-        assertThat(range1.hashCode()).isEqualTo(range2.hashCode());
-    }
-
-    @Test
-    public void testRangeAndNullIsNotEqual()
-    {
-        LongTokenRange range1 = new LongTokenRange(1, 2);
-
-        assertThat(range1).isNotEqualTo(null);
-    }
-
-    @Test
     public void testRangesNotEqual()
     {
         LongTokenRange range1 = new LongTokenRange(1, 2);
