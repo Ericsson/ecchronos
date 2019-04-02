@@ -24,12 +24,15 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Utility class to generate a token -&gt; replicas map for a specific table.
  */
 public class ReplicationState
 {
+    private static final Map<String, KeyspaceReplication> keyspaceReplicationCache = new ConcurrentHashMap<>();
+
     private final Metadata myMetadata;
     private final Host myLocalHost;
 
@@ -41,16 +44,47 @@ public class ReplicationState
 
     public Map<LongTokenRange, ImmutableSet<Host>> getTokenRangeToReplicas(TableReference tableReference)
     {
+        String keyspace = tableReference.getKeyspace();
+
         Map<LongTokenRange, ImmutableSet<Host>> tokenRangeToReplicaMap = new HashMap<>();
 
-        for (TokenRange tokenRange : myMetadata.getTokenRanges(tableReference.getKeyspace(), myLocalHost))
+        Map<ImmutableSet<Host>, ImmutableSet<Host>> replicaCache = new HashMap<>();
+
+        for (TokenRange tokenRange : myMetadata.getTokenRanges(keyspace, myLocalHost))
         {
             LongTokenRange longTokenRange = convert(tokenRange);
-            ImmutableSet<Host> hosts = ImmutableSet.copyOf(myMetadata.getReplicas(tableReference.getKeyspace(), tokenRange));
-            tokenRangeToReplicaMap.put(longTokenRange, hosts);
+            ImmutableSet<Host> replicas = ImmutableSet.copyOf(myMetadata.getReplicas(keyspace, tokenRange));
+
+            tokenRangeToReplicaMap.put(longTokenRange, getOrCache(replicas, replicaCache));
         }
 
-        return ImmutableMap.copyOf(tokenRangeToReplicaMap);
+        return getOrCache(keyspace, ImmutableMap.copyOf(tokenRangeToReplicaMap));
+    }
+
+    private ImmutableSet<Host> getOrCache(ImmutableSet<Host> replicas, Map<ImmutableSet<Host>, ImmutableSet<Host>> replicaCache)
+    {
+        ImmutableSet<Host> actualReplicas;
+        actualReplicas = replicaCache.putIfAbsent(replicas, replicas);
+        if (actualReplicas == null)
+        {
+            actualReplicas = replicas;
+        }
+
+        return actualReplicas;
+    }
+
+    private ImmutableMap<LongTokenRange, ImmutableSet<Host>> getOrCache(String keyspace, ImmutableMap<LongTokenRange, ImmutableSet<Host>> replication)
+    {
+        KeyspaceReplication newKeyspaceReplication = new KeyspaceReplication(replication);
+        KeyspaceReplication oldKeyspaceReplication = keyspaceReplicationCache.get(keyspace);
+
+        if (oldKeyspaceReplication == null || !oldKeyspaceReplication.equals(newKeyspaceReplication))
+        {
+            keyspaceReplicationCache.put(keyspace, newKeyspaceReplication);
+            return newKeyspaceReplication.getReplication();
+        }
+
+        return oldKeyspaceReplication.getReplication();
     }
 
     private LongTokenRange convert(TokenRange range)
@@ -59,5 +93,37 @@ public class ReplicationState
         long start = (long) range.getStart().getValue();
         long end = (long) range.getEnd().getValue();
         return new LongTokenRange(start, end);
+    }
+
+    private static class KeyspaceReplication
+    {
+        private final ImmutableMap<LongTokenRange, ImmutableSet<Host>> myReplication;
+
+        public KeyspaceReplication(ImmutableMap<LongTokenRange, ImmutableSet<Host>> replication)
+        {
+            myReplication = replication;
+        }
+
+        public ImmutableMap<LongTokenRange, ImmutableSet<Host>> getReplication()
+        {
+            return myReplication;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            KeyspaceReplication that = (KeyspaceReplication) o;
+
+            return myReplication != null ? myReplication.equals(that.myReplication) : that.myReplication == null;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return myReplication != null ? myReplication.hashCode() : 0;
+        }
     }
 }
