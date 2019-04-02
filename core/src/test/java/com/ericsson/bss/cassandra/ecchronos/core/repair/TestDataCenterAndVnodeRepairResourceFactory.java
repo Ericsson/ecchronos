@@ -18,10 +18,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
-import java.util.Collections;
 import java.util.UUID;
 
-import org.assertj.core.util.Sets;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
 import com.datastax.driver.core.Host;
@@ -66,7 +66,7 @@ public class TestDataCenterAndVnodeRepairResourceFactory
     private ReplicaRepairGroup generateReplicaRepairGroup(Host... hosts)
     {
         LongTokenRange range = new LongTokenRange(1, 2);
-        return new ReplicaRepairGroup(Sets.newLinkedHashSet(hosts), Collections.singletonList(range));
+        return new ReplicaRepairGroup(ImmutableSet.copyOf(hosts), ImmutableList.of(range));
     }
 
     private Host mockHost(String dataCenter, UUID hostId)

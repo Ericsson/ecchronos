@@ -23,6 +23,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.scheduling.DummyLock;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.junit.After;
 import org.junit.Before;
@@ -31,12 +33,9 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -103,7 +102,7 @@ public class TestRepairGroup
         Map<String, String> metadata = new HashMap<>();
         metadata.put("keyspace", keyspaceName);
         metadata.put("table", tableName);
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(Sets.newHashSet(), Collections.emptyList());
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(), ImmutableList.of());
         Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1", "my-resource"));
 
         doReturn(repairResources).when(myRepairResourceFactory).getRepairResources(eq(replicaRepairGroup));
@@ -125,7 +124,7 @@ public class TestRepairGroup
         Map<String, String> metadata = new HashMap<>();
         metadata.put("keyspace", keyspaceName);
         metadata.put("table", tableName);
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(Sets.newHashSet(), Collections.emptyList());
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(), ImmutableList.of());
         Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1", "my-resource"));
 
         doReturn(repairResources).when(myRepairResourceFactory).getRepairResources(eq(replicaRepairGroup));
@@ -148,13 +147,12 @@ public class TestRepairGroup
         Host host = mockHost("DC1");
         LongTokenRange range = new LongTokenRange(1, 2);
 
-        Set<Host> hosts = new HashSet<>();
-        hosts.add(host);
+        ImmutableSet<Host> hosts = ImmutableSet.of(host);
 
         Set<LongTokenRange> ranges = new HashSet<>();
         ranges.add(range);
 
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(hosts, Collections.singletonList(range));
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(hosts, ImmutableList.of(range));
 
         RepairGroup repairGroup = new RepairGroup(priority, tableReference,
                 repairConfiguration, replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
@@ -178,12 +176,12 @@ public class TestRepairGroup
         Host host = mockHost("DC1");
         Host host2 = mockHost("DC1");
 
-        List<LongTokenRange> vnodes = Arrays.asList(
+        ImmutableList<LongTokenRange> vnodes = ImmutableList.of(
                 new LongTokenRange(1, 2),
                 new LongTokenRange(2, 3),
                 new LongTokenRange(4, 5));
 
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(Sets.newHashSet(host, host2), vnodes);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(host, host2), vnodes);
 
         RepairGroup repairGroup = new RepairGroup(priority, tableReference,
                 repairConfiguration, replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,

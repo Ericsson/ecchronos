@@ -15,10 +15,12 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.google.common.collect.ImmutableMap;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -27,16 +29,16 @@ import java.util.Objects;
  */
 public class VnodeRepairStates
 {
-    private final ImmutableMap<LongTokenRange, VnodeRepairState> myVnodeRepairStatuses;
+    private final List<VnodeRepairState> myVnodeRepairStatuses;
 
     private VnodeRepairStates(Builder builder)
     {
-        myVnodeRepairStatuses = ImmutableMap.copyOf(builder.myVnodeRepairStates);
+        myVnodeRepairStatuses = new ArrayList<>(builder.myVnodeRepairStates.values());
     }
 
     public Collection<VnodeRepairState> getVnodeRepairStates()
     {
-        return myVnodeRepairStatuses.values();
+        return Collections.unmodifiableList(myVnodeRepairStatuses);
     }
 
     /**

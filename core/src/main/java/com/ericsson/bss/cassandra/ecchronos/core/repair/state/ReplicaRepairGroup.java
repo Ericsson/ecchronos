@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,13 +30,11 @@ public class ReplicaRepairGroup implements Iterable<LongTokenRange>
 {
     private final ImmutableSet<Host> myReplicas;
     private final ImmutableList<LongTokenRange> myVnodes;
-    private final ImmutableSet<String> myDataCenters;
 
-    public ReplicaRepairGroup(Set<Host> replicas, List<LongTokenRange> vnodes)
+    public ReplicaRepairGroup(ImmutableSet<Host> replicas, ImmutableList<LongTokenRange> vnodes)
     {
-        myReplicas = ImmutableSet.copyOf(replicas);
-        myVnodes = ImmutableList.copyOf(vnodes);
-        myDataCenters = ImmutableSet.copyOf(myReplicas.stream().map(Host::getDatacenter).collect(Collectors.toSet()));
+        myReplicas = replicas;
+        myVnodes = vnodes;
     }
 
     public Set<Host> getReplicas()
@@ -47,12 +44,7 @@ public class ReplicaRepairGroup implements Iterable<LongTokenRange>
 
     public Set<String> getDataCenters()
     {
-        return myDataCenters;
-    }
-
-    public List<LongTokenRange> getVnodes()
-    {
-        return myVnodes;
+        return myReplicas.stream().map(Host::getDatacenter).collect(Collectors.toSet());
     }
 
     @Override

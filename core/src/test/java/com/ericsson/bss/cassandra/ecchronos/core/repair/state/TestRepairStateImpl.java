@@ -20,7 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableSet;
 import org.assertj.core.util.Lists;
 import org.junit.Before;
 import org.junit.Test;
@@ -80,7 +80,7 @@ public class TestRepairStateImpl
         Host host = mockHost("DC1");
         when(mockHostStates.isUp(eq(host))).thenReturn(true);
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), Sets.newHashSet(host), VnodeRepairState.UNREPAIRED);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(host), VnodeRepairState.UNREPAIRED);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Collections.singletonList(vnodeRepairState))
                 .build();
@@ -112,8 +112,8 @@ public class TestRepairStateImpl
         Host host = mockHost("DC1");
         when(mockHostStates.isUp(eq(host))).thenReturn(true);
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), Sets.newHashSet(host), VnodeRepairState.UNREPAIRED);
-        VnodeRepairState repairedVnodeRepairState = new VnodeRepairState(new LongTokenRange(2, 3), Sets.newHashSet(host), now);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(host), VnodeRepairState.UNREPAIRED);
+        VnodeRepairState repairedVnodeRepairState = new VnodeRepairState(new LongTokenRange(2, 3), ImmutableSet.of(host), now);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Arrays.asList(vnodeRepairState, repairedVnodeRepairState))
                 .build();
@@ -140,7 +140,7 @@ public class TestRepairStateImpl
 
         RepairConfiguration repairConfiguration = repairConfiguration(repairIntervalInMs);
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), Sets.newHashSet(mockHost("DC1")), expectedRepairedAt);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(mockHost("DC1")), expectedRepairedAt);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Collections.singletonList(vnodeRepairState))
                 .build();
