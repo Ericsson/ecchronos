@@ -53,8 +53,8 @@
             </includes>
         </fileSet>
         <fileSet>
-            <directory>${project.basedir}/src/licenses</directory>
-            <outputDirectory>licenses</outputDirectory>
+            <directory>${project.basedir}/target/site</directory>
+            <outputDirectory>site</outputDirectory>
         </fileSet>
     </fileSets>
     <dependencySets>
