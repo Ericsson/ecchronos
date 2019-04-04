@@ -58,12 +58,18 @@
             <!-- <outputDirectory></outputDirectory> -->
             <includes>
                 <include>LICENSE.txt</include>
-                <include>NOTICE.txt</include>
             </includes>
         </fileSet>
         <fileSet>
-            <directory>${project.basedir}/src/licenses</directory>
-            <outputDirectory>licenses</outputDirectory>
+            <directory>${project.basedir}/target/generated-sources/license/</directory>
+            <outputDirectory></outputDirectory>
+            <includes>
+                <include>THIRD-PARTY.txt</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/target/site</directory>
+            <outputDirectory>site</outputDirectory>
         </fileSet>
     </fileSets>
     <dependencySets>
