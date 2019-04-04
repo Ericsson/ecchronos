@@ -9,6 +9,7 @@
 * Change executable file name from ecChronos to ecc
 * Change configuration file name from ecChronos.cfg to ecc.cfg
 * Add RepairJobView
+* Add HTTP server with REST API - #50
 
 ## Version 1.0.0
 

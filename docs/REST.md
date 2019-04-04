@@ -36,16 +36,16 @@ RepairJob:
 | keyspace               | String                 | mykeyspace                              | Mandatory |
 | table                  | String                 | mytable                                 | Mandatory |
 | repairIntervalInMs     | long                   | 604800000 (7 days)                      | Mandatory |
-| lastRepairedAtInMs     | millis since epoch     | 1553099547852 (2019-03-16T16:32:27.852) | Mandatory |
+| lastRepairedAtInMs     | long                   | 1553099547852 (2019-03-16T16:32:27.852) | Mandatory |
 | repairedRatio          | double                 | 1.0 (100%)                              | Mandatory |
 | virtualNodeStates      | list(VirtualNodeState) | VirtualNode state example below         | Optional  |
 
 VirtualNodeState:
 
-| Key                | Type               | Example value                    |
-|--------------------|--------------------|----------------------------------|
-| startToken         | long               | -1                               |
-| endToken           | long               | 1                                |
-| replicas           | list(inet address) | [127.0.0.1, 127.0.0.2]           |
-| lastRepairedAtInMs | unix timestamp     | 1552468659 (2019-03-13T09:17:39) |
-| repaired           | boolean            | true                             |
+| Key                | Type               | Example value                           |
+|--------------------|--------------------|-----------------------------------------|
+| startToken         | long               | -1                                      |
+| endToken           | long               | 1                                       |
+| replicas           | list(inet address) | [127.0.0.1, 127.0.0.2]                  |
+| lastRepairedAtInMs | long               | 1553099547852 (2019-03-16T16:32:27.852) |
+| repaired           | boolean            | true                                    |

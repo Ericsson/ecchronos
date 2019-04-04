@@ -49,7 +49,7 @@ class RepairJob:
         self.table = data["table"] if "table" in data else "<UNKNOWN>"
         self.repair_interval_in_ms = int(data["repairIntervalInMs"] if "repairIntervalInMs" in data else 0)
         self.last_repaired_at_in_ms = int(data["lastRepairedAtInMs"] if "lastRepairedAtInMs" in data else -1)
-        self.repaired = float(data["repairedRatio"] if "repairedRatio" in data else 0)
+        self.repaired_ratio = float(data["repairedRatio"] if "repairedRatio" in data else 0)
 
     def get_interval(self):
         return parse_interval(self.repair_interval_in_ms)
@@ -58,7 +58,7 @@ class RepairJob:
         return datetime.datetime.fromtimestamp(self.last_repaired_at_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
 
     def get_repair_percentage(self):
-        return "{0:.2f}".format(self.repaired * 100.0)
+        return "{0:.2f}".format(self.repaired_ratio * 100.0)
 
 
 class VerboseRepairJob(RepairJob):

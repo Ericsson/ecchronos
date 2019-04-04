@@ -86,12 +86,14 @@
                         <configuration>
                             <acceptPomPackaging>true</acceptPomPackaging>
                             <licenseMerges>
-                                <licenseMerge>The Apache Software License, Version 2.0|Apache License, Version 2.0|Apache License 2.0|Apache 2</licenseMerge>
+                                <licenseMerge>The Apache Software License, Version 2.0|Apache Software License - Version 2.0|Apache License, Version 2.0|Apache License, 2.0|Apache License 2.0|Apache 2.0|Apache 2</licenseMerge>
                             </licenseMerges>
                             <includedLicenses>
                                 <includedLicense>The Apache Software License, Version 2.0</includedLicense>
                                 <includedLicense>MIT License</includedLicense>
                                 <includedLicense>Eclipse Public License - v 1.0</includedLicense>
+                                <includedLicense>CDDL 1.1</includedLicense>
+                                <includedLicense>CDDL + GPLv2 with classpath exception</includedLicense>
                             </includedLicenses>
                             <failOnBlacklist>true</failOnBlacklist>
                         </configuration>
