@@ -93,6 +93,7 @@
         <org.apache.karaf.tooling.karaf-maven-plugin.version>3.0.3</org.apache.karaf.tooling.karaf-maven-plugin.version>
         <org.eluder.coveralls.coveralls-maven-plugin.version>4.3.0</org.eluder.coveralls.coveralls-maven-plugin.version>
         <org.codehaus.mojo.cobertura-maven-plugin.version>2.7</org.codehaus.mojo.cobertura-maven-plugin.version>
+        <org.codehaus.mojo.license-maven-plugin.version>1.19</org.codehaus.mojo.license-maven-plugin.version>
 
         <org.apache.maven.plugins.maven-release-plugin.version>2.5.3</org.apache.maven.plugins.maven-release-plugin.version>
         <org.apache.maven.plugins.maven-deploy-plugin.version>2.8.2</org.apache.maven.plugins.maven-deploy-plugin.version>
@@ -330,6 +331,12 @@
                         <maxmem>256m</maxmem>
                         <aggregate>true</aggregate>
                     </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>license-maven-plugin</artifactId>
+                    <version>${org.codehaus.mojo.license-maven-plugin.version}</version>
                 </plugin>
 
                 <plugin>
