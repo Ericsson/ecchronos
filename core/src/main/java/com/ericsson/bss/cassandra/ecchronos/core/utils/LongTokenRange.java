@@ -17,7 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.utils;
 /**
  * A representation of a token range in Cassandra.
  */
-public class LongTokenRange implements Comparable<LongTokenRange>
+public class LongTokenRange
 {
     public final long start;
     public final long end;
@@ -52,11 +52,5 @@ public class LongTokenRange implements Comparable<LongTokenRange>
         int result = (int) (start ^ (start >>> 32));
         result = 31 * result + (int) (end ^ (end >>> 32));
         return result;
-    }
-
-    @Override
-    public int compareTo(LongTokenRange other)
-    {
-        return Long.compare(start, other.start);
     }
 }

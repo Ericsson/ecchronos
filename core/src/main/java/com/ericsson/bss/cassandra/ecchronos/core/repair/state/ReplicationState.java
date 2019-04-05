@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -31,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ReplicationState
 {
-    private static final Map<String, KeyspaceReplication> keyspaceReplicationCache = new ConcurrentHashMap<>();
+    private static final Map<String, ImmutableMap<LongTokenRange, ImmutableSet<Host>>> keyspaceReplicationCache = new ConcurrentHashMap<>();
 
     private final Metadata myMetadata;
     private final Host myLocalHost;
@@ -46,45 +47,26 @@ public class ReplicationState
     {
         String keyspace = tableReference.getKeyspace();
 
-        Map<LongTokenRange, ImmutableSet<Host>> tokenRangeToReplicaMap = new HashMap<>();
+        ImmutableMap<LongTokenRange, ImmutableSet<Host>> replication = buildTokenMap(keyspace);
 
-        Map<ImmutableSet<Host>, ImmutableSet<Host>> replicaCache = new HashMap<>();
+        return keyspaceReplicationCache.compute(keyspace, (k, v) -> !replication.equals(v) ? replication : v);
+    }
+
+    private ImmutableMap<LongTokenRange, ImmutableSet<Host>> buildTokenMap(String keyspace)
+    {
+        ImmutableMap.Builder<LongTokenRange, ImmutableSet<Host>> replicationBuilder = ImmutableMap.builder();
+
+        Map<Set<Host>, ImmutableSet<Host>> replicaCache = new HashMap<>();
 
         for (TokenRange tokenRange : myMetadata.getTokenRanges(keyspace, myLocalHost))
         {
             LongTokenRange longTokenRange = convert(tokenRange);
-            ImmutableSet<Host> replicas = ImmutableSet.copyOf(myMetadata.getReplicas(keyspace, tokenRange));
+            ImmutableSet<Host> replicas = replicaCache.computeIfAbsent(myMetadata.getReplicas(keyspace, tokenRange), ImmutableSet::copyOf);
 
-            tokenRangeToReplicaMap.put(longTokenRange, getOrCache(replicas, replicaCache));
+            replicationBuilder.put(longTokenRange, replicas);
         }
 
-        return getOrCache(keyspace, ImmutableMap.copyOf(tokenRangeToReplicaMap));
-    }
-
-    private ImmutableSet<Host> getOrCache(ImmutableSet<Host> replicas, Map<ImmutableSet<Host>, ImmutableSet<Host>> replicaCache)
-    {
-        ImmutableSet<Host> actualReplicas;
-        actualReplicas = replicaCache.putIfAbsent(replicas, replicas);
-        if (actualReplicas == null)
-        {
-            actualReplicas = replicas;
-        }
-
-        return actualReplicas;
-    }
-
-    private ImmutableMap<LongTokenRange, ImmutableSet<Host>> getOrCache(String keyspace, ImmutableMap<LongTokenRange, ImmutableSet<Host>> replication)
-    {
-        KeyspaceReplication newKeyspaceReplication = new KeyspaceReplication(replication);
-        KeyspaceReplication oldKeyspaceReplication = keyspaceReplicationCache.get(keyspace);
-
-        if (oldKeyspaceReplication == null || !oldKeyspaceReplication.equals(newKeyspaceReplication))
-        {
-            keyspaceReplicationCache.put(keyspace, newKeyspaceReplication);
-            return newKeyspaceReplication.getReplication();
-        }
-
-        return oldKeyspaceReplication.getReplication();
+        return replicationBuilder.build();
     }
 
     private LongTokenRange convert(TokenRange range)
@@ -93,37 +75,5 @@ public class ReplicationState
         long start = (long) range.getStart().getValue();
         long end = (long) range.getEnd().getValue();
         return new LongTokenRange(start, end);
-    }
-
-    private static class KeyspaceReplication
-    {
-        private final ImmutableMap<LongTokenRange, ImmutableSet<Host>> myReplication;
-
-        public KeyspaceReplication(ImmutableMap<LongTokenRange, ImmutableSet<Host>> replication)
-        {
-            myReplication = replication;
-        }
-
-        public ImmutableMap<LongTokenRange, ImmutableSet<Host>> getReplication()
-        {
-            return myReplication;
-        }
-
-        @Override
-        public boolean equals(Object o)
-        {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            KeyspaceReplication that = (KeyspaceReplication) o;
-
-            return myReplication != null ? myReplication.equals(that.myReplication) : that.myReplication == null;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return myReplication != null ? myReplication.hashCode() : 0;
-        }
     }
 }

@@ -28,7 +28,6 @@ public class TestLongTokenRange
 
         assertThat(range1).isEqualTo(range2);
         assertThat(range1.hashCode()).isEqualTo(range2.hashCode());
-        assertThat(range1.compareTo(range2)).isEqualTo(0);
     }
 
     @Test
@@ -38,7 +37,5 @@ public class TestLongTokenRange
         LongTokenRange range2 = new LongTokenRange(2, 3);
 
         assertThat(range1).isNotEqualTo(range2);
-        assertThat(range1.compareTo(range2)).isLessThan(0);
-        assertThat(range2.compareTo(range1)).isGreaterThan(0);
     }
 }
