@@ -30,6 +30,7 @@
         <exclude name="SimplifiedTernary" />
         <exclude name="SimplifyBooleanReturns" />
         <exclude name="CyclomaticComplexity" />
+        <exclude name="DataClass" />
     </rule>
 
     <rule ref="category/java/bestpractices.xml">

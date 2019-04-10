@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "List of repair jobs",
+  "description": "A list of repair jobs without virtual node state information",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "keyspace": {
+        "type": "string"
+      },
+      "table": {
+        "type": "string"
+      },
+      "repairIntervalInMs": {
+        "type": "integer"
+      },
+      "lastRepairedAtInMs": {
+        "type": "integer",
+        "description": "When the table was last repaired in millis since epoch"
+      },
+      "repairedRatio": {
+        "type": "number",
+        "description": "Ratio of how much of the table that has been repaired"
+      }
+    },
+    "required": [
+      "keyspace",
+      "table",
+      "repairIntervalInMs",
+      "lastRepairedAtInMs",
+      "repairedRatio"
+    ]
+  }
+}

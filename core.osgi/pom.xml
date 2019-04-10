@@ -25,6 +25,7 @@
     <packaging>bundle</packaging>
 
     <artifactId>core.osgi</artifactId>
+    <description>OSGi service wrappers for the core classes</description>
 
     <dependencies>
         <!-- Internal -->

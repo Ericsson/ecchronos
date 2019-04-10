@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Repair job",
+  "description": "A repair job containing virtual node state information",
+  "type": "object",
+  "properties": {
+    "keyspace": {
+      "type": "string"
+    },
+    "table": {
+      "type": "string"
+    },
+    "repairIntervalInMs": {
+      "type": "integer"
+    },
+    "lastRepairedAtInMs": {
+      "type": "integer",
+      "description": "When the table was last repaired in millis since epoch"
+    },
+    "repairedRatio": {
+      "type": "number",
+      "description": "Ratio of how much of the table that has been repaired"
+    },
+    "virtualNodeStates": {
+      "description": "The state of each individual virtual node",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "startToken": {
+            "type": "integer"
+          },
+          "endToken": {
+            "type": "integer"
+          },
+          "replicas": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "ip-address"
+            }
+          },
+          "lastRepairedAtInMs": {
+            "type": "integer",
+            "description": "When the virtual node was last repaired in millis since epoch"
+          },
+          "repaired": {
+            "type": "boolean",
+            "description": "If the virtual node has been repaired in the interval"
+          }
+        },
+        "required": [
+          "startToken",
+          "endToken",
+          "replicas",
+          "lastRepairedAtInMs",
+          "repaired"
+        ]
+      }
+    }
+  },
+  "required": [
+    "keyspace",
+    "table",
+    "repairIntervalInMs",
+    "lastRepairedAtInMs",
+    "repairedRatio",
+    "virtualNodeStates"
+  ]
+}

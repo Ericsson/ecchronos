@@ -24,6 +24,7 @@
     </parent>
     <artifactId>core</artifactId>
     <packaging>bundle</packaging>
+    <description>Core package for scheduling and repairs</description>
 
     <dependencies>
         <!-- Internal -->

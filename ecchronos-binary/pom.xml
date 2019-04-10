@@ -25,6 +25,7 @@
 
     <artifactId>ecchronos-binary</artifactId>
     <packaging>pom</packaging>
+    <description>Packaging of ecChronos as a standalone application</description>
 
     <dependencies>
         <!-- Internal -->
@@ -85,12 +86,14 @@
                         <configuration>
                             <acceptPomPackaging>true</acceptPomPackaging>
                             <licenseMerges>
-                                <licenseMerge>The Apache Software License, Version 2.0|Apache License, Version 2.0|Apache License 2.0|Apache 2</licenseMerge>
+                                <licenseMerge>The Apache Software License, Version 2.0|Apache Software License - Version 2.0|Apache License, Version 2.0|Apache License, 2.0|Apache License 2.0|Apache 2.0|Apache 2</licenseMerge>
                             </licenseMerges>
                             <includedLicenses>
                                 <includedLicense>The Apache Software License, Version 2.0</includedLicense>
                                 <includedLicense>MIT License</includedLicense>
                                 <includedLicense>Eclipse Public License - v 1.0</includedLicense>
+                                <includedLicense>CDDL 1.1</includedLicense>
+                                <includedLicense>CDDL + GPLv2 with classpath exception</includedLicense>
                             </includedLicenses>
                             <failOnBlacklist>true</failOnBlacklist>
                         </configuration>
@@ -99,4 +102,129 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>python-integration-tests</id>
+            <build>
+                <plugins>
+                    <!-- Integration tests -->
+                    <plugin>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>unpack-ecc-binary</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>unpack</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
+                                            <artifactId>ecchronos-binary</artifactId>
+                                            <version>${project.version}</version>
+                                            <type>tar.gz</type>
+                                            <outputDirectory>target/behave</outputDirectory>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-test-resources</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>target/behave</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>src/test/bin</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                        <resource>
+                                            <directory>src/test/features</directory>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>python-integration-tests</id>
+                                <phase>integration-test</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>testwrapper.sh</argument>
+                                        <argument>pytests.sh</argument>
+                                        <argument>pytests.ret</argument>
+                                    </arguments>
+                                    <workingDirectory>target/behave</workingDirectory>
+                                    <environmentVariables>
+                                        <CASSANDRA_IP>${docker.container.seed.ip}</CASSANDRA_IP>
+                                        <CASSANDRA_JMX_PORT>7199</CASSANDRA_JMX_PORT>
+                                        <CASSANDRA_NATIVE_PORT>9042</CASSANDRA_NATIVE_PORT>
+                                    </environmentVariables>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>post-python-integration-tests</id>
+                                <phase>post-integration-test</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>testwrapper.sh</argument>
+                                        <argument>cleanup.sh</argument>
+                                        <argument>cleanup.ret</argument>
+                                    </arguments>
+                                    <workingDirectory>target/behave</workingDirectory>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>verify-python-integration-tests</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>verify.sh</argument>
+                                        <argument>pytests.ret</argument>
+                                    </arguments>
+                                    <workingDirectory>target/behave</workingDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Docker -->
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

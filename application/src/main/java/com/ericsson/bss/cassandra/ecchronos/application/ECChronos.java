@@ -49,6 +49,7 @@ public class ECChronos implements Closeable
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
     private final DefaultRepairConfigurationProvider myDefaultRepairConfigurationProvider;
     private final RepairSchedulerImpl myRepairSchedulerImpl;
+    private final HTTPServer myHttpServer;
 
     public ECChronos(Properties configuration, RepairFaultReporter repairFaultReporter,
                      NativeConnectionProvider nativeConnectionProvider,
@@ -95,16 +96,23 @@ public class ECChronos implements Closeable
                 .withReplicatedTableProvider(myECChronosInternals.getReplicatedTableProvider())
                 .withDefaultRepairConfiguration(getRepairConfiguration(repairProperties))
                 .build();
+
+        HTTPServerProperties httpServerProperties = HTTPServerProperties.from(configuration);
+
+        myHttpServer = new HTTPServer(myRepairSchedulerImpl, myECChronosInternals.getScheduleManager(), httpServerProperties.getAddress());
     }
 
-    public void start()
+    public void start() throws HTTPServerException
     {
         myECChronosInternals.addRunPolicy(myTimeBasedRunPolicy);
+        myHttpServer.start();
     }
 
     @Override
     public void close()
     {
+        myHttpServer.close();
+
         myECChronosInternals.removeRunPolicy(myTimeBasedRunPolicy);
 
         myTimeBasedRunPolicy.close();
