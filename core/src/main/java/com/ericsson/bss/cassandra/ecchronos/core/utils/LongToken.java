@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.utils;
 /**
  * A representation of a token in Cassandra.
  */
+@Deprecated
 public class LongToken implements Comparable<LongToken>
 {
     private final long value;

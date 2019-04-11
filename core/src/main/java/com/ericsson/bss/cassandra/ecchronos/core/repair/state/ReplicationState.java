@@ -24,12 +24,16 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Utility class to generate a token -&gt; replicas map for a specific table.
  */
 public class ReplicationState
 {
+    private static final Map<String, ImmutableMap<LongTokenRange, ImmutableSet<Host>>> keyspaceReplicationCache = new ConcurrentHashMap<>();
+
     private final Metadata myMetadata;
     private final Host myLocalHost;
 
@@ -41,16 +45,28 @@ public class ReplicationState
 
     public Map<LongTokenRange, ImmutableSet<Host>> getTokenRangeToReplicas(TableReference tableReference)
     {
-        Map<LongTokenRange, ImmutableSet<Host>> tokenRangeToReplicaMap = new HashMap<>();
+        String keyspace = tableReference.getKeyspace();
 
-        for (TokenRange tokenRange : myMetadata.getTokenRanges(tableReference.getKeyspace(), myLocalHost))
+        ImmutableMap<LongTokenRange, ImmutableSet<Host>> replication = buildTokenMap(keyspace);
+
+        return keyspaceReplicationCache.compute(keyspace, (k, v) -> !replication.equals(v) ? replication : v);
+    }
+
+    private ImmutableMap<LongTokenRange, ImmutableSet<Host>> buildTokenMap(String keyspace)
+    {
+        ImmutableMap.Builder<LongTokenRange, ImmutableSet<Host>> replicationBuilder = ImmutableMap.builder();
+
+        Map<Set<Host>, ImmutableSet<Host>> replicaCache = new HashMap<>();
+
+        for (TokenRange tokenRange : myMetadata.getTokenRanges(keyspace, myLocalHost))
         {
             LongTokenRange longTokenRange = convert(tokenRange);
-            ImmutableSet<Host> hosts = ImmutableSet.copyOf(myMetadata.getReplicas(tableReference.getKeyspace(), tokenRange));
-            tokenRangeToReplicaMap.put(longTokenRange, hosts);
+            ImmutableSet<Host> replicas = replicaCache.computeIfAbsent(myMetadata.getReplicas(keyspace, tokenRange), ImmutableSet::copyOf);
+
+            replicationBuilder.put(longTokenRange, replicas);
         }
 
-        return ImmutableMap.copyOf(tokenRangeToReplicaMap);
+        return replicationBuilder.build();
     }
 
     private LongTokenRange convert(TokenRange range)

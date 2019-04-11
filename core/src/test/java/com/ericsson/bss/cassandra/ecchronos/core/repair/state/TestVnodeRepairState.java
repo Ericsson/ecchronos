@@ -16,11 +16,8 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
-
-import java.util.HashSet;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -35,7 +32,7 @@ public class TestVnodeRepairState
         Host host2 = mock(Host.class);
         Host host3 = mock(Host.class);
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, Sets.newHashSet(host1, host2, host3), VnodeRepairState.UNREPAIRED);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1, host2, host3), VnodeRepairState.UNREPAIRED);
 
         assertThat(vnodeRepairState.getReplicas()).containsExactlyInAnyOrder(host1, host2, host3);
         assertThat(vnodeRepairState.getTokenRange()).isEqualTo(range);
@@ -52,7 +49,7 @@ public class TestVnodeRepairState
         Host host3 = mock(Host.class);
         long repairedAt = 1234L;
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, Sets.newHashSet(host1, host2, host3), repairedAt);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1, host2, host3), repairedAt);
 
         assertThat(vnodeRepairState.lastRepairedAt()).isEqualTo(repairedAt);
     }
@@ -65,8 +62,8 @@ public class TestVnodeRepairState
         Host host2 = mock(Host.class);
         Host host3 = mock(Host.class);
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, Sets.newHashSet(host1, host2), VnodeRepairState.UNREPAIRED);
-        VnodeRepairState otherVnodeRepairState = new VnodeRepairState(range, Sets.newHashSet(host1, host3), VnodeRepairState.UNREPAIRED);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1, host2), VnodeRepairState.UNREPAIRED);
+        VnodeRepairState otherVnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1, host3), VnodeRepairState.UNREPAIRED);
 
         assertThat(vnodeRepairState.isSameVnode(otherVnodeRepairState)).isFalse();
     }
@@ -80,30 +77,9 @@ public class TestVnodeRepairState
         Host host2 = mock(Host.class);
         Host host3 = mock(Host.class);
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, Sets.newHashSet(host1, host2, host3), VnodeRepairState.UNREPAIRED);
-        VnodeRepairState otherVnodeRepairState = new VnodeRepairState(otherRange, Sets.newHashSet(host1, host2, host3), VnodeRepairState.UNREPAIRED);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1, host2, host3), VnodeRepairState.UNREPAIRED);
+        VnodeRepairState otherVnodeRepairState = new VnodeRepairState(otherRange, ImmutableSet.of(host1, host2, host3), VnodeRepairState.UNREPAIRED);
 
         assertThat(vnodeRepairState.isSameVnode(otherVnodeRepairState)).isFalse();
-    }
-
-    @Test
-    public void testVnodeRepairStateImmutability()
-    {
-        LongTokenRange range = new LongTokenRange(1, 2);
-        Host host1 = mock(Host.class);
-        Host host2 = mock(Host.class);
-        Host host3 = mock(Host.class);
-        Set<Host> inputReplicas = new HashSet<>();
-        inputReplicas.add(host1);
-        inputReplicas.add(host2);
-
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, inputReplicas, VnodeRepairState.UNREPAIRED);
-
-        inputReplicas.add(host3);
-
-        assertThat(vnodeRepairState.getReplicas()).containsExactlyInAnyOrder(host1, host2);
-        assertThat(vnodeRepairState.getTokenRange()).isEqualTo(range);
-        assertThat(vnodeRepairState.lastRepairedAt()).isEqualTo(VnodeRepairState.UNREPAIRED);
-        assertThat(vnodeRepairState.isSameVnode(vnodeRepairState)).isTrue();
     }
 }

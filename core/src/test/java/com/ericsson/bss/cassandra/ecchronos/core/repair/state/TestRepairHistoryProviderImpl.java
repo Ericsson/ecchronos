@@ -267,8 +267,8 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
                 UUIDs.startOf(started),
                 new Date(started),
                 new Date(finished),
-                range.start.toString(),
-                range.end.toString(),
+                Long.toString(range.start),
+                Long.toString(range.end),
                 repairStatus.toString()
                 ));
     }
@@ -284,8 +284,8 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
                 UUIDs.startOf(repairEntry.getStartedAt()),
                 new Date(repairEntry.getStartedAt()),
                 new Date(finishedAt),
-                repairEntry.getRange().start.toString(),
-                repairEntry.getRange().end.toString(),
+                Long.toString(repairEntry.getRange().start),
+                Long.toString(repairEntry.getRange().end),
                 repairEntry.getStatus().toString()
         ));
     }

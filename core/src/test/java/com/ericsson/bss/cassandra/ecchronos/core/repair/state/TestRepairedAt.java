@@ -16,7 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -33,8 +33,8 @@ public class TestRepairedAt
         LongTokenRange range2 = new LongTokenRange(2, 3);
         Host host1 = mock(Host.class);
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, Sets.newHashSet(host1), 1234L);
-        VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, Sets.newHashSet(host1), 1235L);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1), 1234L);
+        VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, ImmutableSet.of(host1), 1235L);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2))
                 .build();
@@ -54,8 +54,8 @@ public class TestRepairedAt
         LongTokenRange range2 = new LongTokenRange(2, 3);
         Host host1 = mock(Host.class);
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, Sets.newHashSet(host1), 1234L);
-        VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, Sets.newHashSet(host1), VnodeRepairState.UNREPAIRED);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1), 1234L);
+        VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, ImmutableSet.of(host1), VnodeRepairState.UNREPAIRED);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2))
                 .build();
@@ -75,8 +75,8 @@ public class TestRepairedAt
         LongTokenRange range2 = new LongTokenRange(2, 3);
         Host host1 = mock(Host.class);
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, Sets.newHashSet(host1), VnodeRepairState.UNREPAIRED);
-        VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, Sets.newHashSet(host1), VnodeRepairState.UNREPAIRED);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1), VnodeRepairState.UNREPAIRED);
+        VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, ImmutableSet.of(host1), VnodeRepairState.UNREPAIRED);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2))
                 .build();

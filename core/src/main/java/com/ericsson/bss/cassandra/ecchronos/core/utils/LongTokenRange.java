@@ -17,18 +17,12 @@ package com.ericsson.bss.cassandra.ecchronos.core.utils;
 /**
  * A representation of a token range in Cassandra.
  */
-public class LongTokenRange implements Comparable<LongTokenRange>
+public class LongTokenRange
 {
-    public final LongToken start;
-    public final LongToken end;
+    public final long start;
+    public final long end;
 
     public LongTokenRange(long start, long end)
-    {
-        this.start = new LongToken(start);
-        this.end = new LongToken(end);
-    }
-
-    public LongTokenRange(LongToken start, LongToken end)
     {
         this.start = start;
         this.end = end;
@@ -41,59 +35,22 @@ public class LongTokenRange implements Comparable<LongTokenRange>
     }
 
     @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        LongTokenRange that = (LongTokenRange) o;
+
+        if (start != that.start) return false;
+        return end == that.end;
+    }
+
+    @Override
     public int hashCode()
     {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((end == null) ? 0 : end.hashCode());
-        result = prime * result + ((start == null) ? 0 : start.hashCode());
+        int result = (int) (start ^ (start >>> 32));
+        result = 31 * result + (int) (end ^ (end >>> 32));
         return result;
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (this == obj)
-        {
-            return true;
-        }
-        if (obj == null)
-        {
-            return false;
-        }
-        if (getClass() != obj.getClass())
-        {
-            return false;
-        }
-        LongTokenRange other = (LongTokenRange) obj;
-        if (end == null)
-        {
-            if (other.end != null)
-            {
-                return false;
-            }
-        }
-        else if (!end.equals(other.end))
-        {
-            return false;
-        }
-        if (start == null)
-        {
-            if (other.start != null)
-            {
-                return false;
-            }
-        }
-        else if (!start.equals(other.start))
-        {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    public int compareTo(LongTokenRange other)
-    {
-        return start.compareTo(other.start);
     }
 }

@@ -17,10 +17,9 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import org.assertj.core.util.Sets;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
-
-import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
@@ -57,7 +56,7 @@ public class TestDataCenterRepairResourceFactory
     private ReplicaRepairGroup generateReplicaRepairGroup(Host... hosts)
     {
         LongTokenRange range = new LongTokenRange(1, 2);
-        return new ReplicaRepairGroup(Sets.newLinkedHashSet(hosts), Collections.singletonList(range));
+        return new ReplicaRepairGroup(ImmutableSet.copyOf(hosts), ImmutableList.of(range));
     }
 
     private Host mockHost(String dataCenter)

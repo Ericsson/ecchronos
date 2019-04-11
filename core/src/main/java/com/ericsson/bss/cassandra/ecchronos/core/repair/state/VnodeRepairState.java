@@ -18,9 +18,7 @@ import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.google.common.collect.ImmutableSet;
 
-import java.util.Collection;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * A class representing the repair state of a single vnode.
@@ -33,10 +31,10 @@ public class VnodeRepairState
     private final ImmutableSet<Host> myReplicas;
     private final long myLastRepairedAt;
 
-    public VnodeRepairState(LongTokenRange tokenRange, Collection<Host> replicas, long lastRepairedAt)
+    public VnodeRepairState(LongTokenRange tokenRange, ImmutableSet<Host> replicas, long lastRepairedAt)
     {
         myTokenRange = tokenRange;
-        myReplicas = ImmutableSet.copyOf(replicas);
+        myReplicas = replicas;
         myLastRepairedAt = lastRepairedAt;
     }
 
@@ -45,7 +43,7 @@ public class VnodeRepairState
         return myTokenRange;
     }
 
-    public Set<Host> getReplicas()
+    public ImmutableSet<Host> getReplicas()
     {
         return myReplicas;
     }
