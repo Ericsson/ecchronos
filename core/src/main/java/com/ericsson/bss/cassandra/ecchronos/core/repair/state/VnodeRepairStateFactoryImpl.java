@@ -75,7 +75,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         for (Map.Entry<LongTokenRange, ImmutableSet<Host>> entry : tokenRangeToReplicaMap.entrySet())
         {
             LongTokenRange longTokenRange = entry.getKey();
-            Set<Host> replicas = entry.getValue();
+            ImmutableSet<Host> replicas = entry.getValue();
             vnodeRepairStatesBase.add(new VnodeRepairState(longTokenRange, replicas, lastRepairedAt));
         }
 
@@ -90,7 +90,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         {
             RepairEntry repairEntry = repairEntryIterator.next();
             LongTokenRange longTokenRange = repairEntry.getRange();
-            Set<Host> replicas = tokenRangeToReplicaMap.get(longTokenRange);
+            ImmutableSet<Host> replicas = tokenRangeToReplicaMap.get(longTokenRange);
 
             VnodeRepairState vnodeRepairState = new VnodeRepairState(longTokenRange, replicas, repairEntry.getStartedAt());
 
