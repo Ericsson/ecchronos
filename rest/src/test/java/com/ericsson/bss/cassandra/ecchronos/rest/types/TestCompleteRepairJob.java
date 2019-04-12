@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.rest.types;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.rest.TestUtils;
+import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -34,7 +35,7 @@ public class TestCompleteRepairJob
         long repairedAfter = System.currentTimeMillis() - repairInterval;
         long lastRepairedAt = System.currentTimeMillis();
 
-        VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, Collections.emptySet(), lastRepairedAt);
+        VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), lastRepairedAt);
 
         RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", lastRepairedAt, repairInterval, Collections.singletonList(vnodeRepairState));
 
@@ -56,7 +57,7 @@ public class TestCompleteRepairJob
         long repairedAfter = System.currentTimeMillis() - repairInterval;
         long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(8);
 
-        VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, Collections.emptySet(), lastRepairedAt);
+        VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), lastRepairedAt);
 
         RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", lastRepairedAt, repairInterval, Collections.singletonList(vnodeRepairState));
 
@@ -79,8 +80,8 @@ public class TestCompleteRepairJob
         long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(8);
         long lastRepairedAtSecond = System.currentTimeMillis();
 
-        VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, Collections.emptySet(), lastRepairedAt);
-        VnodeRepairState vnodeRepairState2 = TestUtils.createVnodeRepairState(3, 4, Collections.emptySet(), lastRepairedAtSecond);
+        VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), lastRepairedAt);
+        VnodeRepairState vnodeRepairState2 = TestUtils.createVnodeRepairState(3, 4, ImmutableSet.of(), lastRepairedAtSecond);
 
         RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", lastRepairedAt, repairInterval, Arrays.asList(vnodeRepairState, vnodeRepairState2));
 

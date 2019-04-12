@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.rest.types;
 import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.google.common.collect.ImmutableSet;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,8 +26,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.Collection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -58,7 +57,7 @@ public class TestVnodeState
         long repairedAfter = 1234;
         long repairedAt = 1235;
         LongTokenRange tokenRange = new LongTokenRange(1, 2);
-        Collection<Host> replicas = Arrays.asList(myLocalHost, myRemoteHost);
+        ImmutableSet<Host> replicas = ImmutableSet.of(myLocalHost, myRemoteHost);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(tokenRange, replicas, repairedAt);
         VirtualNodeState vnodeState = VirtualNodeState.convert(vnodeRepairState, repairedAfter);
@@ -76,7 +75,7 @@ public class TestVnodeState
         long repairedAfter = 1235;
         long repairedAt = 1234;
         LongTokenRange tokenRange = new LongTokenRange(1, 2);
-        Collection<Host> replicas = Arrays.asList(myLocalHost, myRemoteHost);
+        ImmutableSet<Host> replicas = ImmutableSet.of(myLocalHost, myRemoteHost);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(tokenRange, replicas, repairedAt);
         VirtualNodeState vnodeState = VirtualNodeState.convert(vnodeRepairState, repairedAfter);

@@ -17,10 +17,10 @@ package com.ericsson.bss.cassandra.ecchronos.rest.types;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.rest.TestUtils;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -66,8 +66,8 @@ public class TestScheduledRepairJob
         long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(8);
         long lastRepairedAtSecond = System.currentTimeMillis();
 
-        VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, Collections.emptySet(), lastRepairedAt);
-        VnodeRepairState vnodeRepairState2 = TestUtils.createVnodeRepairState(3, 4, Collections.emptySet(), lastRepairedAtSecond);
+        VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), lastRepairedAt);
+        VnodeRepairState vnodeRepairState2 = TestUtils.createVnodeRepairState(3, 4, ImmutableSet.of(), lastRepairedAtSecond);
 
         RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", lastRepairedAt, repairInterval, Sets.newHashSet(vnodeRepairState, vnodeRepairState2));
 

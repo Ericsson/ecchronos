@@ -21,9 +21,9 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.rest.types.CompleteRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.rest.types.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.rest.types.VirtualNodeState;
+import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import org.assertj.core.util.Sets;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -164,7 +164,7 @@ public class TestRepairSchedulerRESTImpl
         when(host.getBroadcastAddress()).thenReturn(InetAddress.getLocalHost());
 
         RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", expectedLastRepairedAt, expectedRepairInterval,
-                longTokenRange, Sets.newLinkedHashSet(host));
+                longTokenRange, ImmutableSet.of(host));
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
 
@@ -180,9 +180,9 @@ public class TestRepairSchedulerRESTImpl
         assertThat(response.virtualNodeStates).hasSize(1);
 
         VirtualNodeState vnodeState = response.virtualNodeStates.get(0);
-        assertThat(vnodeState.startToken).isEqualTo(longTokenRange.start.getValue());
-        assertThat(vnodeState.endToken).isEqualTo(longTokenRange.end.getValue());
+        assertThat(vnodeState.startToken).isEqualTo(longTokenRange.start);
+        assertThat(vnodeState.endToken).isEqualTo(longTokenRange.end);
         assertThat(vnodeState.lastRepairedAtInMs).isEqualTo(expectedLastRepairedAt);
-        assertThat(vnodeState.replicas).isEqualTo(Sets.newLinkedHashSet(InetAddress.getLocalHost()));
+        assertThat(vnodeState.replicas).isEqualTo(ImmutableSet.of(InetAddress.getLocalHost()));
     }
 }

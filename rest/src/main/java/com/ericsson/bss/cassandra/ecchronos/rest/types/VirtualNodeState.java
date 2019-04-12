@@ -45,8 +45,8 @@ public class VirtualNodeState
 
     public static VirtualNodeState convert(VnodeRepairState vnodeRepairState, long repairedAfter)
     {
-        long startToken = vnodeRepairState.getTokenRange().start.getValue();
-        long endToken = vnodeRepairState.getTokenRange().end.getValue();
+        long startToken = vnodeRepairState.getTokenRange().start;
+        long endToken = vnodeRepairState.getTokenRange().end;
         Set<InetAddress> replicas = vnodeRepairState.getReplicas().stream().map(Host::getBroadcastAddress).collect(Collectors.toSet());
         long lastRepairedAt = vnodeRepairState.lastRepairedAt();
         boolean repaired = lastRepairedAt > repairedAfter;

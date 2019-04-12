@@ -22,11 +22,11 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.google.common.collect.ImmutableSet;
 import org.mockito.internal.util.collections.Sets;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class TestUtils
@@ -47,10 +47,10 @@ public class TestUtils
 
     public static RepairJobView createRepairJob(String keyspace, String table, long lastRepairedAt, long repairInterval)
     {
-        return createRepairJob(keyspace, table, lastRepairedAt, repairInterval, new LongTokenRange(1, 2), Collections.emptySet());
+        return createRepairJob(keyspace, table, lastRepairedAt, repairInterval, new LongTokenRange(1, 2), ImmutableSet.of());
     }
 
-    public static RepairJobView createRepairJob(String keyspace, String table, long lastRepairedAt, long repairInterval, LongTokenRange longTokenRange, Set<Host> replicas)
+    public static RepairJobView createRepairJob(String keyspace, String table, long lastRepairedAt, long repairInterval, LongTokenRange longTokenRange, ImmutableSet<Host> replicas)
     {
         VnodeRepairState vnodeRepairState = createVnodeRepairState(longTokenRange, replicas, lastRepairedAt);
 
@@ -66,12 +66,12 @@ public class TestUtils
                 generateRepairStateSnapshot(lastRepairedAt, vnodeRepairStates));
     }
 
-    public static VnodeRepairState createVnodeRepairState(long startToken, long endToken, Set<Host> replicas, long lastRepairedAt)
+    public static VnodeRepairState createVnodeRepairState(long startToken, long endToken, ImmutableSet<Host> replicas, long lastRepairedAt)
     {
         return createVnodeRepairState(new LongTokenRange(startToken, endToken), replicas, lastRepairedAt);
     }
 
-    public static VnodeRepairState createVnodeRepairState(LongTokenRange longTokenRange, Set<Host> replicas, long lastRepairedAt)
+    public static VnodeRepairState createVnodeRepairState(LongTokenRange longTokenRange, ImmutableSet<Host> replicas, long lastRepairedAt)
     {
         return new VnodeRepairState(longTokenRange, replicas, lastRepairedAt);
     }
