@@ -107,7 +107,7 @@ public class RepairStateImpl implements RepairState
 
         VnodeRepairStates updatedVnodeRepairStates = vnodeRepairStates.combineWithRepairedAt(repairedAt);
 
-        List<VnodeRepairState> repairableVnodes = vnodeRepairStates.getVnodeRepairStates().stream()
+        List<VnodeRepairState> repairableVnodes = updatedVnodeRepairStates.getVnodeRepairStates().stream()
                 .filter(this::replicasAreRepairable)
                 .filter(this::vnodeIsRepairable)
                 .collect(Collectors.toList());
