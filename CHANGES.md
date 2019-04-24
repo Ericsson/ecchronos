@@ -11,6 +11,7 @@
 * Add RepairJobView
 * Add HTTP server with REST API - Issue #50
 * Reduce memory footprint - Issue #54
+* Locking failures log too much - Issue #58
 
 ## Version 1.0.0
 
