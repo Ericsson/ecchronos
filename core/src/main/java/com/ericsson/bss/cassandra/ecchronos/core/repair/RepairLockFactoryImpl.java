@@ -64,7 +64,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
             }
             catch (LockException e)
             {
-                LOG.warn("{} - Unable to get lock for repair resource '{}', releasing previously acquired locks - {}", this, repairResource, e.getMessage());
+                LOG.debug("{} - Unable to get lock for repair resource '{}', releasing previously acquired locks - {}", this, repairResource, e.getMessage());
                 releaseLocks(locks);
                 throw e;
             }
@@ -110,7 +110,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
         }
         catch (LockException e)
         {
-            LOG.warn("Lock ({} in datacenter {}) got error {}", resource, dataCenter, e.getMessage());
+            LOG.debug("Lock ({} in datacenter {}) got error {}", resource, dataCenter, e.getMessage());
             throw e;
         }
     }
