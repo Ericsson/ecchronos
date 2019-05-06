@@ -15,11 +15,8 @@
 package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
 import java.io.Closeable;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.RatioGauge;
@@ -56,16 +53,12 @@ public class NodeMetricHolder implements Closeable
             @Override
             protected Ratio getRatio()
             {
-                int tables = 0;
-                double repairRatio = 0;
+                double averageRatio = myTableRepairRatio.values().stream()
+                        .mapToDouble(d -> d)
+                        .average()
+                        .orElse(1); // 100% when no tables to repair
 
-                for (Double ratio : myTableRepairRatio.values())
-                {
-                    tables++;
-                    repairRatio += ratio;
-                }
-
-                return Ratio.of(repairRatio, tables);
+                return Ratio.of(averageRatio, 1);
             }
         });
 
@@ -74,20 +67,17 @@ public class NodeMetricHolder implements Closeable
             @Override
             protected Ratio getRatio()
             {
-                List<TableReference> repairedTables = myTableRepairRatio.entrySet().stream()
-                        .filter(e -> e.getValue() > 0)
-                        .map(Map.Entry::getKey)
-                        .collect(Collectors.toList());
-
                 long totalDataSize = tableStorageStates.getDataSize();
-                double dataSize = 0;
-
-                for (TableReference tableReference : repairedTables)
+                if (totalDataSize == 0)
                 {
-                    dataSize += tableStorageStates.getDataSize(tableReference) * myTableRepairRatio.get(tableReference);
+                    return Ratio.of(1, 1); // 100% when no data to repair
                 }
 
-                return Ratio.of(dataSize, totalDataSize);
+                double repairedDataSize = myTableRepairRatio.entrySet().stream()
+                        .mapToDouble(e -> e.getValue() * tableStorageStates.getDataSize(e.getKey()))
+                        .sum();
+
+                return Ratio.of(repairedDataSize, totalDataSize);
             }
         });
     }

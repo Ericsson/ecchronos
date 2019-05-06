@@ -60,23 +60,44 @@ public class TestNodeMetricHolder
     {
         assertThat(getTimer(NodeMetricHolder.REPAIR_TIMING_SUCCESS).getCount()).isEqualTo(0);
         assertThat(getTimer(NodeMetricHolder.REPAIR_TIMING_FAILED).getCount()).isEqualTo(0);
-        assertThat(getGauge(NodeMetricHolder.REPAIRED_DATA).getValue()).isEqualTo(Double.NaN);
-        assertThat(getGauge(NodeMetricHolder.REPAIRED_TABLES).getValue()).isEqualTo(Double.NaN);
+        assertThat(getGauge(NodeMetricHolder.REPAIRED_DATA).getValue()).isEqualTo(1.0);
+        assertThat(getGauge(NodeMetricHolder.REPAIRED_TABLES).getValue()).isEqualTo(1.0);
+    }
+
+    @Test
+    public void testEmptyTableNotRepaired()
+    {
+        givenSingleRepairedTable(0, 0);
+
+        assertThat(getGauge(NodeMetricHolder.REPAIRED_TABLES).getValue()).isEqualTo(0.0);
+        assertThat(getGauge(NodeMetricHolder.REPAIRED_DATA).getValue()).isEqualTo(1.0);
+    }
+
+    @Test
+    public void testEmptyTablePartiallyRepaired()
+    {
+        givenSingleRepairedTable(0, 0.42);
+
+        assertThat(getGauge(NodeMetricHolder.REPAIRED_TABLES).getValue()).isEqualTo(0.42);
+        assertThat(getGauge(NodeMetricHolder.REPAIRED_DATA).getValue()).isEqualTo(1.0);
+    }
+
+    @Test
+    public void testNonEmptyTableNotRepaired()
+    {
+        givenSingleRepairedTable(3, 0);
+
+        assertThat(getGauge(NodeMetricHolder.REPAIRED_TABLES).getValue()).isEqualTo(0.0);
+        assertThat(getGauge(NodeMetricHolder.REPAIRED_DATA).getValue()).isEqualTo(0.0);
     }
 
     @Test
     public void testUpdateRepairStateOneTable()
     {
-        long expectedDataSize = 1234;
-        TableReference tableReference = new TableReference("keyspace", "table");
-        double repairedRatio = 0.3;
+        givenSingleRepairedTable(1234, 0.3);
 
-        doReturn(expectedDataSize).when(myTableStorageStates).getDataSize();
-
-        addRepairedTable(tableReference, repairedRatio, expectedDataSize);
-
-        assertThat(getGauge(NodeMetricHolder.REPAIRED_TABLES).getValue()).isEqualTo(repairedRatio);
-        assertThat(getGauge(NodeMetricHolder.REPAIRED_DATA).getValue()).isEqualTo(repairedRatio);
+        assertThat(getGauge(NodeMetricHolder.REPAIRED_TABLES).getValue()).isEqualTo(0.3);
+        assertThat(getGauge(NodeMetricHolder.REPAIRED_DATA).getValue()).isEqualTo(0.3);
     }
 
     @Test
@@ -147,5 +168,13 @@ public class TestNodeMetricHolder
     private Gauge getGauge(String name)
     {
         return myMetricRegistry.getGauges().get(name);
+    }
+
+    private void givenSingleRepairedTable(long tableSize, double repairedRatio)
+    {
+        doReturn(tableSize).when(myTableStorageStates).getDataSize();
+
+        TableReference tableReference = new TableReference("keyspace", "table");
+        addRepairedTable(tableReference, repairedRatio, tableSize);
     }
 }
