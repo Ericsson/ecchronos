@@ -15,7 +15,7 @@ See the [STRUCTURE.md](docs/STRUCTURE.md) and [ARCHITECTURE.md](docs/ARCHITECTUR
 
 ### Installation
 
-For installation on a running system read [SETUP.md](docs/SETUP.md) for details on how to setup your system to enable ecChronos to run.
+Installation instructions can be found in [SETUP.md](docs/SETUP.md).
 
 ## Contributing
 
