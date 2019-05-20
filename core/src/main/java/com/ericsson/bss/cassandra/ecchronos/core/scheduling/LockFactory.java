@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.scheduling;
 
 import java.io.Closeable;
 import java.util.Map;
+import java.util.Optional;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 
@@ -67,6 +68,18 @@ public interface LockFactory
      *            Indicates if local_quorum is met.
      */
     boolean sufficientNodesForLocking(String dataCenter, String resource);
+
+    /**
+     * Utility method to return a cached lock exception if one is available.
+     *
+     * @param dataCenter The data center the lock is for.
+     * @param resource The resource the lock is for.
+     * @return A cached exception if available.
+     */
+    default Optional<LockException> getCachedLockException(String dataCenter, String resource)
+    {
+        return Optional.empty();
+    }
 
     /**
      * A locked resource that gets released by the call of the {@link DistributedLock#close() close()} method.

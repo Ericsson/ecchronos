@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.google.common.collect.Sets;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -24,22 +25,33 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyMapOf;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestRepairLockFactoryImpl
 {
-    private static final int DEFAULT_RESOURCES_PER_LOCK = 1;
+    private static final int LOCKS_PER_RESOURCE = 1;
 
     @Mock
     private LockFactory mockLockFactory;
 
     @Mock
     private LockFactory.DistributedLock mockLock;
+
+    @Before
+    public void setup()
+    {
+        when(mockLockFactory.getCachedLockException(anyString(), anyString())).thenReturn(Optional.empty());
+    }
 
     @Test
     public void testNothingToLockThrowsException()
@@ -165,23 +177,76 @@ public class TestRepairLockFactoryImpl
                 .isThrownBy(() -> repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResourceDc1, repairResourceDc2), metadata, priority));
     }
 
+    @Test
+    public void testMultipleLocksOneHasCachedFailure() throws LockException
+    {
+        RepairResource repairResourceDc1 = new RepairResource("DC1", "my-resource-dc1");
+        RepairResource repairResourceDc2 = new RepairResource("DC2", "my-resource-dc2");
+        RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
+        Map<String, String> metadata = new HashMap<>();
+        metadata.put("metadataKey", "metadataValue");
+        int priority = 1;
+
+        withUnsuccessfulCachedLock(repairResourceDc1);
+
+        whenSufficientNodesForLocking(repairResourceDc1);
+        withSuccessfulLocking(repairResourceDc1, priority, metadata);
+
+        whenSufficientNodesForLocking(repairResourceDc2);
+        withSuccessfulLocking(repairResourceDc2, priority, metadata);
+
+        assertThatExceptionOfType(LockException.class)
+                .isThrownBy(() -> repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResourceDc1, repairResourceDc2), metadata, priority));
+
+        verify(mockLockFactory, never()).tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class));
+    }
+
+    @Test
+    public void testMultipleLocksTheOtherHasCachedFailure() throws LockException
+    {
+        RepairResource repairResourceDc1 = new RepairResource("DC1", "my-resource-dc1");
+        RepairResource repairResourceDc2 = new RepairResource("DC2", "my-resource-dc2");
+        RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
+        Map<String, String> metadata = new HashMap<>();
+        metadata.put("metadataKey", "metadataValue");
+        int priority = 1;
+
+        withUnsuccessfulCachedLock(repairResourceDc2);
+
+        whenSufficientNodesForLocking(repairResourceDc1);
+        withSuccessfulLocking(repairResourceDc1, priority, metadata);
+
+        whenSufficientNodesForLocking(repairResourceDc2);
+        withSuccessfulLocking(repairResourceDc2, priority, metadata);
+
+        assertThatExceptionOfType(LockException.class)
+                .isThrownBy(() -> repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResourceDc1, repairResourceDc2), metadata, priority));
+
+        verify(mockLockFactory, never()).tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class));
+    }
+
+    private void withUnsuccessfulCachedLock(RepairResource repairResource)
+    {
+        when(mockLockFactory.getCachedLockException(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)))).thenReturn(Optional.of(new LockException("")));
+    }
+
     private void withSuccessfulLocking(RepairResource repairResource, int priority, Map<String, String> metadata) throws LockException
     {
-        when(mockLockFactory.tryLock(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(DEFAULT_RESOURCES_PER_LOCK)), eq(priority), eq(metadata))).thenReturn(mockLock);
+        when(mockLockFactory.tryLock(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)), eq(priority), eq(metadata))).thenReturn(mockLock);
     }
 
     private void withUnsuccessfulLocking(RepairResource repairResource, int priority, Map<String, String> metadata) throws LockException
     {
-        when(mockLockFactory.tryLock(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(DEFAULT_RESOURCES_PER_LOCK)), eq(priority), eq(metadata))).thenThrow(new LockException(""));
+        when(mockLockFactory.tryLock(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)), eq(priority), eq(metadata))).thenThrow(new LockException(""));
     }
 
     private void whenSufficientNodesForLocking(RepairResource repairResource)
     {
-        when(mockLockFactory.sufficientNodesForLocking(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(DEFAULT_RESOURCES_PER_LOCK)))).thenReturn(true);
+        when(mockLockFactory.sufficientNodesForLocking(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)))).thenReturn(true);
     }
 
     private void whenNotSufficientNodesForLocking(RepairResource repairResource)
     {
-        when(mockLockFactory.sufficientNodesForLocking(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(DEFAULT_RESOURCES_PER_LOCK)))).thenReturn(false);
+        when(mockLockFactory.sufficientNodesForLocking(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)))).thenReturn(false);
     }
 }

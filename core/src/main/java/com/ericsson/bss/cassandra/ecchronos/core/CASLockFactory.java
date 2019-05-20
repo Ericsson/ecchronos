@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -247,6 +248,12 @@ public class CASLockFactory implements LockFactory, Closeable
         }
 
         return false;
+    }
+
+    @Override
+    public Optional<LockException> getCachedLockException(String dataCenter, String resource)
+    {
+        return myLockCache.getCachedFailure(dataCenter, resource);
     }
 
     @Override

@@ -123,6 +123,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         }
 
         assertPriorityListEmpty("lock");
+        assertThat(myLockFactory.getCachedLockException(DATA_CENTER, "lock")).isEmpty();
     }
 
     @Test
@@ -132,6 +133,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         {
         }
         assertPriorityListEmpty("lock");
+        assertThat(myLockFactory.getCachedLockException(null, "lock")).isEmpty();
     }
 
     @Test
@@ -141,6 +143,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
 
         assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(null, "lock", 1, new HashMap<>()));
         assertPrioritiesInList("lock", 1);
+        assertThat(myLockFactory.getCachedLockException(null, "lock")).isNotEmpty();
     }
 
     @Test
@@ -163,6 +166,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         assertThat(getWriteCount(TABLE_LOCK)).isEqualTo(expectedLockWriteCount);
 
         assertPrioritiesInList("lock", 2);
+        assertThat(myLockFactory.getCachedLockException(null, "lock")).isNotEmpty();
     }
 
     @Test
@@ -172,6 +176,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
 
         assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(DATA_CENTER, "lock", 1, new HashMap<>()));
         assertPrioritiesInList("lock", 1, 2);
+        assertThat(myLockFactory.getCachedLockException(DATA_CENTER, "lock")).isNotEmpty();
     }
 
     @Test
@@ -181,6 +186,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
 
         assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(DATA_CENTER, "lock", 1, new HashMap<>()));
         assertPrioritiesInList("lock", 1);
+        assertThat(myLockFactory.getCachedLockException(DATA_CENTER, "lock")).isNotEmpty();
     }
 
     @Test
@@ -194,6 +200,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         }
 
         assertPrioritiesInList("lock", 2);
+        assertThat(myLockFactory.getCachedLockException(DATA_CENTER, "lock")).isEmpty();
     }
 
     @Test
@@ -207,6 +214,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         }
 
         assertPriorityListEmpty("lock");
+        assertThat(myLockFactory.getCachedLockException(DATA_CENTER, "lock")).isEmpty();
     }
 
     @Test
@@ -223,6 +231,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         }
 
         assertPriorityListEmpty("lock");
+        assertThat(myLockFactory.getCachedLockException(DATA_CENTER, "lock")).isEmpty();
     }
 
     @Test
@@ -268,6 +277,8 @@ public class TestCASLockFactory extends AbstractCassandraTest
             lockUpdateTask.run();
             assertThat(lockUpdateTask.getFailedAttempts()).isEqualTo(0);
         }
+
+        assertThat(myLockFactory.getCachedLockException(DATA_CENTER, "lock")).isEmpty();
     }
 
     @Test

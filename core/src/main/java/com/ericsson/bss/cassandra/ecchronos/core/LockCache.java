@@ -48,6 +48,11 @@ public class LockCache
                 .build();
     }
 
+    public Optional<LockException> getCachedFailure(String dataCenter, String resource)
+    {
+        return getCachedFailure(new LockKey(dataCenter, resource));
+    }
+
     public DistributedLock getLock(String dataCenter, String resource, int priority, Map<String, String> metadata) throws LockException
     {
         LockKey lockKey = new LockKey(dataCenter, resource);

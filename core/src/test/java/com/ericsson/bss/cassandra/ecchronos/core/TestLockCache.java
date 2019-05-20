@@ -108,6 +108,7 @@ public class TestLockCache
     private void assertExpectedLockIsRetrieved(String resource) throws LockException
     {
         assertThat(myLockCache.getLock(DATA_CENTER, resource, PRIORITY, METADATA)).isEqualTo(mockedDistributedLock);
+        assertThat(myLockCache.getCachedFailure(DATA_CENTER, resource)).isEmpty();
     }
 
     private void assertCacheThrowsException()
@@ -118,6 +119,7 @@ public class TestLockCache
     private void assertCacheThrowsException(String resource)
     {
         assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockCache.getLock(DATA_CENTER, resource, PRIORITY, METADATA));
+        assertThat(myLockCache.getCachedFailure(DATA_CENTER, resource)).isNotEmpty();
     }
 
     private void doReturnLockOnSupply() throws LockException
