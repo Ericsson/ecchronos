@@ -113,6 +113,7 @@ public class CASLockFactory implements LockFactory, Closeable
     private final PreparedStatement myRemoveLockStatement;
     private final PreparedStatement myUpdateLockStatement;
     private final PreparedStatement myRemoveLockPriorityStatement;
+    private final LockCache myLockCache;
 
     private CASLockFactory(Builder builder)
     {
@@ -194,34 +195,14 @@ public class CASLockFactory implements LockFactory, Closeable
         }
 
         myUuid = hostId;
+
+        myLockCache = new LockCache(this::doTryLock);
     }
 
     @Override
     public DistributedLock tryLock(String dataCenter, String resource, int priority, Map<String, String> metadata) throws LockException
     {
-        LOG.trace("Trying lock for {} - {}", dataCenter, resource);
-
-        if (!sufficientNodesForLocking(dataCenter, resource))
-        {
-            LOG.error("Not sufficient nodes to lock resource {} in datacenter {}", resource, dataCenter);
-            throw new LockException("Not sufficient nodes to lock");
-        }
-
-        try
-        {
-            CASLock casLock = new CASLock(dataCenter, resource, priority, metadata); // NOSONAR
-            if (casLock.lock())
-            {
-                return casLock;
-            }
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Unable to lock resource {} in datacenter {} - {}", resource, dataCenter, e.getMessage());
-            throw new LockException(e);
-        }
-
-        throw new LockException(String.format("Unable to lock resource %s in datacenter %s", resource, dataCenter));
+        return myLockCache.getLock(dataCenter, resource, priority, metadata);
     }
 
     @Override
@@ -337,6 +318,33 @@ public class CASLockFactory implements LockFactory, Closeable
 
             return new CASLockFactory(this);
         }
+    }
+
+    private DistributedLock doTryLock(String dataCenter, String resource, int priority, Map<String, String> metadata) throws LockException
+    {
+        LOG.trace("Trying lock for {} - {}", dataCenter, resource);
+
+        if (!sufficientNodesForLocking(dataCenter, resource))
+        {
+            LOG.error("Not sufficient nodes to lock resource {} in datacenter {}", resource, dataCenter);
+            throw new LockException("Not sufficient nodes to lock");
+        }
+
+        try
+        {
+            CASLock casLock = new CASLock(dataCenter, resource, priority, metadata); // NOSONAR
+            if (casLock.lock())
+            {
+                return casLock;
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Unable to lock resource {} in datacenter {} - {}", resource, dataCenter, e.getMessage());
+            throw new LockException(e);
+        }
+
+        throw new LockException(String.format("Unable to lock resource %s in datacenter %s", resource, dataCenter));
     }
 
     private Set<Host> getHostsForResource(String dataCenter, String resource) throws UnsupportedEncodingException
