@@ -27,13 +27,14 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestRepairLockFactoryImpl
 {
+    private static final int DEFAULT_RESOURCES_PER_LOCK = 1;
+
     @Mock
     private LockFactory mockLockFactory;
 
@@ -60,8 +61,8 @@ public class TestRepairLockFactoryImpl
         metadata.put("metadataKey", "metadataValue");
         int priority = 1;
 
-        doReturn(true).when(mockLockFactory).sufficientNodesForLocking(eq("DC1"), eq("RepairResource-my-resource-1"));
-        doReturn(mockLock).when(mockLockFactory).tryLock(eq("DC1"), eq("RepairResource-my-resource-1"), eq(priority), eq(metadata));
+        whenSufficientNodesForLocking(repairResource);
+        withSuccessfulLocking(repairResource, priority, metadata);
 
         try (LockFactory.DistributedLock lock = repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResource), metadata, priority))
         {
@@ -79,8 +80,8 @@ public class TestRepairLockFactoryImpl
         metadata.put("metadataKey", "metadataValue");
         int priority = 1;
 
-        doReturn(false).when(mockLockFactory).sufficientNodesForLocking(eq("DC1"), eq("RepairResource-my-resource-1"));
-        doReturn(mockLock).when(mockLockFactory).tryLock(eq("DC1"), eq("RepairResource-my-resource-1"), eq(priority), eq(metadata));
+        whenNotSufficientNodesForLocking(repairResource);
+        withSuccessfulLocking(repairResource, priority, metadata);
 
         assertThatExceptionOfType(LockException.class)
                 .isThrownBy(() -> repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResource), metadata, priority));
@@ -95,8 +96,8 @@ public class TestRepairLockFactoryImpl
         metadata.put("metadataKey", "metadataValue");
         int priority = 1;
 
-        doReturn(true).when(mockLockFactory).sufficientNodesForLocking(eq("DC1"), eq("RepairResource-my-resource-1"));
-        doThrow(LockException.class).when(mockLockFactory).tryLock(eq("DC1"), eq("RepairResource-my-resource-1"), eq(priority), eq(metadata));
+        whenSufficientNodesForLocking(repairResource);
+        withUnsuccessfulLocking(repairResource, priority, metadata);
 
         assertThatExceptionOfType(LockException.class)
                 .isThrownBy(() -> repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResource), metadata, priority));
@@ -112,10 +113,11 @@ public class TestRepairLockFactoryImpl
         metadata.put("metadataKey", "metadataValue");
         int priority = 1;
 
-        doReturn(true).when(mockLockFactory).sufficientNodesForLocking(eq("DC1"), eq("RepairResource-my-resource-dc1-1"));
-        doReturn(true).when(mockLockFactory).sufficientNodesForLocking(eq("DC2"), eq("RepairResource-my-resource-dc2-1"));
-        doReturn(mockLock).when(mockLockFactory).tryLock(eq("DC1"), eq("RepairResource-my-resource-dc1-1"), eq(priority), eq(metadata));
-        doReturn(mockLock).when(mockLockFactory).tryLock(eq("DC2"), eq("RepairResource-my-resource-dc2-1"), eq(priority), eq(metadata));
+        whenSufficientNodesForLocking(repairResourceDc1);
+        whenSufficientNodesForLocking(repairResourceDc2);
+
+        withSuccessfulLocking(repairResourceDc1, priority, metadata);
+        withSuccessfulLocking(repairResourceDc2, priority, metadata);
 
         try (LockFactory.DistributedLock lock = repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResourceDc1, repairResourceDc2), metadata, priority))
         {
@@ -136,8 +138,8 @@ public class TestRepairLockFactoryImpl
         metadata.put("metadataKey", "metadataValue");
         int priority = 1;
 
-        doReturn(true).when(mockLockFactory).sufficientNodesForLocking(eq("DC1"), eq("RepairResource-my-resource-dc1-1"));
-        doReturn(false).when(mockLockFactory).sufficientNodesForLocking(eq("DC2"), eq("RepairResource-my-resource-dc2-1"));
+        whenSufficientNodesForLocking(repairResourceDc1);
+        whenNotSufficientNodesForLocking(repairResourceDc2);
 
         assertThatExceptionOfType(LockException.class)
                 .isThrownBy(() -> repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResourceDc1, repairResourceDc2), metadata, priority));
@@ -153,12 +155,33 @@ public class TestRepairLockFactoryImpl
         metadata.put("metadataKey", "metadataValue");
         int priority = 1;
 
-        doReturn(true).when(mockLockFactory).sufficientNodesForLocking(eq("DC1"), eq("RepairResource-my-resource-dc1-1"));
-        doReturn(true).when(mockLockFactory).sufficientNodesForLocking(eq("DC2"), eq("RepairResource-my-resource-dc2-1"));
-        doReturn(mockLock).when(mockLockFactory).tryLock(eq("DC1"), eq("RepairResource-my-resource-dc1-1"), eq(priority), eq(metadata));
-        doThrow(LockException.class).when(mockLockFactory).tryLock(eq("DC2"), eq("RepairResource-my-resource-dc2-1"), eq(priority), eq(metadata));
+        whenSufficientNodesForLocking(repairResourceDc1);
+        withSuccessfulLocking(repairResourceDc1, priority, metadata);
+
+        whenSufficientNodesForLocking(repairResourceDc2);
+        withUnsuccessfulLocking(repairResourceDc2, priority, metadata);
 
         assertThatExceptionOfType(LockException.class)
                 .isThrownBy(() -> repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResourceDc1, repairResourceDc2), metadata, priority));
+    }
+
+    private void withSuccessfulLocking(RepairResource repairResource, int priority, Map<String, String> metadata) throws LockException
+    {
+        when(mockLockFactory.tryLock(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(DEFAULT_RESOURCES_PER_LOCK)), eq(priority), eq(metadata))).thenReturn(mockLock);
+    }
+
+    private void withUnsuccessfulLocking(RepairResource repairResource, int priority, Map<String, String> metadata) throws LockException
+    {
+        when(mockLockFactory.tryLock(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(DEFAULT_RESOURCES_PER_LOCK)), eq(priority), eq(metadata))).thenThrow(new LockException(""));
+    }
+
+    private void whenSufficientNodesForLocking(RepairResource repairResource)
+    {
+        when(mockLockFactory.sufficientNodesForLocking(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(DEFAULT_RESOURCES_PER_LOCK)))).thenReturn(true);
+    }
+
+    private void whenNotSufficientNodesForLocking(RepairResource repairResource)
+    {
+        when(mockLockFactory.sufficientNodesForLocking(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(DEFAULT_RESOURCES_PER_LOCK)))).thenReturn(false);
     }
 }
