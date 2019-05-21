@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Telefonaktiebolaget LM Ericsson
+ * Copyright 2019 Telefonaktiebolaget LM Ericsson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory.DistributedLock;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,8 +27,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -42,9 +43,6 @@ public class TestLockCache
     @Mock
     private LockCache.LockSupplier mockedLockSupplier;
 
-    @Mock
-    private LockFactory.DistributedLock mockedDistributedLock;
-
     private LockCache myLockCache;
 
     @Before
@@ -56,34 +54,46 @@ public class TestLockCache
     @Test
     public void testGetLock() throws LockException
     {
-        doReturnLockOnSupply();
+        DistributedLock expectedLock = doReturnLockOnGetLock();
 
-        assertExpectedLockIsRetrieved();
+        assertGetLockRetrievesExpectedLock(expectedLock);
     }
 
     @Test
     public void testGetThrowingLockIsCached() throws LockException
     {
-        doThrowOnSupply();
+        LockException expectedExcetion = doThrowOnGetLock();
 
-        assertCacheThrowsException();
+        assertGetLockThrowsException(expectedExcetion);
 
         // Reset return type, locking should still throw
-        doReturnLockOnSupply();
+        doReturnLockOnGetLock();
 
-        assertCacheThrowsException();
+        assertGetLockThrowsException(expectedExcetion);
     }
 
     @Test
-    public void testGetOtherLockAfterThrowing() throws LockException
+    public void testGetMultipleLocks() throws LockException
     {
         String otherResource = "RepairResource-b2e33e60-7af6-11e9-8f9e-2a86e4085a59-1";
 
-        doThrowOnSupply(RESOURCE);
-        doReturnLockOnSupply(otherResource);
+        DistributedLock expectedLock = doReturnLockOnGetLock(RESOURCE);
+        DistributedLock expectedOtherLock = doReturnLockOnGetLock(otherResource);
 
-        assertCacheThrowsException(RESOURCE);
-        assertExpectedLockIsRetrieved(otherResource);
+        assertGetLockRetrievesExpectedLock(RESOURCE, expectedLock);
+        assertGetLockRetrievesExpectedLock(otherResource, expectedOtherLock);
+    }
+
+    @Test
+    public void testGetOtherLockAfterThrowingOnAnotherResource() throws LockException
+    {
+        String otherResource = "RepairResource-b2e33e60-7af6-11e9-8f9e-2a86e4085a59-1";
+
+        LockException expectedException = doThrowOnGetLock(RESOURCE);
+        DistributedLock expectedOtherLock = doReturnLockOnGetLock(otherResource);
+
+        assertGetLockThrowsException(RESOURCE, expectedException);
+        assertGetLockRetrievesExpectedLock(otherResource, expectedOtherLock);
     }
 
     @Test
@@ -91,54 +101,58 @@ public class TestLockCache
     {
         myLockCache = new LockCache(mockedLockSupplier, 20, TimeUnit.MILLISECONDS);
 
-        doThrowOnSupply();
-        assertCacheThrowsException();
+        LockException expectedException = doThrowOnGetLock();
+        assertGetLockThrowsException(expectedException);
 
         Thread.sleep(20);
 
-        doReturnLockOnSupply();
-        assertExpectedLockIsRetrieved();
+        DistributedLock expectedLock = doReturnLockOnGetLock();
+        assertGetLockRetrievesExpectedLock(expectedLock);
     }
 
-    private void assertExpectedLockIsRetrieved() throws LockException
+    private void assertGetLockRetrievesExpectedLock(DistributedLock expectedLock) throws LockException
     {
-        assertExpectedLockIsRetrieved(RESOURCE);
+        assertGetLockRetrievesExpectedLock(RESOURCE, expectedLock);
     }
 
-    private void assertExpectedLockIsRetrieved(String resource) throws LockException
+    private void assertGetLockRetrievesExpectedLock(String resource, DistributedLock expectedLock) throws LockException
     {
-        assertThat(myLockCache.getLock(DATA_CENTER, resource, PRIORITY, METADATA)).isEqualTo(mockedDistributedLock);
+        assertThat(myLockCache.getLock(DATA_CENTER, resource, PRIORITY, METADATA)).isSameAs(expectedLock);
         assertThat(myLockCache.getCachedFailure(DATA_CENTER, resource)).isEmpty();
     }
 
-    private void assertCacheThrowsException()
+    private void assertGetLockThrowsException(LockException expectedException)
     {
-        assertCacheThrowsException(RESOURCE);
+        assertGetLockThrowsException(RESOURCE, expectedException);
     }
 
-    private void assertCacheThrowsException(String resource)
+    private void assertGetLockThrowsException(String resource, LockException expectedException)
     {
-        assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockCache.getLock(DATA_CENTER, resource, PRIORITY, METADATA));
+        assertThatThrownBy(() -> myLockCache.getLock(DATA_CENTER, resource, PRIORITY, METADATA)).isSameAs(expectedException);
         assertThat(myLockCache.getCachedFailure(DATA_CENTER, resource)).isNotEmpty();
     }
 
-    private void doReturnLockOnSupply() throws LockException
+    private DistributedLock doReturnLockOnGetLock() throws LockException
     {
-        doReturnLockOnSupply(RESOURCE);
+        return doReturnLockOnGetLock(RESOURCE);
     }
 
-    private void doReturnLockOnSupply(String resouce) throws LockException
+    private DistributedLock doReturnLockOnGetLock(String resource) throws LockException
     {
-        when(mockedLockSupplier.getLock(eq(DATA_CENTER), eq(resouce), eq(PRIORITY), eq(METADATA))).thenReturn(mockedDistributedLock);
+        DistributedLock expectedLock = mock(DistributedLock.class);
+        when(mockedLockSupplier.getLock(eq(DATA_CENTER), eq(resource), eq(PRIORITY), eq(METADATA))).thenReturn(expectedLock);
+        return expectedLock;
     }
 
-    private void doThrowOnSupply() throws LockException
+    private LockException doThrowOnGetLock() throws LockException
     {
-        doThrowOnSupply(RESOURCE);
+        return doThrowOnGetLock(RESOURCE);
     }
 
-    private void doThrowOnSupply(String resource) throws LockException
+    private LockException doThrowOnGetLock(String resource) throws LockException
     {
-        when(mockedLockSupplier.getLock(eq(DATA_CENTER), eq(resource), eq(PRIORITY), eq(METADATA))).thenThrow(new LockException(""));
+        LockException expectedException = new LockException("");
+        when(mockedLockSupplier.getLock(eq(DATA_CENTER), eq(resource), eq(PRIORITY), eq(METADATA))).thenThrow(expectedException);
+        return expectedException;
     }
 }

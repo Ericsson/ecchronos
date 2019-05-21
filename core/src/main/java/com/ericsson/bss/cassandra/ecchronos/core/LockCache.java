@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Telefonaktiebolaget LM Ericsson
+ * Copyright 2019 Telefonaktiebolaget LM Ericsson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,14 @@ package com.ericsson.bss.cassandra.ecchronos.core;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory.DistributedLock;
+import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -95,12 +97,13 @@ public class LockCache
     static final class LockKey
     {
         private final String myDataCenter;
-        private final String myResource;
+        private final String myResourceName;
 
         LockKey(String dataCenter, String resource)
         {
+            Preconditions.checkNotNull(resource);
             myDataCenter = dataCenter;
-            myResource = resource;
+            myResourceName = resource;
         }
 
         @Override
@@ -108,19 +111,15 @@ public class LockCache
         {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-
             LockKey lockKey = (LockKey) o;
-
-            if (myDataCenter != null ? !myDataCenter.equals(lockKey.myDataCenter) : lockKey.myDataCenter != null) return false;
-            return myResource.equals(lockKey.myResource);
+            return Objects.equals(myDataCenter, lockKey.myDataCenter) &&
+                    myResourceName.equals(lockKey.myResourceName);
         }
 
         @Override
         public int hashCode()
         {
-            int result = myDataCenter != null ? myDataCenter.hashCode() : 0;
-            result = 31 * result + myResource.hashCode();
-            return result;
+            return Objects.hash(myDataCenter, myResourceName);
         }
     }
 }

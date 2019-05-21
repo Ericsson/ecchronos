@@ -30,7 +30,7 @@ public interface LockFactory
      * Try to lock a distributed resource using the provided priority.
      *
      * @param dataCenter
-     *            The data center the lock belongs to.
+     *            The data center the lock belongs to or null if it's a global lock.
      * @param resource
      *            The resource to lock.
      * @param priority
@@ -47,7 +47,7 @@ public interface LockFactory
      * Get the metadata of a resource lock.
      *
      * @param dataCenter
-     *            The data center the lock belongs to.
+     *            The data center the lock belongs to or null if it's a global lock.
      * @param resource
      *            The data center resource:
      *             i.e "RepairResource-DC1-1".
@@ -60,7 +60,7 @@ public interface LockFactory
      * Checks if local_quorum is met.
      *
      * @param dataCenter
-     *            The data center the lock belongs to.
+     *            The data center the lock belongs to or null if it's a global lock.
      * @param resource
      *            The data center resource.
      *             i.e "RepairResource-DC1-1".
@@ -72,7 +72,7 @@ public interface LockFactory
     /**
      * Utility method to return a cached lock exception if one is available.
      *
-     * @param dataCenter The data center the lock is for.
+     * @param dataCenter The data center the lock is for or null if it's a global lock.
      * @param resource The resource the lock is for.
      * @return A cached exception if available.
      */
