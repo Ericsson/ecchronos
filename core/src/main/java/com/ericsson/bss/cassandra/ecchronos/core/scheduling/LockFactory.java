@@ -76,7 +76,7 @@ public interface LockFactory
      * @param resource The resource the lock is for.
      * @return A cached exception if available.
      */
-    default Optional<LockException> getCachedLockException(String dataCenter, String resource)
+    default Optional<LockException> getCachedFailure(String dataCenter, String resource)
     {
         return Optional.empty();
     }

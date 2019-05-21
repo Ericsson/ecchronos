@@ -50,18 +50,18 @@ public class RepairLockFactoryImpl implements RepairLockFactory
             throw new LockException(msg);
         }
 
-        validateNoCachedExceptions(lockFactory, repairResources);
+        validateNoCachedFailures(lockFactory, repairResources);
 
         Collection<LockFactory.DistributedLock> locks = getRepairResourceLocks(lockFactory, repairResources, metadata, priority);
 
         return new LockCollection(locks);
     }
 
-    private void validateNoCachedExceptions(LockFactory lockFactory, Set<RepairResource> repairResources) throws LockException
+    private void validateNoCachedFailures(LockFactory lockFactory, Set<RepairResource> repairResources) throws LockException
     {
         for (RepairResource repairResource : repairResources)
         {
-            Optional<LockException> cachedException = lockFactory.getCachedLockException(repairResource.getDataCenter(), repairResource.getResourceName(LOCKS_PER_RESOURCE));
+            Optional<LockException> cachedException = lockFactory.getCachedFailure(repairResource.getDataCenter(), repairResource.getResourceName(LOCKS_PER_RESOURCE));
             if (cachedException.isPresent())
             {
                 LOG.debug("Found cached locking failure for {}, rethrowing", repairResource, cachedException.get());

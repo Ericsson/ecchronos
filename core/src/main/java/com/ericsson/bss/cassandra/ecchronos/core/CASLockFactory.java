@@ -251,7 +251,7 @@ public class CASLockFactory implements LockFactory, Closeable
     }
 
     @Override
-    public Optional<LockException> getCachedLockException(String dataCenter, String resource)
+    public Optional<LockException> getCachedFailure(String dataCenter, String resource)
     {
         return myLockCache.getCachedFailure(dataCenter, resource);
     }
