@@ -230,7 +230,6 @@ public class TestRepairLockFactoryImpl
     private void withSuccessfulLocking(RepairResource repairResource, int priority, Map<String, String> metadata) throws LockException
     {
         when(mockLockFactory.tryLock(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)), eq(priority), eq(metadata))).thenReturn(mockLock);
-        withSufficientNodesForLocking(repairResource);
     }
 
     private void withUnsuccessfulLocking(RepairResource repairResource, int priority, Map<String, String> metadata) throws LockException
