@@ -1,5 +1,9 @@
 # Changes
 
+## Version 1.0.3
+
+* Cache locking failures to reduce unnecessary contention - Issue #70
+
 ## Version 1.0.2
 
 * Locking failures log too much - Issue #58

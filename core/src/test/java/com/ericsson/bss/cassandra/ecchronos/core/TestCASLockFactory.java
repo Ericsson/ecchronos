@@ -37,6 +37,8 @@ import java.util.stream.Collectors;
 
 import com.datastax.driver.core.Row;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import org.apache.cassandra.db.Keyspace;
+import org.apache.cassandra.metrics.TableMetrics;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -121,6 +123,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         }
 
         assertPriorityListEmpty("lock");
+        assertThat(myLockFactory.getCachedFailure(DATA_CENTER, "lock")).isEmpty();
     }
 
     @Test
@@ -130,6 +133,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         {
         }
         assertPriorityListEmpty("lock");
+        assertThat(myLockFactory.getCachedFailure(null, "lock")).isEmpty();
     }
 
     @Test
@@ -139,6 +143,30 @@ public class TestCASLockFactory extends AbstractCassandraTest
 
         assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(null, "lock", 1, new HashMap<>()));
         assertPrioritiesInList("lock", 1);
+        assertThat(myLockFactory.getCachedFailure(null, "lock")).isNotEmpty();
+    }
+
+    @Test
+    public void testGlobalLockTakenIsCachedOnSecondTry()
+    {
+        execute(myLockStatement.bind("lock", UUID.randomUUID(), new HashMap<>()));
+
+        long expectedLockReadCount = getReadCount(TABLE_LOCK) + 1; // We do a read due to CAS
+        long expectedLockWriteCount = getWriteCount(TABLE_LOCK); // No writes as the lock is already held
+        long expectedLockPriorityReadCount = getReadCount(TABLE_LOCK_PRIORITY) + 1; // We read the priorities
+        long expectedLockPriorityWriteCount = getWriteCount(TABLE_LOCK_PRIORITY) + 1; // We update our local priority once
+
+        assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(null, "lock", 2, new HashMap<>()));
+        assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(null, "lock", 1, new HashMap<>()));
+
+        assertThat(getReadCount(TABLE_LOCK_PRIORITY)).isEqualTo(expectedLockPriorityReadCount);
+        assertThat(getWriteCount(TABLE_LOCK_PRIORITY)).isEqualTo(expectedLockPriorityWriteCount);
+
+        assertThat(getReadCount(TABLE_LOCK)).isEqualTo(expectedLockReadCount);
+        assertThat(getWriteCount(TABLE_LOCK)).isEqualTo(expectedLockWriteCount);
+
+        assertPrioritiesInList("lock", 2);
+        assertThat(myLockFactory.getCachedFailure(null, "lock")).isNotEmpty();
     }
 
     @Test
@@ -148,6 +176,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
 
         assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(DATA_CENTER, "lock", 1, new HashMap<>()));
         assertPrioritiesInList("lock", 1, 2);
+        assertThat(myLockFactory.getCachedFailure(DATA_CENTER, "lock")).isNotEmpty();
     }
 
     @Test
@@ -157,6 +186,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
 
         assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(DATA_CENTER, "lock", 1, new HashMap<>()));
         assertPrioritiesInList("lock", 1);
+        assertThat(myLockFactory.getCachedFailure(DATA_CENTER, "lock")).isNotEmpty();
     }
 
     @Test
@@ -170,6 +200,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         }
 
         assertPrioritiesInList("lock", 2);
+        assertThat(myLockFactory.getCachedFailure(DATA_CENTER, "lock")).isEmpty();
     }
 
     @Test
@@ -183,6 +214,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         }
 
         assertPriorityListEmpty("lock");
+        assertThat(myLockFactory.getCachedFailure(DATA_CENTER, "lock")).isEmpty();
     }
 
     @Test
@@ -199,6 +231,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         }
 
         assertPriorityListEmpty("lock");
+        assertThat(myLockFactory.getCachedFailure(DATA_CENTER, "lock")).isEmpty();
     }
 
     @Test
@@ -244,6 +277,8 @@ public class TestCASLockFactory extends AbstractCassandraTest
             lockUpdateTask.run();
             assertThat(lockUpdateTask.getFailedAttempts()).isEqualTo(0);
         }
+
+        assertThat(myLockFactory.getCachedFailure(DATA_CENTER, "lock")).isEmpty();
     }
 
     @Test
@@ -316,5 +351,19 @@ public class TestCASLockFactory extends AbstractCassandraTest
     private ResultSet execute(Statement statement)
     {
         return mySession.execute(statement);
+    }
+
+    private long getReadCount(String tableName)
+    {
+        TableMetrics tableMetrics = Keyspace.open(myKeyspaceName).getColumnFamilyStore(tableName).metric;
+
+        return tableMetrics.readLatency.latency.getCount();
+    }
+
+    private long getWriteCount(String tableName)
+    {
+        TableMetrics tableMetrics = Keyspace.open(myKeyspaceName).getColumnFamilyStore(tableName).metric;
+
+        return tableMetrics.writeLatency.latency.getCount();
     }
 }

@@ -23,18 +23,21 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public class RepairLockFactoryImpl implements RepairLockFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairLockFactoryImpl.class);
 
+    private static final int LOCKS_PER_RESOURCE = 1;
+
     @Override
     public LockFactory.DistributedLock getLock(LockFactory lockFactory, Set<RepairResource> repairResources, Map<String, String> metadata, int priority) throws LockException
     {
         for (RepairResource repairResource : repairResources)
         {
-            if (!lockFactory.sufficientNodesForLocking(repairResource.getDataCenter(), repairResource.getResourceName(1)))
+            if (!lockFactory.sufficientNodesForLocking(repairResource.getDataCenter(), repairResource.getResourceName(LOCKS_PER_RESOURCE)))
             {
                 throw new LockException(repairResource + " not lockable. Repair will be retried later.");
             }
@@ -47,9 +50,24 @@ public class RepairLockFactoryImpl implements RepairLockFactory
             throw new LockException(msg);
         }
 
+        validateNoCachedFailures(lockFactory, repairResources);
+
         Collection<LockFactory.DistributedLock> locks = getRepairResourceLocks(lockFactory, repairResources, metadata, priority);
 
         return new LockCollection(locks);
+    }
+
+    private void validateNoCachedFailures(LockFactory lockFactory, Set<RepairResource> repairResources) throws LockException
+    {
+        for (RepairResource repairResource : repairResources)
+        {
+            Optional<LockException> cachedException = lockFactory.getCachedFailure(repairResource.getDataCenter(), repairResource.getResourceName(LOCKS_PER_RESOURCE));
+            if (cachedException.isPresent())
+            {
+                LOG.debug("Found cached locking failure for {}, rethrowing", repairResource, cachedException.get());
+                throw cachedException.get();
+            }
+        }
     }
 
     private Collection<LockFactory.DistributedLock> getRepairResourceLocks(LockFactory lockFactory, Collection<RepairResource> repairResources, Map<String, String> metadata, int priority) throws LockException
@@ -94,7 +112,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
 
         String dataCenter = repairResource.getDataCenter();
 
-        String resource = repairResource.getResourceName(1);
+        String resource = repairResource.getResourceName(LOCKS_PER_RESOURCE);
         try
         {
             myLock = lockFactory.tryLock(dataCenter, resource, priority, metadata);
