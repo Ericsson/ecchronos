@@ -14,9 +14,9 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import com.google.common.base.Preconditions;
-
 import java.util.Objects;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * A lock resource for repair.
@@ -28,9 +28,8 @@ public class RepairResource
 
     public RepairResource(String dataCenter, String resourceName)
     {
-        Preconditions.checkNotNull(resourceName);
         myDataCenter = dataCenter;
-        myResourceName = resourceName;
+        myResourceName = checkNotNull(resourceName);
     }
 
     public String getDataCenter()
@@ -56,7 +55,7 @@ public class RepairResource
         if (o == null || getClass() != o.getClass()) return false;
         RepairResource that = (RepairResource) o;
         return Objects.equals(myDataCenter, that.myDataCenter) &&
-                myResourceName.equals(that.myResourceName);
+                Objects.equals(myResourceName, that.myResourceName);
     }
 
     @Override

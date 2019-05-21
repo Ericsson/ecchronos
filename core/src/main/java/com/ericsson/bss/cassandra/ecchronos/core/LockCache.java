@@ -16,7 +16,6 @@ package com.ericsson.bss.cassandra.ecchronos.core;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory.DistributedLock;
-import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.slf4j.Logger;
@@ -26,6 +25,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class LockCache
 {
@@ -99,11 +100,10 @@ public class LockCache
         private final String myDataCenter;
         private final String myResourceName;
 
-        LockKey(String dataCenter, String resource)
+        LockKey(String dataCenter, String resourceName)
         {
-            Preconditions.checkNotNull(resource);
             myDataCenter = dataCenter;
-            myResourceName = resource;
+            myResourceName = checkNotNull(resourceName);
         }
 
         @Override
@@ -113,7 +113,7 @@ public class LockCache
             if (o == null || getClass() != o.getClass()) return false;
             LockKey lockKey = (LockKey) o;
             return Objects.equals(myDataCenter, lockKey.myDataCenter) &&
-                    myResourceName.equals(lockKey.myResourceName);
+                    Objects.equals(myResourceName, lockKey.myResourceName);
         }
 
         @Override
