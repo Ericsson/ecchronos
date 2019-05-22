@@ -15,6 +15,7 @@
 * Fix log file rotation - Issue #61
 * Correct initial replica repair group - Issue #60
 * Fix statistics when no table/data to repair - Issue #59
+* Cache locking failures to reduce unnecessary contention - Issue #70
 
 ## Version 1.0.0
 

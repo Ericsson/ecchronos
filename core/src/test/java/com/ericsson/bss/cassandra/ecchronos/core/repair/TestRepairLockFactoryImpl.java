@@ -17,38 +17,50 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.google.common.collect.Sets;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyMapOf;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestRepairLockFactoryImpl
 {
+    private static final int LOCKS_PER_RESOURCE = 1;
+
     @Mock
     private LockFactory mockLockFactory;
 
     @Mock
     private LockFactory.DistributedLock mockLock;
 
+    @Before
+    public void setup()
+    {
+        when(mockLockFactory.getCachedFailure(anyString(), anyString())).thenReturn(Optional.empty());
+    }
+
     @Test
     public void testNothingToLockThrowsException()
     {
         RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
-        Map<String, String> metadata = new HashMap<>();
-        metadata.put("metadataKey", "metadataValue");
+        Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
+        int priority = 1;
 
-        assertThatExceptionOfType(LockException.class)
-                .isThrownBy(() -> repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(), metadata, 1));
+        verifyExceptionIsThrownWhenGettingLock(repairLockFactory, priority, metadata);
     }
 
     @Test
@@ -56,18 +68,13 @@ public class TestRepairLockFactoryImpl
     {
         RepairResource repairResource = new RepairResource("DC1", "my-resource");
         RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
-        Map<String, String> metadata = new HashMap<>();
-        metadata.put("metadataKey", "metadataValue");
+        Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
         int priority = 1;
 
-        doReturn(true).when(mockLockFactory).sufficientNodesForLocking(eq("DC1"), eq("RepairResource-my-resource-1"));
-        doReturn(mockLock).when(mockLockFactory).tryLock(eq("DC1"), eq("RepairResource-my-resource-1"), eq(priority), eq(metadata));
+        withSufficientNodesForLocking(repairResource);
+        withSuccessfulLocking(repairResource, priority, metadata);
 
-        try (LockFactory.DistributedLock lock = repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResource), metadata, priority))
-        {
-        }
-
-        verify(mockLockFactory).tryLock(eq("DC1"), eq("RepairResource-my-resource-1"), eq(priority), eq(metadata));
+        verifyLocksAreTriedWhenGettingLock(repairLockFactory, priority, metadata, repairResource);
     }
 
     @Test
@@ -75,15 +82,13 @@ public class TestRepairLockFactoryImpl
     {
         RepairResource repairResource = new RepairResource("DC1", "my-resource");
         RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
-        Map<String, String> metadata = new HashMap<>();
-        metadata.put("metadataKey", "metadataValue");
+        Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
         int priority = 1;
 
-        doReturn(false).when(mockLockFactory).sufficientNodesForLocking(eq("DC1"), eq("RepairResource-my-resource-1"));
-        doReturn(mockLock).when(mockLockFactory).tryLock(eq("DC1"), eq("RepairResource-my-resource-1"), eq(priority), eq(metadata));
+        withoutSufficientNodesForLocking(repairResource);
+        withSuccessfulLocking(repairResource, priority, metadata);
 
-        assertThatExceptionOfType(LockException.class)
-                .isThrownBy(() -> repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResource), metadata, priority));
+        verifyExceptionIsThrownWhenGettingLock(repairLockFactory, priority, metadata, repairResource);
     }
 
     @Test
@@ -91,15 +96,13 @@ public class TestRepairLockFactoryImpl
     {
         RepairResource repairResource = new RepairResource("DC1", "my-resource");
         RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
-        Map<String, String> metadata = new HashMap<>();
-        metadata.put("metadataKey", "metadataValue");
+        Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
         int priority = 1;
 
-        doReturn(true).when(mockLockFactory).sufficientNodesForLocking(eq("DC1"), eq("RepairResource-my-resource-1"));
-        doThrow(LockException.class).when(mockLockFactory).tryLock(eq("DC1"), eq("RepairResource-my-resource-1"), eq(priority), eq(metadata));
+        withSufficientNodesForLocking(repairResource);
+        withUnsuccessfulLocking(repairResource, priority, metadata);
 
-        assertThatExceptionOfType(LockException.class)
-                .isThrownBy(() -> repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResource), metadata, priority));
+        verifyExceptionIsThrownWhenGettingLock(repairLockFactory, priority, metadata, repairResource);
     }
 
     @Test
@@ -108,22 +111,16 @@ public class TestRepairLockFactoryImpl
         RepairResource repairResourceDc1 = new RepairResource("DC1", "my-resource-dc1");
         RepairResource repairResourceDc2 = new RepairResource("DC2", "my-resource-dc2");
         RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
-        Map<String, String> metadata = new HashMap<>();
-        metadata.put("metadataKey", "metadataValue");
+        Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
         int priority = 1;
 
-        doReturn(true).when(mockLockFactory).sufficientNodesForLocking(eq("DC1"), eq("RepairResource-my-resource-dc1-1"));
-        doReturn(true).when(mockLockFactory).sufficientNodesForLocking(eq("DC2"), eq("RepairResource-my-resource-dc2-1"));
-        doReturn(mockLock).when(mockLockFactory).tryLock(eq("DC1"), eq("RepairResource-my-resource-dc1-1"), eq(priority), eq(metadata));
-        doReturn(mockLock).when(mockLockFactory).tryLock(eq("DC2"), eq("RepairResource-my-resource-dc2-1"), eq(priority), eq(metadata));
+        withSufficientNodesForLocking(repairResourceDc1);
+        withSufficientNodesForLocking(repairResourceDc2);
 
-        try (LockFactory.DistributedLock lock = repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResourceDc1, repairResourceDc2), metadata, priority))
-        {
+        withSuccessfulLocking(repairResourceDc1, priority, metadata);
+        withSuccessfulLocking(repairResourceDc2, priority, metadata);
 
-        }
-
-        verify(mockLockFactory).tryLock(eq("DC1"), eq("RepairResource-my-resource-dc1-1"), eq(priority), eq(metadata));
-        verify(mockLockFactory).tryLock(eq("DC2"), eq("RepairResource-my-resource-dc2-1"), eq(priority), eq(metadata));
+        verifyLocksAreTriedWhenGettingLock(repairLockFactory, priority, metadata, repairResourceDc1, repairResourceDc2);
     }
 
     @Test
@@ -132,15 +129,13 @@ public class TestRepairLockFactoryImpl
         RepairResource repairResourceDc1 = new RepairResource("DC1", "my-resource-dc1");
         RepairResource repairResourceDc2 = new RepairResource("DC2", "my-resource-dc2");
         RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
-        Map<String, String> metadata = new HashMap<>();
-        metadata.put("metadataKey", "metadataValue");
+        Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
         int priority = 1;
 
-        doReturn(true).when(mockLockFactory).sufficientNodesForLocking(eq("DC1"), eq("RepairResource-my-resource-dc1-1"));
-        doReturn(false).when(mockLockFactory).sufficientNodesForLocking(eq("DC2"), eq("RepairResource-my-resource-dc2-1"));
+        withSufficientNodesForLocking(repairResourceDc1);
+        withoutSufficientNodesForLocking(repairResourceDc2);
 
-        assertThatExceptionOfType(LockException.class)
-                .isThrownBy(() -> repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResourceDc1, repairResourceDc2), metadata, priority));
+        verifyExceptionIsThrownWhenGettingLock(repairLockFactory, priority, metadata, repairResourceDc1, repairResourceDc2);
     }
 
     @Test
@@ -149,16 +144,106 @@ public class TestRepairLockFactoryImpl
         RepairResource repairResourceDc1 = new RepairResource("DC1", "my-resource-dc1");
         RepairResource repairResourceDc2 = new RepairResource("DC2", "my-resource-dc2");
         RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
-        Map<String, String> metadata = new HashMap<>();
-        metadata.put("metadataKey", "metadataValue");
+        Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
         int priority = 1;
 
-        doReturn(true).when(mockLockFactory).sufficientNodesForLocking(eq("DC1"), eq("RepairResource-my-resource-dc1-1"));
-        doReturn(true).when(mockLockFactory).sufficientNodesForLocking(eq("DC2"), eq("RepairResource-my-resource-dc2-1"));
-        doReturn(mockLock).when(mockLockFactory).tryLock(eq("DC1"), eq("RepairResource-my-resource-dc1-1"), eq(priority), eq(metadata));
-        doThrow(LockException.class).when(mockLockFactory).tryLock(eq("DC2"), eq("RepairResource-my-resource-dc2-1"), eq(priority), eq(metadata));
+        withSufficientNodesForLocking(repairResourceDc1);
+        withSuccessfulLocking(repairResourceDc1, priority, metadata);
 
+        withSufficientNodesForLocking(repairResourceDc2);
+        withUnsuccessfulLocking(repairResourceDc2, priority, metadata);
+
+        verifyExceptionIsThrownWhenGettingLock(repairLockFactory, priority, metadata, repairResourceDc1, repairResourceDc2);
+    }
+
+    @Test
+    public void testMultipleLocksOneHasCachedFailure() throws LockException
+    {
+        RepairResource repairResourceDc1 = new RepairResource("DC1", "my-resource-dc1");
+        RepairResource repairResourceDc2 = new RepairResource("DC2", "my-resource-dc2");
+        RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
+        Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
+        int priority = 1;
+
+        withUnsuccessfulCachedLock(repairResourceDc1);
+
+        withSufficientNodesForLocking(repairResourceDc1);
+        withSuccessfulLocking(repairResourceDc1, priority, metadata);
+
+        withSufficientNodesForLocking(repairResourceDc2);
+        withSuccessfulLocking(repairResourceDc2, priority, metadata);
+
+        verifyExceptionIsThrownWhenGettingLock(repairLockFactory, priority, metadata, repairResourceDc1, repairResourceDc2);
+        verifyNoLockWasTried();
+    }
+
+    @Test
+    public void testMultipleLocksTheOtherHasCachedFailure() throws LockException
+    {
+        RepairResource repairResourceDc1 = new RepairResource("DC1", "my-resource-dc1");
+        RepairResource repairResourceDc2 = new RepairResource("DC2", "my-resource-dc2");
+        RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
+        Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
+        int priority = 1;
+
+        withUnsuccessfulCachedLock(repairResourceDc2);
+
+        withSufficientNodesForLocking(repairResourceDc1);
+        withSuccessfulLocking(repairResourceDc1, priority, metadata);
+
+        withSufficientNodesForLocking(repairResourceDc2);
+        withSuccessfulLocking(repairResourceDc2, priority, metadata);
+
+        verifyExceptionIsThrownWhenGettingLock(repairLockFactory, priority, metadata, repairResourceDc1, repairResourceDc2);
+        verifyNoLockWasTried();
+    }
+
+    private void verifyNoLockWasTried() throws LockException
+    {
+        verify(mockLockFactory, never()).tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class));
+    }
+
+    private void verifyLocksAreTriedWhenGettingLock(RepairLockFactory repairLockFactory, int priority, Map<String, String> metadata, RepairResource... repairResources) throws LockException
+    {
+        try (LockFactory.DistributedLock lock = repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResources), metadata, priority))
+        {
+            // Nothing to do here
+        }
+
+        for (RepairResource repairResource : repairResources)
+        {
+            verify(mockLockFactory).tryLock(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)), eq(priority), eq(metadata));
+        }
+    }
+
+    private void verifyExceptionIsThrownWhenGettingLock(RepairLockFactory repairLockFactory, int priority, Map<String, String> metadata, RepairResource... repairResources)
+    {
         assertThatExceptionOfType(LockException.class)
-                .isThrownBy(() -> repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResourceDc1, repairResourceDc2), metadata, priority));
+                .isThrownBy(() -> repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResources), metadata, priority));
+    }
+
+    private void withUnsuccessfulCachedLock(RepairResource repairResource)
+    {
+        when(mockLockFactory.getCachedFailure(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)))).thenReturn(Optional.of(new LockException("")));
+    }
+
+    private void withSuccessfulLocking(RepairResource repairResource, int priority, Map<String, String> metadata) throws LockException
+    {
+        when(mockLockFactory.tryLock(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)), eq(priority), eq(metadata))).thenReturn(mockLock);
+    }
+
+    private void withUnsuccessfulLocking(RepairResource repairResource, int priority, Map<String, String> metadata) throws LockException
+    {
+        when(mockLockFactory.tryLock(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)), eq(priority), eq(metadata))).thenThrow(new LockException(""));
+    }
+
+    private void withSufficientNodesForLocking(RepairResource repairResource)
+    {
+        when(mockLockFactory.sufficientNodesForLocking(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)))).thenReturn(true);
+    }
+
+    private void withoutSufficientNodesForLocking(RepairResource repairResource)
+    {
+        when(mockLockFactory.sufficientNodesForLocking(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)))).thenReturn(false);
     }
 }
