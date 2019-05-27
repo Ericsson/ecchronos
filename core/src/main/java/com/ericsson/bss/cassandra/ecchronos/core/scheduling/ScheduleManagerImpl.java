@@ -158,14 +158,14 @@ public class ScheduleManagerImpl implements ScheduleManager, Closeable
 
         private boolean tryRunTasks(ScheduledJob next)
         {
+            boolean hasRun = false;
+
             for (ScheduledTask task : next)
             {
-                if (tryRunTask(next, task))
-                {
-                    return true;
-                }
+                hasRun = tryRunTask(next, task) | hasRun;
             }
-            return false;
+
+            return hasRun;
         }
 
         private boolean tryRunTask(ScheduledJob job, ScheduledTask task)
