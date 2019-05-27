@@ -162,7 +162,7 @@ public class ScheduleManagerImpl implements ScheduleManager, Closeable
 
             for (ScheduledTask task : next)
             {
-                hasRun = tryRunTask(next, task) | hasRun;
+                hasRun |= tryRunTask(next, task);
             }
 
             return hasRun;
