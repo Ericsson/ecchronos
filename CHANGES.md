@@ -2,6 +2,7 @@
 
 ## Version 1.0.3
 
+* Trigger table repairs more often - Issue #72
 * Cache locking failures to reduce unnecessary contention - Issue #70
 
 ## Version 1.0.2
