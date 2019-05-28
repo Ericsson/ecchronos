@@ -24,10 +24,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
 import org.junit.Before;
@@ -193,6 +196,24 @@ public class TestScheduleManager
         verify(myLockFactory, times(2)).tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class));
     }
 
+    @Test
+    public void testThreeTasksOneThrowing() throws LockException
+    {
+        ShortRunningMultipleTasks job = new ShortRunningMultipleTasks(ScheduledJob.Priority.LOW, 3);
+        myScheduler.schedule(job);
+
+        when(myLockFactory.tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class)))
+                .thenReturn(new DummyLock())
+                .thenThrow(new LockException(""))
+                .thenReturn(new DummyLock());
+
+        myScheduler.run();
+
+        assertThat(job.getNumRuns()).isEqualTo(2);
+        assertThat(myScheduler.getQueueSize()).isEqualTo(1);
+        verify(myLockFactory, times(3)).tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class));
+    }
+
     @Test (timeout = 2000L)
     public void testRemoveLongRunningJob() throws InterruptedException
     {
@@ -315,6 +336,46 @@ public class TestScheduleManager
             public void cleanup()
             {
                 // NOOP
+            }
+        }
+    }
+
+    private class ShortRunningMultipleTasks extends ScheduledJob
+    {
+        private final AtomicInteger numRuns = new AtomicInteger();
+        private final int numTasks;
+
+        public ShortRunningMultipleTasks(Priority priority, int numTasks)
+        {
+            super(new ConfigurationBuilder().withPriority(priority).withRunInterval(1, TimeUnit.SECONDS).build());
+            this.numTasks = numTasks;
+        }
+
+        public int getNumRuns()
+        {
+            return numRuns.get();
+        }
+
+        @Override
+        public Iterator<ScheduledTask> iterator()
+        {
+            List<ScheduledTask> tasks = new ArrayList<>();
+
+            for (int i = 0; i < numTasks; i++)
+            {
+                tasks.add(new ShortRunningTask());
+            }
+
+            return tasks.iterator();
+        }
+
+        private class ShortRunningTask extends ScheduledTask
+        {
+            @Override
+            public boolean execute()
+            {
+                numRuns.incrementAndGet();
+                return true;
             }
         }
     }
