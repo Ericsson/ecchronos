@@ -8,6 +8,7 @@
 * Change configuration file name from ecChronos.cfg to ecc.cfg
 * Add RepairJobView
 * Add HTTP server with REST API - Issue #50
+* Expose metrics through JMX - Issue #75
 
 ### Merged from 1.0
 

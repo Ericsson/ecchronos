@@ -20,9 +20,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.CsvReporter;
+import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.google.common.annotations.VisibleForTesting;
 
 public final class TableRepairMetricsImpl implements TableRepairMetrics, Closeable
 {
@@ -30,6 +32,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, Closeab
     private static final long DEFAULT_STATISTICS_REPORT_INTERVAL_IN_MS = TimeUnit.SECONDS.toMillis(60);
 
     private final CsvReporter myTopLevelCsvReporter;
+    private final JmxReporter myTopLevelJmxReporter;
 
     private final ConcurrentHashMap<TableReference, TableMetricHolder> myTableMetricHolders = new ConcurrentHashMap<>();
 
@@ -44,8 +47,11 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, Closeab
                 .convertDurationsTo(TimeUnit.MILLISECONDS)
                 .convertRatesTo(TimeUnit.SECONDS)
                 .build(new File(builder.myStatisticsDirectory));
+        myTopLevelJmxReporter = JmxReporter.forRegistry(myMetricRegistry)
+                .build();
 
         myTopLevelCsvReporter.start(builder.myReportIntervalInMs, builder.myReportIntervalInMs, TimeUnit.MILLISECONDS);
+        myTopLevelJmxReporter.start();
     }
 
     @Override
@@ -66,11 +72,20 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, Closeab
         tableMetricHolder(tableReference).repairTiming(timeTaken, timeUnit, successful);
     }
 
+    @VisibleForTesting
+    void report()
+    {
+        myTopLevelCsvReporter.report();
+    }
+
     @Override
     public void close()
     {
         myTopLevelCsvReporter.report();
         myTopLevelCsvReporter.close();
+
+        myTopLevelJmxReporter.stop();
+        myTopLevelJmxReporter.close();
 
         myNodeMetricHolder.close();
 
