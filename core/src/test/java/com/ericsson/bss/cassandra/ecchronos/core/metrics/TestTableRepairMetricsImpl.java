@@ -22,6 +22,7 @@ import static org.mockito.Mockito.doReturn;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,15 +31,22 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestTableRepairMetricsImpl
 {
+    private static MBeanServer PLATFORM_MBEAN_SERVER = ManagementFactory.getPlatformMBeanServer();
+
     @Rule
     public TemporaryFolder metricsFolder = new TemporaryFolder();
 
@@ -56,6 +64,12 @@ public class TestTableRepairMetricsImpl
                 .build();
     }
 
+    @After
+    public void cleanup()
+    {
+        myTableRepairMetricsImpl.close();
+    }
+
     @Test
     public void testBuildWithNullTableStorageStates()
     {
@@ -66,7 +80,7 @@ public class TestTableRepairMetricsImpl
     }
 
     @Test
-    public void testFullRepairedSingleTable() throws IOException
+    public void testFullRepairedSingleTable() throws Exception
     {
         TableReference tableReference = new TableReference("keyspace", "table");
 
@@ -74,17 +88,17 @@ public class TestTableRepairMetricsImpl
         doReturn(1000L).when(myTableStorageStates).getDataSize(eq(tableReference));
 
         myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
-        myTableRepairMetricsImpl.close();
+        myTableRepairMetricsImpl.report();
 
-        double tablesRepaired = getMetricValue("TableRepairState.csv", 1);
-        double dataRepaired = getMetricValue("DataRepairState.csv", 1);
+        double tablesRepaired = getMetricValue("TableRepairState");
+        double dataRepaired = getMetricValue("DataRepairState");
 
         assertThat(tablesRepaired).isEqualTo(1.0);
         assertThat(dataRepaired).isEqualTo(1.0);
     }
 
     @Test
-    public void testHalfRepairedSingleTable() throws IOException
+    public void testHalfRepairedSingleTable() throws Exception
     {
         TableReference tableReference = new TableReference("keyspace", "table");
 
@@ -92,17 +106,17 @@ public class TestTableRepairMetricsImpl
         doReturn(1000L).when(myTableStorageStates).getDataSize(eq(tableReference));
 
         myTableRepairMetricsImpl.repairState(tableReference, 1, 1);
-        myTableRepairMetricsImpl.close();
+        myTableRepairMetricsImpl.report();
 
-        double tablesRepaired = getMetricValue("TableRepairState.csv", 1);
-        double dataRepaired = getMetricValue("DataRepairState.csv", 1);
+        double tablesRepaired = getMetricValue("TableRepairState");
+        double dataRepaired = getMetricValue("DataRepairState");
 
         assertThat(tablesRepaired).isEqualTo(0.5);
         assertThat(dataRepaired).isEqualTo(0.5);
     }
 
     @Test
-    public void testFullRepairedTwoTables() throws IOException
+    public void testFullRepairedTwoTables() throws Exception
     {
         TableReference tableReference = new TableReference("keyspace", "table");
         TableReference tableReference2 = new TableReference("keyspace", "table2");
@@ -113,17 +127,17 @@ public class TestTableRepairMetricsImpl
 
         myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
         myTableRepairMetricsImpl.repairState(tableReference2, 1, 0);
-        myTableRepairMetricsImpl.close();
+        myTableRepairMetricsImpl.report();
 
-        double tablesRepaired = getMetricValue("TableRepairState.csv", 1);
-        double dataRepaired = getMetricValue("DataRepairState.csv", 1);
+        double tablesRepaired = getMetricValue("TableRepairState");
+        double dataRepaired = getMetricValue("DataRepairState");
 
         assertThat(tablesRepaired).isEqualTo(1.0);
         assertThat(dataRepaired).isEqualTo(1.0);
     }
 
     @Test
-    public void testHalfRepairedTwoTables() throws IOException
+    public void testHalfRepairedTwoTables() throws Exception
     {
         TableReference tableReference = new TableReference("keyspace", "table");
         TableReference tableReference2 = new TableReference("keyspace", "table2");
@@ -134,10 +148,10 @@ public class TestTableRepairMetricsImpl
 
         myTableRepairMetricsImpl.repairState(tableReference, 1, 1);
         myTableRepairMetricsImpl.repairState(tableReference2, 1, 1);
-        myTableRepairMetricsImpl.close();
+        myTableRepairMetricsImpl.report();
 
-        double tablesRepaired = getMetricValue("TableRepairState.csv", 1);
-        double dataRepaired = getMetricValue("DataRepairState.csv", 1);
+        double tablesRepaired = getMetricValue("TableRepairState");
+        double dataRepaired = getMetricValue("DataRepairState");
 
         assertThat(tablesRepaired).isEqualTo(0.5);
         assertThat(dataRepaired).isEqualTo(0.5);
@@ -148,7 +162,7 @@ public class TestTableRepairMetricsImpl
      * and 75% of the data and 50% of the tables have been repaired.
      */
     @Test
-    public void testOneRepairedOneNotRepairedTable() throws IOException
+    public void testOneRepairedOneNotRepairedTable() throws Exception
     {
         TableReference tableReference = new TableReference("keyspace", "table");
         TableReference tableReference2 = new TableReference("keyspace", "table2");
@@ -159,17 +173,17 @@ public class TestTableRepairMetricsImpl
 
         myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
         myTableRepairMetricsImpl.repairState(tableReference2, 0, 1);
-        myTableRepairMetricsImpl.close();
+        myTableRepairMetricsImpl.report();
 
-        double tablesRepaired = getMetricValue("TableRepairState.csv", 1);
-        double dataRepaired = getMetricValue("DataRepairState.csv", 1);
+        double tablesRepaired = getMetricValue("TableRepairState");
+        double dataRepaired = getMetricValue("DataRepairState");
 
         assertThat(tablesRepaired).isEqualTo(0.5);
         assertThat(dataRepaired).isEqualTo(0.75);
     }
 
     @Test
-    public void testLastRepairedAt() throws IOException
+    public void testLastRepairedAt() throws Exception
     {
         TableReference tableReference = new TableReference("keyspace", "table");
         TableReference tableReference2 = new TableReference("keyspace", "table2");
@@ -178,63 +192,94 @@ public class TestTableRepairMetricsImpl
 
         myTableRepairMetricsImpl.lastRepairedAt(tableReference, expectedLastRepaired);
         myTableRepairMetricsImpl.lastRepairedAt(tableReference2, expectedLastRepaired2);
-        myTableRepairMetricsImpl.close();
+        myTableRepairMetricsImpl.report();
 
-        double lastRepaired = getMetricValue(tableReference + "-LastRepairedAt.csv", 1);
-        double lastRepaired2 = getMetricValue(tableReference2 + "-LastRepairedAt.csv", 1);
+        double lastRepaired = getMetricValue(tableReference + "-LastRepairedAt");
+        double lastRepaired2 = getMetricValue(tableReference2 + "-LastRepairedAt");
 
         assertThat(lastRepaired).isEqualTo(expectedLastRepaired);
         assertThat(lastRepaired2).isEqualTo(expectedLastRepaired2);
     }
 
     @Test
-    public void testSuccessfulRepairTiming() throws IOException
+    public void testSuccessfulRepairTiming() throws Exception
     {
         TableReference tableReference = new TableReference("keyspace", "table");
         long expectedRepairTime = 1234L;
 
         myTableRepairMetricsImpl.repairTiming(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, true);
-        myTableRepairMetricsImpl.close();
+        myTableRepairMetricsImpl.report();
 
-        String metricFile = tableReference + "-RepairSuccessTime.csv";
+        String metric = tableReference + "-RepairSuccessTime";
 
-        assertThat(getMetricValue(metricFile, 1)).isEqualTo(1); // Count
-        assertThat(getMetricValue(metricFile, 2)).isEqualTo(expectedRepairTime); // Max
-        assertThat(getMetricValue(metricFile, 3)).isEqualTo(expectedRepairTime); // Mean
-        assertThat(getMetricValue(metricFile, 4)).isEqualTo(expectedRepairTime); // Min
-        assertThat(getMetricValue(metricFile, 5)).isEqualTo(0); // Stddev
+        assertThat(getMetricValue(metric, 1, "Count")).isEqualTo(1);
+        assertThat(getMetricValue(metric, 2, "Max")).isEqualTo(expectedRepairTime);
+        assertThat(getMetricValue(metric, 3, "Mean")).isEqualTo(expectedRepairTime);
+        assertThat(getMetricValue(metric, 4, "Min")).isEqualTo(expectedRepairTime);
+        assertThat(getMetricValue(metric, 5, "StdDev")).isEqualTo(0);
 
-        for (int i = 6; i <= 11; i++) // Percentiles
-        {
-            assertThat(getMetricValue(metricFile, i)).isEqualTo(expectedRepairTime);
-        }
+        assertPercentiles(metric, expectedRepairTime);
     }
 
     @Test
-    public void testFailedRepairTiming() throws IOException
+    public void testFailedRepairTiming() throws Exception
     {
         TableReference tableReference = new TableReference("keyspace", "table");
         long expectedRepairTime = 12345L;
 
         myTableRepairMetricsImpl.repairTiming(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
-        myTableRepairMetricsImpl.close();
+        myTableRepairMetricsImpl.report();
 
-        String metricFile = tableReference + "-RepairFailedTime.csv";
+        String metric = tableReference + "-RepairFailedTime";
 
-        assertThat(getMetricValue(metricFile, 1)).isEqualTo(1); // Count
-        assertThat(getMetricValue(metricFile, 2)).isEqualTo(expectedRepairTime); // Max
-        assertThat(getMetricValue(metricFile, 3)).isEqualTo(expectedRepairTime); // Mean
-        assertThat(getMetricValue(metricFile, 4)).isEqualTo(expectedRepairTime); // Min
-        assertThat(getMetricValue(metricFile, 5)).isEqualTo(0); // Stddev
+        assertThat(getMetricValue(metric, 1, "Count")).isEqualTo(1);
+        assertThat(getMetricValue(metric, 2, "Max")).isEqualTo(expectedRepairTime);
+        assertThat(getMetricValue(metric, 3, "Mean")).isEqualTo(expectedRepairTime);
+        assertThat(getMetricValue(metric, 4, "Min")).isEqualTo(expectedRepairTime);
+        assertThat(getMetricValue(metric, 5, "StdDev")).isEqualTo(0);
 
-        for (int i = 6; i <= 11; i++) // Percentiles
+        assertPercentiles(metric, expectedRepairTime);
+    }
+
+    private void assertPercentiles(String metric, long expectedRepairTime) throws Exception
+    {
+        int csvPos = 6; // start csv position for percentiles
+
+        List<String> percentiles = Arrays.asList("50", "75", "95", "98", "99", "999");
+
+        for (String percentile : percentiles)
         {
-            assertThat(getMetricValue(metricFile, i)).isEqualTo(expectedRepairTime);
+            String percentileAttribute = percentile + "thPercentile";
+            assertThat(getMetricValue(metric, csvPos, percentileAttribute)).isEqualTo(expectedRepairTime);
+            csvPos++;
         }
     }
 
-    private double getMetricValue(String metricFile, int pos) throws IOException
+    private double getMetricValue(String metric) throws Exception
     {
+        return getMetricValue(metric, 1, "Value");
+    }
+
+    private double getMetricValue(String metric, int csvPos, String mBeanAttribute) throws Exception
+    {
+        double csvValue = getCsvMetricValue(metric, csvPos);
+        Number mBeanValue = getMBeanValue(metric, mBeanAttribute);
+
+        assertThat(csvValue).isEqualTo(mBeanValue.doubleValue());
+
+        return csvValue;
+    }
+
+    private Number getMBeanValue(String metric, String mBeanAttribute) throws Exception
+    {
+        ObjectName mBeanMetricName = new ObjectName("metrics:name=" + metric);
+
+        return (Number) PLATFORM_MBEAN_SERVER.getAttribute(mBeanMetricName, mBeanAttribute);
+    }
+
+    private double getCsvMetricValue(String metric, int csvPos) throws IOException
+    {
+        String metricFile = metric + ".csv";
         try (BufferedReader bufferedReader = new BufferedReader(new FileReader(new File(metricsFolder.getRoot(), metricFile))))
         {
             bufferedReader.readLine(); // CSV header
@@ -242,7 +287,7 @@ public class TestTableRepairMetricsImpl
 
             String[] splits = line.split(",");
 
-            return Double.parseDouble(splits[pos]);
+            return Double.parseDouble(splits[csvPos]);
         }
     }
 }
