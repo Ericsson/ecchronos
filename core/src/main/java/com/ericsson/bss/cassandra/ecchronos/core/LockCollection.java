@@ -49,7 +49,7 @@ public class LockCollection implements LockFactory.DistributedLock
             }
             catch (Exception e)
             {
-                LOG.error("Unable to release lock {} ", lock, e);
+                LOG.warn("Unable to release lock {} ", lock, e);
             }
         }
     }
