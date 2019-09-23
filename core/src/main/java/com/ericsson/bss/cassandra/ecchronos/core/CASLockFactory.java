@@ -222,7 +222,7 @@ public class CASLockFactory implements LockFactory, Closeable
         }
         catch (Exception e)
         {
-            LOG.error("Unable to retrieve metadata for resource {}", resource, e);
+            LOG.warn("Unable to retrieve metadata for resource {}", resource, e);
         }
 
         return null;
@@ -333,7 +333,7 @@ public class CASLockFactory implements LockFactory, Closeable
 
         if (!sufficientNodesForLocking(dataCenter, resource))
         {
-            LOG.error("Not sufficient nodes to lock resource {} in datacenter {}", resource, dataCenter);
+            LOG.warn("Not sufficient nodes to lock resource {} in datacenter {}", resource, dataCenter);
             throw new LockException("Not sufficient nodes to lock");
         }
 
