@@ -101,7 +101,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
             }
             catch (Exception e)
             {
-                LOG.error("Unable to release lock {} for {} ", lock, this, e);
+                LOG.warn("Unable to release lock {} for {} ", lock, this, e);
             }
         }
     }
