@@ -1,5 +1,9 @@
 # Changes
 
+## Version 1.0.4
+
+* Reduce error logs to warn for some lock related failures
+
 ## Version 1.0.3
 
 * Trigger table repairs more often - Issue #72
