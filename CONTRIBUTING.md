@@ -52,8 +52,9 @@ These test will in some cases use an embedded Apache Cassandra.
 
 The second suite consist of the unit tests as well as integration tests which can be run by `mvn clean install -P docker-integration-test,osgi-integration-tests,standalone-integration-tests`.
 The integration tests start docker instances of Apache Cassandra to get a cluster environment where repair can run.
+The docker command must be runnable without *sudo* for the user running the tests.
 It is possible to run either OSGi integration tests or the standalone tests without the other.
-This can be done by running either `mvn clean install -P docker-integration-test,osgi-integration-tests` or `mvn clean install-P docker-integration-test,standalone-integration-tests`.
+This can be done by running either `mvn clean install -P docker-integration-test,osgi-integration-tests` or `mvn clean install -P docker-integration-test,standalone-integration-tests`.
 
 #### Maven configuration properties
 
