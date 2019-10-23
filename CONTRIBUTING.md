@@ -68,13 +68,14 @@ They are running simple tests that sometimes utilize a single embedded Cassandra
 
 The acceptance tests and integration tests use docker instances by default.
 The docker containers gets started when the `-P docker-integration-test` flag is used in maven.
+The docker command must be runnable without *sudo* for the user running the tests.
 
 ###### Integration tests
 
 The integration tests tries to start ecChronos with a cluster of nodes and verfiy that repairs are run.
 They are activated by using `-P osgi-integration-tests` or `-P standalone-integration-tests`.
 It is possible to run either OSGi integration tests or the standalone tests without the other.
-This can be done by running either `mvn clean install -P docker-integration-test,osgi-integration-tests` or `mvn clean install-P docker-integration-test,standalone-integration-tests`.
+This can be done by running either `mvn clean install -P docker-integration-test,osgi-integration-tests` or `mvn clean install -P docker-integration-test,standalone-integration-tests`.
 
 ###### Acceptance tests
 
