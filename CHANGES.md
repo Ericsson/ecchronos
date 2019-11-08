@@ -1,5 +1,9 @@
 # Changes
 
+## Version 1.0.5
+
+* Add Karaf commands that exposes repair status
+
 ## Version 1.0.4
 
 * Reduce error logs to warn for some lock related failures

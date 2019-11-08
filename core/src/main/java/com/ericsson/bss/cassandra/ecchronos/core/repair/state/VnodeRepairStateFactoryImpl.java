@@ -61,7 +61,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         }
         else
         {
-            LOG.debug("Table {} last repaired at {}, iterating repir entries until that time", tableReference, lastRepairedAt);
+            LOG.debug("Table {} last repaired at {}, iterating repair entries until that time", tableReference, lastRepairedAt);
             repairEntryIterator = myRepairHistoryProvider.iterate(tableReference, now, lastRepairedAt, (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
         }
 
