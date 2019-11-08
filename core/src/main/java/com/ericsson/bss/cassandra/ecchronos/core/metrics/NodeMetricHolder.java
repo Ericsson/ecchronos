@@ -87,6 +87,11 @@ public class NodeMetricHolder implements Closeable
         myTableRepairRatio.put(tableReference, repairRatio);
     }
 
+    public Double getRepairRatio(TableReference tableReference)
+    {
+        return myTableRepairRatio.get(tableReference);
+    }
+
     public void repairTiming(long timeTaken, TimeUnit timeUnit, boolean successful)
     {
         if (successful)

@@ -14,9 +14,9 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
-import java.util.concurrent.TimeUnit;
-
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Interface for reporting table based repair metrics.
