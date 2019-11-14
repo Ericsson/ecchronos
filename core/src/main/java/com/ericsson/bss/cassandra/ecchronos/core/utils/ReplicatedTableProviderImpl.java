@@ -104,7 +104,7 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
 
         if (!replication.containsKey(localDc))
         {
-            LOG.info("Keyspace {} not replicated by local node, ignoring.", keyspace);
+            LOG.debug("Keyspace {} not replicated by local node, ignoring.", keyspace);
             return false;
         }
 
