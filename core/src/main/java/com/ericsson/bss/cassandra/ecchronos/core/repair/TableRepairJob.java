@@ -84,6 +84,11 @@ public class TableRepairJob extends ScheduledJob
         return myRepairConfiguration;
     }
 
+    public RepairJobView getView()
+    {
+        return new RepairJobView(myTableReference, myRepairConfiguration, myRepairState.getSnapshot());
+    }
+
     @Override
     public Iterator<ScheduledTask> iterator()
     {
