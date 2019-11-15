@@ -107,11 +107,7 @@ public class RepairStatusCommand implements Action
 
     void printTables(PrintStream out, Comparator<OutputData> comparator)
     {
-        ShellTable table = new ShellTable();
-        table.column("Table name");
-        table.column("Repaired ratio");
-        table.column("Repaired at");
-        table.column("Next repair");
+        ShellTable table = createShellTable();
 
         myRepairScheduler.getCurrentRepairJobs()
                 .stream()
@@ -121,6 +117,16 @@ public class RepairStatusCommand implements Action
                 .forEach(outputData -> table.addRow().addContent(outputData.toRowContent()));
 
         table.print(out);
+    }
+
+    private ShellTable createShellTable()
+    {
+        ShellTable table = new ShellTable();
+        table.column("Table name");
+        table.column("Repaired ratio");
+        table.column("Repaired at");
+        table.column("Next repair");
+        return table;
     }
 
     private OutputData createOutputData(RepairJobView job)

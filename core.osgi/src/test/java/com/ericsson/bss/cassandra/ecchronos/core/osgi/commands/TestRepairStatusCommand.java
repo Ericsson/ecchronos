@@ -138,16 +138,9 @@ public class TestRepairStatusCommand
     private static RepairJobView mockRepairJob(String table, Double repairRatio, String repairedAt, long repairInterval)
     {
         TableReference tableReference = createTableRef(table);
-        // Repair ratio
-        when(metricsMock.getRepairRatio(eq(tableReference))).thenReturn(Optional.ofNullable(repairRatio));
-        // Repaired at
-        RepairStateSnapshot state = mock(RepairStateSnapshot.class);
-        long repairedAtMillis = DateTime.parse(repairedAt).getMillis();
-        when(state.lastRepairedAt()).thenReturn(repairedAtMillis);
-        // Repair interval
-        RepairConfiguration repairConfiguration = mock(RepairConfiguration.class);
-        when(repairConfiguration.getRepairIntervalInMs()).thenReturn(repairInterval);
-
+        mockRepairRatio(repairRatio, tableReference);
+        RepairStateSnapshot state = mockRepairedAt(repairedAt);
+        RepairConfiguration repairConfiguration = mockRepairConfiguration(repairInterval);
         return new RepairJobView(tableReference, repairConfiguration, state);
     }
 
@@ -155,6 +148,26 @@ public class TestRepairStatusCommand
     {
         String[] tableSplit = table.split("\\.");
         return new TableReference(tableSplit[0], tableSplit[1]);
+    }
+
+    private static void mockRepairRatio(Double repairRatio, TableReference tableReference)
+    {
+        when(metricsMock.getRepairRatio(eq(tableReference))).thenReturn(Optional.ofNullable(repairRatio));
+    }
+
+    private static RepairStateSnapshot mockRepairedAt(String repairedAt)
+    {
+        RepairStateSnapshot state = mock(RepairStateSnapshot.class);
+        long repairedAtMillis = DateTime.parse(repairedAt).getMillis();
+        when(state.lastRepairedAt()).thenReturn(repairedAtMillis);
+        return state;
+    }
+
+    private static RepairConfiguration mockRepairConfiguration(long repairInterval)
+    {
+        RepairConfiguration repairConfiguration = mock(RepairConfiguration.class);
+        when(repairConfiguration.getRepairIntervalInMs()).thenReturn(repairInterval);
+        return repairConfiguration;
     }
 
     private RepairStatusCommand createRepairStatusCommand(String sortBy, boolean reverse, int limit)

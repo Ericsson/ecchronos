@@ -14,16 +14,16 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
-import com.codahale.metrics.CsvReporter;
-import com.codahale.metrics.MetricRegistry;
-import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-
 import java.io.Closeable;
 import java.io.File;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+
+import com.codahale.metrics.CsvReporter;
+import com.codahale.metrics.MetricRegistry;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
 public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRepairMetricsProvider, Closeable
 {

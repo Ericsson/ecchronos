@@ -14,6 +14,13 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.util.Comparator;
+import java.util.List;
+import java.util.TimeZone;
+import java.util.stream.Stream;
+
 import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
@@ -31,13 +38,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.util.Comparator;
-import java.util.List;
-import java.util.TimeZone;
-import java.util.stream.Stream;
-
 import static com.ericsson.bss.cassandra.ecchronos.core.osgi.commands.TestRepairStatusCommand.createTableRef;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,7 +53,6 @@ public class TestRepairTableStatusCommand
     private static final VnodeRepairState state3 = new VnodeRepairState(new LongTokenRange(3, 4), mockHosts("host2", "host3"), DateTime.parse("1970-01-01T00:00Z").getMillis());
 
     private static final VnodeRepairStates states = createRepairStates(state1, state2, state3);
-    private static final RepairJobView job = mockRepairJob("ks1.tbl1", states);
 
     @BeforeClass
     public static void setup()
@@ -168,9 +167,9 @@ public class TestRepairTableStatusCommand
         return VnodeRepairStates.newBuilder(asList(states)).build();
     }
 
-    private static RepairJobView mockRepairJob(String table, VnodeRepairStates vnodeRepairStates)
+    private static RepairJobView mockRepairJob(VnodeRepairStates vnodeRepairStates)
     {
-        TableReference tableReference = createTableRef(table);
+        TableReference tableReference = createTableRef("ks1.tbl1");
         RepairStateSnapshot state = mock(RepairStateSnapshot.class);
         when(state.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
         return new RepairJobView(tableReference, null, state);
@@ -188,8 +187,9 @@ public class TestRepairTableStatusCommand
 
     private RepairScheduler mockScheduler()
     {
+        RepairJobView repairJobView = mockRepairJob(states);
         RepairScheduler schedulerMock = mock(RepairScheduler.class);
-        when(schedulerMock.getCurrentRepairJobs()).thenReturn(asList(job));
+        when(schedulerMock.getCurrentRepairJobs()).thenReturn(asList(repairJobView));
         return schedulerMock;
     }
 }

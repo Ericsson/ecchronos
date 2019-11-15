@@ -115,10 +115,7 @@ public class RepairTableStatusCommand implements Action
 
     void printTableRanges(PrintStream out, VnodeRepairStates repairStates, Comparator<VnodeRepairState> comparator)
     {
-        ShellTable table = new ShellTable();
-        table.column("Range");
-        table.column("Last repaired at");
-        table.column("Replicas");
+        ShellTable table = createShellTable();
 
         repairStates.getVnodeRepairStates()
                 .stream()
@@ -127,6 +124,15 @@ public class RepairTableStatusCommand implements Action
                 .forEach(state -> table.addRow().addContent(getRowContent(state)));
 
         table.print(out);
+    }
+
+    private ShellTable createShellTable()
+    {
+        ShellTable table = new ShellTable();
+        table.column("Range");
+        table.column("Last repaired at");
+        table.column("Replicas");
+        return table;
     }
 
     private static List<Object> getRowContent(VnodeRepairState state)

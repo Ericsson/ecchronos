@@ -14,17 +14,18 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import junitparams.JUnitParamsRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.osgi.commands.TestRepairStatusCommand.createTableRef;
 import static java.util.Arrays.asList;
@@ -32,9 +33,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(JUnitParamsRunner.class)
+@RunWith (MockitoJUnitRunner.class)
 public class TestRepairConfigCommand
 {
+    @Mock
+    RepairScheduler schedulerMock;
+
     @Test
     public void testRepairConfigSortedByTableName()
     {
@@ -43,7 +47,6 @@ public class TestRepairConfigCommand
         RepairJobView job2 = mockRepairJob("ks2.tbl1", 22, 0.2, 222, 2222);
         RepairJobView job3 = mockRepairJob("ks1.tbl2", 33, 0.3, 333, 3333);
 
-        RepairScheduler schedulerMock = mock(RepairScheduler.class);
         when(schedulerMock.getCurrentRepairJobs()).thenReturn(asList(job1, job2, job3));
 
         RepairConfigCommand command = new RepairConfigCommand(schedulerMock);

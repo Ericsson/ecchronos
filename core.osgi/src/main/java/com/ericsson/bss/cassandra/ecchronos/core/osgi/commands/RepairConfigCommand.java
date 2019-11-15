@@ -55,6 +55,18 @@ public class RepairConfigCommand implements Action
 
     void printConfig(PrintStream out)
     {
+        ShellTable table = createShellTable();
+
+        myRepairScheduler.getCurrentRepairJobs()
+                .stream()
+                .sorted(Comparator.comparing(job -> job.getTableReference().toString()))
+                .forEach(job -> table.addRow().addContent(createRowContent(job)));
+
+        table.print(out);
+    }
+
+    private ShellTable createShellTable()
+    {
         ShellTable table = new ShellTable();
         table.column("Table name");
         table.column("Interval (ms)");
@@ -62,14 +74,7 @@ public class RepairConfigCommand implements Action
         table.column("Unwind ratio");
         table.column("Error time (ms)");
         table.column("Warning time (ms)");
-
-        Comparator<RepairJobView> comparator = Comparator.comparing(job -> job.getTableReference().toString());
-        myRepairScheduler.getCurrentRepairJobs()
-                .stream()
-                .sorted(comparator)
-                .forEach(job -> table.addRow().addContent(createRowContent(job)));
-
-        table.print(out);
+        return table;
     }
 
     private List<Object> createRowContent(RepairJobView job)

@@ -14,24 +14,18 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.util.TimeZone;
+
+import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestPrintUtils
 {
-    @BeforeClass
-    public static void setup()
-    {
-        TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
-    }
-
     @Test
     public void testEpochToHumanReadable()
     {
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         assertThat(PrintUtils.epochToHumanReadable(0)).isEqualTo("1970-01-01 00:00:00");
         assertThat(PrintUtils.epochToHumanReadable(1573720152000L)).isEqualTo("2019-11-14 08:29:12");
     }
