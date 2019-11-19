@@ -44,7 +44,7 @@ public class RepairStatusCommand implements Action
     @Option(name = "-l", aliases = "--limit", description = "Number of entries to display", required = false, multiValued = false)
     int limit = Integer.MAX_VALUE;
 
-    @Option(name = "-s", aliases = "--sort_by", description = "Sort output based on TABLE_NAME/STATUS/RAPAIRED_RATIO/RAPAIRED_AT/NEXT_REPAIR", required = false, multiValued = false)
+    @Option(name = "-s", aliases = "--sort_by", description = "Sort output based on TABLE_NAME/STATUS/REPAIRED_RATIO/REPAIRED_AT/NEXT_REPAIR", required = false, multiValued = false)
     SortBy sortBy = SortBy.TABLE_NAME;
 
     @Option(name = "-r", aliases = "--reverse", description = "Reverse the sort order", required = false, multiValued = false)
@@ -135,10 +135,10 @@ public class RepairStatusCommand implements Action
             case STATUS:
                 comparator = Comparator.comparing(OutputData::getStatus);
                 break;
-            case RAPAIRED_RATIO:
+            case REPAIRED_RATIO:
                 comparator = Comparator.comparing(OutputData::getRatio);
                 break;
-            case RAPAIRED_AT:
+            case REPAIRED_AT:
                 comparator = Comparator.comparing(OutputData::getRepairedAt);
                 break;
             case NEXT_REPAIR:
@@ -225,7 +225,7 @@ public class RepairStatusCommand implements Action
 
     enum SortBy
     {
-        TABLE_NAME, STATUS, RAPAIRED_RATIO, RAPAIRED_AT, NEXT_REPAIR;
+        TABLE_NAME, STATUS, REPAIRED_RATIO, REPAIRED_AT, NEXT_REPAIR;
 
     }
 
@@ -237,11 +237,11 @@ public class RepairStatusCommand implements Action
 
     static class OutputData
     {
-        private TableReference table;
-        private Status status;
-        private Double ratio;
-        private long repairedAt;
-        private long nextRepair;
+        private final TableReference table;
+        private final Status status;
+        private final Double ratio;
+        private final long repairedAt;
+        private final long nextRepair;
 
         OutputData(TableReference table, Status status, Double ratio, long repairedAt, long nextRepair)
         {

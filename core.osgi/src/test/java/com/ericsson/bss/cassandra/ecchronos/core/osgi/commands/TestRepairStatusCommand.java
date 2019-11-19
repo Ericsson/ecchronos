@@ -120,10 +120,10 @@ public class TestRepairStatusCommand
                 {SortBy.TABLE_NAME, true, asList(output4, output1, output2, output3)},
                 {SortBy.STATUS, false, asList(output2, output1, output3, output4)},
                 {SortBy.STATUS, true, asList(output4, output3, output1, output2)},
-                {SortBy.RAPAIRED_RATIO, false, asList(output2, output1, output4, output3)},
-                {SortBy.RAPAIRED_RATIO, true, asList(output3, output4, output1, output2)},
-                {SortBy.RAPAIRED_AT, false, asList(output1, output3, output2, output4)},
-                {SortBy.RAPAIRED_AT, true, asList(output4, output2, output3, output1)},
+                {SortBy.REPAIRED_RATIO, false, asList(output2, output1, output4, output3)},
+                {SortBy.REPAIRED_RATIO, true, asList(output3, output4, output1, output2)},
+                {SortBy.REPAIRED_AT, false, asList(output1, output3, output2, output4)},
+                {SortBy.REPAIRED_AT, true, asList(output4, output2, output3, output1)},
                 {SortBy.NEXT_REPAIR, false, asList(output2, output3, output1, output4)},
                 {SortBy.NEXT_REPAIR, true, asList(output4, output1, output3, output2)},
         };
@@ -172,7 +172,7 @@ public class TestRepairStatusCommand
     {
         // Given
         RepairStatusCommand command = new RepairStatusCommand();
-        command.sortBy = SortBy.RAPAIRED_AT;
+        command.sortBy = SortBy.REPAIRED_AT;
         command.reverse = true;
         command.noFormat = true;
         command.limit = 2;

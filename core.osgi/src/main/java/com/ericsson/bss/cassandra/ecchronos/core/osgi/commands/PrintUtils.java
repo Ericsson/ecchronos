@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 final class PrintUtils
 {
@@ -45,7 +46,7 @@ final class PrintUtils
         Duration partOfDay = duration.minusDays(days);
         if (!partOfDay.isZero())
         {
-            sb.append(partOfDay.toString().substring(2).toLowerCase());
+            sb.append(partOfDay.toString().substring(2).toLowerCase(Locale.ENGLISH));
         }
         return sb.toString();
     }
