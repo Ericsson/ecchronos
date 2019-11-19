@@ -299,7 +299,7 @@ public class TestRepairStatusCommand
     {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         PrintStream out = new PrintStream(os);
-        command.printTable(out, data, command.getOutputComparator());
+        command.printTable(out, data);
         return os.toString();
     }
 

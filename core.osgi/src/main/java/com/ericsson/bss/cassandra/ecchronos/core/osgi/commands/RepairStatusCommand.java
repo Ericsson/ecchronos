@@ -83,7 +83,7 @@ public class RepairStatusCommand implements Action
     public Object execute() throws Exception
     {
         List<OutputData> data = getOutputData();
-        printTable(System.out, data, getOutputComparator());
+        printTable(System.out, data);
         printSummary(System.out, data);
         return null;
     }
@@ -103,6 +103,7 @@ public class RepairStatusCommand implements Action
         Optional<Double> repairRatio = myTableRepairMetrics.getRepairRatio(table);
         long repairedAt = job.getRepairStateSnapshot().lastRepairedAt();
         long nextRepair = repairedAt + job.getRepairConfiguration().getRepairIntervalInMs();
+
         return new OutputData(table, status, repairRatio.orElse(0.0), repairedAt, nextRepair);
     }
 
@@ -125,6 +126,36 @@ public class RepairStatusCommand implements Action
             return Status.IN_QUEUE;
         }
         return Status.COMPLETED;
+    }
+
+    void printTable(PrintStream out, List<OutputData> data)
+    {
+        if (!summaryOnly && !data.isEmpty())
+        {
+            ShellTable table = createShellTable();
+            data.stream()
+                    .filter(this::filterOutput)
+                    .sorted(getOutputComparator())
+                    .limit(limit)
+                    .forEach(outputData -> table.addRow().addContent(outputData.toRowContent()));
+            table.print(out, !noFormat);
+        }
+    }
+
+    private ShellTable createShellTable()
+    {
+        ShellTable table = new ShellTable();
+        table.column("Table name");
+        table.column("Status");
+        table.column("Repaired ratio");
+        table.column("Repaired at");
+        table.column("Next repair");
+        return table;
+    }
+
+    private boolean filterOutput(OutputData data)
+    {
+        return showAll || data.status != Status.COMPLETED;
     }
 
     Comparator<OutputData> getOutputComparator()
@@ -153,36 +184,6 @@ public class RepairStatusCommand implements Action
         return reverse
                 ? comparator.reversed()
                 : comparator;
-    }
-
-    void printTable(PrintStream out, List<OutputData> data, Comparator<OutputData> comparator)
-    {
-        if (!summaryOnly && !data.isEmpty())
-        {
-            ShellTable table = createShellTable();
-            data.stream()
-                    .filter(this::filterOutput)
-                    .sorted(comparator)
-                    .limit(limit)
-                    .forEach(outputData -> table.addRow().addContent(outputData.toRowContent()));
-            table.print(out, !noFormat);
-        }
-    }
-
-    private ShellTable createShellTable()
-    {
-        ShellTable table = new ShellTable();
-        table.column("Table name");
-        table.column("Status");
-        table.column("Repaired ratio");
-        table.column("Repaired at");
-        table.column("Next repair");
-        return table;
-    }
-
-    private boolean filterOutput(OutputData data)
-    {
-        return showAll || data.status != Status.COMPLETED;
     }
 
     void printSummary(PrintStream out, List<OutputData> data)
@@ -226,13 +227,11 @@ public class RepairStatusCommand implements Action
     enum SortBy
     {
         TABLE_NAME, STATUS, REPAIRED_RATIO, REPAIRED_AT, NEXT_REPAIR;
-
     }
 
     enum Status
     {
         COMPLETED, IN_QUEUE, WARNING, ERROR;
-
     }
 
     static class OutputData

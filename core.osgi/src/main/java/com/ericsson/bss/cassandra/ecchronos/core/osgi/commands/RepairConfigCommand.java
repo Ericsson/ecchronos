@@ -89,6 +89,4 @@ public class RepairConfigCommand implements Action
                 PrintUtils.durationToHumanReadable(config.getRepairWarningTimeInMs())
         );
     }
-
-
 }
