@@ -14,6 +14,11 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
+import java.io.PrintStream;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
@@ -23,11 +28,6 @@ import org.apache.karaf.shell.api.action.Command;
 import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.support.table.ShellTable;
-
-import java.io.PrintStream;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
 
 @Service
 @Command(scope = "repair", name = "config", description = "Give the current repair configuration")
@@ -69,11 +69,11 @@ public class RepairConfigCommand implements Action
     {
         ShellTable table = new ShellTable();
         table.column("Table name");
-        table.column("Interval (ms)");
+        table.column("Interval");
         table.column("Parallelism");
         table.column("Unwind ratio");
-        table.column("Error time (ms)");
-        table.column("Warning time (ms)");
+        table.column("Error time");
+        table.column("Warning time");
         return table;
     }
 
@@ -82,11 +82,13 @@ public class RepairConfigCommand implements Action
         RepairConfiguration config = job.getRepairConfiguration();
         return Arrays.asList(
                 job.getTableReference().toString(),
-                config.getRepairIntervalInMs(),
+                PrintUtils.durationToHumanReadable(config.getRepairIntervalInMs()),
                 config.getRepairParallelism(),
                 config.getRepairUnwindRatio(),
-                config.getRepairErrorTimeInMs(),
-                config.getRepairWarningTimeInMs()
+                PrintUtils.durationToHumanReadable(config.getRepairErrorTimeInMs()),
+                PrintUtils.durationToHumanReadable(config.getRepairWarningTimeInMs())
         );
     }
+
+
 }

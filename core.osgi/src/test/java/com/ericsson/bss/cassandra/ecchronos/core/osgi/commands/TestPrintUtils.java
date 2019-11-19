@@ -14,14 +14,26 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
+import java.time.format.DateTimeFormatter;
 import java.util.TimeZone;
 
+import org.joda.time.format.PeriodFormatter;
+import org.joda.time.format.PeriodFormatterBuilder;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestPrintUtils
 {
+    @Test
+    public void testDurationToHumanReadable()
+    {
+        assertThat(PrintUtils.durationToHumanReadable(293387000)).isEqualTo("3d9h29m47s");
+        assertThat(PrintUtils.durationToHumanReadable(691200000)).isEqualTo("8d");
+        assertThat(PrintUtils.durationToHumanReadable(300000)).isEqualTo("5m");
+
+    }
+
     @Test
     public void testEpochToHumanReadable()
     {

@@ -16,6 +16,8 @@ package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
@@ -36,6 +38,10 @@ import static org.mockito.Mockito.when;
 @RunWith (MockitoJUnitRunner.class)
 public class TestRepairConfigCommand
 {
+    private static final long time1 = Duration.ofHours(6).toMillis();
+    private static final long time2 = Duration.ofDays(3).plusHours(2).plusMinutes(33).plusSeconds(44).toMillis();
+    private static final long time3 = Duration.ofDays(7).toMillis();
+
     @Mock
     RepairScheduler schedulerMock;
 
@@ -43,9 +49,9 @@ public class TestRepairConfigCommand
     public void testRepairConfigSortedByTableName()
     {
         // Given
-        RepairJobView job1 = mockRepairJob("ks1.tbl1", 11, 0.1, 111, 1111);
-        RepairJobView job2 = mockRepairJob("ks2.tbl1", 22, 0.2, 222, 2222);
-        RepairJobView job3 = mockRepairJob("ks1.tbl2", 33, 0.3, 333, 3333);
+        RepairJobView job1 = mockRepairJob("ks1.tbl1", time1, 0.1, time2, time3);
+        RepairJobView job2 = mockRepairJob("ks2.tbl1", time2, 0.2, time3, time1);
+        RepairJobView job3 = mockRepairJob("ks1.tbl2", time3, 0.3, time1, time2);
 
         when(schedulerMock.getCurrentRepairJobs()).thenReturn(asList(job1, job2, job3));
 
@@ -56,11 +62,11 @@ public class TestRepairConfigCommand
         command.printConfig(out);
         // Then
         String expected =
-                "Table name │ Interval (ms) │ Parallelism │ Unwind ratio │ Error time (ms) │ Warning time (ms)\n" +
-                "───────────┼───────────────┼─────────────┼──────────────┼─────────────────┼──────────────────\n" +
-                "ks1.tbl1   │ 11            │ PARALLEL    │ 0.1          │ 111             │ 1111\n" +
-                "ks1.tbl2   │ 33            │ PARALLEL    │ 0.3          │ 333             │ 3333\n" +
-                "ks2.tbl1   │ 22            │ PARALLEL    │ 0.2          │ 222             │ 2222\n";
+                "Table name │ Interval   │ Parallelism │ Unwind ratio │ Error time │ Warning time\n" +
+                "───────────┼────────────┼─────────────┼──────────────┼────────────┼─────────────\n" +
+                "ks1.tbl1   │ 6h         │ PARALLEL    │ 0.1          │ 3d2h33m44s │ 7d\n" +
+                "ks1.tbl2   │ 7d         │ PARALLEL    │ 0.3          │ 6h         │ 3d2h33m44s\n" +
+                "ks2.tbl1   │ 3d2h33m44s │ PARALLEL    │ 0.2          │ 7d         │ 6h\n";
         assertThat(os.toString()).isEqualTo(expected);
     }
 

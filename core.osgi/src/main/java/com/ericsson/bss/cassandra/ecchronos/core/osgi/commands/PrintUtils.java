@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -30,6 +31,23 @@ final class PrintUtils
     static String epochToHumanReadable(long timeInMillis)
     {
         return DATE_FORMATTER.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(timeInMillis), ZoneId.systemDefault()));
+    }
+
+    static String durationToHumanReadable(long durationInMillis)
+    {
+        StringBuilder sb = new StringBuilder();
+        Duration duration = Duration.ofMillis(durationInMillis);
+        long days = duration.toDays();
+        if (days > 0)
+        {
+            sb.append(days).append('d');
+        }
+        Duration partOfDay = duration.minusDays(days);
+        if (!partOfDay.isZero())
+        {
+            sb.append(partOfDay.toString().substring(2).toLowerCase());
+        }
+        return sb.toString();
     }
 
     static String toPercentage(Double ratio)
