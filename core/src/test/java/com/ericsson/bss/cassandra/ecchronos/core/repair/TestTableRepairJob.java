@@ -75,9 +75,8 @@ public class TestTableRepairJob
 
     private TableRepairJob myRepairJob;
 
-    private RepairConfiguration myRepairConfiguration;
-
     private final TableReference myTableReference = new TableReference(keyspaceName, tableName);
+    private RepairConfiguration myRepairConfiguration;
 
     @Before
     public void startup()

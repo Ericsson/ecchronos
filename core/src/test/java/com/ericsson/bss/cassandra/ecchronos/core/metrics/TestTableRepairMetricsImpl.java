@@ -241,6 +241,17 @@ public class TestTableRepairMetricsImpl
         assertPercentiles(metric, expectedRepairTime);
     }
 
+    @Test
+    public void testGetRepairRatio()
+    {
+        TableReference tableReference = new TableReference("keyspace", "table");
+        TableReference nonExistingRef = new TableReference("non", "existing");
+        myTableRepairMetricsImpl.repairState(tableReference, 4, 1);
+
+        assertThat(myTableRepairMetricsImpl.getRepairRatio(tableReference)).contains(0.8);
+        assertThat(myTableRepairMetricsImpl.getRepairRatio(nonExistingRef)).isEmpty();
+    }
+
     private void assertPercentiles(String metric, long expectedRepairTime) throws Exception
     {
         int csvPos = 6; // start csv position for percentiles

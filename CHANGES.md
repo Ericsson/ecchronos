@@ -10,6 +10,10 @@
 * Add HTTP server with REST API - Issue #50
 * Expose metrics through JMX - Issue #75
 
+### Merged from 1.1
+
+* Add Karaf commands that exposes repair status
+
 ### Merged from 1.0
 
 * Dynamic license header check - Issue #37
