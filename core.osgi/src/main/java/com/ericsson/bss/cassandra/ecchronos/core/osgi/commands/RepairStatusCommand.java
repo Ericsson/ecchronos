@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
 import java.io.PrintStream;
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -22,7 +23,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import com.ericsson.bss.cassandra.ecchronos.core.Clock;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetricsProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
@@ -44,7 +44,7 @@ public class RepairStatusCommand implements Action
     @Option(name = "-l", aliases = "--limit", description = "Number of entries to display", required = false, multiValued = false)
     int limit = Integer.MAX_VALUE;
 
-    @Option(name = "-s", aliases = "--sort_by", description = "Sort output based on TABLE_NAME/STATUS/REPAIRED_RATIO/REPAIRED_AT/NEXT_REPAIR", required = false, multiValued = false)
+    @Option(name = "-s", aliases = "--sort-by", description = "Sort output based on TABLE_NAME/STATUS/REPAIRED_RATIO/REPAIRED_AT/NEXT_REPAIR", required = false, multiValued = false)
     SortBy sortBy = SortBy.TABLE_NAME;
 
     @Option(name = "-r", aliases = "--reverse", description = "Reverse the sort order", required = false, multiValued = false)
@@ -65,7 +65,7 @@ public class RepairStatusCommand implements Action
     @Reference
     private TableRepairMetricsProvider myTableRepairMetrics;
 
-    private Clock myClock = Clock.DEFAULT;
+    private Clock myClock = Clock.systemDefaultZone();
 
     public RepairStatusCommand()
     {
@@ -110,7 +110,7 @@ public class RepairStatusCommand implements Action
     private Status getStatus(RepairJobView job)
     {
         long repairedAt = job.getRepairStateSnapshot().lastRepairedAt();
-        long msSinceLastRepair = myClock.getTime() - repairedAt;
+        long msSinceLastRepair = myClock.millis() - repairedAt;
         RepairConfiguration config = job.getRepairConfiguration();
 
         if (msSinceLastRepair >= config.getRepairErrorTimeInMs())
@@ -130,7 +130,7 @@ public class RepairStatusCommand implements Action
 
     void printTable(PrintStream out, List<OutputData> data)
     {
-        if (!summaryOnly && !data.isEmpty())
+        if (!summaryOnly)
         {
             ShellTable table = createShellTable();
             data.stream()

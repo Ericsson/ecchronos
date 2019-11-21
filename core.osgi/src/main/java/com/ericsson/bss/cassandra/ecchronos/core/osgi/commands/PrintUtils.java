@@ -14,12 +14,16 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
+
+import org.joda.time.Duration;
+import org.joda.time.Period;
+import org.joda.time.PeriodType;
+import org.joda.time.format.PeriodFormatter;
+import org.joda.time.format.PeriodFormatterBuilder;
 
 final class PrintUtils
 {
@@ -36,19 +40,16 @@ final class PrintUtils
 
     static String durationToHumanReadable(long durationInMillis)
     {
-        StringBuilder sb = new StringBuilder();
-        Duration duration = Duration.ofMillis(durationInMillis);
-        long days = duration.toDays();
-        if (days > 0)
-        {
-            sb.append(days).append('d');
-        }
-        Duration partOfDay = duration.minusDays(days);
-        if (!partOfDay.isZero())
-        {
-            sb.append(partOfDay.toString().substring(2).toLowerCase(Locale.ENGLISH));
-        }
-        return sb.toString();
+        Duration duration = new Duration(durationInMillis);
+        Period normalizedPeriod = duration.toPeriod().normalizedStandard(PeriodType.dayTime());
+        PeriodFormatter formatter = new PeriodFormatterBuilder()
+                .appendDays().appendSuffix("d ")
+                .appendHours().appendSuffix("h ")
+                .appendMinutes().appendSuffix("m ")
+                .appendSeconds().appendSuffix("s ")
+                .toFormatter();
+
+        return formatter.print(normalizedPeriod).trim();
     }
 
     static String toPercentage(Double ratio)

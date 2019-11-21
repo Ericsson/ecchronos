@@ -48,11 +48,11 @@ public class RepairTableStatusCommand implements Action
     @Reference
     private RepairScheduler myRepairSchedulerService;
 
-    @Option(name = "-t", aliases = "--table_reference", description = "The table reference in format <keyspace>.<table>", required = true, multiValued = false)
+    @Option(name = "-t", aliases = "--table-reference", description = "The table reference in format <keyspace>.<table>", required = true, multiValued = false)
     @Completion(TableReferenceCompleter.class)
     String myTableRef;
 
-    @Option(name = "-s", aliases = "--sort_by", description = "Sort output based on " + SORT_RANGE + "/"  + SORT_REPAIRED_AT, required = false, multiValued = false)
+    @Option(name = "-s", aliases = "--sort-by", description = "Sort output based on " + SORT_RANGE + "/"  + SORT_REPAIRED_AT, required = false, multiValued = false)
     @Completion(value = StringsCompleter.class, values = {SORT_RANGE, SORT_REPAIRED_AT})
     String mySortBy = SORT_RANGE;
 
@@ -100,7 +100,7 @@ public class RepairTableStatusCommand implements Action
         switch (mySortBy)
         {
             case SORT_REPAIRED_AT:
-                comparator = Comparator.comparing(vnodeRepairState -> vnodeRepairState.lastRepairedAt());
+                comparator = Comparator.comparing(VnodeRepairState::lastRepairedAt);
                 break;
             case SORT_RANGE:
             default:

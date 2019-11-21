@@ -84,7 +84,7 @@ public class RepairConfigCommand implements Action
                 job.getTableReference().toString(),
                 PrintUtils.durationToHumanReadable(config.getRepairIntervalInMs()),
                 config.getRepairParallelism(),
-                config.getRepairUnwindRatio(),
+                PrintUtils.toPercentage(config.getRepairUnwindRatio()),
                 PrintUtils.durationToHumanReadable(config.getRepairErrorTimeInMs()),
                 PrintUtils.durationToHumanReadable(config.getRepairWarningTimeInMs())
         );

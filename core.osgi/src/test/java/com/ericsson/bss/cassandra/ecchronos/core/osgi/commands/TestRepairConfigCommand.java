@@ -62,11 +62,11 @@ public class TestRepairConfigCommand
         command.printConfig(out);
         // Then
         String expected =
-                "Table name │ Interval   │ Parallelism │ Unwind ratio │ Error time │ Warning time\n" +
-                "───────────┼────────────┼─────────────┼──────────────┼────────────┼─────────────\n" +
-                "ks1.tbl1   │ 6h         │ PARALLEL    │ 0.1          │ 3d2h33m44s │ 7d\n" +
-                "ks1.tbl2   │ 7d         │ PARALLEL    │ 0.3          │ 6h         │ 3d2h33m44s\n" +
-                "ks2.tbl1   │ 3d2h33m44s │ PARALLEL    │ 0.2          │ 7d         │ 6h\n";
+                "Table name │ Interval      │ Parallelism │ Unwind ratio │ Error time    │ Warning time\n" +
+                "───────────┼───────────────┼─────────────┼──────────────┼───────────────┼──────────────\n" +
+                "ks1.tbl1   │ 6h            │ PARALLEL    │ 10%          │ 3d 2h 33m 44s │ 7d\n" +
+                "ks1.tbl2   │ 7d            │ PARALLEL    │ 30%          │ 6h            │ 3d 2h 33m 44s\n" +
+                "ks2.tbl1   │ 3d 2h 33m 44s │ PARALLEL    │ 20%          │ 7d            │ 6h\n";
         assertThat(os.toString()).isEqualTo(expected);
     }
 

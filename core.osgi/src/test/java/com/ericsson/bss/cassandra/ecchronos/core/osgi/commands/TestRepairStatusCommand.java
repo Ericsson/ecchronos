@@ -16,14 +16,13 @@ package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.Collections;
+import java.time.Clock;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-import com.ericsson.bss.cassandra.ecchronos.core.Clock;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetricsProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.osgi.commands.RepairStatusCommand.OutputData;
 import com.ericsson.bss.cassandra.ecchronos.core.osgi.commands.RepairStatusCommand.SortBy;
@@ -69,19 +68,19 @@ public class TestRepairStatusCommand
     }
 
     @Test
-    public void testGetOutputData()
+    public void testRepairJobConversionToOutputData()
     {
         // Given
         Clock clockMock = mockClock("2019-12-12T12:34");
-        long lastRepairAt = toMillis("2019-12-12T00:00");
-        long inQueueTime = lastRepairAt - REPAIR_INTERVAL;
-        long warningTime = lastRepairAt - REPAIR_WARNING_TIME;
-        long errorTime = lastRepairAt - REPAIR_ERROR_TIME;
+        long repairedAtForCompleted = toMillis("2019-12-12T00:00");
+        long repairedAtForInQueue = repairedAtForCompleted - REPAIR_INTERVAL;
+        long repairedAtForWarning = repairedAtForCompleted - REPAIR_WARNING_TIME;
+        long repairedAtForError = repairedAtForCompleted - REPAIR_ERROR_TIME;
 
-        RepairJobView job1 = mockRepairJob("ks.tbl1", 1.0, lastRepairAt);
-        RepairJobView job2 = mockRepairJob("ks.tbl2", null, inQueueTime);
-        RepairJobView job3 = mockRepairJob("ks.tbl3", 0.339, warningTime);
-        RepairJobView job4 = mockRepairJob("ks.tbl4", 0.0, errorTime);
+        RepairJobView job1 = mockRepairJob("ks.tbl1", 1.0, repairedAtForCompleted);
+        RepairJobView job2 = mockRepairJob("ks.tbl2", null, repairedAtForInQueue);
+        RepairJobView job3 = mockRepairJob("ks.tbl3", 0.339, repairedAtForWarning);
+        RepairJobView job4 = mockRepairJob("ks.tbl4", 0.0, repairedAtForError);
         RepairScheduler schedulerMock = mockScheduler(asList(job1, job2, job3, job4));
 
         RepairStatusCommand command = new RepairStatusCommand(schedulerMock, metricsMock, clockMock);
@@ -90,10 +89,10 @@ public class TestRepairStatusCommand
         // Then
         assertThat(outputData).extracting(OutputData::getTable, OutputData::getStatus, OutputData::getRatio, OutputData::getRepairedAt, OutputData::getNextRepair)
                 .containsExactly(
-                        tuple(createTableRef("ks.tbl1"), Status.COMPLETED, 1.0, lastRepairAt, lastRepairAt + REPAIR_INTERVAL),
-                        tuple(createTableRef("ks.tbl2"), Status.IN_QUEUE, 0.0, inQueueTime, inQueueTime + REPAIR_INTERVAL),
-                        tuple(createTableRef("ks.tbl3"), Status.WARNING, 0.339, warningTime, warningTime + REPAIR_INTERVAL),
-                        tuple(createTableRef("ks.tbl4"), Status.ERROR, 0.0, errorTime, errorTime + REPAIR_INTERVAL)
+                        tuple(createTableRef("ks.tbl1"), Status.COMPLETED, 1.0, repairedAtForCompleted, repairedAtForCompleted + REPAIR_INTERVAL),
+                        tuple(createTableRef("ks.tbl2"), Status.IN_QUEUE, 0.0, repairedAtForInQueue, repairedAtForInQueue + REPAIR_INTERVAL),
+                        tuple(createTableRef("ks.tbl3"), Status.WARNING, 0.339, repairedAtForWarning, repairedAtForWarning + REPAIR_INTERVAL),
+                        tuple(createTableRef("ks.tbl4"), Status.ERROR, 0.0, repairedAtForError, repairedAtForError + REPAIR_INTERVAL)
                 );
     }
 
@@ -186,17 +185,6 @@ public class TestRepairStatusCommand
     }
 
     @Test
-    public void testPrintTableWithEmptyData()
-    {
-        // Given
-        RepairStatusCommand command = new RepairStatusCommand();
-        // When
-        String output = executePrintTable(command, Collections.emptyList());
-        // Then
-        assertThat(output).isEmpty();
-    }
-
-    @Test
     public void testPrintTableWithSummaryOnlyFlag()
     {
         // Given
@@ -253,7 +241,7 @@ public class TestRepairStatusCommand
     {
         long time = toMillis(date);
         Clock clockMock = mock(Clock.class);
-        when(clockMock.getTime()).thenReturn(time);
+        when(clockMock.millis()).thenReturn(time);
         return clockMock;
     }
 
