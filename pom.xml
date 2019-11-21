@@ -71,12 +71,13 @@
 
         <pax-exam.version>4.13.1</pax-exam.version>
         <pax-logging-logback.version>1.8.4</pax-logging-logback.version>
-        <apache.karaf.version>4.2.3</apache.karaf.version>
+        <apache.karaf.version>4.1.4</apache.karaf.version>
         <org.apache.felix.scr.version>2.1.14</org.apache.felix.scr.version>
         <pax-url.version>2.4.7</pax-url.version>
         <javax.inject.version>1</javax.inject.version>
         <awaitility.version>3.0.0</awaitility.version>
         <jcip.version>1.0</jcip.version>
+        <junitparams.version>1.1.1</junitparams.version>
 
         <!-- Plugin versions -->
         <org.apache.maven.plugins.maven-compiler-plugin.version>3.8.0</org.apache.maven.plugins.maven-compiler-plugin.version>
@@ -279,6 +280,12 @@
             </dependency>
 
             <dependency>
+                <groupId>org.apache.karaf.shell</groupId>
+                <artifactId>org.apache.karaf.shell.core</artifactId>
+                <version>${apache.karaf.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>org.apache.felix.scr</artifactId>
                 <version>${org.apache.felix.scr.version}</version>
@@ -303,6 +310,12 @@
                 <groupId>net.jcip</groupId>
                 <artifactId>jcip-annotations</artifactId>
                 <version>${jcip.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>pl.pragmatists</groupId>
+                <artifactId>JUnitParams</artifactId>
+                <version>${junitparams.version}</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>

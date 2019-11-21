@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
 import java.io.Closeable;
 import java.io.File;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -24,7 +25,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
-public final class TableRepairMetricsImpl implements TableRepairMetrics, Closeable
+public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRepairMetricsProvider, Closeable
 {
     private static final String DEFAULT_STATISTICS_DIRECTORY = "/var/lib/cassandra/repair/metrics/";
     private static final long DEFAULT_STATISTICS_REPORT_INTERVAL_IN_MS = TimeUnit.SECONDS.toMillis(60);
@@ -52,6 +53,12 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, Closeab
     public void repairState(TableReference tableReference, int repairedRanges, int notRepairedRanges)
     {
         tableMetricHolder(tableReference).repairState(repairedRanges, notRepairedRanges);
+    }
+
+    @Override
+    public Optional<Double> getRepairRatio(TableReference tableReference)
+    {
+        return Optional.ofNullable(myNodeMetricHolder.getRepairRatio(tableReference));
     }
 
     @Override

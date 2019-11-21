@@ -154,6 +154,17 @@ public class TestNodeMetricHolder
         assertThat(getTimer(NodeMetricHolder.REPAIR_TIMING_SUCCESS).getSnapshot().getMean()).isEqualTo(0);
     }
 
+    @Test
+    public void testGetRepairRatio()
+    {
+        TableReference tableReference = new TableReference("keyspace", "table");
+        addRepairedTable(tableReference, 0.3, 123);
+        TableReference nonExistingRef = new TableReference("non", "existing");
+
+        assertThat(myNodeMetricHolder.getRepairRatio(tableReference)).isEqualTo(0.3);
+        assertThat(myNodeMetricHolder.getRepairRatio(nonExistingRef)).isNull();
+    }
+
     private void addRepairedTable(TableReference tableReference, double repairedRatio, long dataSize)
     {
         doReturn(dataSize).when(myTableStorageStates).getDataSize(eq(tableReference));

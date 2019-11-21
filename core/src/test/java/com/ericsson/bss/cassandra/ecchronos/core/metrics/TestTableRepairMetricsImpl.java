@@ -21,7 +21,6 @@ import static org.mockito.Mockito.doReturn;
 
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -231,6 +230,17 @@ public class TestTableRepairMetricsImpl
         {
             assertThat(getMetricValue(metricFile, i)).isEqualTo(expectedRepairTime);
         }
+    }
+
+    @Test
+    public void testGetRepairRatio()
+    {
+        TableReference tableReference = new TableReference("keyspace", "table");
+        TableReference nonExistingRef = new TableReference("non", "existing");
+        myTableRepairMetricsImpl.repairState(tableReference, 4, 1);
+
+        assertThat(myTableRepairMetricsImpl.getRepairRatio(tableReference)).contains(0.8);
+        assertThat(myTableRepairMetricsImpl.getRepairRatio(nonExistingRef)).isEmpty();
     }
 
     private double getMetricValue(String metricFile, int pos) throws IOException

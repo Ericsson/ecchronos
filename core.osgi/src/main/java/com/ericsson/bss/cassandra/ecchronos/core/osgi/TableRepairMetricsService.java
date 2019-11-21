@@ -14,12 +14,13 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetricsImpl;
-
-import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetricsProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -31,9 +32,9 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@Component(service = TableRepairMetrics.class)
+@Component(service = {TableRepairMetrics.class, TableRepairMetricsProvider.class})
 @Designate(ocd = TableRepairMetricsService.Configuration.class)
-public final class TableRepairMetricsService implements TableRepairMetrics
+public final class TableRepairMetricsService implements TableRepairMetrics, TableRepairMetricsProvider
 {
     private static final long DEFAULT_STATISTICS_REPORT_INTERVAL_IN_SECONDS = 60L;
 
@@ -66,6 +67,12 @@ public final class TableRepairMetricsService implements TableRepairMetrics
     public void repairState(TableReference tableReference, int repairedRanges, int notRepairedRanges)
     {
         myDelegateTableRepairMetrics.repairState(tableReference, repairedRanges, notRepairedRanges);
+    }
+
+    @Override
+    public Optional<Double> getRepairRatio(TableReference tableReference)
+    {
+        return myDelegateTableRepairMetrics.getRepairRatio(tableReference);
     }
 
     @Override
