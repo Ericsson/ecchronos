@@ -59,8 +59,9 @@ public class ECChronos implements Closeable
 
         Host host = nativeConnectionProvider.getLocalHost();
         Metadata metadata = nativeConnectionProvider.getSession().getCluster().getMetadata();
+        RepairProperties repairProperties = RepairProperties.from(configuration);
 
-        RepairHistoryProviderImpl repairHistoryProvider = new RepairHistoryProviderImpl(nativeConnectionProvider.getSession(), statementDecorator);
+        RepairHistoryProviderImpl repairHistoryProvider = new RepairHistoryProviderImpl(nativeConnectionProvider.getSession(), statementDecorator, repairProperties.getRepairHistoryLookbackInMs());
 
         RepairStateFactoryImpl repairStateFactoryImpl = RepairStateFactoryImpl.builder()
                 .withMetadata(metadata)
@@ -78,7 +79,6 @@ public class ECChronos implements Closeable
                 .withKeyspaceName(timeBasedRunPolicyProperties.getKeyspaceName())
                 .build();
 
-        RepairProperties repairProperties = RepairProperties.from(configuration);
 
         myRepairSchedulerImpl = RepairSchedulerImpl.builder()
                 .withJmxProxyFactory(myECChronosInternals.getJmxProxyFactory())

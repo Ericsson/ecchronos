@@ -1,5 +1,9 @@
 # Changes
 
+## Version 1.0.5
+
+* Fix slow query of repair_history at start-up #86
+
 ## Version 1.0.4
 
 * Reduce error logs to warn for some lock related failures
