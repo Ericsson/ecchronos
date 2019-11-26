@@ -30,16 +30,20 @@ public final class RepairProperties
     private static final String CONFIG_REPAIR_ALARM_ERROR_BASE = "repair.alarm.error";
     private static final String CONFIG_REPAIR_LOCK_TYPE = "repair.lock.type";
     private static final String CONFIG_REPAIR_UNWIND_RATIO = "repair.unwind.ratio";
+    private static final String CONFIG_REPAIR_HISTORY_LOOKBACK_BASE = "repair.history.lookback";
 
-    private static final String DEFAULT_REPAIR_INTERVAL_TIMEUNIT = "days";
+    private static final String DAYS = "days";
+    private static final String DEFAULT_REPAIR_INTERVAL_TIMEUNIT = DAYS;
     private static final String DEFAULT_REPAIR_INTERVAL_DURATION = "7";
     private static final String DEFAULT_REPAIR_PARALLELISM = "parallel";
-    private static final String DEFAULT_REPAIR_WARN_TIMEUNIT = "days";
+    private static final String DEFAULT_REPAIR_WARN_TIMEUNIT = DAYS;
     private static final String DEFAULT_REPAIR_WARN_DURATION = "8";
-    private static final String DEFAULT_REPAIR_ERROR_TIMEUNIT = "days";
+    private static final String DEFAULT_REPAIR_ERROR_TIMEUNIT = DAYS;
     private static final String DEFAULT_REPAIR_ERROR_DURATION = "10";
     private static final String DEFAULT_REPAIR_LOCK_TYPE = "vnode";
     private static final String DEFAULT_REPAIR_UNWIND_RATIO = Double.toString(RepairConfiguration.NO_UNWIND);
+    private static final String DEFAULT_REPAIR_HISTORY_LOOKBACK_TIMEUNIT = DAYS;
+    private static final String DEFAULT_REPAIR_HISTORY_LOOKBACK_DURATION = "30";
 
     private final long myRepairIntervalInMs;
     private final RepairOptions.RepairParallelism myRepairParallelism;
@@ -47,10 +51,11 @@ public final class RepairProperties
     private final long myRepairAlarmErrorInMs;
     private final RepairLockType myRepairLockType;
     private final double myRepairUnwindRatio;
+    private final long myRepairHistoryLookbackInMs;
 
     private RepairProperties(long repairIntervalInMs, RepairOptions.RepairParallelism repairParallelism,
                              long repairAlarmWarnInMs, long repairAlarmErrorInMs, RepairLockType repairLockType,
-                             double repairUnwindRatio)
+                             double repairUnwindRatio, long repairHistoryLookbackInMs)
     {
         myRepairIntervalInMs = repairIntervalInMs;
         myRepairParallelism = repairParallelism;
@@ -58,6 +63,7 @@ public final class RepairProperties
         myRepairAlarmErrorInMs = repairAlarmErrorInMs;
         myRepairLockType = repairLockType;
         myRepairUnwindRatio = repairUnwindRatio;
+        myRepairHistoryLookbackInMs = repairHistoryLookbackInMs;
     }
 
     public long getRepairIntervalInMs()
@@ -90,11 +96,16 @@ public final class RepairProperties
         return myRepairUnwindRatio;
     }
 
+    public long getRepairHistoryLookbackInMs()
+    {
+        return myRepairHistoryLookbackInMs;
+    }
+
     @Override
     public String toString()
     {
-        return String.format("(intervalMs=%d,repairParallelism=%s,repairWarnMs=%d,repairErrorMs=%d,repairUnwindRatio=%.2f)", myRepairIntervalInMs,
-                myRepairParallelism, myRepairAlarmWarnInMs, myRepairAlarmErrorInMs, myRepairUnwindRatio);
+        return String.format("(intervalMs=%d,repairParallelism=%s,repairWarnMs=%d,repairErrorMs=%d,repairUnwindRatio=%.2f,repairHistoryLookbackInMs=%d)",
+                myRepairIntervalInMs, myRepairParallelism, myRepairAlarmWarnInMs, myRepairAlarmErrorInMs, myRepairUnwindRatio, myRepairHistoryLookbackInMs);
     }
 
     public static RepairProperties from(Properties properties) throws ConfigurationException
@@ -131,8 +142,11 @@ public final class RepairProperties
 
         double repairUnwindRatio = Double.parseDouble(properties.getProperty(CONFIG_REPAIR_UNWIND_RATIO, DEFAULT_REPAIR_UNWIND_RATIO));
 
+        long repairHistoryLookbackInMs = parseTimeUnitToMs(properties, CONFIG_REPAIR_HISTORY_LOOKBACK_BASE,
+                DEFAULT_REPAIR_HISTORY_LOOKBACK_DURATION, DEFAULT_REPAIR_HISTORY_LOOKBACK_TIMEUNIT);
+
         return new RepairProperties(repairIntervalInMs, repairParallelism, repairAlarmWarnInMs,
-                repairAlarmErrorInMs, repairLockType, repairUnwindRatio);
+                repairAlarmErrorInMs, repairLockType, repairUnwindRatio, repairHistoryLookbackInMs);
     }
 
     private static long parseTimeUnitToMs(Properties properties, String baseProperty,
