@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -264,6 +265,14 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
         Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, iterate_end, iterate_start, new FullyRepairedRepairEntryPredicate(tokenToHostMap));
 
         assertThat(repairEntryIterator.hasNext()).isFalse();
+    }
+
+    @Test
+    public void testInvalidRange()
+    {
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> repairHistoryProvider.iterate(myTableReference, 1, 2, Predicates.<RepairEntry> alwaysTrue()))
+                .withMessageContaining("Invalid range when iterating");
     }
 
     private void insertRecord(String keyspace, String table, LongTokenRange range, RepairStatus repairStatus) throws UnknownHostException

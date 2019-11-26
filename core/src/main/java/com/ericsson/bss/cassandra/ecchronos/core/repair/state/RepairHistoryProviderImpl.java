@@ -84,7 +84,13 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     @Override
     public Iterator<RepairEntry> iterate(TableReference tableReference, long to, long from, Predicate<RepairEntry> predicate)
     {
-        ResultSet resultSet = execute(myRepairHistoryByTimeStatement.bind(tableReference.getKeyspace(), tableReference.getTable(), new Date(from), new Date(to)));
+        Date fromDate = new Date(from);
+        Date toDate = new Date(to);
+        if (!fromDate.before(toDate))
+        {
+            throw new IllegalArgumentException("Invalid range when iterating " + tableReference + ", from (" + fromDate + ") to (" + toDate + ")");
+        }
+        ResultSet resultSet = execute(myRepairHistoryByTimeStatement.bind(tableReference.getKeyspace(), tableReference.getTable(), fromDate, toDate));
 
         return RepairEntryIterator.create(resultSet.iterator(), predicate);
     }
