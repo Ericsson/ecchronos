@@ -33,10 +33,16 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @Component(service = RepairStateFactory.class)
+@Designate(ocd = RepairStateFactoryService.Configuration.class)
 public class RepairStateFactoryService implements RepairStateFactory
 {
+    private static final long DEFAULT_REPAIR_HISTORY_LOOKBACK_SECONDS = 30L * 24L * 60L * 60L;
+
     @Reference(service = StatementDecorator.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile StatementDecorator myStatementDecorator;
 
@@ -52,11 +58,13 @@ public class RepairStateFactoryService implements RepairStateFactory
     private volatile RepairStateFactoryImpl myDelegateRepairStateFactory;
 
     @Activate
-    public void activate()
+    public void activate(Configuration configuration)
     {
         Host host = myNativeConnectionProvider.getLocalHost();
         Metadata metadata = myNativeConnectionProvider.getSession().getCluster().getMetadata();
-        RepairHistoryProvider repairHistoryProvider = new RepairHistoryProviderImpl(myNativeConnectionProvider.getSession(), myStatementDecorator);
+
+        long lookbackTimeInMillis = configuration.lookbackTimeSeconds() * 1000;
+        RepairHistoryProvider repairHistoryProvider = new RepairHistoryProviderImpl(myNativeConnectionProvider.getSession(), myStatementDecorator, lookbackTimeInMillis);
 
         myDelegateRepairStateFactory = RepairStateFactoryImpl.builder()
                 .withMetadata(metadata)
@@ -77,5 +85,12 @@ public class RepairStateFactoryService implements RepairStateFactory
     public RepairState create(TableReference tableReference, RepairConfiguration repairConfiguration)
     {
         return myDelegateRepairStateFactory.create(tableReference, repairConfiguration);
+    }
+
+    @ObjectClassDefinition
+    public @interface Configuration
+    {
+        @AttributeDefinition(name = "Repair history lookback time", description = "The lookback time in seconds for when the repair_history table is queried to get initial repair state at startup")
+        long lookbackTimeSeconds() default DEFAULT_REPAIR_HISTORY_LOOKBACK_SECONDS;
     }
 }

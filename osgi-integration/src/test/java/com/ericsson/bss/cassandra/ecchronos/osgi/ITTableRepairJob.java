@@ -102,7 +102,7 @@ public class ITTableRepairJob extends TestBase
         myMetadata = mySession.getCluster().getMetadata();
         myLocalHost = myNativeConnectionProvider.getLocalHost();
 
-        myRepairHistoryProvider = new RepairHistoryProviderImpl(mySession, s -> s);
+        myRepairHistoryProvider = new RepairHistoryProviderImpl(mySession, s -> s, TimeUnit.DAYS.toMillis(30));
     }
 
     @After

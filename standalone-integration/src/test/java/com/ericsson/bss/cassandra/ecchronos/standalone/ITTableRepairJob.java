@@ -119,7 +119,7 @@ public class ITTableRepairJob extends TestBase
                 .withRefreshIntervalInMs(1000)
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .build();
-        myRepairHistoryProvider = new RepairHistoryProviderImpl(mySession, s -> s);
+        myRepairHistoryProvider = new RepairHistoryProviderImpl(mySession, s -> s, TimeUnit.DAYS.toMillis(30));
         ReplicatedTableProviderImpl replicatedTableProvider = new ReplicatedTableProviderImpl(myLocalHost, myMetadata);
 
         myLockFactory = CASLockFactory.builder()

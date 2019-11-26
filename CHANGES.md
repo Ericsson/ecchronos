@@ -4,6 +4,10 @@
 
 * Add Karaf commands that exposes repair status
 
+### Merged from 1.0
+
+* Fix slow query of repair_history at start-up #86
+
 ## Version 1.0.4
 
 * Reduce error logs to warn for some lock related failures
