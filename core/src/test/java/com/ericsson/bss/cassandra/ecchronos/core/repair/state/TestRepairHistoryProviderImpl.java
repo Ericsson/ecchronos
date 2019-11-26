@@ -15,9 +15,13 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -50,6 +54,9 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
 {
     private static final String KEYSPACE = "keyspace";
     private static final String TABLE = "table";
+    private static int LOOKBACK_TIME = 100;
+    private static int CLOCK_TIME = 25;
+    private static int LAST_REPAIRED_AT = 20;
 
     private static RepairHistoryProviderImpl repairHistoryProvider;
 
@@ -62,7 +69,7 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     {
         myInsertRecordStatement = mySession.prepare("INSERT INTO system_distributed.repair_history (keyspace_name, columnfamily_name, participants, id, started_at, finished_at, range_begin, range_end, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-        repairHistoryProvider = new RepairHistoryProviderImpl(mySession, s -> s);
+        repairHistoryProvider = new RepairHistoryProviderImpl(mySession, s -> s, LOOKBACK_TIME, mockClock(CLOCK_TIME));
     }
 
     @After
@@ -74,7 +81,7 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     @Test
     public void testIterateEmptyRepairHistory()
     {
-        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, System.currentTimeMillis(), Predicates.<RepairEntry> alwaysTrue());
+        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME, Predicates.<RepairEntry> alwaysTrue());
 
         assertThat(repairEntryIterator.hasNext()).isFalse();
     }
@@ -84,7 +91,7 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     {
         insertRecord(KEYSPACE, TABLE, new LongTokenRange(0, 1));
 
-        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, System.currentTimeMillis(), Predicates.<RepairEntry> alwaysFalse());
+        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME, Predicates.<RepairEntry> alwaysFalse());
 
         assertThat(repairEntryIterator.hasNext()).isFalse();
     }
@@ -92,22 +99,34 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     @Test
     public void testIterateAcceptedRepairHistory() throws UnknownHostException
     {
-        RepairEntry expectedRepairEntry = new RepairEntry(new LongTokenRange(0, 1), 10, Sets.newHashSet(InetAddress.getLocalHost()), "SUCCESS");
+        RepairEntry expectedRepairEntry = new RepairEntry(new LongTokenRange(0, 1), LAST_REPAIRED_AT, Sets.newHashSet(InetAddress.getLocalHost()), "SUCCESS");
         insertRecord(KEYSPACE, TABLE, expectedRepairEntry);
 
-        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, System.currentTimeMillis(), Predicates.<RepairEntry> alwaysTrue());
+        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME, Predicates.<RepairEntry> alwaysTrue());
 
         assertThat(repairEntryIterator.hasNext()).isTrue();
         assertThat(repairEntryIterator.next()).isEqualTo(expectedRepairEntry);
     }
 
     @Test
-    public void testIterateSuccessfulRepairHistory() throws UnknownHostException
+    public void testIterateLookbackTimeLimitation() throws UnknownHostException
     {
-        RepairEntry expectedRepairEntry = new RepairEntry(new LongTokenRange(0, 1), 10, Sets.newHashSet(InetAddress.getLocalHost()), "SUCCESS");
+        int timeOutsideLookback = CLOCK_TIME - LOOKBACK_TIME - 1;
+        RepairEntry expectedRepairEntry = new RepairEntry(new LongTokenRange(0, 1), timeOutsideLookback, Sets.newHashSet(InetAddress.getLocalHost()), "SUCCESS");
         insertRecord(KEYSPACE, TABLE, expectedRepairEntry);
 
-        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, System.currentTimeMillis(), new SuccessfulRepairEntryPredicate(InetAddress.getLocalHost()));
+        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME, Predicates.<RepairEntry> alwaysTrue());
+
+        assertThat(repairEntryIterator.hasNext()).isFalse();
+    }
+
+    @Test
+    public void testIterateSuccessfulRepairHistory() throws UnknownHostException
+    {
+        RepairEntry expectedRepairEntry = new RepairEntry(new LongTokenRange(0, 1), LAST_REPAIRED_AT, Sets.newHashSet(InetAddress.getLocalHost()), "SUCCESS");
+        insertRecord(KEYSPACE, TABLE, expectedRepairEntry);
+
+        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME, new SuccessfulRepairEntryPredicate(InetAddress.getLocalHost()));
 
         assertThat(repairEntryIterator.hasNext()).isTrue();
         assertThat(repairEntryIterator.next()).isEqualTo(expectedRepairEntry);
@@ -118,7 +137,7 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     {
         insertRecord(KEYSPACE, TABLE, new LongTokenRange(0, 1), RepairStatus.FAILED);
 
-        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, System.currentTimeMillis(), new SuccessfulRepairEntryPredicate(InetAddress.getLocalHost()));
+        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME, new SuccessfulRepairEntryPredicate(InetAddress.getLocalHost()));
 
         assertThat(repairEntryIterator.hasNext()).isFalse();
     }
@@ -126,9 +145,9 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     @Test
     public void testIterateOtherNodesRepairHistory() throws UnknownHostException
     {
-        insertRecord(KEYSPACE, TABLE, Sets.newHashSet(InetAddress.getByName("127.0.0.2")), new LongTokenRange(0, 1), System.currentTimeMillis() - 5, System.currentTimeMillis(), RepairStatus.SUCCESS);
+        insertRecord(KEYSPACE, TABLE, Sets.newHashSet(InetAddress.getByName("127.0.0.2")), new LongTokenRange(0, 1), CLOCK_TIME - 5, CLOCK_TIME, RepairStatus.SUCCESS);
 
-        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, System.currentTimeMillis(), new SuccessfulRepairEntryPredicate(InetAddress.getLocalHost()));
+        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME, new SuccessfulRepairEntryPredicate(InetAddress.getLocalHost()));
 
         assertThat(repairEntryIterator.hasNext()).isFalse();
     }
@@ -136,11 +155,11 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     @Test
     public void testIterateWithOlderHistory() throws UnknownHostException
     {
-        long repair_end = System.currentTimeMillis() - 5000;
+        long repair_end = CLOCK_TIME - 5000;
         long repair_start = repair_end - 5;
 
         long iterate_start = repair_end + 1000;
-        long iterate_end = System.currentTimeMillis();
+        long iterate_end = CLOCK_TIME;
 
         insertRecord(KEYSPACE, TABLE, Sets.newHashSet(InetAddress.getLocalHost()), new LongTokenRange(0, 1), repair_start, repair_end, RepairStatus.SUCCESS);
 
@@ -170,11 +189,11 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     @Test
     public void testIPartiallyRepairedINegative() throws UnknownHostException
     {
-        long repair_end = System.currentTimeMillis() - 5000;
+        long repair_end = CLOCK_TIME - 5000;
         long repair_start = repair_end - 5;
 
         long iterate_start = repair_start - 5;
-        long iterate_end = System.currentTimeMillis();
+        long iterate_end = CLOCK_TIME;
 
         insertRecord(KEYSPACE, TABLE, Sets.newHashSet(InetAddress.getLocalHost()), new LongTokenRange(0, 1), repair_start, repair_end, RepairStatus.UNKNOWN);
         insertRecord(KEYSPACE, TABLE, Sets.newHashSet(InetAddress.getLocalHost()), new LongTokenRange(0, 1), repair_start, repair_end, RepairStatus.FAILED);
@@ -225,11 +244,11 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     @Test
     public void testFullyRepairedNegative() throws UnknownHostException
     {
-        long repair_end = System.currentTimeMillis() - 5000;
+        long repair_end = CLOCK_TIME - 5000;
         long repair_start = repair_end - 5;
 
         long iterate_start = repair_start - 5;
-        long iterate_end = System.currentTimeMillis();
+        long iterate_end = CLOCK_TIME;
 
         insertRecord(KEYSPACE, TABLE, Sets.newHashSet(InetAddress.getByName("198.162.0.1")), new LongTokenRange(0, 1), repair_start, repair_end, RepairStatus.SUCCESS);
         insertRecord(KEYSPACE, TABLE, Sets.newHashSet(InetAddress.getByName("198.162.0.2")), new LongTokenRange(2, 3), repair_start, repair_end, RepairStatus.SUCCESS);
@@ -248,9 +267,17 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
         assertThat(repairEntryIterator.hasNext()).isFalse();
     }
 
+    @Test
+    public void testInvalidRange()
+    {
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> repairHistoryProvider.iterate(myTableReference, 1, 2, Predicates.<RepairEntry> alwaysTrue()))
+                .withMessageContaining("Invalid range when iterating");
+    }
+
     private void insertRecord(String keyspace, String table, LongTokenRange range, RepairStatus repairStatus) throws UnknownHostException
     {
-        insertRecord(keyspace, table, Sets.newHashSet(InetAddress.getLocalHost()), range, System.currentTimeMillis() - 5, System.currentTimeMillis(), repairStatus);
+        insertRecord(keyspace, table, Sets.newHashSet(InetAddress.getLocalHost()), range, CLOCK_TIME - 5, CLOCK_TIME, repairStatus);
     }
 
     private void insertRecord(String keyspace, String table, LongTokenRange range) throws UnknownHostException
@@ -308,5 +335,12 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
             return repairEntry.getParticipants().contains(myHostAddress) &&
                     RepairStatus.SUCCESS == repairEntry.getStatus();
         }
+    }
+
+    private static Clock mockClock(long millis)
+    {
+        Clock clockMock = mock(Clock.class);
+        when(clockMock.millis()).thenReturn(millis);
+        return clockMock;
     }
 }

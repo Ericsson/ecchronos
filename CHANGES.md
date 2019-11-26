@@ -26,6 +26,7 @@
 * Cache locking failures to reduce unnecessary contention - Issue #70
 * Trigger table repairs more often - Issue #72
 * Reduce error logs to warn for some lock related failures
+* Fix slow query of repair_history at start-up #86
 
 ## Version 1.0.0
 
