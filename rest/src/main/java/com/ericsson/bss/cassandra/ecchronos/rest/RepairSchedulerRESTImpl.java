@@ -16,9 +16,9 @@ package com.ericsson.bss.cassandra.ecchronos.rest;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.CompleteRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.ericsson.bss.cassandra.ecchronos.rest.types.CompleteRepairJob;
-import com.ericsson.bss.cassandra.ecchronos.rest.types.ScheduledRepairJob;
 import com.google.gson.Gson;
 
 import javax.inject.Inject;

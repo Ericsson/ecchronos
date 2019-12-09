@@ -14,8 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
-import com.ericsson.bss.cassandra.ecchronos.rest.types.CompleteRepairJob;
-import com.ericsson.bss.cassandra.ecchronos.rest.types.ScheduledRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.CompleteRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
