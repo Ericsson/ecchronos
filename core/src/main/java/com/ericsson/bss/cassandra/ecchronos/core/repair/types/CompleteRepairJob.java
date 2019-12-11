@@ -33,7 +33,7 @@ public class CompleteRepairJob extends ScheduledRepairJob
     {
         super(repairJobView);
 
-        long repairedAfter = System.currentTimeMillis() - repairIntervalInMs;
+        long repairedAfter = System.currentTimeMillis() - repairJobView.getRepairConfiguration().getRepairIntervalInMs();
         VnodeRepairStates vnodeRepairStates = repairJobView.getRepairStateSnapshot().getVnodeRepairStates();
 
         this.virtualNodeStates = vnodeRepairStates.getVnodeRepairStates().stream()

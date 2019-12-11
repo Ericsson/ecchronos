@@ -50,9 +50,8 @@ class RepairJob:
         self.repair_interval_in_ms = int(data["repairIntervalInMs"] if "repairIntervalInMs" in data else 0)
         self.last_repaired_at_in_ms = int(data["lastRepairedAtInMs"] if "lastRepairedAtInMs" in data else -1)
         self.repaired_ratio = float(data["repairedRatio"] if "repairedRatio" in data else 0)
-
-    def get_interval(self):
-        return parse_interval(self.repair_interval_in_ms)
+        self.status = data["status"] if "status" in data else "<UNKNOWN>"
+        self.next_repair_in_ms = int(data["nextRepairInMs"] if "nextRepairInMs" in data else -1)
 
     def get_last_repaired_at(self):
         return datetime.datetime.fromtimestamp(self.last_repaired_at_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
@@ -60,6 +59,8 @@ class RepairJob:
     def get_repair_percentage(self):
         return "{0:.2f}".format(self.repaired_ratio * 100.0)
 
+    def get_next_repair(self):
+        return datetime.datetime.fromtimestamp(self.next_repair_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
 
 class VerboseRepairJob(RepairJob):
     def __init__(self, data):

@@ -12,24 +12,29 @@
       "table": {
         "type": "string"
       },
-      "repairIntervalInMs": {
-        "type": "integer"
+      "status": {
+        "type": "string"
+      },
+      "repairedRatio": {
+        "type": "number",
+        "description": "Ratio of how much of the table that has been repaired"
       },
       "lastRepairedAtInMs": {
         "type": "integer",
         "description": "When the table was last repaired in millis since epoch"
       },
-      "repairedRatio": {
-        "type": "number",
-        "description": "Ratio of how much of the table that has been repaired"
+      "nextRepairInMs": {
+        "type": "integer",
+        "description": "When the table is scheduled for the next repair in millis since epoch"
       }
     },
     "required": [
       "keyspace",
       "table",
-      "repairIntervalInMs",
+      "status",
+      "repairedRatio",
       "lastRepairedAtInMs",
-      "repairedRatio"
+      "nextRepairInMs"
     ]
   }
 }

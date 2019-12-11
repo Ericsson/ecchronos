@@ -14,59 +14,80 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 
+import java.util.Collection;
+import java.util.function.Predicate;
+
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 
 /**
  * A representation of a scheduled repair job.
- *
+ * <p>
  * Primarily used to to have a type to convert to JSON.
  */
 public class ScheduledRepairJob
 {
     public final String keyspace;
     public final String table;
-    public final long repairIntervalInMs;
     public final long lastRepairedAtInMs;
     public final double repairedRatio;
+    public final Status status;
+    public final long nextRepairInMs;
+
+    public enum Status
+    {
+        COMPLETED, IN_QUEUE, WARNING, ERROR
+    }
 
     public ScheduledRepairJob(RepairJobView repairJobView)
     {
         this.keyspace = repairJobView.getTableReference().getKeyspace();
         this.table = repairJobView.getTableReference().getTable();
-        this.repairIntervalInMs = repairJobView.getRepairConfiguration().getRepairIntervalInMs();
         this.lastRepairedAtInMs = repairJobView.getRepairStateSnapshot().lastRepairedAt();
-
-        long repairedAfter = System.currentTimeMillis() - repairIntervalInMs;
-
-        this.repairedRatio = calculateRepaired(repairJobView.getRepairStateSnapshot().getVnodeRepairStates(), repairedAfter);
+        long now = System.currentTimeMillis();
+        this.repairedRatio = calculateRepaired(repairJobView, now);
+        this.status = getStatus(repairJobView, now);
+        this.nextRepairInMs = lastRepairedAtInMs + repairJobView.getRepairConfiguration().getRepairIntervalInMs();
     }
 
-    private double calculateRepaired(VnodeRepairStates vnodeRepairStates, long repairedAfter)
+    private double calculateRepaired(RepairJobView repairJobView, long timestamp)
     {
-        int nRepairedBefore = 0;
-        int nRepairedAfter = 0;
+        long repairInterval = repairJobView.getRepairConfiguration().getRepairIntervalInMs();
+        Collection<VnodeRepairState> states = repairJobView.getRepairStateSnapshot().getVnodeRepairStates().getVnodeRepairStates();
 
-        for (VnodeRepairState vnodeRepairState : vnodeRepairStates.getVnodeRepairStates())
+        long nRepaired = states.stream()
+                .filter(isRepaired(timestamp, repairInterval))
+                .count();
+
+        return states.isEmpty()
+                ? 0
+                : (double) nRepaired / states.size();
+    }
+
+    private Predicate<VnodeRepairState> isRepaired(long timestamp, long repairInterval)
+    {
+        return state -> timestamp - state.lastRepairedAt() <= repairInterval;
+    }
+
+    private Status getStatus(RepairJobView job, long timestamp)
+    {
+        long repairedAt = job.getRepairStateSnapshot().lastRepairedAt();
+        long msSinceLastRepair = timestamp - repairedAt;
+        RepairConfiguration config = job.getRepairConfiguration();
+
+        if (msSinceLastRepair >= config.getRepairErrorTimeInMs())
         {
-            if (vnodeRepairState.lastRepairedAt() < repairedAfter)
-            {
-                nRepairedBefore++;
-            }
-            else
-            {
-                nRepairedAfter++;
-            }
+            return Status.ERROR;
         }
-
-        int nTotal = nRepairedAfter + nRepairedBefore;
-
-        if (nTotal == 0)
+        if (msSinceLastRepair >= config.getRepairWarningTimeInMs())
         {
-            return 0;
+            return Status.WARNING;
         }
-
-        return (double) nRepairedAfter / nTotal;
+        if (msSinceLastRepair >= config.getRepairIntervalInMs())
+        {
+            return Status.IN_QUEUE;
+        }
+        return Status.COMPLETED;
     }
 }

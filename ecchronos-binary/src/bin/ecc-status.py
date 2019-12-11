@@ -44,9 +44,10 @@ def print_verbose_repair_job(repair_job, max_lines):
 
     print(verbose_print_format.format("Keyspace", repair_job.keyspace))
     print(verbose_print_format.format("Table", repair_job.table))
-    print(verbose_print_format.format("Repaired at", repair_job.get_last_repaired_at()))
+    print(verbose_print_format.format("Status", repair_job.status))
     print(verbose_print_format.format("Repaired(%)", repair_job.get_repair_percentage()))
-    print(verbose_print_format.format("Interval", repair_job.get_interval()))
+    print(verbose_print_format.format("Repaired at", repair_job.get_last_repaired_at()))
+    print(verbose_print_format.format("Next repair", repair_job.get_next_repair()))
 
     vnode_state_table = list()
     vnode_state_table.append(["Start token", "End token", "Replicas", "Repaired at", "Repaired"])
@@ -66,16 +67,24 @@ def convert_repair_job(repair_job):
     entry = list()
     entry.append(repair_job.keyspace)
     entry.append(repair_job.table)
-    entry.append(repair_job.get_interval())
-    entry.append(repair_job.get_last_repaired_at())
+    entry.append(repair_job.status)
     entry.append(repair_job.get_repair_percentage())
+    entry.append(repair_job.get_last_repaired_at())
+    entry.append(repair_job.get_next_repair())
 
     return entry
 
+def print_summary(repair_jobs):
+    status_list = map(lambda job: job.status, repair_jobs)
+    summary_format = "Summary: {} completed, {} in queue, {} warning, {} error"
+    print(summary_format.format(status_list.count('COMPLETED'),
+                                status_list.count('IN_QUEUE'),
+                                status_list.count('WARNING'),
+                                status_list.count('ERROR')))
 
 def print_repair_jobs(repair_jobs, max_lines):
     repair_jobs_table = list()
-    repair_jobs_table.append(["Keyspace", "Table", "Interval", "Repaired at", "Repaired(%)"])
+    repair_jobs_table.append(["Keyspace", "Table", "Status", "Repaired(%)", "Repaired at", "Next repair"])
     sorted_repair_jobs = sorted(repair_jobs, key=lambda job: job.last_repaired_at_in_ms)
 
     if max_lines > -1:
@@ -84,6 +93,8 @@ def print_repair_jobs(repair_jobs, max_lines):
     for repair_job in sorted_repair_jobs:
         repair_jobs_table.append(convert_repair_job(repair_job))
     table_formatter.format_table(repair_jobs_table)
+
+    print_summary(repair_jobs)
 
 
 def parse_arguments():

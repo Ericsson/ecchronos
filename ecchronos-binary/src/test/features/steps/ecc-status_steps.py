@@ -26,7 +26,7 @@ def run_ecc_status(context, params):
 
 
 def table_row(keyspace, table):
-    return "\\| {0} \\| {1} \\| 7 day\\(s\\) 00h 00m 00s \\| .* \\| \\d+[.]\\d+ \\|".format(keyspace, table)
+    return "\\| {0} \\| {1} \\| (COMPLETED|IN_QUEUE|WARNING|ERROR) \\| \\d+[.]\\d+ \\| .* \\| .* \\|".format(keyspace, table)
 
 
 def token_row():
@@ -50,7 +50,8 @@ def step_list_tables(context):
 
     output_data = context.out.lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
-    context.rows = output_data[3:]
+    context.rows = output_data[3:-1]
+    context.summary = output_data[-1:]
     pass
 
 
@@ -60,7 +61,8 @@ def step_list_tables_with_limit(context, limit):
 
     output_data = context.out.lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
-    context.rows = output_data[3:]
+    context.rows = output_data[3:-1]
+    context.summary = output_data[-1:]
     pass
 
 
@@ -70,7 +72,8 @@ def step_list_tables_for_keyspace(context, keyspace, limit):
 
     output_data = context.out.lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
-    context.rows = output_data[3:]
+    context.rows = output_data[3:-1]
+    context.summary = output_data[-1:]
     pass
 
 
@@ -80,7 +83,8 @@ def step_list_tables_for_keyspace(context, keyspace):
 
     output_data = context.out.lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
-    context.rows = output_data[3:]
+    context.rows = output_data[3:-1]
+    context.summary = output_data[-1:]
     pass
 
 
@@ -90,9 +94,9 @@ def step_show_table_with_limit(context, keyspace, table, limit):
 
     output_data = context.out.lstrip().rstrip().split('\n')
 
-    context.table_info = output_data[0:5]
-    context.header = output_data[5:8]
-    context.rows = output_data[8:]
+    context.table_info = output_data[0:6]
+    context.header = output_data[6:9]
+    context.rows = output_data[9:]
     pass
 
 
@@ -102,9 +106,9 @@ def step_show_table(context, keyspace, table):
 
     output_data = context.out.lstrip().rstrip().split('\n')
 
-    context.table_info = output_data[0:5]
-    context.header = output_data[5:8]
-    context.rows = output_data[8:]
+    context.table_info = output_data[0:6]
+    context.header = output_data[6:9]
+    context.rows = output_data[9:]
     pass
 
 
@@ -117,7 +121,7 @@ def step_validate_list_tables_header(context):
     assert header[0] == len(header[0]) * header[0][0], header[0]  # -----
 
     header[1] = strip_and_collapse(header[1])
-    assert header[1] == "| Keyspace | Table | Interval | Repaired at | Repaired(%) |", header[1]
+    assert header[1] == "| Keyspace | Table | Status | Repaired(%) | Repaired at | Next repair |", header[1]
 
     assert header[2] == len(header[2]) * header[2][0], header[1]  # -----
     pass
@@ -164,14 +168,25 @@ def step_validate_list_tables_contains_rows(context, limit):
     pass
 
 
+@then(u'the output should contain summary')
+def step_validate_list_tables_contains_rows(context):
+    assert len(context.summary) == 1, "Expecting only 1 row summary"
+
+    summary = context.summary[0]
+    assert re.match("Summary: \d+ completed, \d+ in queue, \d+ warning, \d+ error", summary) , "Faulty summary '{0}'".format(summary)
+
+    pass
+
+
 @then(u'the expected header should be for {keyspace}.{table}')
 def step_validate_expected_show_table_header(context, keyspace, table):
     table_info = context.table_info
     assert strip_and_collapse(table_info[0]) == "Keyspace : {0}".format(keyspace), "Faulty keyspace '{0}'".format(table_info[0])
     assert strip_and_collapse(table_info[1]) == "Table : {0}".format(table), "Faulty table '{0}'".format(table_info[1])
-    assert re.match("Repaired at : .*", strip_and_collapse(table_info[2])), "Faulty repaired at '{0}'".format(table_info[2])
+    assert re.match("Status : (COMPLETED|IN_QUEUE|WARNING|ERROR)", strip_and_collapse(table_info[2])), "Faulty status '{0}'".format(table_info[2])
     assert re.match("Repaired\\(%\\) : \\d+[.]\\d+", strip_and_collapse(table_info[3])), "Faulty repaired(%) '{0}'".format(table_info[3])
-    assert re.match("Interval : 7 day\\(s\\) 00h 00m 00s", strip_and_collapse(table_info[4])), "Faulty interval '{0}'".format(table_info[4])
+    assert re.match("Repaired at : .*", strip_and_collapse(table_info[4])), "Faulty repaired at '{0}'".format(table_info[4])
+    assert re.match("Next repair : .*", strip_and_collapse(table_info[5])), "Faulty next repair '{0}'".format(table_info[5])
 
     pass
 

@@ -19,6 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.CompleteRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob.Status;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.VirtualNodeState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TestUtils;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
@@ -68,9 +69,9 @@ public class TestRepairSchedulerRESTImpl
     public void testListEntry()
     {
         long expectedLastRepairedAt = 234;
-        long expectedRepairInterval = 123;
+        long repairInterval = 123;
 
-        RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", expectedLastRepairedAt, expectedRepairInterval);
+        RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", expectedLastRepairedAt, repairInterval);
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
 
@@ -86,7 +87,8 @@ public class TestRepairSchedulerRESTImpl
         assertThat(scheduledRepairJob.table).isEqualTo("tb");
         assertThat(scheduledRepairJob.lastRepairedAtInMs).isEqualTo(expectedLastRepairedAt);
         assertThat(scheduledRepairJob.repairedRatio).isEqualTo(0.0d);
-        assertThat(scheduledRepairJob.repairIntervalInMs).isEqualTo(expectedRepairInterval);
+        assertThat(scheduledRepairJob.nextRepairInMs).isEqualTo(expectedLastRepairedAt + repairInterval);
+        assertThat(scheduledRepairJob.status).isEqualTo(Status.ERROR);
     }
 
     @Test
@@ -122,9 +124,9 @@ public class TestRepairSchedulerRESTImpl
     public void testListKeyspaceEntry()
     {
         long expectedLastRepairedAt = 234;
-        long expectedRepairInterval = 123;
+        long repairInterval = 123;
 
-        RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", expectedLastRepairedAt, expectedRepairInterval);
+        RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", expectedLastRepairedAt, repairInterval);
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
 
@@ -140,7 +142,8 @@ public class TestRepairSchedulerRESTImpl
         assertThat(scheduledRepairJob.table).isEqualTo("tb");
         assertThat(scheduledRepairJob.lastRepairedAtInMs).isEqualTo(expectedLastRepairedAt);
         assertThat(scheduledRepairJob.repairedRatio).isEqualTo(0.0d);
-        assertThat(scheduledRepairJob.repairIntervalInMs).isEqualTo(expectedRepairInterval);
+        assertThat(scheduledRepairJob.nextRepairInMs).isEqualTo(expectedLastRepairedAt + repairInterval);
+        assertThat(scheduledRepairJob.status).isEqualTo(Status.ERROR);
     }
 
     @Test
@@ -159,12 +162,12 @@ public class TestRepairSchedulerRESTImpl
     public void testGetTableEntry() throws UnknownHostException
     {
         long expectedLastRepairedAt = 234;
-        long expectedRepairInterval = 123;
+        long repairInterval = 123;
         LongTokenRange longTokenRange = new LongTokenRange(2, 3);
         Host host = mock(Host.class);
         when(host.getBroadcastAddress()).thenReturn(InetAddress.getLocalHost());
 
-        RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", expectedLastRepairedAt, expectedRepairInterval,
+        RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", expectedLastRepairedAt, repairInterval,
                 longTokenRange, ImmutableSet.of(host));
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
@@ -177,7 +180,8 @@ public class TestRepairSchedulerRESTImpl
         assertThat(response.table).isEqualTo("tb");
         assertThat(response.lastRepairedAtInMs).isEqualTo(expectedLastRepairedAt);
         assertThat(response.repairedRatio).isEqualTo(0.0d);
-        assertThat(response.repairIntervalInMs).isEqualTo(expectedRepairInterval);
+        assertThat(response.nextRepairInMs).isEqualTo(expectedLastRepairedAt + repairInterval);
+        assertThat(response.status).isEqualTo(Status.ERROR);
         assertThat(response.virtualNodeStates).hasSize(1);
 
         VirtualNodeState vnodeState = response.virtualNodeStates.get(0);

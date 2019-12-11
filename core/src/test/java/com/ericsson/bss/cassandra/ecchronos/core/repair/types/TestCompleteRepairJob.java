@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TestUtils;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob.Status;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
@@ -43,9 +44,10 @@ public class TestCompleteRepairJob
 
         assertThat(completeRepairJob.keyspace).isEqualTo("ks");
         assertThat(completeRepairJob.table).isEqualTo("tb");
-        assertThat(completeRepairJob.repairIntervalInMs).isEqualTo(repairInterval);
         assertThat(completeRepairJob.repairedRatio).isEqualTo(1.0d);
         assertThat(completeRepairJob.lastRepairedAtInMs).isEqualTo(lastRepairedAt);
+        assertThat(completeRepairJob.status).isEqualTo(Status.COMPLETED);
+        assertThat(completeRepairJob.nextRepairInMs).isEqualTo(lastRepairedAt + repairInterval);
 
         assertVnodes(completeRepairJob, repairedAfter, vnodeRepairState);
     }
@@ -55,7 +57,7 @@ public class TestCompleteRepairJob
     {
         long repairInterval = TimeUnit.DAYS.toMillis(7);
         long repairedAfter = System.currentTimeMillis() - repairInterval;
-        long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(8);
+        long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(9);
 
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), lastRepairedAt);
 
@@ -65,9 +67,10 @@ public class TestCompleteRepairJob
 
         assertThat(completeRepairJob.keyspace).isEqualTo("ks");
         assertThat(completeRepairJob.table).isEqualTo("tb");
-        assertThat(completeRepairJob.repairIntervalInMs).isEqualTo(repairInterval);
         assertThat(completeRepairJob.repairedRatio).isEqualTo(0.0d);
         assertThat(completeRepairJob.lastRepairedAtInMs).isEqualTo(lastRepairedAt);
+        assertThat(completeRepairJob.status).isEqualTo(Status.WARNING);
+        assertThat(completeRepairJob.nextRepairInMs).isEqualTo(lastRepairedAt + repairInterval);
 
         assertVnodes(completeRepairJob, repairedAfter, vnodeRepairState);
     }
@@ -77,7 +80,7 @@ public class TestCompleteRepairJob
     {
         long repairInterval = TimeUnit.DAYS.toMillis(7);
         long repairedAfter = System.currentTimeMillis() - repairInterval;
-        long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(8);
+        long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(11);
         long lastRepairedAtSecond = System.currentTimeMillis();
 
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), lastRepairedAt);
@@ -89,9 +92,10 @@ public class TestCompleteRepairJob
 
         assertThat(completeRepairJob.keyspace).isEqualTo("ks");
         assertThat(completeRepairJob.table).isEqualTo("tb");
-        assertThat(completeRepairJob.repairIntervalInMs).isEqualTo(repairInterval);
         assertThat(completeRepairJob.repairedRatio).isEqualTo(0.5d);
         assertThat(completeRepairJob.lastRepairedAtInMs).isEqualTo(lastRepairedAt);
+        assertThat(completeRepairJob.status).isEqualTo(Status.ERROR);
+        assertThat(completeRepairJob.nextRepairInMs).isEqualTo(lastRepairedAt + repairInterval);
 
         assertVnodes(completeRepairJob, repairedAfter, vnodeRepairState, vnodeRepairState2);
     }
