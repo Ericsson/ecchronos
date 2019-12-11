@@ -72,8 +72,8 @@ public class RepairConfigCommand implements Action
         table.column("Interval");
         table.column("Parallelism");
         table.column("Unwind ratio");
-        table.column("Error time");
         table.column("Warning time");
+        table.column("Error time");
         return table;
     }
 
@@ -85,8 +85,8 @@ public class RepairConfigCommand implements Action
                 PrintUtils.durationToHumanReadable(config.getRepairIntervalInMs()),
                 config.getRepairParallelism(),
                 PrintUtils.toPercentage(config.getRepairUnwindRatio()),
-                PrintUtils.durationToHumanReadable(config.getRepairErrorTimeInMs()),
-                PrintUtils.durationToHumanReadable(config.getRepairWarningTimeInMs())
-        );
+                PrintUtils.durationToHumanReadable(config.getRepairWarningTimeInMs()),
+                PrintUtils.durationToHumanReadable(config.getRepairErrorTimeInMs())
+                );
     }
 }
