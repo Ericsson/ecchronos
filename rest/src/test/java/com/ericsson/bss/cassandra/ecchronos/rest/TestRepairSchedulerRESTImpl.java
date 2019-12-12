@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -68,10 +69,10 @@ public class TestRepairSchedulerRESTImpl
     @Test
     public void testListEntry()
     {
-        long expectedLastRepairedAt = 234;
-        long repairInterval = 123;
+        long repairInterval = TimeUnit.DAYS.toMillis(7);
+        long lastRepairedAt = System.currentTimeMillis();
 
-        RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", expectedLastRepairedAt, repairInterval);
+        RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", lastRepairedAt, repairInterval);
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
 
@@ -85,10 +86,10 @@ public class TestRepairSchedulerRESTImpl
 
         assertThat(scheduledRepairJob.keyspace).isEqualTo("ks");
         assertThat(scheduledRepairJob.table).isEqualTo("tb");
-        assertThat(scheduledRepairJob.lastRepairedAtInMs).isEqualTo(expectedLastRepairedAt);
-        assertThat(scheduledRepairJob.repairedRatio).isEqualTo(0.0d);
-        assertThat(scheduledRepairJob.nextRepairInMs).isEqualTo(expectedLastRepairedAt + repairInterval);
-        assertThat(scheduledRepairJob.status).isEqualTo(Status.ERROR);
+        assertThat(scheduledRepairJob.lastRepairedAtInMs).isEqualTo(lastRepairedAt);
+        assertThat(scheduledRepairJob.repairedRatio).isEqualTo(1.0d);
+        assertThat(scheduledRepairJob.nextRepairInMs).isEqualTo(lastRepairedAt + repairInterval);
+        assertThat(scheduledRepairJob.status).isEqualTo(Status.COMPLETED);
     }
 
     @Test

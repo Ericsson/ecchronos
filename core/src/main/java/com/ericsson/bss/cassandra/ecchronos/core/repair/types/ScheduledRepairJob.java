@@ -51,13 +51,13 @@ public class ScheduledRepairJob
         this.nextRepairInMs = lastRepairedAtInMs + repairJobView.getRepairConfiguration().getRepairIntervalInMs();
     }
 
-    private double calculateRepaired(RepairJobView repairJobView, long timestamp)
+    private double calculateRepaired(RepairJobView job, long timestamp)
     {
-        long repairInterval = repairJobView.getRepairConfiguration().getRepairIntervalInMs();
-        Collection<VnodeRepairState> states = repairJobView.getRepairStateSnapshot().getVnodeRepairStates().getVnodeRepairStates();
+        long interval = job.getRepairConfiguration().getRepairIntervalInMs();
+        Collection<VnodeRepairState> states = job.getRepairStateSnapshot().getVnodeRepairStates().getVnodeRepairStates();
 
         long nRepaired = states.stream()
-                .filter(isRepaired(timestamp, repairInterval))
+                .filter(isRepaired(timestamp, interval))
                 .count();
 
         return states.isEmpty()
@@ -65,9 +65,9 @@ public class ScheduledRepairJob
                 : (double) nRepaired / states.size();
     }
 
-    private Predicate<VnodeRepairState> isRepaired(long timestamp, long repairInterval)
+    private Predicate<VnodeRepairState> isRepaired(long timestamp, long interval)
     {
-        return state -> timestamp - state.lastRepairedAt() <= repairInterval;
+        return state -> timestamp - state.lastRepairedAt() <= interval;
     }
 
     private Status getStatus(RepairJobView job, long timestamp)

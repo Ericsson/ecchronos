@@ -76,7 +76,7 @@ def convert_repair_job(repair_job):
 
 def print_summary(repair_jobs):
     status_list = map(lambda job: job.status, repair_jobs)
-    summary_format = "Summary: {} completed, {} in queue, {} warning, {} error"
+    summary_format = "Summary: {0} completed, {1} in queue, {2} warning, {3} error"
     print(summary_format.format(status_list.count('COMPLETED'),
                                 status_list.count('IN_QUEUE'),
                                 status_list.count('WARNING'),

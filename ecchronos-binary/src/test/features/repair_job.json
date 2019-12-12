@@ -11,7 +11,8 @@
       "type": "string"
     },
     "status": {
-      "type": "string"
+      "type": "string",
+      "description": "The status of the repair with regards to its schedule and last successful repair"
     },
     "repairedRatio": {
       "type": "number",

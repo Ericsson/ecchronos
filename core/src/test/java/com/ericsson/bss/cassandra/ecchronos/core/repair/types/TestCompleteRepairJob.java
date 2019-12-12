@@ -100,6 +100,20 @@ public class TestCompleteRepairJob
         assertVnodes(completeRepairJob, repairedAfter, vnodeRepairState, vnodeRepairState2);
     }
 
+    @Test
+    public void testInQueueStatus()
+    {
+        long repairInterval = TimeUnit.DAYS.toMillis(5);
+        long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(6);
+        RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", lastRepairedAt, repairInterval);
+
+        CompleteRepairJob completeRepairJob = new CompleteRepairJob(repairJobView);
+
+        assertThat(completeRepairJob.lastRepairedAtInMs).isEqualTo(lastRepairedAt);
+        assertThat(completeRepairJob.status).isEqualTo(Status.IN_QUEUE);
+        assertThat(completeRepairJob.nextRepairInMs).isEqualTo(lastRepairedAt + repairInterval);
+    }
+
     private void assertVnodes(CompleteRepairJob completeRepairJob, long repairedAfter, VnodeRepairState... vnodeRepairStates)
     {
         assertThat(completeRepairJob.virtualNodeStates).hasSize(vnodeRepairStates.length);
