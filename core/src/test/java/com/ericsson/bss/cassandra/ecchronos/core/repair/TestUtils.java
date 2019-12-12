@@ -43,6 +43,17 @@ public class TestUtils
         return RepairConfiguration.newBuilder().withRepairInterval(repairIntervalInMs, TimeUnit.MILLISECONDS).build();
     }
 
+    public static RepairConfiguration createRepairConfiguration(long interval, double unwindRatio, int warningTime, int errorTime)
+    {
+        return RepairConfiguration.newBuilder()
+                .withRepairInterval(interval, TimeUnit.MILLISECONDS)
+                .withParallelism(RepairOptions.RepairParallelism.PARALLEL)
+                .withRepairUnwindRatio(unwindRatio)
+                .withRepairWarningTime(warningTime, TimeUnit.MILLISECONDS)
+                .withRepairErrorTime(errorTime, TimeUnit.MILLISECONDS)
+                .build();
+    }
+
     public static RepairJobView createRepairJob(String keyspace, String table, long lastRepairedAt, long repairInterval)
     {
         return createRepairJob(keyspace, table, lastRepairedAt, repairInterval, new LongTokenRange(1, 2), ImmutableSet.of());

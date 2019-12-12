@@ -60,4 +60,10 @@ public class RepairSchedulerRESTComponent implements RepairSchedulerREST
     {
         return myDelegateRESTImpl.listKeyspace(keyspace);
     }
+
+    @Override
+    public String config()
+    {
+        return myDelegateRESTImpl.config();
+    }
 }

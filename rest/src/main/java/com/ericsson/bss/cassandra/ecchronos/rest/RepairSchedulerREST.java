@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.rest;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.CompleteRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -63,4 +64,14 @@ public interface RepairSchedulerREST
     @Path("/list/{keyspace}")
     @Produces(MediaType.APPLICATION_JSON)
     String listKeyspace(@PathParam("keyspace") String keyspace);
+
+    /**
+     * Get a list of the configuration of all repair jobs.
+     *
+     * @return A configuration list of JSON representations of {@link TableRepairConfig}
+     */
+    @GET
+    @Path("/config")
+    @Produces(MediaType.APPLICATION_JSON)
+    String config();
 }

@@ -6,8 +6,9 @@ The REST interface for the repair scheduler is located under the path `<host>/re
 The following sub-paths exists:
 * `/get/<keyspace>/<table>`
 * `/list[/<keyspace>]`
+* `/config`
 
-The interface is only exposing state for scheduled tables.
+The interface is only exposing state and configuration for scheduled tables.
 
 
 ### Show specific table repair status
@@ -22,6 +23,11 @@ When listing table repair jobs the field will not be used.*
 
 When performing GET on `<host>/repair-scheduler/v1/list` a [JSON list of RepairJobs](../ecchronos-binary/src/test/features/repair_job_list.json) for all keyspaces will be returned.
 When performing GET on `<host>/repair-scheduler/v1/list/mykeyspace` a JSON list of RepairJobs for that specific keyspace will be returned.
+
+
+### List repair config
+
+When performing GET on `<host>/repair-scheduler/v1/config` a [JSON list of RepairConfig](../ecchronos-binary/src/test/features/repair_config.json) for all tables will be returned.
 
 
 ### Types
@@ -47,3 +53,15 @@ VirtualNodeState:
 | replicas           | list(inet address) | [127.0.0.1, 127.0.0.2]                  |
 | lastRepairedAtInMs | long               | 1553099547852 (2019-03-16T16:32:27.852) |
 | repaired           | boolean            | true                                    |
+
+RepairConfig:
+
+| Key                    | Type       | Example value       | Optional  |
+|------------------------|------------|---------------------|-----------|
+| keyspace               | String     | mykeyspace          | Mandatory |
+| table                  | String     | mytable             | Mandatory |
+| repairIntervalInMs     | long       | 432000000 (5 days)  | Mandatory |
+| repairParallelism      | String     | PARALLEL            | Mandatory |
+| repairUnwindRatio      | double     | 0.5 (50%)           | Mandatory |
+| repairWarningTimeInMs  | long       | 604800000 (7 days)  | Mandatory |
+| repairErrorTimeInMs    | long       | 864000000 (10 days) | Mandatory |

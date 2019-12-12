@@ -71,7 +71,7 @@ echo "Starting behave"
 
 cd "$TEMP_DIR"
 
-behave --define ecc-status="$BASE_DIR"/bin/ecc-status
+behave --define ecc-status="$BASE_DIR"/bin/ecc-status --define ecc-config="$BASE_DIR"/bin/ecc-config
 RETURN=$?
 
 if [ -f $PIDFILE ]; then
