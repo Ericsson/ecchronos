@@ -10,16 +10,21 @@
     "table": {
       "type": "string"
     },
-    "repairIntervalInMs": {
-      "type": "integer"
+    "status": {
+      "type": "string",
+      "description": "The status of the repair with regards to its schedule and last successful repair"
+    },
+    "repairedRatio": {
+      "type": "number",
+      "description": "Ratio of how much of the table that has been repaired"
     },
     "lastRepairedAtInMs": {
       "type": "integer",
       "description": "When the table was last repaired in millis since epoch"
     },
-    "repairedRatio": {
-      "type": "number",
-      "description": "Ratio of how much of the table that has been repaired"
+    "nextRepairInMs": {
+      "type": "integer",
+      "description": "When the table is scheduled for the next repair in millis since epoch"
     },
     "virtualNodeStates": {
       "description": "The state of each individual virtual node",
@@ -62,9 +67,10 @@
   "required": [
     "keyspace",
     "table",
-    "repairIntervalInMs",
-    "lastRepairedAtInMs",
+    "status",
     "repairedRatio",
+    "lastRepairedAtInMs",
+    "nextRepairInMs",
     "virtualNodeStates"
   ]
 }
