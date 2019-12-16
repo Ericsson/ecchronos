@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,5 +42,11 @@ public class TestRepairResource
         assertThat(repairResource).isEqualTo(equalRepairResource);
         assertThat(repairResource).isNotEqualTo(repairResourceWithDifferentDc);
         assertThat(repairResource).isNotEqualTo(repairResourceWithDifferentResource);
+    }
+
+    @Test
+    public void testEqualsContract()
+    {
+        EqualsVerifier.forClass(RepairResource.class).usingGetClass().verify();
     }
 }

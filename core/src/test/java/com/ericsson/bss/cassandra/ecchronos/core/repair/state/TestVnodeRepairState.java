@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.google.common.collect.ImmutableSet;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -81,5 +82,14 @@ public class TestVnodeRepairState
         VnodeRepairState otherVnodeRepairState = new VnodeRepairState(otherRange, ImmutableSet.of(host1, host2, host3), VnodeRepairState.UNREPAIRED);
 
         assertThat(vnodeRepairState.isSameVnode(otherVnodeRepairState)).isFalse();
+    }
+
+    @Test
+    public void testEqualsContract()
+    {
+        EqualsVerifier.forClass(VnodeRepairState.class)
+                .withPrefabValues(ImmutableSet.class, ImmutableSet.of(1), ImmutableSet.of(2))
+                .usingGetClass()
+                .verify();
     }
 }

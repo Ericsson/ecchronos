@@ -16,7 +16,9 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -76,5 +78,14 @@ public class TestVnodeRepairStates
                 .build();
 
         assertThat(vnodeRepairStates.getVnodeRepairStates()).containsExactly(vnodeRepairState);
+    }
+
+    @Test
+    public void testEqualsContract()
+    {
+        EqualsVerifier.forClass(VnodeRepairStates.class)
+                .withPrefabValues(ImmutableList.class, ImmutableList.of(1), ImmutableList.of(2))
+                .usingGetClass()
+                .verify();
     }
 }
