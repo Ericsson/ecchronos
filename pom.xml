@@ -77,6 +77,7 @@
         <javax.inject.version>1</javax.inject.version>
         <awaitility.version>3.0.0</awaitility.version>
         <jcip.version>1.0</jcip.version>
+        <equalsverifier.version>3.1.10</equalsverifier.version>
 
         <!-- Plugin versions -->
         <org.apache.maven.plugins.maven-compiler-plugin.version>3.8.0</org.apache.maven.plugins.maven-compiler-plugin.version>
@@ -303,6 +304,13 @@
                 <groupId>net.jcip</groupId>
                 <artifactId>jcip-annotations</artifactId>
                 <version>${jcip.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>nl.jqno.equalsverifier</groupId>
+                <artifactId>equalsverifier</artifactId>
+                <version>${equalsverifier.version}</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>

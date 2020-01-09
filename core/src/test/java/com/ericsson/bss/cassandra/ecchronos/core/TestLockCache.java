@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory.DistributedLock;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -108,6 +109,12 @@ public class TestLockCache
 
         DistributedLock expectedLock = doReturnLockOnGetLock();
         assertGetLockRetrievesExpectedLock(expectedLock);
+    }
+
+    @Test
+    public void testEqualsContract()
+    {
+        EqualsVerifier.forClass(LockCache.LockKey.class).usingGetClass().verify();
     }
 
     private void assertGetLockRetrievesExpectedLock(DistributedLock expectedLock) throws LockException

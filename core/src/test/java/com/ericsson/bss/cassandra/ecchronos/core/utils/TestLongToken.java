@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 public class TestLongToken
@@ -49,5 +50,11 @@ public class TestLongToken
         assertThat(token1.compareTo(token2)).isLessThan(0);
         assertThat(token2.compareTo(token1)).isGreaterThan(0);
         assertThat(token1.hashCode()).isNotEqualTo(token2.hashCode());
+    }
+
+    @Test
+    public void testEqualsContract()
+    {
+        EqualsVerifier.forClass(LongToken.class).usingGetClass().verify();
     }
 }

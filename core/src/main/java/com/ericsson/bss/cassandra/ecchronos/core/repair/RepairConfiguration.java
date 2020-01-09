@@ -103,7 +103,7 @@ public class RepairConfiguration
                 myRepairWarningTimeInMs == that.myRepairWarningTimeInMs &&
                 myRepairErrorTimeInMs == that.myRepairErrorTimeInMs &&
                 myRepairParallelism == that.myRepairParallelism &&
-                myRepairUnwindRatio == that.myRepairUnwindRatio;
+                Double.compare(myRepairUnwindRatio, that.myRepairUnwindRatio) == 0;
     }
 
     @Override
