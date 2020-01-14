@@ -69,7 +69,7 @@ public class TimeBasedRunPolicy implements RunPolicy, Closeable
     private static final long DEFAULT_REJECT_TIME = TimeUnit.MINUTES.toMillis(1);
 
     private final LoadingCache<TableReference, TimeRejectionCollection> myTimeRejectionCache = CacheBuilder.newBuilder()
-            .expireAfterWrite(DEFAULT_REJECT_TIME, TimeUnit.MILLISECONDS)
+            .expireAfterWrite(10, TimeUnit.SECONDS)
             .build(new CacheLoader<TableReference, TimeRejectionCollection>()
             {
                 @Override
