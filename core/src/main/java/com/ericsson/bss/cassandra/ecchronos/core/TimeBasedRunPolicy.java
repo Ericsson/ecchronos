@@ -68,24 +68,12 @@ public class TimeBasedRunPolicy implements RunPolicy, Closeable
 
     private static final long DEFAULT_REJECT_TIME = TimeUnit.MINUTES.toMillis(1);
 
-    private final LoadingCache<TableReference, TimeRejectionCollection> myTimeRejectionCache = CacheBuilder.newBuilder()
-            .expireAfterWrite(DEFAULT_REJECT_TIME, TimeUnit.MILLISECONDS)
-            .build(new CacheLoader<TableReference, TimeRejectionCollection>()
-            {
-                @Override
-                public TimeRejectionCollection load(TableReference key)
-                {
-                    Statement decoratedStatement = myStatementDecorator.apply(myGetRejectionsStatement.bind(key.getKeyspace(), key.getTable()));
+    static final long DEFAULT_CACHE_EXPIRE_TIME = TimeUnit.SECONDS.toMillis(10);
 
-                    ResultSet resultSet = mySession.execute(decoratedStatement);
-                    Iterator<Row> iterator = resultSet.iterator();
-                    return new TimeRejectionCollection(iterator);
-                }
-            });
-
-    private final Session mySession;
     private final PreparedStatement myGetRejectionsStatement;
     private final StatementDecorator myStatementDecorator;
+    private final Session mySession;
+    private final LoadingCache<TableReference, TimeRejectionCollection> myTimeRejectionCache;
 
     public TimeBasedRunPolicy(Builder builder)
     {
@@ -96,6 +84,26 @@ public class TimeBasedRunPolicy implements RunPolicy, Closeable
                 .from(builder.myKeyspaceName, TABLE_REJECT_CONFIGURATION)
                 .where(eq("keyspace_name", bindMarker()))
                 .and(eq("table_name", bindMarker())));
+
+        myTimeRejectionCache = createConfigCache(builder.myCacheExpireTime);
+    }
+
+    private LoadingCache<TableReference, TimeRejectionCollection> createConfigCache(long expireAfter)
+    {
+        return CacheBuilder.newBuilder()
+                .expireAfterWrite(expireAfter, TimeUnit.MILLISECONDS)
+                .build(new CacheLoader<TableReference, TimeRejectionCollection>()
+                {
+                    @Override
+                    public TimeRejectionCollection load(TableReference key)
+                    {
+                        Statement decoratedStatement = myStatementDecorator.apply(myGetRejectionsStatement.bind(key.getKeyspace(), key.getTable()));
+
+                        ResultSet resultSet = mySession.execute(decoratedStatement);
+                        Iterator<Row> iterator = resultSet.iterator();
+                        return new TimeRejectionCollection(iterator);
+                    }
+                });
     }
 
     @Override
@@ -130,6 +138,7 @@ public class TimeBasedRunPolicy implements RunPolicy, Closeable
         private Session mySession;
         private StatementDecorator myStatementDecorator;
         private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
+        private long myCacheExpireTime = DEFAULT_CACHE_EXPIRE_TIME;
 
         public Builder withSession(Session session)
         {
@@ -146,6 +155,13 @@ public class TimeBasedRunPolicy implements RunPolicy, Closeable
         public Builder withKeyspaceName(String keyspaceName)
         {
             myKeyspaceName = keyspaceName;
+            return this;
+        }
+
+        @VisibleForTesting
+        Builder withCacheExpireTime(long expireTime)
+        {
+            myCacheExpireTime = expireTime;
             return this;
         }
 

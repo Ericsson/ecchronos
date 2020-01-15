@@ -1,5 +1,9 @@
 # Changes
 
+## Version 1.0.6
+
+* Reduce cache refresh time in TimeBasedRunPolicy to quicker react to configuration changes
+
 ## Version 1.0.5
 
 * Fix slow query of repair_history at start-up #86
