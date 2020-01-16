@@ -6,7 +6,7 @@ The REST interface for the repair scheduler is located under the path `<host>/re
 The following sub-paths exists:
 * `/get/<keyspace>/<table>`
 * `/list[/<keyspace>]`
-* `/config`
+* `/config[/<keyspace>]`
 
 The interface is only exposing state and configuration for scheduled tables.
 
@@ -27,7 +27,8 @@ When performing GET on `<host>/repair-scheduler/v1/list/mykeyspace` a JSON list 
 
 ### List repair config
 
-When performing GET on `<host>/repair-scheduler/v1/config` a [JSON list of RepairConfig](../ecchronos-binary/src/test/features/repair_config.json) for all tables will be returned.
+When performing GET on `<host>/repair-scheduler/v1/config` a [JSON list of RepairConfig](../ecchronos-binary/src/test/features/repair_config.json) for all keyspaces will be returned.
+When performing GET on `<host>/repair-scheduler/v1/config/mykeyspace` a JSON list of RepairConfig for that specific keyspace will be returned.
 
 
 ### Types

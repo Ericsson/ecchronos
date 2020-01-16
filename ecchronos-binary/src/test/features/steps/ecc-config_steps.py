@@ -51,6 +51,16 @@ def step_list_tables(context):
     pass
 
 
+@when(u'we list config for keyspace {keyspace}')
+def step_list_tables_for_keyspace(context, keyspace):
+    run_ecc_config(context, [keyspace])
+
+    output_data = context.out.lstrip().rstrip().split('\n')
+    context.header = output_data[0:3]
+    context.rows = output_data[3:]
+    pass
+
+
 @then(u'the config output should contain a valid header')
 def step_validate_list_tables_header(context):
     header = context.header

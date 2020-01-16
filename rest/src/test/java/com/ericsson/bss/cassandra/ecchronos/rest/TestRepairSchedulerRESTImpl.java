@@ -234,4 +234,56 @@ public class TestRepairSchedulerRESTImpl
         assertThat(tableRepairConfig.repairWarningTimeInMs).isEqualTo(33);
         assertThat(tableRepairConfig.repairErrorTimeInMs).isEqualTo(44);
     }
+
+    @Test
+    public void testConfigKeyspaceEmpty()
+    {
+        when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(new ArrayList<>());
+
+        RepairSchedulerREST repairSchedulerService = new RepairSchedulerRESTImpl(myRepairScheduler);
+
+        List<ScheduledRepairJob> response = GSON.fromJson(repairSchedulerService.configKeyspace(""), tableRepairConfigListType);
+
+        assertThat(response).isEmpty();
+    }
+
+    @Test
+    public void testConfigKeyspaceNonExisting()
+    {
+        RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
+        RepairJobView repairJobView = new RepairJobView(new TableReference("ks", "tbl"), repairConfig, null);
+
+        when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
+
+        RepairSchedulerREST repairSchedulerService = new RepairSchedulerRESTImpl(myRepairScheduler);
+
+        List<TableRepairConfig> response = GSON.fromJson(repairSchedulerService.configKeyspace("nonexistingkeyspace"), tableRepairConfigListType);
+
+        assertThat(response).isEmpty();
+    }
+
+    @Test
+    public void testConfigKeyspaceEntry()
+    {
+        RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
+        RepairJobView repairJobView = new RepairJobView(new TableReference("ks", "tbl"), repairConfig, null);
+
+        when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
+
+        RepairSchedulerREST repairSchedulerService = new RepairSchedulerRESTImpl(myRepairScheduler);
+
+        List<TableRepairConfig> response = GSON.fromJson(repairSchedulerService.configKeyspace("ks"), tableRepairConfigListType);
+
+        assertThat(response).hasSize(1);
+
+        TableRepairConfig tableRepairConfig = response.get(0);
+
+        assertThat(tableRepairConfig.keyspace).isEqualTo("ks");
+        assertThat(tableRepairConfig.table).isEqualTo("tbl");
+        assertThat(tableRepairConfig.repairIntervalInMs).isEqualTo(11);
+        assertThat(tableRepairConfig.repairParallelism).isEqualTo(RepairOptions.RepairParallelism.PARALLEL);
+        assertThat(tableRepairConfig.repairUnwindRatio).isEqualTo(2.2);
+        assertThat(tableRepairConfig.repairWarningTimeInMs).isEqualTo(33);
+        assertThat(tableRepairConfig.repairErrorTimeInMs).isEqualTo(44);
+    }
 }

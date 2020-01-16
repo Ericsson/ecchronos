@@ -53,6 +53,8 @@ def print_table_config(configData):
 
 def parse_arguments():
     parser = ArgumentParser(description='Show repair configuration')
+    parser.add_argument('keyspace', nargs='?',
+                        help='show config for a specific keyspace')
     parser.add_argument('-u', '--url', type=str,
                         help='The host to connect to with the format (http://<host>:port)',
                         default=None)
@@ -63,7 +65,7 @@ def main():
     arguments = parse_arguments()
     request = rest.RepairConfigRequest(base_url=arguments.url)
 
-    result = request.list()
+    result = request.list(keyspace=arguments.keyspace)
     if result.is_successful():
         print_table_config(result.data)
     else:

@@ -74,4 +74,15 @@ public interface RepairSchedulerREST
     @Path("/config")
     @Produces(MediaType.APPLICATION_JSON)
     String config();
+
+    /**
+     * Get a list of the configuration of all repair jobs for a specific keyspace.
+     *
+     * @param keyspace The keyspace
+     * @return A configuration list of JSON representations of {@link TableRepairConfig}
+     */
+    @GET
+    @Path("/config/{keyspace}")
+    @Produces(MediaType.APPLICATION_JSON)
+    String configKeyspace(@PathParam("keyspace") String keyspace);
 }

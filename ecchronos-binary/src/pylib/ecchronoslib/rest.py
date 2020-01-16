@@ -120,8 +120,11 @@ class RepairConfigRequest(RestRequest):
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
 
-    def list(self):
+    def list(self, keyspace=None):
         request_url = RepairConfigRequest.repair_scheduler_list_url
+        if keyspace is not None:
+            request_url = "{0}/{1}".format(request_url, keyspace)
+
         result = self.request(request_url)
         if result.is_successful():
             result = result.transform_with_data(new_data=[TableConfig(x) for x in result.data])

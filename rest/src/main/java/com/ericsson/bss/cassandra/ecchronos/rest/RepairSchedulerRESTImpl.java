@@ -92,11 +92,25 @@ public class RepairSchedulerRESTImpl implements RepairSchedulerREST
     @Override
     public String config()
     {
-        List<TableRepairConfig> configurations = myRepairScheduler.getCurrentRepairJobs()
-                .stream()
-                .map(TableRepairConfig::new)
-                .collect(Collectors.toList());
+        List<TableRepairConfig> configurations = getTableRepairConfigs(job -> true);
 
         return GSON.toJson(configurations);
+    }
+
+    @Override
+    public String configKeyspace(String keyspace)
+    {
+        List<TableRepairConfig> configurations = getTableRepairConfigs(job -> keyspace.equals(job.getTableReference().getKeyspace()));
+
+        return GSON.toJson(configurations);
+    }
+
+    private List<TableRepairConfig> getTableRepairConfigs(Predicate<RepairJobView> filter)
+    {
+        return myRepairScheduler.getCurrentRepairJobs()
+                .stream()
+                .filter(filter)
+                .map(TableRepairConfig::new)
+                .collect(Collectors.toList());
     }
 }
