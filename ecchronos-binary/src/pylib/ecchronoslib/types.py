@@ -77,7 +77,7 @@ class TableConfig:
         self.table = data["table"] if "table" in data else "<UNKNOWN>"
         self.repair_interval_in_ms = int(data["repairIntervalInMs"] if "repairIntervalInMs" in data else 0)
         self.repair_parallelism = data["repairParallelism"] if "repairParallelism" in data else "<UNKNOWN>"
-        self.repaired_unwind_ratio = float(data["repairUnwindRatio"] if "repairUnwindRatio" in data else 0)
+        self.repair_unwind_ratio = float(data["repairUnwindRatio"] if "repairUnwindRatio" in data else 0)
         self.repair_warning_time_in_ms = int(data["repairWarningTimeInMs"] if "repairWarningTimeInMs" in data else 0)
         self.repair_error_time_in_ms = int(data["repairErrorTimeInMs"] if "repairErrorTimeInMs" in data else 0)
 

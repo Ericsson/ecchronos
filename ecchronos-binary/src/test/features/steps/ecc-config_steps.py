@@ -30,10 +30,6 @@ def table_row(keyspace, table):
     return "\\| {0} \\| {1} \\| {dur} \\| PARALLEL | \\d+[.]\\d+ \\| {dur} \\| {dur} \\|".format(keyspace, table, dur=duration)
 
 
-def token_row():
-    return "\\| [-]?\\d+ \\| [-]?\\d+ \\| .* \\| .* \\| (True|False) \\|"
-
-
 def strip_and_collapse(line):
     return re.sub(' +', ' ', line.rstrip().lstrip())
 
@@ -66,7 +62,7 @@ def step_validate_list_tables_header(context):
     header[1] = strip_and_collapse(header[1])
     assert header[1] == "| Keyspace | Table | Interval | Parallelism | Unwind ratio | Warning time | Error time |", header[1]
 
-    assert header[2] == len(header[2]) * header[2][0], header[1]  # -----
+    assert header[2] == len(header[2]) * header[2][0], header[2]  # -----
     pass
 
 

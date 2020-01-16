@@ -34,7 +34,7 @@ def convert_config(config):
     entry.append(config.table)
     entry.append(config.get_repair_interval())
     entry.append(config.repair_parallelism)
-    entry.append(config.repaired_unwind_ratio)
+    entry.append(config.repair_unwind_ratio)
     entry.append(config.get_repair_warning_time())
     entry.append(config.get_repair_error_time())
 
