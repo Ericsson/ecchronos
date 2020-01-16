@@ -27,6 +27,7 @@
 * Trigger table repairs more often - Issue #72
 * Reduce error logs to warn for some lock related failures
 * Fix slow query of repair_history at start-up #86
+* Reduce cache refresh time in TimeBasedRunPolicy to quicker react to configuration changes
 
 ## Version 1.0.0
 

@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.google.common.collect.Sets;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 import java.net.InetAddress;
@@ -86,5 +87,11 @@ public class TestRepairEntry
         RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(0, 1), 6, Sets.newHashSet(InetAddress.getLocalHost()), "FAILED");
 
         assertThat(repairEntry).isNotEqualTo(repairEntry2);
+    }
+
+    @Test
+    public void testEqualsContract()
+    {
+        EqualsVerifier.forClass(RepairEntry.class).usingGetClass().verify();
     }
 }
