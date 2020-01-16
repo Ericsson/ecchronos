@@ -1,5 +1,11 @@
 # Changes
 
+## Version 1.1.1
+
+### Merged from 1.0
+
+* Reduce cache refresh time in TimeBasedRunPolicy to quicker react to configuration changes
+
 ## Version 1.1.0
 
 * Add Karaf commands that exposes repair status

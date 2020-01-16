@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -77,6 +78,7 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
                 .withSession(getNativeConnectionProvider().getSession())
                 .withStatementDecorator(s -> s)
                 .withKeyspaceName(myKeyspaceName)
+                .withCacheExpireTime(TimeUnit.SECONDS.toMillis(1))
                 .build();
         insertRejectStatement = mySession.prepare(String.format("INSERT INTO %s.%s (keyspace_name, table_name, start_hour, start_minute, end_hour, end_minute) VALUES (?,?,?,?,?,?)", myKeyspaceName, TABLE_REJECT_CONFIGURATION));
     }
@@ -250,6 +252,17 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
         mySession.execute(String.format("DELETE FROM %s.%s WHERE keyspace_name = '*' AND table_name = '*'", myKeyspaceName, TABLE_REJECT_CONFIGURATION));
 
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(DEFAULT_REJECT_TIME);
+
+        // Cache expires after 1 sec
+        await().pollInterval(500, TimeUnit.MILLISECONDS)
+                .atMost(2, TimeUnit.SECONDS)
+                .until(() -> myRunPolicy.validate(myRepairJobMock) == -1L);
+    }
+
+    @Test
+    public void testDefaultCacheExpireTime()
+    {
+        assertThat(TimeBasedRunPolicy.DEFAULT_CACHE_EXPIRE_TIME).isEqualTo(TimeUnit.SECONDS.toMillis(10));
     }
 
     @Test

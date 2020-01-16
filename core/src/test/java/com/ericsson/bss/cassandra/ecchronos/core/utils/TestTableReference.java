@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,5 +61,11 @@ public class TestTableReference
 
         assertThat(tableReference1).isNotEqualTo(tableReference2);
         assertThat(tableReference1.hashCode()).isNotEqualTo(tableReference2.hashCode());
+    }
+
+    @Test
+    public void testEqualsContract()
+    {
+        EqualsVerifier.forClass(TableReference.class).usingGetClass().verify();
     }
 }

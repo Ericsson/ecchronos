@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 public class TestLongTokenRange
@@ -37,5 +38,11 @@ public class TestLongTokenRange
         LongTokenRange range2 = new LongTokenRange(2, 3);
 
         assertThat(range1).isNotEqualTo(range2);
+    }
+
+    @Test
+    public void testEqualsContract()
+    {
+        EqualsVerifier.forClass(LongTokenRange.class).usingGetClass().verify();
     }
 }
