@@ -20,7 +20,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-        <version>1.0.6</version>
+        <version>1.0.7-SNAPSHOT</version>
     </parent>
     <artifactId>osgi-integration</artifactId>
 
