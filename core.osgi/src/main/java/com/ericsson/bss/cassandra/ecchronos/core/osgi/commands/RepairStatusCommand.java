@@ -15,20 +15,15 @@
 package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
 import java.io.PrintStream;
-import java.time.Clock;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
-import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetricsProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.google.common.annotations.VisibleForTesting;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob.Status;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Command;
 import org.apache.karaf.shell.api.action.Option;
@@ -41,103 +36,54 @@ import org.apache.karaf.shell.support.table.ShellTable;
 @Command(scope = "repair", name = "status", description = "Give the current repair status")
 public class RepairStatusCommand implements Action
 {
-    @Option(name = "-l", aliases = "--limit", description = "Number of entries to display", required = false, multiValued = false)
+    @Option(name = "-l", aliases = "--limit", description = "Number of entries to display")
     int limit = Integer.MAX_VALUE;
 
-    @Option(name = "-s", aliases = "--sort-by", description = "Sort output based on TABLE_NAME/STATUS/REPAIRED_RATIO/REPAIRED_AT/NEXT_REPAIR", required = false, multiValued = false)
+    @Option(name = "-s", aliases = "--sort-by", description = "Sort output based on TABLE_NAME/STATUS/REPAIRED_RATIO/REPAIRED_AT/NEXT_REPAIR")
     SortBy sortBy = SortBy.TABLE_NAME;
 
-    @Option(name = "-r", aliases = "--reverse", description = "Reverse the sort order", required = false, multiValued = false)
+    @Option(name = "-r", aliases = "--reverse", description = "Reverse the sort order")
     boolean reverse = false;
 
-    @Option(name = "-a", aliases = "--all", description = "Show status for all tables (including complete status)", required = false, multiValued = false)
+    @Option(name = "-a", aliases = "--all", description = "Show status for all tables (including complete status)")
     boolean showAll = false;
 
-    @Option(name = "--summary", description = "Show summary only", required = false, multiValued = false)
+    @Option(name = "--summary", description = "Show summary only")
     boolean summaryOnly = false;
 
-    @Option(name = "--no-format", description = "Disable output formatting of table and colors", required = false, multiValued = false)
+    @Option(name = "--no-format", description = "Disable output formatting of table and colors")
     boolean noFormat = false;
 
     @Reference
     private RepairScheduler myRepairScheduler;
 
-    @Reference
-    private TableRepairMetricsProvider myTableRepairMetrics;
-
-    private Clock myClock = Clock.systemDefaultZone();
-
-    public RepairStatusCommand()
-    {
-    }
-
-    @VisibleForTesting
-    RepairStatusCommand(RepairScheduler repairScheduler, TableRepairMetricsProvider tableRepairMetrics, Clock clock)
-    {
-        myRepairScheduler = repairScheduler;
-        myTableRepairMetrics = tableRepairMetrics;
-        myClock = clock;
-    }
-
     @Override
     public Object execute() throws Exception
     {
-        List<OutputData> data = getOutputData();
-        printTable(System.out, data);
-        printSummary(System.out, data);
+        List<ScheduledRepairJob> jobs = getScheduledRepairJobs();
+        printTable(System.out, jobs);
+        printSummary(System.out, jobs);
         return null;
     }
 
-    List<OutputData> getOutputData()
+    List<ScheduledRepairJob> getScheduledRepairJobs()
     {
         return myRepairScheduler.getCurrentRepairJobs()
                     .stream()
-                    .map(this::toOutputData)
+                    .map(ScheduledRepairJob::new)
                     .collect(Collectors.toList());
     }
 
-    private OutputData toOutputData(RepairJobView job)
-    {
-        TableReference table = job.getTableReference();
-        Status status = getStatus(job);
-        Optional<Double> repairRatio = myTableRepairMetrics.getRepairRatio(table);
-        long repairedAt = job.getRepairStateSnapshot().lastRepairedAt();
-        long nextRepair = repairedAt + job.getRepairConfiguration().getRepairIntervalInMs();
-
-        return new OutputData(table, status, repairRatio.orElse(0.0), repairedAt, nextRepair);
-    }
-
-    private Status getStatus(RepairJobView job)
-    {
-        long repairedAt = job.getRepairStateSnapshot().lastRepairedAt();
-        long msSinceLastRepair = myClock.millis() - repairedAt;
-        RepairConfiguration config = job.getRepairConfiguration();
-
-        if (msSinceLastRepair >= config.getRepairErrorTimeInMs())
-        {
-            return Status.ERROR;
-        }
-        if (msSinceLastRepair >= config.getRepairWarningTimeInMs())
-        {
-            return Status.WARNING;
-        }
-        if (msSinceLastRepair >= config.getRepairIntervalInMs())
-        {
-            return Status.IN_QUEUE;
-        }
-        return Status.COMPLETED;
-    }
-
-    void printTable(PrintStream out, List<OutputData> data)
+    void printTable(PrintStream out, List<ScheduledRepairJob> jobs)
     {
         if (!summaryOnly)
         {
             ShellTable table = createShellTable();
-            data.stream()
-                    .filter(this::filterOutput)
-                    .sorted(getOutputComparator())
+            jobs.stream()
+                    .filter(this::filterJob)
+                    .sorted(getJobComparator())
                     .limit(limit)
-                    .forEach(outputData -> table.addRow().addContent(outputData.toRowContent()));
+                    .forEach(job -> table.addRow().addContent(toRowContent(job)));
             table.print(out, !noFormat);
         }
     }
@@ -153,31 +99,31 @@ public class RepairStatusCommand implements Action
         return table;
     }
 
-    private boolean filterOutput(OutputData data)
+    private boolean filterJob(ScheduledRepairJob job)
     {
-        return showAll || data.status != Status.COMPLETED;
+        return showAll || job.status != Status.COMPLETED;
     }
 
-    Comparator<OutputData> getOutputComparator()
+    Comparator<ScheduledRepairJob> getJobComparator()
     {
-        Comparator<OutputData> comparator;
+        Comparator<ScheduledRepairJob> comparator;
         switch (sortBy)
         {
             case STATUS:
-                comparator = Comparator.comparing(OutputData::getStatus);
+                comparator = Comparator.comparing(job -> job.status);
                 break;
             case REPAIRED_RATIO:
-                comparator = Comparator.comparing(OutputData::getRatio);
+                comparator = Comparator.comparing(job -> job.repairedRatio);
                 break;
             case REPAIRED_AT:
-                comparator = Comparator.comparing(OutputData::getRepairedAt);
+                comparator = Comparator.comparing(job -> job.lastRepairedAtInMs);
                 break;
             case NEXT_REPAIR:
-                comparator = Comparator.comparing(OutputData::getNextRepair);
+                comparator = Comparator.comparing(job -> job.nextRepairInMs);
                 break;
             case TABLE_NAME:
             default:
-                comparator = Comparator.comparing(outputData -> outputData.getTable().toString());
+                comparator = Comparator.comparing(job -> getTableReference(job.keyspace, job.table));
                 break;
         }
 
@@ -186,9 +132,24 @@ public class RepairStatusCommand implements Action
                 : comparator;
     }
 
-    void printSummary(PrintStream out, List<OutputData> data)
+    private static String getTableReference(String keyspace, String table)
     {
-        Map<Status, Long> stats = getStatusCount(data);
+        return keyspace + "." + table;
+    }
+
+    List<Object> toRowContent(ScheduledRepairJob job)
+        {
+            return Arrays.asList(
+                    getTableReference(job.keyspace, job.table),
+                    job.status.name(),
+                    PrintUtils.toPercentage(job.repairedRatio),
+                    PrintUtils.epochToHumanReadable(job.lastRepairedAtInMs),
+                    PrintUtils.epochToHumanReadable(job.nextRepairInMs));
+        }
+
+    void printSummary(PrintStream out, List<ScheduledRepairJob> jobs)
+    {
+        Map<Status, Long> stats = getStatusCount(jobs);
 
         StringBuilder sb = new StringBuilder("Summary: ");
         sb.append(stats.getOrDefault(Status.COMPLETED, 0L)).append(" completed, ");
@@ -200,9 +161,9 @@ public class RepairStatusCommand implements Action
         out.println(sb.toString());
     }
 
-    private Map<Status, Long> getStatusCount(List<OutputData> data)
+    private Map<Status, Long> getStatusCount(List<ScheduledRepairJob> jobs)
     {
-        return data.stream().collect(Collectors.groupingBy(outputData -> outputData.status, Collectors.counting()));
+        return jobs.stream().collect(Collectors.groupingBy(job -> job.status, Collectors.counting()));
     }
 
     private String maybeCreateDescription(Long number, String color, String description)
@@ -227,63 +188,5 @@ public class RepairStatusCommand implements Action
     enum SortBy
     {
         TABLE_NAME, STATUS, REPAIRED_RATIO, REPAIRED_AT, NEXT_REPAIR;
-    }
-
-    enum Status
-    {
-        COMPLETED, IN_QUEUE, WARNING, ERROR;
-    }
-
-    static class OutputData
-    {
-        private final TableReference table;
-        private final Status status;
-        private final Double ratio;
-        private final long repairedAt;
-        private final long nextRepair;
-
-        OutputData(TableReference table, Status status, Double ratio, long repairedAt, long nextRepair)
-        {
-            this.table = table;
-            this.status = status;
-            this.ratio = ratio;
-            this.repairedAt = repairedAt;
-            this.nextRepair = nextRepair;
-        }
-
-        TableReference getTable()
-        {
-            return table;
-        }
-
-        Status getStatus()
-        {
-            return status;
-        }
-
-        Double getRatio()
-        {
-            return ratio;
-        }
-
-        long getRepairedAt()
-        {
-            return repairedAt;
-        }
-
-        long getNextRepair()
-        {
-            return nextRepair;
-        }
-
-        List<Object> toRowContent()
-        {
-            return Arrays.asList(
-                    table,
-                    status.name(),
-                    PrintUtils.toPercentage(ratio),
-                    PrintUtils.epochToHumanReadable(repairedAt),
-                    PrintUtils.epochToHumanReadable(nextRepair));
-        }
     }
 }

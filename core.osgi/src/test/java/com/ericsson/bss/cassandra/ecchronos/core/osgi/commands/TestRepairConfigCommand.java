@@ -49,9 +49,9 @@ public class TestRepairConfigCommand
     public void testRepairConfigSortedByTableName()
     {
         // Given
-        RepairJobView job1 = mockRepairJob("ks1.tbl1", time1, 0.1, time2, time3);
-        RepairJobView job2 = mockRepairJob("ks2.tbl1", time2, 0.2, time3, time1);
-        RepairJobView job3 = mockRepairJob("ks1.tbl2", time3, 0.3, time1, time2);
+        RepairJobView job1 = mockRepairJob("ks1.tbl1", time1, 0.1, time3, time2);
+        RepairJobView job2 = mockRepairJob("ks2.tbl1", time2, 0.2, time1, time3);
+        RepairJobView job3 = mockRepairJob("ks1.tbl2", time3, 0.3, time2, time1);
 
         when(schedulerMock.getCurrentRepairJobs()).thenReturn(asList(job1, job2, job3));
 
@@ -62,15 +62,15 @@ public class TestRepairConfigCommand
         command.printConfig(out);
         // Then
         String expected =
-                "Table name │ Interval      │ Parallelism │ Unwind ratio │ Error time    │ Warning time\n" +
+                "Table name │ Interval      │ Parallelism │ Unwind ratio │ Warning time  │ Error time\n" +
                 "───────────┼───────────────┼─────────────┼──────────────┼───────────────┼──────────────\n" +
-                "ks1.tbl1   │ 6h            │ PARALLEL    │ 10%          │ 3d 2h 33m 44s │ 7d\n" +
-                "ks1.tbl2   │ 7d            │ PARALLEL    │ 30%          │ 6h            │ 3d 2h 33m 44s\n" +
-                "ks2.tbl1   │ 3d 2h 33m 44s │ PARALLEL    │ 20%          │ 7d            │ 6h\n";
+                "ks1.tbl1   │ 6h            │ PARALLEL    │ 10%          │ 7d            │ 3d 2h 33m 44s\n" +
+                "ks1.tbl2   │ 7d            │ PARALLEL    │ 30%          │ 3d 2h 33m 44s │ 6h\n" +
+                "ks2.tbl1   │ 3d 2h 33m 44s │ PARALLEL    │ 20%          │ 6h            │ 7d\n";
         assertThat(os.toString()).isEqualTo(expected);
     }
 
-    private static RepairJobView mockRepairJob(String table, long repairInterval, double unwindRatio, long errorTime, long warningTime)
+    private static RepairJobView mockRepairJob(String table, long repairInterval, double unwindRatio, long warningTime, long errorTime)
     {
         TableReference tableReference = createTableRef(table);
 
@@ -78,8 +78,8 @@ public class TestRepairConfigCommand
         when(repairConfiguration.getRepairIntervalInMs()).thenReturn(repairInterval);
         when(repairConfiguration.getRepairParallelism()).thenReturn(RepairOptions.RepairParallelism.PARALLEL);
         when(repairConfiguration.getRepairUnwindRatio()).thenReturn(unwindRatio);
-        when(repairConfiguration.getRepairErrorTimeInMs()).thenReturn(errorTime);
         when(repairConfiguration.getRepairWarningTimeInMs()).thenReturn(warningTime);
+        when(repairConfiguration.getRepairErrorTimeInMs()).thenReturn(errorTime);
 
         return new RepairJobView(tableReference, repairConfiguration, null);
     }

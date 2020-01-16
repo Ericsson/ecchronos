@@ -20,10 +20,11 @@ import java.util.function.Predicate;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * A representation of a scheduled repair job.
- * <p>
+ *
  * Primarily used to to have a type to convert to JSON.
  */
 public class ScheduledRepairJob
@@ -38,6 +39,17 @@ public class ScheduledRepairJob
     public enum Status
     {
         COMPLETED, IN_QUEUE, WARNING, ERROR
+    }
+
+    @VisibleForTesting
+    public ScheduledRepairJob(String keyspace, String table, Status status, double repairedRatio, long lastRepairedAtInMs, long nextRepairInMs)
+    {
+        this.keyspace = keyspace;
+        this.table = table;
+        this.status = status;
+        this.repairedRatio = repairedRatio;
+        this.lastRepairedAtInMs = lastRepairedAtInMs;
+        this.nextRepairInMs = nextRepairInMs;
     }
 
     public ScheduledRepairJob(RepairJobView repairJobView)

@@ -48,18 +48,18 @@ public class RepairTableStatusCommand implements Action
     @Reference
     private RepairScheduler myRepairSchedulerService;
 
-    @Option(name = "-t", aliases = "--table-reference", description = "The table reference in format <keyspace>.<table>", required = true, multiValued = false)
+    @Option(name = "-t", aliases = "--table-reference", description = "The table reference in format <keyspace>.<table>", required = true)
     @Completion(TableReferenceCompleter.class)
     String myTableRef;
 
-    @Option(name = "-s", aliases = "--sort-by", description = "Sort output based on " + SORT_RANGE + "/"  + SORT_REPAIRED_AT, required = false, multiValued = false)
+    @Option(name = "-s", aliases = "--sort-by", description = "Sort output based on " + SORT_RANGE + "/"  + SORT_REPAIRED_AT)
     @Completion(value = StringsCompleter.class, values = {SORT_RANGE, SORT_REPAIRED_AT})
     String mySortBy = SORT_RANGE;
 
-    @Option(name = "-r", aliases = "--reverse", description = "Reverse the sort order", required = false, multiValued = false)
+    @Option(name = "-r", aliases = "--reverse", description = "Reverse the sort order")
     boolean myReverse = false;
 
-    @Option(name = "-l", aliases = "--limit", description = "Number of entries to display", required = false, multiValued = false)
+    @Option(name = "-l", aliases = "--limit", description = "Number of entries to display")
     int myLimit = Integer.MAX_VALUE;
 
     public RepairTableStatusCommand()
