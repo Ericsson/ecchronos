@@ -15,14 +15,18 @@
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
 import com.datastax.driver.core.Host;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.CompleteRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob.Status;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.VirtualNodeState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TestUtils;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -50,6 +54,7 @@ public class TestRepairSchedulerRESTImpl
     private static final Gson GSON = new Gson();
 
     private static Type scheduledRepairJobListType = new TypeToken<List<ScheduledRepairJob>>(){}.getType();
+    private static Type tableRepairConfigListType = new TypeToken<List<TableRepairConfig>>(){}.getType();
 
     @Mock
     private RepairScheduler myRepairScheduler;
@@ -190,5 +195,95 @@ public class TestRepairSchedulerRESTImpl
         assertThat(vnodeState.endToken).isEqualTo(longTokenRange.end);
         assertThat(vnodeState.lastRepairedAtInMs).isEqualTo(expectedLastRepairedAt);
         assertThat(vnodeState.replicas).isEqualTo(ImmutableSet.of(InetAddress.getLocalHost()));
+    }
+
+    @Test
+    public void testConfigEmpty()
+    {
+        when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(new ArrayList<>());
+
+        RepairSchedulerREST repairSchedulerService = new RepairSchedulerRESTImpl(myRepairScheduler);
+
+        List<TableRepairConfig> response = GSON.fromJson(repairSchedulerService.config(), scheduledRepairJobListType);
+
+        assertThat(response).isEmpty();
+    }
+
+    @Test
+    public void testConfigEntry()
+    {
+        // Given
+        RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
+        RepairJobView repairJobView = new RepairJobView(new TableReference("ks", "tbl"), repairConfig, null);
+
+        when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
+
+        RepairSchedulerREST repairSchedulerService = new RepairSchedulerRESTImpl(myRepairScheduler);
+
+        List<TableRepairConfig> response = GSON.fromJson(repairSchedulerService.config(), tableRepairConfigListType);
+
+        assertThat(response).hasSize(1);
+
+        TableRepairConfig tableRepairConfig = response.get(0);
+
+        assertThat(tableRepairConfig.keyspace).isEqualTo("ks");
+        assertThat(tableRepairConfig.table).isEqualTo("tbl");
+        assertThat(tableRepairConfig.repairIntervalInMs).isEqualTo(11);
+        assertThat(tableRepairConfig.repairParallelism).isEqualTo(RepairOptions.RepairParallelism.PARALLEL);
+        assertThat(tableRepairConfig.repairUnwindRatio).isEqualTo(2.2);
+        assertThat(tableRepairConfig.repairWarningTimeInMs).isEqualTo(33);
+        assertThat(tableRepairConfig.repairErrorTimeInMs).isEqualTo(44);
+    }
+
+    @Test
+    public void testConfigKeyspaceEmpty()
+    {
+        when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(new ArrayList<>());
+
+        RepairSchedulerREST repairSchedulerService = new RepairSchedulerRESTImpl(myRepairScheduler);
+
+        List<ScheduledRepairJob> response = GSON.fromJson(repairSchedulerService.configKeyspace(""), tableRepairConfigListType);
+
+        assertThat(response).isEmpty();
+    }
+
+    @Test
+    public void testConfigKeyspaceNonExisting()
+    {
+        RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
+        RepairJobView repairJobView = new RepairJobView(new TableReference("ks", "tbl"), repairConfig, null);
+
+        when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
+
+        RepairSchedulerREST repairSchedulerService = new RepairSchedulerRESTImpl(myRepairScheduler);
+
+        List<TableRepairConfig> response = GSON.fromJson(repairSchedulerService.configKeyspace("nonexistingkeyspace"), tableRepairConfigListType);
+
+        assertThat(response).isEmpty();
+    }
+
+    @Test
+    public void testConfigKeyspaceEntry()
+    {
+        RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
+        RepairJobView repairJobView = new RepairJobView(new TableReference("ks", "tbl"), repairConfig, null);
+
+        when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
+
+        RepairSchedulerREST repairSchedulerService = new RepairSchedulerRESTImpl(myRepairScheduler);
+
+        List<TableRepairConfig> response = GSON.fromJson(repairSchedulerService.configKeyspace("ks"), tableRepairConfigListType);
+
+        assertThat(response).hasSize(1);
+
+        TableRepairConfig tableRepairConfig = response.get(0);
+
+        assertThat(tableRepairConfig.keyspace).isEqualTo("ks");
+        assertThat(tableRepairConfig.table).isEqualTo("tbl");
+        assertThat(tableRepairConfig.repairIntervalInMs).isEqualTo(11);
+        assertThat(tableRepairConfig.repairParallelism).isEqualTo(RepairOptions.RepairParallelism.PARALLEL);
+        assertThat(tableRepairConfig.repairUnwindRatio).isEqualTo(2.2);
+        assertThat(tableRepairConfig.repairWarningTimeInMs).isEqualTo(33);
+        assertThat(tableRepairConfig.repairErrorTimeInMs).isEqualTo(44);
     }
 }

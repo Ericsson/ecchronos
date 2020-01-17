@@ -9,6 +9,7 @@
 * Add RepairJobView
 * Add HTTP server with REST API - Issue #50
 * Expose metrics through JMX - Issue #75
+* Add ecc-config command that displays repair configuration
 
 ### Merged from 1.1
 

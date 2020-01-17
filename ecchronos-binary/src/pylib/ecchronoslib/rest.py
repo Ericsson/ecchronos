@@ -19,7 +19,7 @@ try:
 except ImportError:
     from urllib2 import urlopen, Request, HTTPError, URLError
 import json
-from ecchronoslib.types import RepairJob, VerboseRepairJob
+from ecchronoslib.types import RepairJob, VerboseRepairJob, TableConfig
 
 
 class RequestResult:
@@ -110,6 +110,24 @@ class RepairSchedulerRequest(RestRequest):
 
         if result.is_successful():
             result = result.transform_with_data(new_data=[RepairJob(x) for x in result.data])
+
+        return result
+
+
+class RepairConfigRequest(RestRequest):
+    repair_scheduler_list_url = 'repair-scheduler/v1/config'
+
+    def __init__(self, base_url=None):
+        RestRequest.__init__(self, base_url)
+
+    def list(self, keyspace=None):
+        request_url = RepairConfigRequest.repair_scheduler_list_url
+        if keyspace is not None:
+            request_url = "{0}/{1}".format(request_url, keyspace)
+
+        result = self.request(request_url)
+        if result.is_successful():
+            result = result.transform_with_data(new_data=[TableConfig(x) for x in result.data])
 
         return result
 

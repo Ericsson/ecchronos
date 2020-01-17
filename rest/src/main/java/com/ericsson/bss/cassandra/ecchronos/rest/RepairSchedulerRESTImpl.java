@@ -18,6 +18,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.CompleteRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.gson.Gson;
 
@@ -86,5 +87,30 @@ public class RepairSchedulerRESTImpl implements RepairSchedulerREST
         return myRepairScheduler.getCurrentRepairJobs().stream()
                 .filter(job -> job.getTableReference().equals(tableReference))
                 .findFirst();
+    }
+
+    @Override
+    public String config()
+    {
+        List<TableRepairConfig> configurations = getTableRepairConfigs(job -> true);
+
+        return GSON.toJson(configurations);
+    }
+
+    @Override
+    public String configKeyspace(String keyspace)
+    {
+        List<TableRepairConfig> configurations = getTableRepairConfigs(job -> keyspace.equals(job.getTableReference().getKeyspace()));
+
+        return GSON.toJson(configurations);
+    }
+
+    private List<TableRepairConfig> getTableRepairConfigs(Predicate<RepairJobView> filter)
+    {
+        return myRepairScheduler.getCurrentRepairJobs()
+                .stream()
+                .filter(filter)
+                .map(TableRepairConfig::new)
+                .collect(Collectors.toList());
     }
 }
