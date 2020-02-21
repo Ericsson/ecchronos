@@ -55,7 +55,7 @@
         <bundle.namespace>${project.groupId}.${project.artifactId}</bundle.namespace>
 
         <!-- Dependency versions -->
-        <io.netty.version>4.0.47.Final</io.netty.version>
+        <io.netty.version>4.1.45.Final</io.netty.version>
         <io.dropwizard.metrics.version>3.2.2</io.dropwizard.metrics.version>
         <cassandra.driver.core.version>3.4.0</cassandra.driver.core.version>
         <joda-time.version>2.9.9</joda-time.version>
