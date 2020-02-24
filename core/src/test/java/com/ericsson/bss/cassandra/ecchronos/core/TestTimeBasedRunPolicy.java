@@ -22,13 +22,17 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,7 +57,9 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
     public static Collection<String> keyspaceNames() {
         return Arrays.asList("ecchronos", "anotherkeyspace");
     }
-
+    
+    private static final ZoneId UTC = ZoneId.of("UTC");
+    
     private static final String TABLE_REJECT_CONFIGURATION = "reject_configuration";
 
     private static final long DEFAULT_REJECT_TIME = TimeUnit.MINUTES.toMillis(1);
@@ -74,12 +80,6 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
         mySession.execute(String.format("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {'class': 'NetworkTopologyStrategy', 'DC1': 1}", myKeyspaceName));
         mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.reject_configuration (keyspace_name text, table_name text, start_hour int, start_minute int, end_hour int, end_minute int, PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute))", myKeyspaceName));
 
-        myRunPolicy = TimeBasedRunPolicy.builder()
-                .withSession(getNativeConnectionProvider().getSession())
-                .withStatementDecorator(s -> s)
-                .withKeyspaceName(myKeyspaceName)
-                .withCacheExpireTime(TimeUnit.SECONDS.toMillis(1))
-                .build();
         insertRejectStatement = mySession.prepare(String.format("INSERT INTO %s.%s (keyspace_name, table_name, start_hour, start_minute, end_hour, end_minute) VALUES (?,?,?,?,?,?)", myKeyspaceName, TABLE_REJECT_CONFIGURATION));
     }
 
@@ -87,7 +87,11 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
     public void clear()
     {
         mySession.execute(String.format("TRUNCATE %s.%s", myKeyspaceName, TABLE_REJECT_CONFIGURATION));
-        myRunPolicy.close();
+
+        if (myRunPolicy != null)
+        {
+            myRunPolicy.close();
+        }
     }
 
     @Test
@@ -103,19 +107,19 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
     {
         String keyspace = "test";
         String table = "table";
-        DateTime now = new DateTime();
-        DateTime start = now.minusHours(1);
-        DateTime end = now.plusHours(1);
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDateTime end = now.withHour(5).withMinute(0).withSecond(0);
+        long expectedDelay = Duration.between(LocalDateTime.now(clock), end).toMillis();
 
-        long expectedHighest = end.getMillis() - now.getMillis();
+        policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace, table));
-        insertEntry(keyspace, table, start, end);
+        insertEntry(keyspace, table, 3, 0, 5, 0);
 
         long delay = myRunPolicy.validate(myRepairJobMock);
 
-        assertThat(delay).isLessThanOrEqualTo(expectedHighest);
-        assertThat(delay).isGreaterThan(-1L);
+        assertThat(delay).isEqualTo(expectedDelay);
     }
 
     @Test
@@ -123,10 +127,12 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
     {
         String keyspace = "test";
         String table = "table";
-        DateTime now = new DateTime();
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+
+        policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace, table));
-        insertEntry(keyspace, table, now.minusHours(2), now.minusHours(1));
+        insertEntry(keyspace, table, 2, 0, 4, 30);
 
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
     }
@@ -136,53 +142,54 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
     {
         String keyspace = "test";
         String table = "table";
-        DateTime now = new DateTime();
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+
+        policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace, table));
-        insertEntry(keyspace, table, now.plusHours(1), now.plusHours(2));
+        insertEntry(keyspace, table, 5, 0, 6, 0);
 
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
     }
 
     @Test
-    public void testRejectedWraparound()
+    public void testRejectedWraparoundBeforeEnd()
     {
         String keyspace = "test";
         String table = "table";
-        DateTime now = new DateTime();
-        DateTime start = now.plusHours(2);
-        DateTime end = now.plusHours(1);
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDateTime end = now.withHour(5).withMinute(30).withSecond(0);
+        long expectedDelay = Duration.between(LocalDateTime.now(clock), end).toMillis();
 
-        long expectedHighest = end.getMillis() - now.getMillis();
+        policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace, table));
-        insertEntry(keyspace, table, start, end);
+        insertEntry(keyspace, table, 6, 30, 5, 30);
 
         long delay = myRunPolicy.validate(myRepairJobMock);
 
-        assertThat(delay).isLessThanOrEqualTo(expectedHighest);
-        assertThat(delay).isGreaterThan(-1L);
+        assertThat(delay).isEqualTo(expectedDelay);
     }
 
     @Test
-    public void testRejectedWraparoundWithStartBeforeNow()
+    public void testRejectedWraparoundWithAfterEnd()
     {
         String keyspace = "test";
         String table = "table";
-        DateTime now = new DateTime();
-        DateTime start = now.minusHours(1);
-        DateTime end = now.minusHours(2).plusHours(24);
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDateTime end = now.plusDays(1).withHour(2).withMinute(30).withSecond(0);
+        long expectedDelay = Duration.between(LocalDateTime.now(clock), end).toMillis();
 
-        long expectedHighest = end.getMillis() - now.getMillis();
-        long expectedLowest = end.minusHours(1).getMillis() - now.getMillis();
+        policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace, table));
-        insertEntry(keyspace, table, start, end);
+        insertEntry(keyspace, table, 3, 30, 2, 30);
 
         long delay = myRunPolicy.validate(myRepairJobMock);
 
-        assertThat(delay).isLessThanOrEqualTo(expectedHighest);
-        assertThat(delay).isGreaterThanOrEqualTo(expectedLowest);
+        assertThat(delay).isEqualTo(expectedDelay);
     }
 
     @Test
@@ -190,10 +197,12 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
     {
         String keyspace = "test";
         String table = "table";
-        DateTime now = new DateTime();
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+
+        policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace, table));
-        insertEntry(keyspace, table, now.plusHours(2), now.minusHours(1));
+        insertEntry(keyspace, table, 6, 30, 3, 30);
 
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
     }
@@ -204,6 +213,8 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
         String keyspace1 = "test";
         String keyspace2 = "test2";
         String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+        policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace1, table));
         insertEntry("*", table, 0, 0, 0, 0);
@@ -219,6 +230,8 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
     {
         String keyspace = "test";
         String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+        policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace, table));
         insertEntry(keyspace, table, 0, 0, 0, 0);
@@ -231,6 +244,8 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
     {
         String keyspace = "test";
         String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+        policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace, table));
         insertEntry("*", "*", 0, 0, 0, 0);
@@ -243,6 +258,8 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
     {
         String keyspace = "test";
         String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+        policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace, table));
         insertEntry("*", "*", 0, 0, 0, 0);
@@ -298,9 +315,15 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
                         .build());
     }
 
-    private void insertEntry(String keyspace, String table, DateTime start, DateTime end)
+    private void policyWithClock(Clock clock)
     {
-        insertEntry(keyspace, table, start.getHourOfDay(), start.getMinuteOfHour(), end.getHourOfDay(), end.getMinuteOfHour());
+        myRunPolicy = TimeBasedRunPolicy.builder()
+                .withSession(getNativeConnectionProvider().getSession())
+                .withStatementDecorator(s -> s)
+                .withKeyspaceName(myKeyspaceName)
+                .withCacheExpireTime(TimeUnit.SECONDS.toMillis(1))
+                .withClock(clock)
+                .build();
     }
 
     private void insertEntry(String keyspace, String table, int start_hour, int start_minute, int end_hour, int end_minute)
