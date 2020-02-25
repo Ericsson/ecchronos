@@ -14,16 +14,12 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-
-import org.joda.time.Duration;
-import org.joda.time.Period;
-import org.joda.time.PeriodType;
-import org.joda.time.format.PeriodFormatter;
-import org.joda.time.format.PeriodFormatterBuilder;
+import java.time.temporal.ChronoUnit;
 
 final class PrintUtils
 {
@@ -40,16 +36,36 @@ final class PrintUtils
 
     static String durationToHumanReadable(long durationInMillis)
     {
-        Duration duration = new Duration(durationInMillis);
-        Period normalizedPeriod = duration.toPeriod().normalizedStandard(PeriodType.dayTime());
-        PeriodFormatter formatter = new PeriodFormatterBuilder()
-                .appendDays().appendSuffix("d ")
-                .appendHours().appendSuffix("h ")
-                .appendMinutes().appendSuffix("m ")
-                .appendSeconds().appendSuffix("s ")
-                .toFormatter();
+        Duration currentDuration = Duration.of(durationInMillis, ChronoUnit.MILLIS);
 
-        return formatter.print(normalizedPeriod).trim();
+        long days = currentDuration.toDays();
+        currentDuration = currentDuration.minusDays(days);
+        long hours = currentDuration.toHours();
+        currentDuration = currentDuration.minusHours(hours);
+        long minutes = currentDuration.toMinutes();
+        currentDuration = currentDuration.minusMinutes(minutes);
+        long seconds = currentDuration.getSeconds();
+
+        StringBuilder sb = new StringBuilder();
+
+        if (days > 0)
+        {
+            sb.append(days).append("d ");
+        }
+        if (hours > 0)
+        {
+            sb.append(hours).append("h ");
+        }
+        if (minutes > 0)
+        {
+            sb.append(minutes).append("m ");
+        }
+        if (seconds > 0)
+        {
+            sb.append(seconds).append("s ");
+        }
+
+        return sb.toString().trim();
     }
 
     static String toPercentage(Double ratio)

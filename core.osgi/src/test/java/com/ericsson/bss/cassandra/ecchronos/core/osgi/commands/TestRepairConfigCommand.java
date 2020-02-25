@@ -17,7 +17,6 @@ package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;

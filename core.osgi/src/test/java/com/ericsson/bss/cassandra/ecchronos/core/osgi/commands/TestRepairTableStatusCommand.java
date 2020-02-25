@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.TimeZone;
@@ -33,7 +34,6 @@ import com.google.common.collect.ImmutableSet;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.apache.karaf.shell.support.CommandException;
-import org.joda.time.DateTime;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -48,9 +48,9 @@ import static org.mockito.Mockito.when;
 @RunWith(JUnitParamsRunner.class)
 public class TestRepairTableStatusCommand
 {
-    private static final VnodeRepairState state1 = new VnodeRepairState(new LongTokenRange(5, 6), mockHosts("host1", "host2"), DateTime.parse("2019-12-24T14:57Z").getMillis());
-    private static final VnodeRepairState state2 = new VnodeRepairState(new LongTokenRange(1, 2), mockHosts("host1", "host3"), DateTime.parse("2019-11-12T00:26:59Z").getMillis());
-    private static final VnodeRepairState state3 = new VnodeRepairState(new LongTokenRange(3, 4), mockHosts("host2", "host3"), DateTime.parse("1970-01-01T00:00Z").getMillis());
+    private static final VnodeRepairState state1 = new VnodeRepairState(new LongTokenRange(5, 6), mockHosts("host1", "host2"), toMillis("2019-12-24T14:57:00Z"));
+    private static final VnodeRepairState state2 = new VnodeRepairState(new LongTokenRange(1, 2), mockHosts("host1", "host3"), toMillis("2019-11-12T00:26:59Z"));
+    private static final VnodeRepairState state3 = new VnodeRepairState(new LongTokenRange(3, 4), mockHosts("host2", "host3"), toMillis("1970-01-01T00:00:00Z"));
 
     private static final VnodeRepairStates states = createRepairStates(state1, state2, state3);
 
@@ -191,5 +191,10 @@ public class TestRepairTableStatusCommand
         RepairScheduler schedulerMock = mock(RepairScheduler.class);
         when(schedulerMock.getCurrentRepairJobs()).thenReturn(asList(repairJobView));
         return schedulerMock;
+    }
+
+    private static long toMillis(String date)
+    {
+        return Instant.parse(date).toEpochMilli();
     }
 }
