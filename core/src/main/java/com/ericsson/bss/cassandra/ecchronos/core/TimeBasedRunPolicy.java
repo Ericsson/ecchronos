@@ -15,6 +15,9 @@
 package com.ericsson.bss.cassandra.ecchronos.core;
 
 import java.io.Closeable;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -26,7 +29,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,12 +75,14 @@ public class TimeBasedRunPolicy implements RunPolicy, Closeable
     private final PreparedStatement myGetRejectionsStatement;
     private final StatementDecorator myStatementDecorator;
     private final Session mySession;
+    private final Clock myClock;
     private final LoadingCache<TableReference, TimeRejectionCollection> myTimeRejectionCache;
 
     public TimeBasedRunPolicy(Builder builder)
     {
         mySession = builder.mySession;
         myStatementDecorator = builder.myStatementDecorator;
+        myClock = builder.myClock;
 
         myGetRejectionsStatement = mySession.prepare(QueryBuilder.select()
                 .from(builder.myKeyspaceName, TABLE_REJECT_CONFIGURATION)
@@ -139,6 +143,7 @@ public class TimeBasedRunPolicy implements RunPolicy, Closeable
         private StatementDecorator myStatementDecorator;
         private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
         private long myCacheExpireTime = DEFAULT_CACHE_EXPIRE_TIME;
+        private Clock myClock = Clock.systemDefaultZone();
 
         public Builder withSession(Session session)
         {
@@ -162,6 +167,13 @@ public class TimeBasedRunPolicy implements RunPolicy, Closeable
         Builder withCacheExpireTime(long expireTime)
         {
             myCacheExpireTime = expireTime;
+            return this;
+        }
+
+        @VisibleForTesting
+        Builder withClock(Clock clock)
+        {
+            myClock = clock;
             return this;
         }
 
@@ -194,7 +206,7 @@ public class TimeBasedRunPolicy implements RunPolicy, Closeable
         myTimeRejectionCache.invalidateAll();
     }
 
-    static class TimeRejectionCollection
+    class TimeRejectionCollection
     {
         private final List<TimeRejection> myRejections = new ArrayList<>();
 
@@ -223,10 +235,10 @@ public class TimeBasedRunPolicy implements RunPolicy, Closeable
         }
     }
 
-    static class TimeRejection
+    class TimeRejection
     {
-        private final DateTime myStart;
-        private final DateTime myEnd;
+        private final LocalDateTime myStart;
+        private final LocalDateTime myEnd;
 
         TimeRejection(Row row)
         {
@@ -236,13 +248,13 @@ public class TimeBasedRunPolicy implements RunPolicy, Closeable
 
         public long rejectionTime()
         {
-            DateTime now = new DateTime();
+            LocalDateTime now = LocalDateTime.now(myClock);
 
             // 00:00->00:00 means that we pause the repair scheduling, so wait DEFAULT_REJECT_TIME instead of until 00:00
-            if (myStart.getHourOfDay() == 0
-                    && myStart.getMinuteOfHour() == 0
-                    && myEnd.getHourOfDay() == 0
-                    && myEnd.getMinuteOfHour() == 0)
+            if (myStart.getHour() == 0
+                    && myStart.getMinute() == 0
+                    && myEnd.getHour() == 0
+                    && myEnd.getMinute() == 0)
             {
                 return DEFAULT_REJECT_TIME;
             }
@@ -251,16 +263,16 @@ public class TimeBasedRunPolicy implements RunPolicy, Closeable
             {
                 if (now.isBefore(myEnd))
                 {
-                    return myEnd.getMillis() - now.getMillis();
+                    return Duration.between(now, myEnd).toMillis();
                 }
                 else if (now.isAfter(myStart))
                 {
-                    return myEnd.plusHours(24).getMillis() - now.getMillis();
+                    return Duration.between(now, myEnd.plusDays(1)).toMillis();
                 }
             }
             else if (now.isAfter(myStart) && now.isBefore(myEnd))
             {
-                return myEnd.getMillis() - now.getMillis();
+                return Duration.between(now, myEnd).toMillis();
             }
 
             return -1L;
@@ -271,13 +283,12 @@ public class TimeBasedRunPolicy implements RunPolicy, Closeable
             return myEnd.isBefore(myStart);
         }
 
-        private static DateTime toDateTime(int h, int m)
+        private LocalDateTime toDateTime(int h, int m)
         {
-            return new DateTime()
-                    .withHourOfDay(h)
-                    .withMinuteOfHour(m)
-                    .withSecondOfMinute(0)
-                    .withMillisOfSecond(0);
+            return LocalDateTime.now(myClock)
+                    .withHour(h)
+                    .withMinute(m)
+                    .withSecond(0);
         }
     }
 

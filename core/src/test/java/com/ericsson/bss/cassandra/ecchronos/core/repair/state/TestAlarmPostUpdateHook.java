@@ -14,7 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.ericsson.bss.cassandra.ecchronos.core.MockedClock;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
@@ -24,19 +23,16 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyMapOf;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestAlarmPostUpdateHook
@@ -53,7 +49,9 @@ public class TestAlarmPostUpdateHook
     @Mock
     private RepairFaultReporter myFaultReporter;
 
-    private MockedClock myClock = new MockedClock();
+    @Mock
+    private Clock myClock;
+
     private AlarmPostUpdateHook myPostUpdateHook;
 
     private final TableReference myTableReference = new TableReference(keyspaceName, tableName);
@@ -84,7 +82,7 @@ public class TestAlarmPostUpdateHook
 
         // mock - not repaired
         doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
-        myClock.setTime(start);
+        when(myClock.millis()).thenReturn(start);
 
         myPostUpdateHook.postUpdate(myRepairStateSnapshot);
 
@@ -97,7 +95,7 @@ public class TestAlarmPostUpdateHook
 
         // mock - repaired
         doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
-        myClock.setTime(start);
+        when(myClock.millis()).thenReturn(start);
 
         myPostUpdateHook.postUpdate(myRepairStateSnapshot);
 
@@ -125,7 +123,7 @@ public class TestAlarmPostUpdateHook
 
         // mock - not repaired
         doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
-        myClock.setTime(start);
+        when(myClock.millis()).thenReturn(start);
 
         myPostUpdateHook.postUpdate(myRepairStateSnapshot);
 
@@ -138,7 +136,7 @@ public class TestAlarmPostUpdateHook
 
         // mock - repaired
         doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
-        myClock.setTime(start);
+        when(myClock.millis()).thenReturn(start);
 
         myPostUpdateHook.postUpdate(myRepairStateSnapshot);
 

@@ -60,7 +60,6 @@
         <io.netty.version>4.0.47.Final</io.netty.version>
         <io.dropwizard.metrics.version>3.2.2</io.dropwizard.metrics.version>
         <cassandra.driver.core.version>3.4.0</cassandra.driver.core.version>
-        <joda-time.version>2.9.9</joda-time.version>
         <guava.version>18.0</guava.version>
         <slf4j.version>1.7.23</slf4j.version>
         <logback.version>1.2.3</logback.version>
@@ -169,12 +168,6 @@
                 <groupId>com.datastax.cassandra</groupId>
                 <artifactId>cassandra-driver-core</artifactId>
                 <version>${cassandra.driver.core.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>joda-time</groupId>
-                <artifactId>joda-time</artifactId>
-                <version>${joda-time.version}</version>
             </dependency>
 
             <dependency>

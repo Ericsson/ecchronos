@@ -14,12 +14,12 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.ericsson.bss.cassandra.ecchronos.core.Clock;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.google.common.annotations.VisibleForTesting;
 
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,7 +32,7 @@ public class AlarmPostUpdateHook implements PostUpdateHook
     private final RepairFaultReporter myFaultReporter;
     private final TableReference myTableReference;
     private final RepairConfiguration myRepairConfiguration;
-    private final AtomicReference<Clock> myClock = new AtomicReference<>(Clock.DEFAULT);
+    private final AtomicReference<Clock> myClock = new AtomicReference<>(Clock.systemDefaultZone());
 
     public AlarmPostUpdateHook(TableReference tableReference, RepairConfiguration repairConfiguration, RepairFaultReporter faultReporter)
     {
@@ -54,7 +54,7 @@ public class AlarmPostUpdateHook implements PostUpdateHook
 
     private void sendOrCeaseAlarm(long lastRepairedAt)
     {
-        long msSinceLastRepair = myClock.get().getTime() - lastRepairedAt;
+        long msSinceLastRepair = myClock.get().millis() - lastRepairedAt;
         RepairFaultReporter.FaultCode faultCode = null;
 
         if (msSinceLastRepair >= myRepairConfiguration.getRepairErrorTimeInMs())
