@@ -1,5 +1,9 @@
 # Changes
 
+## Version 1.0.7
+
+* Avoid concurrent modification exception in RSI#close - Issue #99
+
 ## Version 1.0.6
 
 * Reduce cache refresh time in TimeBasedRunPolicy to quicker react to configuration changes
