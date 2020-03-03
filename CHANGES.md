@@ -1,5 +1,11 @@
 # Changes
 
+## Version 1.1.2
+
+### Merged from 1.0
+
+* Avoid concurrent modification exception in RSI#close - Issue #99
+
 ## Version 1.1.1
 
 ### Merged from 1.0
