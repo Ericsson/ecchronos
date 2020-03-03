@@ -18,13 +18,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.ignoreStubs;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +33,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
-import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,6 +49,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 public class TestRepairSchedulerImpl
 {
     private static final TableReference TABLE_REFERENCE = new TableReference("keyspace", "table");
+    private static final TableReference TABLE_REFERENCE2 = new TableReference("keyspace", "table2");
 
     @Mock
     private JmxProxyFactory jmxProxyFactory;
@@ -72,8 +72,9 @@ public class TestRepairSchedulerImpl
     @Before
     public void init()
     {
-        doReturn(myRepairStateSnapshot).when(myRepairState).getSnapshot();
-        doReturn(myRepairState).when(myRepairStateFactory).create(eq(TABLE_REFERENCE), any(), any());
+        when(myRepairState.getSnapshot()).thenReturn(myRepairStateSnapshot);
+        when(myRepairStateFactory.create(eq(TABLE_REFERENCE), any(), any())).thenReturn(myRepairState);
+        when(myRepairStateFactory.create(eq(TABLE_REFERENCE2), any(), any())).thenReturn(myRepairState);
     }
 
     @Test
@@ -91,6 +92,28 @@ public class TestRepairSchedulerImpl
 
         repairSchedulerImpl.close();
         verify(scheduleManager).deschedule(any(ScheduledJob.class));
+
+        verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
+        verifyNoMoreInteractions(myRepairStateFactory);
+        verifyNoMoreInteractions(scheduleManager);
+    }
+
+    @Test
+    public void testConfigureTwoTables()
+    {
+        RepairSchedulerImpl repairSchedulerImpl = defaultRepairSchedulerImplBuilder().build();
+
+        repairSchedulerImpl.putConfiguration(TABLE_REFERENCE, RepairConfiguration.DEFAULT);
+        repairSchedulerImpl.putConfiguration(TABLE_REFERENCE2, RepairConfiguration.DEFAULT);
+
+        verify(scheduleManager, timeout(1000).times(2)).schedule(any(ScheduledJob.class));
+        verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
+        verify(myRepairStateFactory).create(eq(TABLE_REFERENCE2), eq(RepairConfiguration.DEFAULT), any());
+        verify(myRepairState, atLeastOnce()).update();
+
+        repairSchedulerImpl.close();
+        verify(scheduleManager, times(2)).deschedule(any(ScheduledJob.class));
 
         verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
         verifyNoMoreInteractions(myRepairStateFactory);

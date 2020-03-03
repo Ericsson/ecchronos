@@ -30,6 +30,7 @@
 * Reduce error logs to warn for some lock related failures
 * Fix slow query of repair_history at start-up #86
 * Reduce cache refresh time in TimeBasedRunPolicy to quicker react to configuration changes
+* Avoid concurrent modification exception in RSI#close - Issue #99
 
 ## Version 1.0.0
 

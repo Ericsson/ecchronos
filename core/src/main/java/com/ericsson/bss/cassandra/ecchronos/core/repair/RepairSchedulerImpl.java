@@ -15,9 +15,9 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import java.io.Closeable;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -43,7 +43,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairSchedulerImpl.class);
 
-    private final Map<TableReference, TableRepairJob> myScheduledJobs = new HashMap<>();
+    private final Map<TableReference, TableRepairJob> myScheduledJobs = new ConcurrentHashMap<>();
     private final Object myLock = new Object();
 
     private final ExecutorService myExecutor;
