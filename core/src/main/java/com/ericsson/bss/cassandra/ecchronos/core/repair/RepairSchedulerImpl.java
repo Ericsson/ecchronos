@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -53,6 +54,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
     private final ScheduleManager myScheduleManager;
     private final RepairStateFactory myRepairStateFactory;
     private final RepairLockType myRepairLockType;
+    private final TableStorageStates myTableStorageStates;
 
     private RepairSchedulerImpl(Builder builder)
     {
@@ -63,6 +65,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
         myScheduleManager = builder.myScheduleManager;
         myRepairStateFactory = builder.myRepairStateFactory;
         myRepairLockType = builder.myRepairLockType;
+        myTableStorageStates = builder.myTableStorageStates;
     }
 
     @Override
@@ -183,6 +186,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairConfiguration(repairConfiguration)
                 .withRepairLockType(myRepairLockType)
+                .withTableStorageStates(myTableStorageStates)
                 .build();
 
         job.runnable();
@@ -203,6 +207,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
         private ScheduleManager myScheduleManager;
         private RepairStateFactory myRepairStateFactory;
         private RepairLockType myRepairLockType;
+        private TableStorageStates myTableStorageStates;
 
         public Builder withFaultReporter(RepairFaultReporter repairFaultReporter)
         {
@@ -237,6 +242,12 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
         public Builder withRepairLockType(RepairLockType repairLockType)
         {
             myRepairLockType = repairLockType;
+            return this;
+        }
+
+        public Builder withTableStorageStates(TableStorageStates tableStorageStates)
+        {
+            myTableStorageStates = tableStorageStates;
             return this;
         }
 

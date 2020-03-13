@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurati
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -61,6 +62,11 @@ public class DefaultRepairConfigurationProviderComponent
         if (configuration.enabled())
         {
             long repairInterval = configuration.repairIntervalSeconds();
+            long repairSizeInBytes = Long.MAX_VALUE;
+            if (!configuration.targetRepairSize().isEmpty())
+            {
+                repairSizeInBytes = UnitConverter.toBytes(configuration.targetRepairSize());
+            }
 
             RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
                     .withParallelism(configuration.repairParallelism())
@@ -68,6 +74,7 @@ public class DefaultRepairConfigurationProviderComponent
                     .withRepairWarningTime(configuration.repairWarningSeconds(), TimeUnit.SECONDS)
                     .withRepairErrorTime(configuration.repairErrorSeconds(), TimeUnit.SECONDS)
                     .withRepairUnwindRatio(configuration.repairUnwindRatio())
+                    .withTargetRepairSizeInBytes(repairSizeInBytes)
                     .build();
 
             myDelegateRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()
@@ -109,5 +116,8 @@ public class DefaultRepairConfigurationProviderComponent
 
         @AttributeDefinition (name = "Repair unwind ratio", description = "The ratio of time to wait before starting the next repair. The amount of time to wait is based on the time it took to perform the repair. A value of 1.0 gives 100% of the repair time as wait time.")
         double repairUnwindRatio() default RepairConfiguration.NO_UNWIND;
+
+        @AttributeDefinition (name = "Target repair size", description = "An indication of how much data a repair session should handle.")
+        String targetRepairSize() default "";
     }
 }

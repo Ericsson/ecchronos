@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
 
 import java.util.Locale;
 import java.util.Properties;
@@ -31,6 +32,7 @@ public final class RepairProperties
     private static final String CONFIG_REPAIR_LOCK_TYPE = "repair.lock.type";
     private static final String CONFIG_REPAIR_UNWIND_RATIO = "repair.unwind.ratio";
     private static final String CONFIG_REPAIR_HISTORY_LOOKBACK_BASE = "repair.history.lookback";
+    private static final String CONFIG_REPAIR_TARGET_REPAIR_SIZE = "repair.size.target";
 
     private static final String DAYS = "days";
     private static final String DEFAULT_REPAIR_INTERVAL_TIMEUNIT = DAYS;
@@ -44,6 +46,7 @@ public final class RepairProperties
     private static final String DEFAULT_REPAIR_UNWIND_RATIO = Double.toString(RepairConfiguration.NO_UNWIND);
     private static final String DEFAULT_REPAIR_HISTORY_LOOKBACK_TIMEUNIT = DAYS;
     private static final String DEFAULT_REPAIR_HISTORY_LOOKBACK_DURATION = "30";
+    private static final String DEFAULT_REPAIR_TARGET_REPAIR_SIZE = "";
 
     private final long myRepairIntervalInMs;
     private final RepairOptions.RepairParallelism myRepairParallelism;
@@ -52,10 +55,12 @@ public final class RepairProperties
     private final RepairLockType myRepairLockType;
     private final double myRepairUnwindRatio;
     private final long myRepairHistoryLookbackInMs;
+    private final long myTargetRepairSizeInBytes;
 
     private RepairProperties(long repairIntervalInMs, RepairOptions.RepairParallelism repairParallelism,
                              long repairAlarmWarnInMs, long repairAlarmErrorInMs, RepairLockType repairLockType,
-                             double repairUnwindRatio, long repairHistoryLookbackInMs)
+                             double repairUnwindRatio, long repairHistoryLookbackInMs,
+                             long targetRepairSizeInBytes)
     {
         myRepairIntervalInMs = repairIntervalInMs;
         myRepairParallelism = repairParallelism;
@@ -64,6 +69,7 @@ public final class RepairProperties
         myRepairLockType = repairLockType;
         myRepairUnwindRatio = repairUnwindRatio;
         myRepairHistoryLookbackInMs = repairHistoryLookbackInMs;
+        myTargetRepairSizeInBytes = targetRepairSizeInBytes;
     }
 
     public long getRepairIntervalInMs()
@@ -99,6 +105,11 @@ public final class RepairProperties
     public long getRepairHistoryLookbackInMs()
     {
         return myRepairHistoryLookbackInMs;
+    }
+
+    public long getTargetRepairSizeInBytes()
+    {
+        return myTargetRepairSizeInBytes;
     }
 
     @Override
@@ -145,8 +156,24 @@ public final class RepairProperties
         long repairHistoryLookbackInMs = parseTimeUnitToMs(properties, CONFIG_REPAIR_HISTORY_LOOKBACK_BASE,
                 DEFAULT_REPAIR_HISTORY_LOOKBACK_DURATION, DEFAULT_REPAIR_HISTORY_LOOKBACK_TIMEUNIT);
 
+        long targetRepairSizeInBytes = Long.MAX_VALUE;
+
+        try
+        {
+            String targetRepairSize = properties.getProperty(CONFIG_REPAIR_TARGET_REPAIR_SIZE, DEFAULT_REPAIR_TARGET_REPAIR_SIZE);
+            if (!targetRepairSize.isEmpty())
+            {
+                targetRepairSizeInBytes = UnitConverter.toBytes(targetRepairSize);
+            }
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new ConfigurationException("Unknown target repair size specified in '" + CONFIG_REPAIR_TARGET_REPAIR_SIZE + "'", e);
+        }
+
         return new RepairProperties(repairIntervalInMs, repairParallelism, repairAlarmWarnInMs,
-                repairAlarmErrorInMs, repairLockType, repairUnwindRatio, repairHistoryLookbackInMs);
+                repairAlarmErrorInMs, repairLockType, repairUnwindRatio, repairHistoryLookbackInMs,
+                targetRepairSizeInBytes);
     }
 
     private static long parseTimeUnitToMs(Properties properties, String baseProperty,

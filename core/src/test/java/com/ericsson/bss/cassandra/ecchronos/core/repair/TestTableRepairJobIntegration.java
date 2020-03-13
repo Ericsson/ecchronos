@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.ericsson.bss.cassandra.ecchronos.core.Clock;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManagerImpl;
@@ -36,7 +37,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.DefaultJobComparator;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -48,7 +48,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJobQueue;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 
 @RunWith (MockitoJUnitRunner.class)
@@ -101,6 +100,9 @@ public class TestTableRepairJobIntegration
     private TableRepairMetrics myTableRepairMetrics;
 
     @Mock
+    private TableStorageStates myTableStorageStates;
+
+    @Mock
     private Clock myClock;
 
     private TableRepairJob myTableRepairJob;
@@ -143,6 +145,7 @@ public class TestTableRepairJobIntegration
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairConfiguration(repairConfiguration)
                 .withRepairLockType(RepairLockType.VNODE)
+                .withTableStorageStates(myTableStorageStates)
                 .build();
 
         myTableRepairJob.setClock(myClock);
