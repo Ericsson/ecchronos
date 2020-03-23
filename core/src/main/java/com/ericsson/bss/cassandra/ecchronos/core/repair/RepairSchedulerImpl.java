@@ -15,8 +15,8 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import java.io.Closeable;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +40,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairSchedulerImpl.class);
 
-    private final Map<TableReference, TableRepairJob> myScheduledJobs = new ConcurrentHashMap<>();
+    private final Map<TableReference, TableRepairJob> myScheduledJobs = new HashMap<>();
     private final Object myLock = new Object();
 
     private final ExecutorService myExecutor;
@@ -84,7 +84,8 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
         {
             for (TableReference tableReference : myScheduledJobs.keySet())
             {
-                deleteTableSchedule(tableReference);
+                ScheduledJob job = myScheduledJobs.get(tableReference);
+                descheduleTableJob(job);
             }
 
             myScheduledJobs.clear();
@@ -125,10 +126,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
     {
         TableRepairJob oldTableRepairJob = myScheduledJobs.get(tableReference);
 
-        if (oldTableRepairJob != null)
-        {
-            deleteTableSchedule(tableReference);
-        }
+        descheduleTableJob(oldTableRepairJob);
 
         TableRepairJob job = getRepairJob(tableReference, repairConfiguration);
         myScheduledJobs.put(tableReference, job);
@@ -139,14 +137,13 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
     {
         synchronized (myLock)
         {
-            deleteTableSchedule(tableReference);
+            ScheduledJob job = myScheduledJobs.remove(tableReference);
+            descheduleTableJob(job);
         }
     }
 
-    private void deleteTableSchedule(TableReference tableReference)
+    private void descheduleTableJob(ScheduledJob job)
     {
-        ScheduledJob job = myScheduledJobs.remove(tableReference);
-
         if (job != null)
         {
             myScheduleManager.deschedule(job);
