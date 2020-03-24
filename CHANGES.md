@@ -4,6 +4,7 @@
 
 ### Merged from 1.0
 
+* Avoid using concurrent map - Issue #101
 * Avoid concurrent modification exception in RSI#close - Issue #99
 
 ## Version 1.1.1
