@@ -34,7 +34,7 @@ public class RepairStateFactoryImpl implements RepairStateFactory
         myTableRepairMetrics = builder.myTableRepairMetrics;
 
         ReplicationState replicationState = new ReplicationState(builder.myMetadata, builder.myHost);
-        myVnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(replicationState, builder.myRepairHistoryProvider);
+        myVnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(replicationState, builder.myRepairHistoryProvider, false);
     }
 
     @Override

@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import java.util.Collection;
 
+
 /**
  * A collection of {@link VnodeRepairState VnodeRepairStates} that contains utilities to easily combine with new entries.
  */

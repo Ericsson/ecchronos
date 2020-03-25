@@ -65,7 +65,7 @@ public class TestVnodeRepairStateFactoryImpl
         withRange(range(1, 2), host1, host2);
         withRange(range(2, 3), host1, host2);
 
-        assertVnodeStates(newUnrepairedState(range(1, 2)),
+        assertSameForVnodeAndSubrange(newUnrepairedState(range(1, 2)),
                 newUnrepairedState(range(2, 3)));
     }
 
@@ -82,7 +82,7 @@ public class TestVnodeRepairStateFactoryImpl
                 newState(range(1, 2), 1234L),
                 newState(range(2, 3), 2345L));
 
-        assertVnodeStates(previousSnapshot,
+        assertSameForVnodeAndSubrange(previousSnapshot,
                 newState(range(1, 2), 1234L),
                 newState(range(2, 3), 2345L));
     }
@@ -99,7 +99,7 @@ public class TestVnodeRepairStateFactoryImpl
         withSuccessfulRepairHistory(range(1, 2), 1234L);
         withSuccessfulRepairHistory(range(2, 3), 2345L);
 
-        assertVnodeStates(newState(range(1, 2), 1234L),
+        assertSameForVnodeAndSubrange(newState(range(1, 2), 1234L),
                 newState(range(2, 3), 2345L));
     }
 
@@ -123,6 +123,8 @@ public class TestVnodeRepairStateFactoryImpl
 
         assertVnodeStates(newUnrepairedState(range(1, 5)),
                 newUnrepairedState(range(5, 10)));
+        assertSubRangeStates(newState(range(1, 5), range1RepairedAt),
+                newState(range(5, 10), range2RepairedAt));
     }
 
     @Test
@@ -144,6 +146,9 @@ public class TestVnodeRepairStateFactoryImpl
 
         assertVnodeStates(newUnrepairedState(range(1, 5)),
                 newUnrepairedState(range(5, 10)));
+        assertSubRangeStates(newSubRangeState(range(1, 3), range1RepairedAt),
+                newSubRangeUnrepairedState(range(3, 5)),
+                newState(range(5, 10), range2RepairedAt));
     }
 
     @Test
@@ -161,7 +166,7 @@ public class TestVnodeRepairStateFactoryImpl
         withSuccessfulRepairHistory(range(1, 2), range1RepairedAt);
         withFailedRepairHistory(range(2, 3), range2RepairedAt);
 
-        assertVnodeStates(newState(range(1, 2), range1RepairedAt),
+        assertSameForVnodeAndSubrange(newState(range(1, 2), range1RepairedAt),
                 newUnrepairedState(range(2, 3)));
     }
 
@@ -183,7 +188,7 @@ public class TestVnodeRepairStateFactoryImpl
 
         withSuccessfulRepairHistory(range(1, 2), range1RepairedAt);
 
-        assertVnodeStates(newState(range(1, 2), range1RepairedAt),
+        assertSameForVnodeAndSubrange(newState(range(1, 2), range1RepairedAt),
                 newUnrepairedState(range(2, 3)));
     }
 
@@ -203,7 +208,7 @@ public class TestVnodeRepairStateFactoryImpl
                 newState(range(1, 4), 1234L),
                 newState(range(5, 0), 1234L));
 
-        assertVnodeStates(previousSnapshot,
+        assertSameForVnodeAndSubrange(previousSnapshot,
                 newState(range(1, 2), 1234L),
                 newState(range(5, 0), 1234L));
     }
@@ -259,6 +264,16 @@ public class TestVnodeRepairStateFactoryImpl
     private VnodeRepairState newState(LongTokenRange range, long repairedAt)
     {
         return new VnodeRepairState(range, getKnownReplicas(range), repairedAt);
+    }
+
+    private VnodeRepairState newSubRangeUnrepairedState(LongTokenRange range)
+    {
+        return newSubRangeState(range, VnodeRepairState.UNREPAIRED);
+    }
+
+    private VnodeRepairState newSubRangeState(LongTokenRange range, long repairedAt)
+    {
+        return new VnodeRepairState(range, getKnownReplicasForSubRange(range), repairedAt);
     }
 
     private ImmutableSet<Host> getKnownReplicasForSubRange(LongTokenRange range)
@@ -319,8 +334,30 @@ public class TestVnodeRepairStateFactoryImpl
 
     private void assertVnodeStates(RepairStateSnapshot previous, VnodeRepairState... states)
     {
-        VnodeRepairStateFactory vnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider);
+        VnodeRepairStateFactory vnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider, false);
         assertNewState(vnodeRepairStateFactory, previous, VnodeRepairStatesImpl.class, states);
+    }
+
+    private void assertSubRangeStates(VnodeRepairState... states)
+    {
+        assertSubRangeStates(null, states);
+    }
+
+    private void assertSubRangeStates(RepairStateSnapshot previous, VnodeRepairState... states)
+    {
+        VnodeRepairStateFactory subRangeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider, true);
+        assertNewState(subRangeRepairStateFactory, previous, SubRangeRepairStates.class, states);
+    }
+
+    private void assertSameForVnodeAndSubrange(VnodeRepairState... states)
+    {
+        assertSameForVnodeAndSubrange(null, states);
+    }
+
+    private void assertSameForVnodeAndSubrange(RepairStateSnapshot previous, VnodeRepairState... states)
+    {
+        assertVnodeStates(previous, states);
+        assertSubRangeStates(previous, states);
     }
 
     private void assertNewState(VnodeRepairStateFactory factory, RepairStateSnapshot previous, Class<? extends VnodeRepairStates> expectedClass, VnodeRepairState... expectedStates)

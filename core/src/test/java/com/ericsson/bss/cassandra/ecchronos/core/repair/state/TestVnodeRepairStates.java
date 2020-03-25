@@ -51,6 +51,7 @@ public class TestVnodeRepairStates
         List<VnodeRepairState> toUpdate = Collections.emptyList();
 
         assertVnodeRepairStatesContainsExactly(base, toUpdate, vnodeRepairState, vnodeRepairState2);
+        assertSubRangeStatesContainsExactly(base, toUpdate, vnodeRepairState, vnodeRepairState2);
     }
 
     @Test
@@ -66,6 +67,7 @@ public class TestVnodeRepairStates
         List<VnodeRepairState> toUpdate = Arrays.asList(updatedVnodeRepairState, vnodeRepairState);
 
         assertVnodeRepairStatesContainsExactly(base, toUpdate, updatedVnodeRepairState);
+        assertSubRangeStatesContainsExactly(base, toUpdate, updatedVnodeRepairState);
     }
 
     @Test
@@ -83,6 +85,7 @@ public class TestVnodeRepairStates
         List<VnodeRepairState> toUpdate = Collections.singletonList(updatedVnodeRepairState);
 
         assertVnodeRepairStatesContainsExactly(base, toUpdate, vnodeRepairState);
+        assertSubRangeStatesContainsExactly(base, toUpdate, vnodeRepairState);
     }
 
     @Test
@@ -100,6 +103,7 @@ public class TestVnodeRepairStates
         List<VnodeRepairState> toUpdate = Collections.singletonList(updatedVnodeRepairState);
 
         assertVnodeRepairStatesContainsExactly(base, toUpdate, vnodeRepairState);
+        assertSubRangeStatesContainsExactly(base, toUpdate, vnodeRepairState);
     }
 
     /**
@@ -123,6 +127,7 @@ public class TestVnodeRepairStates
         List<VnodeRepairState> toUpdate = Collections.singletonList(updatedVnodeRepairState);
 
         assertVnodeRepairStatesContainsExactly(base, toUpdate, vnodeRepairState);
+        assertSubRangeStatesContainsExactly(base, toUpdate, vnodeRepairState);
     }
 
     /**
@@ -148,6 +153,11 @@ public class TestVnodeRepairStates
         long updatedRepairedAt = baseRepairedAt + TimeUnit.HOURS.toMillis(2);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1, host2), baseRepairedAt);
+        List<VnodeRepairState> expectedVnodeRepairStates = Arrays.asList(
+                new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(host1, host2), baseRepairedAt),
+                new VnodeRepairState(new LongTokenRange(2, 4), ImmutableSet.of(host1, host2), updatedRepairedAt),
+                new VnodeRepairState(new LongTokenRange(4, 5), ImmutableSet.of(host1, host2), baseRepairedAt)
+        );
 
         VnodeRepairState updatedVnodeRepairState = new VnodeRepairState(range2, ImmutableSet.of(host1, host2), updatedRepairedAt);
         VnodeRepairState updatedVnodeRepairState2 = new VnodeRepairState(range3, ImmutableSet.of(host1, host2), baseRepairedAt);
@@ -156,6 +166,7 @@ public class TestVnodeRepairStates
         List<VnodeRepairState> toUpdate = Arrays.asList(updatedVnodeRepairState, updatedVnodeRepairState2);
 
         assertVnodeRepairStatesContainsExactly(base, toUpdate, vnodeRepairState);
+        assertSubRangeStatesContainsExactly(base, toUpdate, expectedVnodeRepairStates);
     }
 
     @Test
@@ -164,12 +175,14 @@ public class TestVnodeRepairStates
         LongTokenRange range = new LongTokenRange(1, 100);
         Host host1 = mock(Host.class);
 
+        VnodeRepairState expectedVnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1), 1234L);
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1), VnodeRepairState.UNREPAIRED);
 
         List<VnodeRepairState> base = Collections.singletonList(vnodeRepairState);
         List<VnodeRepairState> toUpdate = generateSubRanges(range, 10, host1, 1234L);
 
         assertVnodeRepairStatesContainsExactly(base, toUpdate, vnodeRepairState);
+        assertSubRangeStatesContainsExactly(base, toUpdate, expectedVnodeRepairState);
     }
 
     @Test
@@ -178,12 +191,14 @@ public class TestVnodeRepairStates
         LongTokenRange range = new LongTokenRange(50, -50);
         Host host1 = mock(Host.class);
 
+        VnodeRepairState expectedVnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1), 1234L);
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1), VnodeRepairState.UNREPAIRED);
 
         List<VnodeRepairState> base = Collections.singletonList(vnodeRepairState);
         List<VnodeRepairState> toUpdate = generateSubRanges(range, 10, host1, 1234L);
 
         assertVnodeRepairStatesContainsExactly(base, toUpdate, vnodeRepairState);
+        assertSubRangeStatesContainsExactly(base, toUpdate, expectedVnodeRepairState);
     }
 
     @Test
@@ -197,12 +212,14 @@ public class TestVnodeRepairStates
         long subRange1Ms = LocalDateTime.parse("2020-03-13T14:00:05").toEpochSecond(ZoneOffset.UTC) * 1000;
         long subRange2Ms = LocalDateTime.parse("2020-03-13T14:30:05").toEpochSecond(ZoneOffset.UTC) * 1000;
 
+        VnodeRepairState expectedVnodeRepairState = new VnodeRepairState(range, hostSet, subRange1Ms);
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1), totalRangeMs);
         List<VnodeRepairState> subRangeRepairStates = new ArrayList<>();
         subRangeRepairStates.add(new VnodeRepairState(new LongTokenRange(1, 50), hostSet, subRange1Ms));
         subRangeRepairStates.add(new VnodeRepairState(new LongTokenRange(50, 100), hostSet, subRange2Ms));
 
         assertVnodeRepairStatesContainsExactly(Collections.singletonList(vnodeRepairState), subRangeRepairStates, vnodeRepairState);
+        assertSubRangeStatesContainsExactly(Collections.singletonList(vnodeRepairState), subRangeRepairStates, expectedVnodeRepairState);
     }
 
     @Test
@@ -216,12 +233,17 @@ public class TestVnodeRepairStates
         long subRange1Ms = LocalDateTime.parse("2020-03-13T14:00:05").toEpochSecond(ZoneOffset.UTC) * 1000;
         long subRange2Ms = LocalDateTime.parse("2020-03-13T14:30:05").toEpochSecond(ZoneOffset.UTC) * 1000;
 
+        List<VnodeRepairState> expectedVnodeRepairStates = Arrays.asList(
+                new VnodeRepairState(new LongTokenRange(1, 66), hostSet, subRange1Ms), // Repaired sub ranges
+                new VnodeRepairState(new LongTokenRange(66, 100), hostSet, totalRangeMs) // The "rest"
+        );
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1), totalRangeMs);
         List<VnodeRepairState> subRangeRepairStates = new ArrayList<>();
         subRangeRepairStates.add(new VnodeRepairState(new LongTokenRange(1, 33), hostSet, subRange1Ms));
         subRangeRepairStates.add(new VnodeRepairState(new LongTokenRange(33, 66), hostSet, subRange2Ms));
 
         assertVnodeRepairStatesContainsExactly(Collections.singletonList(vnodeRepairState), subRangeRepairStates, vnodeRepairState);
+        assertSubRangeStatesContainsExactly(Collections.singletonList(vnodeRepairState), subRangeRepairStates, expectedVnodeRepairStates);
     }
 
     private List<VnodeRepairState> generateSubRanges(LongTokenRange range, int subRangeCount, Host host, long lastRepairedAt)
@@ -243,6 +265,20 @@ public class TestVnodeRepairStates
                 .withPrefabValues(ImmutableList.class, ImmutableList.of(1), ImmutableList.of(2))
                 .usingGetClass()
                 .verify();
+    }
+
+    private void assertSubRangeStatesContainsExactly(List<VnodeRepairState> base, List<VnodeRepairState> toUpdate, VnodeRepairState... expectedVnodeRepairStates)
+    {
+        assertSubRangeStatesContainsExactly(base, toUpdate, Arrays.asList(expectedVnodeRepairStates));
+    }
+
+    private void assertSubRangeStatesContainsExactly(List<VnodeRepairState> base, List<VnodeRepairState> toUpdate, List<VnodeRepairState> expectedVnodeRepairStates)
+    {
+        VnodeRepairStates actualVnodeRepairStates = SubRangeRepairStates.newBuilder(base)
+                .updateVnodeRepairStates(toUpdate)
+                .build();
+
+        assertThat(actualVnodeRepairStates.getVnodeRepairStates()).containsOnlyElementsOf(expectedVnodeRepairStates);
     }
 
     private void assertVnodeRepairStatesContainsExactly(List<VnodeRepairState> base, List<VnodeRepairState> toUpdate, VnodeRepairState... expectedVnodeRepairStates)
