@@ -14,11 +14,16 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
+import java.math.BigInteger;
+
 /**
  * A representation of a token range in Cassandra.
  */
 public class LongTokenRange
 {
+    static final BigInteger RANGE_END = BigInteger.valueOf(2).pow(63).subtract(BigInteger.ONE); // Long.MAX_VALUE
+    static final BigInteger FULL_RANGE = BigInteger.valueOf(2).pow(64);
+
     public final long start;
     public final long end;
 
@@ -26,6 +31,70 @@ public class LongTokenRange
     {
         this.start = start;
         this.end = end;
+    }
+
+    /**
+     * Check if the token range is wrapping around.
+     *
+     * @return True in case this token range wraps around.
+     */
+    public boolean isWrapAround()
+    {
+        return start >= end;
+    }
+
+    /**
+     * Calculate the size of the token range.
+     *
+     * @return The size of the token range.
+     */
+    public BigInteger rangeSize()
+    {
+        BigInteger tokenStart = BigInteger.valueOf(start);
+        BigInteger tokenEnd = BigInteger.valueOf(end);
+
+        BigInteger rangeSize = tokenEnd.subtract(tokenStart);
+
+        if (rangeSize.compareTo(BigInteger.ZERO) <= 0)
+        {
+            rangeSize = rangeSize.add(FULL_RANGE);
+        }
+
+        return rangeSize;
+    }
+
+    /**
+     * Check if this range covers the other range.
+     * <br><br>
+     * The range (I, J] covers (K, L] if:
+     * <br>
+     * I &lt;= K <b>and</b> J &gt;= L if either both are wrapping or not wrapping.
+     * <br>
+     * I &lt;= K <b>or</b> J &gt;= L if this is wrapping.
+     *
+     * @param other The token range to check if this is covering.
+     * @return True if this token range covers the provided token range.
+     */
+    public boolean isCovering(LongTokenRange other)
+    {
+        boolean thisWraps = isWrapAround();
+        boolean otherWraps = other.isWrapAround();
+
+        if (thisWraps == otherWraps)
+        {
+            // Normal case - are we including the other range
+            return start <= other.start && end >= other.end;
+        }
+        else if (thisWraps)
+        {
+            // If only this wraps we cover it if either:
+            // start is before the other start
+            // end is after the other end
+            return this.start <= other.start || this.end >= other.end;
+        }
+
+        // If the other wraps but we don't we can't possibly cover it
+        return false;
     }
 
     @Override
