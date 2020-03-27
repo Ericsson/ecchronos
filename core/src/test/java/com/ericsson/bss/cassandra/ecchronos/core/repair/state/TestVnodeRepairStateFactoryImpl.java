@@ -152,6 +152,37 @@ public class TestVnodeRepairStateFactoryImpl
     }
 
     @Test
+    public void testWithSubRangeHistoryAndPreviousIsPartiallyRepaired() throws UnknownHostException
+    {
+        Host host1 = withHost("127.0.0.1");
+        Host host2 = withHost("127.0.0.2");
+
+        long firstRepairedAt = TimeUnit.DAYS.toMillis(8);
+        long range1RepairedAt = TimeUnit.DAYS.toMillis(10);
+        long range2RepairedAt = TimeUnit.DAYS.toMillis(11);
+
+        withRange(range(1, 5), host1, host2);
+        withRange(range(5, 10), host1, host2);
+
+        withSubRangeSuccessfulRepairHistory(range(1, 3), range1RepairedAt);
+        withSubRangeSuccessfulRepairHistory(range(5, 8), range2RepairedAt);
+        withSubRangeSuccessfulRepairHistory(range(8, 10), range2RepairedAt);
+
+        RepairStateSnapshot previousSnapshot = snapshot(firstRepairedAt,
+                newState(range(1, 5), firstRepairedAt),
+                newState(range(5, 10), firstRepairedAt));
+
+        assertVnodeStates(previousSnapshot,
+                newState(range(1, 5), firstRepairedAt),
+                newState(range(5, 10), firstRepairedAt));
+
+        assertSubRangeStates(previousSnapshot,
+                newSubRangeState(range(1, 3), range1RepairedAt),
+                newSubRangeState(range(3, 5), firstRepairedAt),
+                newSubRangeState(range(5, 10), range2RepairedAt));
+    }
+
+    @Test
     public void testWithHistoryNoPreviousIsPartiallyRepaired() throws UnknownHostException
     {
         Host host1 = withHost("127.0.0.1");
