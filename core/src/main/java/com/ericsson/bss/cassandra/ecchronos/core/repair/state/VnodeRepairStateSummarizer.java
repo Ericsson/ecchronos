@@ -30,21 +30,21 @@ public final class VnodeRepairStateSummarizer
 {
     private static final long ONE_HOUR_IN_MS = TimeUnit.HOURS.toMillis(1);
 
-    private final VnodeRepairState myBaseVnode;
+    private final NormalizedBaseRange myBaseVnode;
     private final List<NormalizedRange> mySummarizedRanges;
     private final MergeStrategy myMergeStrategy;
 
     private VnodeRepairStateSummarizer(VnodeRepairState baseVnode, Collection<VnodeRepairState> subStates, MergeStrategy mergeStrategy)
     {
-        this.myBaseVnode = baseVnode;
+        this.myBaseVnode = new NormalizedBaseRange(baseVnode);
         this.mySummarizedRanges = subStates.stream()
-                .map(vnode -> NormalizedRange.transform(baseVnode, vnode))
+                .map(myBaseVnode::transform)
                 .sorted()
                 .collect(Collectors.toCollection(LinkedList::new));
         this.myMergeStrategy = mergeStrategy;
 
         // Add the full range first so that we can split out any sub ranges that we are missing
-        mySummarizedRanges.add(0, NormalizedRange.transform(baseVnode, baseVnode));
+        mySummarizedRanges.add(0, myBaseVnode.transform(baseVnode));
     }
 
     /**
@@ -141,7 +141,7 @@ public final class VnodeRepairStateSummarizer
         }
 
         return mySummarizedRanges.stream()
-                .map(range -> range.transform(myBaseVnode))
+                .map(myBaseVnode::transform)
                 .collect(Collectors.toList());
     }
 
@@ -157,7 +157,7 @@ public final class VnodeRepairStateSummarizer
                 splitCoveringRange(current, next);
                 i--;
             }
-            else if (current.end() > next.start())
+            else if (current.end().compareTo(next.start()) > 0)
             {
                 // Replace e.g. "(5, 15], (8, 30]" with "(5, 8], (8, 15], (15, 30]"
                 // The middle section gets the highest "repaired at" of the two overlapping ranges
@@ -165,7 +165,7 @@ public final class VnodeRepairStateSummarizer
                 mySummarizedRanges.remove(next);
 
                 insertSorted(current.mutateEnd(next.start()), mySummarizedRanges);
-                insertSorted(current.split(next), mySummarizedRanges);
+                insertSorted(current.splitEnd(next), mySummarizedRanges);
                 insertSorted(next.mutateStart(current.end()), mySummarizedRanges);
                 i--;
             }
@@ -174,7 +174,7 @@ public final class VnodeRepairStateSummarizer
 
     private void splitCoveringRange(NormalizedRange covering, NormalizedRange covered)
     {
-        if (covering.repairedAt() > covered.repairedAt())
+        if (covering.repairedAt() >= covered.repairedAt())
         {
             mySummarizedRanges.remove(covered);
         }
@@ -182,11 +182,11 @@ public final class VnodeRepairStateSummarizer
         {
             mySummarizedRanges.remove(covering);
 
-            if (covering.start() != covered.start())
+            if (covering.start().compareTo(covered.start()) != 0)
             {
                 insertSorted(covering.mutateEnd(covered.start()), mySummarizedRanges);
             }
-            if (covering.end() != covered.end())
+            if (covering.end().compareTo(covered.end()) != 0)
             {
                 insertSorted(covering.mutateStart(covered.end()), mySummarizedRanges);
             }

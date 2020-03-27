@@ -14,15 +14,13 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-
 import java.math.BigInteger;
 import java.util.Objects;
 
 /**
  * A normalized range based on a "base vnode".
  * The range is normalized so that the token range in the base vnode
- * starts at Long.MIN_VALUE and ends (at most) at LONG.MAX_VALUE.
+ * starts at 0 and ends (at most) at Long.MAX_VALUE - Long.MIN_VALUE + 1.
  *
  * When comparing normalized ranges the ones with lowest start comes first.
  * If two normalized ranges have the same start the one including more is sorted first.
@@ -30,147 +28,183 @@ import java.util.Objects;
  */
 public class NormalizedRange implements Comparable<NormalizedRange>
 {
-    private static final BigInteger RANGE_START = BigInteger.valueOf(Long.MIN_VALUE);
-    private static final BigInteger RANGE_END = BigInteger.valueOf(Long.MAX_VALUE);
-    private static final BigInteger FULL_RANGE = RANGE_END.subtract(RANGE_START).add(BigInteger.ONE);
-
-    private final long start;
-    private final long end;
+    private final NormalizedBaseRange base;
+    private final BigInteger start;
+    private final BigInteger end;
 
     private final long repairedAt;
 
-    public NormalizedRange(long start, long end, long repairedAt)
+    NormalizedRange(NormalizedBaseRange base, BigInteger start, BigInteger end, long repairedAt)
     {
+        this.base = base;
         this.start = start;
         this.end = end;
         this.repairedAt = repairedAt;
     }
 
-    public long start()
+    /**
+     * Get the normalized start token of this sub range.
+     *
+     * @return The normalized start token
+     */
+    public BigInteger start()
     {
         return start;
     }
 
-    public long end()
+    /**
+     * Get the normalized end token of this sub range.
+     *
+     * @return The normalized end token
+     */
+    public BigInteger end()
     {
         return end;
     }
 
+    /**
+     * Get the repair timestamp of this sub range.
+     *
+     * @return The repair timestamp.
+     */
     public long repairedAt()
     {
         return repairedAt;
     }
 
-    public NormalizedRange mutateStart(long newStart)
+    /**
+     * Create a new normalized range based on this sub range with the provided start
+     * and the current sub range end.
+     *
+     * @param newStart The new normalized start token to use.
+     * @return The new normalized range.
+     */
+    public NormalizedRange mutateStart(BigInteger newStart)
     {
-        return new NormalizedRange(newStart, end, repairedAt);
+        if (!base.inRange(newStart))
+        {
+            throw new IllegalArgumentException("Token " + newStart + " not in range " + base);
+        }
+
+        return new NormalizedRange(base, newStart, end, repairedAt);
     }
 
-    public NormalizedRange mutateEnd(long newEnd)
+    /**
+     * Create a new normalized range based on this sub range with the provided end
+     * and the current sub range start.
+     *
+     * @param newEnd The new normalized end token to use.
+     * @return The new normalized range.
+     */
+    public NormalizedRange mutateEnd(BigInteger newEnd)
     {
-        return new NormalizedRange(start, newEnd, repairedAt);
+        if (!base.inRange(newEnd))
+        {
+            throw new IllegalArgumentException("Token " + newEnd + " not in range " + base);
+        }
+
+        return new NormalizedRange(base, start, newEnd, repairedAt);
     }
 
+    /**
+     * Create a new normalized range based on this sub range and the provided sub range.
+     * The new normalized sub range will span the range between the end of this and the
+     * start of the provided sub range.
+     *
+     * E.g. (5, 15] and (20, 30] generates a range (15, 20]
+     *
+     * @param other The new normalized start token to use.
+     * @param repairedAt The repair timestamp to use for the new normalized range.
+     * @return The new normalized range.
+     */
     public NormalizedRange between(NormalizedRange other, long repairedAt)
     {
-        return new NormalizedRange(end, other.start, repairedAt);
+        verifySameBaseRange(other.base);
+
+        if (end.compareTo(other.start) >= 0)
+        {
+            throw new IllegalArgumentException("Cannot create range between " + this + " -> " + other);
+        }
+
+        return new NormalizedRange(base, end, other.start, repairedAt);
     }
 
-    public NormalizedRange split(NormalizedRange other)
+    /**
+     * Split an overlap between the start of the provided range and the end of this.
+     *
+     * E.g. (5, 15] and (8, 17] splits to a new range (8, 15]
+     *
+     * @param other The overlapping range.
+     * @return The new normalized range using the highest repair timestamp of the two.
+     */
+    public NormalizedRange splitEnd(NormalizedRange other)
     {
+        verifySameBaseRange(other.base);
+
+        if (start.compareTo(other.start) > 0 || other.start.compareTo(end) >= 0)
+        {
+            throw new IllegalArgumentException("Cannot split end of " + this + " with " + other);
+        }
+
         long timestampToUse = Math.max(repairedAt, other.repairedAt);
-        return new NormalizedRange(other.start, end, timestampToUse);
+        return new NormalizedRange(base, other.start, end, timestampToUse);
     }
 
+    /**
+     * Combine this normalized range with the provided range assuming
+     * they are adjacent.
+     *
+     * E.g. (5, 15] and (15, 30] becomes (5, 30]
+     *
+     * @param other The adjacent range.
+     * @return The new normalized range using the lowest repair timestamp of the two.
+     */
     public NormalizedRange combine(NormalizedRange other)
     {
+        verifySameBaseRange(other.base);
+
+        if (other.start.compareTo(end) != 0)
+        {
+            throw new IllegalArgumentException("Range " + other + " is not adjacent to " + this);
+        }
+
         long timestampToUse = Math.min(repairedAt, other.repairedAt);
-        return new NormalizedRange(start, other.end, timestampToUse);
+        return new NormalizedRange(base, start, other.end, timestampToUse);
     }
 
+    /**
+     * Check if this sub range covers the other sub range fully.
+     *
+     * @param other The sub range to compare
+     * @return True if this range covers the provided range.
+     */
     public boolean isCovering(NormalizedRange other)
     {
-        return start <= other.start && end >= other.end;
+        verifySameBaseRange(other.base);
+
+        return start.compareTo(other.start) <= 0 && end.compareTo(other.end) >= 0;
     }
 
-    /**
-     * Transform this normalized range back into a vnode state based on
-     * the provided base vnode.
-     *
-     * The resulting vnode state will have an offset from the base vnode
-     * instead of Long.MIN_VALUE.
-     *
-     * @param baseVnode The base vnode
-     * @return The transform vnode state with an offset from the base vnode
-     */
-    public VnodeRepairState transform(VnodeRepairState baseVnode)
+    private void verifySameBaseRange(NormalizedBaseRange other)
     {
-        BigInteger baseStart = BigInteger.valueOf(baseVnode.getTokenRange().start);
-
-        BigInteger startOffset = BigInteger.valueOf(start).subtract(RANGE_START);
-        BigInteger endOffset = BigInteger.valueOf(end).subtract(RANGE_START);
-
-        BigInteger realStart = baseStart.add(startOffset);
-        BigInteger realEnd = baseStart.add(endOffset);
-
-        if (realStart.compareTo(RANGE_END) >= 0)
+        if (!base.equals(other))
         {
-            realStart = realStart.subtract(FULL_RANGE);
+            throw new IllegalArgumentException("Different bases" + base + ":" + other);
         }
-        if (realEnd.compareTo(RANGE_END) >= 0)
-        {
-            realEnd = realEnd.subtract(FULL_RANGE);
-        }
-
-        return new VnodeRepairState(new LongTokenRange(realStart.longValueExact(), realEnd.longValueExact()), baseVnode.getReplicas(), repairedAt);
-    }
-
-    /**
-     * Generate a normalized range for the sub range based on the base vnode.
-     *
-     * The resulting normalized range will have an offset from Long.MIN_VALUE instead
-     * of the base vnode.
-     *
-     * @param baseVnode The base vnode range.
-     * @param subRange The sub range to transform.
-     * @return The range normalized from Long.MIN_VALUE
-     */
-    public static NormalizedRange transform(VnodeRepairState baseVnode, VnodeRepairState subRange)
-    {
-        if (!baseVnode.getTokenRange().isCovering(subRange.getTokenRange()))
-        {
-            throw new IllegalArgumentException(baseVnode + " is not covering " + subRange);
-        }
-
-        BigInteger baseStart = BigInteger.valueOf(baseVnode.getTokenRange().start);
-
-        BigInteger startOffset = BigInteger.valueOf(subRange.getTokenRange().start).subtract(baseStart);
-        if (startOffset.compareTo(BigInteger.ZERO) < 0)
-        {
-            startOffset = startOffset.add(FULL_RANGE);
-        }
-        BigInteger endOffset = BigInteger.valueOf(subRange.getTokenRange().end).subtract(baseStart);
-        if (endOffset.compareTo(BigInteger.ZERO) < 0)
-        {
-            endOffset = endOffset.add(FULL_RANGE);
-        }
-
-        long normalizedStart = RANGE_START.add(startOffset).longValueExact();
-        long normalizedEnd = RANGE_START.add(endOffset).longValueExact();
-
-        return new NormalizedRange(normalizedStart, normalizedEnd, subRange.lastRepairedAt());
     }
 
     @Override
     public int compareTo(NormalizedRange o)
     {
-        int cmp = Long.compare(start, o.start);
+        verifySameBaseRange(o.base);
+
+        int cmp = start.compareTo(o.start);
         if (cmp != 0)
         {
             return cmp;
         }
 
-        return Long.compare(o.end, end);
+        return o.end.compareTo(end);
     }
 
     @Override
@@ -179,15 +213,16 @@ public class NormalizedRange implements Comparable<NormalizedRange>
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         NormalizedRange that = (NormalizedRange) o;
-        return start == that.start &&
-                end == that.end &&
-                repairedAt == that.repairedAt;
+        return repairedAt == that.repairedAt &&
+                base.equals(that.base) &&
+                start.equals(that.start) &&
+                end.equals(that.end);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(start, end, repairedAt);
+        return Objects.hash(base, start, end, repairedAt);
     }
 
     @Override
@@ -195,4 +230,5 @@ public class NormalizedRange implements Comparable<NormalizedRange>
     {
         return String.format("(%d, %d], %d", start, end, repairedAt);
     }
+
 }

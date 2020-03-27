@@ -21,8 +21,8 @@ import java.math.BigInteger;
  */
 public class LongTokenRange
 {
-    static final BigInteger RANGE_END = BigInteger.valueOf(2).pow(63).subtract(BigInteger.ONE); // Long.MAX_VALUE
-    static final BigInteger FULL_RANGE = BigInteger.valueOf(2).pow(64);
+    public static final BigInteger RANGE_END = BigInteger.valueOf(2).pow(63).subtract(BigInteger.ONE); // Long.MAX_VALUE
+    public static final BigInteger FULL_RANGE = BigInteger.valueOf(2).pow(64);
 
     public final long start;
     public final long end;

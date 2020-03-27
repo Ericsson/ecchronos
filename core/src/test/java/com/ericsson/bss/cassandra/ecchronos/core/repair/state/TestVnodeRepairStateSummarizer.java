@@ -245,6 +245,24 @@ public class TestVnodeRepairStateSummarizer
     }
 
     @Test
+    public void summarizeMultipleIntersectingRanges()
+    {
+        VnodeRepairState baseVnode = withVnode(100, 3000, dateToTimestamp("2020-03-12T16:00:00"));
+
+        VnodeRepairState partialVnode1 = withVnode(200, 300, dateToTimestamp("2020-03-12T16:00:00"));
+        VnodeRepairState partialVnode2 = withVnode(200, 400, dateToTimestamp("2020-03-12T16:05:00"));
+        VnodeRepairState partialVnode3 = withVnode(200, 500, dateToTimestamp("2020-03-13T16:00:00")); // 100 -> 500
+
+        List<VnodeRepairState> actualVnodeRepairStates = summarize(baseVnode, partialVnode2, partialVnode1, partialVnode3);
+
+        assertThat(actualVnodeRepairStates).containsExactly(
+                withVnode(100, 200, dateToTimestamp("2020-03-12T16:00:00")),
+                withVnode(200, 500, dateToTimestamp("2020-03-13T16:00:00")),
+                withVnode(500, 3000, dateToTimestamp("2020-03-12T16:00:00"))
+        );
+    }
+
+    @Test
     public void summarizeMultipleCoveringAndIntersectingRangesWithLaterRepairedAt()
     {
         VnodeRepairState baseVnode = withVnode(100, 3000, dateToTimestamp("2020-03-12T16:00:00"));
@@ -263,6 +281,25 @@ public class TestVnodeRepairStateSummarizer
                 withVnode(200, 500, dateToTimestamp("2020-03-14T16:05:00")),
                 withVnode(500, 600, dateToTimestamp("2020-03-13T17:05:00")),
                 withVnode(600, 3000, dateToTimestamp("2020-03-13T16:05:00"))
+        );
+    }
+
+    @Test
+    public void summarizeMultipleCoveringAndIntersectingRangesWithEarlierRepairedAt()
+    {
+        VnodeRepairState baseVnode = withVnode(100, 3000, dateToTimestamp("2020-03-15T16:00:00"));
+
+        VnodeRepairState partialVnode1 = withVnode(100, 500, dateToTimestamp("2020-03-13T16:00:00"));
+        VnodeRepairState partialVnode2 = withVnode(200, 300, dateToTimestamp("2020-03-14T16:05:00"));
+        VnodeRepairState partialVnode3 = withVnode(250, 450, dateToTimestamp("2020-03-14T16:05:00"));
+        VnodeRepairState partialVnode4 = withVnode(250, 600, dateToTimestamp("2020-03-13T17:05:00"));
+        VnodeRepairState partialVnode5 = withVnode(400, 500, dateToTimestamp("2020-03-14T16:05:00"));
+        VnodeRepairState partialVnode6 = withVnode(400, 3000, dateToTimestamp("2020-03-13T16:05:00"));
+
+        List<VnodeRepairState> actualVnodeRepairStates = summarize(baseVnode, partialVnode2, partialVnode1, partialVnode3, partialVnode4, partialVnode5, partialVnode6);
+
+        assertThat(actualVnodeRepairStates).containsExactly(
+                withVnode(100, 3000, dateToTimestamp("2020-03-15T16:00:00"))
         );
     }
 
@@ -306,6 +343,25 @@ public class TestVnodeRepairStateSummarizer
                 withVnode(6000, -12000, dateToTimestamp("2020-03-14T16:05:00")),
                 withVnode(-12000, -10000, dateToTimestamp("2020-03-13T17:05:00")),
                 withVnode(-10000, 3000, dateToTimestamp("2020-03-13T16:05:00"))
+        );
+    }
+
+    @Test
+    public void summarizeWraparoundMultipleCoveringAndIntersectingRangesWithEarlierRepairedAt()
+    {
+        VnodeRepairState baseVnode = withVnode(5000, 3000, dateToTimestamp("2020-03-15T16:00:00"));
+
+        VnodeRepairState partialVnode1 = withVnode(5000, -12000, dateToTimestamp("2020-03-13T16:00:00")); // 5000 -> 6000
+        VnodeRepairState partialVnode2 = withVnode(6000, -14000, dateToTimestamp("2020-03-14T16:05:00")); // 6000 -> -12000
+        VnodeRepairState partialVnode3 = withVnode(7000, -13000, dateToTimestamp("2020-03-14T16:05:00"));
+        VnodeRepairState partialVnode4 = withVnode(7000, -10000, dateToTimestamp("2020-03-13T17:05:00")); // -12000 -> -10000
+        VnodeRepairState partialVnode5 = withVnode(-15000, -12000, dateToTimestamp("2020-03-14T16:05:00"));
+        VnodeRepairState partialVnode6 = withVnode(-15000, 3000, dateToTimestamp("2020-03-13T16:05:00")); // -10000 -> 3000
+
+        List<VnodeRepairState> actualVnodeRepairStates = summarize(baseVnode, partialVnode2, partialVnode1, partialVnode3, partialVnode4, partialVnode5, partialVnode6);
+
+        assertThat(actualVnodeRepairStates).containsExactly(
+                withVnode(5000, 3000, dateToTimestamp("2020-03-15T16:00:00"))
         );
     }
 
