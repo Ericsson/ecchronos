@@ -19,10 +19,10 @@ New features should, in general, be added to the master branch.
 
 ### Code Style
 
-Codestyle TBD.
+This project uses the cassandra code style which is based on Sun’s Java coding conventions. Formatting rules for eclipse can be found [here](https://github.com/Ericsson/ecchronos/blob/ecchronos-1.0/code_style.xml).
 
-It is appreciated if provided patches are contained and do not modify code outside of the scope of the patch.
-This will also make it quicker to perform reviews and merging the pull requests.
+Provided patches should be contained and should not modify code outside of the scope of the patch.
+This will make it quicker to perform reviews and merging the pull requests.
 
 ### Builds
     
