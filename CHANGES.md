@@ -4,6 +4,7 @@
 
 ### Merged from 1.0
 
+* Add Code Style - Issue #103
 * Avoid using concurrent map - Issue #101
 * Avoid concurrent modification exception in RSI#close - Issue #99
 
