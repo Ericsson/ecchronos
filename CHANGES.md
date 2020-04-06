@@ -2,6 +2,7 @@
 
 ## Version 2.0.0
 
+* Add Code Style - Issue #103
 * Avoid using concurrent map - Issue #101
 * Move alarm handling out of TableRepairJob
 * Add State to each ScheduledJob

@@ -516,6 +516,7 @@ limitations under the License.
                             <exclude>release.properties</exclude>
                             <exclude>**/*.feature</exclude>
                             <exclude>**/*.pyc</exclude>
+                            <exclude>code_style.xml</exclude>
                         </excludes>
                     </configuration>
                 </plugin>
