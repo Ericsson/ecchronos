@@ -57,7 +57,7 @@ CHECKS=0
 MAX_CHECK=10
 
 echo "Waiting for REST server to start..."
-until $(curl --silent --fail --head --output /dev/null http://localhost:8080/repair-scheduler/v1/list); do
+until $(curl --silent --fail --head --output /dev/null http://localhost:8080/repair/scheduled/v1/list); do
     if [ "$CHECKS" -eq "$MAX_CHECK" ]; then
         exit 1
     fi

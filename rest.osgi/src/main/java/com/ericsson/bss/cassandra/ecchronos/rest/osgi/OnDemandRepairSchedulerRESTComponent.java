@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Telefonaktiebolaget LM Ericsson
+ * Copyright 2020 Telefonaktiebolaget LM Ericsson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,10 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.rest.osgi;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.rest.RepairSchedulerREST;
-import com.ericsson.bss.cassandra.ecchronos.rest.RepairSchedulerRESTImpl;
+import com.ericsson.bss.cassandra.ecchronos.rest.OnDemandRepairSchedulerREST;
+import com.ericsson.bss.cassandra.ecchronos.rest.OnDemandRepairSchedulerRESTImpl;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -26,21 +27,21 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import javax.ws.rs.Path;
 
 /**
- * OSGi component wrapping {@link RepairSchedulerREST} bound with OSGi services.
+ * OSGi component wrapping {@link OnDemandRepairSchedulerREST} bound with OSGi services.
  */
 @Component
-@Path("/repair/scheduled/v1")
-public class RepairSchedulerRESTComponent implements RepairSchedulerREST
+@Path("/repair/demand/v1")
+public class OnDemandRepairSchedulerRESTComponent implements OnDemandRepairSchedulerREST
 {
-    @Reference(service = RepairScheduler.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
-    private volatile RepairScheduler myRepairScheduler;
+    @Reference (service = RepairScheduler.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    private volatile OnDemandRepairScheduler myRepairScheduler;
 
-    private volatile RepairSchedulerRESTImpl myDelegateRESTImpl;
+    private volatile OnDemandRepairSchedulerRESTImpl myDelegateRESTImpl;
 
     @Activate
     public synchronized void activate()
     {
-        myDelegateRESTImpl = new RepairSchedulerRESTImpl(myRepairScheduler);
+        myDelegateRESTImpl = new OnDemandRepairSchedulerRESTImpl(myRepairScheduler);
     }
 
     @Override
@@ -62,14 +63,8 @@ public class RepairSchedulerRESTComponent implements RepairSchedulerREST
     }
 
     @Override
-    public String config()
+    public String scheduleJob(String keyspace, String table)
     {
-        return myDelegateRESTImpl.config();
-    }
-
-    @Override
-    public String configKeyspace(String keyspace)
-    {
-        return myDelegateRESTImpl.configKeyspace(keyspace);
+        return myDelegateRESTImpl.scheduleJob(keyspace, table);
     }
 }

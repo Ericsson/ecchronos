@@ -188,7 +188,7 @@ public class TestTableRepairJob
         doReturn(repairedAt).when(myRepairStateSnapshot).lastRepairedAt();
         doReturn(false).when(myRepairStateSnapshot).canRepair();
 
-        myRepairJob.postExecute(true);
+        myRepairJob.postExecute(true, null);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(repairedAt);
         verify(myRepairState, times(1)).update();
@@ -202,7 +202,7 @@ public class TestTableRepairJob
         doReturn(repairedAt).when(myRepairStateSnapshot).lastRepairedAt();
         doReturn(false).when(myRepairStateSnapshot).canRepair();
 
-        myRepairJob.postExecute(false);
+        myRepairJob.postExecute(false, null);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(repairedAt);
         verify(myRepairState, times(1)).update();
@@ -216,7 +216,7 @@ public class TestTableRepairJob
 
         long lastRun = myRepairJob.getLastSuccessfulRun();
 
-        myRepairJob.postExecute(true);
+        myRepairJob.postExecute(true, null);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(lastRun);
         verify(myRepairState, times(1)).update();
@@ -230,7 +230,7 @@ public class TestTableRepairJob
 
         long lastRun = myRepairJob.getLastSuccessfulRun();
 
-        myRepairJob.postExecute(false);
+        myRepairJob.postExecute(false, null);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(lastRun);
         verify(myRepairState, times(1)).update();
@@ -244,7 +244,7 @@ public class TestTableRepairJob
 
         long lastRun = myRepairJob.getLastSuccessfulRun();
 
-        myRepairJob.postExecute(true);
+        myRepairJob.postExecute(true, null);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(lastRun);
     }

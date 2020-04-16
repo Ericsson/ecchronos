@@ -180,7 +180,7 @@ public class ScheduleManagerImpl implements ScheduleManager, Closeable
             try (LockFactory.DistributedLock lock = task.getLock(myLockFactory))
             {
                 boolean successful = runTask(task);
-                job.postExecute(successful);
+                job.postExecute(successful, task);
                 return true;
             }
             catch (LockException e)

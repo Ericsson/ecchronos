@@ -37,14 +37,16 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     }
 
     /**
-     * This method gets run after the execution of the job has completed.
+     * This method gets run after the execution of one task has completed.
      * <p>
-     * When overriding this method make sure to call super.postExecute(success) in the end.
+     * When overriding this method make sure to call super.postExecute(success, task) in the end.
      *
      * @param successful
      *            If the job ran successfully.
+     * @param task
+     *            Last task that has completely successful
      */
-    protected void postExecute(boolean successful)
+    protected void postExecute(boolean successful, ScheduledTask task)
     {
         if (successful)
         {

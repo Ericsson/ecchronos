@@ -101,7 +101,7 @@ public class TableRepairJob extends ScheduledJob
     }
 
     @Override
-    public void postExecute(boolean successful)
+    public void postExecute(boolean successful, ScheduledTask task)
     {
         try
         {
@@ -112,7 +112,7 @@ public class TableRepairJob extends ScheduledJob
             LOG.warn("Unable to check repair history, {}", this, e);
         }
 
-        super.postExecute(successful);
+        super.postExecute(successful, task);
     }
 
     @Override

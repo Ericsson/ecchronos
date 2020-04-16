@@ -85,8 +85,8 @@ class RestRequest:
 
 
 class RepairSchedulerRequest(RestRequest):
-    repair_scheduler_list_url = 'repair-scheduler/v1/list'
-    repair_scheduler_get_url = 'repair-scheduler/v1/get/{0}/{1}'
+    repair_scheduler_list_url = 'repair/scheduled/v1/list'
+    repair_scheduler_get_url = 'repair/scheduled/v1/get/{0}/{1}'
 
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
@@ -115,7 +115,7 @@ class RepairSchedulerRequest(RestRequest):
 
 
 class RepairConfigRequest(RestRequest):
-    repair_scheduler_list_url = 'repair-scheduler/v1/config'
+    repair_scheduler_list_url = 'repair/scheduled/v1/config'
 
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)

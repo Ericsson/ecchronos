@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Telefonaktiebolaget LM Ericsson
+ * Copyright 2020 Telefonaktiebolaget LM Ericsson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,33 +14,33 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.types.CompleteRepairJob;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.google.gson.Gson;
-
-import javax.inject.Inject;
-import javax.ws.rs.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import javax.inject.Inject;
+import javax.ws.rs.Path;
+
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.CompleteRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.google.gson.Gson;
+
 /**
  * When updating the path it should also be updated in the OSGi component.
  */
-@Path("/repair/scheduled/v1")
-public class RepairSchedulerRESTImpl implements RepairSchedulerREST
+@Path("/repair/demand/v1")
+public class OnDemandRepairSchedulerRESTImpl implements OnDemandRepairSchedulerREST
 {
     private static final Gson GSON = new Gson();
 
-    private final RepairScheduler myRepairScheduler;
+    private final OnDemandRepairScheduler myRepairScheduler;
 
     @Inject
-    public RepairSchedulerRESTImpl(RepairScheduler repairScheduler)
+    public OnDemandRepairSchedulerRESTImpl(OnDemandRepairScheduler repairScheduler)
     {
         myRepairScheduler = repairScheduler;
     }
@@ -67,9 +67,19 @@ public class RepairSchedulerRESTImpl implements RepairSchedulerREST
     @Override
     public String listKeyspace(String keyspace)
     {
-        List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(job -> keyspace.equals(job.getTableReference().getKeyspace()));
+        List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(
+                job -> keyspace.equals(job.getTableReference().getKeyspace()));
 
         return GSON.toJson(repairJobs);
+    }
+
+    @Override
+    public String scheduleJob(String keyspace, String table)
+    {
+        TableReference tableReference = new TableReference(keyspace, table);
+        myRepairScheduler.scheduleJob(tableReference);
+
+        return GSON.toJson("Success");
     }
 
     private List<ScheduledRepairJob> getScheduledRepairJobs(Predicate<RepairJobView> filter)
@@ -87,30 +97,5 @@ public class RepairSchedulerRESTImpl implements RepairSchedulerREST
         return myRepairScheduler.getCurrentRepairJobs().stream()
                 .filter(job -> job.getTableReference().equals(tableReference))
                 .findFirst();
-    }
-
-    @Override
-    public String config()
-    {
-        List<TableRepairConfig> configurations = getTableRepairConfigs(job -> true);
-
-        return GSON.toJson(configurations);
-    }
-
-    @Override
-    public String configKeyspace(String keyspace)
-    {
-        List<TableRepairConfig> configurations = getTableRepairConfigs(job -> keyspace.equals(job.getTableReference().getKeyspace()));
-
-        return GSON.toJson(configurations);
-    }
-
-    private List<TableRepairConfig> getTableRepairConfigs(Predicate<RepairJobView> filter)
-    {
-        return myRepairScheduler.getCurrentRepairJobs()
-                .stream()
-                .filter(filter)
-                .map(TableRepairConfig::new)
-                .collect(Collectors.toList());
     }
 }

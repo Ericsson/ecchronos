@@ -14,8 +14,10 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
+import com.ericsson.bss.cassandra.ecchronos.rest.OnDemandRepairSchedulerRESTImpl;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairSchedulerRESTImpl;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -27,24 +29,29 @@ import org.glassfish.jersey.servlet.ServletContainer;
 
 import java.io.Closeable;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 
 public class HTTPServer implements Closeable
 {
     private final Server myServer;
 
-    public HTTPServer(RepairScheduler repairScheduler, ScheduleManager scheduleManager, InetSocketAddress inetSocketAddress)
+    public HTTPServer(RepairScheduler repairScheduler, OnDemandRepairScheduler onDemandRepairScheduler, ScheduleManager scheduleManager, InetSocketAddress inetSocketAddress)
     {
+        MyBinder binder = new MyBinder(repairScheduler, scheduleManager, onDemandRepairScheduler);
+
         ResourceConfig config = new ResourceConfig()
-                .packages(true, RepairSchedulerRESTImpl.class.getPackage().getName())
-                .register(new MyBinder(repairScheduler, scheduleManager));
+                .packages(true, RepairSchedulerRESTImpl.class.getPackage().getName(),OnDemandRepairSchedulerRESTImpl.class.getPackage().getName())
+                .register(binder);
 
         ServletHolder servletHolder = new ServletHolder(new ServletContainer(config));
 
         servletHolder.setInitOrder(0);
-        servletHolder.setInitParameter(ServerProperties.PROVIDER_CLASSNAMES, RepairSchedulerRESTImpl.class.getCanonicalName());
+        servletHolder.setInitParameter(ServerProperties.PROVIDER_CLASSNAMES,
+                String.join(",", Arrays.asList(RepairSchedulerRESTImpl.class.getCanonicalName(), OnDemandRepairSchedulerRESTImpl.class.getCanonicalName())));
 
         myServer = new Server(inetSocketAddress);
         ServletContextHandler context = new ServletContextHandler(myServer, "/");
+
         context.addServlet(servletHolder, "/*");
     }
 
@@ -71,11 +78,13 @@ public class HTTPServer implements Closeable
     {
         private final RepairScheduler myRepairScheduler;
         private final ScheduleManager myScheduleManager;
+        private final OnDemandRepairScheduler myOnDemandRepairScheduler;
 
-        public MyBinder(RepairScheduler repairScheduler, ScheduleManager scheduleManager)
+        public MyBinder(RepairScheduler repairScheduler, ScheduleManager scheduleManager, OnDemandRepairScheduler onDemandRepairScheduler)
         {
             myRepairScheduler = repairScheduler;
             myScheduleManager = scheduleManager;
+            myOnDemandRepairScheduler = onDemandRepairScheduler;
         }
 
         @Override
@@ -83,6 +92,7 @@ public class HTTPServer implements Closeable
         {
             bind(myRepairScheduler).to(RepairScheduler.class);
             bind(myScheduleManager).to(ScheduleManager.class);
+            bind(myOnDemandRepairScheduler).to(OnDemandRepairScheduler.class);
         }
     }
 }
