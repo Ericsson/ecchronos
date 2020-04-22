@@ -19,6 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TestUtils;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob.Status;
 import com.google.common.collect.ImmutableSet;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -112,6 +113,14 @@ public class TestCompleteRepairJob
         assertThat(completeRepairJob.lastRepairedAtInMs).isEqualTo(lastRepairedAt);
         assertThat(completeRepairJob.status).isEqualTo(Status.IN_QUEUE);
         assertThat(completeRepairJob.nextRepairInMs).isEqualTo(lastRepairedAt + repairInterval);
+    }
+
+    @Test
+    public void testEqualsContract()
+    {
+        EqualsVerifier.forClass(CompleteRepairJob.class).usingGetClass()
+                .withNonnullFields("keyspace", "table", "virtualNodeStates")
+                .verify();
     }
 
     private void assertVnodes(CompleteRepairJob completeRepairJob, long repairedAfter, VnodeRepairState... vnodeRepairStates)

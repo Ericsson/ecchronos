@@ -16,7 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
-import com.ericsson.bss.cassandra.ecchronos.rest.RepairSchedulerRESTImpl;
+import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementRESTImpl;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -35,13 +35,13 @@ public class HTTPServer implements Closeable
     public HTTPServer(RepairScheduler repairScheduler, ScheduleManager scheduleManager, InetSocketAddress inetSocketAddress)
     {
         ResourceConfig config = new ResourceConfig()
-                .packages(true, RepairSchedulerRESTImpl.class.getPackage().getName())
+                .packages(true, RepairManagementRESTImpl.class.getPackage().getName())
                 .register(new MyBinder(repairScheduler, scheduleManager));
 
         ServletHolder servletHolder = new ServletHolder(new ServletContainer(config));
 
         servletHolder.setInitOrder(0);
-        servletHolder.setInitParameter(ServerProperties.PROVIDER_CLASSNAMES, RepairSchedulerRESTImpl.class.getCanonicalName());
+        servletHolder.setInitParameter(ServerProperties.PROVIDER_CLASSNAMES, RepairManagementRESTImpl.class.getCanonicalName());
 
         myServer = new Server(inetSocketAddress);
         ServletContextHandler context = new ServletContextHandler(myServer, "/");

@@ -18,6 +18,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -39,5 +40,24 @@ public class CompleteRepairJob extends ScheduledRepairJob
         this.virtualNodeStates = vnodeRepairStates.getVnodeRepairStates().stream()
                 .map(vrs -> VirtualNodeState.convert(vrs, repairedAfter))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        if (!super.equals(o))
+            return false;
+        CompleteRepairJob that = (CompleteRepairJob) o;
+        return virtualNodeStates.equals(that.virtualNodeStates);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(super.hashCode(), virtualNodeStates);
     }
 }

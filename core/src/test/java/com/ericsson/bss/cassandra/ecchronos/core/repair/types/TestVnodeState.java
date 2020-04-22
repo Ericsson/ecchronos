@@ -18,6 +18,7 @@ import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.google.common.collect.ImmutableSet;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -85,5 +86,11 @@ public class TestVnodeState
         assertThat(vnodeState.lastRepairedAtInMs).isEqualTo(repairedAt);
         assertThat(vnodeState.replicas).containsExactlyInAnyOrder(myLocalHostAddress, myRemoteHostAddress);
         assertThat(vnodeState.repaired).isFalse();
+    }
+
+    @Test
+    public void testEqualsContract()
+    {
+        EqualsVerifier.forClass(VirtualNodeState.class).usingGetClass().withNonnullFields("replicas").verify();
     }
 }
