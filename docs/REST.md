@@ -59,7 +59,7 @@ RepairJob:
 | repairedRatio          | double                 | 1.0 (100%)                              | Mandatory |
 | lastRepairedAtInMs     | long                   | 1553099547852 (2019-03-16T20:32:27.852) | Mandatory |
 | nextRepairInMs         | long                   | 1553531547000 (2019-03-16T16:32:27.000) | Mandatory |
-| virtualNodeStates      | list(VirtualNodeState) | VirtualNode state example below         | Optional  | 
+| virtualNodeStates      | list(VirtualNodeState) | VirtualNode state example below         | Optional  |
 
 VirtualNodeState:
 

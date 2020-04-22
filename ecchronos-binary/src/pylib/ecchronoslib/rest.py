@@ -86,14 +86,14 @@ class RestRequest:
 
 
 class RepairSchedulerRequest(RestRequest):
-    repair_scheduler_list_url = 'repair-management/v1/status'
-    repair_scheduler_get_url = 'repair-management/v1/status/keyspaces/{0}/tables/{1}'
+    repair_management_status_url = 'repair-management/v1/status'
+    repair_management_table_status_url = 'repair-management/v1/status/keyspaces/{0}/tables/{1}'
 
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
 
     def get(self, keyspace, table):
-        request_url = RepairSchedulerRequest.repair_scheduler_get_url.format(keyspace, table)
+        request_url = RepairSchedulerRequest.repair_management_table_status_url.format(keyspace, table)
 
         result = self.request(request_url)
 
@@ -103,7 +103,7 @@ class RepairSchedulerRequest(RestRequest):
         return result
 
     def list(self, keyspace=None):
-        request_url = RepairSchedulerRequest.repair_scheduler_list_url
+        request_url = RepairSchedulerRequest.repair_management_status_url
         if keyspace is not None:
             request_url = "{0}/keyspaces/{1}".format(request_url, keyspace)
 
@@ -116,14 +116,14 @@ class RepairSchedulerRequest(RestRequest):
 
 
 class RepairConfigRequest(RestRequest):
-    repair_scheduler_list_url = 'repair-management/v1/config'
-    repair_scheduler_get_url = 'repair-management/v1/config/keyspaces/{0}/tables/{1}'
+    repair_management_config_url = 'repair-management/v1/config'
+    repair_management_table_config_url = 'repair-management/v1/config/keyspaces/{0}/tables/{1}'
 
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
 
     def get(self, keyspace, table):
-        request_url = RepairConfigRequest.repair_scheduler_get_url.format(keyspace, table)
+        request_url = RepairConfigRequest.repair_management_table_config_url.format(keyspace, table)
 
         result = self.request(request_url)
         if result.is_successful():
@@ -132,7 +132,7 @@ class RepairConfigRequest(RestRequest):
         return result
 
     def list(self, keyspace=None):
-        request_url = RepairConfigRequest.repair_scheduler_list_url
+        request_url = RepairConfigRequest.repair_management_config_url
         if keyspace is not None:
             request_url = "{0}/keyspaces/{1}".format(request_url, keyspace)
 
