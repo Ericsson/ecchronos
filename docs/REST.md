@@ -2,33 +2,49 @@
 
 ## Repair scheduler
 
-The REST interface for the repair scheduler is located under the path `<host>/repair-scheduler/v1/`.
-The following sub-paths exists:
-* `/get/<keyspace>/<table>`
-* `/list[/<keyspace>]`
-* `/config[/<keyspace>]`
+The REST interface for the repair scheduler is located under the path `<host>/repair-management/v1/`.
 
 The interface is only exposing state and configuration for scheduled tables.
 
 
-### Show specific table repair status
+### Resources
 
-When performing GET on `<host>/repair-scheduler/v1/get/mykeyspace/mytable` a JSON object of the [RepairJob](../ecchronos-binary/src/test/features/repair_job.json) type will be returned.
+* &lt;host&gt;/repair-management/v1/status
+  - Valid verbs: GET
+* &lt;host&gt;/repair-management/v1/status/keyspaces/&lt;keyspace&gt;
+  - Valid verbs: GET
+* &lt;host&gt;/repair-management/v1/status/keyspaces/&lt;keyspace&gt;/tables/&lt;table&gt;
+  - Valid verbs: GET
+* &lt;host&gt;/repair-management/v1/config
+  - Valid verbs: GET
+* &lt;host&gt;/repair-management/v1/config/keyspaces/&lt;keyspace&gt;
+  - Valid verbs: GET
+* &lt;host&gt;/repair-management/v1/config/keyspaces/&lt;keyspace&gt;/tables/&lt;table&gt;
+  - Valid verbs: GET
+
+
+### Get specific table repair status
+
+When performing GET on `<host>/repair-management/v1/status/keyspaces/mykeyspace/tables/mytable` a JSON object of the [RepairJob](../ecchronos-binary/src/test/features/repair_job.json) type will be returned.
 
 *Note: The field virtualNodeStates will only be used when showing a specific table.
-When listing table repair jobs the field will not be used.*
+When listing multiple table repair jobs the field will not be used.*
 
 
-### List table repair jobs
+### Get table repair job status
 
-When performing GET on `<host>/repair-scheduler/v1/list` a [JSON list of RepairJobs](../ecchronos-binary/src/test/features/repair_job_list.json) for all keyspaces will be returned.
-When performing GET on `<host>/repair-scheduler/v1/list/mykeyspace` a JSON list of RepairJobs for that specific keyspace will be returned.
+When performing GET on `<host>/repair-management/v1/status` a [JSON list of RepairJobs](../ecchronos-binary/src/test/features/repair_job_list.json) for all keyspaces will be returned.
+
+When performing GET on `<host>/repair-management/v1/status/keyspaces/mykeyspace` a JSON list of RepairJobs for the keyspace "mykeyspace" will be returned.
 
 
-### List repair config
+### Get scheduled table configuration
 
-When performing GET on `<host>/repair-scheduler/v1/config` a [JSON list of RepairConfig](../ecchronos-binary/src/test/features/repair_config.json) for all keyspaces will be returned.
-When performing GET on `<host>/repair-scheduler/v1/config/mykeyspace` a JSON list of RepairConfig for that specific keyspace will be returned.
+When performing GET on `<host>/repair-management/v1/config` a [JSON list of RepairConfig](../ecchronos-binary/src/test/features/repair_config_list.json) for all keyspaces will be returned.
+
+When performing GET on `<host>/repair-management/v1/config/keyspaces/mykeyspace` a JSON list of RepairConfig for the keyspace "mykeyspace" will be returned.
+
+When performing GET on `<host>/repair-management/v1/config/keyspaces/mykeyspace/tables/mytable` a JSON object of the [RepairConfig](../ecchronos-binary/src/test/features/repair_config.json) type will be returned.
 
 
 ### Types

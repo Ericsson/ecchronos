@@ -52,6 +52,9 @@ class RepairJob:
         self.status = data["status"] if "status" in data else "<UNKNOWN>"
         self.next_repair_in_ms = int(data["nextRepairInMs"] if "nextRepairInMs" in data else -1)
 
+    def is_valid(self):
+        return self.keyspace != "<UNKNOWN>"
+
     def get_last_repaired_at(self):
         return datetime.datetime.fromtimestamp(self.last_repaired_at_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
 
@@ -80,6 +83,9 @@ class TableConfig:
         self.repair_unwind_ratio = float(data["repairUnwindRatio"] if "repairUnwindRatio" in data else 0)
         self.repair_warning_time_in_ms = int(data["repairWarningTimeInMs"] if "repairWarningTimeInMs" in data else 0)
         self.repair_error_time_in_ms = int(data["repairErrorTimeInMs"] if "repairErrorTimeInMs" in data else 0)
+
+    def is_valid(self):
+        return self.keyspace != "<UNKNOWN>"
 
     def get_repair_interval(self):
         return parse_interval(self.repair_interval_in_ms)

@@ -77,7 +77,8 @@ class RestRequest:
             response.close()
             return RequestResult(status_code=200, data=json_data)
         except HTTPError as e:
-            return RequestResult(status_code=e.code, exception=e)
+            return RequestResult(status_code=e.code, message="Unable to retrieve resource {0}".format(request_url),
+                                 exception=e)
         except URLError as e:
             return RequestResult(status_code=404, message="Unable to connect to {0}".format(request_url), exception=e)
         except Exception as e:
@@ -85,14 +86,14 @@ class RestRequest:
 
 
 class RepairSchedulerRequest(RestRequest):
-    repair_scheduler_list_url = 'repair-scheduler/v1/list'
-    repair_scheduler_get_url = 'repair-scheduler/v1/get/{0}/{1}'
+    repair_management_status_url = 'repair-management/v1/status'
+    repair_management_table_status_url = 'repair-management/v1/status/keyspaces/{0}/tables/{1}'
 
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
 
     def get(self, keyspace, table):
-        request_url = RepairSchedulerRequest.repair_scheduler_get_url.format(keyspace, table)
+        request_url = RepairSchedulerRequest.repair_management_table_status_url.format(keyspace, table)
 
         result = self.request(request_url)
 
@@ -102,9 +103,9 @@ class RepairSchedulerRequest(RestRequest):
         return result
 
     def list(self, keyspace=None):
-        request_url = RepairSchedulerRequest.repair_scheduler_list_url
+        request_url = RepairSchedulerRequest.repair_management_status_url
         if keyspace is not None:
-            request_url = "{0}/{1}".format(request_url, keyspace)
+            request_url = "{0}/keyspaces/{1}".format(request_url, keyspace)
 
         result = self.request(request_url)
 
@@ -115,19 +116,28 @@ class RepairSchedulerRequest(RestRequest):
 
 
 class RepairConfigRequest(RestRequest):
-    repair_scheduler_list_url = 'repair-scheduler/v1/config'
+    repair_management_config_url = 'repair-management/v1/config'
+    repair_management_table_config_url = 'repair-management/v1/config/keyspaces/{0}/tables/{1}'
 
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
 
+    def get(self, keyspace, table):
+        request_url = RepairConfigRequest.repair_management_table_config_url.format(keyspace, table)
+
+        result = self.request(request_url)
+        if result.is_successful():
+            result = result.transform_with_data(new_data=TableConfig(result.data))
+
+        return result
+
     def list(self, keyspace=None):
-        request_url = RepairConfigRequest.repair_scheduler_list_url
+        request_url = RepairConfigRequest.repair_management_config_url
         if keyspace is not None:
-            request_url = "{0}/{1}".format(request_url, keyspace)
+            request_url = "{0}/keyspaces/{1}".format(request_url, keyspace)
 
         result = self.request(request_url)
         if result.is_successful():
             result = result.transform_with_data(new_data=[TableConfig(x) for x in result.data])
 
         return result
-

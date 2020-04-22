@@ -41,13 +41,17 @@ def convert_config(config):
     return entry
 
 
-def print_table_config(configData):
+def print_table_config(config_data):
+    if not isinstance(config_data, list):
+        config_data = [config_data]
+
     config_table = list()
     config_table.append(["Keyspace", "Table", "Interval", "Parallelism", "Unwind ratio", "Warning time", "Error time"])
-    sorted_configs = sorted(configData, key=lambda config: (config.keyspace, config.table))
+    sorted_config_data = sorted(config_data, key=lambda config: (config.keyspace, config.table))
 
-    for config in sorted_configs:
-        config_table.append(convert_config(config))
+    for config in sorted_config_data:
+        if config.is_valid():
+            config_table.append(convert_config(config))
     table_formatter.format_table(config_table)
 
 
@@ -55,6 +59,8 @@ def parse_arguments():
     parser = ArgumentParser(description='Show repair configuration')
     parser.add_argument('keyspace', nargs='?',
                         help='show config for a specific keyspace')
+    parser.add_argument('table', nargs='?',
+                        help='show config for a specific table')
     parser.add_argument('-u', '--url', type=str,
                         help='The host to connect to with the format (http://<host>:port)',
                         default=None)
@@ -65,7 +71,11 @@ def main():
     arguments = parse_arguments()
     request = rest.RepairConfigRequest(base_url=arguments.url)
 
-    result = request.list(keyspace=arguments.keyspace)
+    if arguments.table:
+        result = request.get(arguments.keyspace, arguments.table)
+    else:
+        result = request.list(keyspace=arguments.keyspace)
+
     if result.is_successful():
         print_table_config(result.data)
     else:

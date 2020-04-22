@@ -19,6 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions.RepairParallelism;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TestUtils;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,5 +42,11 @@ public class TestTableRepairConfig
         assertThat(tableRepairConfig.repairUnwindRatio).isEqualTo(2.2);
         assertThat(tableRepairConfig.repairWarningTimeInMs).isEqualTo(33);
         assertThat(tableRepairConfig.repairErrorTimeInMs).isEqualTo(44);
+    }
+
+    @Test
+    public void testEqualsContract()
+    {
+        EqualsVerifier.forClass(TableRepairConfig.class).usingGetClass().verify();
     }
 }

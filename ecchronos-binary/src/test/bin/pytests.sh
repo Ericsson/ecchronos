@@ -36,14 +36,14 @@ PYLIB_DIR="$BASE_DIR"/pylib
 # Change configuration for ecchronos
 
 ## Connection
-sed "s/#connection.native.host=localhost/connection.native.host=$CASSANDRA_IP/g" -i "$CONF_DIR"/ecc.cfg
-sed "s/#connection.native.port=9042/connection.native.port=$CASSANDRA_NATIVE_PORT/g" -i "$CONF_DIR"/ecc.cfg
-sed "s/#connection.jmx.host=localhost/connection.jmx.host=$CASSANDRA_IP/g" -i "$CONF_DIR"/ecc.cfg
-sed "s/#connection.jmx.port=7199/connection.jmx.port=$CASSANDRA_JMX_PORT/g" -i "$CONF_DIR"/ecc.cfg
+sed "s/#\?connection.native.host=[a-zA-Z0-9.]\+/connection.native.host=$CASSANDRA_IP/g" -i "$CONF_DIR"/ecc.cfg
+sed "s/#\?connection.native.port=[0-9]\+/connection.native.port=$CASSANDRA_NATIVE_PORT/g" -i "$CONF_DIR"/ecc.cfg
+sed "s/#\?connection.jmx.host=[a-zA-Z0-9.]\+/connection.jmx.host=$CASSANDRA_IP/g" -i "$CONF_DIR"/ecc.cfg
+sed "s/#\?connection.jmx.port=[0-9]\+/connection.jmx.port=$CASSANDRA_JMX_PORT/g" -i "$CONF_DIR"/ecc.cfg
 
 # Logback
 
-sed 's;\(<appender-ref ref="STDOUT" />\);<!-- \1 -->;g' -i "$CONF_DIR"/logback.xml
+sed 's;^\(\s*\)\(<appender-ref ref="STDOUT" />\)\s*$;\1<!-- \2 -->;g' -i "$CONF_DIR"/logback.xml
 
 cd $PYLIB_DIR
 
@@ -57,7 +57,7 @@ CHECKS=0
 MAX_CHECK=10
 
 echo "Waiting for REST server to start..."
-until $(curl --silent --fail --head --output /dev/null http://localhost:8080/repair-scheduler/v1/list); do
+until $(curl --silent --fail --head --output /dev/null http://localhost:8080/repair-management/v1/status); do
     if [ "$CHECKS" -eq "$MAX_CHECK" ]; then
         exit 1
     fi

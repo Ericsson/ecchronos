@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.TestUtils;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob.Status;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -96,5 +97,13 @@ public class TestScheduledRepairJob
         assertThat(scheduledRepairJob.lastRepairedAtInMs).isEqualTo(lastRepairedAt);
         assertThat(scheduledRepairJob.status).isEqualTo(Status.ERROR);
         assertThat(scheduledRepairJob.nextRepairInMs).isEqualTo(lastRepairedAt + repairInterval);
+    }
+
+    @Test
+    public void testEqualsContract()
+    {
+        EqualsVerifier.forClass(ScheduledRepairJob.class).usingGetClass()
+                .withNonnullFields("keyspace", "table")
+                .verify();
     }
 }
