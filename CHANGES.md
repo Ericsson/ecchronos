@@ -13,6 +13,8 @@
 * Expose metrics through JMX - Issue #75
 * Add ecc-config command that displays repair configuration
 * Remove usage of joda time - Issue #95
+* Proper REST interface - Issue #109
+* Add manual repair - Issue #14
 
 ### Merged from 1.1
 

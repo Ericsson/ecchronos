@@ -40,6 +40,10 @@ def add_vnode_state_to_table(vnode_state, table):
 
 
 def print_verbose_repair_job(repair_job, max_lines):
+    if not repair_job.is_valid():
+        print('Repair job not found')
+        return
+
     verbose_print_format = "{0:15s}: {1}"
 
     print(verbose_print_format.format("Keyspace", repair_job.keyspace))

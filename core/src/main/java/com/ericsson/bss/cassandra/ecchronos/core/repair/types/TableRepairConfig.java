@@ -19,6 +19,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions.RepairParallelism;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
+import java.util.Objects;
+
 /**
  * A representation of a table repair configuration.
  *
@@ -46,5 +48,30 @@ public class TableRepairConfig
         this.repairUnwindRatio = config.getRepairUnwindRatio();
         this.repairWarningTimeInMs = config.getRepairWarningTimeInMs();
         this.repairErrorTimeInMs = config.getRepairErrorTimeInMs();
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        TableRepairConfig that = (TableRepairConfig) o;
+        return repairIntervalInMs == that.repairIntervalInMs &&
+                Double.compare(that.repairUnwindRatio, repairUnwindRatio) == 0 &&
+                repairWarningTimeInMs == that.repairWarningTimeInMs &&
+                repairErrorTimeInMs == that.repairErrorTimeInMs &&
+                Objects.equals(keyspace, that.keyspace) &&
+                Objects.equals(table, that.table) &&
+                repairParallelism == that.repairParallelism;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects
+                .hash(keyspace, table, repairIntervalInMs, repairParallelism, repairUnwindRatio, repairWarningTimeInMs,
+                        repairErrorTimeInMs);
     }
 }

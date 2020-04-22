@@ -18,6 +18,7 @@ import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 
 import java.net.InetAddress;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -52,5 +53,26 @@ public class VirtualNodeState
         boolean repaired = lastRepairedAt > repairedAfter;
 
         return new VirtualNodeState(startToken, endToken, replicas, lastRepairedAt, repaired);
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        VirtualNodeState that = (VirtualNodeState) o;
+        return startToken == that.startToken &&
+                endToken == that.endToken &&
+                lastRepairedAtInMs == that.lastRepairedAtInMs &&
+                repaired == that.repaired &&
+                replicas.equals(that.replicas);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(startToken, endToken, replicas, lastRepairedAtInMs, repaired);
     }
 }

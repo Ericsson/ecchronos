@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
@@ -101,5 +102,27 @@ public class ScheduledRepairJob
             return Status.IN_QUEUE;
         }
         return Status.COMPLETED;
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        ScheduledRepairJob that = (ScheduledRepairJob) o;
+        return lastRepairedAtInMs == that.lastRepairedAtInMs &&
+                Double.compare(that.repairedRatio, repairedRatio) == 0 &&
+                nextRepairInMs == that.nextRepairInMs &&
+                keyspace.equals(that.keyspace) &&
+                table.equals(that.table) &&
+                status == that.status;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(keyspace, table, lastRepairedAtInMs, repairedRatio, status, nextRepairInMs);
     }
 }

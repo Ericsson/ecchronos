@@ -32,21 +32,37 @@ import java.util.stream.Collectors;
 /**
  * When updating the path it should also be updated in the OSGi component.
  */
-@Path("/repair/scheduled/v1")
-public class RepairSchedulerRESTImpl implements RepairSchedulerREST
+@Path("/repair-management/v1")
+public class RepairManagementRESTImpl implements RepairManagementREST
 {
     private static final Gson GSON = new Gson();
 
     private final RepairScheduler myRepairScheduler;
 
     @Inject
-    public RepairSchedulerRESTImpl(RepairScheduler repairScheduler)
+    public RepairManagementRESTImpl(RepairScheduler repairScheduler)
     {
         myRepairScheduler = repairScheduler;
     }
 
     @Override
-    public String get(String keyspace, String table)
+    public String scheduledStatus()
+    {
+        List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(job -> true);
+
+        return GSON.toJson(repairJobs);
+    }
+
+    @Override
+    public String scheduledKeyspaceStatus(String keyspace)
+    {
+        List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(job -> keyspace.equals(job.getTableReference().getKeyspace()));
+
+        return GSON.toJson(repairJobs);
+    }
+
+    @Override
+    public String scheduledTableStatus(String keyspace, String table)
     {
         Optional<RepairJobView> repairJobView = findRepairJob(new TableReference(keyspace, table));
 
@@ -57,19 +73,30 @@ public class RepairSchedulerRESTImpl implements RepairSchedulerREST
     }
 
     @Override
-    public String list()
+    public String scheduledConfig()
     {
-        List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(job -> true);
+        List<TableRepairConfig> configurations = getTableRepairConfigs(job -> true);
 
-        return GSON.toJson(repairJobs);
+        return GSON.toJson(configurations);
     }
 
     @Override
-    public String listKeyspace(String keyspace)
+    public String scheduledKeyspaceConfig(String keyspace)
     {
-        List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(job -> keyspace.equals(job.getTableReference().getKeyspace()));
+        List<TableRepairConfig> configurations = getTableRepairConfigs(job -> job.getTableReference().getKeyspace().equals(keyspace));
 
-        return GSON.toJson(repairJobs);
+        return GSON.toJson(configurations);
+    }
+
+    @Override
+    public String scheduledTableConfig(String keyspace, String table)
+    {
+        Optional<RepairJobView> repairJobView = findRepairJob(new TableReference(keyspace, table));
+
+        return repairJobView
+                .map(TableRepairConfig::new)
+                .map(GSON::toJson)
+                .orElse("{}");
     }
 
     private List<ScheduledRepairJob> getScheduledRepairJobs(Predicate<RepairJobView> filter)
@@ -87,22 +114,6 @@ public class RepairSchedulerRESTImpl implements RepairSchedulerREST
         return myRepairScheduler.getCurrentRepairJobs().stream()
                 .filter(job -> job.getTableReference().equals(tableReference))
                 .findFirst();
-    }
-
-    @Override
-    public String config()
-    {
-        List<TableRepairConfig> configurations = getTableRepairConfigs(job -> true);
-
-        return GSON.toJson(configurations);
-    }
-
-    @Override
-    public String configKeyspace(String keyspace)
-    {
-        List<TableRepairConfig> configurations = getTableRepairConfigs(job -> keyspace.equals(job.getTableReference().getKeyspace()));
-
-        return GSON.toJson(configurations);
     }
 
     private List<TableRepairConfig> getTableRepairConfigs(Predicate<RepairJobView> filter)

@@ -15,8 +15,8 @@
 package com.ericsson.bss.cassandra.ecchronos.rest.osgi;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.rest.RepairSchedulerREST;
-import com.ericsson.bss.cassandra.ecchronos.rest.RepairSchedulerRESTImpl;
+import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementREST;
+import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementRESTImpl;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -26,50 +26,56 @@ import org.osgi.service.component.annotations.ReferencePolicy;
 import javax.ws.rs.Path;
 
 /**
- * OSGi component wrapping {@link RepairSchedulerREST} bound with OSGi services.
+ * OSGi component wrapping {@link RepairManagementREST} bound with OSGi services.
  */
 @Component
-@Path("/repair/scheduled/v1")
-public class RepairSchedulerRESTComponent implements RepairSchedulerREST
+@Path("/repair-management/v1")
+public class RepairManagementRESTComponent implements RepairManagementREST
 {
     @Reference(service = RepairScheduler.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile RepairScheduler myRepairScheduler;
 
-    private volatile RepairSchedulerRESTImpl myDelegateRESTImpl;
+    private volatile RepairManagementRESTImpl myDelegateRESTImpl;
 
     @Activate
     public synchronized void activate()
     {
-        myDelegateRESTImpl = new RepairSchedulerRESTImpl(myRepairScheduler);
+        myDelegateRESTImpl = new RepairManagementRESTImpl(myRepairScheduler);
     }
 
     @Override
-    public String get(String keyspace, String table)
+    public String scheduledStatus()
     {
-        return myDelegateRESTImpl.get(keyspace, table);
+        return myDelegateRESTImpl.scheduledStatus();
     }
 
     @Override
-    public String list()
+    public String scheduledKeyspaceStatus(String keyspace)
     {
-        return myDelegateRESTImpl.list();
+        return myDelegateRESTImpl.scheduledKeyspaceStatus(keyspace);
     }
 
     @Override
-    public String listKeyspace(String keyspace)
+    public String scheduledTableStatus(String keyspace, String table)
     {
-        return myDelegateRESTImpl.listKeyspace(keyspace);
+        return myDelegateRESTImpl.scheduledTableStatus(keyspace, table);
     }
 
     @Override
-    public String config()
+    public String scheduledConfig()
     {
-        return myDelegateRESTImpl.config();
+        return myDelegateRESTImpl.scheduledConfig();
     }
 
     @Override
-    public String configKeyspace(String keyspace)
+    public String scheduledKeyspaceConfig(String keyspace)
     {
-        return myDelegateRESTImpl.configKeyspace(keyspace);
+        return myDelegateRESTImpl.scheduledKeyspaceConfig(keyspace);
+    }
+
+    @Override
+    public String scheduledTableConfig(String keyspace, String table)
+    {
+        return myDelegateRESTImpl.scheduledTableConfig(keyspace, table);
     }
 }
