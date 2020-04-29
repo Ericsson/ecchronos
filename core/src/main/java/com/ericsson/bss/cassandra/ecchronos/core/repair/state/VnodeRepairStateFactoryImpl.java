@@ -79,7 +79,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
             vnodeRepairStatesBase.add(new VnodeRepairState(longTokenRange, replicas, lastRepairedAt));
         }
 
-        VnodeRepairStates.Builder vnodeRepairStatusesBuilder = VnodeRepairStates.newBuilder(vnodeRepairStatesBase);
+        VnodeRepairStates.Builder vnodeRepairStatusesBuilder = VnodeRepairStatesImpl.newBuilder(vnodeRepairStatesBase);
 
         if (previous != null)
         {

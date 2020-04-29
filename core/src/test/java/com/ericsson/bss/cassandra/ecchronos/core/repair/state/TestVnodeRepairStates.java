@@ -39,7 +39,7 @@ public class TestVnodeRepairStates
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1), VnodeRepairState.UNREPAIRED);
         VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, ImmutableSet.of(host1), VnodeRepairState.UNREPAIRED);
 
-        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2))
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2))
                 .build();
 
         assertThat(vnodeRepairStates.getVnodeRepairStates()).containsExactlyInAnyOrder(vnodeRepairState, vnodeRepairState2);
@@ -54,7 +54,7 @@ public class TestVnodeRepairStates
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1), VnodeRepairState.UNREPAIRED);
         VnodeRepairState updatedVnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1), 1234L);
 
-        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Collections.singletonList(vnodeRepairState))
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Collections.singletonList(vnodeRepairState))
                 .updateVnodeRepairState(updatedVnodeRepairState)
                 .updateVnodeRepairState(vnodeRepairState)
                 .build();
@@ -73,7 +73,7 @@ public class TestVnodeRepairStates
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1, host2), 1234L);
         VnodeRepairState updatedVnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1, host3), VnodeRepairState.UNREPAIRED);
 
-        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Collections.singletonList(vnodeRepairState))
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Collections.singletonList(vnodeRepairState))
                 .updateVnodeRepairState(updatedVnodeRepairState)
                 .build();
 

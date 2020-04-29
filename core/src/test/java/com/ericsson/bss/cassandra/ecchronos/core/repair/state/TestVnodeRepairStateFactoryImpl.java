@@ -65,7 +65,7 @@ public class TestVnodeRepairStateFactoryImpl
         when(mockReplicationState.getTokenRangeToReplicas(eq(TABLE_REFERENCE))).thenReturn(tokenToHostMap);
         RepairHistoryProvider repairHistoryProvider = new MockedRepairHistoryProvider(TABLE_REFERENCE);
 
-        VnodeRepairStates expectedVnodeRepairStates = VnodeRepairStates.newBuilder(Arrays.asList(
+        VnodeRepairStates expectedVnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(
                 new VnodeRepairState(longTokenRange1, replicas, VnodeRepairState.UNREPAIRED),
                 new VnodeRepairState(longTokenRange2, replicas, VnodeRepairState.UNREPAIRED)))
                 .build();
@@ -93,7 +93,7 @@ public class TestVnodeRepairStateFactoryImpl
         when(mockReplicationState.getTokenRangeToReplicas(eq(TABLE_REFERENCE))).thenReturn(tokenToHostMap);
         RepairHistoryProvider repairHistoryProvider = new MockedRepairHistoryProvider(TABLE_REFERENCE);
 
-        VnodeRepairStates expectedVnodeRepairStates = VnodeRepairStates.newBuilder(Arrays.asList(
+        VnodeRepairStates expectedVnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(
                 new VnodeRepairState(longTokenRange1, replicas, 1),
                 new VnodeRepairState(longTokenRange2, replicas, 2)))
                 .build();
@@ -135,7 +135,7 @@ public class TestVnodeRepairStateFactoryImpl
         when(mockReplicationState.getTokenRangeToReplicas(eq(TABLE_REFERENCE))).thenReturn(tokenToHostMap);
         RepairHistoryProvider repairHistoryProvider = new MockedRepairHistoryProvider(TABLE_REFERENCE, repairEntry1, repairEntry2);
 
-        VnodeRepairStates expectedVnodeRepairStates = VnodeRepairStates.newBuilder(Arrays.asList(
+        VnodeRepairStates expectedVnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(
                 new VnodeRepairState(longTokenRange1, replicas, range1RepairedAt),
                 new VnodeRepairState(longTokenRange2, replicas, range2RepairedAt)))
                 .build();
@@ -171,7 +171,7 @@ public class TestVnodeRepairStateFactoryImpl
         when(mockReplicationState.getTokenRangeToReplicas(eq(TABLE_REFERENCE))).thenReturn(tokenToHostMap);
         RepairHistoryProvider repairHistoryProvider = new MockedRepairHistoryProvider(TABLE_REFERENCE, repairEntry1, repairEntry2);
 
-        VnodeRepairStates expectedVnodeRepairStates = VnodeRepairStates.newBuilder(Arrays.asList(
+        VnodeRepairStates expectedVnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(
                 new VnodeRepairState(longTokenRange1, replicas, range1RepairedAt),
                 new VnodeRepairState(longTokenRange2, replicas, VnodeRepairState.UNREPAIRED)))
                 .build();
@@ -207,7 +207,7 @@ public class TestVnodeRepairStateFactoryImpl
         when(mockReplicationState.getTokenRangeToReplicas(eq(TABLE_REFERENCE))).thenReturn(tokenToHostMap);
         RepairHistoryProvider repairHistoryProvider = new MockedRepairHistoryProvider(TABLE_REFERENCE, repairEntry1, repairEntry2);
 
-        VnodeRepairStates expectedVnodeRepairStates = VnodeRepairStates.newBuilder(Arrays.asList(
+        VnodeRepairStates expectedVnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(
                 new VnodeRepairState(longTokenRange1, replicas, range1RepairedAt),
                 new VnodeRepairState(longTokenRange2, replicas, VnodeRepairState.UNREPAIRED)))
                 .build();
@@ -234,7 +234,7 @@ public class TestVnodeRepairStateFactoryImpl
 
         RepairHistoryProvider repairHistoryProvider = new MockedRepairHistoryProvider(TABLE_REFERENCE);
 
-        VnodeRepairStates vnodeRepairStatesBefore = VnodeRepairStates.newBuilder(Arrays.asList(
+        VnodeRepairStates vnodeRepairStatesBefore = VnodeRepairStatesImpl.newBuilder(Arrays.asList(
                 new VnodeRepairState(longTokenRange1Before, replicasBefore, rangeRepairedAt),
                 new VnodeRepairState(longTokenRange2Before, replicasBefore, rangeRepairedAt)))
                 .build();
@@ -252,7 +252,7 @@ public class TestVnodeRepairStateFactoryImpl
 
         when(mockReplicationState.getTokenRangeToReplicas(eq(TABLE_REFERENCE))).thenReturn(tokenToHostMapAfter);
 
-        VnodeRepairStates expectedVnodeRepairStatesAfter = VnodeRepairStates.newBuilder(Arrays.asList(
+        VnodeRepairStates expectedVnodeRepairStatesAfter = VnodeRepairStatesImpl.newBuilder(Arrays.asList(
                 new VnodeRepairState(longTokenRange1After, replicasGroupOneAfter, rangeRepairedAt),
                 new VnodeRepairState(longTokenRange2After, replicasGroupTwoAfter, rangeRepairedAt)))
                 .build();
