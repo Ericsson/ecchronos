@@ -33,7 +33,7 @@ import javax.ws.rs.Path;
 @Path("/repair-management/v1")
 public class RepairManagementRESTComponent implements RepairManagementREST
 {
-    @Reference(service = RepairScheduler.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference (service = RepairScheduler.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile RepairScheduler myRepairScheduler;
 
     @Reference(service = OnDemandRepairScheduler.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)

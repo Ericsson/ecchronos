@@ -28,7 +28,6 @@ import org.glassfish.jersey.servlet.ServletContainer;
 
 import java.io.Closeable;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 
 public class HTTPServer implements Closeable
 {
@@ -45,8 +44,7 @@ public class HTTPServer implements Closeable
         ServletHolder servletHolder = new ServletHolder(new ServletContainer(config));
 
         servletHolder.setInitOrder(0);
-        servletHolder.setInitParameter(ServerProperties.PROVIDER_CLASSNAMES,
-                String.join(",", Arrays.asList(RepairManagementRESTImpl.class.getCanonicalName())));
+        servletHolder.setInitParameter(ServerProperties.PROVIDER_CLASSNAMES, RepairManagementRESTImpl.class.getCanonicalName());
 
         myServer = new Server(inetSocketAddress);
         ServletContextHandler context = new ServletContextHandler(myServer, "/");
