@@ -98,4 +98,16 @@ public interface RepairManagementREST
     @Produces(MediaType.APPLICATION_JSON)
     String scheduledTableConfig(@PathParam("keyspace") String keyspace, // NOPMD
             @PathParam("table") String table);
+    /**
+     * Schedule an on demand repair to be run on a specific table
+     *
+     * @param keyspace The keyspace of the table
+     * @param table The table to get configuration of
+     * @return A JSON containing the scheduled job
+     */
+    @GET
+    @Path("/schedule/keyspaces/{keyspace}/tables/{table}")
+    @Produces(MediaType.APPLICATION_JSON)
+    String scheduleJob(@PathParam("keyspace") String keyspace,
+                              @PathParam("table") String table);
 }

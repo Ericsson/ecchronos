@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.rest.osgi;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementREST;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementRESTImpl;
@@ -35,12 +36,15 @@ public class RepairManagementRESTComponent implements RepairManagementREST
     @Reference(service = RepairScheduler.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile RepairScheduler myRepairScheduler;
 
+    @Reference(service = OnDemandRepairScheduler.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    private volatile OnDemandRepairScheduler myOnDemandRepairScheduler;
+
     private volatile RepairManagementRESTImpl myDelegateRESTImpl;
 
     @Activate
     public synchronized void activate()
     {
-        myDelegateRESTImpl = new RepairManagementRESTImpl(myRepairScheduler);
+        myDelegateRESTImpl = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
     }
 
     @Override
@@ -77,5 +81,11 @@ public class RepairManagementRESTComponent implements RepairManagementREST
     public String scheduledTableConfig(String keyspace, String table)
     {
         return myDelegateRESTImpl.scheduledTableConfig(keyspace, table);
+    }
+
+    @Override
+    public String scheduleJob(String keyspace, String table)
+    {
+        return myDelegateRESTImpl.scheduleJob(keyspace, table);
     }
 }

@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 
 import java.util.Collection;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Predicate;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
@@ -36,6 +37,7 @@ public class ScheduledRepairJob
     public final double repairedRatio;
     public final Status status;
     public final long nextRepairInMs;
+    public final UUID id;
 
     public enum Status
     {
@@ -43,8 +45,9 @@ public class ScheduledRepairJob
     }
 
     @VisibleForTesting
-    public ScheduledRepairJob(String keyspace, String table, Status status, double repairedRatio, long lastRepairedAtInMs, long nextRepairInMs)
+    public ScheduledRepairJob(UUID id, String keyspace, String table, Status status, double repairedRatio, long lastRepairedAtInMs, long nextRepairInMs)
     {
+        this.id = id;
         this.keyspace = keyspace;
         this.table = table;
         this.status = status;
@@ -55,12 +58,22 @@ public class ScheduledRepairJob
 
     public ScheduledRepairJob(RepairJobView repairJobView)
     {
+        this.id = repairJobView.getId();
         this.keyspace = repairJobView.getTableReference().getKeyspace();
         this.table = repairJobView.getTableReference().getTable();
-        this.lastRepairedAtInMs = repairJobView.getRepairStateSnapshot().lastRepairedAt();
         long now = System.currentTimeMillis();
-        this.repairedRatio = calculateRepaired(repairJobView, now);
-        this.status = getStatus(repairJobView, now);
+        if (repairJobView.getRepairStateSnapshot() != null)
+        {
+            this.lastRepairedAtInMs = repairJobView.getRepairStateSnapshot().lastRepairedAt();
+            this.repairedRatio = calculateRepaired(repairJobView, now);
+            this.status = getStatus(repairJobView, now);
+        }
+        else
+        {
+            this.lastRepairedAtInMs = 0;
+            this.repairedRatio = 0;
+            this.status = Status.IN_QUEUE;
+        }
         this.nextRepairInMs = lastRepairedAtInMs + repairJobView.getRepairConfiguration().getRepairIntervalInMs();
     }
 
@@ -117,12 +130,13 @@ public class ScheduledRepairJob
                 nextRepairInMs == that.nextRepairInMs &&
                 keyspace.equals(that.keyspace) &&
                 table.equals(that.table) &&
-                status == that.status;
+                status == that.status &&
+                id.equals(that.id);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(keyspace, table, lastRepairedAtInMs, repairedRatio, status, nextRepairInMs);
+        return Objects.hash(id, keyspace, table, lastRepairedAtInMs, repairedRatio, status, nextRepairInMs);
     }
 }

@@ -17,7 +17,6 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
-import com.ericsson.bss.cassandra.ecchronos.rest.OnDemandRepairSchedulerRESTImpl;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementRESTImpl;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -40,14 +39,14 @@ public class HTTPServer implements Closeable
         MyBinder binder = new MyBinder(repairScheduler, scheduleManager, onDemandRepairScheduler);
 
         ResourceConfig config = new ResourceConfig()
-                .packages(true, RepairManagementRESTImpl.class.getPackage().getName(),OnDemandRepairSchedulerRESTImpl.class.getPackage().getName())
+                .packages(true, RepairManagementRESTImpl.class.getPackage().getName())
                 .register(binder);
 
         ServletHolder servletHolder = new ServletHolder(new ServletContainer(config));
 
         servletHolder.setInitOrder(0);
         servletHolder.setInitParameter(ServerProperties.PROVIDER_CLASSNAMES,
-                String.join(",", Arrays.asList(RepairManagementRESTImpl.class.getCanonicalName(), OnDemandRepairSchedulerRESTImpl.class.getCanonicalName())));
+                String.join(",", Arrays.asList(RepairManagementRESTImpl.class.getCanonicalName())));
 
         myServer = new Server(inetSocketAddress);
         ServletContextHandler context = new ServletContextHandler(myServer, "/");

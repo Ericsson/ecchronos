@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import org.junit.After;
 import org.junit.Test;
@@ -75,7 +76,8 @@ public class TestOnDemandRepairJob
     public void testJobCorrectlyReturned()
     {
         OnDemandRepairJob repairJob = createOnDemandRepairJob();
-        RepairJobView expectedView = new RepairJobView(myTableReference, RepairConfiguration.DEFAULT, null);
+        RepairJobView expectedView = new RepairJobView(repairJob.getId(), myTableReference, RepairConfiguration.DEFAULT, null);
+        assertThat(repairJob.getId()).isEqualTo(repairJob.getId());
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
         assertThat(repairJob.getRepairConfiguration()).isEqualTo(RepairConfiguration.DEFAULT);
         assertThat(repairJob.getTableReference()).isEqualTo(myTableReference);

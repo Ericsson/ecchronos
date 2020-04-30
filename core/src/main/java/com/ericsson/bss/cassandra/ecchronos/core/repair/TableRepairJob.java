@@ -73,7 +73,7 @@ public class TableRepairJob extends ScheduledJob
 
     public RepairJobView getView()
     {
-        return new RepairJobView(myTableReference, myRepairConfiguration, myRepairState.getSnapshot());
+        return new RepairJobView(getId(), myTableReference, myRepairConfiguration, myRepairState.getSnapshot());
     }
 
     @Override

@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.scheduling;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -28,9 +29,11 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
 
     protected volatile long myLastSuccessfulRun = -1;
     private volatile long myNextRunTime = -1;
+    private final UUID myId;
 
     public ScheduledJob(Configuration configuration)
     {
+        myId = UUID.randomUUID();
         myPriority = configuration.priority;
         myRunIntervalInMs = configuration.runIntervalInMs;
         myLastSuccessfulRun = System.currentTimeMillis() - myRunIntervalInMs;
@@ -138,6 +141,14 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         int hours = (int) (diff / 3600000) + 1;
 
         return hours * myPriority.getValue();
+    }
+
+    /**
+     * @return unique identifier for Job
+     */
+    public final UUID getId()
+    {
+        return myId;
     }
 
     /**

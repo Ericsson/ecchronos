@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import com.datastax.driver.core.Host;
@@ -172,7 +173,7 @@ public class TestRepairTableStatusCommand
         TableReference tableReference = createTableRef("ks1.tbl1");
         RepairStateSnapshot state = mock(RepairStateSnapshot.class);
         when(state.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
-        return new RepairJobView(tableReference, null, state);
+        return new RepairJobView(UUID.randomUUID(), tableReference, null, state);
     }
 
     private RepairTableStatusCommand mockCommand(String tableRef)

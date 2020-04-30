@@ -106,7 +106,7 @@ public class OnDemandRepairJob extends ScheduledJob
 
     public RepairJobView getView()
     {
-        return new RepairJobView(myTableReference, myRepairConfiguration, null);
+        return new RepairJobView(getId(), myTableReference, myRepairConfiguration, null);
     }
 
     @Override

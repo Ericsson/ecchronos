@@ -25,6 +25,7 @@ import org.mockito.internal.util.collections.Sets;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class TestUtils
@@ -56,21 +57,26 @@ public class TestUtils
 
     public static RepairJobView createRepairJob(String keyspace, String table, long lastRepairedAt, long repairInterval)
     {
-        return createRepairJob(keyspace, table, lastRepairedAt, repairInterval, new LongTokenRange(1, 2), ImmutableSet.of());
+        return createRepairJob(UUID.randomUUID(), keyspace, table, lastRepairedAt, repairInterval, new LongTokenRange(1, 2), ImmutableSet.of());
     }
 
-    public static RepairJobView createRepairJob(String keyspace, String table, long lastRepairedAt, long repairInterval, LongTokenRange longTokenRange, ImmutableSet<Host> replicas)
+    public static RepairJobView createRepairJob(UUID id, String keyspace, String table, long lastRepairedAt, long repairInterval)
+    {
+        return createRepairJob(id, keyspace, table, lastRepairedAt, repairInterval, new LongTokenRange(1, 2), ImmutableSet.of());
+    }
+
+    public static RepairJobView createRepairJob(UUID id, String keyspace, String table, long lastRepairedAt, long repairInterval, LongTokenRange longTokenRange, ImmutableSet<Host> replicas)
     {
         VnodeRepairState vnodeRepairState = createVnodeRepairState(longTokenRange, replicas, lastRepairedAt);
 
-        return createRepairJob(keyspace, table, lastRepairedAt, repairInterval, Sets.newSet(vnodeRepairState));
+        return createRepairJob(id, keyspace, table, lastRepairedAt, repairInterval, Sets.newSet(vnodeRepairState));
     }
 
-    public static RepairJobView createRepairJob(String keyspace, String table, long lastRepairedAt, long repairInterval, Collection<VnodeRepairState> vnodeRepairStateSet)
+    public static RepairJobView createRepairJob(UUID id, String keyspace, String table, long lastRepairedAt, long repairInterval, Collection<VnodeRepairState> vnodeRepairStateSet)
     {
         VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(vnodeRepairStateSet).build();
 
-        return new RepairJobView(new TableReference(keyspace, table),
+        return new RepairJobView(id, new TableReference(keyspace, table),
                 generateRepairConfiguration(repairInterval),
                 generateRepairStateSnapshot(lastRepairedAt, vnodeRepairStates));
     }

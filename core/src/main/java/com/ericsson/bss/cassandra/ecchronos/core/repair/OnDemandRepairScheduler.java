@@ -29,8 +29,9 @@ public interface OnDemandRepairScheduler
      *
      * @param tableReference
      *            The table to schedule a job on.
+     * @return A view of the scheduled job
      */
-    void scheduleJob(TableReference tableReference);
+    RepairJobView scheduleJob(TableReference tableReference);
 
     /**
      * @return the list of the currently ongoing repair jobs.

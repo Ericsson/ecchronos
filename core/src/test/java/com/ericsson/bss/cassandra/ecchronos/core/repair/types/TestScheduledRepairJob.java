@@ -23,6 +23,7 @@ import com.google.common.collect.Sets;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,10 +35,12 @@ public class TestScheduledRepairJob
     {
         long repairInterval = TimeUnit.DAYS.toMillis(7);
         long lastRepairedAt = System.currentTimeMillis();
-        RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", lastRepairedAt, repairInterval);
+        UUID id = UUID.randomUUID();
+        RepairJobView repairJobView = TestUtils.createRepairJob(id, "ks", "tb", lastRepairedAt, repairInterval);
 
         ScheduledRepairJob scheduledRepairJob = new ScheduledRepairJob(repairJobView);
 
+        assertThat(scheduledRepairJob.id).isEqualTo(id);
         assertThat(scheduledRepairJob.keyspace).isEqualTo("ks");
         assertThat(scheduledRepairJob.table).isEqualTo("tb");
         assertThat(scheduledRepairJob.repairedRatio).isEqualTo(1.0d);
@@ -51,10 +54,12 @@ public class TestScheduledRepairJob
     {
         long repairInterval = TimeUnit.DAYS.toMillis(5);
         long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(7);
-        RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", lastRepairedAt, repairInterval);
+        UUID id = UUID.randomUUID();
+        RepairJobView repairJobView = TestUtils.createRepairJob(id, "ks", "tb", lastRepairedAt, repairInterval);
 
         ScheduledRepairJob scheduledRepairJob = new ScheduledRepairJob(repairJobView);
 
+        assertThat(scheduledRepairJob.id).isEqualTo(id);
         assertThat(scheduledRepairJob.keyspace).isEqualTo("ks");
         assertThat(scheduledRepairJob.table).isEqualTo("tb");
         assertThat(scheduledRepairJob.repairedRatio).isEqualTo(0.0d);
@@ -73,10 +78,12 @@ public class TestScheduledRepairJob
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), lastRepairedAt);
         VnodeRepairState vnodeRepairState2 = TestUtils.createVnodeRepairState(3, 4, ImmutableSet.of(), lastRepairedAtSecond);
 
-        RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", lastRepairedAt, repairInterval, Sets.newHashSet(vnodeRepairState, vnodeRepairState2));
+        UUID id = UUID.randomUUID();
+        RepairJobView repairJobView = TestUtils.createRepairJob(id,"ks", "tb", lastRepairedAt, repairInterval, Sets.newHashSet(vnodeRepairState, vnodeRepairState2));
 
         ScheduledRepairJob scheduledRepairJob = new ScheduledRepairJob(repairJobView);
 
+        assertThat(scheduledRepairJob.id).isEqualTo(id);
         assertThat(scheduledRepairJob.keyspace).isEqualTo("ks");
         assertThat(scheduledRepairJob.table).isEqualTo("tb");
         assertThat(scheduledRepairJob.repairedRatio).isEqualTo(0.5d);
@@ -103,7 +110,7 @@ public class TestScheduledRepairJob
     public void testEqualsContract()
     {
         EqualsVerifier.forClass(ScheduledRepairJob.class).usingGetClass()
-                .withNonnullFields("keyspace", "table")
+                .withNonnullFields("id", "keyspace", "table")
                 .verify();
     }
 }

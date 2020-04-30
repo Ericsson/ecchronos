@@ -14,6 +14,16 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.inject.Inject;
+import javax.ws.rs.Path;
+
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.CompleteRepairJob;
@@ -21,13 +31,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.gson.Gson;
-
-import javax.inject.Inject;
-import javax.ws.rs.Path;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * When updating the path it should also be updated in the OSGi component.
@@ -38,11 +41,13 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     private static final Gson GSON = new Gson();
 
     private final RepairScheduler myRepairScheduler;
+    private final OnDemandRepairScheduler myOnDemandRepairScheduler;
 
     @Inject
-    public RepairManagementRESTImpl(RepairScheduler repairScheduler)
+    public RepairManagementRESTImpl(RepairScheduler repairScheduler, OnDemandRepairScheduler demandRepairScheduler)
     {
         myRepairScheduler = repairScheduler;
+        myOnDemandRepairScheduler = demandRepairScheduler;
     }
 
     @Override
@@ -99,11 +104,18 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                 .orElse("{}");
     }
 
+    @Override
+    public String scheduleJob(String keyspace, String table)
+    {
+        RepairJobView repairJobView = myOnDemandRepairScheduler.scheduleJob(new TableReference(keyspace, table));
+        return GSON.toJson(new ScheduledRepairJob(repairJobView));
+    }
+
     private List<ScheduledRepairJob> getScheduledRepairJobs(Predicate<RepairJobView> filter)
     {
-        List<RepairJobView> repairJobViewList = myRepairScheduler.getCurrentRepairJobs();
-
-        return repairJobViewList.stream()
+        return Stream
+                .concat(myRepairScheduler.getCurrentRepairJobs().stream(),
+                        myOnDemandRepairScheduler.getCurrentRepairJobs().stream())
                 .filter(filter)
                 .map(ScheduledRepairJob::new)
                 .collect(Collectors.toList());
@@ -111,15 +123,18 @@ public class RepairManagementRESTImpl implements RepairManagementREST
 
     private Optional<RepairJobView> findRepairJob(TableReference tableReference)
     {
-        return myRepairScheduler.getCurrentRepairJobs().stream()
+        return Stream
+                .concat(myRepairScheduler.getCurrentRepairJobs().stream(),
+                        myOnDemandRepairScheduler.getCurrentRepairJobs().stream())
                 .filter(job -> job.getTableReference().equals(tableReference))
                 .findFirst();
     }
 
     private List<TableRepairConfig> getTableRepairConfigs(Predicate<RepairJobView> filter)
     {
-        return myRepairScheduler.getCurrentRepairJobs()
-                .stream()
+        return Stream
+                .concat(myRepairScheduler.getCurrentRepairJobs().stream(),
+                        myOnDemandRepairScheduler.getCurrentRepairJobs().stream())
                 .filter(filter)
                 .map(TableRepairConfig::new)
                 .collect(Collectors.toList());

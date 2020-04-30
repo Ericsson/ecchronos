@@ -17,20 +17,32 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
+import java.util.UUID;
+
 /**
  * Read only view of a scheduled repair job.
  */
 public class RepairJobView
 {
+    private final UUID myId;
     private final TableReference myTableReference;
     private final RepairConfiguration myRepairConfiguration;
     private final RepairStateSnapshot myRepairStateSnapshot;
 
-    public RepairJobView(TableReference tableReference, RepairConfiguration repairConfiguration, RepairStateSnapshot repairStateSnapshot)
+    public RepairJobView(UUID id, TableReference tableReference, RepairConfiguration repairConfiguration, RepairStateSnapshot repairStateSnapshot)
     {
+        myId = id;
         myTableReference = tableReference;
         myRepairConfiguration = repairConfiguration;
         myRepairStateSnapshot = repairStateSnapshot;
+    }
+
+    /**
+     * @return the unique identifier for this job.
+     */
+    public UUID getId()
+    {
+        return myId;
     }
 
     /**

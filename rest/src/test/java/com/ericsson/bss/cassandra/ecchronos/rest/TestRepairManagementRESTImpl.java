@@ -39,7 +39,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class TestRepairSchedulerRESTImpl
+public class TestRepairManagementRESTImpl
 {
     private static final Gson GSON = new Gson();
 
@@ -49,12 +49,15 @@ public class TestRepairSchedulerRESTImpl
     @Mock
     private RepairScheduler myRepairScheduler;
 
+    @Mock
+    private OnDemandRepairScheduler myOnDemandRepairScheduler;
+
     @Test
     public void testScheduledStatusEmpty()
     {
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(new ArrayList<>());
 
-        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler);
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         List<ScheduledRepairJob> response = GSON.fromJson(repairManagementREST.scheduledStatus(), scheduledRepairJobListType);
 
@@ -72,7 +75,7 @@ public class TestRepairSchedulerRESTImpl
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
 
-        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler);
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         List<ScheduledRepairJob> response = GSON.fromJson(repairManagementREST.scheduledStatus(), scheduledRepairJobListType);
 
@@ -93,7 +96,7 @@ public class TestRepairSchedulerRESTImpl
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(repairJobViews);
 
-        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler);
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         List<ScheduledRepairJob> response = GSON.fromJson(repairManagementREST.scheduledStatus(), scheduledRepairJobListType);
 
@@ -105,7 +108,7 @@ public class TestRepairSchedulerRESTImpl
     {
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(new ArrayList<>());
 
-        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler);
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         List<ScheduledRepairJob> response = GSON.fromJson(repairManagementREST.scheduledKeyspaceStatus(""), scheduledRepairJobListType);
 
@@ -122,7 +125,7 @@ public class TestRepairSchedulerRESTImpl
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
 
-        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler);
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         List<ScheduledRepairJob> response = GSON.fromJson(repairManagementREST.scheduledKeyspaceStatus("nonexistingkeyspace"), scheduledRepairJobListType);
 
@@ -140,7 +143,7 @@ public class TestRepairSchedulerRESTImpl
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
 
-        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler);
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         List<ScheduledRepairJob> response = GSON.fromJson(repairManagementREST.scheduledKeyspaceStatus("ks"), scheduledRepairJobListType);
 
@@ -160,7 +163,7 @@ public class TestRepairSchedulerRESTImpl
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(repairJobViews);
 
-        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler);
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         List<ScheduledRepairJob> response = GSON.fromJson(repairManagementREST.scheduledKeyspaceStatus("ks"), scheduledRepairJobListType);
 
@@ -172,7 +175,7 @@ public class TestRepairSchedulerRESTImpl
     {
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(new ArrayList<>());
 
-        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler);
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         Map<Object, Object> response = GSON.fromJson(repairManagementREST.scheduledTableStatus("ks", "tb"), new TypeToken<Map<Object, Object>>(){}.getType());
 
@@ -188,13 +191,13 @@ public class TestRepairSchedulerRESTImpl
         Host host = mock(Host.class);
         when(host.getBroadcastAddress()).thenReturn(InetAddress.getLocalHost());
 
-        RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", expectedLastRepairedAt, repairInterval,
+        RepairJobView repairJobView = TestUtils.createRepairJob(UUID.randomUUID(),"ks", "tb", expectedLastRepairedAt, repairInterval,
                 longTokenRange, ImmutableSet.of(host));
         CompleteRepairJob expectedResponse = new CompleteRepairJob(repairJobView);
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
 
-        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler);
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         CompleteRepairJob response = GSON.fromJson(repairManagementREST.scheduledTableStatus("ks", "tb"), CompleteRepairJob.class);
 
@@ -206,7 +209,7 @@ public class TestRepairSchedulerRESTImpl
     {
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(new ArrayList<>());
         
-        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler);
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         List<TableRepairConfig> response = GSON.fromJson(repairManagementREST.scheduledConfig(), tableRepairConfigListType);
 
@@ -218,12 +221,12 @@ public class TestRepairSchedulerRESTImpl
     {
         // Given
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
-        RepairJobView repairJobView = new RepairJobView(new TableReference("ks", "tbl"), repairConfig, null);
+        RepairJobView repairJobView = new RepairJobView(UUID.randomUUID(), new TableReference("ks", "tbl"), repairConfig, null);
         TableRepairConfig expectedResponse = new TableRepairConfig(repairJobView);
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
 
-        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler);
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         List<TableRepairConfig> response = GSON.fromJson(repairManagementREST.scheduledConfig(), tableRepairConfigListType);
 
@@ -235,10 +238,10 @@ public class TestRepairSchedulerRESTImpl
     {
         // Given
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
-        RepairJobView repairJobView = new RepairJobView(new TableReference("ks", "tbl"), repairConfig, null);
+        RepairJobView repairJobView = new RepairJobView(UUID.randomUUID(), new TableReference("ks", "tbl"), repairConfig, null);
 
         RepairConfiguration repairConfig2 = TestUtils.createRepairConfiguration(22, 3.3, 44, 55);
-        RepairJobView repairJobView2 = new RepairJobView(new TableReference("ks2", "tbl"), repairConfig2, null);
+        RepairJobView repairJobView2 = new RepairJobView(UUID.randomUUID(), new TableReference("ks2", "tbl"), repairConfig2, null);
 
         List<TableRepairConfig> expectedResponse = Arrays.asList(
                 new TableRepairConfig(repairJobView),
@@ -247,7 +250,7 @@ public class TestRepairSchedulerRESTImpl
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Arrays.asList(repairJobView, repairJobView2));
 
-        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler);
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         List<TableRepairConfig> response = GSON.fromJson(repairManagementREST.scheduledConfig(), tableRepairConfigListType);
 
@@ -259,7 +262,7 @@ public class TestRepairSchedulerRESTImpl
     {
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(new ArrayList<>());
 
-        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler);
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         List<TableRepairConfig> response = GSON.fromJson(repairManagementREST.scheduledKeyspaceConfig(""), tableRepairConfigListType);
 
@@ -270,11 +273,11 @@ public class TestRepairSchedulerRESTImpl
     public void testScheduledKeyspaceConfigNonExisting()
     {
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
-        RepairJobView repairJobView = new RepairJobView(new TableReference("ks", "tbl"), repairConfig, null);
+        RepairJobView repairJobView = new RepairJobView(UUID.randomUUID(), new TableReference("ks", "tbl"), repairConfig, null);
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
 
-        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler);
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         List<TableRepairConfig> response = GSON.fromJson(repairManagementREST.scheduledKeyspaceConfig("nonexistingkeyspace"), tableRepairConfigListType);
 
@@ -285,13 +288,13 @@ public class TestRepairSchedulerRESTImpl
     public void testScheduledKeyspaceConfigEntry()
     {
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
-        RepairJobView repairJobView = new RepairJobView(new TableReference("ks", "tbl"), repairConfig, null);
+        RepairJobView repairJobView = new RepairJobView(UUID.randomUUID(), new TableReference("ks", "tbl"), repairConfig, null);
 
         TableRepairConfig expectedResponse = new TableRepairConfig(repairJobView);
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
 
-        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler);
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         List<TableRepairConfig> response = GSON.fromJson(repairManagementREST.scheduledKeyspaceConfig("ks"), tableRepairConfigListType);
 
@@ -302,10 +305,10 @@ public class TestRepairSchedulerRESTImpl
     public void testScheduledKeyspaceConfigMultipleEntries()
     {
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
-        RepairJobView repairJobView = new RepairJobView(new TableReference("ks", "tbl"), repairConfig, null);
+        RepairJobView repairJobView = new RepairJobView(UUID.randomUUID(), new TableReference("ks", "tbl"), repairConfig, null);
 
         RepairConfiguration repairConfig2 = TestUtils.createRepairConfiguration(22, 3.3, 44, 55);
-        RepairJobView repairJobView2 = new RepairJobView(new TableReference("ks", "tbl2"), repairConfig2, null);
+        RepairJobView repairJobView2 = new RepairJobView(UUID.randomUUID(), new TableReference("ks", "tbl2"), repairConfig2, null);
 
         List<TableRepairConfig> expectedResponse = Arrays.asList(
                 new TableRepairConfig(repairJobView),
@@ -314,7 +317,7 @@ public class TestRepairSchedulerRESTImpl
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Arrays.asList(repairJobView, repairJobView2));
 
-        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler);
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         List<TableRepairConfig> response = GSON.fromJson(repairManagementREST.scheduledKeyspaceConfig("ks"), tableRepairConfigListType);
 
@@ -326,7 +329,7 @@ public class TestRepairSchedulerRESTImpl
     {
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(new ArrayList<>());
 
-        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler);
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         Map<Object, Object> response = GSON.fromJson(repairManagementREST.scheduledTableConfig("ks", "tbl"), new TypeToken<Map<Object, Object>>(){}.getType());
 
@@ -337,11 +340,11 @@ public class TestRepairSchedulerRESTImpl
     public void testScheduledTableConfigNonExisting()
     {
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
-        RepairJobView repairJobView = new RepairJobView(new TableReference("ks", "tbl"), repairConfig, null);
+        RepairJobView repairJobView = new RepairJobView(UUID.randomUUID(), new TableReference("ks", "tbl"), repairConfig, null);
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
 
-        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler);
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         Map<Object, Object> response = GSON.fromJson(repairManagementREST.scheduledTableConfig("nonexisting", "tbl"), new TypeToken<Map<Object, Object>>(){}.getType());
 
@@ -352,16 +355,32 @@ public class TestRepairSchedulerRESTImpl
     public void testScheduledTableConfigEntry()
     {
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
-        RepairJobView repairJobView = new RepairJobView(new TableReference("ks", "tbl"), repairConfig, null);
+        RepairJobView repairJobView = new RepairJobView(UUID.randomUUID(), new TableReference("ks", "tbl"), repairConfig, null);
 
         TableRepairConfig expectedResponse = new TableRepairConfig(repairJobView);
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
 
-        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler);
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         TableRepairConfig response = GSON.fromJson(repairManagementREST.scheduledTableConfig("ks", "tbl"), TableRepairConfig.class);
 
+        assertThat(response).isEqualTo(expectedResponse);
+    }
+
+    @Test
+    public void testScheduleRepair()
+    {
+        RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
+
+        long expectedLastRepairedAt = 234;
+        long repairInterval = 123;
+
+        RepairJobView repairJobView = TestUtils.createRepairJob("ks", "tb", expectedLastRepairedAt, repairInterval);
+        ScheduledRepairJob expectedResponse = new ScheduledRepairJob(repairJobView);
+
+        when(myOnDemandRepairScheduler.scheduleJob(new TableReference("ks","tb"))).thenReturn(repairJobView);
+        ScheduledRepairJob response = GSON.fromJson(repairManagementREST.scheduleJob("ks", "tb"), ScheduledRepairJob.class);
         assertThat(response).isEqualTo(expectedResponse);
     }
 }

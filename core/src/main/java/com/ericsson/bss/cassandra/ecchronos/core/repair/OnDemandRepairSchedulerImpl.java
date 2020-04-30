@@ -92,9 +92,11 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     }
 
     @Override
-    public void scheduleJob(TableReference tableReference)
+    public RepairJobView scheduleJob(TableReference tableReference)
     {
-        myExecutor.execute(() -> createTableRepair(tableReference));
+        OnDemandRepairJob job = getRepairJob(tableReference);
+        myExecutor.execute(() -> scheduleRepairJob(tableReference, job));
+        return job.getView();
     }
 
     @Override
@@ -108,11 +110,11 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         }
     }
 
-    private void createTableRepair(TableReference tableReference)
+    private OnDemandRepairJob scheduleRepairJob(TableReference tableReference, OnDemandRepairJob job)
     {
-        OnDemandRepairJob job = getRepairJob(tableReference);
         myScheduledJobs.put(tableReference, job);
         myScheduleManager.schedule(job);
+        return job;
     }
 
     private void removeScheduledJob(TableReference tableReference)
