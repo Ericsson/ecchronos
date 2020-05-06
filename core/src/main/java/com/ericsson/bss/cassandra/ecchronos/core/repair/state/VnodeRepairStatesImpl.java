@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class VnodeRepairStatesImpl implements VnodeRepairStates
+public class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
 {
     private final ImmutableList<VnodeRepairState> myVnodeRepairStatuses;
 

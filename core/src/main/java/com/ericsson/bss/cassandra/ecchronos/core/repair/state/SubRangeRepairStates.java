@@ -19,7 +19,7 @@ import com.google.common.collect.ImmutableList;
 
 import java.util.*;
 
-public class SubRangeRepairStates implements VnodeRepairStates
+public class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
 {
     private final ImmutableList<VnodeRepairState> myVnodeRepairStatuses;
 
