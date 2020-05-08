@@ -107,6 +107,7 @@ public class ECChronos implements Closeable
                 .withJmxProxyFactory(myECChronosInternals.getJmxProxyFactory())
                 .withReplicationState(replicationState)
                 .withRepairLockType(repairProperties.getRepairLockType())
+                .withMetadata(metadata)
                 .build();
 
         HTTPServerProperties httpServerProperties = HTTPServerProperties.from(configuration);

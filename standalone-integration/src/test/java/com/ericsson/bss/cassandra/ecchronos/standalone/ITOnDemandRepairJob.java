@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import org.assertj.core.util.Lists;
 import org.junit.After;
 import org.junit.Before;
@@ -124,6 +125,7 @@ public class ITOnDemandRepairJob extends TestBase
                 .withScheduleManager(myScheduleManagerImpl)
                 .withRepairLockType(RepairLockType.VNODE)
                 .withReplicationState(replicationState)
+                .withMetadata(myMetadata)
                 .build();
     }
 
@@ -152,9 +154,9 @@ public class ITOnDemandRepairJob extends TestBase
      * Create a table that is replicated and schedule a repair on it
      */
     @Test
-    public void repairSingleTable()
+    public void repairSingleTable() throws EcChronosException
     {
-
+        long startTime = System.currentTimeMillis();
         TableReference tableReference = new TableReference("ks", "tb");
 
         createKeyspace(tableReference.getKeyspace(), 3);
@@ -162,7 +164,6 @@ public class ITOnDemandRepairJob extends TestBase
 
         myRepairSchedulerImpl.scheduleJob(tableReference);
 
-        long startTime = System.currentTimeMillis();
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
                 .until(() -> isRepairedSince(tableReference, startTime));
 
@@ -173,7 +174,7 @@ public class ITOnDemandRepairJob extends TestBase
      * Create two tables that are replicated and repair both
      */
     @Test
-    public void repairMultipleTables()
+    public void repairMultipleTables() throws EcChronosException
     {
         long startTime = System.currentTimeMillis();
 
@@ -188,9 +189,7 @@ public class ITOnDemandRepairJob extends TestBase
         myRepairSchedulerImpl.scheduleJob(tableReference2);
 
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
-                .until(() -> isRepairedSince(tableReference, startTime));
-        await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
-                .until(() -> isRepairedSince(tableReference2, startTime));
+                .until(() -> myRepairSchedulerImpl.getCurrentRepairJobs().isEmpty());
 
         verifyTableRepairedSince(tableReference, startTime);
         verifyTableRepairedSince(tableReference2, startTime);
@@ -200,7 +199,7 @@ public class ITOnDemandRepairJob extends TestBase
      * Schedule two jobs on the same table
      */
     @Test
-    public void repairSameTableTwice()
+    public void repairSameTableTwice() throws EcChronosException
     {
         long startTime = System.currentTimeMillis();
 

@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
 import com.datastax.driver.core.Host;
+import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.*;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.*;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestRepairManagementRESTImpl
@@ -208,7 +210,7 @@ public class TestRepairManagementRESTImpl
     public void testScheduledConfigEmpty()
     {
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(new ArrayList<>());
-        
+
         RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 
         List<TableRepairConfig> response = GSON.fromJson(repairManagementREST.scheduledConfig(), tableRepairConfigListType);
@@ -369,7 +371,7 @@ public class TestRepairManagementRESTImpl
     }
 
     @Test
-    public void testScheduleRepair()
+    public void testScheduleRepair() throws EcChronosException
     {
         RepairManagementREST repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
 

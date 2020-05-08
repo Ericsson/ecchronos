@@ -36,7 +36,7 @@ public class RepairManagementRESTComponent implements RepairManagementREST
     @Reference (service = RepairScheduler.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile RepairScheduler myRepairScheduler;
 
-    @Reference(service = OnDemandRepairScheduler.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference (service = OnDemandRepairScheduler.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile OnDemandRepairScheduler myOnDemandRepairScheduler;
 
     private volatile RepairManagementRESTImpl myDelegateRESTImpl;

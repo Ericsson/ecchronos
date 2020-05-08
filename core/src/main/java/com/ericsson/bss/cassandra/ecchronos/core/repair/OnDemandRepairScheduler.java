@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import java.util.List;
 
+import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
 /**
@@ -29,9 +30,10 @@ public interface OnDemandRepairScheduler
      *
      * @param tableReference
      *            The table to schedule a job on.
-     * @return A view of the scheduled job
+     * @return A view of the scheduled job.
+     * @throws EcChronosException Thrown when the keyspace/table doesn't exist.
      */
-    RepairJobView scheduleJob(TableReference tableReference);
+    RepairJobView scheduleJob(TableReference tableReference) throws EcChronosException;
 
     /**
      * @return the list of the currently ongoing repair jobs.

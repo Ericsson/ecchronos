@@ -21,8 +21,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 
+import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
@@ -61,7 +63,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     @Override
     public String scheduledKeyspaceStatus(String keyspace)
     {
-        List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(job -> keyspace.equals(job.getTableReference().getKeyspace()));
+        List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(
+                job -> keyspace.equals(job.getTableReference().getKeyspace()));
 
         return GSON.toJson(repairJobs);
     }
@@ -88,7 +91,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     @Override
     public String scheduledKeyspaceConfig(String keyspace)
     {
-        List<TableRepairConfig> configurations = getTableRepairConfigs(job -> job.getTableReference().getKeyspace().equals(keyspace));
+        List<TableRepairConfig> configurations = getTableRepairConfigs(
+                job -> job.getTableReference().getKeyspace().equals(keyspace));
 
         return GSON.toJson(configurations);
     }
@@ -107,7 +111,14 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     @Override
     public String scheduleJob(String keyspace, String table)
     {
-        RepairJobView repairJobView = myOnDemandRepairScheduler.scheduleJob(new TableReference(keyspace, table));
+        RepairJobView repairJobView = null;
+        try
+        {
+            repairJobView = myOnDemandRepairScheduler.scheduleJob(new TableReference(keyspace, table));
+        } catch (EcChronosException e)
+        {
+            throw new NotFoundException(e);
+        }
         return GSON.toJson(new ScheduledRepairJob(repairJobView));
     }
 

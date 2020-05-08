@@ -18,14 +18,13 @@ import java.io.Closeable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datastax.driver.core.KeyspaceMetadata;
+import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 
+import com.datastax.driver.core.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
@@ -38,51 +37,34 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
  */
 public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Closeable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(OnDemandRepairSchedulerImpl.class);
-
-    private final Map<TableReference, OnDemandRepairJob> myScheduledJobs = new HashMap<>();
+    private final Map<UUID, OnDemandRepairJob> myScheduledJobs = new HashMap<>();
     private final Object myLock = new Object();
-
-    private final ExecutorService myExecutor;
 
     private final JmxProxyFactory myJmxProxyFactory;
     private final TableRepairMetrics myTableRepairMetrics;
     private final ScheduleManager myScheduleManager;
     private final ReplicationState myReplicationState;
     private final RepairLockType myRepairLockType;
+    private final Metadata myMetadata;
 
     private OnDemandRepairSchedulerImpl(Builder builder)
     {
-        myExecutor = Executors.newSingleThreadScheduledExecutor();
         myJmxProxyFactory = builder.myJmxProxyFactory;
         myTableRepairMetrics = builder.myTableRepairMetrics;
         myScheduleManager = builder.myScheduleManager;
         myReplicationState = builder.myReplicationState;
         myRepairLockType = builder.repairLockType;
+        myMetadata = builder.metadata;
     }
 
     @Override
     public void close()
     {
-        myExecutor.shutdown();
-        try
-        {
-            if (!myExecutor.awaitTermination(10, TimeUnit.SECONDS))
-            {
-                LOG.warn("Waited 10 seconds for executor to shutdown, still not shut down");
-            }
-        }
-        catch (InterruptedException e)
-        {
-            LOG.error("Interrupted while waiting for executor to shutdown", e);
-            Thread.currentThread().interrupt();
-        }
-
         synchronized (myLock)
         {
-            for (TableReference tableReference : myScheduledJobs.keySet())
+            for (UUID uuid : myScheduledJobs.keySet())
             {
-                ScheduledJob job = myScheduledJobs.get(tableReference);
+                ScheduledJob job = myScheduledJobs.get(uuid);
 
                 descheduleTable(job);
             }
@@ -92,11 +74,24 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     }
 
     @Override
-    public RepairJobView scheduleJob(TableReference tableReference)
+    public RepairJobView scheduleJob(TableReference tableReference) throws EcChronosException
     {
-        OnDemandRepairJob job = getRepairJob(tableReference);
-        myExecutor.execute(() -> scheduleRepairJob(tableReference, job));
-        return job.getView();
+        synchronized (myLock)
+        {
+            KeyspaceMetadata ks = myMetadata.getKeyspace(tableReference.getKeyspace());
+            if (ks == null)
+            {
+                throw new EcChronosException("Keyspace does not exist");
+            }
+            if (ks.getTable(tableReference.getTable()) == null)
+            {
+                throw new EcChronosException("Table does not exist");
+            }
+            OnDemandRepairJob job = getRepairJob(tableReference);
+            myScheduledJobs.put(job.getId(), job);
+            myScheduleManager.schedule(job);
+            return job.getView();
+        }
     }
 
     @Override
@@ -110,18 +105,11 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         }
     }
 
-    private OnDemandRepairJob scheduleRepairJob(TableReference tableReference, OnDemandRepairJob job)
-    {
-        myScheduledJobs.put(tableReference, job);
-        myScheduleManager.schedule(job);
-        return job;
-    }
-
-    private void removeScheduledJob(TableReference tableReference)
+    private void removeScheduledJob(UUID id)
     {
         synchronized (myLock)
         {
-            myScheduledJobs.remove(tableReference);
+            myScheduledJobs.remove(id);
         }
     }
 
@@ -158,6 +146,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         private ScheduleManager myScheduleManager;
         private ReplicationState myReplicationState;
         private RepairLockType repairLockType;
+        private Metadata metadata;
 
         public Builder withJmxProxyFactory(JmxProxyFactory jmxProxyFactory)
         {
@@ -186,6 +175,12 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         public Builder withRepairLockType(RepairLockType repairLockType)
         {
             this.repairLockType = repairLockType;
+            return this;
+        }
+
+        public Builder withMetadata(Metadata metadata)
+        {
+            this.metadata = metadata;
             return this;
         }
 

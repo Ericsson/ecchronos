@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -46,7 +48,7 @@ public class OnDemandRepairJob extends ScheduledJob
     private final RepairConfiguration myRepairConfiguration;
     private final RepairLockType myRepairLockType;
     private final ReplicationState myReplicationState;
-    private final Consumer<TableReference> myOnFinishedHook;
+    private final Consumer<UUID> myOnFinishedHook;
 
     private final TableRepairMetrics myTableRepairMetrics;
 
@@ -63,7 +65,7 @@ public class OnDemandRepairJob extends ScheduledJob
         myRepairLockType = builder.repairLockType;
         myReplicationState = builder.replicationState;
         myOnFinishedHook = builder.onFinishedHook;
-        myTasks = createRepairTasks();
+        myTasks = new CopyOnWriteArrayList<>(createRepairTasks());
     }
 
     private List<ScheduledTask> createRepairTasks()
@@ -86,7 +88,7 @@ public class OnDemandRepairJob extends ScheduledJob
 
         for (ReplicaRepairGroup replicaRepairGroup : repairGroups)
         {
-            taskList.add(new RepairGroup(getRealPriority(), myTableReference, myRepairConfiguration,
+            taskList.add(new RepairGroup(Priority.HIGHEST.getValue(), myTableReference, myRepairConfiguration,
                     replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
                     myRepairLockType.getLockFactory(),
                     new RepairLockFactoryImpl()));
@@ -122,7 +124,7 @@ public class OnDemandRepairJob extends ScheduledJob
 
         if (myTasks.isEmpty())
         {
-            myOnFinishedHook.accept(myTableReference);
+            myOnFinishedHook.accept(getId());
         }
 
         super.postExecute(successful, task);
@@ -137,26 +139,19 @@ public class OnDemandRepairJob extends ScheduledJob
     @Override
     public boolean runnable()
     {
-        return true;
+        return getState().equals(State.RUNNABLE);
     }
 
     @Override
     public State getState()
     {
-        if (myTasks.isEmpty())
-        {
-            return State.FINISHED;
-        }
-        else
-        {
-            return State.RUNNABLE;
-        }
+        return myTasks.isEmpty() ? State.FINISHED : State.RUNNABLE;
     }
 
     @Override
     public String toString()
     {
-        return String.format("Repair job of %s", myTableReference);
+        return String.format("On Demand Repair job of %s", myTableReference);
     }
 
     public static class Builder
@@ -171,7 +166,7 @@ public class OnDemandRepairJob extends ScheduledJob
         private final RepairConfiguration repairConfiguration = RepairConfiguration.DEFAULT;
         private RepairLockType repairLockType;
         private ReplicationState replicationState;
-        private Consumer<TableReference> onFinishedHook = table -> {
+        private Consumer<UUID> onFinishedHook = table -> {
         };
 
         public Builder withTableReference(TableReference tableReference)
@@ -204,7 +199,7 @@ public class OnDemandRepairJob extends ScheduledJob
             return this;
         }
 
-        public Builder withOnFinished(Consumer<TableReference> onFinishedHook)
+        public Builder withOnFinished(Consumer<UUID> onFinishedHook)
         {
             this.onFinishedHook = onFinishedHook;
             return this;
