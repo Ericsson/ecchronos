@@ -43,12 +43,8 @@ public class TokenSubRangeUtil
 
     /**
      * Generates a number of sub ranges of mostly equal size.
-     * The last sub range can be slightly larger than the others
+     * The last sub range can be slightly smaller than the others
      * due to rounding.
-     * <br>
-     * The number of sub ranges can be less than the target if the
-     * token range size is smaller than the target number of token
-     * ranges.
      *
      * @param tokenPerSubRange The number of wanted tokens per subrange
      * @return The sub ranges containing the full range.

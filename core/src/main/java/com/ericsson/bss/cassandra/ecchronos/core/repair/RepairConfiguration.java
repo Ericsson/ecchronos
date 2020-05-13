@@ -221,10 +221,12 @@ public class RepairConfiguration
         /**
          * Set the target repair size in bytes.
          *
-         * The
+         * This is used to perform sub range repairs within virtual nodes.
+         * The sub ranges will be calculated based on how much data is in the table versus how large the target size
+         * per repair session is.
          *
-         * @param targetRepairSizeInBytes
-         * @return
+         * @param targetRepairSizeInBytes The target data per repair session
+         * @return The builder
          */
         public Builder withTargetRepairSizeInBytes(long targetRepairSizeInBytes)
         {

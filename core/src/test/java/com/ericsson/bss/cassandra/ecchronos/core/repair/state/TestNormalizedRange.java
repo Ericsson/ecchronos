@@ -39,7 +39,7 @@ public class TestNormalizedRange
     @Test
     public void testMutateStart()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 9L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 109L, 1234L));
         NormalizedRange normalizedRange = new NormalizedRange(normalizedBaseRange, START, bi(9L), 1234L);
 
         NormalizedRange withNewStart = normalizedRange.mutateStart(bi(8L));
@@ -51,7 +51,7 @@ public class TestNormalizedRange
     @Test
     public void testMutateStartOutsideBaseRange()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 9L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 109L, 1234L));
         NormalizedRange normalizedRange = new NormalizedRange(normalizedBaseRange, START, bi(9L), 1234L);
 
         assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> normalizedRange.mutateStart(bi(13L)));
@@ -60,7 +60,7 @@ public class TestNormalizedRange
     @Test
     public void testMutateEnd()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 9L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 109L, 1234L));
         NormalizedRange normalizedRange = new NormalizedRange(normalizedBaseRange, START, bi(9L), 1234L);
 
         NormalizedRange withNewEnd = normalizedRange.mutateEnd(bi(8L));
@@ -72,7 +72,7 @@ public class TestNormalizedRange
     @Test
     public void testMutateEndOutsideBaseRange()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 9L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 109L, 1234L));
         NormalizedRange normalizedRange = new NormalizedRange(normalizedBaseRange, START, bi(9L), 1234L);
 
         assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> normalizedRange.mutateEnd(bi(13)));
@@ -81,7 +81,7 @@ public class TestNormalizedRange
     @Test
     public void testBetween()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 15L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 115L, 1234L));
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, START, bi(9L), 1234L);
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange, bi(13L), bi(15L), 1235L);
 
@@ -94,7 +94,7 @@ public class TestNormalizedRange
     @Test
     public void testBetweenDifferentBaseRange()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 30L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 130L, 1234L));
         NormalizedBaseRange normalizedBaseRange2 = new NormalizedBaseRange(withVnode(0L, 31L, 1234L));
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, START, bi(9L), 1234L);
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange2, bi(13L), bi(15L), 1235L);
@@ -105,7 +105,7 @@ public class TestNormalizedRange
     @Test
     public void testBetweenWrongOrder()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 15L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 115L, 1234L));
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, bi(13L), bi(15L), 1235L);
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange, START, bi(9L), 1234L);
 
@@ -115,7 +115,7 @@ public class TestNormalizedRange
     @Test
     public void testBetweenAdjacent()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 15L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 115L, 1234L));
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, START, bi(9L), 1235L);
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange, bi(9L), bi(13L), 1234L);
 
@@ -125,7 +125,7 @@ public class TestNormalizedRange
     @Test
     public void testSplitEnd()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 15L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 115L, 1234L));
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, START, bi(13L), 1234L);
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange, bi(9L), bi(15L), 1235L);
 
@@ -138,8 +138,8 @@ public class TestNormalizedRange
     @Test
     public void testSplitEndDifferentBaseRange()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 15L, 1234L));
-        NormalizedBaseRange normalizedBaseRange2 = new NormalizedBaseRange(withVnode(0L, 16L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 115L, 1234L));
+        NormalizedBaseRange normalizedBaseRange2 = new NormalizedBaseRange(withVnode(100L, 116L, 1234L));
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, START, bi(13L), 1234L);
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange2, bi(9L), bi(15L), 1235L);
 
@@ -149,7 +149,7 @@ public class TestNormalizedRange
     @Test
     public void testSplitEndWrongOrder()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 15L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 115L, 1234L));
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, bi(9L), bi(15L), 1235L);
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange, START, bi(13L), 1234L);
 
@@ -159,7 +159,7 @@ public class TestNormalizedRange
     @Test
     public void testSplitEndAdjacent()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 15L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 115L, 1234L));
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, START, bi(9L), 1235L);
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange, bi(9L), bi(13L), 1234L);
 
@@ -169,7 +169,7 @@ public class TestNormalizedRange
     @Test
     public void testCombine()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 15L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 115L, 1234L));
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, START, bi(13L), 1234L);
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange, bi(13L), bi(15L), 1235L);
 
@@ -182,8 +182,8 @@ public class TestNormalizedRange
     @Test
     public void testCombineDifferentBaseRange()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 15L, 1234L));
-        NormalizedBaseRange normalizedBaseRange2 = new NormalizedBaseRange(withVnode(0L, 16L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 115L, 1234L));
+        NormalizedBaseRange normalizedBaseRange2 = new NormalizedBaseRange(withVnode(100L, 116L, 1234L));
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, START, bi(13L), 1234L);
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange2, bi(13L), bi(15L), 1235L);
 
@@ -193,7 +193,7 @@ public class TestNormalizedRange
     @Test
     public void testCombineWrongOrder()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 15L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 115L, 1234L));
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange, START, bi(13L), 1234L);
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, bi(13L), bi(15L), 1235L);
 
@@ -203,7 +203,7 @@ public class TestNormalizedRange
     @Test
     public void testIsCovering()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 15L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 115L, 1234L));
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, START, bi(13L), 1234L);
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange, bi(10L), bi(12L), 1235L);
 
@@ -213,7 +213,7 @@ public class TestNormalizedRange
     @Test
     public void testIsCoveringSameStart()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 15L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 115L, 1234L));
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, START, bi(13L), 1234L);
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange, START, bi(12L), 1235L);
 
@@ -223,7 +223,7 @@ public class TestNormalizedRange
     @Test
     public void testIsCoveringSameEnd()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 15L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 115L, 1234L));
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, START, bi(13L), 1234L);
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange, bi(10L), bi(13L), 1235L);
 
@@ -233,7 +233,7 @@ public class TestNormalizedRange
     @Test
     public void testIsCoveringOutsideStart()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 15L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 115L, 1234L));
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, bi(4L), bi(13L), 1234L);
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange, bi(3L), bi(12L), 1235L);
 
@@ -243,7 +243,7 @@ public class TestNormalizedRange
     @Test
     public void testIsCoveringOutsideEnd()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 15L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 115L, 1234L));
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, bi(4L), bi(13L), 1234L);
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange, bi(5L), bi(15L), 1235L);
 
@@ -253,8 +253,8 @@ public class TestNormalizedRange
     @Test
     public void testIsCoveringDifferentBaseRange()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 15L, 1234L));
-        NormalizedBaseRange normalizedBaseRange2 = new NormalizedBaseRange(withVnode(0L, 16L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 115L, 1234L));
+        NormalizedBaseRange normalizedBaseRange2 = new NormalizedBaseRange(withVnode(100L, 116L, 1234L));
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, START, bi(13L), 1234L);
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange2, bi(10L), bi(12L), 1235L);
 
@@ -264,7 +264,7 @@ public class TestNormalizedRange
     @Test
     public void testIsCoveringReverse()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, 15L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 115L, 1234L));
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, bi(10L), bi(12L), 1235L);
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange, START, bi(13L), 1234L);
 
@@ -274,7 +274,7 @@ public class TestNormalizedRange
     @Test
     public void testCompareSimpleFirst()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, -1L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 99L, 1234L));
         NormalizedRange range1 = new NormalizedRange(normalizedBaseRange, bi(1L), bi(5L), 1234L);
         NormalizedRange range2 = new NormalizedRange(normalizedBaseRange, bi(5L), bi(10L), 1234L);
 
@@ -284,7 +284,7 @@ public class TestNormalizedRange
     @Test
     public void testCompareSimpleAfter()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, -1L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 99L, 1234L));
         NormalizedRange range1 = new NormalizedRange(normalizedBaseRange, bi(1L), bi(5L), 1234L);
         NormalizedRange range2 = new NormalizedRange(normalizedBaseRange, bi(5L), bi(10L), 1234L);
 
@@ -294,7 +294,7 @@ public class TestNormalizedRange
     @Test
     public void testCompareSame()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, -1L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 99L, 1234L));
         NormalizedRange range1 = new NormalizedRange(normalizedBaseRange, bi(1L), bi(5L), 1234L);
         NormalizedRange range2 = new NormalizedRange(normalizedBaseRange, bi(1L), bi(5L), 1234L);
 
@@ -304,7 +304,7 @@ public class TestNormalizedRange
     @Test
     public void testCompareSameStart()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, -1L, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 99L, 1234L));
         NormalizedRange range1 = new NormalizedRange(normalizedBaseRange, bi(1L), bi(5L), 1234L);
         NormalizedRange range2 = new NormalizedRange(normalizedBaseRange, bi(1L), bi(10L), 1234L);
 
@@ -314,8 +314,8 @@ public class TestNormalizedRange
     @Test
     public void testCompareDifferentBaseRanges()
     {
-        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(0L, -1L, 1234L));
-        NormalizedBaseRange normalizedBaseRange2 = new NormalizedBaseRange(withVnode(0L, Long.MAX_VALUE, 1234L));
+        NormalizedBaseRange normalizedBaseRange = new NormalizedBaseRange(withVnode(100L, 99L, 1234L));
+        NormalizedBaseRange normalizedBaseRange2 = new NormalizedBaseRange(withVnode(100L, Long.MAX_VALUE, 1234L));
         NormalizedRange range1 = new NormalizedRange(normalizedBaseRange, bi(1L), bi(5L), 1234L);
         NormalizedRange range2 = new NormalizedRange(normalizedBaseRange2, bi(1L), bi(10L), 1234L);
 

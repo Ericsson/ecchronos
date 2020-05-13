@@ -17,7 +17,6 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -40,7 +39,7 @@ public final class VnodeRepairStateSummarizer
         this.mySummarizedRanges = subStates.stream()
                 .map(myBaseVnode::transform)
                 .sorted()
-                .collect(Collectors.toCollection(LinkedList::new));
+                .collect(Collectors.toCollection(ArrayList::new));
         this.myMergeStrategy = mergeStrategy;
 
         // Add the full range first so that we can split out any sub ranges that we are missing
@@ -58,7 +57,7 @@ public final class VnodeRepairStateSummarizer
      * (5, 15], (8, 30] will become (5, 8], (8, 15], (15, 30].<br>
      * The middle section will retain the highest repaired at of the two.
      * <br><br>
-     * Adjacent ranges repaired in within one hour will be merged together.
+     * Adjacent ranges repaired within one hour will be merged together.
      *
      * @param baseVnodes The base vnode set retrieved from the keyspace replication.
      * @param partialVnodes The repaired vnodes that can be sub-ranges of the base vnodes.
@@ -160,7 +159,7 @@ public final class VnodeRepairStateSummarizer
             else if (current.end().compareTo(next.start()) > 0)
             {
                 // Replace e.g. "(5, 15], (8, 30]" with "(5, 8], (8, 15], (15, 30]"
-                // The middle section gets the highest "repaired at" of the two overlapping ranges
+                // The middle section (8, 15] gets the highest "repaired at" of the two overlapping ranges
                 mySummarizedRanges.remove(current);
                 mySummarizedRanges.remove(next);
 
@@ -176,10 +175,15 @@ public final class VnodeRepairStateSummarizer
     {
         if (covering.repairedAt() >= covered.repairedAt())
         {
+            // We already cover the sub range with a later repaired at, remove it
             mySummarizedRanges.remove(covered);
         }
         else
         {
+            // Since the covering range is repaired earlier than the covered range
+            // we replace the covering range with smaller ranges around the covered
+            // range. The covered range is already in place in the list so there
+            // is no need to modify it.
             mySummarizedRanges.remove(covering);
 
             if (covering.start().compareTo(covered.start()) != 0)

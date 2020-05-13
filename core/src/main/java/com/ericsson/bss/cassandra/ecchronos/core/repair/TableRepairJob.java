@@ -231,7 +231,7 @@ public class TableRepairJob extends ScheduledJob
     {
         BigInteger tokensPerRepair = LongTokenRange.FULL_RANGE;
 
-        if (myRepairConfiguration.getTargetRepairSizeInBytes() != Long.MAX_VALUE)
+        if (myRepairConfiguration.getTargetRepairSizeInBytes() != RepairConfiguration.FULL_REPAIR_SIZE)
         {
             BigInteger tableSizeInBytes = BigInteger.valueOf(myTableStorageStates.getDataSize(myTableReference));
 

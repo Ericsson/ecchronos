@@ -20,7 +20,7 @@ import java.util.Objects;
 /**
  * A normalized range based on a "base vnode".
  * The range is normalized so that the token range in the base vnode
- * starts at 0 and ends (at most) at Long.MAX_VALUE - Long.MIN_VALUE + 1.
+ * starts at 0 and ends (at most) at 2^64.
  *
  * When comparing normalized ranges the ones with lowest start comes first.
  * If two normalized ranges have the same start the one including more is sorted first.
