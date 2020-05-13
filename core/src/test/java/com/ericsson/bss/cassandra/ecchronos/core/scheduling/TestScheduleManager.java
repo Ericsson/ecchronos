@@ -246,9 +246,25 @@ public class TestScheduleManager
     }
 
     @Test
-    public void testRunOnceJobRemoved() throws LockException
+    public void testRunOnceJobRemovedOnFinish()
     {
-        RunOnceJob job = new RunOnceJob(ScheduledJob.Priority.LOW);
+        RunOnceJob job = new RunOnceJob(ScheduledJob.Priority.LOW, ScheduledJob.State.FINISHED);
+        myScheduler.schedule(job);
+
+        myScheduler.run();
+
+        assertThat(job.hasRun()).isTrue();
+        assertThat(myScheduler.getQueueSize()).isEqualTo(1);
+
+        myScheduler.run();
+
+        assertThat(myScheduler.getQueueSize()).isEqualTo(0);
+    }
+
+    @Test
+    public void testRunOnceJobRemovedOnFailure()
+    {
+        RunOnceJob job = new RunOnceJob(ScheduledJob.Priority.LOW, ScheduledJob.State.FAILED);
         myScheduler.schedule(job);
 
         myScheduler.run();
@@ -265,9 +281,11 @@ public class TestScheduleManager
 
     private class RunOnceJob extends DummyJob
     {
-        RunOnceJob(Priority priority)
+        private State state;
+        RunOnceJob(Priority priority, State state)
         {
             super(priority);
+            this.state = state;
         }
 
         @Override
@@ -275,7 +293,7 @@ public class TestScheduleManager
         {
             if(hasRun)
             {
-                return State.FINISHED;
+                return state;
             }
             return super.getState();
         }

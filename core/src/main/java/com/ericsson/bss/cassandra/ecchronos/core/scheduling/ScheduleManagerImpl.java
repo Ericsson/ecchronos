@@ -141,6 +141,12 @@ public class ScheduleManagerImpl implements ScheduleManager, Closeable
                     deschedule(next);
                     break;
                 }
+                if (next.getState() == ScheduledJob.State.FAILED)
+                {
+                    LOG.error("{} failed, descheduling", next.toString());
+                    deschedule(next);
+                    break;
+                }
                 if (validate(next) && tryRunTasks(next))
                 {
                     break;

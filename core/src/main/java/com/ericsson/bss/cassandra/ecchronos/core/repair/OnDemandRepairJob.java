@@ -54,6 +54,8 @@ public class OnDemandRepairJob extends ScheduledJob
 
     private final List<ScheduledTask> myTasks;
 
+    private final Map<LongTokenRange, ImmutableSet<Host>> myTokens;
+
     public OnDemandRepairJob(OnDemandRepairJob.Builder builder)
     {
         super(builder.configuration);
@@ -65,16 +67,15 @@ public class OnDemandRepairJob extends ScheduledJob
         myRepairLockType = builder.repairLockType;
         myReplicationState = builder.replicationState;
         myOnFinishedHook = builder.onFinishedHook;
-        myTasks = new CopyOnWriteArrayList<>(createRepairTasks());
+        myTokens = myReplicationState
+                .getTokenRangeToReplicas(myTableReference);
+        myTasks = new CopyOnWriteArrayList<>(createRepairTasks(myTokens));
     }
 
-    private List<ScheduledTask> createRepairTasks()
+    private List<ScheduledTask> createRepairTasks(Map<LongTokenRange, ImmutableSet<Host>> tokenRanges)
     {
         List<ScheduledTask> taskList = new ArrayList<>();
         List<VnodeRepairState> vnodeRepairStates = new ArrayList<>();
-
-        Map<LongTokenRange, ImmutableSet<Host>> tokenRanges = myReplicationState
-                .getTokenRangeToReplicas(myTableReference);
 
         for (Map.Entry<LongTokenRange, ImmutableSet<Host>> entry : tokenRanges.entrySet())
         {
@@ -145,6 +146,12 @@ public class OnDemandRepairJob extends ScheduledJob
     @Override
     public State getState()
     {
+        // If tokens have changed the repair will need to be rerun as the token ranges are incorrect
+        if (!myTokens.equals(myReplicationState
+            .getTokenRangeToReplicas(myTableReference)))
+        {
+            return State.FAILED;
+        }
         return myTasks.isEmpty() ? State.FINISHED : State.RUNNABLE;
     }
 

@@ -201,14 +201,19 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         RUNNABLE,
 
         /**
-         * Job is finished and can be discarded
+         * Job is finished and can be discarded.
          */
         FINISHED,
 
         /**
          * The Job cannot be run currently.
          */
-        PARKED
+        PARKED,
+
+        /**
+         * The Job has failed and can be discarded.
+         */
+        FAILED
     }
 
     /**

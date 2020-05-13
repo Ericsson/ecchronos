@@ -100,6 +100,15 @@ public class TestOnDemandRepairJob
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FINISHED);
     }
 
+    @Test
+    public void testJobFailed()
+    {
+        OnDemandRepairJob repairJob = createOnDemandRepairJob();
+        Iterator<ScheduledTask> it = repairJob.iterator();
+        when(myReplicationState.getTokenRangeToReplicas(myTableReference)).thenReturn(new HashMap<>());
+        assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FAILED);
+    }
+
     private OnDemandRepairJob createOnDemandRepairJob()
     {
         LongTokenRange range1 = new LongTokenRange(1, 2);
