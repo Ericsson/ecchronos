@@ -20,7 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.base.Predicate;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableSet;
-import org.assertj.core.util.Lists;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -28,12 +28,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,266 +45,304 @@ public class TestVnodeRepairStateFactoryImpl
     @Mock
     private ReplicationState mockReplicationState;
 
+    private Map<LongTokenRange, ImmutableSet<Host>> tokenToHostMap = new TreeMap<>((l1, l2) -> Long.compare(l1.start, l2.start));
+
+    private RepairHistoryProvider repairHistoryProvider = new MockedRepairHistoryProvider(TABLE_REFERENCE);
+    private List<RepairEntry> repairHistory = new ArrayList<>();
+
+    @Before
+    public void setup()
+    {
+        when(mockReplicationState.getTokenRangeToReplicas(eq(TABLE_REFERENCE))).thenReturn(tokenToHostMap);
+    }
+
     @Test
     public void testEmptyHistoryNoPreviousIsUnrepaired() throws UnknownHostException
     {
-        MockedHost host1 = new MockedHost("127.0.0.1");
-        MockedHost host2 = new MockedHost("127.0.0.2");
-        LongTokenRange longTokenRange1 = new LongTokenRange(1, 2);
-        LongTokenRange longTokenRange2 = new LongTokenRange(2, 3);
-        ImmutableSet<Host> replicas = getReplicas(host1, host2);
+        Host host1 = withHost("127.0.0.1");
+        Host host2 = withHost("127.0.0.2");
+ 
+        withRange(range(1, 2), host1, host2);
+        withRange(range(2, 3), host1, host2);
 
-        Map<LongTokenRange, ImmutableSet<Host>> tokenToHostMap = new HashMap<>();
-        tokenToHostMap.put(longTokenRange1, replicas);
-        tokenToHostMap.put(longTokenRange2, replicas);
-
-        when(mockReplicationState.getTokenRangeToReplicas(eq(TABLE_REFERENCE))).thenReturn(tokenToHostMap);
-        RepairHistoryProvider repairHistoryProvider = new MockedRepairHistoryProvider(TABLE_REFERENCE);
-
-        VnodeRepairStates expectedVnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(
-                new VnodeRepairState(longTokenRange1, replicas, VnodeRepairState.UNREPAIRED),
-                new VnodeRepairState(longTokenRange2, replicas, VnodeRepairState.UNREPAIRED)))
-                .build();
-
-        VnodeRepairStateFactory vnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider);
-
-        VnodeRepairStates actualVnodeRepairStates = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, null);
-
-        assertThat(actualVnodeRepairStates).isEqualTo(expectedVnodeRepairStates);
+        assertVnodeStates(newUnrepairedState(range(1, 2)),
+                newUnrepairedState(range(2, 3)));
     }
 
     @Test
     public void testEmptyHistoryWithPreviousKeepsRepairedAt() throws UnknownHostException
     {
-        MockedHost host1 = new MockedHost("127.0.0.1");
-        MockedHost host2 = new MockedHost("127.0.0.2");
-        LongTokenRange longTokenRange1 = new LongTokenRange(1, 2);
-        LongTokenRange longTokenRange2 = new LongTokenRange(2, 3);
-        ImmutableSet<Host> replicas = getReplicas(host1, host2);
+        Host host1 = withHost("127.0.0.1");
+        Host host2 = withHost("127.0.0.2");
 
-        Map<LongTokenRange, ImmutableSet<Host>> tokenToHostMap = new HashMap<>();
-        tokenToHostMap.put(longTokenRange1, replicas);
-        tokenToHostMap.put(longTokenRange2, replicas);
+        withRange(range(1, 2), host1, host2);
+        withRange(range(2, 3), host1, host2);
 
-        when(mockReplicationState.getTokenRangeToReplicas(eq(TABLE_REFERENCE))).thenReturn(tokenToHostMap);
-        RepairHistoryProvider repairHistoryProvider = new MockedRepairHistoryProvider(TABLE_REFERENCE);
+        RepairStateSnapshot previousSnapshot = snapshot(1234L,
+                newState(range(1, 2), 1234L),
+                newState(range(2, 3), 2345L));
 
-        VnodeRepairStates expectedVnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(
-                new VnodeRepairState(longTokenRange1, replicas, 1),
-                new VnodeRepairState(longTokenRange2, replicas, 2)))
-                .build();
-
-        RepairStateSnapshot previousRepairState = RepairStateSnapshot.newBuilder()
-                .withLastRepairedAt(1)
-                .withReplicaRepairGroups(Collections.emptyList())
-                .withVnodeRepairStates(expectedVnodeRepairStates)
-                .build();
-
-        VnodeRepairStateFactory vnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider);
-
-        VnodeRepairStates actualVnodeRepairStates = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, previousRepairState);
-
-        assertThat(actualVnodeRepairStates).isEqualTo(expectedVnodeRepairStates);
+        assertVnodeStates(previousSnapshot,
+                newState(range(1, 2), 1234L),
+                newState(range(2, 3), 2345L));
     }
 
     @Test
     public void testWithHistoryNoPreviousIsRepaired() throws UnknownHostException
     {
-        MockedHost host1 = new MockedHost("127.0.0.1");
-        MockedHost host2 = new MockedHost("127.0.0.2");
+        Host host1 = withHost("127.0.0.1");
+        Host host2 = withHost("127.0.0.2");
 
-        LongTokenRange longTokenRange1 = new LongTokenRange(1, 2);
-        LongTokenRange longTokenRange2 = new LongTokenRange(2, 3);
-        ImmutableSet<Host> replicas = getReplicas(host1, host2);
-        ImmutableSet<InetAddress> replicaAddresses = getReplicaAddresses(host1, host2);
+        withRange(range(1, 2), host1, host2);
+        withRange(range(2, 3), host1, host2);
 
-        Map<LongTokenRange, ImmutableSet<Host>> tokenToHostMap = new HashMap<>();
-        tokenToHostMap.put(longTokenRange1, replicas);
-        tokenToHostMap.put(longTokenRange2, replicas);
+        withSuccessfulRepairHistory(range(1, 2), 1234L);
+        withSuccessfulRepairHistory(range(2, 3), 2345L);
 
-        long range1RepairedAt = 1;
-        long range2RepairedAt = 2;
+        assertVnodeStates(newState(range(1, 2), 1234L),
+                newState(range(2, 3), 2345L));
+    }
 
-        RepairEntry repairEntry1 = new RepairEntry(longTokenRange1, range1RepairedAt, replicaAddresses, "SUCCESS");
-        RepairEntry repairEntry2 = new RepairEntry(longTokenRange2, range2RepairedAt, replicaAddresses, "SUCCESS");
+    @Test
+    public void testWithSubRangeHistoryNoPreviousIsRepaired() throws UnknownHostException
+    {
+        Host host1 = withHost("127.0.0.1");
+        Host host2 = withHost("127.0.0.2");
 
-        when(mockReplicationState.getTokenRangeToReplicas(eq(TABLE_REFERENCE))).thenReturn(tokenToHostMap);
-        RepairHistoryProvider repairHistoryProvider = new MockedRepairHistoryProvider(TABLE_REFERENCE, repairEntry1, repairEntry2);
+        withRange(range(1, 5), host1, host2);
+        withRange(range(5, 10), host1, host2);
 
-        VnodeRepairStates expectedVnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(
-                new VnodeRepairState(longTokenRange1, replicas, range1RepairedAt),
-                new VnodeRepairState(longTokenRange2, replicas, range2RepairedAt)))
-                .build();
+        long range1RepairedAt = TimeUnit.DAYS.toMillis(10);
+        long range2RepairedAt = TimeUnit.DAYS.toMillis(11);
 
-        VnodeRepairStateFactory vnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider);
+        withSubRangeSuccessfulRepairHistory(range(1, 3), range1RepairedAt);
+        withSubRangeSuccessfulRepairHistory(range(3, 5), range1RepairedAt);
 
-        VnodeRepairStates actualVnodeRepairStates = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, null);
+        withSubRangeSuccessfulRepairHistory(range(5, 8), range2RepairedAt);
+        withSubRangeSuccessfulRepairHistory(range(8, 10), range2RepairedAt);
 
-        assertThat(actualVnodeRepairStates).isEqualTo(expectedVnodeRepairStates);
+        assertVnodeStates(newUnrepairedState(range(1, 5)),
+                newUnrepairedState(range(5, 10)));
+    }
+
+    @Test
+    public void testWithSubRangeHistoryNoPreviousIsPartiallyRepaired() throws UnknownHostException
+    {
+        Host host1 = withHost("127.0.0.1");
+        Host host2 = withHost("127.0.0.2");
+
+        withRange(range(1, 5), host1, host2);
+        withRange(range(5, 10), host1, host2);
+
+        long range1RepairedAt = TimeUnit.DAYS.toMillis(10);
+        long range2RepairedAt = TimeUnit.DAYS.toMillis(11);
+
+        withSubRangeSuccessfulRepairHistory(range(1, 3), range1RepairedAt);
+
+        withSubRangeSuccessfulRepairHistory(range(5, 8), range2RepairedAt);
+        withSubRangeSuccessfulRepairHistory(range(8, 10), range2RepairedAt);
+
+        assertVnodeStates(newUnrepairedState(range(1, 5)),
+                newUnrepairedState(range(5, 10)));
     }
 
     @Test
     public void testWithHistoryNoPreviousIsPartiallyRepaired() throws UnknownHostException
     {
-        MockedHost host1 = new MockedHost("127.0.0.1");
-        MockedHost host2 = new MockedHost("127.0.0.2");
+        Host host1 = withHost("127.0.0.1");
+        Host host2 = withHost("127.0.0.2");
 
-        LongTokenRange longTokenRange1 = new LongTokenRange(1, 2);
-        LongTokenRange longTokenRange2 = new LongTokenRange(2, 3);
-        ImmutableSet<Host> replicas = getReplicas(host1, host2);
-        ImmutableSet<InetAddress> replicaAddresses = getReplicaAddresses(host1, host2);
-
-        Map<LongTokenRange, ImmutableSet<Host>> tokenToHostMap = new HashMap<>();
-        tokenToHostMap.put(longTokenRange1, replicas);
-        tokenToHostMap.put(longTokenRange2, replicas);
+        withRange(range(1, 2), host1, host2);
+        withRange(range(2, 3), host1, host2);
 
         long range1RepairedAt = 1;
         long range2RepairedAt = 2;
 
-        RepairEntry repairEntry1 = new RepairEntry(longTokenRange1, range1RepairedAt, replicaAddresses, "SUCCESS");
-        RepairEntry repairEntry2 = new RepairEntry(longTokenRange2, range2RepairedAt, replicaAddresses, "FAILED");
+        withSuccessfulRepairHistory(range(1, 2), range1RepairedAt);
+        withFailedRepairHistory(range(2, 3), range2RepairedAt);
 
-        when(mockReplicationState.getTokenRangeToReplicas(eq(TABLE_REFERENCE))).thenReturn(tokenToHostMap);
-        RepairHistoryProvider repairHistoryProvider = new MockedRepairHistoryProvider(TABLE_REFERENCE, repairEntry1, repairEntry2);
-
-        VnodeRepairStates expectedVnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(
-                new VnodeRepairState(longTokenRange1, replicas, range1RepairedAt),
-                new VnodeRepairState(longTokenRange2, replicas, VnodeRepairState.UNREPAIRED)))
-                .build();
-
-        VnodeRepairStateFactory vnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider);
-
-        VnodeRepairStates actualVnodeRepairStates = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, null);
-
-        assertThat(actualVnodeRepairStates).isEqualTo(expectedVnodeRepairStates);
+        assertVnodeStates(newState(range(1, 2), range1RepairedAt),
+                newUnrepairedState(range(2, 3)));
     }
 
     @Test
     public void testWithOldHistoryNoPreviousIsPartiallyRepaired() throws UnknownHostException
     {
-        MockedHost host1 = new MockedHost("127.0.0.1");
-        MockedHost host2 = new MockedHost("127.0.0.2");
-
-        LongTokenRange longTokenRange1 = new LongTokenRange(1, 2);
-        LongTokenRange longTokenRange2 = new LongTokenRange(2, 3);
-        ImmutableSet<Host> replicas = getReplicas(host1, host2);
-        ImmutableSet<InetAddress> replicaAddresses = getReplicaAddresses(host1, host2);
-
-        Map<LongTokenRange, ImmutableSet<Host>> tokenToHostMap = new HashMap<>();
-        tokenToHostMap.put(longTokenRange1, replicas);
-        tokenToHostMap.put(longTokenRange2, replicas);
+        Host host1 = withHost("127.0.0.1");
+        Host host2 = withHost("127.0.0.2");
+        Host host3 = withHost("127.0.0.3");
 
         long range1RepairedAt = 1;
         long range2RepairedAt = 2;
 
-        RepairEntry repairEntry1 = new RepairEntry(longTokenRange1, range1RepairedAt, replicaAddresses, "SUCCESS");
-        RepairEntry repairEntry2 = new RepairEntry(longTokenRange2, range2RepairedAt, Collections.singleton(host1.getAddress()), "SUCCESS");
+        withRange(range(1, 2), host1, host2);
+        withRange(range(2, 3), host1, host3);
+        withSuccessfulRepairHistory(range(2, 3), range2RepairedAt); // Previous replication
 
-        when(mockReplicationState.getTokenRangeToReplicas(eq(TABLE_REFERENCE))).thenReturn(tokenToHostMap);
-        RepairHistoryProvider repairHistoryProvider = new MockedRepairHistoryProvider(TABLE_REFERENCE, repairEntry1, repairEntry2);
+        replaceRange(range(2, 3), range(2, 3), host1, host2);
 
-        VnodeRepairStates expectedVnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(
-                new VnodeRepairState(longTokenRange1, replicas, range1RepairedAt),
-                new VnodeRepairState(longTokenRange2, replicas, VnodeRepairState.UNREPAIRED)))
-                .build();
+        withSuccessfulRepairHistory(range(1, 2), range1RepairedAt);
 
-        VnodeRepairStateFactory vnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider);
-
-        VnodeRepairStates actualVnodeRepairStates = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, null);
-
-        assertThat(actualVnodeRepairStates).isEqualTo(expectedVnodeRepairStates);
+        assertVnodeStates(newState(range(1, 2), range1RepairedAt),
+                newUnrepairedState(range(2, 3)));
     }
 
     @Test
     public void testWithHistoryAndPreviousAfterScaleOut() throws UnknownHostException
     {
-        MockedHost host1 = new MockedHost("127.0.0.1");
-        MockedHost host2 = new MockedHost("127.0.0.2");
-        MockedHost host3 = new MockedHost("127.0.0.3");
+        Host host1 = withHost("127.0.0.1");
+        Host host2 = withHost("127.0.0.2");
+        Host host3 = withHost("127.0.0.3");
 
-        LongTokenRange longTokenRange1Before = new LongTokenRange(1, 4);
-        LongTokenRange longTokenRange2Before = new LongTokenRange(5, 0);
-        ImmutableSet<Host> replicasBefore = getReplicas(host1, host2);
+        withRange(range(1, 4), host1, host2);
+        withRange(range(5, 0), host1, host2);
 
-        long rangeRepairedAt = 1;
+        replaceRange(range(1, 4), range(1, 2), host1, host3);
 
-        RepairHistoryProvider repairHistoryProvider = new MockedRepairHistoryProvider(TABLE_REFERENCE);
+        RepairStateSnapshot previousSnapshot = snapshot(1234L,
+                newState(range(1, 4), 1234L),
+                newState(range(5, 0), 1234L));
 
-        VnodeRepairStates vnodeRepairStatesBefore = VnodeRepairStatesImpl.newBuilder(Arrays.asList(
-                new VnodeRepairState(longTokenRange1Before, replicasBefore, rangeRepairedAt),
-                new VnodeRepairState(longTokenRange2Before, replicasBefore, rangeRepairedAt)))
-                .build();
+        assertVnodeStates(previousSnapshot,
+                newState(range(1, 2), 1234L),
+                newState(range(5, 0), 1234L));
+    }
 
-        VnodeRepairStateFactory vnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider);
-
-        LongTokenRange longTokenRange1After = new LongTokenRange(1, 2);
-        LongTokenRange longTokenRange2After = new LongTokenRange(5, 0);
-        ImmutableSet<Host> replicasGroupOneAfter = getReplicas(host1, host3);
-        ImmutableSet<Host> replicasGroupTwoAfter = getReplicas(host1, host2);
-
-        Map<LongTokenRange, ImmutableSet<Host>> tokenToHostMapAfter = new HashMap<>();
-        tokenToHostMapAfter.put(longTokenRange1After, replicasGroupOneAfter);
-        tokenToHostMapAfter.put(longTokenRange2After, replicasGroupTwoAfter);
-
-        when(mockReplicationState.getTokenRangeToReplicas(eq(TABLE_REFERENCE))).thenReturn(tokenToHostMapAfter);
-
-        VnodeRepairStates expectedVnodeRepairStatesAfter = VnodeRepairStatesImpl.newBuilder(Arrays.asList(
-                new VnodeRepairState(longTokenRange1After, replicasGroupOneAfter, rangeRepairedAt),
-                new VnodeRepairState(longTokenRange2After, replicasGroupTwoAfter, rangeRepairedAt)))
-                .build();
-
-        RepairStateSnapshot repairStateSnapshot = RepairStateSnapshot.newBuilder()
-                .withLastRepairedAt(rangeRepairedAt)
-                .withVnodeRepairStates(vnodeRepairStatesBefore)
+    private RepairStateSnapshot snapshot(long repairedAt, VnodeRepairState... states)
+    {
+        return RepairStateSnapshot.newBuilder()
+                .withLastRepairedAt(repairedAt)
                 .withReplicaRepairGroups(Collections.emptyList())
+                .withVnodeRepairStates(vnodeRepairStates(states))
                 .build();
-
-        VnodeRepairStates actualVnodeRepairStatesAfter = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, repairStateSnapshot);
-
-        assertThat(actualVnodeRepairStatesAfter).isEqualTo(expectedVnodeRepairStatesAfter);
     }
 
-    private ImmutableSet<Host> getReplicas(MockedHost... hosts)
+    private VnodeRepairStates vnodeRepairStates(VnodeRepairState... states)
     {
-        return ImmutableSet.copyOf(Lists.newArrayList(hosts).stream().map(MockedHost::getHost).collect(Collectors.toSet()));
+        return VnodeRepairStatesImpl.newBuilder(Arrays.asList(states)).build();
     }
 
-    private ImmutableSet<InetAddress> getReplicaAddresses(MockedHost... hosts)
+    private void withSubRangeSuccessfulRepairHistory(LongTokenRange range, long repairedAt)
     {
-        return ImmutableSet.copyOf(Lists.newArrayList(hosts).stream().map(MockedHost::getAddress).collect(Collectors.toSet()));
+        ImmutableSet<Host> replicas = getKnownReplicasForSubRange(range);
+        withRepairHistory(range, repairedAt, replicas, "SUCCESS");
     }
 
-    private class MockedHost
+    private void withSuccessfulRepairHistory(LongTokenRange range, long repairedAt)
     {
-        private final Host myHost;
-        private final InetAddress myInetAddress;
+        ImmutableSet<Host> replicas = getKnownReplicas(range);
+        withRepairHistory(range, repairedAt, replicas, "SUCCESS");
+    }
 
-        public MockedHost(String inetAddress) throws UnknownHostException
+    private void withFailedRepairHistory(LongTokenRange range, long repairedAt)
+    {
+        ImmutableSet<Host> replicas = getKnownReplicas(range);
+        withRepairHistory(range, repairedAt, replicas, "FAILED");
+    }
+
+    private void withRepairHistory(LongTokenRange range, long repairedAt, ImmutableSet<Host> replicas, String status)
+    {
+        RepairEntry repairEntry = new RepairEntry(range, repairedAt, getReplicaAddresses(replicas), status);
+        repairHistory.add(repairEntry);
+    }
+
+    private ImmutableSet<InetAddress> getReplicaAddresses(Collection<Host> hosts)
+    {
+        return ImmutableSet.copyOf(hosts.stream().map(Host::getBroadcastAddress).collect(Collectors.toSet()));
+    }
+
+    private VnodeRepairState newUnrepairedState(LongTokenRange range)
+    {
+        return newState(range, VnodeRepairState.UNREPAIRED);
+    }
+
+    private VnodeRepairState newState(LongTokenRange range, long repairedAt)
+    {
+        return new VnodeRepairState(range, getKnownReplicas(range), repairedAt);
+    }
+
+    private ImmutableSet<Host> getKnownReplicasForSubRange(LongTokenRange range)
+    {
+        ImmutableSet<Host> replicas = tokenToHostMap.get(range);
+        if (replicas == null)
         {
-            myHost = mock(Host.class);
-            myInetAddress = InetAddress.getByName(inetAddress);
-            when(myHost.getBroadcastAddress()).thenReturn(myInetAddress);
+            for (LongTokenRange vnode : tokenToHostMap.keySet())
+            {
+                if (vnode.isCovering(range))
+                {
+                    replicas = tokenToHostMap.get(vnode);
+                    break;
+                }
+            }
+
+            assertThat(replicas).isNotNull();
         }
 
-        public Host getHost()
-        {
-            return myHost;
-        }
-
-        public InetAddress getAddress()
-        {
-            return myInetAddress;
-        }
+        return replicas;
     }
 
-    private static class MockedRepairHistoryProvider implements RepairHistoryProvider
+    private ImmutableSet<Host> getKnownReplicas(LongTokenRange range)
+    {
+        ImmutableSet<Host> replicas = tokenToHostMap.get(range);
+        assertThat(replicas).isNotNull();
+        return replicas;
+    }
+
+    private LongTokenRange range(long start, long end)
+    {
+        return new LongTokenRange(start, end);
+    }
+
+    private void withRange(LongTokenRange range, Host... replicas)
+    {
+        tokenToHostMap.put(range, ImmutableSet.copyOf(replicas));
+    }
+
+    private void replaceRange(LongTokenRange previousRange, LongTokenRange newRange, Host... newReplicas)
+    {
+        tokenToHostMap.remove(previousRange);
+        withRange(newRange, newReplicas);
+    }
+
+    private Host withHost(String inetAddress) throws UnknownHostException
+    {
+        Host host = mock(Host.class);
+        InetAddress hostAddress = InetAddress.getByName(inetAddress);
+        when(host.getBroadcastAddress()).thenReturn(hostAddress);
+        return host;
+    }
+
+    private void assertVnodeStates(VnodeRepairState... states)
+    {
+        assertVnodeStates(null, states);
+    }
+
+    private void assertVnodeStates(RepairStateSnapshot previous, VnodeRepairState... states)
+    {
+        VnodeRepairStateFactory vnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider);
+        assertNewState(vnodeRepairStateFactory, previous, VnodeRepairStatesImpl.class, states);
+    }
+
+    private void assertNewState(VnodeRepairStateFactory factory, RepairStateSnapshot previous, Class<? extends VnodeRepairStates> expectedClass, VnodeRepairState... expectedStates)
+    {
+        assertNewState(factory, previous, expectedClass, Arrays.asList(expectedStates));
+    }
+
+    private void assertNewState(VnodeRepairStateFactory factory, RepairStateSnapshot previous, Class<? extends VnodeRepairStates> expectedClass, Collection<VnodeRepairState> expectedStates)
+    {
+        VnodeRepairStates newStates = factory.calculateNewState(TABLE_REFERENCE, previous);
+        assertThat(newStates).isInstanceOf(expectedClass);
+
+        Collection<VnodeRepairState> vnodeRepairStates = newStates.getVnodeRepairStates();
+        assertThat(vnodeRepairStates).containsOnlyElementsOf(expectedStates);
+    }
+
+    private class MockedRepairHistoryProvider implements RepairHistoryProvider
     {
         private final TableReference myTableReference;
-        private final List<RepairEntry> myRepairEntries;
 
-        public MockedRepairHistoryProvider(TableReference tableReference, RepairEntry... repairEntries)
+        public MockedRepairHistoryProvider(TableReference tableReference)
         {
-            myRepairEntries = Lists.newArrayList(repairEntries);
             myTableReference = tableReference;
         }
 
@@ -317,7 +351,7 @@ public class TestVnodeRepairStateFactoryImpl
         {
             assertThat(tableReference).isEqualTo(myTableReference);
 
-            return new MockedRepairEntryIterator(myRepairEntries.iterator(), predicate);
+            return new MockedRepairEntryIterator(repairHistory.iterator(), predicate);
         }
 
         @Override
@@ -325,7 +359,7 @@ public class TestVnodeRepairStateFactoryImpl
         {
             assertThat(tableReference).isEqualTo(myTableReference);
 
-            return new MockedRepairEntryIterator(myRepairEntries.iterator(), predicate);
+            return new MockedRepairEntryIterator(repairHistory.iterator(), predicate);
         }
     }
 
