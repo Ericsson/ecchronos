@@ -42,6 +42,10 @@ It is recommended to modify `SimpleStrategy` to `NetworkTopologyStrategy` with a
 
 ## Installation
 
+The package can be found in
+[maven central](https://mvnrepository.com/artifact/com.ericsson.bss.cassandra.ecchronos/ecchronos-binary)
+or in the [github releases section](https://github.com/Ericsson/ecchronos/releases).
+
 Unpack `ecchronos-binary-<version>.tar.gz`.
 The root directory should contain the following directories:
 ```
