@@ -31,5 +31,5 @@ done
 if [ "$1" = "-f" ]; then
     java $JVM_ENV -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.ECChronos $@
 else
-    java $JVM_ENV -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.ECChronos $@ <&- &
+    java $JVM_ENV -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.ECChronos $@ <&- 1>&- 2>&- &
 fi
