@@ -15,8 +15,10 @@
 #
 
 if [ "x$ECCHRONOS_HOME" = "x" ]; then
-  ECCHRONOS_HOME="`dirname "$0"`/.."
+    ECCHRONOS_HOME=$(dirname $(readlink -f $0))/..
 fi
+
+cd $ECCHRONOS_HOME
 
 CLASSPATH="$ECCHRONOS_HOME"/conf/
 JVM_ENV=-Decchronos.config="$ECCHRONOS_HOME"/conf/ecChronos.cfg
