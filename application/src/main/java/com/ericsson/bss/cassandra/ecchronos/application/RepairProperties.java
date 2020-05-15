@@ -47,6 +47,7 @@ public final class RepairProperties
     private static final String DEFAULT_REPAIR_HISTORY_LOOKBACK_TIMEUNIT = DAYS;
     private static final String DEFAULT_REPAIR_HISTORY_LOOKBACK_DURATION = "30";
     private static final String DEFAULT_REPAIR_TARGET_REPAIR_SIZE = "";
+    private static final long DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES = RepairConfiguration.FULL_REPAIR_SIZE;
 
     private final long myRepairIntervalInMs;
     private final RepairOptions.RepairParallelism myRepairParallelism;
@@ -156,7 +157,7 @@ public final class RepairProperties
         long repairHistoryLookbackInMs = parseTimeUnitToMs(properties, CONFIG_REPAIR_HISTORY_LOOKBACK_BASE,
                 DEFAULT_REPAIR_HISTORY_LOOKBACK_DURATION, DEFAULT_REPAIR_HISTORY_LOOKBACK_TIMEUNIT);
 
-        long targetRepairSizeInBytes = Long.MAX_VALUE;
+        long targetRepairSizeInBytes = DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES;
 
         try
         {

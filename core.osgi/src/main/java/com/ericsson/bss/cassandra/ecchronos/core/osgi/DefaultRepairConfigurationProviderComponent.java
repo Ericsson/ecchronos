@@ -44,6 +44,7 @@ public class DefaultRepairConfigurationProviderComponent
     private static final long DEFAULT_REPAIR_INTERVAL_SECONDS = 7L * 24L * 60L * 60L;
     private static final long DEFAULT_REPAIR_WARNING_SECONDS = 8L * 24L * 60L * 60L;
     private static final long DEFAULT_REPAIR_ERROR_SECONDS = 10L * 24L * 60L * 60L;
+    private static final long DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES = RepairConfiguration.FULL_REPAIR_SIZE;
 
     @Reference (service = NativeConnectionProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile NativeConnectionProvider myNativeConnectionProvider;
@@ -62,7 +63,7 @@ public class DefaultRepairConfigurationProviderComponent
         if (configuration.enabled())
         {
             long repairInterval = configuration.repairIntervalSeconds();
-            long repairSizeInBytes = Long.MAX_VALUE;
+            long repairSizeInBytes = DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES;
             if (!configuration.targetRepairSize().isEmpty())
             {
                 repairSizeInBytes = UnitConverter.toBytes(configuration.targetRepairSize());

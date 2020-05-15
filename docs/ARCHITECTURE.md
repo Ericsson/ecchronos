@@ -65,7 +65,7 @@ The RepairTask is the class that will perform the repair.
 
 ## Sub-range repairs
 
-As of #96 the repair scheduler in ecChronos has support for sub range repairs within virtual nodes.
+As of [#96][i96] the repair scheduler in ecChronos has support for sub range repairs within virtual nodes.
 This is activated by specifying a target repair size in the [RepairConfiguration](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/RepairConfiguration.java).
 For the standalone version the option is called `repair.size.target` in the configuration file.
 Each sub-range repair session will aim to handle the target amount of data.
@@ -83,13 +83,11 @@ The sub ranges would be:
 (96, 98]  
 (98, 100]
 
-### Details
-
-Sub-ranges are handled in two parts, one part is while building an internal state of the repair history and the other is while performing the repairs.
-
 #### Repair history
 
-While building the internal repair history state all sub-ranges which are fully contained within a local virtual node is collected from the repair history.
+
+Sub-ranges are handled in two parts, one part is building an internal state of the repair history and the other is performing the repairs.
+While building the internal repair history state all sub-ranges which are fully contained within a local virtual node are collected from the repair history.
 This means that for a virtual node (1, 5] it will collect ranges such as (1, 3] and (2, 4].
 It will not collect (0, 3] since it is not fully contained in the virtual node even though it is intersecting it.
 
@@ -105,3 +103,5 @@ Assuming that X is more than one hour before Y this will produce three sub range
 * (0, 15] repaired at X.
 * (15, 20] repaired at Y
 * (20, 30] repaired at X
+
+[i96]: https://github.com/Ericsson/ecchronos/issues/96

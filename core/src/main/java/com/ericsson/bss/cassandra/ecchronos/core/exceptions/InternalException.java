@@ -20,6 +20,8 @@ package com.ericsson.bss.cassandra.ecchronos.core.exceptions;
  */
 public class InternalException extends RuntimeException
 {
+    private static final long serialVersionUID = 8519513326549621415L;
+
     public InternalException(String message)
     {
         super(message);
