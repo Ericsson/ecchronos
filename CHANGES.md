@@ -3,6 +3,8 @@
 ## Version 1.0.7
 
 * Avoid concurrent modification exception in RSI#close - Issue #99
+* Support symlink of ecc binary - PR #114
+* Close file descriptors in background mode - PR #115
 
 ## Version 1.0.6
 
