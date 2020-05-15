@@ -15,8 +15,10 @@
 #
 
 if [ "x$ECCHRONOS_HOME" = "x" ]; then
-  ECCHRONOS_HOME="`dirname "$0"`/.."
+    ECCHRONOS_HOME=$(dirname $(readlink -f $0))/..
 fi
+
+cd $ECCHRONOS_HOME
 
 CLASSPATH="$ECCHRONOS_HOME"/conf/
 JVM_ENV=-Decchronos.config="$ECCHRONOS_HOME"/conf/ecChronos.cfg
@@ -29,5 +31,5 @@ done
 if [ "$1" = "-f" ]; then
     java $JVM_ENV -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.ECChronos $@
 else
-    java $JVM_ENV -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.ECChronos $@ <&- &
+    java $JVM_ENV -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.ECChronos $@ <&- 1>&- 2>&- &
 fi

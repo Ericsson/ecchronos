@@ -51,17 +51,20 @@ public class ECChronos implements Closeable
     private final RepairSchedulerImpl myRepairSchedulerImpl;
 
     public ECChronos(Properties configuration, RepairFaultReporter repairFaultReporter,
-                     NativeConnectionProvider nativeConnectionProvider,
-                     JmxConnectionProvider jmxConnectionProvider,
-                     StatementDecorator statementDecorator) throws ConfigurationException
+            NativeConnectionProvider nativeConnectionProvider,
+            JmxConnectionProvider jmxConnectionProvider,
+            StatementDecorator statementDecorator) throws ConfigurationException
     {
-        myECChronosInternals = new ECChronosInternals(configuration, nativeConnectionProvider,jmxConnectionProvider, statementDecorator);
+        myECChronosInternals = new ECChronosInternals(configuration, nativeConnectionProvider, jmxConnectionProvider,
+                statementDecorator);
 
         Host host = nativeConnectionProvider.getLocalHost();
         Metadata metadata = nativeConnectionProvider.getSession().getCluster().getMetadata();
         RepairProperties repairProperties = RepairProperties.from(configuration);
 
-        RepairHistoryProviderImpl repairHistoryProvider = new RepairHistoryProviderImpl(nativeConnectionProvider.getSession(), statementDecorator, repairProperties.getRepairHistoryLookbackInMs());
+        RepairHistoryProviderImpl repairHistoryProvider = new RepairHistoryProviderImpl(
+                nativeConnectionProvider.getSession(), statementDecorator,
+                repairProperties.getRepairHistoryLookbackInMs());
 
         RepairStateFactoryImpl repairStateFactoryImpl = RepairStateFactoryImpl.builder()
                 .withMetadata(metadata)
@@ -78,7 +81,6 @@ public class ECChronos implements Closeable
                 .withStatementDecorator(statementDecorator)
                 .withKeyspaceName(timeBasedRunPolicyProperties.getKeyspaceName())
                 .build();
-
 
         myRepairSchedulerImpl = RepairSchedulerImpl.builder()
                 .withJmxProxyFactory(myECChronosInternals.getJmxProxyFactory())
@@ -129,13 +131,6 @@ public class ECChronos implements Closeable
 
     public static void main(String[] args) throws IOException
     {
-        boolean foreground = false;
-
-        if (args.length >= 1 && "-f".equals(args[0])) // NOPMD
-        {
-            foreground = true;
-        }
-
         NativeConnectionProvider nativeConnectionProvider = null;
         JmxConnectionProvider jmxConnectionProvider = null;
         StatementDecorator statementDecorator;
@@ -152,9 +147,10 @@ public class ECChronos implements Closeable
             jmxConnectionProvider = getJmxConnectionProvider(configuration, connectionProperties);
             statementDecorator = getStatementDecorator(configuration, connectionProperties);
 
-            ECChronos ecChronos = new ECChronos(configuration, new LoggingFaultReporter(), nativeConnectionProvider, jmxConnectionProvider, statementDecorator);
+            ECChronos ecChronos = new ECChronos(configuration, new LoggingFaultReporter(), nativeConnectionProvider,
+                    jmxConnectionProvider, statementDecorator);
 
-            start(ecChronos, foreground, nativeConnectionProvider, jmxConnectionProvider);
+            start(ecChronos, nativeConnectionProvider, jmxConnectionProvider);
         }
         catch (Exception e)
         {
@@ -170,21 +166,15 @@ public class ECChronos implements Closeable
         }
     }
 
-    private static void start(ECChronos ecChronos, boolean foreground,
-                              NativeConnectionProvider nativeConnectionProvider,
-                              JmxConnectionProvider jmxConnectionProvider)
+    private static void start(ECChronos ecChronos, NativeConnectionProvider nativeConnectionProvider,
+            JmxConnectionProvider jmxConnectionProvider)
     {
         try
         {
             ecChronos.start();
 
-            if (!foreground)
-            {
-                System.out.close();
-                System.err.close();
-            }
-
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(ecChronos, nativeConnectionProvider, jmxConnectionProvider)));
+            Runtime.getRuntime().addShutdownHook(
+                    new Thread(() -> shutdown(ecChronos, nativeConnectionProvider, jmxConnectionProvider)));
         }
         catch (Exception e)
         {
@@ -210,7 +200,8 @@ public class ECChronos implements Closeable
         return configuration;
     }
 
-    private static void shutdown(ECChronos ecChronos, NativeConnectionProvider nativeConnectionProvider, JmxConnectionProvider jmxConnectionProvider)
+    private static void shutdown(ECChronos ecChronos, NativeConnectionProvider nativeConnectionProvider,
+            JmxConnectionProvider jmxConnectionProvider)
     {
         try
         {
@@ -224,17 +215,20 @@ public class ECChronos implements Closeable
         }
     }
 
-    private static NativeConnectionProvider getNativeConnectionProvider(Properties configuration, ConnectionProperties connectionProperties) throws ConfigurationException
+    private static NativeConnectionProvider getNativeConnectionProvider(Properties configuration,
+            ConnectionProperties connectionProperties) throws ConfigurationException
     {
         return ReflectionUtils.construct(connectionProperties.getNativeConnectionProviderClass(), configuration);
     }
 
-    private static JmxConnectionProvider getJmxConnectionProvider(Properties configuration, ConnectionProperties connectionProperties) throws ConfigurationException
+    private static JmxConnectionProvider getJmxConnectionProvider(Properties configuration,
+            ConnectionProperties connectionProperties) throws ConfigurationException
     {
         return ReflectionUtils.construct(connectionProperties.getJmxConnectionProviderClass(), configuration);
     }
 
-    private static StatementDecorator getStatementDecorator(Properties configuration, ConnectionProperties connectionProperties) throws ConfigurationException
+    private static StatementDecorator getStatementDecorator(Properties configuration,
+            ConnectionProperties connectionProperties) throws ConfigurationException
     {
         return ReflectionUtils.construct(connectionProperties.getStatementDecoratorClass(), configuration);
     }
