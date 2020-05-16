@@ -440,6 +440,7 @@ limitations under the License.
                             <exclude>**/*.txt</exclude>
                             <exclude>**/pom.xml.tag</exclude>
                             <exclude>**/pom.xml.releaseBackup</exclude>
+                            <exclude>**/*.options</exclude>
                             <exclude>release.properties</exclude>
                             <exclude>code_style.xml</exclude>
                         </excludes>

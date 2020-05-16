@@ -21,15 +21,23 @@ fi
 cd $ECCHRONOS_HOME
 
 CLASSPATH="$ECCHRONOS_HOME"/conf/
-JVM_ENV=-Decchronos.config="$ECCHRONOS_HOME"/conf/ecChronos.cfg
 
 for library in "$ECCHRONOS_HOME"/lib/*.jar
 do
     CLASSPATH="$CLASSPATH:$library"
 done
 
+# Read user-defined JVM options from jvm.options file
+JVM_OPTS_FILE=$ECCHRONOS_HOME/conf/jvm.options
+for opt in $(grep "^-" $JVM_OPTS_FILE)
+do
+  JVM_OPTS="$JVM_OPTS $opt"
+done
+
+JVM_OPTS="$JVM_OPTS -Decchronos.config="$ECCHRONOS_HOME"/conf/ecChronos.cfg"
+
 if [ "$1" = "-f" ]; then
-    java $JVM_ENV -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.ECChronos $@
+    java $JVM_OPTS -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.ECChronos $@
 else
-    java $JVM_ENV -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.ECChronos $@ <&- 1>&- 2>&- &
+    java $JVM_OPTS -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.ECChronos $@ <&- 1>&- 2>&- &
 fi
