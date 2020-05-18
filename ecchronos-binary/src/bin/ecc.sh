@@ -21,7 +21,6 @@ fi
 cd $ECCHRONOS_HOME
 
 CLASSPATH="$ECCHRONOS_HOME"/conf/
-JVM_ENV=-Decchronos.config="$ECCHRONOS_HOME"/conf/ecc.cfg
 
 for library in "$ECCHRONOS_HOME"/lib/*.jar
 do
@@ -48,10 +47,19 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+# Read user-defined JVM options from jvm.options file
+JVM_OPTS_FILE=$ECCHRONOS_HOME/conf/jvm.options
+for opt in $(grep "^-" $JVM_OPTS_FILE)
+do
+  JVM_OPTS="$JVM_OPTS $opt"
+done
+
+JVM_OPTS="$JVM_OPTS -Decchronos.config="$ECCHRONOS_HOME"/conf/ecc.cfg"
+
 if [ "$FOREGROUND" = "-f" ]; then
-    java $JVM_ENV -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.ECChronos $FOREGROUND
+    java $JVM_OPTS -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.ECChronos $FOREGROUND
     [ ! -z "$PIDFILE" ] && echo "$!" > "$PIDFILE"
 else
-    java $JVM_ENV -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.ECChronos $@ <&- 1>&- 2>&- &
+    java $JVM_OPTS -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.ECChronos $@ <&- 1>&- 2>&- &
     [ ! -z "$PIDFILE" ] && echo "$!" > "$PIDFILE"
 fi
