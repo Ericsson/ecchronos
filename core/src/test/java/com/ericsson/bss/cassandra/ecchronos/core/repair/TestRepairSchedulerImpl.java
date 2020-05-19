@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
@@ -68,6 +69,9 @@ public class TestRepairSchedulerImpl
 
     @Mock
     private RepairStateSnapshot myRepairStateSnapshot;
+
+    @Mock
+    private TableStorageStates myTableStorageStates;
 
     @Before
     public void init()
@@ -222,6 +226,7 @@ public class TestRepairSchedulerImpl
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withScheduleManager(scheduleManager)
                 .withRepairStateFactory(myRepairStateFactory)
-                .withRepairLockType(RepairLockType.VNODE);
+                .withRepairLockType(RepairLockType.VNODE)
+                .withTableStorageStates(myTableStorageStates);
     }
 }

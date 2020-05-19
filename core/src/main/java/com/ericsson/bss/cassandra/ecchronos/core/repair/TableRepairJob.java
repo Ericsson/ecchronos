@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -21,10 +22,14 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
@@ -48,6 +53,7 @@ public class TableRepairJob extends ScheduledJob
     private final RepairLockType myRepairLockType;
 
     private final TableRepairMetrics myTableRepairMetrics;
+    private final TableStorageStates myTableStorageStates;
 
     TableRepairJob(Builder builder)
     {
@@ -59,6 +65,7 @@ public class TableRepairJob extends ScheduledJob
         myTableRepairMetrics = builder.tableRepairMetrics;
         myRepairConfiguration = builder.repairConfiguration;
         myRepairLockType = builder.repairLockType;
+        myTableStorageStates = builder.tableStorageStates;
     }
 
     public TableReference getTableReference()
@@ -84,12 +91,15 @@ public class TableRepairJob extends ScheduledJob
         {
             List<ScheduledTask> taskList = new ArrayList<>();
 
+            BigInteger tokensPerRepair = getTokensPerRepair(repairStateSnapshot.getVnodeRepairStates());
+
             for (ReplicaRepairGroup replicaRepairGroup : repairStateSnapshot.getRepairGroups())
             {
                 taskList.add(new RepairGroup(getRealPriority(), myTableReference, myRepairConfiguration,
                         replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
                         myRepairLockType.getLockFactory(),
-                        new RepairLockFactoryImpl()));
+                        new RepairLockFactoryImpl(),
+                        tokensPerRepair));
             }
 
             return taskList.iterator();
@@ -144,6 +154,31 @@ public class TableRepairJob extends ScheduledJob
         return String.format("Repair job of %s", myTableReference);
     }
 
+    private BigInteger getTokensPerRepair(VnodeRepairStates vnodeRepairStates)
+    {
+        BigInteger tokensPerRepair = LongTokenRange.FULL_RANGE;
+
+        if (myRepairConfiguration.getTargetRepairSizeInBytes() != RepairConfiguration.FULL_REPAIR_SIZE)
+        {
+            BigInteger tableSizeInBytes = BigInteger.valueOf(myTableStorageStates.getDataSize(myTableReference));
+
+            if (!BigInteger.ZERO.equals(tableSizeInBytes))
+            {
+                BigInteger fullRangeSize = vnodeRepairStates.getVnodeRepairStates().stream()
+                        .map(VnodeRepairState::getTokenRange)
+                        .map(LongTokenRange::rangeSize)
+                        .reduce(BigInteger.ZERO, BigInteger::add);
+
+                BigInteger targetSizeInBytes = BigInteger.valueOf(myRepairConfiguration.getTargetRepairSizeInBytes());
+
+                BigInteger targetRepairs = tableSizeInBytes.divide(targetSizeInBytes);
+                tokensPerRepair = fullRangeSize.divide(targetRepairs);
+            }
+        }
+
+        return tokensPerRepair;
+    }
+
     public static class Builder
     {
         Configuration configuration = new ConfigurationBuilder()
@@ -156,6 +191,7 @@ public class TableRepairJob extends ScheduledJob
         private TableRepairMetrics tableRepairMetrics = null;
         private RepairConfiguration repairConfiguration = RepairConfiguration.DEFAULT;
         private RepairLockType repairLockType;
+        private TableStorageStates tableStorageStates;
 
         public Builder withConfiguration(Configuration configuration)
         {
@@ -199,6 +235,12 @@ public class TableRepairJob extends ScheduledJob
             return this;
         }
 
+        public Builder withTableStorageStates(TableStorageStates tableStorageStates)
+        {
+            this.tableStorageStates = tableStorageStates;
+            return this;
+        }
+
         public TableRepairJob build()
         {
             if (tableReference == null)
@@ -212,6 +254,10 @@ public class TableRepairJob extends ScheduledJob
             if (tableRepairMetrics == null)
             {
                 throw new IllegalArgumentException("Metric interface not set");
+            }
+            if (tableStorageStates == null)
+            {
+                throw new IllegalArgumentException("Table storage states not set");
             }
             return new TableRepairJob(this);
         }

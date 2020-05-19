@@ -15,6 +15,10 @@
 * Remove usage of joda time - Issue #95
 * Proper REST interface - Issue #109
 
+### Merged from 1.2
+
+* Add support for sub range repairs - Issue #96
+
 ### Merged from 1.1
 
 * Add Karaf commands that exposes repair status

@@ -36,7 +36,7 @@ public class TestRepairedAt
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1), 1234L);
         VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, ImmutableSet.of(host1), 1235L);
 
-        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2))
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2))
                 .build();
 
         RepairedAt repairedAt = RepairedAt.generate(vnodeRepairStates);
@@ -57,7 +57,7 @@ public class TestRepairedAt
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1), 1234L);
         VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, ImmutableSet.of(host1), VnodeRepairState.UNREPAIRED);
 
-        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2))
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2))
                 .build();
 
         RepairedAt repairedAt = RepairedAt.generate(vnodeRepairStates);
@@ -78,7 +78,7 @@ public class TestRepairedAt
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1), VnodeRepairState.UNREPAIRED);
         VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, ImmutableSet.of(host1), VnodeRepairState.UNREPAIRED);
 
-        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2))
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2))
                 .build();
 
         RepairedAt repairedAt = RepairedAt.generate(vnodeRepairStates);
