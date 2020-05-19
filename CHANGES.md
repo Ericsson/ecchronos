@@ -2,6 +2,8 @@
 
 ## Version 1.1.2
 
+* Add support for sub range repairs - Issue #96
+
 ### Merged from 1.0
 
 * Add Code Style - Issue #103
