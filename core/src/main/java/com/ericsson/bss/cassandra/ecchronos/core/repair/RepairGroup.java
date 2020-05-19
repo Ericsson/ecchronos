@@ -23,10 +23,12 @@ import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TokenSubRangeUtil;
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,6 +50,7 @@ public class RepairGroup extends ScheduledTask
     private final TableRepairMetrics myTableRepairMetrics;
     private final RepairResourceFactory myRepairResourceFactory;
     private final RepairLockFactory myRepairLockFactory;
+    private final BigInteger myTokensPerRepair;
 
     public RepairGroup(int priority,
                        TableReference tableReference,
@@ -58,6 +61,19 @@ public class RepairGroup extends ScheduledTask
                        RepairResourceFactory repairResourceFactory,
                        RepairLockFactory repairLockFactory)
     {
+        this(priority, tableReference, repairConfiguration, replicaRepairGroup, jmxProxyFactory, tableRepairMetrics, repairResourceFactory, repairLockFactory, LongTokenRange.FULL_RANGE);
+    }
+
+    public RepairGroup(int priority,
+                       TableReference tableReference,
+                       RepairConfiguration repairConfiguration,
+                       ReplicaRepairGroup replicaRepairGroup,
+                       JmxProxyFactory jmxProxyFactory,
+                       TableRepairMetrics tableRepairMetrics,
+                       RepairResourceFactory repairResourceFactory,
+                       RepairLockFactory repairLockFactory,
+                       BigInteger tokensPerRepair)
+    {
         super(priority);
 
         myTableReference = tableReference;
@@ -67,6 +83,7 @@ public class RepairGroup extends ScheduledTask
         myTableRepairMetrics = tableRepairMetrics;
         myRepairResourceFactory = repairResourceFactory;
         myRepairLockFactory = repairLockFactory;
+        myTokensPerRepair = tokensPerRepair;
     }
 
     @Override
@@ -132,9 +149,11 @@ public class RepairGroup extends ScheduledTask
 
         for (LongTokenRange range : myReplicaRepairGroup)
         {
-            builder.withTokenRanges(Collections.singletonList(range));
-
-            tasks.add(builder.build());
+            for (LongTokenRange subRange : new TokenSubRangeUtil(range).generateSubRanges(myTokensPerRepair))
+            {
+                builder.withTokenRanges(Collections.singletonList(subRange));
+                tasks.add(builder.build());
+            }
         }
 
         return tasks;

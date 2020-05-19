@@ -89,6 +89,7 @@ public class ECChronos implements Closeable
                 .withScheduleManager(myECChronosInternals.getScheduleManager())
                 .withRepairStateFactory(repairStateFactoryImpl)
                 .withRepairLockType(repairProperties.getRepairLockType())
+                .withTableStorageStates(myECChronosInternals.getTableStorageStates())
                 .build();
 
         myDefaultRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()
@@ -126,6 +127,7 @@ public class ECChronos implements Closeable
                 .withRepairWarningTime(repairProperties.getRepairAlarmWarnInMs(), TimeUnit.MILLISECONDS)
                 .withRepairErrorTime(repairProperties.getRepairAlarmErrorInMs(), TimeUnit.MILLISECONDS)
                 .withRepairUnwindRatio(repairProperties.getRepairUnwindRatio())
+                .withTargetRepairSizeInBytes(repairProperties.getTargetRepairSizeInBytes())
                 .build();
     }
 

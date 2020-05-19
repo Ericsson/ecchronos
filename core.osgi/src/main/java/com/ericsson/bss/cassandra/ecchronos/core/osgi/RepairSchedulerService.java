@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
@@ -63,6 +64,9 @@ public class RepairSchedulerService implements RepairScheduler
     @Reference(service = RepairStateFactory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile RepairStateFactory myRepairStateFactory;
 
+    @Reference(service = TableStorageStates.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    private volatile TableStorageStates myTableStorageStates;
+
     private volatile RepairSchedulerImpl myDelegateRepairSchedulerImpl;
 
     @Activate
@@ -75,6 +79,7 @@ public class RepairSchedulerService implements RepairScheduler
                 .withScheduleManager(myScheduleManager)
                 .withRepairStateFactory(myRepairStateFactory)
                 .withRepairLockType(configuration.repairLockType())
+                .withTableStorageStates(myTableStorageStates)
                 .build();
     }
 

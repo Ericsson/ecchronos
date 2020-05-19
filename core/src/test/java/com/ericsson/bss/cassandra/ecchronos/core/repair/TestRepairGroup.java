@@ -33,9 +33,13 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -149,9 +153,6 @@ public class TestRepairGroup
 
         ImmutableSet<Host> hosts = ImmutableSet.of(host);
 
-        Set<LongTokenRange> ranges = new HashSet<>();
-        ranges.add(range);
-
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(hosts, ImmutableList.of(range));
 
         RepairGroup repairGroup = new RepairGroup(priority, tableReference,
@@ -160,13 +161,56 @@ public class TestRepairGroup
 
         Collection<RepairTask> repairTasks = repairGroup.getRepairTasks();
 
-        assertThat((repairTasks).isEmpty()).isFalse();
+        assertThat(repairTasks).hasSize(1);
         RepairTask repairTask = repairTasks.iterator().next();
 
-        assertThat(repairTask.getReplicas()).isEqualTo(hosts);
-        assertThat(repairTask.getTokenRanges()).isEqualTo(ranges);
+        assertThat(repairTask.getReplicas()).containsExactlyInAnyOrderElementsOf(hosts);
+        assertThat(repairTask.getTokenRanges()).containsExactly(range);
         assertThat(repairTask.getTableReference()).isEqualTo(tableReference);
         assertThat(repairTask.getRepairConfiguration().getRepairParallelism()).isEqualTo(RepairOptions.RepairParallelism.PARALLEL);
+    }
+
+    @Test
+    public void testGetRepairTaskWithSubRange()
+    {
+        List<LongTokenRange> expectedTokenRanges = Arrays.asList(
+                new LongTokenRange(0, 1),
+                new LongTokenRange(1, 2),
+                new LongTokenRange(2, 3),
+                new LongTokenRange(3, 4),
+                new LongTokenRange(4, 5)
+        );
+
+        BigInteger tokensPerRange = BigInteger.ONE;
+
+        // setup
+        Host host = mockHost("DC1");
+        LongTokenRange vnode = new LongTokenRange(0, 5);
+
+        ImmutableSet<Host> hosts = ImmutableSet.of(host);
+
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(hosts, ImmutableList.of(vnode));
+
+        RepairGroup repairGroup = new RepairGroup(priority, tableReference,
+                repairConfiguration, replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
+                myRepairResourceFactory, myRepairLockFactory,
+                tokensPerRange);
+
+        Collection<RepairTask> repairTasks = repairGroup.getRepairTasks();
+
+        assertThat(repairTasks).hasSize(5);
+        Iterator<RepairTask> iterator = repairTasks.iterator();
+
+        for (LongTokenRange expectedRange : expectedTokenRanges)
+        {
+            assertThat(iterator.hasNext()).isTrue();
+            RepairTask repairTask = iterator.next();
+
+            assertThat(repairTask.getReplicas()).containsExactlyInAnyOrderElementsOf(hosts);
+            assertThat(repairTask.getTokenRanges()).containsExactly(expectedRange);
+            assertThat(repairTask.getTableReference()).isEqualTo(tableReference);
+            assertThat(repairTask.getRepairConfiguration().getRepairParallelism()).isEqualTo(RepairOptions.RepairParallelism.PARALLEL);
+        }
     }
 
     @Test
