@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -60,7 +61,7 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
  * end_minute int,
  * PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute));
  */
-public class TimeBasedRunPolicy implements RunPolicy, Closeable
+public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(TimeBasedRunPolicy.class);
 
@@ -117,6 +118,12 @@ public class TimeBasedRunPolicy implements RunPolicy, Closeable
         }
 
         return -1;
+    }
+
+    @Override
+    public boolean shouldRun(TableReference tableReference)
+    {
+        return getRejectionsForTable(tableReference) == -1L;
     }
 
     @Override
