@@ -18,8 +18,10 @@ import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
 
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -30,9 +32,9 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-@Component(service = RunPolicy.class)
+@Component(service = {RunPolicy.class, TableRepairPolicy.class})
 @Designate(ocd = TimeBasedRunPolicyService.Configuration.class)
-public class TimeBasedRunPolicyService implements RunPolicy
+public class TimeBasedRunPolicyService implements RunPolicy, TableRepairPolicy
 {
     private static final String DEFAULT_KEYSPACE_NAME = "ecchronos";
 
@@ -42,12 +44,12 @@ public class TimeBasedRunPolicyService implements RunPolicy
     @Reference (service = StatementDecorator.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile StatementDecorator myStatementDecorator;
 
-    private volatile TimeBasedRunPolicy myDelegateRunPolicy;
+    private volatile TimeBasedRunPolicy myDelegatePolicy;
 
     @Activate
     public synchronized void activate(Configuration configuration)
     {
-        myDelegateRunPolicy = TimeBasedRunPolicy.builder()
+        myDelegatePolicy = TimeBasedRunPolicy.builder()
                 .withSession(myNativeConnectionProvider.getSession())
                 .withStatementDecorator(myStatementDecorator)
                 .withKeyspaceName(configuration.keyspaceName())
@@ -57,14 +59,20 @@ public class TimeBasedRunPolicyService implements RunPolicy
     @Deactivate
     public synchronized void deactivate()
     {
-        myDelegateRunPolicy.close();
-        myDelegateRunPolicy = null;
+        myDelegatePolicy.close();
+        myDelegatePolicy = null;
     }
 
     @Override
     public long validate(ScheduledJob job)
     {
-        return myDelegateRunPolicy.validate(job);
+        return myDelegatePolicy.validate(job);
+    }
+
+    @Override
+    public boolean shouldRun(TableReference tableReference)
+    {
+        return myDelegatePolicy.shouldRun(tableReference);
     }
 
     @ObjectClassDefinition
