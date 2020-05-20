@@ -12,6 +12,7 @@
 * Support symlink of ecc binary - PR #114
 * Close file descriptors in background mode - PR #115
 * Add JVM options file
+* Make policy changes quicker - Issue #117
 
 ## Version 1.1.1
 

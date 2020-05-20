@@ -15,9 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import java.io.Closeable;
-import java.util.List;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -55,6 +53,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
     private final RepairStateFactory myRepairStateFactory;
     private final RepairLockType myRepairLockType;
     private final TableStorageStates myTableStorageStates;
+    private final List<TableRepairPolicy> myRepairPolicies;
 
     private RepairSchedulerImpl(Builder builder)
     {
@@ -66,6 +65,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
         myRepairStateFactory = builder.myRepairStateFactory;
         myRepairLockType = builder.myRepairLockType;
         myTableStorageStates = builder.myTableStorageStates;
+        myRepairPolicies = new ArrayList<>(builder.myRepairPolicies);
     }
 
     @Override
@@ -187,6 +187,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
                 .withRepairConfiguration(repairConfiguration)
                 .withRepairLockType(myRepairLockType)
                 .withTableStorageStates(myTableStorageStates)
+                .withRepairPolices(myRepairPolicies)
                 .build();
 
         job.runnable();
@@ -208,6 +209,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
         private RepairStateFactory myRepairStateFactory;
         private RepairLockType myRepairLockType;
         private TableStorageStates myTableStorageStates;
+        private final List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
 
         public Builder withFaultReporter(RepairFaultReporter repairFaultReporter)
         {
@@ -248,6 +250,12 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
         public Builder withTableStorageStates(TableStorageStates tableStorageStates)
         {
             myTableStorageStates = tableStorageStates;
+            return this;
+        }
+
+        public Builder withRepairPolicies(Collection<TableRepairPolicy> tableRepairPolicies)
+        {
+            myRepairPolicies.addAll(tableRepairPolicies);
             return this;
         }
 
