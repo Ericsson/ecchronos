@@ -17,7 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
 /**
- * Interface for policies that can be used to control if repairs should continue to run.
+ * Interface for policies that can be used to control if repairs should run.
  */
 public interface TableRepairPolicy
 {

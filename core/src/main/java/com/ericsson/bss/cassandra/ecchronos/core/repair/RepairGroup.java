@@ -121,15 +121,7 @@ public class RepairGroup extends ScheduledTask
 
     private boolean shouldContinue()
     {
-        for (TableRepairPolicy repairPolicy : myRepairPolicies)
-        {
-            if (!repairPolicy.shouldRun(myTableReference))
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return myRepairPolicies.stream().allMatch(repairPolicy -> repairPolicy.shouldRun(myTableReference));
     }
 
     @Override

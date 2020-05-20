@@ -90,7 +90,7 @@ public class ECChronos implements Closeable
                 .withScheduleManager(myECChronosInternals.getScheduleManager())
                 .withRepairStateFactory(repairStateFactoryImpl)
                 .withRepairLockType(repairProperties.getRepairLockType())
-                .withRepairPolices(Collections.singletonList(myTimeBasedRunPolicy))
+                .withRepairPolicies(Collections.singletonList(myTimeBasedRunPolicy))
                 .build();
 
         myDefaultRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()

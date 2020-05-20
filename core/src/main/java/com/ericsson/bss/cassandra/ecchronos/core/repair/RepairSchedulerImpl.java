@@ -230,7 +230,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
             return this;
         }
 
-        public Builder withRepairPolices(Collection<TableRepairPolicy> tableRepairPolicies)
+        public Builder withRepairPolicies(Collection<TableRepairPolicy> tableRepairPolicies)
         {
             myRepairPolicies.addAll(tableRepairPolicies);
             return this;

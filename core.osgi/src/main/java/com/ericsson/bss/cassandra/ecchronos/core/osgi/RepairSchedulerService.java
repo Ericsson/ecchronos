@@ -73,7 +73,7 @@ public class RepairSchedulerService implements RepairScheduler
                 .withScheduleManager(myScheduleManager)
                 .withRepairStateFactory(myRepairStateFactory)
                 .withRepairLockType(configuration.repairLockType())
-                .withRepairPolices(myRepairPolicies)
+                .withRepairPolicies(myRepairPolicies)
                 .build();
     }
 
