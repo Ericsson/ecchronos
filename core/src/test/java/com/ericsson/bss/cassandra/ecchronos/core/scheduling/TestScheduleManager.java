@@ -105,6 +105,23 @@ public class TestScheduleManager
     }
 
     @Test
+    public void testRunningTwoTasksStoppedAfterFirstByPolicy() throws LockException
+    {
+        ShortRunningMultipleTasks job = new ShortRunningMultipleTasks(ScheduledJob.Priority.LOW, 2, () -> {
+            when(myRunPolicy.validate(any(ScheduledJob.class))).thenReturn(1L);
+        });
+        myScheduler.schedule(job);
+
+        when(myLockFactory.tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class))).thenReturn(new DummyLock());
+
+        myScheduler.run();
+
+        assertThat(job.getNumRuns()).isEqualTo(1);
+        assertThat(myScheduler.getQueueSize()).isEqualTo(1);
+        verify(myLockFactory, times(1)).tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class));
+    }
+
+    @Test
     public void testRunningJobWithThrowingRunPolicy()
     {
         DummyJob job = new DummyJob(ScheduledJob.Priority.LOW);
@@ -344,11 +361,18 @@ public class TestScheduleManager
     {
         private final AtomicInteger numRuns = new AtomicInteger();
         private final int numTasks;
+        private final Runnable onCompletion;
 
         public ShortRunningMultipleTasks(Priority priority, int numTasks)
         {
+            this(priority, numTasks, () -> {});
+        }
+
+        public ShortRunningMultipleTasks(Priority priority, int numTasks, Runnable onCompletion)
+        {
             super(new ConfigurationBuilder().withPriority(priority).withRunInterval(1, TimeUnit.SECONDS).build());
             this.numTasks = numTasks;
+            this.onCompletion = onCompletion;
         }
 
         public int getNumRuns()
@@ -363,7 +387,7 @@ public class TestScheduleManager
 
             for (int i = 0; i < numTasks; i++)
             {
-                tasks.add(new ShortRunningTask());
+                tasks.add(new ShortRunningTask(onCompletion));
             }
 
             return tasks.iterator();
@@ -371,9 +395,17 @@ public class TestScheduleManager
 
         private class ShortRunningTask extends ScheduledTask
         {
+            private final Runnable onCompletion;
+
+            public ShortRunningTask(Runnable onCompletion)
+            {
+                this.onCompletion = onCompletion;
+            }
+
             @Override
             public boolean execute()
             {
+                onCompletion.run();
                 numRuns.incrementAndGet();
                 return true;
             }

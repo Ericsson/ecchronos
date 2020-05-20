@@ -29,12 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class RepairGroup extends ScheduledTask
 {
@@ -51,6 +46,7 @@ public class RepairGroup extends ScheduledTask
     private final RepairResourceFactory myRepairResourceFactory;
     private final RepairLockFactory myRepairLockFactory;
     private final BigInteger myTokensPerRepair;
+    private final List<TableRepairPolicy> myRepairPolicies;
 
     public RepairGroup(int priority,
                        TableReference tableReference,
@@ -74,6 +70,21 @@ public class RepairGroup extends ScheduledTask
                        RepairLockFactory repairLockFactory,
                        BigInteger tokensPerRepair)
     {
+        this(priority, tableReference, repairConfiguration, replicaRepairGroup, jmxProxyFactory,
+                tableRepairMetrics, repairResourceFactory, repairLockFactory, tokensPerRepair, Collections.emptyList());
+    }
+
+    public RepairGroup(int priority, // NOPMD
+            TableReference tableReference,
+            RepairConfiguration repairConfiguration,
+            ReplicaRepairGroup replicaRepairGroup,
+            JmxProxyFactory jmxProxyFactory,
+            TableRepairMetrics tableRepairMetrics,
+            RepairResourceFactory repairResourceFactory,
+            RepairLockFactory repairLockFactory,
+            BigInteger tokensPerRepair,
+            List<TableRepairPolicy> tableRepairPolicies)
+    {
         super(priority);
 
         myTableReference = tableReference;
@@ -84,6 +95,7 @@ public class RepairGroup extends ScheduledTask
         myRepairResourceFactory = repairResourceFactory;
         myRepairLockFactory = repairLockFactory;
         myTokensPerRepair = tokensPerRepair;
+        myRepairPolicies = new ArrayList<>(tableRepairPolicies);
     }
 
     @Override
@@ -94,6 +106,13 @@ public class RepairGroup extends ScheduledTask
 
         for (RepairTask repairTask : getRepairTasks())
         {
+            if (!shouldContinue())
+            {
+                LOG.info("Repair of {} was stopped by policy, will continue later", this);
+                successful = false;
+                break;
+            }
+
             try
             {
                 repairTask.execute();
@@ -116,6 +135,11 @@ public class RepairGroup extends ScheduledTask
         }
 
         return successful;
+    }
+
+    private boolean shouldContinue()
+    {
+        return myRepairPolicies.stream().allMatch(repairPolicy -> repairPolicy.shouldRun(myTableReference));
     }
 
     @Override

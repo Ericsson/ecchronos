@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 import java.io.Closeable;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -91,6 +92,7 @@ public class ECChronos implements Closeable
                 .withRepairStateFactory(repairStateFactoryImpl)
                 .withRepairLockType(repairProperties.getRepairLockType())
                 .withTableStorageStates(myECChronosInternals.getTableStorageStates())
+                .withRepairPolicies(Collections.singletonList(myTimeBasedRunPolicy))
                 .build();
 
         myDefaultRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()
