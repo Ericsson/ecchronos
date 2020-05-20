@@ -14,12 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -56,6 +51,7 @@ public class TableRepairJob extends ScheduledJob
     private final RepairFaultReporter myFaultReporter;
     private final RepairConfiguration myRepairConfiguration;
     private final RepairLockType myRepairLockType;
+    private final List<TableRepairPolicy> myRepairPolicies;
 
     private final TableRepairMetrics myTableRepairMetrics;
 
@@ -72,6 +68,7 @@ public class TableRepairJob extends ScheduledJob
         myTableRepairMetrics = builder.tableRepairMetrics;
         myRepairConfiguration = builder.repairConfiguration;
         myRepairLockType = builder.repairLockType;
+        myRepairPolicies = builder.repairPolicies;
     }
 
     public TableReference getTableReference()
@@ -102,7 +99,7 @@ public class TableRepairJob extends ScheduledJob
                 taskList.add(new RepairGroup(getRealPriority(), myTableReference, myRepairConfiguration,
                         replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
                         myRepairLockType.getLockFactory(),
-                        new RepairLockFactoryImpl()));
+                        new RepairLockFactoryImpl(), myRepairPolicies));
             }
 
             return taskList.iterator();
@@ -231,6 +228,7 @@ public class TableRepairJob extends ScheduledJob
         private TableRepairMetrics tableRepairMetrics = null;
         private RepairConfiguration repairConfiguration = RepairConfiguration.DEFAULT;
         private RepairLockType repairLockType;
+        private final List<TableRepairPolicy> repairPolicies = new ArrayList<>();
 
         public Builder withConfiguration(Configuration configuration)
         {
@@ -277,6 +275,12 @@ public class TableRepairJob extends ScheduledJob
         public Builder withRepairLockType(RepairLockType repairLockType)
         {
             this.repairLockType = repairLockType;
+            return this;
+        }
+
+        public Builder withRepairPolices(Collection<TableRepairPolicy> tableRepairPolicies)
+        {
+            this.repairPolicies.addAll(tableRepairPolicies);
             return this;
         }
 
