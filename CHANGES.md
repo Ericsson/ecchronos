@@ -14,6 +14,7 @@
 * Add ecc-config command that displays repair configuration
 * Remove usage of joda time - Issue #95
 * Proper REST interface - Issue #109
+* Make scheduler interval configurable - Issue #122
 
 ### Merged from 1.2
 

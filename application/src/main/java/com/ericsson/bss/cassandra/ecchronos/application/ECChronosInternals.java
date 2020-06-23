@@ -104,8 +104,11 @@ public class ECChronosInternals implements Closeable
             myTableRepairMetricsImpl = null;
         }
 
+        SchedulerProperties schedulerProperties = SchedulerProperties.from(configuration);
+
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withLockFactory(myLockFactory)
+                .withRunInterval(schedulerProperties.getRunInterval(), schedulerProperties.getTimeUnit())
                 .build();
     }
 
