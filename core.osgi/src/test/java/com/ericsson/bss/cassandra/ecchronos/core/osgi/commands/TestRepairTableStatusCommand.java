@@ -29,6 +29,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
@@ -165,7 +166,7 @@ public class TestRepairTableStatusCommand
 
     private static VnodeRepairStates createRepairStates(VnodeRepairState... states)
     {
-        return VnodeRepairStates.newBuilder(asList(states)).build();
+        return VnodeRepairStatesImpl.newBuilder(asList(states)).build();
     }
 
     private static RepairJobView mockRepairJob(VnodeRepairStates vnodeRepairStates)

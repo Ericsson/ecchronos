@@ -174,6 +174,11 @@ public class ScheduleManagerImpl implements ScheduleManager, Closeable
 
             for (ScheduledTask task : next)
             {
+                if (!validate(next))
+                {
+                    LOG.info("Job {} was stopped, will continue later", next);
+                    break;
+                }
                 hasRun |= tryRunTask(next, task);
             }
 

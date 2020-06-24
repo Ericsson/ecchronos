@@ -33,6 +33,7 @@ public class TestRepairProperties
     private static final RepairLockType DEFAULT_REPAIR_LOCK_TYPE = RepairLockType.VNODE;
     private static final double DEFAULT_REPAIR_UNWIND_RATIO = 0.0d;
     private static final long DEFAULT_REPAIR_HISTORY_LOOKBACK_IN_MS = TimeUnit.DAYS.toMillis(30);
+    private static final long DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES = Long.MAX_VALUE;
 
     @Test
     public void testDefaultValues() throws ConfigurationException
@@ -48,6 +49,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
         assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
         assertThat(repairProperties.getRepairHistoryLookbackInMs()).isEqualTo(DEFAULT_REPAIR_HISTORY_LOOKBACK_IN_MS);
+        assertThat(repairProperties.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
     }
 
     @Test
@@ -68,6 +70,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
         assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
         assertThat(repairProperties.getRepairHistoryLookbackInMs()).isEqualTo(DEFAULT_REPAIR_HISTORY_LOOKBACK_IN_MS);
+        assertThat(repairProperties.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
     }
 
     @Test
@@ -87,6 +90,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
         assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
         assertThat(repairProperties.getRepairHistoryLookbackInMs()).isEqualTo(DEFAULT_REPAIR_HISTORY_LOOKBACK_IN_MS);
+        assertThat(repairProperties.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
     }
 
     @Test
@@ -107,6 +111,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
         assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
         assertThat(repairProperties.getRepairHistoryLookbackInMs()).isEqualTo(DEFAULT_REPAIR_HISTORY_LOOKBACK_IN_MS);
+        assertThat(repairProperties.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
     }
 
     @Test
@@ -127,6 +132,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
         assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
         assertThat(repairProperties.getRepairHistoryLookbackInMs()).isEqualTo(DEFAULT_REPAIR_HISTORY_LOOKBACK_IN_MS);
+        assertThat(repairProperties.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
     }
 
     @Test
@@ -144,6 +150,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairLockType()).isEqualTo(RepairLockType.DATACENTER_AND_VNODE);
         assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
         assertThat(repairProperties.getRepairHistoryLookbackInMs()).isEqualTo(DEFAULT_REPAIR_HISTORY_LOOKBACK_IN_MS);
+        assertThat(repairProperties.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
     }
 
     @Test
@@ -161,6 +168,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
         assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(1.0d);
         assertThat(repairProperties.getRepairHistoryLookbackInMs()).isEqualTo(DEFAULT_REPAIR_HISTORY_LOOKBACK_IN_MS);
+        assertThat(repairProperties.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
     }
 
     @Test
@@ -181,6 +189,27 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
         assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
         assertThat(repairProperties.getRepairHistoryLookbackInMs()).isEqualTo(expectedRepairLoockbackInMs);
+        assertThat(repairProperties.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
+    }
+
+    @Test
+    public void testSetTargetRepairSizeInMiB() throws ConfigurationException
+    {
+        long expectedTargetRepairSizeInBytes = 1024L * 1024L;
+
+        Properties properties = new Properties();
+        properties.put("repair.size.target", "1m");
+
+        RepairProperties repairProperties = RepairProperties.from(properties);
+
+        assertThat(repairProperties.getRepairIntervalInMs()).isEqualTo(DEFAULT_REPAIR_INTERVAL_IN_MS);
+        assertThat(repairProperties.getRepairParallelism()).isEqualTo(DEFAULT_REPAIR_PARALLELISM);
+        assertThat(repairProperties.getRepairAlarmWarnInMs()).isEqualTo(DEFAULT_ALARM_WARN_IN_MS);
+        assertThat(repairProperties.getRepairAlarmErrorInMs()).isEqualTo(DEFAULT_ALARM_ERROR_IN_MS);
+        assertThat(repairProperties.getRepairLockType()).isEqualTo(DEFAULT_REPAIR_LOCK_TYPE);
+        assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
+        assertThat(repairProperties.getRepairHistoryLookbackInMs()).isEqualTo(DEFAULT_REPAIR_HISTORY_LOOKBACK_IN_MS);
+        assertThat(repairProperties.getTargetRepairSizeInBytes()).isEqualTo(expectedTargetRepairSizeInBytes);
     }
 
     @Test
@@ -191,6 +220,7 @@ public class TestRepairProperties
         long expectedAlarmWarnInMs = TimeUnit.DAYS.toMillis(5);
         long expectedAlarmErrorInMs = TimeUnit.DAYS.toMillis(7);
         long expectedRepairLoockbackInMs = TimeUnit.HOURS.toMillis(2);
+        long expectedTargetRepairSizeInBytes = 1024L * 1024L;
 
         Properties properties = new Properties();
         properties.put("repair.interval.time.unit", "days");
@@ -204,6 +234,7 @@ public class TestRepairProperties
         properties.put("repair.unwind.ratio", "1.0");
         properties.put("repair.history.lookback.time.unit", "hours");
         properties.put("repair.history.lookback.time", "2");
+        properties.put("repair.size.target", "1m");
 
         RepairProperties repairProperties = RepairProperties.from(properties);
 
@@ -214,6 +245,7 @@ public class TestRepairProperties
         assertThat(repairProperties.getRepairLockType()).isEqualTo(RepairLockType.DATACENTER);
         assertThat(repairProperties.getRepairUnwindRatio()).isEqualTo(1.0d);
         assertThat(repairProperties.getRepairHistoryLookbackInMs()).isEqualTo(expectedRepairLoockbackInMs);
+        assertThat(repairProperties.getTargetRepairSizeInBytes()).isEqualTo(expectedTargetRepairSizeInBytes);
     }
 
     @Test
@@ -294,6 +326,16 @@ public class TestRepairProperties
     {
         Properties properties = new Properties();
         properties.put("repair.lock.type", "nonexisting");
+
+        assertThatExceptionOfType(ConfigurationException.class)
+                .isThrownBy(() -> RepairProperties.from(properties));
+    }
+
+    @Test
+    public void testSetInvalidTargetRepairSize()
+    {
+        Properties properties = new Properties();
+        properties.put("repair.size.target", "1f");
 
         assertThatExceptionOfType(ConfigurationException.class)
                 .isThrownBy(() -> RepairProperties.from(properties));

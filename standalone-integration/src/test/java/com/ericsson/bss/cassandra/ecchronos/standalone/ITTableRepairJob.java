@@ -29,6 +29,7 @@ import com.datastax.driver.core.schemabuilder.SchemaBuilder;
 import com.datastax.driver.core.utils.UUIDs;
 import com.ericsson.bss.cassandra.ecchronos.core.CASLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStatesImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
@@ -42,6 +43,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManagerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TokenSubRangeUtil;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.google.common.collect.Sets;
 import net.jcip.annotations.NotThreadSafe;
@@ -53,6 +56,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.math.BigInteger;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Date;
@@ -76,6 +80,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 @NotThreadSafe
@@ -86,6 +91,9 @@ public class ITTableRepairJob extends TestBase
 
     @Mock
     private TableRepairMetrics myTableRepairMetrics;
+
+    @Mock
+    private TableStorageStates myTableStorageStates;
 
     private Metadata myMetadata;
 
@@ -150,10 +158,12 @@ public class ITTableRepairJob extends TestBase
                 .withScheduleManager(myScheduleManagerImpl)
                 .withRepairStateFactory(repairStateFactory)
                 .withRepairLockType(RepairLockType.VNODE)
+                .withTableStorageStates(myTableStorageStates)
                 .build();
 
         RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
                 .withRepairInterval(60, TimeUnit.MINUTES)
+                .withTargetRepairSizeInBytes(UnitConverter.toBytes("100m")) // 100MiB
                 .build();
 
         myDefaultRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()
@@ -205,6 +215,57 @@ public class ITTableRepairJob extends TestBase
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference, startTime));
 
         verifyTableRepairedSince(tableReference, startTime);
+        verify(myFaultReporter, never()).raise(any(RepairFaultReporter.FaultCode.class), anyMapOf(String.class, Object.class));
+    }
+
+    /**
+     * Create a table that is replicated and was repaired two hours ago using sub ranges.
+     *
+     * The repair factory should detect the new table automatically and schedule it to run.
+     * If the sub ranges are not detected the repair will be postponed for 1 hour based on repair configuration.
+     */
+    @Test
+    public void repairSingleTableRepairedInSubRanges()
+    {
+        long startTime = System.currentTimeMillis();
+
+        TableReference tableReference = new TableReference("ks", "tb");
+
+        createKeyspace(tableReference.getKeyspace(), 3);
+        injectRepairHistory(tableReference, System.currentTimeMillis() - TimeUnit.HOURS.toMillis(2), true);
+        createTable(tableReference);
+
+        await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference, startTime));
+
+        verifyTableRepairedSince(tableReference, startTime);
+        verify(myFaultReporter, never()).raise(any(RepairFaultReporter.FaultCode.class), anyMapOf(String.class, Object.class));
+    }
+
+    /**
+     * Create a table that is replicated and was repaired two hours ago.
+     * It also has a simulated size of 10 GiB and a target repair size of 100 MiB
+     * which should result in around 102 repair sessions.
+     */
+    @Test
+    public void repairSingleTableInSubRanges()
+    {
+        long startTime = System.currentTimeMillis();
+
+        TableReference tableReference = new TableReference("ks", "tb");
+
+        when(myTableStorageStates.getDataSize(eq(tableReference))).thenReturn(UnitConverter.toBytes("10g"));
+
+        createKeyspace(tableReference.getKeyspace(), 3);
+        injectRepairHistory(tableReference, System.currentTimeMillis() - TimeUnit.HOURS.toMillis(2));
+        createTable(tableReference);
+
+        BigInteger numberOfRanges = BigInteger.valueOf(UnitConverter.toBytes("10g")).divide(BigInteger.valueOf(UnitConverter.toBytes("100m"))); // 102
+
+        Set<LongTokenRange> expectedRanges = splitTokenRanges(tableReference, numberOfRanges);
+
+        await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference, startTime, expectedRanges));
+
+        verifyTableRepairedSinceWithSubRangeRepair(tableReference, startTime, expectedRanges);
         verify(myFaultReporter, never()).raise(any(RepairFaultReporter.FaultCode.class), anyMapOf(String.class, Object.class));
     }
 
@@ -272,6 +333,17 @@ public class ITTableRepairJob extends TestBase
         verifyTableRepairedSince(tableReference, repairedSince, tokenRangesFor(tableReference.getKeyspace()));
     }
 
+    private void verifyTableRepairedSinceWithSubRangeRepair(TableReference tableReference, long repairedSince, Set<LongTokenRange> expectedRepaired)
+    {
+        OptionalLong repairedAt = lastRepairedSince(tableReference, repairedSince, expectedRepaired);
+        assertThat(repairedAt.isPresent()).isTrue();
+
+        verify(myTableRepairMetrics, timeout(5000)).lastRepairedAt(tableReference, repairedAt.getAsLong());
+
+        int expectedTokenRanges = expectedRepaired.size();
+        verify(myTableRepairMetrics, times(expectedTokenRanges)).repairTiming(eq(tableReference), anyLong(), any(TimeUnit.class), eq(true));
+    }
+
     private void verifyTableRepairedSince(TableReference tableReference, long repairedSince, Set<LongTokenRange> expectedRepaired)
     {
         OptionalLong repairedAt = lastRepairedSince(tableReference, repairedSince);
@@ -333,27 +405,55 @@ public class ITTableRepairJob extends TestBase
 
     private void injectRepairHistory(TableReference tableReference, long timestampMax)
     {
-        injectRepairHistory(tableReference, timestampMax, myMetadata.getTokenRanges(tableReference.getKeyspace(), myLocalHost));
+        injectRepairHistory(tableReference, timestampMax, false);
+    }
+
+    private void injectRepairHistory(TableReference tableReference, long timestampMax, boolean splitRanges)
+    {
+        injectRepairHistory(tableReference, timestampMax, myMetadata.getTokenRanges(tableReference.getKeyspace(), myLocalHost), splitRanges);
     }
 
     private void injectRepairHistory(TableReference tableReference, long timestampMax, Set<TokenRange> tokenRanges)
+    {
+        injectRepairHistory(tableReference, timestampMax, tokenRanges, false);
+    }
+
+    private void injectRepairHistory(TableReference tableReference, long timestampMax, Set<TokenRange> tokenRanges, boolean splitRanges)
     {
         long timestamp = timestampMax - 1;
 
         for (TokenRange tokenRange : tokenRanges)
         {
-            injectRepairHistory(tableReference, timestamp, tokenRange);
+            Set<InetAddress> participants = myMetadata.getReplicas(tableReference.getKeyspace(), tokenRange).stream().map(Host::getAddress).collect(Collectors.toSet());
+
+            if (splitRanges)
+            {
+                LongTokenRange longTokenRange = convertTokenRange(tokenRange);
+                BigInteger tokensPerRange = longTokenRange.rangeSize().divide(BigInteger.TEN);
+                List<LongTokenRange> subRanges = new TokenSubRangeUtil(longTokenRange).generateSubRanges(tokensPerRange);
+
+                for (LongTokenRange subRange : subRanges)
+                {
+                    String start = Long.toString(subRange.start);
+                    String end = Long.toString(subRange.end);
+                    injectRepairHistory(tableReference, timestampMax, participants, start, end);
+                }
+            }
+            else
+            {
+                String start = tokenRange.getStart().toString();
+                String end = tokenRange.getEnd().toString();
+                injectRepairHistory(tableReference, timestamp, participants, start, end);
+            }
 
             timestamp--;
         }
     }
 
-    private void injectRepairHistory(TableReference tableReference, long timestamp, TokenRange tokenRange)
+    private void injectRepairHistory(TableReference tableReference, long timestamp, Set<InetAddress> participants, String range_begin, String range_end)
     {
         long started_at = timestamp;
         long finished_at = timestamp + 5;
-
-        Set<InetAddress> participants = myMetadata.getReplicas(tableReference.getKeyspace(), tokenRange).stream().map(Host::getAddress).collect(Collectors.toSet());
 
         Insert insert = QueryBuilder.insertInto("system_distributed", "repair_history")
                 .value("keyspace_name", tableReference.getKeyspace())
@@ -362,8 +462,8 @@ public class ITTableRepairJob extends TestBase
                 .value("id", UUIDs.startOf(started_at))
                 .value("started_at", new Date(started_at))
                 .value("finished_at", new Date(finished_at))
-                .value("range_begin", tokenRange.getStart().toString())
-                .value("range_end", tokenRange.getEnd().toString())
+                .value("range_begin", range_begin)
+                .value("range_end", range_end)
                 .value("status", "SUCCESS");
 
         mySession.execute(insert);
@@ -415,6 +515,21 @@ public class ITTableRepairJob extends TestBase
     private Set<LongTokenRange> convertTokenRanges(Set<TokenRange> tokenRanges)
     {
         return tokenRanges.stream().map(this::convertTokenRange).collect(Collectors.toSet());
+    }
+
+    private Set<LongTokenRange> splitTokenRanges(TableReference tableReference, BigInteger numberOfRanges)
+    {
+        Set<LongTokenRange> allRanges = convertTokenRanges(myMetadata.getTokenRanges(tableReference.getKeyspace(), myLocalHost));
+
+        BigInteger totalRangeSize = allRanges.stream()
+                .map(LongTokenRange::rangeSize)
+                .reduce(BigInteger.ZERO, BigInteger::add);
+
+        BigInteger tokensPerSubRange = totalRangeSize.divide(numberOfRanges);
+
+        return allRanges.stream()
+                .flatMap(range -> new TokenSubRangeUtil(range).generateSubRanges(tokensPerSubRange).stream())
+                .collect(Collectors.toSet());
     }
 
     private LongTokenRange convertTokenRange(TokenRange range)

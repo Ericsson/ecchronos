@@ -18,6 +18,7 @@ import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
@@ -74,7 +75,7 @@ public class TestUtils
 
     public static RepairJobView createRepairJob(UUID id, String keyspace, String table, long lastRepairedAt, long repairInterval, Collection<VnodeRepairState> vnodeRepairStateSet)
     {
-        VnodeRepairStates vnodeRepairStates = VnodeRepairStates.newBuilder(vnodeRepairStateSet).build();
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(vnodeRepairStateSet).build();
 
         return new RepairJobView(id, new TableReference(keyspace, table),
                 generateRepairConfiguration(repairInterval),

@@ -43,6 +43,7 @@
             <outputDirectory>conf</outputDirectory>
             <includes>
                 <include>ecc.cfg</include>
+                <include>jvm.options</include>
                 <include>logback.xml</include>
                 <include>create_keyspace_sample.cql</include>
             </includes>

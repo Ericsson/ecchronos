@@ -15,13 +15,9 @@
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.*;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairSchedulerImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairJob;
 
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
@@ -63,6 +59,13 @@ public class RepairSchedulerService implements RepairScheduler
     @Reference(service = RepairStateFactory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile RepairStateFactory myRepairStateFactory;
 
+    @Reference(service = TableStorageStates.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    private volatile TableStorageStates myTableStorageStates;
+
+    @Reference(service = TableRepairPolicy.class, cardinality = ReferenceCardinality.AT_LEAST_ONE, policy = ReferencePolicy.STATIC)
+    private volatile List<TableRepairPolicy> myRepairPolicies;
+
+
     private volatile RepairSchedulerImpl myDelegateRepairSchedulerImpl;
 
     @Activate
@@ -75,6 +78,8 @@ public class RepairSchedulerService implements RepairScheduler
                 .withScheduleManager(myScheduleManager)
                 .withRepairStateFactory(myRepairStateFactory)
                 .withRepairLockType(configuration.repairLockType())
+                .withTableStorageStates(myTableStorageStates)
+                .withRepairPolicies(myRepairPolicies)
                 .build();
     }
 

@@ -24,6 +24,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetricsImpl;
@@ -103,8 +104,11 @@ public class ECChronosInternals implements Closeable
             myTableRepairMetricsImpl = null;
         }
 
+        SchedulerProperties schedulerProperties = SchedulerProperties.from(configuration);
+
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withLockFactory(myLockFactory)
+                .withRunInterval(schedulerProperties.getRunInterval(), schedulerProperties.getTimeUnit())
                 .build();
     }
 
@@ -136,6 +140,11 @@ public class ECChronosInternals implements Closeable
     public JmxProxyFactory getJmxProxyFactory()
     {
         return myJmxProxyFactory;
+    }
+
+    public TableStorageStates getTableStorageStates()
+    {
+        return myTableStorageStatesImpl;
     }
 
     public boolean addRunPolicy(RunPolicy runPolicy)

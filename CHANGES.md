@@ -14,7 +14,12 @@
 * Add ecc-config command that displays repair configuration
 * Remove usage of joda time - Issue #95
 * Proper REST interface - Issue #109
+* Make scheduler interval configurable - Issue #122
 * Add manual repair - Issue #14
+
+### Merged from 1.2
+
+* Add support for sub range repairs - Issue #96
 
 ### Merged from 1.1
 
@@ -35,6 +40,10 @@
 * Fix slow query of repair_history at start-up #86
 * Reduce cache refresh time in TimeBasedRunPolicy to quicker react to configuration changes
 * Avoid concurrent modification exception in RSI#close - Issue #99
+* Support symlink of ecc binary - PR #114
+* Close file descriptors in background mode - PR #115
+* Add JVM options file
+* Make policy changes quicker - Issue #117
 
 ## Version 1.0.0
 

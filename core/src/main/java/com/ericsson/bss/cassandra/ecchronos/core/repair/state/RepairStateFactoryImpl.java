@@ -27,6 +27,7 @@ public class RepairStateFactoryImpl implements RepairStateFactory
     private final TableRepairMetrics myTableRepairMetrics;
 
     private final VnodeRepairStateFactoryImpl myVnodeRepairStateFactory;
+    private final VnodeRepairStateFactoryImpl mySubRangeRepairStateFactory;
 
 
 
@@ -36,7 +37,8 @@ public class RepairStateFactoryImpl implements RepairStateFactory
         myTableRepairMetrics = builder.myTableRepairMetrics;
 
         ReplicationState replicationState = new ReplicationState(builder.myMetadata, builder.myHost);
-        myVnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(replicationState, builder.myRepairHistoryProvider);
+        myVnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(replicationState, builder.myRepairHistoryProvider, false);
+        mySubRangeRepairStateFactory = new VnodeRepairStateFactoryImpl(replicationState, builder.myRepairHistoryProvider, true);
     }
 
     @Override
@@ -44,7 +46,13 @@ public class RepairStateFactoryImpl implements RepairStateFactory
     {
         ReplicaRepairGroupFactory replicaRepairGroupFactory = VnodeRepairGroupFactory.INSTANCE;
 
-        return new RepairStateImpl(tableReference, repairConfiguration, myVnodeRepairStateFactory, myHostStates, myTableRepairMetrics, replicaRepairGroupFactory, postUpdateHook);
+        VnodeRepairStateFactory vnodeRepairStateFactory = myVnodeRepairStateFactory;
+        if (repairConfiguration.getTargetRepairSizeInBytes() != RepairConfiguration.FULL_REPAIR_SIZE)
+        {
+            vnodeRepairStateFactory = mySubRangeRepairStateFactory;
+        }
+
+        return new RepairStateImpl(tableReference, repairConfiguration, vnodeRepairStateFactory, myHostStates, myTableRepairMetrics, replicaRepairGroupFactory, postUpdateHook);
     }
 
     public static Builder builder()
