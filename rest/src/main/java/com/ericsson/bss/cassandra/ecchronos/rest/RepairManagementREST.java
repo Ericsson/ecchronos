@@ -39,7 +39,7 @@ public interface RepairManagementREST
     @GET
     @Path("/status")
     @Produces(MediaType.APPLICATION_JSON)
-    String scheduledStatus();
+    String status();
 
     /**
      * Get a list of the status of all scheduled repair jobs for a specific keyspace.
@@ -50,20 +50,35 @@ public interface RepairManagementREST
     @GET
     @Path("/status/keyspaces/{keyspace}")
     @Produces(MediaType.APPLICATION_JSON)
-    String scheduledKeyspaceStatus(@PathParam("keyspace") String keyspace); // NOPMD
+    String keyspaceStatus(@PathParam("keyspace") String keyspace); // NOPMD
+
+    /**
+     * Get a list of the status of all scheduled repair jobs for a specific table.
+     *
+     * @param keyspace The keyspace of the table
+     * @param table The table to get status of
+     * @return A JSON representation of {@link ScheduledRepairJob}
+     */
+    @GET
+    @Path("/status/keyspaces/{keyspace}/tables/{table}")
+    @Produces(MediaType.APPLICATION_JSON)
+    String tableStatus(@PathParam("keyspace") String keyspace, // NOPMD
+                       @PathParam("table") String table); // NOPMD
 
     /**
      * Get status of a specific scheduled table repair job.
      *
      * @param keyspace The keyspace of the table
      * @param table The table to get status of
+     * @param id The id of the job
      * @return A JSON representation of {@link CompleteRepairJob}
      */
     @GET
-    @Path("/status/keyspaces/{keyspace}/tables/{table}")
+    @Path("/status/keyspaces/{keyspace}/tables/{table}/ids/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    String scheduledTableStatus(@PathParam("keyspace") String keyspace, // NOPMD
-               @PathParam("table") String table);
+    String jobStatus(@PathParam("keyspace") String keyspace, // NOPMD
+                     @PathParam("table") String table, // NOPMD
+                     @PathParam("id") String id);
 
     /**
      * Get a list of configuration of all scheduled repair jobs.
@@ -73,7 +88,7 @@ public interface RepairManagementREST
     @GET
     @Path("/config")
     @Produces(MediaType.APPLICATION_JSON)
-    String scheduledConfig();
+    String config(); // NOPMD
 
     /**
      * Get a list of configuration of all scheduled repair jobs for a specific keyspace.
@@ -84,7 +99,7 @@ public interface RepairManagementREST
     @GET
     @Path("/config/keyspaces/{keyspace}")
     @Produces(MediaType.APPLICATION_JSON)
-    String scheduledKeyspaceConfig(@PathParam("keyspace") String keyspace); // NOPMD
+    String keyspaceConfig(@PathParam("keyspace") String keyspace); // NOPMD
 
     /**
      * Get configuration of a specific scheduled table repair job.
@@ -96,8 +111,8 @@ public interface RepairManagementREST
     @GET
     @Path("/config/keyspaces/{keyspace}/tables/{table}")
     @Produces(MediaType.APPLICATION_JSON)
-    String scheduledTableConfig(@PathParam("keyspace") String keyspace, // NOPMD
-            @PathParam("table") String table);
+    String tableConfig(@PathParam("keyspace") String keyspace, // NOPMD
+                       @PathParam("table") String table); // NOPMD
 
     /**
      * Schedule an on demand repair to be run on a specific table
@@ -109,6 +124,6 @@ public interface RepairManagementREST
     @GET
     @Path("/schedule/keyspaces/{keyspace}/tables/{table}")
     @Produces(MediaType.APPLICATION_JSON)
-    String scheduleJob(@PathParam("keyspace") String keyspace,
-                                @PathParam("table") String table);
+    String scheduleJob(@PathParam("keyspace") String keyspace, // NOPMD
+                                @PathParam("table") String table); // NOPMD
 }

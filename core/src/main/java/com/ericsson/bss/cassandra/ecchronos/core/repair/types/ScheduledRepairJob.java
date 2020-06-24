@@ -38,6 +38,7 @@ public class ScheduledRepairJob
     public final Status status;
     public final long nextRepairInMs;
     public final UUID id;
+    public final boolean reoccurring;
 
     public enum Status
     {
@@ -45,7 +46,7 @@ public class ScheduledRepairJob
     }
 
     @VisibleForTesting
-    public ScheduledRepairJob(UUID id, String keyspace, String table, Status status, double repairedRatio, long lastRepairedAtInMs, long nextRepairInMs)
+    public ScheduledRepairJob(UUID id, String keyspace, String table, Status status, double repairedRatio, long lastRepairedAtInMs, long nextRepairInMs, boolean reoccurring)
     {
         this.id = id;
         this.keyspace = keyspace;
@@ -54,6 +55,7 @@ public class ScheduledRepairJob
         this.repairedRatio = repairedRatio;
         this.lastRepairedAtInMs = lastRepairedAtInMs;
         this.nextRepairInMs = nextRepairInMs;
+        this.reoccurring = reoccurring;
     }
 
     public ScheduledRepairJob(RepairJobView repairJobView)
@@ -67,14 +69,17 @@ public class ScheduledRepairJob
             this.lastRepairedAtInMs = repairJobView.getRepairStateSnapshot().lastRepairedAt();
             this.repairedRatio = calculateRepaired(repairJobView, now);
             this.status = getStatus(repairJobView, now);
+            this.nextRepairInMs = lastRepairedAtInMs + repairJobView.getRepairConfiguration().getRepairIntervalInMs();
+            this.reoccurring = true;
         }
         else
         {
-            this.lastRepairedAtInMs = 0;
+            this.lastRepairedAtInMs = -1;
             this.repairedRatio = 0;
             this.status = Status.IN_QUEUE;
+            this.nextRepairInMs = -1;
+            this.reoccurring = false;
         }
-        this.nextRepairInMs = lastRepairedAtInMs + repairJobView.getRepairConfiguration().getRepairIntervalInMs();
     }
 
     private double calculateRepaired(RepairJobView job, long timestamp)
@@ -131,12 +136,13 @@ public class ScheduledRepairJob
                 keyspace.equals(that.keyspace) &&
                 table.equals(that.table) &&
                 status == that.status &&
-                id.equals(that.id);
+                id.equals(that.id) &&
+                reoccurring == that.reoccurring;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(id, keyspace, table, lastRepairedAtInMs, repairedRatio, status, nextRepairInMs);
+        return Objects.hash(id, keyspace, table, lastRepairedAtInMs, repairedRatio, status, nextRepairInMs, reoccurring);
     }
 }

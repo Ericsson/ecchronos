@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import org.assertj.core.util.Lists;
 import org.junit.After;
 import org.junit.Before;
@@ -126,6 +127,7 @@ public class ITOnDemandRepairJob extends TestBase
                 .withRepairLockType(RepairLockType.VNODE)
                 .withReplicationState(replicationState)
                 .withMetadata(myMetadata)
+                .withRepairConfiguration(RepairConfiguration.DEFAULT)
                 .build();
     }
 
@@ -163,9 +165,8 @@ public class ITOnDemandRepairJob extends TestBase
         createTable(tableReference);
 
         myRepairSchedulerImpl.scheduleJob(tableReference);
-
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
-                .until(() -> isRepairedSince(tableReference, startTime));
+                .until(() -> myRepairSchedulerImpl.getCurrentRepairJobs().isEmpty());
 
         verifyTableRepairedSince(tableReference, startTime);
     }
@@ -211,8 +212,9 @@ public class ITOnDemandRepairJob extends TestBase
         myRepairSchedulerImpl.scheduleJob(tableReference);
         myRepairSchedulerImpl.scheduleJob(tableReference);
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
-                .until(() -> myScheduleManagerImpl.getQueueSize() == 0);
-        assertThat(myRepairSchedulerImpl.getCurrentRepairJobs()).isEmpty();
+                .until(() -> myRepairSchedulerImpl.getCurrentRepairJobs().isEmpty());
+        assertThat(myScheduleManagerImpl.getQueueSize()).isEqualTo(0);
+
         verifyTableRepairedSince(tableReference, startTime, tokenRangesFor(tableReference.getKeyspace()).size() * 2);
     }
 
@@ -228,11 +230,6 @@ public class ITOnDemandRepairJob extends TestBase
 
         verify(myTableRepairMetrics, times(expectedTokenRanges)).repairTiming(eq(tableReference), anyLong(),
                 any(TimeUnit.class), eq(true));
-    }
-
-    private boolean isRepairedSince(TableReference tableReference, long repairedSince)
-    {
-        return lastRepairedSince(tableReference, repairedSince).isPresent();
     }
 
     private OptionalLong lastRepairedSince(TableReference tableReference, long repairedSince)

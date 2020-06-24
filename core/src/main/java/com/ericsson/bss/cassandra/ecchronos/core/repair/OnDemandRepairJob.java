@@ -35,14 +35,18 @@ import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A Job that will schedule and run repair on one table once. It creates {@link RepairTask RepairTasks} to fully repair
- * the table. Once all {@link RepairTask RepairTasks} are completed, the repair is finished and the job will be
+ * the table for the current node. Once all {@link RepairTask RepairTasks} are completed, the repair is finished and the job will be
  * descheduled.
  */
 public class OnDemandRepairJob extends ScheduledJob
 {
+    private static final Logger LOG = LoggerFactory.getLogger(OnDemandRepairJob.class);
+
     private final TableReference myTableReference;
     private final JmxProxyFactory myJmxProxyFactory;
     private final RepairConfiguration myRepairConfiguration;
@@ -55,6 +59,8 @@ public class OnDemandRepairJob extends ScheduledJob
     private final List<ScheduledTask> myTasks;
 
     private final Map<LongTokenRange, ImmutableSet<Host>> myTokens;
+
+    private boolean failed = false;
 
     public OnDemandRepairJob(OnDemandRepairJob.Builder builder)
     {
@@ -121,13 +127,18 @@ public class OnDemandRepairJob extends ScheduledJob
     @Override
     public void postExecute(boolean successful, ScheduledTask task)
     {
+        if (!successful)
+        {
+            LOG.error("Error running {}", task);
+            failed = true;
+        }
+
         myTasks.remove(task);
 
         if (myTasks.isEmpty())
         {
             myOnFinishedHook.accept(getId());
         }
-
         super.postExecute(successful, task);
     }
 
@@ -146,10 +157,15 @@ public class OnDemandRepairJob extends ScheduledJob
     @Override
     public State getState()
     {
-        // If tokens have changed the repair will need to be rerun as the token ranges are incorrect
+        if (failed)
+        {
+            LOG.error("Repair job with id {} failed", getId());
+            return State.FAILED;
+        }
         if (!myTokens.equals(myReplicationState
             .getTokenRangeToReplicas(myTableReference)))
         {
+            LOG.error("Repair job with id {} failed, token Ranges have changed since repair has was triggered", getId());
             return State.FAILED;
         }
         return myTasks.isEmpty() ? State.FINISHED : State.RUNNABLE;
@@ -170,7 +186,7 @@ public class OnDemandRepairJob extends ScheduledJob
         private TableReference tableReference;
         private JmxProxyFactory jmxProxyFactory;
         private TableRepairMetrics tableRepairMetrics = null;
-        private final RepairConfiguration repairConfiguration = RepairConfiguration.DEFAULT;
+        private RepairConfiguration repairConfiguration = RepairConfiguration.DEFAULT;
         private RepairLockType repairLockType;
         private ReplicationState replicationState;
         private Consumer<UUID> onFinishedHook = table -> {
@@ -209,6 +225,12 @@ public class OnDemandRepairJob extends ScheduledJob
         public Builder withOnFinished(Consumer<UUID> onFinishedHook)
         {
             this.onFinishedHook = onFinishedHook;
+            return this;
+        }
+
+        public Builder withRepairConfiguration(RepairConfiguration repairConfiguration)
+        {
+            this.repairConfiguration = repairConfiguration;
             return this;
         }
 

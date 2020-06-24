@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.rest;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -53,7 +54,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
-    public String scheduledStatus()
+    public String status()
     {
         List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(job -> true);
 
@@ -61,7 +62,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
-    public String scheduledKeyspaceStatus(String keyspace)
+    public String keyspaceStatus(String keyspace)
     {
         List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(
                 job -> keyspace.equals(job.getTableReference().getKeyspace()));
@@ -70,18 +71,32 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
-    public String scheduledTableStatus(String keyspace, String table)
+    public String tableStatus(String keyspace, String table)
     {
-        Optional<RepairJobView> repairJobView = findRepairJob(new TableReference(keyspace, table));
+        List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(
+                job -> new TableReference(keyspace, table).equals(job.getTableReference()));
 
-        return repairJobView
-                .map(CompleteRepairJob::new)
-                .map(GSON::toJson)
-                .orElse("{}");
+        return GSON.toJson(repairJobs);
     }
 
     @Override
-    public String scheduledConfig()
+    public String jobStatus(String keyspace, String table, String id)
+    {
+        try
+        {
+            Optional<RepairJobView>  repairJobView = getCompleteRepairJob(new TableReference(keyspace, table), UUID.fromString(id));
+            return repairJobView
+                    .map(CompleteRepairJob::new)
+                    .map(GSON::toJson)
+                    .orElse("{}");
+        } catch (IllegalArgumentException e)
+        {
+            return "{}";
+        }
+    }
+
+    @Override
+    public String config()
     {
         List<TableRepairConfig> configurations = getTableRepairConfigs(job -> true);
 
@@ -89,7 +104,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
-    public String scheduledKeyspaceConfig(String keyspace)
+    public String keyspaceConfig(String keyspace)
     {
         List<TableRepairConfig> configurations = getTableRepairConfigs(
                 job -> job.getTableReference().getKeyspace().equals(keyspace));
@@ -98,14 +113,12 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
-    public String scheduledTableConfig(String keyspace, String table)
+    public String tableConfig(String keyspace, String table)
     {
-        Optional<RepairJobView> repairJobView = findRepairJob(new TableReference(keyspace, table));
+        List<TableRepairConfig> configurations = getTableRepairConfigs(
+                job -> job.getTableReference().equals(new TableReference(keyspace, table)));
 
-        return repairJobView
-                .map(TableRepairConfig::new)
-                .map(GSON::toJson)
-                .orElse("{}");
+        return GSON.toJson(configurations);
     }
 
     @Override
@@ -132,12 +145,14 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                 .collect(Collectors.toList());
     }
 
-    private Optional<RepairJobView> findRepairJob(TableReference tableReference)
+    private Optional<RepairJobView> getCompleteRepairJob(TableReference tableReference, UUID id)
     {
+        Predicate<RepairJobView> matchesTable = job -> job.getTableReference().equals(tableReference);
+        Predicate<RepairJobView> matchesId = job -> job.getId().equals(id);
         return Stream
                 .concat(myRepairScheduler.getCurrentRepairJobs().stream(),
                         myOnDemandRepairScheduler.getCurrentRepairJobs().stream())
-                .filter(job -> job.getTableReference().equals(tableReference))
+                .filter(matchesTable.and(matchesId))
                 .findFirst();
     }
 

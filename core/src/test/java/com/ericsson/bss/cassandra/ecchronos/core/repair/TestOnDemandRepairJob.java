@@ -22,7 +22,6 @@ import static org.mockito.Mockito.when;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.UUID;
 
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import org.junit.After;
@@ -39,7 +38,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestOnDemandRepairJob
@@ -101,11 +99,21 @@ public class TestOnDemandRepairJob
     }
 
     @Test
-    public void testJobFailed()
+    public void testJobFailedWithWrongTokens()
+    {
+        OnDemandRepairJob repairJob = createOnDemandRepairJob();
+        when(myReplicationState.getTokenRangeToReplicas(myTableReference)).thenReturn(new HashMap<>());
+        assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FAILED);
+    }
+
+    @Test
+    public void testJobUnsuccessful()
     {
         OnDemandRepairJob repairJob = createOnDemandRepairJob();
         Iterator<ScheduledTask> it = repairJob.iterator();
-        when(myReplicationState.getTokenRangeToReplicas(myTableReference)).thenReturn(new HashMap<>());
+        repairJob.postExecute(true, it.next());
+        assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
+        repairJob.postExecute(false, it.next());
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FAILED);
     }
 
@@ -115,9 +123,9 @@ public class TestOnDemandRepairJob
         LongTokenRange range2 = new LongTokenRange(1, 3);
         Map<LongTokenRange, ImmutableSet<Host>> tokenRangeToReplicas = new HashMap<>();
         tokenRangeToReplicas.put(range1,
-                ImmutableSet.copyOf(Sets.newHashSet(mockReplica1, mockReplica2, mockReplica3)));
+                ImmutableSet.of(mockReplica1, mockReplica2, mockReplica3));
         tokenRangeToReplicas.put(range2,
-                ImmutableSet.copyOf(Sets.newHashSet(mockReplica1, mockReplica2)));
+                ImmutableSet.of(mockReplica1, mockReplica2));
         when(myReplicationState.getTokenRangeToReplicas(myTableReference)).thenReturn(tokenRangeToReplicas);
 
         return new OnDemandRepairJob.Builder()

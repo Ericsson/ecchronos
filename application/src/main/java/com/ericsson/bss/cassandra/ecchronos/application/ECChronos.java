@@ -97,12 +97,12 @@ public class ECChronos implements Closeable
                 .withTableStorageStates(myECChronosInternals.getTableStorageStates())
                 .withRepairPolicies(Collections.singletonList(myTimeBasedRunPolicy))
                 .build();
-
+        RepairConfiguration repairConfiguration = getRepairConfiguration(repairProperties);
         myDefaultRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()
                 .withRepairScheduler(myRepairSchedulerImpl)
                 .withCluster(nativeConnectionProvider.getSession().getCluster())
                 .withReplicatedTableProvider(myECChronosInternals.getReplicatedTableProvider())
-                .withDefaultRepairConfiguration(getRepairConfiguration(repairProperties))
+                .withDefaultRepairConfiguration(repairConfiguration)
                 .build();
 
         ReplicationState replicationState = new ReplicationState(metadata, host);
@@ -113,6 +113,7 @@ public class ECChronos implements Closeable
                 .withReplicationState(replicationState)
                 .withRepairLockType(repairProperties.getRepairLockType())
                 .withMetadata(metadata)
+                .withRepairConfiguration(repairConfiguration)
                 .build();
 
         HTTPServerProperties httpServerProperties = HTTPServerProperties.from(configuration);

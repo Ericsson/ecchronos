@@ -88,23 +88,24 @@ class RestRequest:
 class RepairSchedulerRequest(RestRequest):
     repair_management_status_url = 'repair-management/v1/status'
     repair_management_table_status_url = 'repair-management/v1/status/keyspaces/{0}/tables/{1}'
+    repair_management_job_status_url = 'repair-management/v1/status/keyspaces/{0}/tables/{1}/ids/{2}'
 
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
 
-    def get(self, keyspace, table):
-        request_url = RepairSchedulerRequest.repair_management_table_status_url.format(keyspace, table)
+    def get(self, keyspace, table, id):
+        request_url = RepairSchedulerRequest.repair_management_job_status_url.format(keyspace, table, id)
 
         result = self.request(request_url)
-
         if result.is_successful():
             result = result.transform_with_data(new_data=VerboseRepairJob(result.data))
-
         return result
 
-    def list(self, keyspace=None):
+    def list(self, keyspace=None, table=None):
         request_url = RepairSchedulerRequest.repair_management_status_url
-        if keyspace is not None:
+        if keyspace and table:
+            request_url = "{0}/keyspaces/{1}/tables/{2}".format(request_url, keyspace, table)
+        elif keyspace:
             request_url = "{0}/keyspaces/{1}".format(request_url, keyspace)
 
         result = self.request(request_url)

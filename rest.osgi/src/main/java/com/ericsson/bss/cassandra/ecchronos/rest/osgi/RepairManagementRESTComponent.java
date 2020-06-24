@@ -48,39 +48,45 @@ public class RepairManagementRESTComponent implements RepairManagementREST
     }
 
     @Override
-    public String scheduledStatus()
+    public String status()
     {
-        return myDelegateRESTImpl.scheduledStatus();
+        return myDelegateRESTImpl.status();
     }
 
     @Override
-    public String scheduledKeyspaceStatus(String keyspace)
+    public String keyspaceStatus(String keyspace)
     {
-        return myDelegateRESTImpl.scheduledKeyspaceStatus(keyspace);
+        return myDelegateRESTImpl.keyspaceStatus(keyspace);
     }
 
     @Override
-    public String scheduledTableStatus(String keyspace, String table)
+    public String tableStatus(String keyspace, String table)
     {
-        return myDelegateRESTImpl.scheduledTableStatus(keyspace, table);
+        return myDelegateRESTImpl.tableStatus(keyspace, table);
     }
 
     @Override
-    public String scheduledConfig()
+    public String jobStatus(String keyspace, String table, String id)
     {
-        return myDelegateRESTImpl.scheduledConfig();
+        return myDelegateRESTImpl.jobStatus(keyspace, table, id);
     }
 
     @Override
-    public String scheduledKeyspaceConfig(String keyspace)
+    public String config()
     {
-        return myDelegateRESTImpl.scheduledKeyspaceConfig(keyspace);
+        return myDelegateRESTImpl.config();
     }
 
     @Override
-    public String scheduledTableConfig(String keyspace, String table)
+    public String keyspaceConfig(String keyspace)
     {
-        return myDelegateRESTImpl.scheduledTableConfig(keyspace, table);
+        return myDelegateRESTImpl.keyspaceConfig(keyspace);
+    }
+
+    @Override
+    public String tableConfig(String keyspace, String table)
+    {
+        return myDelegateRESTImpl.tableConfig(keyspace, table);
     }
 
     @Override

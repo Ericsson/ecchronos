@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import java.util.List;
+import java.util.UUID;
 
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Metadata;
@@ -36,7 +37,6 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
@@ -75,10 +75,10 @@ public class TestOnDemandRepairSchedulerImpl
         when(keyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(tableMetadata);
 
         verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
-        repairScheduler.scheduleJob(TABLE_REFERENCE);
+        RepairJobView repairJobView = repairScheduler.scheduleJob(TABLE_REFERENCE);
         verify(scheduleManager).schedule(any(ScheduledJob.class));
 
-        assertTableViewExist(repairScheduler, TABLE_REFERENCE, RepairConfiguration.DEFAULT, 1);
+        assertTableViewExist(repairScheduler, repairJobView);
 
         repairScheduler.close();
         verify(scheduleManager).deschedule(any(ScheduledJob.class));
@@ -95,11 +95,11 @@ public class TestOnDemandRepairSchedulerImpl
         when(keyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(tableMetadata);
 
         verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
-        repairScheduler.scheduleJob(TABLE_REFERENCE);
-        repairScheduler.scheduleJob(TABLE_REFERENCE);
+        RepairJobView repairJobView = repairScheduler.scheduleJob(TABLE_REFERENCE);
+        RepairJobView repairJobView2 = repairScheduler.scheduleJob(TABLE_REFERENCE);
         verify(scheduleManager, times(2)).schedule(any(ScheduledJob.class));
 
-        assertTableViewExist(repairScheduler, TABLE_REFERENCE, RepairConfiguration.DEFAULT, 2);
+        assertTableViewExist(repairScheduler, repairJobView, repairJobView2);
 
         repairScheduler.close();
         verify(scheduleManager, times(2)).deschedule(any(ScheduledJob.class));
@@ -109,7 +109,7 @@ public class TestOnDemandRepairSchedulerImpl
     }
 
     @Test (expected = EcChronosException.class)
-    public void testScheduleRepairOnNonExistantTable() throws EcChronosException
+    public void testScheduleRepairOnNonExistentKeyspaceTable() throws EcChronosException
     {
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
 
@@ -117,17 +117,19 @@ public class TestOnDemandRepairSchedulerImpl
         repairScheduler.scheduleJob(TABLE_REFERENCE);
     }
 
-    private void assertTableViewExist(OnDemandRepairScheduler repairScheduler, TableReference tableReference,
-            RepairConfiguration repairConfiguration, int nrOfTables)
+    @Test (expected = EcChronosException.class)
+    public void testScheduleRepairOnNonExistentTable() throws EcChronosException
+    {
+        OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
+        when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(keyspaceMetadata);
+        verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
+        repairScheduler.scheduleJob(TABLE_REFERENCE);
+    }
+
+    private void assertTableViewExist(OnDemandRepairScheduler repairScheduler, RepairJobView... expectedViews)
     {
         List<RepairJobView> repairJobViews = repairScheduler.getCurrentRepairJobs();
-        assertThat(repairJobViews).hasSize(nrOfTables);
-
-        for (RepairJobView repairJobView : repairJobViews)
-        {
-            assertThat(repairJobView.getTableReference()).isEqualTo(tableReference);
-            assertThat(repairJobView.getRepairConfiguration()).isEqualTo(repairConfiguration);
-        }
+        assertThat(repairJobViews).containsExactlyInAnyOrder(expectedViews);
     }
 
     private OnDemandRepairSchedulerImpl.Builder defaultOnDemandRepairSchedulerImplBuilder()

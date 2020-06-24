@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -34,6 +35,11 @@ public class CompleteRepairJob extends ScheduledRepairJob
     {
         super(repairJobView);
 
+        if (repairJobView.getRepairStateSnapshot() == null)
+        {
+            virtualNodeStates = new ArrayList<>();
+            return;
+        }
         long repairedAfter = System.currentTimeMillis() - repairJobView.getRepairConfiguration().getRepairIntervalInMs();
         VnodeRepairStates vnodeRepairStates = repairJobView.getRepairStateSnapshot().getVnodeRepairStates();
 

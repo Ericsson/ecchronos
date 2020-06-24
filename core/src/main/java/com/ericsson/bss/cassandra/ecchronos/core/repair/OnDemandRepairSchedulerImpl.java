@@ -46,6 +46,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     private final ReplicationState myReplicationState;
     private final RepairLockType myRepairLockType;
     private final Metadata myMetadata;
+    private final RepairConfiguration myRepairConfiguration;
 
     private OnDemandRepairSchedulerImpl(Builder builder)
     {
@@ -55,6 +56,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         myReplicationState = builder.myReplicationState;
         myRepairLockType = builder.repairLockType;
         myMetadata = builder.metadata;
+        myRepairConfiguration = builder.repairConfiguration;
     }
 
     @Override
@@ -130,6 +132,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
                 .withReplicationState(myReplicationState)
                 .withRepairLockType(myRepairLockType)
                 .withOnFinished(this::removeScheduledJob)
+                .withRepairConfiguration(myRepairConfiguration)
                 .build();
         return job;
     }
@@ -147,6 +150,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         private ReplicationState myReplicationState;
         private RepairLockType repairLockType;
         private Metadata metadata;
+        private RepairConfiguration repairConfiguration;
 
         public Builder withJmxProxyFactory(JmxProxyFactory jmxProxyFactory)
         {
@@ -181,6 +185,12 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         public Builder withMetadata(Metadata metadata)
         {
             this.metadata = metadata;
+            return this;
+        }
+
+        public Builder withRepairConfiguration(RepairConfiguration repairConfiguration)
+        {
+            this.repairConfiguration = repairConfiguration;
             return this;
         }
 

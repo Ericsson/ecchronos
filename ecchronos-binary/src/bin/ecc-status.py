@@ -52,6 +52,7 @@ def print_verbose_repair_job(repair_job, max_lines):
     print(verbose_print_format.format("Repaired(%)", repair_job.get_repair_percentage()))
     print(verbose_print_format.format("Repaired at", repair_job.get_last_repaired_at()))
     print(verbose_print_format.format("Next repair", repair_job.get_next_repair()))
+    print(verbose_print_format.format("Reoccurring", repair_job.reoccurring))
 
     vnode_state_table = list()
     vnode_state_table.append(["Start token", "End token", "Replicas", "Repaired at", "Repaired"])
@@ -75,6 +76,8 @@ def convert_repair_job(repair_job):
     entry.append(repair_job.get_repair_percentage())
     entry.append(repair_job.get_last_repaired_at())
     entry.append(repair_job.get_next_repair())
+    entry.append(repair_job.reoccurring)
+    entry.append(repair_job.id)
 
     return entry
 
@@ -88,7 +91,7 @@ def print_summary(repair_jobs):
 
 def print_repair_jobs(repair_jobs, max_lines):
     repair_jobs_table = list()
-    repair_jobs_table.append(["Keyspace", "Table", "Status", "Repaired(%)", "Repaired at", "Next repair"])
+    repair_jobs_table.append(["Keyspace", "Table", "Status", "Repaired(%)", "Repaired at", "Next repair", "reoccurring", "id"])
     sorted_repair_jobs = sorted(repair_jobs, key=lambda job: job.last_repaired_at_in_ms)
 
     if max_lines > -1:
@@ -106,7 +109,9 @@ def parse_arguments():
     parser.add_argument('keyspace', nargs='?',
                         help='Print status(es) for a specific keyspace')
     parser.add_argument('table', nargs='?',
-                        help='Print verbose status for a specific table')
+                        help='Print status(es) for a specific table')
+    parser.add_argument('id', nargs='?',
+                        help='Print verbose status for a specific job')
     parser.add_argument('-l', '--limit', type=int,
                         help='Limit the number of tables or virtual nodes printed (-1 to disable)',
                         default=15)
@@ -120,10 +125,16 @@ def main():
     arguments = parse_arguments()
     request = rest.RepairSchedulerRequest(base_url=arguments.url)
 
-    if arguments.table:
-        result = request.get(keyspace=arguments.keyspace, table=arguments.table)
+    if arguments.table and arguments.id:
+        result = request.get(keyspace=arguments.keyspace, table=arguments.table, id=arguments.id)
         if result.is_successful():
             print_verbose_repair_job(result.data, arguments.limit)
+        else:
+            print(result.format_exception())
+    elif arguments.table:
+        result = request.list(keyspace=arguments.keyspace, table=arguments.table)
+        if result.is_successful():
+            print_repair_jobs(result.data, arguments.limit)
         else:
             print(result.format_exception())
     else:

@@ -24,14 +24,19 @@ def get_behave_dir():
     current_dir = os.path.dirname(__file__)
     return os.path.abspath(os.path.join(current_dir, '..'))
 
-
-@given('I have a json schema in {schema_name}.json')
+@given(u'I have a json schema in {schema_name}.json')
 def step_import_schema(context, schema_name):
     schema_file = os.path.join(get_behave_dir(), "{0}.json".format(schema_name))
 
     with open(schema_file, "r") as jsonfile:
         setattr(context, schema_name, json.loads(jsonfile.read()))
 
+@given(u'we schedule an on demand repair on {keyspace}.{table}')
+def schedule_demand_repair(context, keyspace, table):
+    step_set_url(context, "http://localhost:8080/repair-management/v1/schedule/keyspaces/{0}/tables/{1}".format(keyspace, table))
+    step_send_get_request(context)
+    step_verify_response_is_succesful(context)
+    pass
 
 @given('I use the url {url}')
 def step_set_url(context, url):

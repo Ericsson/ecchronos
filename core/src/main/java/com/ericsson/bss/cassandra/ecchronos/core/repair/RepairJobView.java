@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -67,5 +68,21 @@ public class RepairJobView
     public RepairStateSnapshot getRepairStateSnapshot()
     {
         return myRepairStateSnapshot;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RepairJobView that = (RepairJobView) o;
+        return Objects.equals(myId, that.myId) &&
+                Objects.equals(myTableReference, that.myTableReference) &&
+                Objects.equals(myRepairConfiguration, that.myRepairConfiguration) &&
+                Objects.equals(myRepairStateSnapshot, that.myRepairStateSnapshot);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(myId, myTableReference, myRepairConfiguration, myRepairStateSnapshot);
     }
 }
