@@ -19,6 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -121,7 +122,7 @@ public interface RepairManagementREST
      * @param table The table to get configuration of
      * @return A JSON representation of {@link ScheduledRepairJob}
      */
-    @GET
+    @POST
     @Path("/schedule/keyspaces/{keyspace}/tables/{table}")
     @Produces(MediaType.APPLICATION_JSON)
     String scheduleJob(@PathParam("keyspace") String keyspace, // NOPMD

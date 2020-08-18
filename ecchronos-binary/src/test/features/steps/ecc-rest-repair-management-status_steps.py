@@ -48,6 +48,11 @@ def step_send_get_request(context):
     assert context.url is not None
     context.response = requests.get(context.url)
 
+@when('I send a POST request')
+def step_send_get_request(context):
+    assert context.url is not None
+    context.response = requests.post(context.url)
+
 
 @then('the response is successful')
 def step_verify_response_is_succesful(context):

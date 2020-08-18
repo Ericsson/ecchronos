@@ -168,7 +168,7 @@ public class ITOnDemandRepairJob extends TestBase
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
                 .until(() -> myRepairSchedulerImpl.getCurrentRepairJobs().isEmpty());
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
-                .until(() ->myScheduleManagerImpl.getQueueSize() == 0);
+                .until(() -> myScheduleManagerImpl.getQueueSize() == 0);
 
 
         verifyTableRepairedSince(tableReference, startTime);
