@@ -59,6 +59,7 @@
 
     <logger name="com.datastax" level="ERROR" />
     <logger name="io.netty" level="WARN" />
+    <logger name="org.eclipse.jetty" level="INFO" />
 
     <root level="DEBUG">
         <appender-ref ref="STDOUT" />
