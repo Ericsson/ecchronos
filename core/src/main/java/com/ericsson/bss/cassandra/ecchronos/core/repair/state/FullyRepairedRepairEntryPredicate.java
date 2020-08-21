@@ -14,11 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import java.net.InetAddress;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
@@ -41,13 +38,7 @@ public class FullyRepairedRepairEntryPredicate implements Predicate<RepairEntry>
             Collection<Node> replicas = myTokenToNodeMap.get(repairEntry.getRange());
             if (replicas != null)
             {
-                Set<InetAddress> replicaAddresses = new HashSet<>();
-                for (Node replica : replicas)
-                {
-                    replicaAddresses.add(replica.getPublicAddress());
-                }
-
-                return repairEntry.getParticipants().containsAll(replicaAddresses);
+                return repairEntry.getParticipants().containsAll(replicas);
             }
         }
         return false;

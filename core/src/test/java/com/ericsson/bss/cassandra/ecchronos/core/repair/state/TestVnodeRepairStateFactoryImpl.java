@@ -30,7 +30,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -279,13 +278,8 @@ public class TestVnodeRepairStateFactoryImpl
 
     private void withRepairHistory(LongTokenRange range, long repairedAt, ImmutableSet<Node> replicas, String status)
     {
-        RepairEntry repairEntry = new RepairEntry(range, repairedAt, getReplicaAddresses(replicas), status);
+        RepairEntry repairEntry = new RepairEntry(range, repairedAt, replicas, status);
         repairHistory.add(repairEntry);
-    }
-
-    private ImmutableSet<InetAddress> getReplicaAddresses(Collection<Node> nodes)
-    {
-        return ImmutableSet.copyOf(nodes.stream().map(Node::getPublicAddress).collect(Collectors.toSet()));
     }
 
     private VnodeRepairState newUnrepairedState(LongTokenRange range)

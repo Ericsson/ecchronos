@@ -102,7 +102,9 @@ public class ITTableRepairJob extends TestBase
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .build();
 
-        myRepairHistoryProvider = new RepairHistoryProviderImpl(session, s -> s, TimeUnit.DAYS.toMillis(30));
+        NodeResolver nodeResolver = new NodeResolverImpl(myMetadata);
+        myRepairHistoryProvider = new RepairHistoryProviderImpl(nodeResolver, session, s -> s,
+                TimeUnit.DAYS.toMillis(30));
 
         myLockFactory = CASLockFactory.builder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
@@ -114,8 +116,6 @@ public class ITTableRepairJob extends TestBase
                 .withLockFactory(myLockFactory)
                 .withRunInterval(1, TimeUnit.SECONDS)
                 .build();
-
-        NodeResolver nodeResolver = new NodeResolverImpl(myMetadata);
 
         ReplicationState replicationState = new ReplicationStateImpl(nodeResolver, myMetadata, myLocalHost);
 

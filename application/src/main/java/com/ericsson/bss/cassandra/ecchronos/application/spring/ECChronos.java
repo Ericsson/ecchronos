@@ -66,11 +66,11 @@ public class ECChronos implements Closeable
 
         Config.RepairConfig repairConfig = configuration.getRepair();
 
-        RepairHistoryProviderImpl repairHistoryProvider = new RepairHistoryProviderImpl(
+        NodeResolver nodeResolver = new NodeResolverImpl(metadata);
+
+        RepairHistoryProviderImpl repairHistoryProvider = new RepairHistoryProviderImpl(nodeResolver,
                 nativeConnectionProvider.getSession(), statementDecorator,
                 repairConfig.getHistoryLookback().getInterval(TimeUnit.MILLISECONDS));
-
-        NodeResolver nodeResolver = new NodeResolverImpl(metadata);
 
         ReplicationState replicationState = new ReplicationStateImpl(nodeResolver, metadata, host);
 

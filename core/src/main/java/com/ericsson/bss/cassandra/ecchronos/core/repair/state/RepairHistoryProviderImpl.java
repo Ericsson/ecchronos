@@ -14,32 +14,30 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import java.net.InetAddress;
-import java.time.Clock;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.UUID;
-
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.*;
 import com.datastax.driver.core.utils.UUIDs;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Predicate;
 import com.google.common.collect.AbstractIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.InetAddress;
+import java.time.Clock;
+import java.util.*;
 
 /**
  * Implementation of the RepairHistoryProvider interface that retrieves the repair history from Cassandra.
  */
 public class RepairHistoryProviderImpl implements RepairHistoryProvider
 {
+    private static final Logger LOG = LoggerFactory.getLogger(RepairHistoryProviderImpl.class);
+
     private static final String RANGE_BEGIN_COLUMN = "range_begin";
     private static final String RANGE_END_COLUMN = "range_end";
     private static final String ID_COLUMN = "id";
@@ -52,6 +50,7 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     private static final String REPAIR_HISTORY_BY_TIME_STATEMENT = String
             .format("SELECT id, range_begin, range_end, status, participants FROM %s.%s WHERE keyspace_name=? AND columnfamily_name=? AND id >= minTimeuuid(?) and id <= maxTimeuuid(?)", KEYSPACE_NAME, REPAIR_HISTORY);
 
+    private final NodeResolver myNodeResolver;
     private final Session mySession;
     private final StatementDecorator myStatementDecorator;
 
@@ -59,14 +58,15 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     private final long myLookbackTime;
     private final Clock myClock;
 
-    public RepairHistoryProviderImpl(Session session, StatementDecorator statementDecorator, long lookbackTime)
+    public RepairHistoryProviderImpl(NodeResolver nodeResolver, Session session, StatementDecorator statementDecorator, long lookbackTime)
     {
-        this(session, statementDecorator, lookbackTime, Clock.systemDefaultZone());
+        this(nodeResolver, session, statementDecorator, lookbackTime, Clock.systemDefaultZone());
     }
 
     @VisibleForTesting
-    RepairHistoryProviderImpl(Session session, StatementDecorator statementDecorator, long lookbackTime, Clock clock)
+    RepairHistoryProviderImpl(NodeResolver nodeResolver, Session session, StatementDecorator statementDecorator, long lookbackTime, Clock clock)
     {
+        myNodeResolver = nodeResolver;
         mySession = session;
         myStatementDecorator = statementDecorator;
         myRepairHistoryByTimeStatement = mySession.prepare(REPAIR_HISTORY_BY_TIME_STATEMENT);
@@ -92,7 +92,7 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
         }
         ResultSet resultSet = execute(myRepairHistoryByTimeStatement.bind(tableReference.getKeyspace(), tableReference.getTable(), fromDate, toDate));
 
-        return RepairEntryIterator.create(resultSet.iterator(), predicate);
+        return new RepairEntryIterator(resultSet.iterator(), predicate);
     }
 
     private ResultSet execute(Statement statement)
@@ -100,17 +100,12 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
         return mySession.execute(myStatementDecorator.apply(statement));
     }
 
-    private static class RepairEntryIterator extends AbstractIterator<RepairEntry>
+    class RepairEntryIterator extends AbstractIterator<RepairEntry>
     {
         private final Iterator<Row> myIterator;
         private final Predicate<RepairEntry> myPredicate;
 
-        public static RepairEntryIterator create(Iterator<Row> iterator, Predicate<RepairEntry> predicate)
-        {
-            return new RepairEntryIterator(iterator, predicate);
-        }
-
-        private RepairEntryIterator(Iterator<Row> iterator, Predicate<RepairEntry> predicate)
+        RepairEntryIterator(Iterator<Row> iterator, Predicate<RepairEntry> predicate)
         {
             myIterator = iterator;
             myPredicate = predicate;
@@ -131,11 +126,24 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
                     LongTokenRange tokenRange = new LongTokenRange(rangeBegin, rangeEnd);
                     UUID id = row.getUUID(ID_COLUMN);
                     Set<InetAddress> participants = row.getSet(PARTICIPANTS_COLUMN, InetAddress.class);
+                    Set<Node> nodes = new HashSet<>();
+                    for (InetAddress participant : participants)
+                    {
+                        Optional<Node> node = myNodeResolver.fromIp(participant);
+                        if (!node.isPresent())
+                        {
+                            LOG.warn("Node {} not found in metadata", participant);
+                        }
+                        else
+                        {
+                            nodes.add(node.get());
+                        }
+                    }
                     String status = row.getString(STATUS_COLUMN);
 
                     long startedAt = UUIDs.unixTimestamp(id);
 
-                    RepairEntry repairEntry = new RepairEntry(tokenRange, startedAt, participants, status);
+                    RepairEntry repairEntry = new RepairEntry(tokenRange, startedAt, nodes, status);
 
                     if (myPredicate.apply(repairEntry))
                     {

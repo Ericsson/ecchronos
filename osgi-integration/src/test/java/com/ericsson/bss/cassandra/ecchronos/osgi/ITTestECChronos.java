@@ -28,6 +28,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.osgi.ScheduleManagerService;
 import com.ericsson.bss.cassandra.ecchronos.core.osgi.TimeBasedRunPolicyService;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import org.junit.Before;
 import org.junit.Test;
@@ -170,6 +171,18 @@ public class ITTestECChronos extends TestBase
         serviceTracker.close();
 
         assertThat(repairScheduler).isNotNull();
+    }
+
+    @Test
+    public void testGetNodeResolverService() throws InterruptedException
+    {
+        ServiceTracker serviceTracker = new ServiceTracker(myBundleContext, NodeResolver.class, null);
+        serviceTracker.open();
+
+        NodeResolver nodeResolver = (NodeResolver) serviceTracker.waitForService(TimeUnit.SECONDS.toMillis(10));
+        serviceTracker.close();
+
+        assertThat(nodeResolver).isNotNull();
     }
 
     @Test

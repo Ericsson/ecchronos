@@ -69,7 +69,7 @@ public class TestFullyRepairedRepairEntryPredicate
     {
         List<LongTokenRange> expectedRepairedTokenRanges = new ArrayList<>();
         Set<InetAddress> expectedRepairedNodeAddresses = Sets.newHashSet(InetAddress.getLocalHost());
-        Set<Node> allNodes = expectedRepairedNodeAddresses.stream().map(this::mockNode).collect(Collectors.toSet());
+        Set<Node> expectedRepairedNodes = expectedRepairedNodeAddresses.stream().map(this::mockNode).collect(Collectors.toSet());
 
         Map<LongTokenRange, Collection<Node>> tokenToNodeMap = new HashMap<>();
 
@@ -77,12 +77,12 @@ public class TestFullyRepairedRepairEntryPredicate
         {
             LongTokenRange longTokenRange = new LongTokenRange(i, i + 1);
             expectedRepairedTokenRanges.add(longTokenRange);
-            tokenToNodeMap.put(longTokenRange, allNodes);
+            tokenToNodeMap.put(longTokenRange, expectedRepairedNodes);
         }
 
         for (LongTokenRange expectedRepairedTokenRange : expectedRepairedTokenRanges)
         {
-            assertThat(applyWith(expectedRepairedTokenRange, tokenToNodeMap, expectedRepairedNodeAddresses, SUCCESS)).isTrue();
+            assertThat(applyWith(expectedRepairedTokenRange, tokenToNodeMap, expectedRepairedNodes, SUCCESS)).isTrue();
         }
     }
 
@@ -90,15 +90,16 @@ public class TestFullyRepairedRepairEntryPredicate
     public void testAcceptPartialSuccess() throws UnknownHostException
     {
         LongTokenRange expectedRepairedTokenRange = new LongTokenRange(0, 1);
-        Set<InetAddress> expectedRepairedNodeAddresses = Sets.newHashSet(InetAddress.getLocalHost());
+        Node repairedNode = mockNode(InetAddress.getLocalHost());
+        Set<Node> repairedNodes = Sets.newHashSet(repairedNode);
         Set<Node> allNodes = new HashSet<>();
-        allNodes.add(mockNode(InetAddress.getLocalHost()));
+        allNodes.add(repairedNode);
         allNodes.add(mockNode(mock(InetAddress.class)));
 
         Map<LongTokenRange, Collection<Node>> tokenToNodeMap = new HashMap<>();
         tokenToNodeMap.put(expectedRepairedTokenRange, allNodes);
 
-        assertThat(applyWith(expectedRepairedTokenRange, tokenToNodeMap, expectedRepairedNodeAddresses, SUCCESS)).isFalse();
+        assertThat(applyWith(expectedRepairedTokenRange, tokenToNodeMap, repairedNodes, SUCCESS)).isFalse();
     }
 
     @Test
@@ -107,29 +108,29 @@ public class TestFullyRepairedRepairEntryPredicate
         LongTokenRange repairedTokenRange = new LongTokenRange(0, 1);
         LongTokenRange actualTokenRange = new LongTokenRange(0, 2);
         Set<InetAddress> expectedRepairedNodeAddresses = Sets.newHashSet(InetAddress.getLocalHost());
-        Set<Node> allNodes = expectedRepairedNodeAddresses.stream().map(this::mockNode).collect(Collectors.toSet());
+        Set<Node> expectedRepairedNodes = expectedRepairedNodeAddresses.stream().map(this::mockNode).collect(Collectors.toSet());
 
         Map<LongTokenRange, Collection<Node>> tokenToNodeMap = new HashMap<>();
-        tokenToNodeMap.put(actualTokenRange, allNodes);
+        tokenToNodeMap.put(actualTokenRange, expectedRepairedNodes);
 
-        assertThat(applyWith(repairedTokenRange, tokenToNodeMap, expectedRepairedNodeAddresses, SUCCESS)).isFalse();
+        assertThat(applyWith(repairedTokenRange, tokenToNodeMap, expectedRepairedNodes, SUCCESS)).isFalse();
     }
 
     private boolean applyWith(String status) throws UnknownHostException
     {
         LongTokenRange expectedRepairedTokenRange = new LongTokenRange(0, 1);
         Set<InetAddress> expectedRepairedNodeAddresses = Sets.newHashSet(InetAddress.getLocalHost());
-        Set<Node> allNodes = expectedRepairedNodeAddresses.stream().map(this::mockNode).collect(Collectors.toSet());
+        Set<Node> expectedRepairedNodes = expectedRepairedNodeAddresses.stream().map(this::mockNode).collect(Collectors.toSet());
 
         Map<LongTokenRange, Collection<Node>> tokenToNodeMap = new HashMap<>();
-        tokenToNodeMap.put(expectedRepairedTokenRange, allNodes);
+        tokenToNodeMap.put(expectedRepairedTokenRange, expectedRepairedNodes);
 
-        return applyWith(expectedRepairedTokenRange, tokenToNodeMap, expectedRepairedNodeAddresses, status);
+        return applyWith(expectedRepairedTokenRange, tokenToNodeMap, expectedRepairedNodes, status);
     }
 
-    private boolean applyWith(LongTokenRange repairedTokenRange, Map<LongTokenRange, Collection<Node>> tokenToNodeMap, Set<InetAddress> repairedNodeAddresses, String status)
+    private boolean applyWith(LongTokenRange repairedTokenRange, Map<LongTokenRange, Collection<Node>> tokenToNodeMap, Set<Node> repairedNodes, String status)
     {
-        RepairEntry repairEntry = new RepairEntry(repairedTokenRange, 5, repairedNodeAddresses, status);
+        RepairEntry repairEntry = new RepairEntry(repairedTokenRange, 5, repairedNodes, status);
         FullyRepairedRepairEntryPredicate fullyRepairedRepairEntryPredicate = new FullyRepairedRepairEntryPredicate(tokenToNodeMap);
 
         return fullyRepairedRepairEntryPredicate.apply(repairEntry);

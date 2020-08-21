@@ -15,24 +15,30 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.google.common.collect.Sets;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@RunWith(MockitoJUnitRunner.class)
 public class TestRepairEntry
 {
+    @Mock
+    private Node mockNode;
+    
     @Test
-    public void testGetters() throws UnknownHostException
+    public void testGetters()
     {
         LongTokenRange expectedLongTokenRange = new LongTokenRange(0, 1);
         long expectedStartedAt = 5;
-        Set<InetAddress> expectedParticipants = Sets.newHashSet(InetAddress.getLocalHost());
+        Set<Node> expectedParticipants = Sets.newHashSet(mockNode);
         RepairStatus expectedStatus = RepairStatus.SUCCESS;
 
         RepairEntry repairEntry = new RepairEntry(expectedLongTokenRange, expectedStartedAt, expectedParticipants, expectedStatus.toString());
@@ -44,47 +50,47 @@ public class TestRepairEntry
     }
 
     @Test
-    public void testRepairEntriesAreEqual() throws UnknownHostException
+    public void testRepairEntriesAreEqual()
     {
-        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, Sets.newHashSet(InetAddress.getLocalHost()), "SUCCESS");
-        RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(0, 1), 5, Sets.newHashSet(InetAddress.getLocalHost()), "SUCCESS");
+        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, Sets.newHashSet(mockNode), "SUCCESS");
+        RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(0, 1), 5, Sets.newHashSet(mockNode), "SUCCESS");
 
         assertThat(repairEntry).isEqualTo(repairEntry2);
         assertThat(repairEntry.hashCode()).isEqualTo(repairEntry2.hashCode());
     }
 
     @Test
-    public void testRepairEntriesWithDifferentRangeAreNotEqual() throws UnknownHostException
+    public void testRepairEntriesWithDifferentRangeAreNotEqual()
     {
-        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, Sets.newHashSet(InetAddress.getLocalHost()), "SUCCESS");
-        RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(1, 2), 5, Sets.newHashSet(InetAddress.getLocalHost()), "SUCCESS");
+        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, Sets.newHashSet(mockNode), "SUCCESS");
+        RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(1, 2), 5, Sets.newHashSet(mockNode), "SUCCESS");
 
         assertThat(repairEntry).isNotEqualTo(repairEntry2);
     }
 
     @Test
-    public void testRepairEntriesWithDifferentFinishedAtAreNotEqual() throws UnknownHostException
+    public void testRepairEntriesWithDifferentFinishedAtAreNotEqual()
     {
-        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, Sets.newHashSet(InetAddress.getLocalHost()), "SUCCESS");
-        RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(0, 1), 6, Sets.newHashSet(InetAddress.getLocalHost()), "SUCCESS");
+        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, Sets.newHashSet(mockNode), "SUCCESS");
+        RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(0, 1), 6, Sets.newHashSet(mockNode), "SUCCESS");
 
         assertThat(repairEntry).isNotEqualTo(repairEntry2);
     }
 
     @Test
-    public void testRepairEntriesWithDifferentParticipantsAreNotEqual() throws UnknownHostException
+    public void testRepairEntriesWithDifferentParticipantsAreNotEqual()
     {
-        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, Sets.newHashSet(InetAddress.getLocalHost()), "SUCCESS");
+        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, Sets.newHashSet(mockNode), "SUCCESS");
         RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(0, 1), 6, Sets.newHashSet(), "SUCCESS");
 
         assertThat(repairEntry).isNotEqualTo(repairEntry2);
     }
 
     @Test
-    public void testRepairEntriesWithDifferentStatusAreNotEqual() throws UnknownHostException
+    public void testRepairEntriesWithDifferentStatusAreNotEqual()
     {
-        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, Sets.newHashSet(InetAddress.getLocalHost()), "SUCCESS");
-        RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(0, 1), 6, Sets.newHashSet(InetAddress.getLocalHost()), "FAILED");
+        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, Sets.newHashSet(mockNode), "SUCCESS");
+        RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(0, 1), 6, Sets.newHashSet(mockNode), "FAILED");
 
         assertThat(repairEntry).isNotEqualTo(repairEntry2);
     }

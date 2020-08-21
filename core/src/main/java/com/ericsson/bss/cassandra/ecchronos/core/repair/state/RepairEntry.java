@@ -15,8 +15,8 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 
-import java.net.InetAddress;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
@@ -28,10 +28,10 @@ public class RepairEntry
 {
     private final LongTokenRange myRange;
     private final long myStartedAt;
-    private final Set<InetAddress> myParticipants;
+    private final Set<Node> myParticipants;
     private final RepairStatus myStatus;
 
-    public RepairEntry(LongTokenRange range, long startedAt, Set<InetAddress> participants, String status)
+    public RepairEntry(LongTokenRange range, long startedAt, Set<Node> participants, String status)
     {
         myRange = range;
         myStartedAt = startedAt;
@@ -49,9 +49,9 @@ public class RepairEntry
         return myStartedAt;
     }
 
-    public Set<InetAddress> getParticipants()
+    public Set<Node> getParticipants()
     {
-        return Collections.unmodifiableSet(myParticipants);
+        return myParticipants;
     }
 
     public RepairStatus getStatus()

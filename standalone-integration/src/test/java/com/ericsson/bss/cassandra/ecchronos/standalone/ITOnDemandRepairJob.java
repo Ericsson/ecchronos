@@ -84,7 +84,9 @@ public class ITOnDemandRepairJob extends TestBase
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .build();
 
-        myRepairHistoryProvider = new RepairHistoryProviderImpl(session, s -> s, TimeUnit.DAYS.toMillis(30));
+        NodeResolver nodeResolver = new NodeResolverImpl(myMetadata);
+        myRepairHistoryProvider = new RepairHistoryProviderImpl(nodeResolver, session, s -> s,
+                TimeUnit.DAYS.toMillis(30));
 
         myLockFactory = CASLockFactory.builder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
@@ -96,8 +98,6 @@ public class ITOnDemandRepairJob extends TestBase
                 .withLockFactory(myLockFactory)
                 .withRunInterval(100, TimeUnit.MILLISECONDS)
                 .build();
-
-        NodeResolver nodeResolver = new NodeResolverImpl(myMetadata);
 
         ReplicationState replicationState = new ReplicationStateImpl(nodeResolver, myMetadata, myLocalHost);
         myRepairSchedulerImpl = OnDemandRepairSchedulerImpl.builder()

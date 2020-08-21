@@ -21,13 +21,10 @@ import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * A repair state factory which uses a {@link RepairHistoryProvider} to determine repair state.
@@ -148,18 +145,16 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
 
         LongTokenRange repairedRange = repairEntry.getRange();
 
-        ImmutableSet<Node> hosts = getReplicasForRange(repairedRange, tokenRangeToReplicaMap);
-        if (hosts == null)
+        ImmutableSet<Node> nodes = getReplicasForRange(repairedRange, tokenRangeToReplicaMap);
+        if (nodes == null)
         {
             LOG.trace("Ignoring entry {}, replicas not present in tokenRangeToReplicas", repairEntry);
             return false;
         }
 
-        Set<InetAddress> hostAddresses = hosts.stream().map(Node::getPublicAddress).collect(Collectors.toSet());
-
-        if (!hostAddresses.equals(repairEntry.getParticipants()))
+        if (!nodes.equals(repairEntry.getParticipants()))
         {
-            LOG.debug("Ignoring entry {}, replicas {} not matching participants", repairEntry, hostAddresses);
+            LOG.debug("Ignoring entry {}, replicas {} not matching participants", repairEntry, nodes);
             return false;
         }
 

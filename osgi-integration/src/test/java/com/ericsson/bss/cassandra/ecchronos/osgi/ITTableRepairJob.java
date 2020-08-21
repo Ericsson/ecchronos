@@ -47,6 +47,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvi
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.google.common.collect.Lists;
@@ -71,8 +72,12 @@ public class ITTableRepairJob extends TestBase
     @Inject
     RepairScheduler myRepairScheduler;
 
+    @Inject
+    NodeResolver myNodeResolver;
+
     private static Cluster myAdminCluster;
     private static Session myAdminSession;
+
     private Metadata myMetadata;
     private Host myLocalHost;
 
@@ -105,7 +110,8 @@ public class ITTableRepairJob extends TestBase
         myMetadata = session.getCluster().getMetadata();
         myLocalHost = myNativeConnectionProvider.getLocalHost();
 
-        myRepairHistoryProvider = new RepairHistoryProviderImpl(session, s -> s, TimeUnit.DAYS.toMillis(30));
+        myRepairHistoryProvider = new RepairHistoryProviderImpl(myNodeResolver, session, s -> s,
+                TimeUnit.DAYS.toMillis(30));
 
         myRepairConfiguration = RepairConfiguration.newBuilder()
                 .withRepairInterval(1, TimeUnit.HOURS)

@@ -25,6 +25,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
 @Component(service = RepairStateFactory.class)
@@ -45,6 +46,9 @@ public class RepairStateFactoryService implements RepairStateFactory
     @Reference(service = TableRepairMetrics.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile TableRepairMetrics myTableRepairMetrics;
 
+    @Reference(service = NodeResolver.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    private volatile NodeResolver myNodeResolver;
+
     @Reference(service = ReplicationState.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile ReplicationState myReplicationState;
 
@@ -54,7 +58,7 @@ public class RepairStateFactoryService implements RepairStateFactory
     public void activate(Configuration configuration)
     {
         long lookbackTimeInMillis = configuration.lookbackTimeSeconds() * 1000;
-        RepairHistoryProvider repairHistoryProvider = new RepairHistoryProviderImpl(
+        RepairHistoryProvider repairHistoryProvider = new RepairHistoryProviderImpl(myNodeResolver,
                 myNativeConnectionProvider.getSession(), myStatementDecorator, lookbackTimeInMillis);
 
         myDelegateRepairStateFactory = RepairStateFactoryImpl.builder()
