@@ -42,6 +42,9 @@ repair:
     time: 13
     unit: days
   size_target: 5m
+  history:
+    provider: cassandra
+    keyspace: customkeyspace
 
 statistics:
   enabled: false

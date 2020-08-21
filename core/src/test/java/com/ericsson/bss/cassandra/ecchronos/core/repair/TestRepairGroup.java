@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.DummyLock;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
@@ -69,11 +70,21 @@ public class TestRepairGroup
     @Mock
     private RepairLockFactory myRepairLockFactory;
 
+    @Mock
+    private RepairHistory myRepairHistory;
+
+    @Mock
+    private RepairHistory.RepairSession myRepairSession;
+
+    private final UUID myJobId = UUID.randomUUID();
+
     private RepairConfiguration repairConfiguration;
 
     @Before
     public void init()
     {
+        when(myRepairHistory.newSession(any(), any(), any(), any())).thenReturn(myRepairSession);
+
         repairConfiguration = RepairConfiguration.newBuilder()
                 .withParallelism(RepairOptions.RepairParallelism.PARALLEL)
                 .withRepairWarningTime(RUN_INTERVAL_IN_DAYS * 2, TimeUnit.DAYS)
@@ -240,7 +251,9 @@ public class TestRepairGroup
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairResourceFactory(myRepairResourceFactory)
-                .withRepairLockFactory(myRepairLockFactory);
+                .withRepairLockFactory(myRepairLockFactory)
+                .withRepairHistory(myRepairHistory)
+                .withJobId(myJobId);
     }
 
     private Node mockNode(String dataCenter)

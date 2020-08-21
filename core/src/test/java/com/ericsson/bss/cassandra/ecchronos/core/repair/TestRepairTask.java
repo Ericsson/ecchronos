@@ -19,8 +19,12 @@ import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairTask.ProgressEventType;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.google.common.collect.Sets;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,7 +36,10 @@ import javax.management.Notification;
 import javax.management.NotificationListener;
 import javax.management.remote.JMXConnectionNotification;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -56,14 +63,31 @@ public class TestRepairTask
     @Mock
     private TableRepairMetrics myTableRepairMetrics;
 
+    @Mock
+    private RepairHistory repairHistory;
+
+    private UUID jobId = UUID.randomUUID();
+
     private MockedJmxProxy proxy = new MockedJmxProxy(KEYSPACE_NAME, TABLE_NAME);
 
     private final TableReference myTableReference = tableReference(KEYSPACE_NAME, TABLE_NAME);
+
+    private Set<Node> participants = Sets.newHashSet(mockNode(), mockNode());
+
+    private ConcurrentMap<LongTokenRange, RepairHistory.RepairSession> repairSessions = new ConcurrentHashMap<>();
 
     @Before
     public void setup() throws IOException
     {
         when(jmxProxyFactory.connect()).thenReturn(proxy);
+        when(repairHistory.newSession(eq(myTableReference), eq(jobId), any(), eq(participants)))
+                .thenAnswer(invocation ->
+                {
+                    LongTokenRange range = invocation.getArgumentAt(2, LongTokenRange.class);
+                    RepairHistory.RepairSession repairSession = mock(RepairHistory.RepairSession.class);
+                    repairSessions.put(range, repairSession);
+                    return repairSession;
+                });
     }
 
     @After
@@ -76,17 +100,20 @@ public class TestRepairTask
     public void testRepairSuccessfully() throws InterruptedException
     {
         Collection<LongTokenRange> ranges = new ArrayList<>();
-        Collection<LongTokenRange> range1 = Collections.singleton(new LongTokenRange(1, 2));
-        Collection<LongTokenRange> range2 = Collections.singleton(new LongTokenRange(3, 4));
+        LongTokenRange range1 = new LongTokenRange(1, 2);
+        LongTokenRange range2 = new LongTokenRange(3, 4);
 
-        ranges.addAll(range1);
-        ranges.addAll(range2);
+        ranges.add(range1);
+        ranges.add(range2);
 
         final RepairTask repairTask = new RepairTask.Builder()
                 .withJMXProxyFactory(jmxProxyFactory)
                 .withTableReference(myTableReference)
                 .withTokenRanges(ranges)
                 .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairHistory(repairHistory)
+                .withJobId(jobId)
+                .withReplicas(participants)
                 .build();
 
         CountDownLatch cdl = startRepair(repairTask, false);
@@ -110,23 +137,69 @@ public class TestRepairTask
         assertThat(proxy.myOptions.get(RepairOptions.RANGES_KEY)).isNotEmpty();
 
         verify(myTableRepairMetrics).repairTiming(eq(TABLE_REFERENCE), anyLong(), any(TimeUnit.class), eq(true));
+        verify(repairSessions.get(range1)).start();
+        verify(repairSessions.get(range2)).start();
+        verify(repairSessions.get(range1)).finish(eq(RepairStatus.SUCCESS));
+        verify(repairSessions.get(range2)).finish(eq(RepairStatus.SUCCESS));
     }
 
     @Test
-    public void testRepairHalf() throws InterruptedException
+    public void testRepairSingleRangeSuccessfully() throws InterruptedException
     {
         Collection<LongTokenRange> ranges = new ArrayList<>();
-        Collection<LongTokenRange> range1 = Collections.singleton(new LongTokenRange(1, 2));
-        Collection<LongTokenRange> range2 = Collections.singleton(new LongTokenRange(3, 4));
+        LongTokenRange range = new LongTokenRange(1, 2);
 
-        ranges.addAll(range1);
-        ranges.addAll(range2);
+        ranges.add(range);
 
         final RepairTask repairTask = new RepairTask.Builder()
                 .withJMXProxyFactory(jmxProxyFactory)
                 .withTableReference(myTableReference)
                 .withTokenRanges(ranges)
                 .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairHistory(repairHistory)
+                .withJobId(jobId)
+                .withReplicas(participants)
+                .build();
+
+        CountDownLatch cdl = startRepair(repairTask, false);
+
+        Notification notification = new Notification("progress", "repair:1", 0, getRepairMessage(range));
+        notification.setUserData(getNotificationData(RepairTask.ProgressEventType.PROGRESS.ordinal(), 1, 2));
+        proxy.notify(notification);
+
+        notification = new Notification("progress", "repair:1", 1, "Done with repair");
+        notification.setUserData(getNotificationData(RepairTask.ProgressEventType.COMPLETE.ordinal(), 2, 2));
+        proxy.notify(notification);
+
+        cdl.await();
+
+        assertThat(repairTask.getUnknownRanges()).isNull();
+        assertThat(repairTask.getCompletedRanges()).containsExactlyElementsOf(ranges);
+        assertThat(proxy.myOptions.get(RepairOptions.RANGES_KEY)).isNotEmpty();
+
+        verify(myTableRepairMetrics).repairTiming(eq(TABLE_REFERENCE), anyLong(), any(TimeUnit.class), eq(true));
+        verify(repairSessions.get(range)).start();
+        verify(repairSessions.get(range)).finish(eq(RepairStatus.SUCCESS));
+    }
+
+    @Test
+    public void testRepairHalf() throws InterruptedException
+    {
+        Collection<LongTokenRange> ranges = new ArrayList<>();
+        LongTokenRange range1 = new LongTokenRange(1, 2);
+        LongTokenRange range2 = new LongTokenRange(3, 4);
+
+        ranges.add(range1);
+        ranges.add(range2);
+
+        final RepairTask repairTask = new RepairTask.Builder()
+                .withJMXProxyFactory(jmxProxyFactory)
+                .withTableReference(myTableReference)
+                .withTokenRanges(ranges)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairHistory(repairHistory)
+                .withJobId(jobId)
+                .withReplicas(participants)
                 .build();
 
         CountDownLatch cdl = startRepair(repairTask, true);
@@ -140,28 +213,35 @@ public class TestRepairTask
 
         cdl.await();
 
-        assertThat(repairTask.getUnknownRanges()).containsExactlyElementsOf(range2);
-        assertThat(repairTask.getCompletedRanges()).containsExactlyElementsOf(range1);
+        assertThat(repairTask.getUnknownRanges()).containsExactly(range2);
+        assertThat(repairTask.getCompletedRanges()).containsExactly(range1);
         assertThat(proxy.myOptions.get(RepairOptions.RANGES_KEY)).isNotEmpty();
 
         verify(myTableRepairMetrics).repairTiming(eq(TABLE_REFERENCE), anyLong(), any(TimeUnit.class), eq(false));
+        verify(repairSessions.get(range1)).start();
+        verify(repairSessions.get(range2)).start();
+        verify(repairSessions.get(range1)).finish(eq(RepairStatus.SUCCESS));
+        verify(repairSessions.get(range2)).finish(eq(RepairStatus.FAILED));
     }
 
     @Test
     public void testPartialFailedRepair() throws InterruptedException
     {
         Collection<LongTokenRange> ranges = new ArrayList<>();
-        Collection<LongTokenRange> range1 = Collections.singleton(new LongTokenRange(1, 2));
-        Collection<LongTokenRange> range2 = Collections.singleton(new LongTokenRange(3, 4));
+        LongTokenRange range1 = new LongTokenRange(1, 2);
+        LongTokenRange range2 = new LongTokenRange(3, 4);
 
-        ranges.addAll(range1);
-        ranges.addAll(range2);
+        ranges.add(range1);
+        ranges.add(range2);
 
         final RepairTask repairTask = new RepairTask.Builder()
                 .withJMXProxyFactory(jmxProxyFactory)
                 .withTableReference(myTableReference)
                 .withTokenRanges(ranges)
                 .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairHistory(repairHistory)
+                .withJobId(jobId)
+                .withReplicas(participants)
                 .build();
 
         CountDownLatch cdl = startRepair(repairTask, true);
@@ -180,28 +260,35 @@ public class TestRepairTask
 
         cdl.await();
 
-        assertThat(repairTask.getUnknownRanges()).containsExactlyElementsOf(range2);
-        assertThat(repairTask.getCompletedRanges()).containsExactlyElementsOf(range1);
+        assertThat(repairTask.getUnknownRanges()).containsExactly(range2);
+        assertThat(repairTask.getCompletedRanges()).containsExactly(range1);
         assertThat(proxy.myOptions.get(RepairOptions.RANGES_KEY)).isNotEmpty();
 
         verify(myTableRepairMetrics).repairTiming(eq(TABLE_REFERENCE), anyLong(), any(TimeUnit.class), eq(false));
+        verify(repairSessions.get(range1)).start();
+        verify(repairSessions.get(range2)).start();
+        verify(repairSessions.get(range1)).finish(eq(RepairStatus.SUCCESS));
+        verify(repairSessions.get(range2)).finish(eq(RepairStatus.FAILED));
     }
 
     @Test
     public void testPartialRepair() throws InterruptedException
     {
         Collection<LongTokenRange> ranges = new ArrayList<>();
-        Collection<LongTokenRange> range1 = Collections.singleton(new LongTokenRange(1, 2));
-        Collection<LongTokenRange> range2 = Collections.singleton(new LongTokenRange(3, 4));
+        LongTokenRange range1 = new LongTokenRange(1, 2);
+        LongTokenRange range2 = new LongTokenRange(3, 4);
 
-        ranges.addAll(range1);
-        ranges.addAll(range2);
+        ranges.add(range1);
+        ranges.add(range2);
 
         final RepairTask repairTask = new RepairTask.Builder()
                 .withJMXProxyFactory(jmxProxyFactory)
                 .withTableReference(myTableReference)
                 .withTokenRanges(ranges)
                 .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairHistory(repairHistory)
+                .withJobId(jobId)
+                .withReplicas(participants)
                 .build();
 
         CountDownLatch cdl = startRepair(repairTask, false);
@@ -225,23 +312,31 @@ public class TestRepairTask
         assertThat(proxy.myOptions.get(RepairOptions.RANGES_KEY)).isNotEmpty();
 
         verify(myTableRepairMetrics).repairTiming(eq(TABLE_REFERENCE), anyLong(), any(TimeUnit.class), eq(true));
+        verify(repairSessions.get(range1)).start();
+        verify(repairSessions.get(range2)).start();
+        verify(repairSessions.get(range1)).finish(eq(RepairStatus.SUCCESS));
+        verify(repairSessions.get(range2)).finish(eq(RepairStatus.SUCCESS));
     }
 
     @Test
     public void testShouldMatchProgressNotificationPattern()
     {
-        Collection<LongTokenRange> ranges = Collections.singleton(new LongTokenRange(1, 2));
+        LongTokenRange range = new LongTokenRange(1, 2);
 
         final RepairTask repairTask = new RepairTask.Builder()
                 .withJMXProxyFactory(jmxProxyFactory)
                 .withTableReference(myTableReference)
-                .withTokenRanges(ranges)
+                .withTokenRanges(Arrays.asList(range))
                 .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairHistory(repairHistory)
+                .withJobId(jobId)
+                .withReplicas(participants)
                 .build();
 
-        repairTask.progress(ProgressEventType.PROGRESS, 1, 1, getRepairMessage(ranges));
+        repairTask.progress(ProgressEventType.PROGRESS, 1, 1, getRepairMessage(range));
 
-        assertThat(repairTask.getCompletedRanges()).containsExactlyElementsOf(ranges);
+        assertThat(repairTask.getCompletedRanges()).containsExactly(range);
+        verify(repairSessions.get(range)).finish(eq(RepairStatus.SUCCESS));
     }
 
     private CountDownLatch startRepair(final RepairTask repairTask, final boolean assertFailed)
@@ -274,14 +369,16 @@ public class TestRepairTask
         return cdl;
     }
 
-    private String getFailedRepairMessage(Collection<LongTokenRange> range)
+    private String getFailedRepairMessage(LongTokenRange... ranges)
     {
-        return String.format("Repair session RepairSession for range %s failed with error ...", range);
+        Collection<LongTokenRange> rangeCollection = Arrays.asList(ranges);
+        return String.format("Repair session RepairSession for range %s failed with error ...", rangeCollection);
     }
 
-    private String getRepairMessage(Collection<LongTokenRange> range)
+    private String getRepairMessage(LongTokenRange... ranges)
     {
-        return String.format("Repair session RepairSession for range %s finished", range);
+        Collection<LongTokenRange> rangeCollection = Arrays.asList(ranges);
+        return String.format("Repair session RepairSession for range %s finished", rangeCollection);
     }
 
     private Map<String, Integer> getNotificationData(int type, int progressCount, int total)
@@ -291,6 +388,14 @@ public class TestRepairTask
         data.put("progressCount", progressCount);
         data.put("total", total);
         return data;
+    }
+
+    private Node mockNode()
+    {
+        Node node = mock(Node.class);
+        when(node.getId()).thenReturn(UUID.randomUUID());
+        when(node.getPublicAddress()).thenReturn(InetAddress.getLoopbackAddress());
+        return node;
     }
 
     public class MockedJmxProxy implements JmxProxy

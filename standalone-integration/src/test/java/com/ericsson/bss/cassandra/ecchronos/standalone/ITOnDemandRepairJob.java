@@ -55,6 +55,8 @@ public class ITOnDemandRepairJob extends TestBase
 
     private static HostStatesImpl myHostStates;
 
+    private static EccRepairHistory myEccRepairHistory;
+
     private static RepairHistoryProviderImpl myRepairHistoryProvider;
 
     private static OnDemandRepairSchedulerImpl myRepairSchedulerImpl;
@@ -85,6 +87,19 @@ public class ITOnDemandRepairJob extends TestBase
                 .build();
 
         NodeResolver nodeResolver = new NodeResolverImpl(myMetadata);
+
+        Node localNode = nodeResolver.fromUUID(myLocalHost.getHostId()).orElseThrow(IllegalStateException::new);
+
+        ReplicationState replicationState = new ReplicationStateImpl(nodeResolver, myMetadata, myLocalHost);
+
+        myEccRepairHistory = EccRepairHistory.newBuilder()
+                .withReplicationState(replicationState)
+                .withLookbackTime(30, TimeUnit.DAYS)
+                .withLocalNode(localNode)
+                .withSession(session)
+                .withStatementDecorator(s -> s)
+                .build();
+
         myRepairHistoryProvider = new RepairHistoryProviderImpl(nodeResolver, session, s -> s,
                 TimeUnit.DAYS.toMillis(30));
 
@@ -99,7 +114,6 @@ public class ITOnDemandRepairJob extends TestBase
                 .withRunInterval(100, TimeUnit.MILLISECONDS)
                 .build();
 
-        ReplicationState replicationState = new ReplicationStateImpl(nodeResolver, myMetadata, myLocalHost);
         myRepairSchedulerImpl = OnDemandRepairSchedulerImpl.builder()
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .withTableRepairMetrics(mockTableRepairMetrics)
@@ -108,6 +122,7 @@ public class ITOnDemandRepairJob extends TestBase
                 .withReplicationState(replicationState)
                 .withMetadata(myMetadata)
                 .withRepairConfiguration(RepairConfiguration.DEFAULT)
+                .withRepairHistory(myEccRepairHistory)
                 .build();
     }
 
@@ -213,23 +228,29 @@ public class ITOnDemandRepairJob extends TestBase
 
     private void verifyTableRepairedSince(TableReference tableReference, long repairedSince, int expectedTokenRanges)
     {
-        OptionalLong repairedAt = lastRepairedSince(tableReference, repairedSince);
-        assertThat(repairedAt.isPresent()).isTrue();
+        OptionalLong repairedAtWithCassandraHistory = lastRepairedSince(tableReference, repairedSince,
+                myRepairHistoryProvider);
+        assertThat(repairedAtWithCassandraHistory.isPresent()).isTrue();
+
+        OptionalLong repairedAtWithEccHistory = lastRepairedSince(tableReference, repairedSince, myEccRepairHistory);
+        assertThat(repairedAtWithEccHistory.isPresent()).isTrue();
 
         verify(mockTableRepairMetrics, times(expectedTokenRanges)).repairTiming(eq(tableReference), anyLong(),
                 any(TimeUnit.class), eq(true));
     }
 
-    private OptionalLong lastRepairedSince(TableReference tableReference, long repairedSince)
+    private OptionalLong lastRepairedSince(TableReference tableReference, long repairedSince,
+            RepairHistoryProvider repairHistoryProvider)
     {
-        return lastRepairedSince(tableReference, repairedSince, tokenRangesFor(tableReference.getKeyspace()));
+        return lastRepairedSince(tableReference, repairedSince, tokenRangesFor(tableReference.getKeyspace()),
+                repairHistoryProvider);
     }
 
     private OptionalLong lastRepairedSince(TableReference tableReference, long repairedSince,
-            Set<LongTokenRange> expectedRepaired)
+            Set<LongTokenRange> expectedRepaired, RepairHistoryProvider repairHistoryProvider)
     {
         Set<LongTokenRange> expectedRepairedCopy = new HashSet<>(expectedRepaired);
-        Iterator<RepairEntry> repairEntryIterator = myRepairHistoryProvider.iterate(tableReference,
+        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(tableReference,
                 System.currentTimeMillis(), repairedSince,
                 repairEntry -> fullyRepaired(repairEntry) && expectedRepairedCopy.remove(repairEntry.getRange()));
 

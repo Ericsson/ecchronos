@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -80,6 +81,12 @@ public class TestTableRepairJob
     @Mock
     private TableStorageStates myTableStorageStates;
 
+    @Mock
+    private RepairHistory myRepairHistory;
+
+    @Mock
+    private RepairHistory.RepairSession myRepairSession;
+
     private TableRepairJob myRepairJob;
 
     private final TableReference myTableReference = tableReference(keyspaceName, tableName);
@@ -92,6 +99,8 @@ public class TestTableRepairJob
         doReturn(myRepairStateSnapshot).when(myRepairState).getSnapshot();
 
         doNothing().when(myRepairState).update();
+
+        when(myRepairHistory.newSession(any(), any(), any(), any())).thenReturn(myRepairSession);
 
         ScheduledJob.Configuration configuration = new ScheduledJob.ConfigurationBuilder()
                 .withPriority(ScheduledJob.Priority.LOW)
@@ -115,6 +124,7 @@ public class TestTableRepairJob
                 .withRepairConfiguration(myRepairConfiguration)
                 .withRepairLockType(RepairLockType.VNODE)
                 .withTableStorageStates(myTableStorageStates)
+                .withRepairHistory(myRepairHistory)
                 .build();
     }
 
@@ -267,6 +277,7 @@ public class TestTableRepairJob
         when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
         RepairJobView repairJobView = myRepairJob.getView();
 
+        assertThat(repairJobView.getId()).isEqualTo(myTableReference.getId());
         assertThat(repairJobView.getTableReference()).isEqualTo(myTableReference);
         assertThat(repairJobView.getRepairConfiguration()).isEqualTo(myRepairConfiguration);
         assertThat(repairJobView.getRepairStateSnapshot()).isEqualTo(myRepairStateSnapshot);

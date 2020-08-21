@@ -24,3 +24,20 @@ CREATE TABLE IF NOT EXISTS ecchronos.reject_configuration (
     end_hour int,
     end_minute int,
     PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute));
+
+CREATE TABLE IF NOT EXISTS ecchronos.repair_history(
+    table_id uuid,
+    node_id uuid,
+    repair_id timeuuid,
+    job_id uuid,
+    coordinator_id uuid,
+    range_begin text,
+    range_end text,
+    participants set<uuid>,
+    status text,
+    started_at timestamp,
+    finished_at timestamp,
+    PRIMARY KEY((table_id,node_id), repair_id))
+    WITH compaction = {'class': 'TimeWindowCompactionStrategy'}
+    AND default_time_to_live = 1728000
+    AND CLUSTERING ORDER BY (repair_id DESC);

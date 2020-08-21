@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
 import java.net.InetAddress;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Node resolver interface.
@@ -29,4 +30,6 @@ public interface NodeResolver
      * @return The node.
      */
     Optional<Node> fromIp(InetAddress inetAddress);
+
+    Optional<Node> fromUUID(UUID nodeId);
 }

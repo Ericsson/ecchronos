@@ -18,10 +18,13 @@ import com.ericsson.bss.cassandra.ecchronos.core.JmxProxy;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,14 +71,24 @@ public class RepairTask implements NotificationListener
     private volatile ScheduledFuture<?> myHangPreventFuture;
     private volatile int myCommand;
 
+    private final ConcurrentMap<LongTokenRange, RepairHistory.RepairSession> myRepairSessions = new ConcurrentHashMap<>();
+
     RepairTask(Builder builder)
     {
+        UUID jobId = Preconditions.checkNotNull(builder.jobId, "Job id must be set");
+        RepairHistory repairHistory = Preconditions.checkNotNull(builder.repairHistory, "Repair history must be set");
+
         myJmxProxyFactory = builder.jmxProxyFactory;
         myTableReference = builder.tableReference;
         myTokenRanges = builder.tokenRanges;
-        myReplicas = builder.replicas;
+        myReplicas = Preconditions.checkNotNull(builder.replicas, "Replicas must be set");
         myTableRepairMetrics = builder.tableRepairMetrics;
         myRepairConfiguration = builder.repairConfiguration;
+
+        for (LongTokenRange range : myTokenRanges)
+        {
+            myRepairSessions.put(range, repairHistory.newSession(myTableReference, jobId, range, myReplicas));
+        }
     }
 
     public void execute() throws ScheduledJobException
@@ -85,13 +98,17 @@ public class RepairTask implements NotificationListener
         long executionNanos;
         boolean successful = true;
 
+        myRepairSessions.values().forEach(RepairHistory.RepairSession::start);
+
         try (JmxProxy proxy = myJmxProxyFactory.connect())
         {
             rescheduleHangPrevention();
             repair(proxy);
+            finish(RepairStatus.SUCCESS);
         }
         catch (Exception e)
         {
+            finish(RepairStatus.FAILED);
             successful = false;
             String msg = "Unable to repair " + this;
             LOG.warn(msg);
@@ -110,6 +127,26 @@ public class RepairTask implements NotificationListener
         }
 
         lazySleep(executionNanos);
+    }
+
+    private void finish(RepairStatus repairStatus)
+    {
+        myRepairSessions.values().forEach(rs -> rs.finish(repairStatus));
+        myRepairSessions.clear();
+    }
+
+    private void finish(LongTokenRange range, RepairStatus repairStatus)
+    {
+        RepairHistory.RepairSession repairSession = myRepairSessions.remove(range);
+        if (repairSession == null)
+        {
+            LOG.error("{}: Finished range {} - but it was not included in the known repair sessions {}, all ranges are {}",
+                    this, range, myRepairSessions.keySet(), myTokenRanges);
+        }
+        else
+        {
+            repairSession.finish(repairStatus);
+        }
     }
 
     private void lazySleep(long executionNanos) throws ScheduledJobException
@@ -208,14 +245,11 @@ public class RepairTask implements NotificationListener
 
         options.put(RepairOptions.RANGES_KEY, rangesStringBuilder.toString());
 
-        if (myReplicas != null)
-        {
-            String replicasString = myReplicas.stream()
-                    .map(host -> host.getPublicAddress().getHostAddress())
-                    .collect(Collectors.joining(","));
+        String replicasString = myReplicas.stream()
+                .map(host -> host.getPublicAddress().getHostAddress())
+                .collect(Collectors.joining(","));
 
-            options.put(RepairOptions.HOSTS_KEY, replicasString);
-        }
+        options.put(RepairOptions.HOSTS_KEY, replicasString);
 
         return options;
     }
@@ -302,7 +336,9 @@ public class RepairTask implements NotificationListener
                 long start = Long.parseLong(matcher.group(1));
                 long end = Long.parseLong(matcher.group(2));
 
-                completedRanges.add(new LongTokenRange(start, end));
+                LongTokenRange completedRange = new LongTokenRange(start, end);
+                finish(completedRange, RepairStatus.SUCCESS);
+                completedRanges.add(completedRange);
             }
             else
             {
@@ -347,12 +383,26 @@ public class RepairTask implements NotificationListener
      */
     public static class Builder
     {
+        private RepairHistory repairHistory;
+        private UUID jobId;
         private JmxProxyFactory jmxProxyFactory;
         private TableReference tableReference;
         private Set<LongTokenRange> tokenRanges;
         private Set<Node> replicas;
         private TableRepairMetrics tableRepairMetrics;
         private RepairConfiguration repairConfiguration = RepairConfiguration.DEFAULT;
+
+        public Builder withRepairHistory(RepairHistory repairHistory)
+        {
+            this.repairHistory = repairHistory;
+            return this;
+        }
+
+        public Builder withJobId(UUID jobId)
+        {
+            this.jobId = jobId;
+            return this;
+        }
 
         public Builder withJMXProxyFactory(JmxProxyFactory jmxProxyFactory)
         {
@@ -474,10 +524,6 @@ public class RepairTask implements NotificationListener
     @VisibleForTesting
     Set<Node> getReplicas()
     {
-        if (myReplicas == null)
-        {
-            return Collections.emptySet();
-        }
         return Sets.newHashSet(myReplicas);
     }
 

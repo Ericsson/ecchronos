@@ -55,6 +55,12 @@ public class NodeResolverImpl implements NodeResolver
         return Optional.ofNullable(node);
     }
 
+    @Override
+    public Optional<Node> fromUUID(UUID nodeId)
+    {
+        return Optional.ofNullable(resolve(nodeId));
+    }
+
     private DriverNode resolve(UUID nodeId)
     {
         DriverNode node = idToHostMap.get(nodeId);

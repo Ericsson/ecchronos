@@ -27,9 +27,9 @@ import java.util.stream.Collectors;
 
 import org.assertj.core.util.Lists;
 import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.Insert;
@@ -50,9 +50,24 @@ import com.google.common.collect.Sets;
 
 import net.jcip.annotations.NotThreadSafe;
 
+@RunWith(Parameterized.class)
 @NotThreadSafe
 public class ITTableRepairJob extends TestBase
 {
+    enum RepairHistoryType
+    {
+        CASSANDRA, ECC
+    }
+
+    @Parameterized.Parameters
+    public static List<RepairHistoryType> repairHistoryTypes()
+    {
+        return Arrays.asList(RepairHistoryType.values());
+    }
+
+    @Parameterized.Parameter
+    public RepairHistoryType myRepairHistoryType;
+
     private static RepairFaultReporter mockFaultReporter;
 
     private static TableRepairMetrics mockTableRepairMetrics;
@@ -67,7 +82,11 @@ public class ITTableRepairJob extends TestBase
 
     private static HostStatesImpl myHostStates;
 
-    private static RepairHistoryProviderImpl myRepairHistoryProvider;
+    private static Node myLocalNode;
+
+    private static RepairHistoryProvider myRepairHistoryProvider;
+
+    private static NodeResolver myNodeResolver;
 
     private static RepairSchedulerImpl myRepairSchedulerImpl;
 
@@ -81,8 +100,8 @@ public class ITTableRepairJob extends TestBase
 
     private Set<TableReference> myRepairs = new HashSet<>();
 
-    @BeforeClass
-    public static void init()
+    @Parameterized.BeforeParam
+    public static void init(RepairHistoryType repairHistoryType)
     {
         mockFaultReporter = mock(RepairFaultReporter.class);
         mockTableRepairMetrics = mock(TableRepairMetrics.class);
@@ -102,9 +121,32 @@ public class ITTableRepairJob extends TestBase
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .build();
 
-        NodeResolver nodeResolver = new NodeResolverImpl(myMetadata);
-        myRepairHistoryProvider = new RepairHistoryProviderImpl(nodeResolver, session, s -> s,
-                TimeUnit.DAYS.toMillis(30));
+        myNodeResolver = new NodeResolverImpl(myMetadata);
+        myLocalNode = myNodeResolver.fromUUID(myLocalHost.getHostId()).orElseThrow(IllegalStateException::new);
+
+        ReplicationState replicationState = new ReplicationStateImpl(myNodeResolver, myMetadata, myLocalHost);
+
+        EccRepairHistory eccRepairHistory = EccRepairHistory.newBuilder()
+                .withReplicationState(replicationState)
+                .withLookbackTime(30, TimeUnit.DAYS)
+                .withLocalNode(myLocalNode)
+                .withSession(session)
+                .withStatementDecorator(s -> s)
+                .build();
+
+        if (repairHistoryType == RepairHistoryType.ECC)
+        {
+            myRepairHistoryProvider = eccRepairHistory;
+        }
+        else if (repairHistoryType == RepairHistoryType.CASSANDRA)
+        {
+            myRepairHistoryProvider = new RepairHistoryProviderImpl(myNodeResolver, session, s -> s,
+                    TimeUnit.DAYS.toMillis(30));
+        }
+        else
+        {
+            throw new IllegalArgumentException("Unknown repair history type for test");
+        }
 
         myLockFactory = CASLockFactory.builder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
@@ -116,8 +158,6 @@ public class ITTableRepairJob extends TestBase
                 .withLockFactory(myLockFactory)
                 .withRunInterval(1, TimeUnit.SECONDS)
                 .build();
-
-        ReplicationState replicationState = new ReplicationStateImpl(nodeResolver, myMetadata, myLocalHost);
 
         RepairStateFactoryImpl repairStateFactory = RepairStateFactoryImpl.builder()
                 .withReplicationState(replicationState)
@@ -136,6 +176,7 @@ public class ITTableRepairJob extends TestBase
                 .withRepairStateFactory(repairStateFactory)
                 .withRepairLockType(RepairLockType.VNODE)
                 .withTableStorageStates(mockTableStorageStates)
+                .withRepairHistory(eccRepairHistory)
                 .build();
 
         myRepairConfiguration = RepairConfiguration.newBuilder()
@@ -147,14 +188,28 @@ public class ITTableRepairJob extends TestBase
     @After
     public void clean()
     {
+        List<ResultSetFuture> futures = new ArrayList<>();
+
         for (TableReference tableReference : myRepairs)
         {
             myRepairSchedulerImpl.removeConfiguration(tableReference);
 
-            myAdminSession.execute(QueryBuilder.delete()
+            futures.add(myAdminSession.executeAsync(QueryBuilder.delete()
                     .from("system_distributed", "repair_history")
                     .where(QueryBuilder.eq("keyspace_name", tableReference.getKeyspace()))
-                    .and(QueryBuilder.eq("columnfamily_name", tableReference.getTable())));
+                    .and(QueryBuilder.eq("columnfamily_name", tableReference.getTable()))));
+            for (Host host : myMetadata.getAllHosts())
+            {
+                futures.add(myAdminSession.executeAsync(QueryBuilder.delete()
+                        .from("ecchronos", "repair_history")
+                        .where(QueryBuilder.eq("table_id", tableReference.getId()))
+                        .and(QueryBuilder.eq("node_id", host.getHostId()))));
+            }
+        }
+
+        for (ResultSetFuture future : futures)
+        {
+            future.getUninterruptibly();
         }
 
         reset(mockTableRepairMetrics);
@@ -162,7 +217,7 @@ public class ITTableRepairJob extends TestBase
         reset(mockTableStorageStates);
     }
 
-    @AfterClass
+    @Parameterized.AfterParam
     public static void closeConnections()
     {
         myHostStates.close();
@@ -463,16 +518,43 @@ public class ITTableRepairJob extends TestBase
         long started_at = timestamp;
         long finished_at = timestamp + 5;
 
-        Insert insert = QueryBuilder.insertInto("system_distributed", "repair_history")
-                .value("keyspace_name", tableReference.getKeyspace())
-                .value("columnfamily_name", tableReference.getTable())
-                .value("participants", participants)
-                .value("id", UUIDs.startOf(started_at))
-                .value("started_at", new Date(started_at))
-                .value("finished_at", new Date(finished_at))
-                .value("range_begin", range_begin)
-                .value("range_end", range_end)
-                .value("status", "SUCCESS");
+        Insert insert;
+
+        if (myRepairHistoryType == RepairHistoryType.CASSANDRA)
+        {
+            insert = QueryBuilder.insertInto("system_distributed", "repair_history")
+                    .value("keyspace_name", tableReference.getKeyspace())
+                    .value("columnfamily_name", tableReference.getTable())
+                    .value("participants", participants)
+                    .value("id", UUIDs.startOf(started_at))
+                    .value("started_at", new Date(started_at))
+                    .value("finished_at", new Date(finished_at))
+                    .value("range_begin", range_begin)
+                    .value("range_end", range_end)
+                    .value("status", "SUCCESS");
+        }
+        else
+        {
+            Set<UUID> nodes = participants.stream()
+                    .map(myNodeResolver::fromIp)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .map(Node::getId)
+                    .collect(Collectors.toSet());
+
+            insert = QueryBuilder.insertInto("ecchronos", "repair_history")
+                    .value("table_id", tableReference.getId())
+                    .value("node_id", myLocalNode.getId())
+                    .value("repair_id", UUIDs.startOf(started_at))
+                    .value("job_id", tableReference.getId())
+                    .value("coordinator_id", myLocalNode.getId())
+                    .value("range_begin", range_begin)
+                    .value("range_end", range_end)
+                    .value("participants", nodes)
+                    .value("status", "SUCCESS")
+                    .value("started_at", new Date(started_at))
+                    .value("finished_at", new Date(finished_at));
+        }
 
         myAdminSession.execute(insert);
     }

@@ -54,10 +54,39 @@ public class ReplicationStateImpl implements ReplicationState
     }
 
     @Override
+    public ImmutableSet<Node> getNodes(TableReference tableReference, LongTokenRange tokenRange)
+    {
+        String keyspace = tableReference.getKeyspace();
+
+        ImmutableMap<LongTokenRange, ImmutableSet<Node>> replication = maybeRenew(keyspace);
+
+        ImmutableSet<Node> nodes = replication.get(tokenRange);
+
+        if (nodes == null)
+        {
+            for (Map.Entry<LongTokenRange, ImmutableSet<Node>> entry : replication.entrySet())
+            {
+                if (entry.getKey().isCovering(tokenRange))
+                {
+                    nodes = entry.getValue();
+                    break;
+                }
+            }
+        }
+
+        return nodes;
+    }
+
+    @Override
     public Map<LongTokenRange, ImmutableSet<Node>> getTokenRangeToReplicas(TableReference tableReference)
     {
         String keyspace = tableReference.getKeyspace();
 
+        return maybeRenew(keyspace);
+    }
+
+    private ImmutableMap<LongTokenRange, ImmutableSet<Node>> maybeRenew(String keyspace)
+    {
         ImmutableMap<LongTokenRange, ImmutableSet<Node>> replication = buildTokenMap(keyspace);
 
         return keyspaceReplicationCache.compute(keyspace, (k, v) -> !replication.equals(v) ? replication : v);

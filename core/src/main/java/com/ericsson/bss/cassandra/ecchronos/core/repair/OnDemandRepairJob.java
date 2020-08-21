@@ -14,25 +14,24 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairGroupFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 /**
  * A Job that will schedule and run repair on one table once. It creates {@link RepairTask RepairTasks} to fully repair
@@ -51,6 +50,7 @@ public class OnDemandRepairJob extends ScheduledJob
     private final RepairLockType myRepairLockType;
     private final ReplicationState myReplicationState;
     private final Consumer<UUID> myOnFinishedHook;
+    private final RepairHistory myRepairHistory;
 
     private final TableRepairMetrics myTableRepairMetrics;
 
@@ -66,13 +66,14 @@ public class OnDemandRepairJob extends ScheduledJob
     {
         super(builder.configuration);
 
-        myTableReference = builder.tableReference;
-        myJmxProxyFactory = builder.jmxProxyFactory;
-        myTableRepairMetrics = builder.tableRepairMetrics;
-        myRepairConfiguration = builder.repairConfiguration;
-        myRepairLockType = builder.repairLockType;
-        myReplicationState = builder.replicationState;
-        myOnFinishedHook = builder.onFinishedHook;
+        myTableReference = Preconditions.checkNotNull(builder.tableReference, "Table reference must be set");
+        myJmxProxyFactory = Preconditions.checkNotNull(builder.jmxProxyFactory, "JMX Proxy Factory must be set");
+        myTableRepairMetrics = Preconditions.checkNotNull(builder.tableRepairMetrics, "Table repair metrics must be set");
+        myRepairConfiguration = Preconditions.checkNotNull(builder.repairConfiguration, "Repair configuration must be set");
+        myRepairLockType = Preconditions.checkNotNull(builder.repairLockType, "Repair lock type must be set");
+        myReplicationState = Preconditions.checkNotNull(builder.replicationState, "Replication state must be set");
+        myOnFinishedHook = Preconditions.checkNotNull(builder.onFinishedHook, "On finished hook must be set");
+        myRepairHistory = Preconditions.checkNotNull(builder.repairHistory, "Repair history must be set");
         myTokens = myReplicationState
                 .getTokenRangeToReplicas(myTableReference);
         myTasks = new CopyOnWriteArrayList<>(createRepairTasks(myTokens));
@@ -104,6 +105,8 @@ public class OnDemandRepairJob extends ScheduledJob
                     .withTableRepairMetrics(myTableRepairMetrics)
                     .withRepairResourceFactory(myRepairLockType.getLockFactory())
                     .withRepairLockFactory(repairLockFactory)
+                    .withRepairHistory(myRepairHistory)
+                    .withJobId(getId())
                     .build(Priority.HIGHEST.getValue()));
         }
         return taskList;
@@ -209,6 +212,7 @@ public class OnDemandRepairJob extends ScheduledJob
         private ReplicationState replicationState;
         private Consumer<UUID> onFinishedHook = table -> {
         };
+        private RepairHistory repairHistory;
 
         public Builder withTableReference(TableReference tableReference)
         {
@@ -249,6 +253,12 @@ public class OnDemandRepairJob extends ScheduledJob
         public Builder withRepairConfiguration(RepairConfiguration repairConfiguration)
         {
             this.repairConfiguration = repairConfiguration;
+            return this;
+        }
+
+        public Builder withRepairHistory(RepairHistory repairHistory)
+        {
+            this.repairHistory = repairHistory;
             return this;
         }
 

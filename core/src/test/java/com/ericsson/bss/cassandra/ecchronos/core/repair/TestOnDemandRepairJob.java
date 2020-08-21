@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
@@ -51,6 +52,9 @@ public class TestOnDemandRepairJob
 
     @Mock
     private ReplicationState myReplicationState;
+
+    @Mock
+    private RepairHistory myRepairHistory;
 
     @Mock
     private Node mockReplica1;
@@ -160,6 +164,7 @@ public class TestOnDemandRepairJob
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairLockType(RepairLockType.VNODE)
                 .withReplicationState(myReplicationState)
+                .withRepairHistory(myRepairHistory)
                 .build();
     }
 }

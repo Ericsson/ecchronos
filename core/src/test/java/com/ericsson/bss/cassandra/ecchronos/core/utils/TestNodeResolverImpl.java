@@ -69,6 +69,7 @@ public class TestNodeResolverImpl
         assertThat(node.getDatacenter()).isEqualTo("dc1");
 
         assertThat(nodeResolver.fromIp(address("127.0.0.1"))).containsSame(node);
+        assertThat(nodeResolver.fromUUID(host.getHostId())).containsSame(node);
     }
 
     @Test
@@ -90,6 +91,7 @@ public class TestNodeResolverImpl
 
         // New mapping for the node
         assertThat(nodeResolver.fromIp(address("127.0.0.5"))).containsSame(node);
+        assertThat(nodeResolver.fromUUID(host.getHostId())).containsSame(node);
 
         // Make sure the old mapping is removed
         assertThat(nodeResolver.fromIp(address("127.0.0.1"))).isEmpty();
@@ -114,6 +116,7 @@ public class TestNodeResolverImpl
 
         // New mapping for the node
         assertThat(nodeResolver.fromIp(address("127.0.0.5"))).containsSame(node);
+        assertThat(nodeResolver.fromUUID(host.getHostId())).containsSame(node);
 
         // If a new node is using the old ip we should return it
         Host newHost = addHost(address("127.0.0.1"), "dc2");
@@ -125,6 +128,8 @@ public class TestNodeResolverImpl
         assertThat(newNode.getId()).isEqualTo(newHost.getHostId());
         assertThat(newNode.getPublicAddress()).isEqualTo(address("127.0.0.1"));
         assertThat(newNode.getDatacenter()).isEqualTo("dc2");
+        assertThat(nodeResolver.fromUUID(newHost.getHostId())).containsSame(newNode);
+
         assertThat(newNode).isNotSameAs(node);
     }
 
@@ -132,6 +137,9 @@ public class TestNodeResolverImpl
     public void testGetNonExistingHost() throws Exception
     {
         Optional<Node> maybeNode = nodeResolver.fromIp(address("127.0.0.1"));
+        assertThat(maybeNode).isEmpty();
+
+        maybeNode = nodeResolver.fromUUID(UUID.randomUUID());
         assertThat(maybeNode).isEmpty();
     }
 

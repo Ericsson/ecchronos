@@ -15,26 +15,41 @@
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
 import java.util.Iterator;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.osgi.service.component.annotations.*;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairEntry;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.base.Predicate;
 
-@Component(service = RepairHistoryProvider.class)
+@Component(service = { RepairHistory.class, RepairHistoryProvider.class })
 @Designate(ocd = RepairHistoryService.Configuration.class)
-public class RepairHistoryService implements RepairHistoryProvider
+public class RepairHistoryService implements RepairHistory, RepairHistoryProvider
 {
+    private static final Logger LOG = LoggerFactory.getLogger(RepairHistoryService.class);
+
     private static final long DEFAULT_REPAIR_HISTORY_LOOKBACK_SECONDS = 30L * 24L * 60L * 60L;
+
+    public enum Provider
+    {
+        CASSANDRA,
+        ECC
+    }
 
     @Reference(service = StatementDecorator.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile StatementDecorator statementDecorator;
@@ -45,14 +60,51 @@ public class RepairHistoryService implements RepairHistoryProvider
     @Reference(service = NodeResolver.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile NodeResolver nodeResolver;
 
+    @Reference(service = ReplicationState.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    private volatile ReplicationState replicationState;
+
+    private volatile EccRepairHistory delegateRepairHistory;
+
     private volatile RepairHistoryProvider delegateRepairHistoryProvider;
 
     @Activate
     public void activate(Configuration configuration)
     {
+        Host localHost = nativeConnectionProvider.getLocalHost();
+        Optional<Node> localNode = nodeResolver.fromUUID(localHost.getHostId());
+        if (!localNode.isPresent())
+        {
+            LOG.error("Local node ({}) not found in resolver", localHost.getHostId());
+            throw new IllegalStateException("Local node (" + localHost.getHostId() + ") not found in resolver");
+        }
+
         long lookbackTimeInMillis = configuration.lookbackTimeSeconds() * 1000;
-        delegateRepairHistoryProvider = new RepairHistoryProviderImpl(nodeResolver,
-                nativeConnectionProvider.getSession(), statementDecorator, lookbackTimeInMillis);
+        delegateRepairHistory = EccRepairHistory.newBuilder()
+                .withLocalNode(localNode.get())
+                .withReplicationState(replicationState)
+                .withSession(nativeConnectionProvider.getSession())
+                .withStatementDecorator(statementDecorator)
+                .withLookbackTime(lookbackTimeInMillis, TimeUnit.MILLISECONDS)
+                .build();
+
+        switch (configuration.provider())
+        {
+        case ECC:
+            delegateRepairHistoryProvider = delegateRepairHistory;
+            break;
+        case CASSANDRA:
+        default:
+            delegateRepairHistoryProvider = new RepairHistoryProviderImpl(nodeResolver,
+                    nativeConnectionProvider.getSession(), statementDecorator, lookbackTimeInMillis);
+            break;
+        }
+    }
+
+    @Override
+    public RepairSession newSession(TableReference tableReference, UUID jobId, LongTokenRange range,
+            Set<Node> participants)
+    {
+        return delegateRepairHistory.newSession(tableReference, jobId, range, participants);
     }
 
     @Override
@@ -72,6 +124,9 @@ public class RepairHistoryService implements RepairHistoryProvider
     @ObjectClassDefinition
     public @interface Configuration
     {
+        @AttributeDefinition(name = "The provider to use for repair history", description = "The provider to use for repair history")
+        Provider provider() default Provider.ECC;
+
         @AttributeDefinition(name = "Repair history lookback time", description = "The lookback time in seconds for when the repair_history table is queried to get initial repair state at startup")
         long lookbackTimeSeconds() default DEFAULT_REPAIR_HISTORY_LOOKBACK_SECONDS;
     }

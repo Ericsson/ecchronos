@@ -100,6 +100,8 @@ public class TestReplicationStateImpl
 
         assertThat(tokenRangeToReplicas.keySet()).containsExactlyInAnyOrder(range1);
         assertThat(tokenRangeToReplicas.get(range1)).containsExactlyInAnyOrder(mockNode1, mockNode2, mockNode3);
+
+        assertThat(replicationState.getNodes(tableReference, range1)).isSameAs(tokenRangeToReplicas.get(range1));
     }
 
     @Test
@@ -123,6 +125,9 @@ public class TestReplicationStateImpl
         assertThat(tokenRangeToReplicas.keySet()).containsExactlyInAnyOrder(range1, range2);
         assertThat(tokenRangeToReplicas.get(range1)).containsExactlyInAnyOrder(mockNode1, mockNode2);
         assertThat(tokenRangeToReplicas.get(range2)).containsExactlyInAnyOrder(mockNode1, mockNode3);
+
+        assertThat(replicationState.getNodes(tableReference, range1)).isSameAs(tokenRangeToReplicas.get(range1));
+        assertThat(replicationState.getNodes(tableReference, range2)).isSameAs(tokenRangeToReplicas.get(range2));
     }
 
     @Test
@@ -146,6 +151,9 @@ public class TestReplicationStateImpl
         assertThat(tokenRangeToReplicas.keySet()).containsExactlyInAnyOrder(range1, range2);
         assertThat(tokenRangeToReplicas.get(range1)).containsExactlyInAnyOrder(mockNode1, mockNode2);
         assertThat(tokenRangeToReplicas.get(range1)).isSameAs(tokenRangeToReplicas.get(range2));
+
+        assertThat(replicationState.getNodes(tableReference, range1)).isSameAs(tokenRangeToReplicas.get(range1));
+        assertThat(replicationState.getNodes(tableReference, range2)).isSameAs(tokenRangeToReplicas.get(range2));
     }
 
     @Test
@@ -167,5 +175,59 @@ public class TestReplicationStateImpl
         assertThat(tokenRangeToReplicas.get(range1)).containsExactlyInAnyOrder(mockNode1, mockNode2, mockNode3);
 
         assertThat(replicationState.getTokenRangeToReplicas(tableReference)).isSameAs(tokenRangeToReplicas);
+
+        assertThat(replicationState.getNodes(tableReference, range1)).isSameAs(tokenRangeToReplicas.get(range1));
+    }
+
+    @Test
+    public void testGetNodesForSubRange() throws Exception
+    {
+        LongTokenRange subRange = new LongTokenRange(2, 3);
+        TableReference tableReference = tableReference("ks", "tb");
+
+        TokenRange tokenRange = TokenUtil.getRange(1, 5);
+
+        doReturn(Sets.newHashSet(tokenRange)).when(mockMetadata).getTokenRanges(eq("ks"), eq(mockReplica1));
+        doReturn(Sets.newHashSet(mockReplica1, mockReplica2, mockReplica3)).when(mockMetadata).getReplicas(eq("ks"), eq(tokenRange));
+
+        ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockMetadata, mockReplica1);
+
+        ImmutableSet<Node> nodes = replicationState.getNodes(tableReference, subRange);
+
+        assertThat(nodes).containsExactlyInAnyOrder(mockNode1, mockNode2, mockNode3);
+    }
+
+    @Test
+    public void testGetNodesForNonExistingSubRange() throws Exception
+    {
+        LongTokenRange subRange = new LongTokenRange(6, 7);
+        TableReference tableReference = tableReference("ks", "tb");
+
+        TokenRange tokenRange = TokenUtil.getRange(1, 5);
+
+        doReturn(Sets.newHashSet(tokenRange)).when(mockMetadata).getTokenRanges(eq("ks"), eq(mockReplica1));
+        doReturn(Sets.newHashSet(mockReplica1, mockReplica2, mockReplica3)).when(mockMetadata).getReplicas(eq("ks"), eq(tokenRange));
+
+        ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockMetadata, mockReplica1);
+
+        assertThat(replicationState.getNodes(tableReference, subRange)).isNull();
+    }
+
+    @Test
+    public void testGetNodesForIntersectingSubRange() throws Exception
+    {
+        LongTokenRange subRange = new LongTokenRange(4, 7);
+        TableReference tableReference = tableReference("ks", "tb");
+
+        TokenRange existingRange = TokenUtil.getRange(1, 5);
+        TokenRange existingRange2 = TokenUtil.getRange(5, 9);
+
+        doReturn(Sets.newHashSet(existingRange, existingRange2)).when(mockMetadata).getTokenRanges(eq("ks"), eq(mockReplica1));
+        doReturn(Sets.newHashSet(mockReplica1, mockReplica2, mockReplica3)).when(mockMetadata).getReplicas(eq("ks"), eq(existingRange));
+        doReturn(Sets.newHashSet(mockReplica1, mockReplica2, mockReplica3)).when(mockMetadata).getReplicas(eq("ks"), eq(existingRange2));
+
+        ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockMetadata, mockReplica1);
+
+        assertThat(replicationState.getNodes(tableReference, subRange)).isNull();
     }
 }

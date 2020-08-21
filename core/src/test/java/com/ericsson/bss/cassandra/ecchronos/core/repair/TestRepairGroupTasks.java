@@ -16,13 +16,15 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,6 +43,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxy;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.DummyLock;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
@@ -77,7 +81,14 @@ public class TestRepairGroupTasks
     @Mock
     private RepairLockFactory mockRepairLockFactory;
 
+    @Mock
+    private RepairHistory mockRepairHistory;
+
+    private final UUID jobId = UUID.randomUUID();
+
     private RepairConfiguration repairConfiguration;
+
+    private final ConcurrentMap<LongTokenRange, RepairHistory.RepairSession> repairSessions = new ConcurrentHashMap<>();
 
     @Before
     public void init()
@@ -87,6 +98,13 @@ public class TestRepairGroupTasks
                 .withRepairWarningTime(RUN_INTERVAL_IN_DAYS * 2, TimeUnit.DAYS)
                 .withRepairErrorTime(GC_GRACE_DAYS, TimeUnit.DAYS)
                 .build();
+
+        when(mockRepairHistory.newSession(eq(tableReference), eq(jobId), any(), any())).thenAnswer(invocation -> {
+            LongTokenRange range = invocation.getArgumentAt(2, LongTokenRange.class);
+            RepairHistory.RepairSession repairSession = mock(RepairHistory.RepairSession.class);
+            repairSessions.put(range, repairSession);
+            return repairSession;
+        });
     }
 
     @Test
@@ -107,6 +125,9 @@ public class TestRepairGroupTasks
         RepairGroup repairGroup = builderFor(replicaRepairGroup).build(priority);
 
         assertThat(repairGroup.execute()).isTrue();
+
+        verify(repairSessions.get(range(1, 2))).start();
+        verify(repairSessions.get(range(1, 2))).finish(RepairStatus.SUCCESS);
     }
 
     @Test (timeout = 1000L)
@@ -140,6 +161,11 @@ public class TestRepairGroupTasks
                 .build(priority);
 
         assertThat(repairGroup.execute()).isFalse();
+
+        verify(repairSessions.get(range(1, 2))).start();
+        verify(repairSessions.get(range(2, 3)), never()).start();
+        verify(repairSessions.get(range(1, 2))).finish(RepairStatus.SUCCESS);
+        verify(repairSessions.get(range(2, 3)), never()).finish(RepairStatus.FAILED);
     }
 
     private RepairGroup.Builder builderFor(ReplicaRepairGroup replicaRepairGroup)
@@ -151,7 +177,9 @@ public class TestRepairGroupTasks
                 .withJmxProxyFactory(mockJmxProxyFactory)
                 .withTableRepairMetrics(mockTableRepairMetrics)
                 .withRepairResourceFactory(mockRepairResourceFactory)
-                .withRepairLockFactory(mockRepairLockFactory);
+                .withRepairLockFactory(mockRepairLockFactory)
+                .withRepairHistory(mockRepairHistory)
+                .withJobId(jobId);
     }
 
     private void progressAndComplete(NotificationListener notificationListener, LongTokenRange range)

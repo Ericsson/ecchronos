@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
 import java.net.InetAddress;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.osgi.service.component.annotations.*;
 
@@ -45,5 +46,11 @@ public class NodeResolverService implements NodeResolver
     public Optional<Node> fromIp(InetAddress inetAddress)
     {
         return delegateNodeResolver.fromIp(inetAddress);
+    }
+
+    @Override
+    public Optional<Node> fromUUID(UUID nodeId)
+    {
+        return delegateNodeResolver.fromUUID(nodeId);
     }
 }

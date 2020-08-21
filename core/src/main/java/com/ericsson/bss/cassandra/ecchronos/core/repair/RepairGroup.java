@@ -18,6 +18,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
@@ -48,6 +49,8 @@ public class RepairGroup extends ScheduledTask
     private final RepairLockFactory myRepairLockFactory;
     private final BigInteger myTokensPerRepair;
     private final List<TableRepairPolicy> myRepairPolicies;
+    private final RepairHistory myRepairHistory;
+    private final UUID myJobId;
 
     public RepairGroup(int priority, Builder builder)
     {
@@ -61,6 +64,8 @@ public class RepairGroup extends ScheduledTask
         myRepairLockFactory = Preconditions.checkNotNull(builder.repairLockFactory, "Repair lock factory must be set");
         myTokensPerRepair = Preconditions.checkNotNull(builder.tokensPerRepair, "Tokens per repair must be set");
         myRepairPolicies = new ArrayList<>(Preconditions.checkNotNull(builder.repairPolicies, "Repair policies must be set"));
+        myRepairHistory = Preconditions.checkNotNull(builder.repairHistory, "Repair history must be set");
+        myJobId = Preconditions.checkNotNull(builder.jobId, "Job id must be set");
     }
 
     @Override
@@ -134,7 +139,9 @@ public class RepairGroup extends ScheduledTask
                 .withTableReference(myTableReference)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairConfiguration(myRepairConfiguration)
-                .withReplicas(myReplicaRepairGroup.getReplicas());
+                .withReplicas(myReplicaRepairGroup.getReplicas())
+                .withRepairHistory(myRepairHistory)
+                .withJobId(myJobId);
 
         for (LongTokenRange range : myReplicaRepairGroup)
         {
@@ -165,6 +172,8 @@ public class RepairGroup extends ScheduledTask
         private TableRepairMetrics tableRepairMetrics;
         private RepairResourceFactory repairResourceFactory;
         private RepairLockFactory repairLockFactory;
+        private RepairHistory repairHistory;
+        private UUID jobId;
 
         public Builder withTableReference(TableReference tableReference)
         {
@@ -217,6 +226,18 @@ public class RepairGroup extends ScheduledTask
         public Builder withTokensPerRepair(BigInteger tokensPerRepair)
         {
             this.tokensPerRepair = tokensPerRepair;
+            return this;
+        }
+
+        public Builder withRepairHistory(RepairHistory repairHistory)
+        {
+            this.repairHistory = repairHistory;
+            return this;
+        }
+
+        public Builder withJobId(UUID jobId)
+        {
+            this.jobId = jobId;
             return this;
         }
 

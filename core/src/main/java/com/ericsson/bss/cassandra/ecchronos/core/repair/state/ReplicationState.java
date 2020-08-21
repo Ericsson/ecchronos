@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Telefonaktiebolaget LM Ericsson
+ * Copyright 2020 Telefonaktiebolaget LM Ericsson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,16 @@ import com.google.common.collect.ImmutableSet;
  */
 public interface ReplicationState
 {
+    /**
+     * Get the nodes that are responsible for the provided token range.
+     * The provided token range can be a sub range of an existing one.
+     *
+     * @param tableReference The table used to calculate the proper replication.
+     * @param tokenRange The token range to get nodes for.
+     * @return The responsible nodes or null if either the token range does not exist or is intersecting two ranges.
+     */
+    ImmutableSet<Node> getNodes(TableReference tableReference, LongTokenRange tokenRange);
+
     /**
      * Get a map of the current replication state for the provided table.
      *

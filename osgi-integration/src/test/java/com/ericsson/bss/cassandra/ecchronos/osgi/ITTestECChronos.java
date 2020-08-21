@@ -14,29 +14,24 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.osgi;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-import javax.inject.Inject;
-
+import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
-import com.ericsson.bss.cassandra.ecchronos.core.osgi.DefaultRepairConfigurationProviderComponent;
-import com.ericsson.bss.cassandra.ecchronos.core.osgi.ReplicationStateService;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.osgi.DefaultRepairConfigurationProviderComponent;
+import com.ericsson.bss.cassandra.ecchronos.core.osgi.ReplicationStateService;
 import com.ericsson.bss.cassandra.ecchronos.core.osgi.ScheduleManagerService;
 import com.ericsson.bss.cassandra.ecchronos.core.osgi.TimeBasedRunPolicyService;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
@@ -46,6 +41,10 @@ import org.osgi.framework.BundleContext;
 import org.osgi.service.component.runtime.ServiceComponentRuntime;
 import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO;
 import org.osgi.util.tracker.ServiceTracker;
+
+import javax.inject.Inject;
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
