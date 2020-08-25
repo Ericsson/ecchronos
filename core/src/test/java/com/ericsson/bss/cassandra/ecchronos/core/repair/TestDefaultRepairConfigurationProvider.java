@@ -14,36 +14,23 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.SchemaChangeListener;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.TableMetadata;
+import com.datastax.driver.core.*;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestDefaultRepairConfigurationProvider
@@ -51,7 +38,7 @@ public class TestDefaultRepairConfigurationProvider
     private static final String KEYSPACE_NAME = "keyspace";
     private static final String TABLE_NAME = "table";
 
-    private static final TableReference TABLE_REFERENCE = new TableReference(KEYSPACE_NAME, TABLE_NAME);
+    private static final TableReference TABLE_REFERENCE = tableReference(KEYSPACE_NAME, TABLE_NAME);
 
     @Mock
     private Session session;
@@ -70,6 +57,8 @@ public class TestDefaultRepairConfigurationProvider
 
     @Mock
     private RepairScheduler myRepairScheduler;
+
+    private TableReferenceFactory myTableReferenceFactory = new MockTableReferenceFactory();
 
     private NativeConnectionProvider myNativeConnectionProvider;
 
@@ -232,7 +221,8 @@ public class TestDefaultRepairConfigurationProvider
                 .withReplicatedTableProvider(myReplicatedTableProviderMock)
                 .withCluster(myNativeConnectionProvider.getSession().getCluster())
                 .withDefaultRepairConfiguration(RepairConfiguration.DEFAULT)
-                .withRepairScheduler(myRepairScheduler);
+                .withRepairScheduler(myRepairScheduler)
+                .withTableReferenceFactory(myTableReferenceFactory);
     }
 
     private TableMetadata mockNonReplicatedTable(TableReference tableReference)

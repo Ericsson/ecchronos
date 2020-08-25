@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Telefonaktiebolaget LM Ericsson
+ * Copyright 2020 Telefonaktiebolaget LM Ericsson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,16 @@
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
 /**
- * An interface containing keyspace/table mapping to avoid passing around two strings to refer to one specific table.
+ * A table reference factory to generate table references.
  */
-public interface TableReference
+public interface TableReferenceFactory
 {
     /**
-     * Get the table name.
+     * Get a table reference for the provided keyspace/table pair.
      *
-     * @return The table name.
+     * @param keyspace The keyspace name.
+     * @param table The table name.
+     * @return A table reference for the provided keyspace/table pair..
      */
-    String getTable();
-
-    /**
-     * Get the keyspace name.
-     *
-     * @return The keyspace name.
-     */
-    String getKeyspace();
+    TableReference forTable(String keyspace, String table);
 }

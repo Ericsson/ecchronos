@@ -14,17 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.inject.Inject;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.Path;
-
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
@@ -33,7 +22,18 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.types.CompleteRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.google.gson.Gson;
+
+import javax.inject.Inject;
+import javax.ws.rs.NotFoundException;
+import javax.ws.rs.Path;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * When updating the path it should also be updated in the OSGi component.
@@ -45,12 +45,15 @@ public class RepairManagementRESTImpl implements RepairManagementREST
 
     private final RepairScheduler myRepairScheduler;
     private final OnDemandRepairScheduler myOnDemandRepairScheduler;
+    private final TableReferenceFactory myTableReferenceFactory;
 
     @Inject
-    public RepairManagementRESTImpl(RepairScheduler repairScheduler, OnDemandRepairScheduler demandRepairScheduler)
+    public RepairManagementRESTImpl(RepairScheduler repairScheduler, OnDemandRepairScheduler demandRepairScheduler,
+            TableReferenceFactory tableReferenceFactory)
     {
         myRepairScheduler = repairScheduler;
         myOnDemandRepairScheduler = demandRepairScheduler;
+        myTableReferenceFactory = tableReferenceFactory;
     }
 
     @Override
@@ -73,8 +76,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     @Override
     public String tableStatus(String keyspace, String table)
     {
-        List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(
-                job -> new TableReference(keyspace, table).equals(job.getTableReference()));
+        List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(forTable(keyspace, table));
 
         return GSON.toJson(repairJobs);
     }
@@ -84,7 +86,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     {
         try
         {
-            Optional<RepairJobView>  repairJobView = getCompleteRepairJob(new TableReference(keyspace, table), UUID.fromString(id));
+            Optional<RepairJobView> repairJobView = getCompleteRepairJob(forTable(keyspace, table),
+                    UUID.fromString(id));
             return repairJobView
                     .map(CompleteRepairJob::new)
                     .map(GSON::toJson)
@@ -115,8 +118,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     @Override
     public String tableConfig(String keyspace, String table)
     {
-        List<TableRepairConfig> configurations = getTableRepairConfigs(
-                job -> job.getTableReference().equals(new TableReference(keyspace, table)));
+        List<TableRepairConfig> configurations = getTableRepairConfigs(forTable(keyspace, table));
 
         return GSON.toJson(configurations);
     }
@@ -127,7 +129,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         RepairJobView repairJobView = null;
         try
         {
-            repairJobView = myOnDemandRepairScheduler.scheduleJob(new TableReference(keyspace, table));
+            repairJobView = myOnDemandRepairScheduler.scheduleJob(myTableReferenceFactory.forTable(keyspace, table));
         } catch (EcChronosException e)
         {
             throw new NotFoundException(e);
@@ -145,14 +147,13 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                 .collect(Collectors.toList());
     }
 
-    private Optional<RepairJobView> getCompleteRepairJob(TableReference tableReference, UUID id)
+    private Optional<RepairJobView> getCompleteRepairJob(Predicate<RepairJobView> filter, UUID id)
     {
-        Predicate<RepairJobView> matchesTable = job -> job.getTableReference().equals(tableReference);
         Predicate<RepairJobView> matchesId = job -> job.getId().equals(id);
         return Stream
                 .concat(myRepairScheduler.getCurrentRepairJobs().stream(),
                         myOnDemandRepairScheduler.getCurrentRepairJobs().stream())
-                .filter(matchesTable.and(matchesId))
+                .filter(filter.and(matchesId))
                 .findFirst();
     }
 
@@ -164,5 +165,15 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                 .filter(filter)
                 .map(TableRepairConfig::new)
                 .collect(Collectors.toList());
+    }
+
+    private Predicate<RepairJobView> forTable(String keyspace, String table)
+    {
+        return tableView ->
+        {
+            TableReference tableReference = tableView.getTableReference();
+            return tableReference.getKeyspace().equals(keyspace)
+                    && tableReference.getTable().equals(table);
+        };
     }
 }

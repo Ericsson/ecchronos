@@ -14,14 +14,10 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.ignoreStubs;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-
-import java.util.concurrent.TimeUnit;
-
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,15 +25,17 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import java.util.concurrent.TimeUnit;
+
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestTableMetricHolder
 {
-    private final TableReference myTableReference = new TableReference("keyspace", "table");
+    private final TableReference myTableReference = tableReference("keyspace", "table");
 
     private final MetricRegistry myMetricRegistry = new MetricRegistry();
 

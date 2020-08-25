@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurati
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -55,6 +56,9 @@ public class DefaultRepairConfigurationProviderComponent
     @Reference (service = RepairScheduler.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile RepairScheduler myRepairScheduler;
 
+    @Reference(service = TableReferenceFactory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    private volatile TableReferenceFactory myTableReferenceFactory;
+
     private volatile DefaultRepairConfigurationProvider myDelegateRepairConfigurationProvider;
 
     @Activate
@@ -83,6 +87,7 @@ public class DefaultRepairConfigurationProviderComponent
                     .withRepairScheduler(myRepairScheduler)
                     .withCluster(myNativeConnectionProvider.getSession().getCluster())
                     .withDefaultRepairConfiguration(repairConfiguration)
+                    .withTableReferenceFactory(myTableReferenceFactory)
                     .build();
         }
     }

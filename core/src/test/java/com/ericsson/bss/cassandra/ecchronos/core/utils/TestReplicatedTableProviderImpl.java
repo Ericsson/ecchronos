@@ -14,26 +14,27 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.datastax.driver.core.Host;
+import com.datastax.driver.core.KeyspaceMetadata;
+import com.datastax.driver.core.Metadata;
+import com.datastax.driver.core.TableMetadata;
+import com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.TableMetadata;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestReplicatedTableProviderImpl
@@ -42,6 +43,8 @@ public class TestReplicatedTableProviderImpl
 
     @Mock
     private Metadata myMetadata;
+
+    private TableReferenceFactory myTableReferenceFactory = new MockTableReferenceFactory();
 
     private List<KeyspaceMetadata> myKeyspaces = new ArrayList<>();
 
@@ -54,7 +57,7 @@ public class TestReplicatedTableProviderImpl
 
         when(myMetadata.getKeyspaces()).thenReturn(myKeyspaces);
 
-        myReplicatedTableProviderImpl = new ReplicatedTableProviderImpl(localHost, myMetadata);
+        myReplicatedTableProviderImpl = new ReplicatedTableProviderImpl(localHost, myMetadata, myTableReferenceFactory);
     }
 
     @Test
@@ -140,7 +143,8 @@ public class TestReplicatedTableProviderImpl
 
         mockKeyspace("user_keyspace", replication, "table1");
 
-        ReplicatedTableProviderImpl replicatedTableProviderImpl = new ReplicatedTableProviderImpl(localHost, myMetadata);
+        ReplicatedTableProviderImpl replicatedTableProviderImpl = new ReplicatedTableProviderImpl(localHost, myMetadata,
+                myTableReferenceFactory);
         assertThat(replicatedTableProviderImpl.accept("user_keyspace")).isFalse();
     }
 
@@ -150,7 +154,8 @@ public class TestReplicatedTableProviderImpl
         Host localHost = mockHost(null);
         mockKeyspace("user_keyspace", simpleStrategy(3), "table1");
 
-        ReplicatedTableProviderImpl replicatedTableProviderImpl = new ReplicatedTableProviderImpl(localHost, myMetadata);
+        ReplicatedTableProviderImpl replicatedTableProviderImpl = new ReplicatedTableProviderImpl(localHost, myMetadata,
+                myTableReferenceFactory);
         assertThat(replicatedTableProviderImpl.accept("user_keyspace")).isTrue();
     }
 
@@ -165,11 +170,11 @@ public class TestReplicatedTableProviderImpl
         mockKeyspace("user_keyspace", replication, "table1", "table2");
 
         TableReference[] expectedTableReferences = new TableReference[] {
-                new TableReference("system_auth", "roles"),
-                new TableReference("system_auth", "role_members"),
-                new TableReference("system_auth", "role_permissions"),
-                new TableReference("user_keyspace", "table1"),
-                new TableReference("user_keyspace", "table2")
+                tableReference("system_auth", "roles"),
+                tableReference("system_auth", "role_members"),
+                tableReference("system_auth", "role_permissions"),
+                tableReference("user_keyspace", "table1"),
+                tableReference("user_keyspace", "table2")
         };
 
         assertThat(myReplicatedTableProviderImpl.getAll()).containsExactlyInAnyOrder(expectedTableReferences);
@@ -188,11 +193,11 @@ public class TestReplicatedTableProviderImpl
         mockKeyspace("user_keyspace", replication, "table1", "table2");
 
         TableReference[] expectedTableReferences = new TableReference[] {
-                new TableReference("system_auth", "roles"),
-                new TableReference("system_auth", "role_members"),
-                new TableReference("system_auth", "role_permissions"),
-                new TableReference("user_keyspace", "table1"),
-                new TableReference("user_keyspace", "table2")
+                tableReference("system_auth", "roles"),
+                tableReference("system_auth", "role_members"),
+                tableReference("system_auth", "role_permissions"),
+                tableReference("user_keyspace", "table1"),
+                tableReference("user_keyspace", "table2")
         };
 
         assertThat(myReplicatedTableProviderImpl.getAll()).containsExactlyInAnyOrder(expectedTableReferences);

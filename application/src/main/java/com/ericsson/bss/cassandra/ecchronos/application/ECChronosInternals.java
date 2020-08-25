@@ -19,21 +19,13 @@ import com.datastax.driver.core.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
-import com.ericsson.bss.cassandra.ecchronos.core.CASLockFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
-import com.ericsson.bss.cassandra.ecchronos.core.HostStatesImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactoryImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
-import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStatesImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.*;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetricsImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManagerImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProviderImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +46,7 @@ public class ECChronosInternals implements Closeable
     private final TableStorageStatesImpl myTableStorageStatesImpl;
     private final TableRepairMetricsImpl myTableRepairMetricsImpl;
 
+    private final TableReferenceFactory myTableReferenceFactory;
     private final JmxProxyFactory myJmxProxyFactory;
 
     private final CASLockFactory myLockFactory;
@@ -84,7 +77,9 @@ public class ECChronosInternals implements Closeable
         Host host = nativeConnectionProvider.getLocalHost();
         Metadata metadata = nativeConnectionProvider.getSession().getCluster().getMetadata();
 
-        myReplicatedTableProvider = new ReplicatedTableProviderImpl(host, metadata);
+        myTableReferenceFactory = new TableReferenceFactoryImpl(metadata);
+
+        myReplicatedTableProvider = new ReplicatedTableProviderImpl(host, metadata, myTableReferenceFactory);
 
         if (statisticsProperties.isEnabled())
         {
@@ -110,6 +105,11 @@ public class ECChronosInternals implements Closeable
                 .withLockFactory(myLockFactory)
                 .withRunInterval(schedulerProperties.getRunInterval(), schedulerProperties.getTimeUnit())
                 .build();
+    }
+
+    public TableReferenceFactory getTableReferenceFactory()
+    {
+        return myTableReferenceFactory;
     }
 
     public HostStates getHostStates()

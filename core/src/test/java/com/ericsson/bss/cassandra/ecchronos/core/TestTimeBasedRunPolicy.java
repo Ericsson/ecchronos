@@ -14,40 +14,29 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.awaitility.Awaitility.await;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.concurrent.TimeUnit;
-
+import com.datastax.driver.core.*;
+import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairJob;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
+import net.jcip.annotations.NotThreadSafe;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
-import com.datastax.driver.core.exceptions.NoHostAvailableException;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 
-import net.jcip.annotations.NotThreadSafe;
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.awaitility.Awaitility.await;
+import static org.mockito.Mockito.*;
 
 @NotThreadSafe
 @RunWith(Parameterized.class)
@@ -114,13 +103,13 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
 
         policyWithClock(clock);
 
-        when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace, table));
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
         insertEntry(keyspace, table, 3, 0, 5, 0);
 
         long delay = myRunPolicy.validate(myRepairJobMock);
 
         assertThat(delay).isEqualTo(expectedDelay);
-        assertThat(myRunPolicy.shouldRun(new TableReference(keyspace, table))).isFalse();
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isFalse();
     }
 
     @Test
@@ -132,11 +121,11 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
 
         policyWithClock(clock);
 
-        when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace, table));
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
         insertEntry(keyspace, table, 2, 0, 4, 30);
 
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
-        assertThat(myRunPolicy.shouldRun(new TableReference(keyspace, table))).isTrue();
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
     }
 
     @Test
@@ -148,11 +137,11 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
 
         policyWithClock(clock);
 
-        when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace, table));
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
         insertEntry(keyspace, table, 5, 0, 6, 0);
 
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
-        assertThat(myRunPolicy.shouldRun(new TableReference(keyspace, table))).isTrue();
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
     }
 
     @Test
@@ -167,13 +156,13 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
 
         policyWithClock(clock);
 
-        when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace, table));
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
         insertEntry(keyspace, table, 6, 30, 5, 30);
 
         long delay = myRunPolicy.validate(myRepairJobMock);
 
         assertThat(delay).isEqualTo(expectedDelay);
-        assertThat(myRunPolicy.shouldRun(new TableReference(keyspace, table))).isFalse();
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isFalse();
     }
 
     @Test
@@ -188,13 +177,13 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
 
         policyWithClock(clock);
 
-        when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace, table));
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
         insertEntry(keyspace, table, 3, 30, 2, 30);
 
         long delay = myRunPolicy.validate(myRepairJobMock);
 
         assertThat(delay).isEqualTo(expectedDelay);
-        assertThat(myRunPolicy.shouldRun(new TableReference(keyspace, table))).isFalse();
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isFalse();
     }
 
     @Test
@@ -206,11 +195,11 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
 
         policyWithClock(clock);
 
-        when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace, table));
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
         insertEntry(keyspace, table, 6, 30, 3, 30);
 
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
-        assertThat(myRunPolicy.shouldRun(new TableReference(keyspace, table))).isTrue();
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
     }
 
     @Test
@@ -222,15 +211,15 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
         Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
         policyWithClock(clock);
 
-        when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace1, table));
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace1, table));
         insertEntry("*", table, 0, 0, 0, 0);
 
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(DEFAULT_REJECT_TIME);
-        assertThat(myRunPolicy.shouldRun(new TableReference(keyspace1, table))).isFalse();
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace1, table))).isFalse();
 
-        when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace2, table));
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace2, table));
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(DEFAULT_REJECT_TIME);
-        assertThat(myRunPolicy.shouldRun(new TableReference(keyspace2, table))).isFalse();
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace2, table))).isFalse();
     }
 
     @Test
@@ -241,11 +230,11 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
         Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
         policyWithClock(clock);
 
-        when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace, table));
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
         insertEntry(keyspace, table, 0, 0, 0, 0);
 
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(DEFAULT_REJECT_TIME);
-        assertThat(myRunPolicy.shouldRun(new TableReference(keyspace, table))).isFalse();
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isFalse();
     }
 
     @Test
@@ -256,11 +245,11 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
         Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
         policyWithClock(clock);
 
-        when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace, table));
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
         insertEntry("*", "*", 0, 0, 0, 0);
 
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(DEFAULT_REJECT_TIME);
-        assertThat(myRunPolicy.shouldRun(new TableReference(keyspace, table))).isFalse();
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isFalse();
     }
 
     @Test
@@ -271,22 +260,22 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
         Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
         policyWithClock(clock);
 
-        when(myRepairJobMock.getTableReference()).thenReturn(new TableReference(keyspace, table));
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
         insertEntry("*", "*", 0, 0, 0, 0);
 
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(DEFAULT_REJECT_TIME);
-        assertThat(myRunPolicy.shouldRun(new TableReference(keyspace, table))).isFalse();
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isFalse();
 
         mySession.execute(String.format("DELETE FROM %s.%s WHERE keyspace_name = '*' AND table_name = '*'", myKeyspaceName, TABLE_REJECT_CONFIGURATION));
 
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(DEFAULT_REJECT_TIME);
-        assertThat(myRunPolicy.shouldRun(new TableReference(keyspace, table))).isFalse();
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isFalse();
 
         // Cache expires after 1 sec
         await().pollInterval(500, TimeUnit.MILLISECONDS)
                 .atMost(2, TimeUnit.SECONDS)
                 .until(() -> myRunPolicy.validate(myRepairJobMock) == -1L);
-        assertThat(myRunPolicy.shouldRun(new TableReference(keyspace, table))).isTrue();
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
     }
 
     @Test

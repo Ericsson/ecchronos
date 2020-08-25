@@ -14,31 +14,30 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
+import com.datastax.driver.core.Host;
+import com.datastax.driver.core.Metadata;
+import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
+import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairSchedulerImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairSchedulerImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
+import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
+import com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.Closeable;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
-
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
-import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairSchedulerImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairSchedulerImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactoryImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
-import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
-import com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter;
 
 public class ECChronos implements Closeable
 {
@@ -103,6 +102,7 @@ public class ECChronos implements Closeable
                 .withCluster(nativeConnectionProvider.getSession().getCluster())
                 .withReplicatedTableProvider(myECChronosInternals.getReplicatedTableProvider())
                 .withDefaultRepairConfiguration(repairConfiguration)
+                .withTableReferenceFactory(myECChronosInternals.getTableReferenceFactory())
                 .build();
 
         ReplicationState replicationState = new ReplicationState(metadata, host);
@@ -118,7 +118,9 @@ public class ECChronos implements Closeable
 
         HTTPServerProperties httpServerProperties = HTTPServerProperties.from(configuration);
 
-        myHttpServer = new HTTPServer(myRepairSchedulerImpl, myOnDemandRepairScheduler, myECChronosInternals.getScheduleManager(), httpServerProperties.getAddress());
+        myHttpServer = new HTTPServer(myRepairSchedulerImpl, myOnDemandRepairScheduler,
+                myECChronosInternals.getScheduleManager(), myECChronosInternals.getTableReferenceFactory(),
+                httpServerProperties.getAddress());
     }
 
     public void start() throws HTTPServerException

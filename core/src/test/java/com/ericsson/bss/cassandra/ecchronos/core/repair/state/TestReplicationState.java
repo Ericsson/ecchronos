@@ -29,6 +29,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.Map;
 
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -52,7 +53,7 @@ public class TestReplicationState
     public void testGetTokenRangeToReplicaSingleToken() throws Exception
     {
         LongTokenRange range1 = new LongTokenRange(1, 2);
-        TableReference tableReference = new TableReference("ks", "tb");
+        TableReference tableReference = tableReference("ks", "tb");
 
         TokenRange tokenRange = TokenUtil.getRange(1, 2);
 
@@ -72,7 +73,7 @@ public class TestReplicationState
     {
         LongTokenRange range1 = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(2, 3);
-        TableReference tableReference = new TableReference("ks", "tb");
+        TableReference tableReference = tableReference("ks", "tb");
 
         TokenRange tokenRange1 = TokenUtil.getRange(1, 2);
         TokenRange tokenRange2 = TokenUtil.getRange(2, 3);
@@ -95,7 +96,7 @@ public class TestReplicationState
     {
         LongTokenRange range1 = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(2, 3);
-        TableReference tableReference = new TableReference("ks", "tb");
+        TableReference tableReference = tableReference("ks", "tb");
 
         TokenRange tokenRange1 = TokenUtil.getRange(1, 2);
         TokenRange tokenRange2 = TokenUtil.getRange(2, 3);
@@ -117,7 +118,7 @@ public class TestReplicationState
     public void testGetTokenRangeToReplicaMapReuse() throws Exception
     {
         LongTokenRange range1 = new LongTokenRange(1, 2);
-        TableReference tableReference = new TableReference("ks", "tb");
+        TableReference tableReference = tableReference("ks", "tb");
 
         TokenRange tokenRange = TokenUtil.getRange(1, 2);
 

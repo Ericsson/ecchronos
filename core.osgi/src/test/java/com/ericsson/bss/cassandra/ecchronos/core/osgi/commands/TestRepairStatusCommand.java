@@ -14,14 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.time.Instant;
-import java.util.Comparator;
-import java.util.List;
-import java.util.TimeZone;
-import java.util.UUID;
-
 import com.ericsson.bss.cassandra.ecchronos.core.osgi.commands.RepairStatusCommand.SortBy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -31,9 +23,19 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
+import java.util.TimeZone;
+import java.util.UUID;
+
+import static com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView.Status;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView.Status;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @RunWith(JUnitParamsRunner.class)
 public class TestRepairStatusCommand
@@ -183,7 +185,10 @@ public class TestRepairStatusCommand
     static TableReference createTableRef(String table)
     {
         String[] tableSplit = table.split("\\.");
-        return new TableReference(tableSplit[0], tableSplit[1]);
+        TableReference tableReference = mock(TableReference.class);
+        when(tableReference.getKeyspace()).thenReturn(tableSplit[0]);
+        when(tableReference.getTable()).thenReturn(tableSplit[1]);
+        return tableReference;
     }
 
     private static long toMillis(String date)

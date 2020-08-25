@@ -16,13 +16,10 @@ package com.ericsson.bss.cassandra.ecchronos.rest.osgi;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementREST;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementRESTImpl;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.annotations.*;
 
 import javax.ws.rs.Path;
 
@@ -39,12 +36,16 @@ public class RepairManagementRESTComponent implements RepairManagementREST
     @Reference (service = OnDemandRepairScheduler.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile OnDemandRepairScheduler myOnDemandRepairScheduler;
 
+    @Reference(service = TableReferenceFactory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    private volatile TableReferenceFactory myTableReferenceFactory;
+
     private volatile RepairManagementRESTImpl myDelegateRESTImpl;
 
     @Activate
     public synchronized void activate()
     {
-        myDelegateRESTImpl = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
+        myDelegateRESTImpl = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler,
+                myTableReferenceFactory);
     }
 
     @Override

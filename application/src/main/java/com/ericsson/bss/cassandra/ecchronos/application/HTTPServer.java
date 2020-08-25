@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementRESTImpl;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -33,9 +34,12 @@ public class HTTPServer implements Closeable
 {
     private final Server myServer;
 
-    public HTTPServer(RepairScheduler repairScheduler, OnDemandRepairScheduler onDemandRepairScheduler, ScheduleManager scheduleManager, InetSocketAddress inetSocketAddress)
+    public HTTPServer(RepairScheduler repairScheduler, OnDemandRepairScheduler onDemandRepairScheduler,
+            ScheduleManager scheduleManager, TableReferenceFactory tableReferenceFactory,
+            InetSocketAddress inetSocketAddress)
     {
-        MyBinder binder = new MyBinder(repairScheduler, scheduleManager, onDemandRepairScheduler);
+        MyBinder binder = new MyBinder(repairScheduler, scheduleManager, onDemandRepairScheduler,
+                tableReferenceFactory);
 
         ResourceConfig config = new ResourceConfig()
                 .packages(true, RepairManagementRESTImpl.class.getPackage().getName())
@@ -76,12 +80,15 @@ public class HTTPServer implements Closeable
         private final RepairScheduler myRepairScheduler;
         private final ScheduleManager myScheduleManager;
         private final OnDemandRepairScheduler myOnDemandRepairScheduler;
+        private final TableReferenceFactory myTableReferenceFactory;
 
-        public MyBinder(RepairScheduler repairScheduler, ScheduleManager scheduleManager, OnDemandRepairScheduler onDemandRepairScheduler)
+        public MyBinder(RepairScheduler repairScheduler, ScheduleManager scheduleManager,
+                OnDemandRepairScheduler onDemandRepairScheduler, TableReferenceFactory tableReferenceFactory)
         {
             myRepairScheduler = repairScheduler;
             myScheduleManager = scheduleManager;
             myOnDemandRepairScheduler = onDemandRepairScheduler;
+            myTableReferenceFactory = tableReferenceFactory;
         }
 
         @Override
@@ -90,6 +97,7 @@ public class HTTPServer implements Closeable
             bind(myRepairScheduler).to(RepairScheduler.class);
             bind(myScheduleManager).to(ScheduleManager.class);
             bind(myOnDemandRepairScheduler).to(OnDemandRepairScheduler.class);
+            bind(myTableReferenceFactory).to(TableReferenceFactory.class);
         }
     }
 }

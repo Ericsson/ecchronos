@@ -38,11 +38,13 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
 
     private final Host myLocalhost;
     private final Metadata myMetadata;
+    private final TableReferenceFactory myTableReferenceFactory;
 
-    public ReplicatedTableProviderImpl(Host host, Metadata metadata)
+    public ReplicatedTableProviderImpl(Host host, Metadata metadata, TableReferenceFactory tableReferenceFactory)
     {
         myLocalhost = host;
         myMetadata = metadata;
+        myTableReferenceFactory = tableReferenceFactory;
     }
 
     @Override
@@ -51,7 +53,7 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
         return myMetadata.getKeyspaces().stream()
                 .filter(k -> accept(k.getName()))
                 .flatMap(k -> k.getTables().stream())
-                .map(tb -> new TableReference(tb.getKeyspace().getName(), tb.getName()))
+                .map(tb -> myTableReferenceFactory.forTable(tb.getKeyspace().getName(), tb.getName()))
                 .collect(Collectors.toSet());
     }
 
