@@ -14,8 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.google.common.collect.ImmutableSet;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
@@ -34,7 +34,7 @@ public class TestNormalizedBaseRange
     private static final BigInteger START = BigInteger.ZERO;
 
     @Mock
-    Host mockHost;
+    Node mockNode;
 
     @Test
     public void testTransformBaseRange()
@@ -235,6 +235,6 @@ public class TestNormalizedBaseRange
     
     private VnodeRepairState withVnode(long start, long end, long lastRepairedAt)
     {
-        return new VnodeRepairState(new LongTokenRange(start, end), ImmutableSet.of(mockHost), lastRepairedAt);
+        return new VnodeRepairState(new LongTokenRange(start, end), ImmutableSet.of(mockNode), lastRepairedAt);
     }
 }

@@ -14,8 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
@@ -50,7 +50,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
     @Override
     public VnodeRepairStates calculateNewState(TableReference tableReference, RepairStateSnapshot previous)
     {
-        Map<LongTokenRange, ImmutableSet<Host>> tokenRangeToReplicaMap = myReplicationState.getTokenRangeToReplicas(tableReference);
+        Map<LongTokenRange, ImmutableSet<Node>> tokenRangeToReplicaMap = myReplicationState.getTokenRangeToReplicas(tableReference);
         long lastRepairedAt = previousLastRepairedAt(previous, tokenRangeToReplicaMap);
         long now = System.currentTimeMillis();
 
@@ -70,14 +70,14 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         return generateVnodeRepairStates(lastRepairedAt, previous, repairEntryIterator, tokenRangeToReplicaMap);
     }
 
-    private VnodeRepairStates generateVnodeRepairStates(long lastRepairedAt, RepairStateSnapshot previous, Iterator<RepairEntry> repairEntryIterator, Map<LongTokenRange, ImmutableSet<Host>> tokenRangeToReplicaMap)
+    private VnodeRepairStates generateVnodeRepairStates(long lastRepairedAt, RepairStateSnapshot previous, Iterator<RepairEntry> repairEntryIterator, Map<LongTokenRange, ImmutableSet<Node>> tokenRangeToReplicaMap)
     {
         List<VnodeRepairState> vnodeRepairStatesBase = new ArrayList<>();
 
-        for (Map.Entry<LongTokenRange, ImmutableSet<Host>> entry : tokenRangeToReplicaMap.entrySet())
+        for (Map.Entry<LongTokenRange, ImmutableSet<Node>> entry : tokenRangeToReplicaMap.entrySet())
         {
             LongTokenRange longTokenRange = entry.getKey();
-            ImmutableSet<Host> replicas = entry.getValue();
+            ImmutableSet<Node> replicas = entry.getValue();
             vnodeRepairStatesBase.add(new VnodeRepairState(longTokenRange, replicas, lastRepairedAt));
         }
 
@@ -100,7 +100,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         {
             RepairEntry repairEntry = repairEntryIterator.next();
             LongTokenRange longTokenRange = repairEntry.getRange();
-            ImmutableSet<Host> replicas = getReplicasForRange(longTokenRange, tokenRangeToReplicaMap);
+            ImmutableSet<Node> replicas = getReplicasForRange(longTokenRange, tokenRangeToReplicaMap);
 
             VnodeRepairState vnodeRepairState = new VnodeRepairState(longTokenRange, replicas, repairEntry.getStartedAt());
 
@@ -110,7 +110,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         return vnodeRepairStatusesBuilder.build();
     }
 
-    private long previousLastRepairedAt(RepairStateSnapshot previous, Map<LongTokenRange, ImmutableSet<Host>> tokenToReplicaMap)
+    private long previousLastRepairedAt(RepairStateSnapshot previous, Map<LongTokenRange, ImmutableSet<Node>> tokenToReplicaMap)
     {
         if (previous == null)
         {
@@ -138,7 +138,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         return lastRepairedAt == Long.MAX_VALUE ? VnodeRepairState.UNREPAIRED : lastRepairedAt;
     }
 
-    private boolean acceptRepairEntries(RepairEntry repairEntry, Map<LongTokenRange, ImmutableSet<Host>> tokenRangeToReplicaMap)
+    private boolean acceptRepairEntries(RepairEntry repairEntry, Map<LongTokenRange, ImmutableSet<Node>> tokenRangeToReplicaMap)
     {
         if (RepairStatus.SUCCESS != repairEntry.getStatus())
         {
@@ -148,14 +148,14 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
 
         LongTokenRange repairedRange = repairEntry.getRange();
 
-        ImmutableSet<Host> hosts = getReplicasForRange(repairedRange, tokenRangeToReplicaMap);
+        ImmutableSet<Node> hosts = getReplicasForRange(repairedRange, tokenRangeToReplicaMap);
         if (hosts == null)
         {
             LOG.trace("Ignoring entry {}, replicas not present in tokenRangeToReplicas", repairEntry);
             return false;
         }
 
-        Set<InetAddress> hostAddresses = hosts.stream().map(Host::getBroadcastAddress).collect(Collectors.toSet());
+        Set<InetAddress> hostAddresses = hosts.stream().map(Node::getPublicAddress).collect(Collectors.toSet());
 
         if (!hostAddresses.equals(repairEntry.getParticipants()))
         {
@@ -166,21 +166,21 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         return true;
     }
 
-    private ImmutableSet<Host> getReplicasForRange(LongTokenRange range, Map<LongTokenRange, ImmutableSet<Host>> tokenRangeToReplicaMap)
+    private ImmutableSet<Node> getReplicasForRange(LongTokenRange range, Map<LongTokenRange, ImmutableSet<Node>> tokenRangeToReplicaMap)
     {
-        ImmutableSet<Host> hosts = tokenRangeToReplicaMap.get(range);
-        if (hosts == null && useSubRanges)
+        ImmutableSet<Node> nodes = tokenRangeToReplicaMap.get(range);
+        if (nodes == null && useSubRanges)
         {
-            for (Map.Entry<LongTokenRange, ImmutableSet<Host>> vnode : tokenRangeToReplicaMap.entrySet())
+            for (Map.Entry<LongTokenRange, ImmutableSet<Node>> vnode : tokenRangeToReplicaMap.entrySet())
             {
                 if (vnode.getKey().isCovering(range))
                 {
-                    hosts = vnode.getValue();
+                    nodes = vnode.getValue();
                     break;
                 }
             }
         }
 
-        return hosts;
+        return nodes;
     }
 }

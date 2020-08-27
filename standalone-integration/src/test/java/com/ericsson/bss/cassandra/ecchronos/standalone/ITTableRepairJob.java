@@ -115,7 +115,9 @@ public class ITTableRepairJob extends TestBase
                 .withRunInterval(1, TimeUnit.SECONDS)
                 .build();
 
-        ReplicationState replicationState = new ReplicationStateImpl(myMetadata, myLocalHost);
+        NodeResolver nodeResolver = new NodeResolverImpl(myMetadata);
+
+        ReplicationState replicationState = new ReplicationStateImpl(nodeResolver, myMetadata, myLocalHost);
 
         RepairStateFactoryImpl repairStateFactory = RepairStateFactoryImpl.builder()
                 .withReplicationState(replicationState)

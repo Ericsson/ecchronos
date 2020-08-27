@@ -40,10 +40,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManagerImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.*;
 
 import net.jcip.annotations.NotThreadSafe;
 
@@ -99,7 +96,10 @@ public class ITOnDemandRepairJob extends TestBase
                 .withLockFactory(myLockFactory)
                 .withRunInterval(100, TimeUnit.MILLISECONDS)
                 .build();
-        ReplicationState replicationState = new ReplicationStateImpl(myMetadata, myLocalHost);
+
+        NodeResolver nodeResolver = new NodeResolverImpl(myMetadata);
+
+        ReplicationState replicationState = new ReplicationStateImpl(nodeResolver, myMetadata, myLocalHost);
         myRepairSchedulerImpl = OnDemandRepairSchedulerImpl.builder()
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .withTableRepairMetrics(mockTableRepairMetrics)

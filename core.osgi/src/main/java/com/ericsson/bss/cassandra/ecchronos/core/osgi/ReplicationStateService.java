@@ -24,6 +24,8 @@ import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 
@@ -33,6 +35,9 @@ public class ReplicationStateService implements ReplicationState
     @Reference(service = NativeConnectionProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile NativeConnectionProvider nativeConnectionProvider;
 
+    @Reference(service = NodeResolver.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    private volatile NodeResolver nodeResolver;
+
     private volatile ReplicationState delegateReplicationState;
 
     @Activate
@@ -41,11 +46,11 @@ public class ReplicationStateService implements ReplicationState
         Metadata metadata = nativeConnectionProvider.getSession().getCluster().getMetadata();
         Host localHost = nativeConnectionProvider.getLocalHost();
 
-        delegateReplicationState = new ReplicationStateImpl(metadata, localHost);
+        delegateReplicationState = new ReplicationStateImpl(nodeResolver, metadata, localHost);
     }
 
     @Override
-    public Map<LongTokenRange, ImmutableSet<Host>> getTokenRangeToReplicas(TableReference tableReference)
+    public Map<LongTokenRange, ImmutableSet<Node>> getTokenRangeToReplicas(TableReference tableReference)
     {
         return delegateReplicationState.getTokenRangeToReplicas(tableReference);
     }

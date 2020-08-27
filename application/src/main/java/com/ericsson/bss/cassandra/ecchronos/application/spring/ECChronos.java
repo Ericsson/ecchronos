@@ -18,6 +18,8 @@ import java.io.Closeable;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -68,7 +70,9 @@ public class ECChronos implements Closeable
                 nativeConnectionProvider.getSession(), statementDecorator,
                 repairConfig.getHistoryLookback().getInterval(TimeUnit.MILLISECONDS));
 
-        ReplicationState replicationState = new ReplicationStateImpl(metadata, host);
+        NodeResolver nodeResolver = new NodeResolverImpl(metadata);
+
+        ReplicationState replicationState = new ReplicationStateImpl(nodeResolver, metadata, host);
 
         RepairStateFactoryImpl repairStateFactoryImpl = RepairStateFactoryImpl.builder()
                 .withReplicationState(replicationState)

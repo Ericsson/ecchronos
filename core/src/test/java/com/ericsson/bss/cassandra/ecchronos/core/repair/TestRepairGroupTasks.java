@@ -38,7 +38,6 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxy;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
@@ -46,6 +45,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.DummyLock;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -95,7 +95,8 @@ public class TestRepairGroupTasks
         Map<String, String> metadata = new HashMap<>();
         metadata.put("keyspace", keyspaceName);
         metadata.put("table", tableName);
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(withHost("127.0.0.1")), ImmutableList.of(range(1, 2)));
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(withNode("127.0.0.1")),
+                ImmutableList.of(range(1, 2)));
         Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1", "my-resource"));
 
         when(mockJmxProxyFactory.connect()).thenReturn(new CustomJmxProxy((notificationListener, i) -> progressAndComplete(notificationListener, range(1, 2))));
@@ -114,7 +115,8 @@ public class TestRepairGroupTasks
         Map<String, String> metadata = new HashMap<>();
         metadata.put("keyspace", keyspaceName);
         metadata.put("table", tableName);
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(withHost("127.0.0.1")), ImmutableList.of(range(1, 2), range(2, 3)));
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(withNode("127.0.0.1")),
+                ImmutableList.of(range(1, 2), range(2, 3)));
         Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1", "my-resource"));
         final AtomicBoolean shouldRun = new AtomicBoolean(true);
 
@@ -173,13 +175,13 @@ public class TestRepairGroupTasks
         return new LongTokenRange(start, end);
     }
 
-    private Host withHost(String ip) throws UnknownHostException
+    private Node withNode(String ip) throws UnknownHostException
     {
-        Host host = mock(Host.class);
+        Node node = mock(Node.class);
 
-        when(host.getBroadcastAddress()).thenReturn(InetAddress.getByName(ip));
+        when(node.getPublicAddress()).thenReturn(InetAddress.getByName(ip));
 
-        return host;
+        return node;
     }
 
     private String getRepairMessage(LongTokenRange range)

@@ -14,8 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 
-import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 
 import java.net.InetAddress;
 import java.util.Objects;
@@ -48,7 +48,7 @@ public class VirtualNodeState
     {
         long startToken = vnodeRepairState.getTokenRange().start;
         long endToken = vnodeRepairState.getTokenRange().end;
-        Set<InetAddress> replicas = vnodeRepairState.getReplicas().stream().map(Host::getBroadcastAddress).collect(Collectors.toSet());
+        Set<InetAddress> replicas = vnodeRepairState.getReplicas().stream().map(Node::getPublicAddress).collect(Collectors.toSet());
         long lastRepairedAt = vnodeRepairState.lastRepairedAt();
         boolean repaired = lastRepairedAt > repairedAfter;
 

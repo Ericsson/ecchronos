@@ -14,7 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import com.datastax.driver.core.Host;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.exceptions.OverloadedException;
@@ -26,6 +25,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -277,7 +277,7 @@ public class TestTableRepairJob
     public void testIterator()
     {
         LongTokenRange tokenRange = new LongTokenRange(0, 10);
-        ImmutableSet<Host> replicas = ImmutableSet.of(mock(Host.class), mock(Host.class));
+        ImmutableSet<Node> replicas = ImmutableSet.of(mock(Node.class), mock(Node.class));
         ImmutableList<LongTokenRange> vnodes = ImmutableList.of(tokenRange);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl
@@ -323,7 +323,7 @@ public class TestTableRepairJob
         );
 
         LongTokenRange tokenRange = new LongTokenRange(0, 10);
-        ImmutableSet<Host> replicas = ImmutableSet.of(mock(Host.class), mock(Host.class));
+        ImmutableSet<Node> replicas = ImmutableSet.of(mock(Node.class), mock(Node.class));
         ImmutableList<LongTokenRange> vnodes = ImmutableList.of(tokenRange);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(ImmutableList.of(new VnodeRepairState(tokenRange, replicas, 1234L))).build();

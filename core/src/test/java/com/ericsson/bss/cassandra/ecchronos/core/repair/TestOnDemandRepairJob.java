@@ -14,13 +14,13 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 import org.junit.After;
@@ -53,13 +53,13 @@ public class TestOnDemandRepairJob
     private ReplicationState myReplicationState;
 
     @Mock
-    private Host mockReplica1;
+    private Node mockReplica1;
 
     @Mock
-    private Host mockReplica2;
+    private Node mockReplica2;
 
     @Mock
-    private Host mockReplica3;
+    private Node mockReplica3;
 
     private final TableReference myTableReference = tableReference(keyspaceName, tableName);
 
@@ -147,7 +147,7 @@ public class TestOnDemandRepairJob
     {
         LongTokenRange range1 = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(1, 3);
-        Map<LongTokenRange, ImmutableSet<Host>> tokenRangeToReplicas = new HashMap<>();
+        Map<LongTokenRange, ImmutableSet<Node>> tokenRangeToReplicas = new HashMap<>();
         tokenRangeToReplicas.put(range1,
                 ImmutableSet.of(mockReplica1, mockReplica2, mockReplica3));
         tokenRangeToReplicas.put(range2,

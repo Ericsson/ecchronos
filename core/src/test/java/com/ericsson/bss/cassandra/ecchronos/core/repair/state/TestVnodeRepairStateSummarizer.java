@@ -14,8 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestVnodeRepairStateSummarizer
 {
     @Mock
-    Host mockHost;
+    Node mockNode;
 
     @Test
     public void summarizeSingleTokenNoPartial()
@@ -377,7 +377,7 @@ public class TestVnodeRepairStateSummarizer
 
     private VnodeRepairState withVnode(long start, long end, long lastRepairedAt)
     {
-        return new VnodeRepairState(new LongTokenRange(start, end), ImmutableSet.of(mockHost), lastRepairedAt);
+        return new VnodeRepairState(new LongTokenRange(start, end), ImmutableSet.of(mockNode), lastRepairedAt);
     }
 
     private long dateToTimestamp(String date)

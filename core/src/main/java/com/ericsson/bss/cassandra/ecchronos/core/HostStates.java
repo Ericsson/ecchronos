@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core;
 import java.net.InetAddress;
 
 import com.datastax.driver.core.Host;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 
 /**
  * Interface used to determine node statuses.
@@ -40,4 +41,12 @@ public interface HostStates
      * @return True if the host is up. False will be returned if the state is unknown or if the host is down.
      */
     boolean isUp(Host host);
+
+    /**
+     * Check if a node is up.
+     *
+     * @param node The node.
+     * @return True if the node is up. False will be returned if the state is unknown or if the node is down.
+     */
+    boolean isUp(Node node);
 }

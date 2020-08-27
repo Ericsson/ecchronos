@@ -14,16 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-
-import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
@@ -33,10 +23,16 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * A Job that will schedule and run repair on one table once. It creates {@link RepairTask RepairTasks} to fully repair
@@ -60,7 +56,7 @@ public class OnDemandRepairJob extends ScheduledJob
 
     private final List<ScheduledTask> myTasks;
 
-    private final Map<LongTokenRange, ImmutableSet<Host>> myTokens;
+    private final Map<LongTokenRange, ImmutableSet<Node>> myTokens;
 
     private final int myTotalTasks;
 
@@ -83,15 +79,15 @@ public class OnDemandRepairJob extends ScheduledJob
         myTotalTasks = myTasks.size();
     }
 
-    private List<ScheduledTask> createRepairTasks(Map<LongTokenRange, ImmutableSet<Host>> tokenRanges)
+    private List<ScheduledTask> createRepairTasks(Map<LongTokenRange, ImmutableSet<Node>> tokenRanges)
     {
         List<ScheduledTask> taskList = new ArrayList<>();
         List<VnodeRepairState> vnodeRepairStates = new ArrayList<>();
 
-        for (Map.Entry<LongTokenRange, ImmutableSet<Host>> entry : tokenRanges.entrySet())
+        for (Map.Entry<LongTokenRange, ImmutableSet<Node>> entry : tokenRanges.entrySet())
         {
             LongTokenRange longTokenRange = entry.getKey();
-            ImmutableSet<Host> replicas = entry.getValue();
+            ImmutableSet<Node> replicas = entry.getValue();
             vnodeRepairStates.add(new VnodeRepairState(longTokenRange, replicas, -1));
         }
 

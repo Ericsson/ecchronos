@@ -19,24 +19,33 @@ import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.TokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.TokenUtil;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.net.InetAddress;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestReplicationStateImpl
 {
+    @Mock
+    private NodeResolver mockNodeResolver;
+
     @Mock
     private Metadata mockMetadata;
 
@@ -49,6 +58,31 @@ public class TestReplicationStateImpl
     @Mock
     private Host mockReplica3;
 
+    @Mock
+    private Node mockNode1;
+
+    @Mock
+    private Node mockNode2;
+
+    @Mock
+    private Node mockNode3;
+
+    @Before
+    public void setup() throws Exception
+    {
+        InetAddress address1 = InetAddress.getByName("127.0.0.1");
+        InetAddress address2 = InetAddress.getByName("127.0.0.2");
+        InetAddress address3 = InetAddress.getByName("127.0.0.3");
+
+        when(mockReplica1.getBroadcastAddress()).thenReturn(address1);
+        when(mockReplica2.getBroadcastAddress()).thenReturn(address2);
+        when(mockReplica3.getBroadcastAddress()).thenReturn(address3);
+
+        when(mockNodeResolver.fromIp(eq(address1))).thenReturn(Optional.of(mockNode1));
+        when(mockNodeResolver.fromIp(eq(address2))).thenReturn(Optional.of(mockNode2));
+        when(mockNodeResolver.fromIp(eq(address3))).thenReturn(Optional.of(mockNode3));
+    }
+
     @Test
     public void testGetTokenRangeToReplicaSingleToken() throws Exception
     {
@@ -60,12 +94,12 @@ public class TestReplicationStateImpl
         doReturn(Sets.newHashSet(tokenRange)).when(mockMetadata).getTokenRanges(eq("ks"), eq(mockReplica1));
         doReturn(Sets.newHashSet(mockReplica1, mockReplica2, mockReplica3)).when(mockMetadata).getReplicas(eq("ks"), eq(tokenRange));
 
-        ReplicationState replicationState = new ReplicationStateImpl(mockMetadata, mockReplica1);
+        ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockMetadata, mockReplica1);
 
-        Map<LongTokenRange, ImmutableSet<Host>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(tableReference);
+        Map<LongTokenRange, ImmutableSet<Node>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(tableReference);
 
         assertThat(tokenRangeToReplicas.keySet()).containsExactlyInAnyOrder(range1);
-        assertThat(tokenRangeToReplicas.get(range1)).containsExactlyInAnyOrder(mockReplica1, mockReplica2, mockReplica3);
+        assertThat(tokenRangeToReplicas.get(range1)).containsExactlyInAnyOrder(mockNode1, mockNode2, mockNode3);
     }
 
     @Test
@@ -82,13 +116,13 @@ public class TestReplicationStateImpl
         doReturn(Sets.newHashSet(mockReplica1, mockReplica2)).when(mockMetadata).getReplicas(eq("ks"), eq(tokenRange1));
         doReturn(Sets.newHashSet(mockReplica1, mockReplica3)).when(mockMetadata).getReplicas(eq("ks"), eq(tokenRange2));
 
-        ReplicationState replicationState = new ReplicationStateImpl(mockMetadata, mockReplica1);
+        ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockMetadata, mockReplica1);
 
-        Map<LongTokenRange, ImmutableSet<Host>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(tableReference);
+        Map<LongTokenRange, ImmutableSet<Node>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(tableReference);
 
         assertThat(tokenRangeToReplicas.keySet()).containsExactlyInAnyOrder(range1, range2);
-        assertThat(tokenRangeToReplicas.get(range1)).containsExactlyInAnyOrder(mockReplica1, mockReplica2);
-        assertThat(tokenRangeToReplicas.get(range2)).containsExactlyInAnyOrder(mockReplica1, mockReplica3);
+        assertThat(tokenRangeToReplicas.get(range1)).containsExactlyInAnyOrder(mockNode1, mockNode2);
+        assertThat(tokenRangeToReplicas.get(range2)).containsExactlyInAnyOrder(mockNode1, mockNode3);
     }
 
     @Test
@@ -105,12 +139,12 @@ public class TestReplicationStateImpl
         doReturn(Sets.newHashSet(mockReplica1, mockReplica2)).when(mockMetadata).getReplicas(eq("ks"), eq(tokenRange1));
         doReturn(Sets.newHashSet(mockReplica1, mockReplica2)).when(mockMetadata).getReplicas(eq("ks"), eq(tokenRange2));
 
-        ReplicationState replicationState = new ReplicationStateImpl(mockMetadata, mockReplica1);
+        ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockMetadata, mockReplica1);
 
-        Map<LongTokenRange, ImmutableSet<Host>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(tableReference);
+        Map<LongTokenRange, ImmutableSet<Node>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(tableReference);
 
         assertThat(tokenRangeToReplicas.keySet()).containsExactlyInAnyOrder(range1, range2);
-        assertThat(tokenRangeToReplicas.get(range1)).containsExactlyInAnyOrder(mockReplica1, mockReplica2);
+        assertThat(tokenRangeToReplicas.get(range1)).containsExactlyInAnyOrder(mockNode1, mockNode2);
         assertThat(tokenRangeToReplicas.get(range1)).isSameAs(tokenRangeToReplicas.get(range2));
     }
 
@@ -125,12 +159,12 @@ public class TestReplicationStateImpl
         doReturn(Sets.newHashSet(tokenRange)).when(mockMetadata).getTokenRanges(eq("ks"), eq(mockReplica1));
         doReturn(Sets.newHashSet(mockReplica1, mockReplica2, mockReplica3)).when(mockMetadata).getReplicas(eq("ks"), eq(tokenRange));
 
-        ReplicationState replicationState = new ReplicationStateImpl(mockMetadata, mockReplica1);
+        ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockMetadata, mockReplica1);
 
-        Map<LongTokenRange, ImmutableSet<Host>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(tableReference);
+        Map<LongTokenRange, ImmutableSet<Node>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(tableReference);
 
         assertThat(tokenRangeToReplicas.keySet()).containsExactlyInAnyOrder(range1);
-        assertThat(tokenRangeToReplicas.get(range1)).containsExactlyInAnyOrder(mockReplica1, mockReplica2, mockReplica3);
+        assertThat(tokenRangeToReplicas.get(range1)).containsExactlyInAnyOrder(mockNode1, mockNode2, mockNode3);
 
         assertThat(replicationState.getTokenRangeToReplicas(tableReference)).isSameAs(tokenRangeToReplicas);
     }

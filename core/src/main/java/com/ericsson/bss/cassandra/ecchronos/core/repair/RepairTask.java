@@ -14,39 +14,27 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import javax.management.Notification;
-import javax.management.NotificationListener;
-import javax.management.remote.JMXConnectionNotification;
-
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxy;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.driver.core.Host;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Sets;
+import javax.management.Notification;
+import javax.management.NotificationListener;
+import javax.management.remote.JMXConnectionNotification;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * A task that is run to repair a specific keyspace and table using the options from {@link RepairOptions}.
@@ -67,7 +55,7 @@ public class RepairTask implements NotificationListener
     private final CountDownLatch myLatch = new CountDownLatch(1);
 
     private final Set<LongTokenRange> myTokenRanges;
-    private final Set<Host> myReplicas;
+    private final Set<Node> myReplicas;
     private final JmxProxyFactory myJmxProxyFactory;
     private final TableReference myTableReference;
     private final TableRepairMetrics myTableRepairMetrics;
@@ -223,7 +211,7 @@ public class RepairTask implements NotificationListener
         if (myReplicas != null)
         {
             String replicasString = myReplicas.stream()
-                    .map(host -> host.getBroadcastAddress().getHostAddress())
+                    .map(host -> host.getPublicAddress().getHostAddress())
                     .collect(Collectors.joining(","));
 
             options.put(RepairOptions.HOSTS_KEY, replicasString);
@@ -362,7 +350,7 @@ public class RepairTask implements NotificationListener
         private JmxProxyFactory jmxProxyFactory;
         private TableReference tableReference;
         private Set<LongTokenRange> tokenRanges;
-        private Set<Host> replicas;
+        private Set<Node> replicas;
         private TableRepairMetrics tableRepairMetrics;
         private RepairConfiguration repairConfiguration = RepairConfiguration.DEFAULT;
 
@@ -384,7 +372,7 @@ public class RepairTask implements NotificationListener
             return this;
         }
 
-        public Builder withReplicas(Collection<Host> replicas)
+        public Builder withReplicas(Collection<Node> replicas)
         {
             this.replicas = new HashSet<>(replicas);
             return this;
@@ -484,7 +472,7 @@ public class RepairTask implements NotificationListener
     }
 
     @VisibleForTesting
-    Set<Host> getReplicas()
+    Set<Node> getReplicas()
     {
         if (myReplicas == null)
         {

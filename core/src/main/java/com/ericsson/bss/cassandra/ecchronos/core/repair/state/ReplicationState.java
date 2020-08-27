@@ -16,8 +16,8 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import java.util.Map;
 
-import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 
@@ -35,5 +35,5 @@ public interface ReplicationState
      *            The table used to calculate the proper replication.
      * @return The map consisting of token -&gt; responsible nodes.
      */
-    Map<LongTokenRange, ImmutableSet<Host>> getTokenRangeToReplicas(TableReference tableReference);
+    Map<LongTokenRange, ImmutableSet<Node>> getTokenRangeToReplicas(TableReference tableReference);
 }

@@ -64,7 +64,8 @@ public class RepairLockFactoryImpl implements RepairLockFactory
             Optional<LockException> cachedException = lockFactory.getCachedFailure(repairResource.getDataCenter(), repairResource.getResourceName(LOCKS_PER_RESOURCE));
             if (cachedException.isPresent())
             {
-                LOG.debug("Found cached locking failure for {}, rethrowing", repairResource, cachedException.get());
+                LockException e = cachedException.get();
+                LOG.debug("Found cached locking failure for {}, rethrowing", repairResource, e);
                 throw cachedException.get();
             }
         }
