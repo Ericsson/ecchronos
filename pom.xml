@@ -605,7 +605,7 @@ limitations under the License.
                                                         <time>60000</time>
                                                         <tcp>
                                                             <ports>
-                                                                <port>9042</port>
+                                                                <port>7000</port>
                                                             </ports>
                                                         </tcp>
                                                     </wait>
@@ -629,7 +629,7 @@ limitations under the License.
                                                         <time>120000</time>
                                                         <tcp>
                                                             <ports>
-                                                                <port>9042</port>
+                                                                <port>7000</port>
                                                             </ports>
                                                         </tcp>
                                                     </wait>
@@ -652,7 +652,7 @@ limitations under the License.
                                                         <time>120000</time>
                                                         <tcp>
                                                             <ports>
-                                                                <port>9042</port>
+                                                                <port>7000</port>
                                                             </ports>
                                                         </tcp>
                                                     </wait>
