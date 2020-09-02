@@ -73,7 +73,7 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
         Map<String, Object> env = new HashMap<>();
 
         LOG.debug("Connecting JMX through {}", jmxUrl);
-        JMXConnector jmxConnector = JMXConnectorFactory.connect(jmxUrl, env);
+        JMXConnector jmxConnector = JMXConnectorFactory.connect(jmxUrl, env); // NOPMD
         LOG.debug("Connected JMX for {}", jmxUrl);
 
         switchJmxConnection(jmxConnector);
@@ -81,7 +81,7 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
 
     private void switchJmxConnection(JMXConnector newJmxConnector) throws IOException
     {
-        JMXConnector oldJmxConnector = myJmxConnection.getAndSet(newJmxConnector);
+        JMXConnector oldJmxConnector = myJmxConnection.getAndSet(newJmxConnector); // NOPMD
 
         if (oldJmxConnector != null)
         {

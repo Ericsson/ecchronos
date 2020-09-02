@@ -93,7 +93,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
 
     private void releaseLocks(Collection<LockFactory.DistributedLock> locks)
     {
-        for (LockFactory.DistributedLock lock : locks)
+        for (LockFactory.DistributedLock lock : locks) // NOPMD
         {
             try
             {

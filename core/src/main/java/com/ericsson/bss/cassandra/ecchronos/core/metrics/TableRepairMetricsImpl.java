@@ -74,7 +74,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, Closeab
 
         myNodeMetricHolder.close();
 
-        for (TableMetricHolder tableMetricHolder : myTableMetricHolders.values())
+        for (TableMetricHolder tableMetricHolder : myTableMetricHolders.values()) // NOPMD
         {
             tableMetricHolder.close();
         }
@@ -128,7 +128,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, Closeab
         {
             tableMetricHolder = new TableMetricHolder(tableReference, myMetricRegistry, myNodeMetricHolder);
 
-            TableMetricHolder oldTableMetricHolder = myTableMetricHolders.putIfAbsent(tableReference, tableMetricHolder);
+            TableMetricHolder oldTableMetricHolder = myTableMetricHolders.putIfAbsent(tableReference, tableMetricHolder); // NOPMD
 
             if (oldTableMetricHolder != null)
             {

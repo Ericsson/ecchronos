@@ -41,7 +41,7 @@ public class LockCollection implements LockFactory.DistributedLock
     @Override
     public void close()
     {
-        for (LockFactory.DistributedLock lock : myLocks)
+        for (LockFactory.DistributedLock lock : myLocks) // NOPMD
         {
             try
             {
