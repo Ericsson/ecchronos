@@ -20,8 +20,6 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.util.Properties;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -33,7 +31,7 @@ public class TestNoopStatementDecorator
     @Test
     public void testApplyPreservesStatement()
     {
-        NoopStatementDecorator noopStatementDecorator = new NoopStatementDecorator(new Properties());
+        NoopStatementDecorator noopStatementDecorator = new NoopStatementDecorator(new Config());
         assertThat(noopStatementDecorator.apply(mockStatement)).isEqualTo(mockStatement);
     }
 }

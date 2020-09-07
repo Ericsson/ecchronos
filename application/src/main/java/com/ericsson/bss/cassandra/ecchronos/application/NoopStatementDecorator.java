@@ -17,11 +17,9 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 import com.datastax.driver.core.Statement;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 
-import java.util.Properties;
-
 public class NoopStatementDecorator implements StatementDecorator
 {
-    public NoopStatementDecorator(Properties properties) // NOPMD
+    public NoopStatementDecorator(Config config) // NOPMD
     {
         // Nothing to do
     }

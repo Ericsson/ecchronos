@@ -36,10 +36,14 @@ PYLIB_DIR="$BASE_DIR"/pylib
 # Change configuration for ecchronos
 
 ## Connection
-sed "s/#\?connection.native.host=[a-zA-Z0-9.]\+/connection.native.host=$CASSANDRA_IP/g" -i "$CONF_DIR"/ecc.cfg
-sed "s/#\?connection.native.port=[0-9]\+/connection.native.port=$CASSANDRA_NATIVE_PORT/g" -i "$CONF_DIR"/ecc.cfg
-sed "s/#\?connection.jmx.host=[a-zA-Z0-9.]\+/connection.jmx.host=$CASSANDRA_IP/g" -i "$CONF_DIR"/ecc.cfg
-sed "s/#\?connection.jmx.port=[0-9]\+/connection.jmx.port=$CASSANDRA_JMX_PORT/g" -i "$CONF_DIR"/ecc.cfg
+# Remove comment lines
+sed '/^\s*#.*/d' -i "$CONF_DIR"/ecc.yml
+# Replace native/jmx host (it's important not to change the REST host)
+sed "/cql:/{n;s/host: .*/host: $CASSANDRA_IP/}" -i "$CONF_DIR"/ecc.yml
+sed "/jmx:/{n;s/host: .*/host: $CASSANDRA_IP/}" -i "$CONF_DIR"/ecc.yml
+# Replace native/jmx ports
+sed "s/port: 9042/port: $CASSANDRA_NATIVE_PORT/g" -i "$CONF_DIR"/ecc.yml
+sed "s/port: 7199/port: $CASSANDRA_JMX_PORT/g" -i "$CONF_DIR"/ecc.yml
 
 # Logback
 

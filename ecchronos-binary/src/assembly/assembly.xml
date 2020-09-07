@@ -42,7 +42,7 @@
             <directory>${project.basedir}/src/resources</directory>
             <outputDirectory>conf</outputDirectory>
             <includes>
-                <include>ecc.cfg</include>
+                <include>ecc.yml</include>
                 <include>jvm.options</include>
                 <include>logback.xml</include>
                 <include>create_keyspace_sample.cql</include>

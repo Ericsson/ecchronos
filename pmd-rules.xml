@@ -27,6 +27,7 @@
         <exclude name="LawOfDemeter" />
         <exclude name="AvoidCatchingGenericException" /> <!-- Should consider fixing this -->
         <exclude name="LoosePackageCoupling" />
+        <exclude name="DataClass" />
     </rule>
 
     <rule ref="category/java/bestpractices.xml">
