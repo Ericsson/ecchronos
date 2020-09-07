@@ -34,7 +34,7 @@ def step_import_schema(context, schema_name):
 @given(u'we schedule an on demand repair on {keyspace}.{table}')
 def schedule_demand_repair(context, keyspace, table):
     step_set_url(context, "http://localhost:8080/repair-management/v1/schedule/keyspaces/{0}/tables/{1}".format(keyspace, table))
-    step_send_get_request(context)
+    step_send_post_request(context)
     step_verify_response_is_succesful(context)
     pass
 
@@ -49,7 +49,7 @@ def step_send_get_request(context):
     context.response = requests.get(context.url)
 
 @when('I send a POST request')
-def step_send_get_request(context):
+def step_send_post_request(context):
     assert context.url is not None
     context.response = requests.post(context.url)
 

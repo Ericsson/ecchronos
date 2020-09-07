@@ -33,7 +33,7 @@ public class TestTableRepairConfig
     {
         // Given
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
-        RepairJobView repairJobView = new RepairJobView(UUID.randomUUID(), new TableReference("ks", "tbl"), repairConfig, null);
+        RepairJobView repairJobView = new RepairJobView(UUID.randomUUID(), new TableReference("ks", "tbl"), repairConfig, null, RepairJobView.Status.COMPLETED, 0);
         // When
         TableRepairConfig tableRepairConfig = new TableRepairConfig(repairJobView);
         // Then

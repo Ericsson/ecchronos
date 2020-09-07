@@ -101,6 +101,44 @@ public class TestScheduledJobQueue
         assertThat(queue.iterator()).containsExactly(job);
     }
 
+    @Test
+    public void testRunOnceJobRemovedOnFinish()
+    {
+        StateJob job = new StateJob(ScheduledJob.Priority.LOW, ScheduledJob.State.FINISHED);
+        StateJob job2 = new StateJob(ScheduledJob.Priority.LOW, ScheduledJob.State.RUNNABLE);
+
+        queue.add(job);
+        queue.add(job2);
+
+        for (ScheduledJob next : queue)
+        {
+            assertThat(next.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
+        }
+
+        assertThat(queue.size()).isEqualTo(1);
+
+        Assertions.assertThat(queue.iterator()).containsExactly(job2);
+    }
+
+    @Test
+    public void testRunOnceJobRemovedOnFailure()
+    {
+        StateJob job = new StateJob(ScheduledJob.Priority.LOW, ScheduledJob.State.FAILED);
+        StateJob job2 = new StateJob(ScheduledJob.Priority.LOW, ScheduledJob.State.RUNNABLE);
+
+        queue.add(job);
+        queue.add(job2);
+
+        for (ScheduledJob next : queue)
+        {
+            assertThat(next.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
+        }
+
+        assertThat(queue.size()).isEqualTo(1);
+
+        Assertions.assertThat(queue.iterator()).containsExactly(job2);
+    }
+
     private class Comp implements Comparator<ScheduledJob>
     {
 
@@ -136,6 +174,22 @@ public class TestScheduledJobQueue
         public String toString()
         {
             return "RunnableOnce " + getPriority();
+        }
+    }
+
+    private class StateJob extends DummyJob
+    {
+        private State state;
+        StateJob(Priority priority, State state)
+        {
+            super(priority);
+            this.state = state;
+        }
+
+        @Override
+        public State getState()
+        {
+            return state;
         }
     }
 }

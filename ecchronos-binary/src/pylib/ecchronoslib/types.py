@@ -51,7 +51,7 @@ class RepairJob:
         self.repaired_ratio = float(data["repairedRatio"] if "repairedRatio" in data else 0)
         self.status = data["status"] if "status" in data else "<UNKNOWN>"
         self.next_repair_in_ms = int(data["nextRepairInMs"] if "nextRepairInMs" in data else -1)
-        self.reoccurring = data["reoccurring"] if "reoccurring" in data else "<UNKNOWN>"
+        self.recurring = data["recurring"] if "recurring" in data else "<UNKNOWN>"
         self.id = data["id"] if "id" in data else "<UNKNOWN>"
 
     def is_valid(self):

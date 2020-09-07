@@ -29,13 +29,22 @@ public class RepairJobView
     private final TableReference myTableReference;
     private final RepairConfiguration myRepairConfiguration;
     private final RepairStateSnapshot myRepairStateSnapshot;
+    private final Status myStatus;
+    private final double myProgress;
 
-    public RepairJobView(UUID id, TableReference tableReference, RepairConfiguration repairConfiguration, RepairStateSnapshot repairStateSnapshot)
+    public enum Status
+    {
+        COMPLETED, IN_QUEUE, WARNING, ERROR
+    }
+
+    public RepairJobView(UUID id, TableReference tableReference, RepairConfiguration repairConfiguration, RepairStateSnapshot repairStateSnapshot, Status status, double progress)
     {
         myId = id;
         myTableReference = tableReference;
         myRepairConfiguration = repairConfiguration;
         myRepairStateSnapshot = repairStateSnapshot;
+        myStatus = status;
+        myProgress = progress;
     }
 
     /**
@@ -70,6 +79,23 @@ public class RepairJobView
         return myRepairStateSnapshot;
     }
 
+    /**
+     * @return the status of this job
+     */
+    public Status getStatus()
+    {
+        return myStatus;
+    }
+
+    /**
+     * @return the progress of this job
+     */
+    public double getProgress()
+    {
+        return myProgress;
+    }
+
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -78,11 +104,13 @@ public class RepairJobView
         return Objects.equals(myId, that.myId) &&
                 Objects.equals(myTableReference, that.myTableReference) &&
                 Objects.equals(myRepairConfiguration, that.myRepairConfiguration) &&
-                Objects.equals(myRepairStateSnapshot, that.myRepairStateSnapshot);
+                Objects.equals(myRepairStateSnapshot, that.myRepairStateSnapshot) &&
+                Objects.equals(myStatus, that.myStatus) &&
+                Objects.equals(myProgress, that.myProgress);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(myId, myTableReference, myRepairConfiguration, myRepairStateSnapshot);
+        return Objects.hash(myId, myTableReference, myRepairConfiguration, myRepairStateSnapshot, myStatus, myProgress);
     }
 }

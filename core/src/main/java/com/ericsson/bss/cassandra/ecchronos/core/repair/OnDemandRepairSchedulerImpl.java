@@ -19,6 +19,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.datastax.driver.core.KeyspaceMetadata;
@@ -37,6 +40,9 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
  */
 public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Closeable
 {
+    private static final int DEFAULT_INITIAL_DELAY_IN_DAYS = 1;
+    private static final int DEFAULT_DELAY_IN_DAYS = 7;
+
     private final Map<UUID, OnDemandRepairJob> myScheduledJobs = new HashMap<>();
     private final Object myLock = new Object();
 
@@ -47,6 +53,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     private final RepairLockType myRepairLockType;
     private final Metadata myMetadata;
     private final RepairConfiguration myRepairConfiguration;
+    private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor();
 
     private OnDemandRepairSchedulerImpl(Builder builder)
     {
@@ -57,6 +64,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         myRepairLockType = builder.repairLockType;
         myMetadata = builder.metadata;
         myRepairConfiguration = builder.repairConfiguration;
+        myExecutor.scheduleWithFixedDelay(() -> clearFailedJobs(), DEFAULT_INITIAL_DELAY_IN_DAYS, DEFAULT_DELAY_IN_DAYS, TimeUnit.DAYS);
     }
 
     @Override
@@ -64,10 +72,8 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     {
         synchronized (myLock)
         {
-            for (UUID uuid : myScheduledJobs.keySet())
+            for (ScheduledJob job : myScheduledJobs.values())
             {
-                ScheduledJob job = myScheduledJobs.get(uuid);
-
                 descheduleTable(job);
             }
 
@@ -112,6 +118,14 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         synchronized (myLock)
         {
             myScheduledJobs.remove(id);
+        }
+    }
+
+    private void clearFailedJobs()
+    {
+        synchronized (myLock)
+        {
+            myScheduledJobs.values().removeIf(job -> job.getState().equals(ScheduledJob.State.FAILED));
         }
     }
 

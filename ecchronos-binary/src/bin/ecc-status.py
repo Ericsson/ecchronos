@@ -52,7 +52,7 @@ def print_verbose_repair_job(repair_job, max_lines):
     print(verbose_print_format.format("Repaired(%)", repair_job.get_repair_percentage()))
     print(verbose_print_format.format("Repaired at", repair_job.get_last_repaired_at()))
     print(verbose_print_format.format("Next repair", repair_job.get_next_repair()))
-    print(verbose_print_format.format("Reoccurring", repair_job.reoccurring))
+    print(verbose_print_format.format("Recurring", repair_job.recurring))
 
     vnode_state_table = list()
     vnode_state_table.append(["Start token", "End token", "Replicas", "Repaired at", "Repaired"])
@@ -76,7 +76,7 @@ def convert_repair_job(repair_job):
     entry.append(repair_job.get_repair_percentage())
     entry.append(repair_job.get_last_repaired_at())
     entry.append(repair_job.get_next_repair())
-    entry.append(repair_job.reoccurring)
+    entry.append(repair_job.recurring)
     entry.append(repair_job.id)
 
     return entry
@@ -91,7 +91,7 @@ def print_summary(repair_jobs):
 
 def print_repair_jobs(repair_jobs, max_lines):
     repair_jobs_table = list()
-    repair_jobs_table.append(["Keyspace", "Table", "Status", "Repaired(%)", "Repaired at", "Next repair", "reoccurring", "id"])
+    repair_jobs_table.append(["Keyspace", "Table", "Status", "Repaired(%)", "Repaired at", "Next repair", "recurring", "id"])
     sorted_repair_jobs = sorted(repair_jobs, key=lambda job: job.last_repaired_at_in_ms)
 
     if max_lines > -1:

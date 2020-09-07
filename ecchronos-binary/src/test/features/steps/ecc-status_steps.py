@@ -121,7 +121,7 @@ def step_validate_list_tables_header(context):
     assert header[0] == len(header[0]) * header[0][0], header[0]  # -----
 
     header[1] = strip_and_collapse(header[1])
-    assert header[1] == "| Keyspace | Table | Status | Repaired(%) | Repaired at | Next repair | reoccurring | id |", header[1]
+    assert header[1] == "| Keyspace | Table | Status | Repaired(%) | Repaired at | Next repair | recurring | id |", header[1]
 
     assert header[2] == len(header[2]) * header[2][0], header[2]  # -----
     pass

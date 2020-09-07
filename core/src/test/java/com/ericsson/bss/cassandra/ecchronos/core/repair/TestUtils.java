@@ -56,31 +56,104 @@ public class TestUtils
                 .build();
     }
 
-    public static RepairJobView createRepairJob(String keyspace, String table, long lastRepairedAt, long repairInterval)
+    public static class RepairJobBuilder
     {
-        return createRepairJob(UUID.randomUUID(), keyspace, table, lastRepairedAt, repairInterval, new LongTokenRange(1, 2), ImmutableSet.of());
+        private UUID id = UUID.randomUUID();
+        private String keyspace;
+        private String table;
+        private long lastRepairedAt = 0;
+        private long repairInterval = 0;
+        private ImmutableSet<Host> replicas = ImmutableSet.of();
+        private LongTokenRange longTokenRange = new LongTokenRange(1, 2);
+        private Collection<VnodeRepairState> vnodeRepairStateSet;
+
+        private double progress = 0;
+        private RepairJobView.Status status = RepairJobView.Status.IN_QUEUE;
+
+        public RepairJobBuilder withId(UUID id)
+        {
+            this.id = id;
+            return this;
+        }
+
+        public RepairJobBuilder withKeyspace(String keyspace)
+        {
+            this.keyspace = keyspace;
+            return this;
+        }
+
+        public RepairJobBuilder withTable(String table)
+        {
+            this.table = table;
+            return this;
+        }
+
+        public RepairJobBuilder withLastRepairedAt(long lastRepairedAt)
+        {
+            this.lastRepairedAt = lastRepairedAt;
+            return this;
+        }
+
+        public RepairJobBuilder withRepairInterval(long repairInterval)
+        {
+            this.repairInterval = repairInterval;
+            return this;
+        }
+
+
+        public RepairJobBuilder withVnodeRepairStateSet(Collection<VnodeRepairState> vnodeRepairStateSet)
+        {
+            this.vnodeRepairStateSet = vnodeRepairStateSet;
+            return this;
+        }
+
+        public RepairJobBuilder withStatus(RepairJobView.Status status)
+        {
+            this.status = status;
+            return this;
+        }
+
+        public RepairJobBuilder withProgress(double progress)
+        {
+            this.progress = progress;
+            return this;
+        }
+
+        public RepairJobView build()
+        {
+            if (keyspace == null)
+            {
+                throw new IllegalArgumentException("keyspace cannot be null");
+            }
+            if (table == null)
+            {
+                throw new IllegalArgumentException("table cannot be null");
+            }
+            if (lastRepairedAt == 0)
+            {
+                throw new IllegalArgumentException("lastRepairedAt not set");
+            }
+            if (repairInterval == 0)
+            {
+                throw new IllegalArgumentException("repairInterval not set");
+            }
+            VnodeRepairStates vnodeRepairStates;
+            if ( vnodeRepairStateSet != null)
+            {
+                vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(vnodeRepairStateSet).build();
+            }
+            else
+            {
+                VnodeRepairState vnodeRepairState = createVnodeRepairState(longTokenRange, replicas, lastRepairedAt);
+                vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Sets.newSet(vnodeRepairState)).build();
+            }
+
+            return new RepairJobView(id, new TableReference(keyspace, table),
+                    generateRepairConfiguration(repairInterval),
+                    generateRepairStateSnapshot(lastRepairedAt, vnodeRepairStates), status,progress);
+        }
     }
 
-    public static RepairJobView createRepairJob(UUID id, String keyspace, String table, long lastRepairedAt, long repairInterval)
-    {
-        return createRepairJob(id, keyspace, table, lastRepairedAt, repairInterval, new LongTokenRange(1, 2), ImmutableSet.of());
-    }
-
-    public static RepairJobView createRepairJob(UUID id, String keyspace, String table, long lastRepairedAt, long repairInterval, LongTokenRange longTokenRange, ImmutableSet<Host> replicas)
-    {
-        VnodeRepairState vnodeRepairState = createVnodeRepairState(longTokenRange, replicas, lastRepairedAt);
-
-        return createRepairJob(id, keyspace, table, lastRepairedAt, repairInterval, Sets.newSet(vnodeRepairState));
-    }
-
-    public static RepairJobView createRepairJob(UUID id, String keyspace, String table, long lastRepairedAt, long repairInterval, Collection<VnodeRepairState> vnodeRepairStateSet)
-    {
-        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(vnodeRepairStateSet).build();
-
-        return new RepairJobView(id, new TableReference(keyspace, table),
-                generateRepairConfiguration(repairInterval),
-                generateRepairStateSnapshot(lastRepairedAt, vnodeRepairStates));
-    }
 
     public static VnodeRepairState createVnodeRepairState(long startToken, long endToken, ImmutableSet<Host> replicas, long lastRepairedAt)
     {

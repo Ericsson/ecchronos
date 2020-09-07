@@ -76,7 +76,7 @@ public class TestOnDemandRepairJob
     public void testJobCorrectlyReturned()
     {
         OnDemandRepairJob repairJob = createOnDemandRepairJob();
-        RepairJobView expectedView = new RepairJobView(repairJob.getId(), myTableReference, RepairConfiguration.DEFAULT, null);
+        RepairJobView expectedView = new RepairJobView(repairJob.getId(), myTableReference, RepairConfiguration.DEFAULT, null, RepairJobView.Status.IN_QUEUE, 0);
         assertThat(repairJob.getId()).isEqualTo(repairJob.getId());
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
         assertThat(repairJob.getRepairConfiguration()).isEqualTo(RepairConfiguration.DEFAULT);
@@ -84,6 +84,23 @@ public class TestOnDemandRepairJob
         assertThat(repairJob.getView().getRepairConfiguration()).isEqualTo(expectedView.getRepairConfiguration());
         assertThat(repairJob.getView().getRepairStateSnapshot()).isNull();
         assertThat(repairJob.getView().getTableReference()).isEqualTo(expectedView.getTableReference());
+        assertThat(repairJob.getView().getStatus()).isEqualTo(expectedView.getStatus());
+    }
+
+    @Test
+    public void testFailedJobCorrectlyReturned()
+    {
+        OnDemandRepairJob repairJob = createOnDemandRepairJob();
+        repairJob.postExecute(false, null);
+        RepairJobView expectedView = new RepairJobView(repairJob.getId(), myTableReference, RepairConfiguration.DEFAULT, null, RepairJobView.Status.ERROR, 0);
+        assertThat(repairJob.getId()).isEqualTo(repairJob.getId());
+        assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
+        assertThat(repairJob.getRepairConfiguration()).isEqualTo(RepairConfiguration.DEFAULT);
+        assertThat(repairJob.getTableReference()).isEqualTo(myTableReference);
+        assertThat(repairJob.getView().getRepairConfiguration()).isEqualTo(expectedView.getRepairConfiguration());
+        assertThat(repairJob.getView().getRepairStateSnapshot()).isNull();
+        assertThat(repairJob.getView().getTableReference()).isEqualTo(expectedView.getTableReference());
+        assertThat(repairJob.getView().getStatus()).isEqualTo(expectedView.getStatus());
     }
 
     @Test
@@ -115,6 +132,18 @@ public class TestOnDemandRepairJob
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
         repairJob.postExecute(false, it.next());
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FAILED);
+    }
+
+    @Test
+    public void testGetProgress()
+    {
+        OnDemandRepairJob repairJob = createOnDemandRepairJob();
+        assertThat(repairJob.getProgress()).isEqualTo(0);
+        Iterator<ScheduledTask> it = repairJob.iterator();
+        repairJob.postExecute(true, it.next());
+        assertThat(repairJob.getProgress()).isEqualTo(0.5);
+        repairJob.postExecute(true, it.next());
+        assertThat(repairJob.getProgress()).isEqualTo(1);
     }
 
     private OnDemandRepairJob createOnDemandRepairJob()

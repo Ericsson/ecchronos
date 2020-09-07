@@ -262,59 +262,7 @@ public class TestScheduleManager
         assertThat(myScheduler.getQueueSize()).isEqualTo(0);
     }
 
-    @Test
-    public void testRunOnceJobRemovedOnFinish()
-    {
-        RunOnceJob job = new RunOnceJob(ScheduledJob.Priority.LOW, ScheduledJob.State.FINISHED);
-        myScheduler.schedule(job);
 
-        myScheduler.run();
-
-        assertThat(job.hasRun()).isTrue();
-        assertThat(myScheduler.getQueueSize()).isEqualTo(1);
-
-        myScheduler.run();
-
-        assertThat(myScheduler.getQueueSize()).isEqualTo(0);
-    }
-
-    @Test
-    public void testRunOnceJobRemovedOnFailure()
-    {
-        RunOnceJob job = new RunOnceJob(ScheduledJob.Priority.LOW, ScheduledJob.State.FAILED);
-        myScheduler.schedule(job);
-
-        myScheduler.run();
-
-        assertThat(job.hasRun()).isTrue();
-        assertThat(myScheduler.getQueueSize()).isEqualTo(1);
-
-        myScheduler.run();
-
-        assertThat(myScheduler.getQueueSize()).isEqualTo(0);
-    }
-
-
-
-    private class RunOnceJob extends DummyJob
-    {
-        private State state;
-        RunOnceJob(Priority priority, State state)
-        {
-            super(priority);
-            this.state = state;
-        }
-
-        @Override
-        public State getState()
-        {
-            if(hasRun)
-            {
-                return state;
-            }
-            return super.getState();
-        }
-    }
 
 
     private class LongRunningJob extends ScheduledJob

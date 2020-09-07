@@ -24,7 +24,6 @@ import java.util.UUID;
 
 import com.ericsson.bss.cassandra.ecchronos.core.osgi.commands.RepairStatusCommand.SortBy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob.Status;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
@@ -34,6 +33,7 @@ import org.junit.runner.RunWith;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView.Status;
 
 @RunWith(JUnitParamsRunner.class)
 public class TestRepairStatusCommand

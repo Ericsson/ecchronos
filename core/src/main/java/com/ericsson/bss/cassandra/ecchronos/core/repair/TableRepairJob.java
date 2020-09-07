@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
@@ -79,7 +80,48 @@ public class TableRepairJob extends ScheduledJob
 
     public RepairJobView getView()
     {
-        return new RepairJobView(getId(), myTableReference, myRepairConfiguration, myRepairState.getSnapshot());
+        long now = System.currentTimeMillis();
+        return new RepairJobView(getId(), myTableReference, myRepairConfiguration, myRepairState.getSnapshot(), getStatus(now), getProgress(now));
+    }
+
+    private double getProgress(long timestamp)
+    {
+        long interval = myRepairConfiguration.getRepairIntervalInMs();
+        Collection<VnodeRepairState> states = myRepairState.getSnapshot().getVnodeRepairStates().getVnodeRepairStates();
+
+        long nRepaired = states.stream()
+                .filter(isRepaired(timestamp, interval))
+                .count();
+
+        return states.isEmpty()
+                ? 0
+                : (double) nRepaired / states.size();
+    }
+
+    private Predicate<VnodeRepairState> isRepaired(long timestamp, long interval)
+    {
+        return state -> timestamp - state.lastRepairedAt() <= interval;
+    }
+
+    private RepairJobView.Status getStatus(long timestamp)
+    {
+        long repairedAt = myRepairState.getSnapshot().lastRepairedAt();
+        long msSinceLastRepair = timestamp - repairedAt;
+        RepairConfiguration config = myRepairConfiguration;
+
+        if (msSinceLastRepair >= config.getRepairErrorTimeInMs())
+        {
+            return RepairJobView.Status.ERROR;
+        }
+        if (msSinceLastRepair >= config.getRepairWarningTimeInMs())
+        {
+            return RepairJobView.Status.WARNING;
+        }
+        if (msSinceLastRepair >= config.getRepairIntervalInMs())
+        {
+            return RepairJobView.Status.IN_QUEUE;
+        }
+        return RepairJobView.Status.COMPLETED;
     }
 
     @Override

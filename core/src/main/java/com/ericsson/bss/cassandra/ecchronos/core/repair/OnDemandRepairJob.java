@@ -60,6 +60,8 @@ public class OnDemandRepairJob extends ScheduledJob
 
     private final Map<LongTokenRange, ImmutableSet<Host>> myTokens;
 
+    private final int myTotalTasks;
+
     private boolean failed = false;
 
     public OnDemandRepairJob(OnDemandRepairJob.Builder builder)
@@ -76,6 +78,7 @@ public class OnDemandRepairJob extends ScheduledJob
         myTokens = myReplicationState
                 .getTokenRangeToReplicas(myTableReference);
         myTasks = new CopyOnWriteArrayList<>(createRepairTasks(myTokens));
+        myTotalTasks = myTasks.size();
     }
 
     private List<ScheduledTask> createRepairTasks(Map<LongTokenRange, ImmutableSet<Host>> tokenRanges)
@@ -115,7 +118,12 @@ public class OnDemandRepairJob extends ScheduledJob
 
     public RepairJobView getView()
     {
-        return new RepairJobView(getId(), myTableReference, myRepairConfiguration, null);
+        return new RepairJobView(getId(), myTableReference, myRepairConfiguration, null, getStatus(), getProgress());
+    }
+
+    private RepairJobView.Status getStatus()
+    {
+        return failed ? RepairJobView.Status.ERROR : RepairJobView.Status.IN_QUEUE;
     }
 
     @Override
@@ -169,6 +177,12 @@ public class OnDemandRepairJob extends ScheduledJob
             return State.FAILED;
         }
         return myTasks.isEmpty() ? State.FINISHED : State.RUNNABLE;
+    }
+
+    public double getProgress()
+    {
+        int finishedTasks = myTotalTasks - myTasks.size();
+        return finishedTasks == 0 ? 0 : (double) finishedTasks / myTotalTasks;
     }
 
     @Override
