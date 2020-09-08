@@ -133,8 +133,8 @@ public class ECChronos implements Closeable
 
     public static void main(String[] args) throws IOException
     {
-        NativeConnectionProvider nativeConnectionProvider = null; // NOPMD
-        JmxConnectionProvider jmxConnectionProvider = null; // NOPMD
+        NativeConnectionProvider nativeConnectionProvider = null;
+        JmxConnectionProvider jmxConnectionProvider = null;
         StatementDecorator statementDecorator;
 
         try
@@ -149,7 +149,7 @@ public class ECChronos implements Closeable
             jmxConnectionProvider = getJmxConnectionProvider(configuration, connectionProperties);
             statementDecorator = getStatementDecorator(configuration, connectionProperties);
 
-            ECChronos ecChronos = new ECChronos(configuration, new LoggingFaultReporter(), nativeConnectionProvider, // NOPMD
+            ECChronos ecChronos = new ECChronos(configuration, new LoggingFaultReporter(), nativeConnectionProvider,
                     jmxConnectionProvider, statementDecorator);
 
             start(ecChronos, nativeConnectionProvider, jmxConnectionProvider);
