@@ -260,6 +260,17 @@ public class CASLockFactory implements LockFactory, Closeable
     public void close()
     {
         myExecutor.shutdown();
+        try
+        {
+            if (!myExecutor.awaitTermination(1, TimeUnit.SECONDS))
+            {
+                LOG.warn("Executing tasks did not finish within one second");
+            }
+        }
+        catch (InterruptedException e)
+        {
+            LOG.warn("Interrupted while waiting for executor to shut down", e);
+        }
     }
 
     @VisibleForTesting
