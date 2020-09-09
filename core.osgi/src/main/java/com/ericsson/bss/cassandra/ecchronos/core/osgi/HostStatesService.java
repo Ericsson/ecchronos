@@ -51,7 +51,6 @@ public class HostStatesService implements HostStates
     public void deactivate()
     {
         myDelegateHostStates.close();
-        myDelegateHostStates = null;
     }
 
     @Override

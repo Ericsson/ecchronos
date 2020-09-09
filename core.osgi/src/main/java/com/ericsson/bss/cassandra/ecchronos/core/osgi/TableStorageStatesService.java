@@ -62,7 +62,6 @@ public class TableStorageStatesService implements TableStorageStates
     public synchronized void deactivate()
     {
         myDelegateTableStorageStates.close();
-        myDelegateTableStorageStates = null;
     }
 
     @Override

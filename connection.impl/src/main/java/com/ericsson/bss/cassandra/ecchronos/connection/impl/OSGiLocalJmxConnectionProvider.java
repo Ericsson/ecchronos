@@ -46,7 +46,6 @@ public class OSGiLocalJmxConnectionProvider implements JmxConnectionProvider
     public synchronized void deactivate() throws IOException
     {
         myDelegateJmxConnectionProvider.close();
-        myDelegateJmxConnectionProvider = null;
     }
 
     @Override

@@ -14,21 +14,15 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
-import java.util.Set;
-
-import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProviderImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-
 import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProviderImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import org.osgi.service.component.annotations.*;
+
+import java.util.Set;
 
 @Component(service = ReplicatedTableProvider.class)
 public class ReplicatedTableProviderService implements ReplicatedTableProvider
@@ -45,12 +39,6 @@ public class ReplicatedTableProviderService implements ReplicatedTableProvider
         Host localhost = myNativeConnectionProvider.getLocalHost();
 
         myDelegateReplicatedTableProvider = new ReplicatedTableProviderImpl(localhost, metadata);
-    }
-
-    @Deactivate
-    public void deactivate()
-    {
-        myDelegateReplicatedTableProvider = null;
     }
 
     @Override

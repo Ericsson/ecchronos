@@ -54,7 +54,7 @@ public class HostStatesImpl implements HostStates, Closeable
         refreshNodeStatus();
 
         Boolean status = myHostStates.get(address);
-        return status == null ? false : status;
+        return status != null && status;
     }
 
     @Override
