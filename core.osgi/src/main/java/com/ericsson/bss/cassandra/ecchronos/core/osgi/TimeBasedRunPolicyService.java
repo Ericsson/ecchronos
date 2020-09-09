@@ -60,7 +60,6 @@ public class TimeBasedRunPolicyService implements RunPolicy, TableRepairPolicy
     public synchronized void deactivate()
     {
         myDelegatePolicy.close();
-        myDelegatePolicy = null;
     }
 
     @Override

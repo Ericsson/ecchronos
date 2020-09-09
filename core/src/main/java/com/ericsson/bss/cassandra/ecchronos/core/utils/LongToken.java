@@ -14,6 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
+import java.util.Objects;
+
 /**
  * A representation of a token in Cassandra.
  */
@@ -39,35 +41,20 @@ public class LongToken implements Comparable<LongToken>
     }
 
     @Override
-    public int hashCode()
+    public boolean equals(Object o)
     {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + (int) (value ^ (value >>> 32));
-        return result;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        LongToken longToken = (LongToken) o;
+        return value == longToken.value;
     }
 
     @Override
-    public boolean equals(Object obj)
+    public int hashCode()
     {
-        if (this == obj)
-        {
-            return true;
-        }
-        if (obj == null)
-        {
-            return false;
-        }
-        if (getClass() != obj.getClass())
-        {
-            return false;
-        }
-        LongToken other = (LongToken) obj;
-        if (value != other.value)
-        {
-            return false;
-        }
-        return true;
+        return Objects.hash(value);
     }
 
     @Override

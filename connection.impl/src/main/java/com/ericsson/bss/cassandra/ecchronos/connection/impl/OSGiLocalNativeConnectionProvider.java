@@ -45,7 +45,6 @@ public class OSGiLocalNativeConnectionProvider implements NativeConnectionProvid
     public synchronized void deactivate()
     {
         myDelegateNativeConnectionProvider.close();
-        myDelegateNativeConnectionProvider = null;
     }
 
     @Override
