@@ -22,6 +22,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStatesI
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
+import org.assertj.core.util.Preconditions;
 import org.mockito.internal.util.collections.Sets;
 
 import java.util.Collection;
@@ -121,22 +122,10 @@ public class TestUtils
 
         public RepairJobView build()
         {
-            if (keyspace == null)
-            {
-                throw new IllegalArgumentException("keyspace cannot be null");
-            }
-            if (table == null)
-            {
-                throw new IllegalArgumentException("table cannot be null");
-            }
-            if (lastRepairedAt == 0)
-            {
-                throw new IllegalArgumentException("lastRepairedAt not set");
-            }
-            if (repairInterval == 0)
-            {
-                throw new IllegalArgumentException("repairInterval not set");
-            }
+            Preconditions.checkNotNull(keyspace, "Keyspace cannot be null");
+            Preconditions.checkNotNull(table, "Table cannot be null");
+            Preconditions.checkArgument(lastRepairedAt > 0, "Last repaired not set");
+            Preconditions.checkArgument(repairInterval > 0, "Repair interval not set");
             VnodeRepairStates vnodeRepairStates;
             if ( vnodeRepairStateSet != null)
             {

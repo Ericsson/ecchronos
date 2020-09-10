@@ -78,6 +78,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
             }
 
             myScheduledJobs.clear();
+            myExecutor.shutdown();
         }
     }
 

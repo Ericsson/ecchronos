@@ -93,7 +93,6 @@ public class TestOnDemandRepairJob
         OnDemandRepairJob repairJob = createOnDemandRepairJob();
         repairJob.postExecute(false, null);
         RepairJobView expectedView = new RepairJobView(repairJob.getId(), myTableReference, RepairConfiguration.DEFAULT, null, RepairJobView.Status.ERROR, 0);
-        assertThat(repairJob.getId()).isEqualTo(repairJob.getId());
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
         assertThat(repairJob.getRepairConfiguration()).isEqualTo(RepairConfiguration.DEFAULT);
         assertThat(repairJob.getTableReference()).isEqualTo(myTableReference);

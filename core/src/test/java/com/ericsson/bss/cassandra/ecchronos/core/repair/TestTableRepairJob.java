@@ -425,16 +425,16 @@ public class TestTableRepairJob
     @Test
     public void testHalfCompleteProgress()
     {
-        long repairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(7);
-        long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(9);
+        long repairedAtFirst = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(7);
         long lastRepairedAtSecond = System.currentTimeMillis();
+        long lastRepairedAtThird = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(9);
 
-        VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), lastRepairedAt);
+        VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), lastRepairedAtThird);
         VnodeRepairState vnodeRepairState2 = TestUtils.createVnodeRepairState(3, 4, ImmutableSet.of(), lastRepairedAtSecond);
 
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2)).build();
         doReturn(vnodeRepairStates).when(myRepairStateSnapshot).getVnodeRepairStates();
-        doReturn(repairedAt).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(repairedAtFirst).when(myRepairStateSnapshot).lastRepairedAt();
 
         assertThat(myRepairJob.getView().getProgress()).isEqualTo(0.5d);
     }
@@ -457,9 +457,9 @@ public class TestTableRepairJob
     public void testInQueueProgress()
     {
         long repairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(2);
-        long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(4);
+        long repairedAtSecond = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(4);
 
-        VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), lastRepairedAt);
+        VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), repairedAtSecond);
         VnodeRepairState vnodeRepairState2 = TestUtils.createVnodeRepairState(3, 4, ImmutableSet.of(), repairedAt);
 
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2)).build();

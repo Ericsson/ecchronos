@@ -174,6 +174,7 @@ public class OnDemandRepairJob extends ScheduledJob
             .getTokenRangeToReplicas(myTableReference)))
         {
             LOG.error("Repair job with id {} failed, token Ranges have changed since repair has was triggered", getId());
+            failed = true;
             return State.FAILED;
         }
         return myTasks.isEmpty() ? State.FINISHED : State.RUNNABLE;
@@ -182,7 +183,7 @@ public class OnDemandRepairJob extends ScheduledJob
     public double getProgress()
     {
         int finishedTasks = myTotalTasks - myTasks.size();
-        return finishedTasks == 0 ? 0 : (double) finishedTasks / myTotalTasks;
+        return myTotalTasks == 0 ? 0 : (double) finishedTasks / myTotalTasks;
     }
 
     @Override
