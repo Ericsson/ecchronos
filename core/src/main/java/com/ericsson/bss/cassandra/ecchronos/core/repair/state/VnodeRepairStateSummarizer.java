@@ -119,7 +119,8 @@ public final class VnodeRepairStateSummarizer
     {
         splitOverlapping();
 
-        for (int i = 0; i < mySummarizedRanges.size() - 1; i++)
+        int i = 0;
+        for (; i < mySummarizedRanges.size() - 1; i++)
         {
             NormalizedRange current = mySummarizedRanges.get(i);
             NormalizedRange next = mySummarizedRanges.get(i + 1);
@@ -146,7 +147,8 @@ public final class VnodeRepairStateSummarizer
 
     private void splitOverlapping()
     {
-        for (int i = 0; i < mySummarizedRanges.size() - 1; i++)
+        int i = 0;
+        for (; i < mySummarizedRanges.size() - 1; i++)
         {
             NormalizedRange current = mySummarizedRanges.get(i);
             NormalizedRange next = mySummarizedRanges.get(i + 1);

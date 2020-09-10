@@ -25,12 +25,8 @@
     <rule ref="category/java/design.xml">
         <exclude name="TooManyMethods" />
         <exclude name="LawOfDemeter" />
-        <exclude name="ExcessiveImports" />
-        <exclude name="AvoidCatchingGenericException" />
-        <exclude name="SimplifiedTernary" />
-        <exclude name="SimplifyBooleanReturns" />
-        <exclude name="CyclomaticComplexity" />
-        <exclude name="DataClass" />
+        <exclude name="AvoidCatchingGenericException" /> <!-- Should consider fixing this -->
+        <exclude name="LoosePackageCoupling" />
     </rule>
 
     <rule ref="category/java/bestpractices.xml">
@@ -40,9 +36,7 @@
         <exclude name="BeanMembersShouldSerialize" />
         <exclude name="DataflowAnomalyAnalysis" />
         <exclude name="AvoidBranchingStatementAsLastInLoop" />
-        <exclude name="NullAssignment" />
-        <exclude name="MissingSerialVersionUID" />
-        <exclude name="InvalidSlf4jMessageFormat" />
         <exclude name="AvoidFieldNameMatchingMethodName" />
+        <exclude name="CloseResource" />
     </rule>
 </ruleset>

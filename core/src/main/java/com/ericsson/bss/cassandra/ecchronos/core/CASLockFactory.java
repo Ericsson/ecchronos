@@ -14,18 +14,21 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core;
 
+import com.datastax.driver.core.*;
+import com.datastax.driver.core.querybuilder.*;
+import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwareStatement;
+import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
+import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
+import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
+import com.google.common.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.Closeable;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -33,32 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.datastax.driver.core.querybuilder.Delete;
-import com.datastax.driver.core.querybuilder.Insert;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.querybuilder.Select;
-import com.datastax.driver.core.querybuilder.Update;
-import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
-import com.google.common.annotations.VisibleForTesting;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.datastax.driver.core.ConsistencyLevel;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
-import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwareStatement;
-import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
-
-import static com.datastax.driver.core.querybuilder.QueryBuilder.bindMarker;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.set;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.*;
 
 /**
  * Lock factory using Cassandras LWT (Compare-And-Set operations) to create and maintain locks.
@@ -260,6 +238,17 @@ public class CASLockFactory implements LockFactory, Closeable
     public void close()
     {
         myExecutor.shutdown();
+        try
+        {
+            if (!myExecutor.awaitTermination(1, TimeUnit.SECONDS))
+            {
+                LOG.warn("Executing tasks did not finish within one second");
+            }
+        }
+        catch (InterruptedException e)
+        {
+            LOG.warn("Interrupted while waiting for executor to shut down", e);
+        }
     }
 
     @VisibleForTesting

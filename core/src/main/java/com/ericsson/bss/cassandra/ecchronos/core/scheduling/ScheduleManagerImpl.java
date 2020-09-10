@@ -186,7 +186,7 @@ public class ScheduleManagerImpl implements ScheduleManager, Closeable
             {
                 if (e.getCause() != null)
                 {
-                    LOG.warn("Unable to get schedule lock on task", task, e);
+                    LOG.warn("Unable to get schedule lock on task {}", task, e);
                 }
                 return false;
             }

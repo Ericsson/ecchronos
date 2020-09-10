@@ -255,8 +255,6 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
 
         public long rejectionTime()
         {
-            LocalDateTime now = LocalDateTime.now(myClock);
-
             // 00:00->00:00 means that we pause the repair scheduling, so wait DEFAULT_REJECT_TIME instead of until 00:00
             if (myStart.getHour() == 0
                     && myStart.getMinute() == 0
@@ -265,6 +263,13 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
             {
                 return DEFAULT_REJECT_TIME;
             }
+
+            return calculateRejectTime();
+        }
+
+        private long calculateRejectTime()
+        {
+            LocalDateTime now = LocalDateTime.now(myClock);
 
             if (isWraparound())
             {

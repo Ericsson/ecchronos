@@ -16,6 +16,8 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 
 public class ConfigurationException extends Exception
 {
+    private static final long serialVersionUID = -2269440899665538081L;
+
     public ConfigurationException()
     {
     }

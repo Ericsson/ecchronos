@@ -92,7 +92,8 @@
         <org.apache.maven.plugins.maven-failsafe-plugin.version>2.22.1</org.apache.maven.plugins.maven-failsafe-plugin.version>
         <org.apache.maven.plugins.maven-assembly-plugin.version>3.1.0</org.apache.maven.plugins.maven-assembly-plugin.version>
         <org.apache.maven.plugins-maven-dependency-plugin.version>3.1.1</org.apache.maven.plugins-maven-dependency-plugin.version>
-        <org.apache.maven.plugins-maven-pmd-plugin.version>3.11.0</org.apache.maven.plugins-maven-pmd-plugin.version>
+        <org.apache.maven.plugins-maven-pmd-plugin.version>3.13.0</org.apache.maven.plugins-maven-pmd-plugin.version>
+        <org.apache.maven.plugin.maven-jxr-plugin.version>3.0.0</org.apache.maven.plugin.maven-jxr-plugin.version>
         <org.apache.maven.plugins-maven-resources-plugin.version>3.1.0</org.apache.maven.plugins-maven-resources-plugin.version>
         <org.apache.maven.plugins-maven-dependency-plugin.version>3.1.1</org.apache.maven.plugins-maven-dependency-plugin.version>
         <org.apache.maven.plugins-maven-jar-plugin.version>2.6</org.apache.maven.plugins-maven-jar-plugin.version>
@@ -702,7 +703,7 @@ limitations under the License.
                                                         <time>60000</time>
                                                         <tcp>
                                                             <ports>
-                                                                <port>9042</port>
+                                                                <port>7000</port>
                                                             </ports>
                                                         </tcp>
                                                     </wait>
@@ -726,7 +727,7 @@ limitations under the License.
                                                         <time>120000</time>
                                                         <tcp>
                                                             <ports>
-                                                                <port>9042</port>
+                                                                <port>7000</port>
                                                             </ports>
                                                         </tcp>
                                                     </wait>
@@ -749,7 +750,7 @@ limitations under the License.
                                                         <time>120000</time>
                                                         <tcp>
                                                             <ports>
-                                                                <port>9042</port>
+                                                                <port>7000</port>
                                                             </ports>
                                                         </tcp>
                                                     </wait>
@@ -803,6 +804,16 @@ limitations under the License.
             </build>
         </profile>
     </profiles>
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jxr-plugin</artifactId>
+                <version>${org.apache.maven.plugin.maven-jxr-plugin.version}</version>
+            </plugin>
+        </plugins>
+    </reporting>
 
     <distributionManagement>
         <snapshotRepository>

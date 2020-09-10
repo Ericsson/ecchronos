@@ -102,7 +102,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         myLockStatement = mySession.prepare(String.format("INSERT INTO %s.%s (resource, node, metadata) VALUES (?, ?, ?) IF NOT EXISTS", myKeyspaceName, TABLE_LOCK))
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
                 .setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
-        myRemoveLockStatement = mySession.prepare(String.format("DELETE FROM %s.%s WHERE resource=?", myKeyspaceName, TABLE_LOCK));
+        myRemoveLockStatement = mySession.prepare(String.format("DELETE FROM %s.%s WHERE resource=? IF EXISTS", myKeyspaceName, TABLE_LOCK));
         myCompeteStatement = mySession.prepare(String.format("INSERT INTO %s.%s (resource, node, priority) VALUES (?, ?, ?)", myKeyspaceName, TABLE_LOCK_PRIORITY));
         myGetPrioritiesStatement = mySession.prepare(String.format("SELECT * FROM %s.%s WHERE resource=?", myKeyspaceName, TABLE_LOCK_PRIORITY));
     }

@@ -93,7 +93,6 @@ public class DefaultRepairConfigurationProviderComponent
         if (myDelegateRepairConfigurationProvider != null)
         {
             myDelegateRepairConfigurationProvider.close();
-            myDelegateRepairConfigurationProvider = null;
         }
     }
 

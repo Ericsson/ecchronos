@@ -16,6 +16,8 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 
 public class HTTPServerException extends Exception
 {
+    private static final long serialVersionUID = 8396606879364454089L;
+
     public HTTPServerException(String message, Throwable cause)
     {
         super(message, cause);
