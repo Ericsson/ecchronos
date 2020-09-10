@@ -14,6 +14,7 @@
 #
 
 from behave import given, when, then, step
+import time
 import os
 import re
 from subprocess import Popen, PIPE
@@ -88,27 +89,26 @@ def step_list_tables_for_keyspace(context, keyspace):
     pass
 
 
-@when(u'we show table {keyspace}.{table} with a limit of {limit}')
+@when(u'we show job {keyspace}.{table} with a limit of {limit}')
 def step_show_table_with_limit(context, keyspace, table, limit):
-    run_ecc_status(context, [keyspace, table, '--limit', limit])
-
+    run_ecc_status(context, [keyspace, table])
+    id = re.search('[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}',context.out).group(0)
+    run_ecc_status(context, [keyspace, table, id, '--limit', limit])
     output_data = context.out.lstrip().rstrip().split('\n')
 
-    context.table_info = output_data[0:6]
-    context.header = output_data[6:9]
-    context.rows = output_data[9:]
+    context.table_info = output_data[0:7]
+    context.header = output_data[8:9]
+    context.rows = output_data[10:]
     pass
 
-
-@when(u'we show table {keyspace}.{table}')
+@when(u'we list jobs for table {keyspace}.{table}')
 def step_show_table(context, keyspace, table):
     run_ecc_status(context, [keyspace, table])
 
     output_data = context.out.lstrip().rstrip().split('\n')
-
-    context.table_info = output_data[0:6]
-    context.header = output_data[6:9]
-    context.rows = output_data[9:]
+    context.header = output_data[0:3]
+    context.rows = output_data[3:-1]
+    context.summary = output_data[-1:]
     pass
 
 
@@ -121,7 +121,7 @@ def step_validate_list_tables_header(context):
     assert header[0] == len(header[0]) * header[0][0], header[0]  # -----
 
     header[1] = strip_and_collapse(header[1])
-    assert header[1] == "| Keyspace | Table | Status | Repaired(%) | Repaired at | Next repair |", header[1]
+    assert header[1] == "| Keyspace | Table | Status | Repaired(%) | Repaired at | Next repair | recurring | id |", header[1]
 
     assert header[2] == len(header[2]) * header[2][0], header[2]  # -----
     pass
@@ -214,3 +214,14 @@ def step_validate_token_list(context, limit):
     step_validate_list_rows_clear(context)
 
     pass
+
+@then('the job for {keyspace}.{table} disappears when it is finished')
+def verify_job_disappeared(context, keyspace, table):
+    id = re.search('[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}', context.response.text).group(0)
+    timeout = time.time() + (150)
+    output_data = []
+    while "Repair job not found" not in output_data:
+        run_ecc_status(context, [keyspace, table, id, '--limit', "1"])
+        output_data = context.out.lstrip().rstrip().split('\n')
+        time.sleep(1)
+        assert time.time() < timeout

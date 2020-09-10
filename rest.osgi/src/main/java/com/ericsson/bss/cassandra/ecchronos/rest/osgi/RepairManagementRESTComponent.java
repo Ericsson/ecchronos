@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.rest.osgi;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementREST;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementRESTImpl;
@@ -35,47 +36,62 @@ public class RepairManagementRESTComponent implements RepairManagementREST
     @Reference (service = RepairScheduler.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile RepairScheduler myRepairScheduler;
 
+    @Reference (service = OnDemandRepairScheduler.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    private volatile OnDemandRepairScheduler myOnDemandRepairScheduler;
+
     private volatile RepairManagementRESTImpl myDelegateRESTImpl;
 
     @Activate
     public synchronized void activate()
     {
-        myDelegateRESTImpl = new RepairManagementRESTImpl(myRepairScheduler);
+        myDelegateRESTImpl = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler);
     }
 
     @Override
-    public String scheduledStatus()
+    public String status()
     {
-        return myDelegateRESTImpl.scheduledStatus();
+        return myDelegateRESTImpl.status();
     }
 
     @Override
-    public String scheduledKeyspaceStatus(String keyspace)
+    public String keyspaceStatus(String keyspace)
     {
-        return myDelegateRESTImpl.scheduledKeyspaceStatus(keyspace);
+        return myDelegateRESTImpl.keyspaceStatus(keyspace);
     }
 
     @Override
-    public String scheduledTableStatus(String keyspace, String table)
+    public String tableStatus(String keyspace, String table)
     {
-        return myDelegateRESTImpl.scheduledTableStatus(keyspace, table);
+        return myDelegateRESTImpl.tableStatus(keyspace, table);
     }
 
     @Override
-    public String scheduledConfig()
+    public String jobStatus(String keyspace, String table, String id)
     {
-        return myDelegateRESTImpl.scheduledConfig();
+        return myDelegateRESTImpl.jobStatus(keyspace, table, id);
     }
 
     @Override
-    public String scheduledKeyspaceConfig(String keyspace)
+    public String config()
     {
-        return myDelegateRESTImpl.scheduledKeyspaceConfig(keyspace);
+        return myDelegateRESTImpl.config();
     }
 
     @Override
-    public String scheduledTableConfig(String keyspace, String table)
+    public String keyspaceConfig(String keyspace)
     {
-        return myDelegateRESTImpl.scheduledTableConfig(keyspace, table);
+        return myDelegateRESTImpl.keyspaceConfig(keyspace);
+    }
+
+    @Override
+    public String tableConfig(String keyspace, String table)
+    {
+        return myDelegateRESTImpl.tableConfig(keyspace, table);
+    }
+
+    @Override
+    public String scheduleJob(String keyspace, String table)
+    {
+        return myDelegateRESTImpl.scheduleJob(keyspace, table);
     }
 }

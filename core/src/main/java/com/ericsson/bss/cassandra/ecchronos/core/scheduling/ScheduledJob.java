@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.scheduling;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -28,23 +29,27 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
 
     protected volatile long myLastSuccessfulRun = -1;
     private volatile long myNextRunTime = -1;
+    private final UUID myId;
 
     public ScheduledJob(Configuration configuration)
     {
+        myId = UUID.randomUUID();
         myPriority = configuration.priority;
         myRunIntervalInMs = configuration.runIntervalInMs;
         myLastSuccessfulRun = System.currentTimeMillis() - myRunIntervalInMs;
     }
 
     /**
-     * This method gets run after the execution of the job has completed.
+     * This method gets run after the execution of one task has completed.
      * <p>
-     * When overriding this method make sure to call super.postExecute(success) in the end.
+     * When overriding this method make sure to call super.postExecute(success, task) in the end.
      *
      * @param successful
      *            If the job ran successfully.
+     * @param task
+     *            Last task that has completely successful
      */
-    protected void postExecute(boolean successful)
+    protected void postExecute(boolean successful, ScheduledTask task)
     {
         if (successful)
         {
@@ -139,6 +144,14 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     }
 
     /**
+     * @return unique identifier for Job
+     */
+    public final UUID getId()
+    {
+        return myId;
+    }
+
+    /**
      * The different priorities a job can have.
      * <p>
      * The higher the value a job has the more the {@link ScheduledJob#getRealPriority() current priority} is increased each hour.
@@ -188,14 +201,19 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         RUNNABLE,
 
         /**
-         * Job is finished and can be discarded
+         * Job is finished and can be discarded.
          */
         FINISHED,
 
         /**
          * The Job cannot be run currently.
          */
-        PARKED
+        PARKED,
+
+        /**
+         * The Job has failed and can be discarded.
+         */
+        FAILED
     }
 
     /**

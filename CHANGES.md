@@ -15,6 +15,7 @@
 * Remove usage of joda time - Issue #95
 * Proper REST interface - Issue #109
 * Make scheduler interval configurable - Issue #122
+* Add manual repair - Issue #14
 
 ### Merged from 1.2
 

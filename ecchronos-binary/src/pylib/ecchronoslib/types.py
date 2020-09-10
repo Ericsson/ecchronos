@@ -51,17 +51,23 @@ class RepairJob:
         self.repaired_ratio = float(data["repairedRatio"] if "repairedRatio" in data else 0)
         self.status = data["status"] if "status" in data else "<UNKNOWN>"
         self.next_repair_in_ms = int(data["nextRepairInMs"] if "nextRepairInMs" in data else -1)
+        self.recurring = data["recurring"] if "recurring" in data else "<UNKNOWN>"
+        self.id = data["id"] if "id" in data else "<UNKNOWN>"
 
     def is_valid(self):
         return self.keyspace != "<UNKNOWN>"
 
     def get_last_repaired_at(self):
+        if self.last_repaired_at_in_ms == -1:
+            return "-"
         return datetime.datetime.fromtimestamp(self.last_repaired_at_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
 
     def get_repair_percentage(self):
         return "{0:.2f}".format(self.repaired_ratio * 100.0)
 
     def get_next_repair(self):
+        if self.next_repair_in_ms == -1:
+            return "-"
         return datetime.datetime.fromtimestamp(self.next_repair_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
 
 

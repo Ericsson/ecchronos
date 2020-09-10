@@ -121,7 +121,7 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
         return new RunnableJobIterator(baseIterator);
     }
 
-    private static class RunnableJobIterator extends AbstractIterator<ScheduledJob>
+    private class RunnableJobIterator extends AbstractIterator<ScheduledJob>
     {
         private final Iterator<ScheduledJob> myBaseIterator;
 
@@ -137,7 +137,17 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
             {
                 ScheduledJob job = myBaseIterator.next();
 
-                if (job.getState() != ScheduledJob.State.PARKED)
+                if (job.getState() == ScheduledJob.State.FAILED)
+                {
+                    LOG.error("{} failed, descheduling", job);
+                    ScheduledJobQueue.this.remove(job);
+                }
+                else if (job.getState() == ScheduledJob.State.FINISHED)
+                {
+                    LOG.debug("{} completed, descheduling", job);
+                    ScheduledJobQueue.this.remove(job);
+                }
+                else if (job.getState() != ScheduledJob.State.PARKED)
                 {
                     LOG.debug("Retrieving job: {}, Priority: {}", job, job.getPriority());
                     return job;

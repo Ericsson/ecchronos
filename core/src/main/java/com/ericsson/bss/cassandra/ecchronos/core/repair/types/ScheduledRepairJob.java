@@ -14,13 +14,10 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 
-import java.util.Collection;
 import java.util.Objects;
-import java.util.function.Predicate;
+import java.util.UUID;
 
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.google.common.annotations.VisibleForTesting;
 
 /**
@@ -34,74 +31,43 @@ public class ScheduledRepairJob
     public final String table;
     public final long lastRepairedAtInMs;
     public final double repairedRatio;
-    public final Status status;
+    public final RepairJobView.Status status;
     public final long nextRepairInMs;
-
-    public enum Status
-    {
-        COMPLETED, IN_QUEUE, WARNING, ERROR
-    }
+    public final UUID id;
+    public final boolean recurring;
 
     @VisibleForTesting
-    public ScheduledRepairJob(String keyspace, String table, Status status, double repairedRatio, long lastRepairedAtInMs, long nextRepairInMs)
+    public ScheduledRepairJob(UUID id, String keyspace, String table, RepairJobView.Status status, double repairedRatio, long lastRepairedAtInMs, long nextRepairInMs, boolean recurring)
     {
+        this.id = id;
         this.keyspace = keyspace;
         this.table = table;
         this.status = status;
         this.repairedRatio = repairedRatio;
         this.lastRepairedAtInMs = lastRepairedAtInMs;
         this.nextRepairInMs = nextRepairInMs;
+        this.recurring = recurring;
     }
 
     public ScheduledRepairJob(RepairJobView repairJobView)
     {
+        this.id = repairJobView.getId();
         this.keyspace = repairJobView.getTableReference().getKeyspace();
         this.table = repairJobView.getTableReference().getTable();
-        this.lastRepairedAtInMs = repairJobView.getRepairStateSnapshot().lastRepairedAt();
-        long now = System.currentTimeMillis();
-        this.repairedRatio = calculateRepaired(repairJobView, now);
-        this.status = getStatus(repairJobView, now);
-        this.nextRepairInMs = lastRepairedAtInMs + repairJobView.getRepairConfiguration().getRepairIntervalInMs();
-    }
-
-    private double calculateRepaired(RepairJobView job, long timestamp)
-    {
-        long interval = job.getRepairConfiguration().getRepairIntervalInMs();
-        Collection<VnodeRepairState> states = job.getRepairStateSnapshot().getVnodeRepairStates().getVnodeRepairStates();
-
-        long nRepaired = states.stream()
-                .filter(isRepaired(timestamp, interval))
-                .count();
-
-        return states.isEmpty()
-                ? 0
-                : (double) nRepaired / states.size();
-    }
-
-    private Predicate<VnodeRepairState> isRepaired(long timestamp, long interval)
-    {
-        return state -> timestamp - state.lastRepairedAt() <= interval;
-    }
-
-    private Status getStatus(RepairJobView job, long timestamp)
-    {
-        long repairedAt = job.getRepairStateSnapshot().lastRepairedAt();
-        long msSinceLastRepair = timestamp - repairedAt;
-        RepairConfiguration config = job.getRepairConfiguration();
-
-        if (msSinceLastRepair >= config.getRepairErrorTimeInMs())
+        this.status = repairJobView.getStatus();
+        this.repairedRatio = repairJobView.getProgress();
+        if (repairJobView.getRepairStateSnapshot() != null)
         {
-            return Status.ERROR;
+            this.lastRepairedAtInMs = repairJobView.getRepairStateSnapshot().lastRepairedAt();
+            this.nextRepairInMs = lastRepairedAtInMs + repairJobView.getRepairConfiguration().getRepairIntervalInMs();
+            this.recurring = true;
         }
-        if (msSinceLastRepair >= config.getRepairWarningTimeInMs())
+        else
         {
-            return Status.WARNING;
+            this.lastRepairedAtInMs = -1;
+            this.nextRepairInMs = -1;
+            this.recurring = false;
         }
-        if (msSinceLastRepair >= config.getRepairIntervalInMs())
-        {
-            return Status.IN_QUEUE;
-        }
-        return Status.COMPLETED;
     }
 
     @Override
@@ -117,12 +83,14 @@ public class ScheduledRepairJob
                 nextRepairInMs == that.nextRepairInMs &&
                 keyspace.equals(that.keyspace) &&
                 table.equals(that.table) &&
-                status == that.status;
+                status == that.status &&
+                id.equals(that.id) &&
+                recurring == that.recurring;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(keyspace, table, lastRepairedAtInMs, repairedRatio, status, nextRepairInMs);
+        return Objects.hash(id, keyspace, table, lastRepairedAtInMs, repairedRatio, status, nextRepairInMs, recurring);
     }
 }

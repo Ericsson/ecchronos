@@ -26,11 +26,13 @@ import com.datastax.driver.core.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairSchedulerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairSchedulerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +52,7 @@ public class ECChronos implements Closeable
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
     private final DefaultRepairConfigurationProvider myDefaultRepairConfigurationProvider;
     private final RepairSchedulerImpl myRepairSchedulerImpl;
+    private final OnDemandRepairSchedulerImpl myOnDemandRepairScheduler;
     private final HTTPServer myHttpServer;
 
     public ECChronos(Properties configuration, RepairFaultReporter repairFaultReporter,
@@ -94,17 +97,28 @@ public class ECChronos implements Closeable
                 .withTableStorageStates(myECChronosInternals.getTableStorageStates())
                 .withRepairPolicies(Collections.singletonList(myTimeBasedRunPolicy))
                 .build();
-
+        RepairConfiguration repairConfiguration = getRepairConfiguration(repairProperties);
         myDefaultRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()
                 .withRepairScheduler(myRepairSchedulerImpl)
                 .withCluster(nativeConnectionProvider.getSession().getCluster())
                 .withReplicatedTableProvider(myECChronosInternals.getReplicatedTableProvider())
-                .withDefaultRepairConfiguration(getRepairConfiguration(repairProperties))
+                .withDefaultRepairConfiguration(repairConfiguration)
+                .build();
+
+        ReplicationState replicationState = new ReplicationState(metadata, host);
+        myOnDemandRepairScheduler = OnDemandRepairSchedulerImpl.builder()
+                .withScheduleManager(myECChronosInternals.getScheduleManager())
+                .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
+                .withJmxProxyFactory(myECChronosInternals.getJmxProxyFactory())
+                .withReplicationState(replicationState)
+                .withRepairLockType(repairProperties.getRepairLockType())
+                .withMetadata(metadata)
+                .withRepairConfiguration(repairConfiguration)
                 .build();
 
         HTTPServerProperties httpServerProperties = HTTPServerProperties.from(configuration);
 
-        myHttpServer = new HTTPServer(myRepairSchedulerImpl, myECChronosInternals.getScheduleManager(), httpServerProperties.getAddress());
+        myHttpServer = new HTTPServer(myRepairSchedulerImpl, myOnDemandRepairScheduler, myECChronosInternals.getScheduleManager(), httpServerProperties.getAddress());
     }
 
     public void start() throws HTTPServerException
@@ -123,6 +137,7 @@ public class ECChronos implements Closeable
         myTimeBasedRunPolicy.close();
         myDefaultRepairConfigurationProvider.close();
         myRepairSchedulerImpl.close();
+        myOnDemandRepairScheduler.close();
 
         myECChronosInternals.close();
     }

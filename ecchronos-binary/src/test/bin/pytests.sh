@@ -45,6 +45,12 @@ sed "s/#\?connection.jmx.port=[0-9]\+/connection.jmx.port=$CASSANDRA_JMX_PORT/g"
 
 sed 's;^\(\s*\)\(<appender-ref ref="STDOUT" />\)\s*$;\1<!-- \2 -->;g' -i "$CONF_DIR"/logback.xml
 
+
+## Scheduler
+
+sed "s/#\?scheduler.run.interval.time=[0-9]\+/scheduler.run.interval.time=1/g" -i "$CONF_DIR"/ecc.cfg
+sed "s/#\?scheduler.run.interval.time.unit=seconds\+/scheduler.run.interval.time.unit=seconds/g" -i "$CONF_DIR"/ecc.cfg
+
 cd $PYLIB_DIR
 
 python setup.py install

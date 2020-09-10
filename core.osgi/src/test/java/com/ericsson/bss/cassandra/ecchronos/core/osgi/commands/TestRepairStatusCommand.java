@@ -20,10 +20,10 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.UUID;
 
 import com.ericsson.bss.cassandra.ecchronos.core.osgi.commands.RepairStatusCommand.SortBy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob.Status;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
@@ -33,14 +33,15 @@ import org.junit.runner.RunWith;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView.Status;
 
 @RunWith(JUnitParamsRunner.class)
 public class TestRepairStatusCommand
 {
-    private static final ScheduledRepairJob JOB1 = new ScheduledRepairJob("ks", "tbl3", Status.IN_QUEUE, 0.234, toMillis("1970-01-01T00:00:00Z"), toMillis("2019-12-31T23:59:00Z"));
-    private static final ScheduledRepairJob JOB2 = new ScheduledRepairJob("ks", "tbl2", Status.COMPLETED, 0.0, toMillis("2019-12-24T12:34:00Z"), toMillis("2019-12-29T00:34:00Z"));
-    private static final ScheduledRepairJob JOB3 = new ScheduledRepairJob("ks", "tbl1", Status.WARNING, 1.0, toMillis("2019-11-12T12:34:00Z"), toMillis("2019-12-29T12:34:00Z"));
-    private static final ScheduledRepairJob JOB4 = new ScheduledRepairJob("ks", "tbl4", Status.ERROR, 0.456, toMillis("2029-11-12T23:59:00Z"), toMillis("2030-11-19T00:00:00Z"));
+    private static final ScheduledRepairJob JOB1 = new ScheduledRepairJob(UUID.randomUUID(),"ks", "tbl3", Status.IN_QUEUE, 0.234, toMillis("1970-01-01T00:00:00Z"), toMillis("2019-12-31T23:59:00Z"), true);
+    private static final ScheduledRepairJob JOB2 = new ScheduledRepairJob(UUID.randomUUID(),"ks", "tbl2", Status.COMPLETED, 0.0, toMillis("2019-12-24T12:34:00Z"), toMillis("2019-12-29T00:34:00Z"), true);
+    private static final ScheduledRepairJob JOB3 = new ScheduledRepairJob(UUID.randomUUID(),"ks", "tbl1", Status.WARNING, 1.0, toMillis("2019-11-12T12:34:00Z"), toMillis("2019-12-29T12:34:00Z"), true);
+    private static final ScheduledRepairJob JOB4 = new ScheduledRepairJob(UUID.randomUUID(),"ks", "tbl4", Status.ERROR, 0.456, toMillis("2029-11-12T23:59:00Z"), toMillis("2030-11-19T00:00:00Z"), true);
     private static final List<ScheduledRepairJob> JOBS = asList(JOB1, JOB2, JOB3, JOB4);
 
     @BeforeClass
