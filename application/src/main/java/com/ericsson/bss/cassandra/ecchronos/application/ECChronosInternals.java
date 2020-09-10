@@ -187,7 +187,7 @@ public class ECChronosInternals implements Closeable
         {
             if (LOG.isTraceEnabled())
             {
-                LOG.trace("Repair timing for table {} {}ms, it was ", tableReference,
+                LOG.trace("Repair timing for table {} {}ms, it was {}", tableReference,
                         timeUnit.toMillis(timeTaken), successful ? "successful" : "not successful");
             }
         }

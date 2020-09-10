@@ -60,7 +60,6 @@ public final class TableRepairMetricsService implements TableRepairMetrics, Tabl
     public void deactivate()
     {
         myDelegateTableRepairMetrics.close();
-        myDelegateTableRepairMetrics = null;
     }
 
     @Override

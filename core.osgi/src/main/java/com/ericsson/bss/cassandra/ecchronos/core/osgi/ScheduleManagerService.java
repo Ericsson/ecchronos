@@ -72,7 +72,6 @@ public class ScheduleManagerService implements ScheduleManager
     public synchronized void deactivate()
     {
         myDelegateSchedulerManager.close();
-        myDelegateSchedulerManager = null;
     }
 
     @Override
