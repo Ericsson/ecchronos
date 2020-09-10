@@ -14,19 +14,13 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
-import java.io.IOException;
-
+import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxy;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactoryImpl;
+import org.osgi.service.component.annotations.*;
 
-import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
+import java.io.IOException;
 
 @Component(service = JmxProxyFactory.class)
 public class JmxProxyFactoryService implements JmxProxyFactory
@@ -42,12 +36,6 @@ public class JmxProxyFactoryService implements JmxProxyFactory
         myDelegateJmxProxyFactory = JmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(myJmxConnectionProvider)
                 .build();
-    }
-
-    @Deactivate
-    public void deactivate()
-    {
-        myDelegateJmxProxyFactory = null;
     }
 
     @Override

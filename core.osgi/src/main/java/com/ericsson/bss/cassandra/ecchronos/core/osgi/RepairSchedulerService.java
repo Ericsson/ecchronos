@@ -87,7 +87,6 @@ public class RepairSchedulerService implements RepairScheduler
     public synchronized void deactivate()
     {
         myDelegateRepairSchedulerImpl.close();
-        myDelegateRepairSchedulerImpl = null;
     }
 
     @Override

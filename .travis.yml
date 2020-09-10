@@ -8,7 +8,7 @@ cache:
 matrix:
   include:
   - name: "Style check"
-    env: TEST_SUITE='com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
+    env: TEST_SUITE='compile com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
   - name: "Unit tests"
     env: TEST_SUITE='test jacoco:report coveralls:report'
   - name: "OSGi integration"

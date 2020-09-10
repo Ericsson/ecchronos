@@ -74,8 +74,8 @@ public class RepairTask implements NotificationListener
     private final RepairConfiguration myRepairConfiguration;
 
     private volatile boolean hasLostNotification = false;
-    private volatile ScheduledJobException myLastError = null;
-    private volatile Collection<LongTokenRange> myUnknownRanges = null;
+    private volatile ScheduledJobException myLastError;
+    private volatile Collection<LongTokenRange> myUnknownRanges;
 
     private volatile ScheduledFuture<?> myHangPreventFuture;
     private volatile int myCommand;
@@ -114,7 +114,6 @@ public class RepairTask implements NotificationListener
             if (myHangPreventFuture != null)
             {
                 myHangPreventFuture.cancel(false);
-                myHangPreventFuture = null;
             }
             end = System.nanoTime();
             executionNanos = end - start;
@@ -246,25 +245,7 @@ public class RepairTask implements NotificationListener
 
                 proxy.removeStorageServiceListener(this);
 
-                if (!validateRepairedRanges())
-                {
-                    proxy.forceTerminateAllRepairSessions();
-                    String msg = String.format("Unknown status of some ranges for %s", this);
-                    LOG.warn(msg);
-                    throw new ScheduledJobException(msg);
-                }
-
-                if (myLastError != null)
-                {
-                    throw myLastError;
-                }
-
-                if (hasLostNotification)
-                {
-                    String msg = String.format("Repair of %s had lost notifications", myTableReference);
-                    LOG.warn(msg);
-                    throw new ScheduledJobException(msg);
-                }
+                verifyRepair(proxy);
 
                 LOG.debug("{} - {} completed successfully", this, completedRanges);
             }
@@ -274,6 +255,29 @@ public class RepairTask implements NotificationListener
                 Thread.currentThread().interrupt();
                 throw new ScheduledJobException(e);
             }
+        }
+    }
+
+    private void verifyRepair(JmxProxy proxy) throws ScheduledJobException
+    {
+        if (!validateRepairedRanges())
+        {
+            proxy.forceTerminateAllRepairSessions();
+            String msg = String.format("Unknown status of some ranges for %s", this);
+            LOG.warn(msg);
+            throw new ScheduledJobException(msg);
+        }
+
+        if (myLastError != null)
+        {
+            throw myLastError;
+        }
+
+        if (hasLostNotification)
+        {
+            String msg = String.format("Repair of %s had lost notifications", myTableReference);
+            LOG.warn(msg);
+            throw new ScheduledJobException(msg);
         }
     }
 

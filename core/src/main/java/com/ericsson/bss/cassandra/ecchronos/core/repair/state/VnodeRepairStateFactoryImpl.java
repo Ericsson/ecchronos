@@ -142,7 +142,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
     {
         if (RepairStatus.SUCCESS != repairEntry.getStatus())
         {
-            LOG.debug("Ignoring entry {}, repair was not successful({})", repairEntry.getStatus());
+            LOG.debug("Ignoring entry {}, repair was not successful", repairEntry);
             return false;
         }
 

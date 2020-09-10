@@ -14,30 +14,26 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import com.ericsson.bss.cassandra.ecchronos.core.Clock;
+import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
+import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
+import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
+import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter.FaultCode;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import com.ericsson.bss.cassandra.ecchronos.core.Clock;
-import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
-import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter.FaultCode;
-import com.google.common.annotations.VisibleForTesting;
 
 /**
  * A scheduled job that keeps track of the repair status of a single table. The table is considered repaired for this node if all the ranges this node
@@ -66,15 +62,18 @@ public class TableRepairJob extends ScheduledJob
     {
         super(builder.configuration);
 
-        myTableReference = builder.tableReference;
-        myJmxProxyFactory = builder.jmxProxyFactory;
-        myRepairState = builder.repairState;
-        myFaultReporter = builder.faultReporter;
-        myTableRepairMetrics = builder.tableRepairMetrics;
-        myRepairConfiguration = builder.repairConfiguration;
-        myRepairLockType = builder.repairLockType;
-        myTableStorageStates = builder.tableStorageStates;
-        myRepairPolicies = builder.repairPolicies;
+        myTableReference = Preconditions.checkNotNull(builder.tableReference, "Table reference must be set");
+        myJmxProxyFactory = Preconditions.checkNotNull(builder.jmxProxyFactory, "JMX Proxy Factory must be set");
+        myRepairState = Preconditions.checkNotNull(builder.repairState, "Repair state must be set");
+        myFaultReporter = Preconditions.checkNotNull(builder.faultReporter, "Fault reporter must be set");
+        myTableRepairMetrics = Preconditions
+                .checkNotNull(builder.tableRepairMetrics, "Table repair metrics must be set");
+        myRepairConfiguration = Preconditions
+                .checkNotNull(builder.repairConfiguration, "Repair configuration must be set");
+        myRepairLockType = Preconditions.checkNotNull(builder.repairLockType, "Repair lock type must be set");
+        myTableStorageStates = Preconditions
+                .checkNotNull(builder.tableStorageStates, "Table storage states must be set");
+        myRepairPolicies = Preconditions.checkNotNull(builder.repairPolicies, "Repair policies cannot be null");
     }
 
     public TableReference getTableReference()
@@ -327,26 +326,6 @@ public class TableRepairJob extends ScheduledJob
 
         public TableRepairJob build()
         {
-            if (tableReference == null)
-            {
-                throw new IllegalArgumentException("Table reference cannot be null");
-            }
-            if (faultReporter == null)
-            {
-                throw new IllegalArgumentException("Fault reporter cannot be null");
-            }
-            if (jmxProxyFactory == null)
-            {
-                throw new IllegalArgumentException("JMX Proxy factory cannot be null");
-            }
-            if (tableRepairMetrics == null)
-            {
-                throw new IllegalArgumentException("Metric interface not set");
-            }
-            if (tableStorageStates == null)
-            {
-                throw new IllegalArgumentException("Table storage states not set");
-            }
             return new TableRepairJob(this);
         }
     }
