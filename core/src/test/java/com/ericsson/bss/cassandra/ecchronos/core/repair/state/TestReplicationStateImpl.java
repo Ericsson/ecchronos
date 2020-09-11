@@ -35,7 +35,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 
 @RunWith(MockitoJUnitRunner.class)
-public class TestReplicationState
+public class TestReplicationStateImpl
 {
     @Mock
     private Metadata mockMetadata;
@@ -60,7 +60,7 @@ public class TestReplicationState
         doReturn(Sets.newHashSet(tokenRange)).when(mockMetadata).getTokenRanges(eq("ks"), eq(mockReplica1));
         doReturn(Sets.newHashSet(mockReplica1, mockReplica2, mockReplica3)).when(mockMetadata).getReplicas(eq("ks"), eq(tokenRange));
 
-        ReplicationState replicationState = new ReplicationState(mockMetadata, mockReplica1);
+        ReplicationState replicationState = new ReplicationStateImpl(mockMetadata, mockReplica1);
 
         Map<LongTokenRange, ImmutableSet<Host>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(tableReference);
 
@@ -82,7 +82,7 @@ public class TestReplicationState
         doReturn(Sets.newHashSet(mockReplica1, mockReplica2)).when(mockMetadata).getReplicas(eq("ks"), eq(tokenRange1));
         doReturn(Sets.newHashSet(mockReplica1, mockReplica3)).when(mockMetadata).getReplicas(eq("ks"), eq(tokenRange2));
 
-        ReplicationState replicationState = new ReplicationState(mockMetadata, mockReplica1);
+        ReplicationState replicationState = new ReplicationStateImpl(mockMetadata, mockReplica1);
 
         Map<LongTokenRange, ImmutableSet<Host>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(tableReference);
 
@@ -105,7 +105,7 @@ public class TestReplicationState
         doReturn(Sets.newHashSet(mockReplica1, mockReplica2)).when(mockMetadata).getReplicas(eq("ks"), eq(tokenRange1));
         doReturn(Sets.newHashSet(mockReplica1, mockReplica2)).when(mockMetadata).getReplicas(eq("ks"), eq(tokenRange2));
 
-        ReplicationState replicationState = new ReplicationState(mockMetadata, mockReplica1);
+        ReplicationState replicationState = new ReplicationStateImpl(mockMetadata, mockReplica1);
 
         Map<LongTokenRange, ImmutableSet<Host>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(tableReference);
 
@@ -125,7 +125,7 @@ public class TestReplicationState
         doReturn(Sets.newHashSet(tokenRange)).when(mockMetadata).getTokenRanges(eq("ks"), eq(mockReplica1));
         doReturn(Sets.newHashSet(mockReplica1, mockReplica2, mockReplica3)).when(mockMetadata).getReplicas(eq("ks"), eq(tokenRange));
 
-        ReplicationState replicationState = new ReplicationState(mockMetadata, mockReplica1);
+        ReplicationState replicationState = new ReplicationStateImpl(mockMetadata, mockReplica1);
 
         Map<LongTokenRange, ImmutableSet<Host>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(tableReference);
 

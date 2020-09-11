@@ -14,8 +14,11 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
+import org.osgi.service.component.annotations.*;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
+
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
@@ -23,10 +26,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import org.osgi.service.component.annotations.*;
-import org.osgi.service.metatype.annotations.AttributeDefinition;
-import org.osgi.service.metatype.annotations.Designate;
-import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @Component(service = RepairStateFactory.class)
 @Designate(ocd = RepairStateFactoryService.Configuration.class)
@@ -37,29 +36,29 @@ public class RepairStateFactoryService implements RepairStateFactory
     @Reference(service = StatementDecorator.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile StatementDecorator myStatementDecorator;
 
-    @Reference (service = NativeConnectionProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = NativeConnectionProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile NativeConnectionProvider myNativeConnectionProvider;
 
-    @Reference (service = HostStates.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = HostStates.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile HostStates myHostStates;
 
     @Reference(service = TableRepairMetrics.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile TableRepairMetrics myTableRepairMetrics;
+
+    @Reference(service = ReplicationState.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    private volatile ReplicationState myReplicationState;
 
     private volatile RepairStateFactoryImpl myDelegateRepairStateFactory;
 
     @Activate
     public void activate(Configuration configuration)
     {
-        Host host = myNativeConnectionProvider.getLocalHost();
-        Metadata metadata = myNativeConnectionProvider.getSession().getCluster().getMetadata();
-
         long lookbackTimeInMillis = configuration.lookbackTimeSeconds() * 1000;
-        RepairHistoryProvider repairHistoryProvider = new RepairHistoryProviderImpl(myNativeConnectionProvider.getSession(), myStatementDecorator, lookbackTimeInMillis);
+        RepairHistoryProvider repairHistoryProvider = new RepairHistoryProviderImpl(
+                myNativeConnectionProvider.getSession(), myStatementDecorator, lookbackTimeInMillis);
 
         myDelegateRepairStateFactory = RepairStateFactoryImpl.builder()
-                .withMetadata(metadata)
-                .withHost(host)
+                .withReplicationState(myReplicationState)
                 .withHostStates(myHostStates)
                 .withRepairHistoryProvider(repairHistoryProvider)
                 .withTableRepairMetrics(myTableRepairMetrics)
@@ -67,7 +66,8 @@ public class RepairStateFactoryService implements RepairStateFactory
     }
 
     @Override
-    public RepairState create(TableReference tableReference, RepairConfiguration repairConfiguration, PostUpdateHook postUpdateHook)
+    public RepairState create(TableReference tableReference, RepairConfiguration repairConfiguration,
+            PostUpdateHook postUpdateHook)
     {
         return myDelegateRepairStateFactory.create(tableReference, repairConfiguration, postUpdateHook);
     }

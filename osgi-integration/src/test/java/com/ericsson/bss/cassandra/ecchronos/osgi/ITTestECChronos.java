@@ -20,6 +20,7 @@ import javax.inject.Inject;
 
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.osgi.DefaultRepairConfigurationProviderComponent;
+import com.ericsson.bss.cassandra.ecchronos.core.osgi.ReplicationStateService;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
@@ -56,6 +57,7 @@ public class ITTestECChronos extends TestBase
 
     private static final String TIME_BASED_RUN_POLICY_PID = "com.ericsson.bss.cassandra.ecchronos.core.osgi.TimeBasedRunPolicyService";
     private static final String REPAIR_CONFIGURATION_PID = "com.ericsson.bss.cassandra.ecchronos.core.osgi.DefaultRepairConfigurationProviderComponent";
+    private static final String REPLICATION_STATE_PID = "com.ericsson.bss.cassandra.ecchronos.core.osgi.ReplicationStateService";
 
     @Inject
     BundleContext myBundleContext;
@@ -186,6 +188,12 @@ public class ITTestECChronos extends TestBase
     public void testGetRepairConfigurationComponent()
     {
         assertComponentIsActive(REPAIR_CONFIGURATION_PID, DefaultRepairConfigurationProviderComponent.class);
+    }
+
+    @Test
+    public void testGetReplicationStateComponent()
+    {
+        assertComponentIsActive(REPLICATION_STATE_PID, ReplicationStateService.class);
     }
 
     private void assertComponentIsActive(String pid, Class clazz)

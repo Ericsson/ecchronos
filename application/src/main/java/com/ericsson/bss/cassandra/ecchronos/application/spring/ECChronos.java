@@ -35,6 +35,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.*;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 
@@ -67,9 +68,10 @@ public class ECChronos implements Closeable
                 nativeConnectionProvider.getSession(), statementDecorator,
                 repairConfig.getHistoryLookback().getInterval(TimeUnit.MILLISECONDS));
 
+        ReplicationState replicationState = new ReplicationStateImpl(metadata, host);
+
         RepairStateFactoryImpl repairStateFactoryImpl = RepairStateFactoryImpl.builder()
-                .withMetadata(metadata)
-                .withHost(host)
+                .withReplicationState(replicationState)
                 .withHostStates(myECChronosInternals.getHostStates())
                 .withRepairHistoryProvider(repairHistoryProvider)
                 .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
@@ -99,7 +101,7 @@ public class ECChronos implements Closeable
                 .withDefaultRepairConfiguration(repairConfiguration)
                 .withTableReferenceFactory(myECChronosInternals.getTableReferenceFactory())
                 .build();
-        ReplicationState replicationState = new ReplicationState(metadata, host);
+
         myOnDemandRepairSchedulerImpl = OnDemandRepairSchedulerImpl.builder()
                 .withScheduleManager(myECChronosInternals.getScheduleManager())
                 .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())

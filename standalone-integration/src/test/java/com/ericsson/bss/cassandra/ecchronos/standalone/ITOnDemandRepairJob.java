@@ -38,10 +38,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairSchedulerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairEntry;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStatus;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManagerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -102,7 +99,7 @@ public class ITOnDemandRepairJob extends TestBase
                 .withLockFactory(myLockFactory)
                 .withRunInterval(100, TimeUnit.MILLISECONDS)
                 .build();
-        ReplicationState replicationState = new ReplicationState(myMetadata, myLocalHost);
+        ReplicationState replicationState = new ReplicationStateImpl(myMetadata, myLocalHost);
         myRepairSchedulerImpl = OnDemandRepairSchedulerImpl.builder()
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .withTableRepairMetrics(mockTableRepairMetrics)

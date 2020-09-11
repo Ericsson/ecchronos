@@ -14,66 +14,26 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
+import java.util.Map;
+
 import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.TokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
- * Utility class to generate a token -&gt; replicas map for a specific table.
+ * Replication state interface used to retrieve mappings between token range to responsible nodes.
+ *
+ * Within a keyspace the methods are expected to return the exact same object instance for a set of nodes.
  */
-public class ReplicationState
+public interface ReplicationState
 {
-    private static final Map<String, ImmutableMap<LongTokenRange, ImmutableSet<Host>>> keyspaceReplicationCache = new ConcurrentHashMap<>();
-
-    private final Metadata myMetadata;
-    private final Host myLocalHost;
-
-    public ReplicationState(Metadata metadata, Host localhost)
-    {
-        myMetadata = metadata;
-        myLocalHost = localhost;
-    }
-
-    public Map<LongTokenRange, ImmutableSet<Host>> getTokenRangeToReplicas(TableReference tableReference)
-    {
-        String keyspace = tableReference.getKeyspace();
-
-        ImmutableMap<LongTokenRange, ImmutableSet<Host>> replication = buildTokenMap(keyspace);
-
-        return keyspaceReplicationCache.compute(keyspace, (k, v) -> !replication.equals(v) ? replication : v);
-    }
-
-    private ImmutableMap<LongTokenRange, ImmutableSet<Host>> buildTokenMap(String keyspace)
-    {
-        ImmutableMap.Builder<LongTokenRange, ImmutableSet<Host>> replicationBuilder = ImmutableMap.builder();
-
-        Map<Set<Host>, ImmutableSet<Host>> replicaCache = new HashMap<>();
-
-        for (TokenRange tokenRange : myMetadata.getTokenRanges(keyspace, myLocalHost))
-        {
-            LongTokenRange longTokenRange = convert(tokenRange);
-            ImmutableSet<Host> replicas = replicaCache.computeIfAbsent(myMetadata.getReplicas(keyspace, tokenRange), ImmutableSet::copyOf);
-
-            replicationBuilder.put(longTokenRange, replicas);
-        }
-
-        return replicationBuilder.build();
-    }
-
-    private LongTokenRange convert(TokenRange range)
-    {
-        // Assuming murmur3 partitioner
-        long start = (long) range.getStart().getValue();
-        long end = (long) range.getEnd().getValue();
-        return new LongTokenRange(start, end);
-    }
+    /**
+     * Get a map of the current replication state for the provided table.
+     *
+     * @param tableReference
+     *            The table used to calculate the proper replication.
+     * @return The map consisting of token -&gt; responsible nodes.
+     */
+    Map<LongTokenRange, ImmutableSet<Host>> getTokenRangeToReplicas(TableReference tableReference);
 }
