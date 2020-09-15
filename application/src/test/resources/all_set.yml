@@ -17,12 +17,12 @@ connection:
   cql:
     host: 127.0.0.2
     port: 9100
-    provider: com.ericsson.bss.cassandra.ecchronos.application.TestConfig$TestNativeConnectionProvider
-    decoratorClass: com.ericsson.bss.cassandra.ecchronos.application.TestConfig$TestStatementDecorator
+    provider: com.ericsson.bss.cassandra.ecchronos.application.config.TestConfig$TestNativeConnectionProvider
+    decoratorClass: com.ericsson.bss.cassandra.ecchronos.application.config.TestConfig$TestStatementDecorator
   jmx:
     host: 127.0.0.3
     port: 7100
-    provider: com.ericsson.bss.cassandra.ecchronos.application.TestConfig$TestJmxConnectionProvider
+    provider: com.ericsson.bss.cassandra.ecchronos.application.config.TestConfig$TestJmxConnectionProvider
 
 repair:
   interval:

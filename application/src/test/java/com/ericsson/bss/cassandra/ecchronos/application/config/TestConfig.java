@@ -12,12 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.application;
+package com.ericsson.bss.cassandra.ecchronos.application.config;
 
 import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
-import com.ericsson.bss.cassandra.ecchronos.application.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.DefaultJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.DefaultNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.NoopStatementDecorator;

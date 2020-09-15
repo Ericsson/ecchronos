@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.application;
 
 import com.datastax.driver.core.Statement;
+import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 
 public class NoopStatementDecorator implements StatementDecorator
