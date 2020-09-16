@@ -174,8 +174,8 @@ public class ECChronos implements Closeable
 
             LOG.info("Using connection properties {}", configuration.getConnectionConfig());
 
-            nativeConnectionProvider = getNativeConnectionProvider(configuration); // NOPMD
-            jmxConnectionProvider = getJmxConnectionProvider(configuration); // NOPMD
+            nativeConnectionProvider = getNativeConnectionProvider(configuration);
+            jmxConnectionProvider = getJmxConnectionProvider(configuration);
             statementDecorator = getStatementDecorator(configuration);
 
             ECChronos ecChronos = new ECChronos(configuration, new LoggingFaultReporter(), nativeConnectionProvider,
