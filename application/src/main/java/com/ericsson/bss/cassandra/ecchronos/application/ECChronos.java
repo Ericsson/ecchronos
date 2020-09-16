@@ -14,38 +14,40 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
-import java.io.Closeable;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
-
 import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Metadata;
+import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
+import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairSchedulerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairSchedulerImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactoryImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
+import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
+import com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
-import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
-import com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 public class ECChronos implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ECChronos.class);
 
     private static final String CONFIGURATION_FILE_PATH = "ecchronos.config";
-    private static final String DEFAULT_CONFIGURATION_FILE = "./ecChronos.cfg";
+    private static final String DEFAULT_CONFIGURATION_FILE = "./ecc.yml";
 
     private final ECChronosInternals myECChronosInternals;
 
@@ -55,21 +57,22 @@ public class ECChronos implements Closeable
     private final OnDemandRepairSchedulerImpl myOnDemandRepairScheduler;
     private final HTTPServer myHttpServer;
 
-    public ECChronos(Properties configuration, RepairFaultReporter repairFaultReporter,
+    public ECChronos(Config configuration, RepairFaultReporter repairFaultReporter,
             NativeConnectionProvider nativeConnectionProvider,
             JmxConnectionProvider jmxConnectionProvider,
-            StatementDecorator statementDecorator) throws ConfigurationException
+            StatementDecorator statementDecorator)
     {
         myECChronosInternals = new ECChronosInternals(configuration, nativeConnectionProvider, jmxConnectionProvider,
                 statementDecorator);
 
         Host host = nativeConnectionProvider.getLocalHost();
         Metadata metadata = nativeConnectionProvider.getSession().getCluster().getMetadata();
-        RepairProperties repairProperties = RepairProperties.from(configuration);
+
+        Config.RepairConfig repairConfig = configuration.getRepair();
 
         RepairHistoryProviderImpl repairHistoryProvider = new RepairHistoryProviderImpl(
                 nativeConnectionProvider.getSession(), statementDecorator,
-                repairProperties.getRepairHistoryLookbackInMs());
+                repairConfig.getHistoryLookback().getInterval(TimeUnit.MILLISECONDS));
 
         RepairStateFactoryImpl repairStateFactoryImpl = RepairStateFactoryImpl.builder()
                 .withMetadata(metadata)
@@ -79,12 +82,10 @@ public class ECChronos implements Closeable
                 .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
                 .build();
 
-        TimeBasedRunPolicyProperties timeBasedRunPolicyProperties = TimeBasedRunPolicyProperties.from(configuration);
-
         myTimeBasedRunPolicy = TimeBasedRunPolicy.builder()
                 .withSession(nativeConnectionProvider.getSession())
                 .withStatementDecorator(statementDecorator)
-                .withKeyspaceName(timeBasedRunPolicyProperties.getKeyspaceName())
+                .withKeyspaceName(configuration.getRunPolicy().getTimeBased().getKeyspace())
                 .build();
 
         myRepairSchedulerImpl = RepairSchedulerImpl.builder()
@@ -93,11 +94,11 @@ public class ECChronos implements Closeable
                 .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
                 .withScheduleManager(myECChronosInternals.getScheduleManager())
                 .withRepairStateFactory(repairStateFactoryImpl)
-                .withRepairLockType(repairProperties.getRepairLockType())
+                .withRepairLockType(repairConfig.getLockType())
                 .withTableStorageStates(myECChronosInternals.getTableStorageStates())
                 .withRepairPolicies(Collections.singletonList(myTimeBasedRunPolicy))
                 .build();
-        RepairConfiguration repairConfiguration = getRepairConfiguration(repairProperties);
+        RepairConfiguration repairConfiguration = getRepairConfiguration(repairConfig);
         myDefaultRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()
                 .withRepairScheduler(myRepairSchedulerImpl)
                 .withCluster(nativeConnectionProvider.getSession().getCluster())
@@ -111,14 +112,16 @@ public class ECChronos implements Closeable
                 .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
                 .withJmxProxyFactory(myECChronosInternals.getJmxProxyFactory())
                 .withReplicationState(replicationState)
-                .withRepairLockType(repairProperties.getRepairLockType())
+                .withRepairLockType(repairConfig.getLockType())
                 .withMetadata(metadata)
                 .withRepairConfiguration(repairConfiguration)
                 .build();
 
-        HTTPServerProperties httpServerProperties = HTTPServerProperties.from(configuration);
+        InetSocketAddress restAddress = new InetSocketAddress(configuration.getRestServer().getHost(),
+                configuration.getRestServer().getPort());
 
-        myHttpServer = new HTTPServer(myRepairSchedulerImpl, myOnDemandRepairScheduler, myECChronosInternals.getScheduleManager(), httpServerProperties.getAddress());
+        myHttpServer = new HTTPServer(myRepairSchedulerImpl, myOnDemandRepairScheduler,
+                myECChronosInternals.getScheduleManager(), restAddress);
     }
 
     public void start() throws HTTPServerException
@@ -142,17 +145,20 @@ public class ECChronos implements Closeable
         myECChronosInternals.close();
     }
 
-    private RepairConfiguration getRepairConfiguration(RepairProperties repairProperties)
+    private RepairConfiguration getRepairConfiguration(Config.RepairConfig repairProperties)
     {
         LOG.debug("Using repair properties {}", repairProperties);
 
         return RepairConfiguration.newBuilder()
-                .withRepairInterval(repairProperties.getRepairIntervalInMs(), TimeUnit.MILLISECONDS)
-                .withParallelism(repairProperties.getRepairParallelism())
-                .withRepairWarningTime(repairProperties.getRepairAlarmWarnInMs(), TimeUnit.MILLISECONDS)
-                .withRepairErrorTime(repairProperties.getRepairAlarmErrorInMs(), TimeUnit.MILLISECONDS)
-                .withRepairUnwindRatio(repairProperties.getRepairUnwindRatio())
-                .withTargetRepairSizeInBytes(repairProperties.getTargetRepairSizeInBytes())
+                .withRepairInterval(repairProperties.getInterval().getInterval(TimeUnit.MILLISECONDS),
+                        TimeUnit.MILLISECONDS)
+                .withParallelism(repairProperties.getParallelism())
+                .withRepairWarningTime(repairProperties.getAlarm().getWarn().getInterval(TimeUnit.MILLISECONDS),
+                        TimeUnit.MILLISECONDS)
+                .withRepairErrorTime(repairProperties.getAlarm().getError().getInterval(TimeUnit.MILLISECONDS),
+                        TimeUnit.MILLISECONDS)
+                .withRepairUnwindRatio(repairProperties.getUnwindRatio())
+                .withTargetRepairSizeInBytes(repairProperties.getSizeTargetInBytes())
                 .build();
     }
 
@@ -164,15 +170,13 @@ public class ECChronos implements Closeable
 
         try
         {
-            Properties configuration = getConfiguration();
+            Config configuration = getConfiguration();
 
-            ConnectionProperties connectionProperties = ConnectionProperties.from(configuration);
+            LOG.info("Using connection properties {}", configuration.getConnectionConfig());
 
-            LOG.info("Using connection properties {}", connectionProperties);
-
-            nativeConnectionProvider = getNativeConnectionProvider(configuration, connectionProperties);
-            jmxConnectionProvider = getJmxConnectionProvider(configuration, connectionProperties);
-            statementDecorator = getStatementDecorator(configuration, connectionProperties);
+            nativeConnectionProvider = getNativeConnectionProvider(configuration);
+            jmxConnectionProvider = getJmxConnectionProvider(configuration);
+            statementDecorator = getStatementDecorator(configuration);
 
             ECChronos ecChronos = new ECChronos(configuration, new LoggingFaultReporter(), nativeConnectionProvider,
                     jmxConnectionProvider, statementDecorator);
@@ -205,26 +209,26 @@ public class ECChronos implements Closeable
         }
         catch (Exception e)
         {
+            LOG.error("Unexpected exception during start", e);
             shutdown(ecChronos, nativeConnectionProvider, jmxConnectionProvider);
         }
     }
 
-    private static Properties getConfiguration()
+    private static Config getConfiguration() throws ConfigurationException
     {
-        Properties configuration = new Properties();
-
         String configurationFile = System.getProperty(CONFIGURATION_FILE_PATH, DEFAULT_CONFIGURATION_FILE);
+        File file = new File(configurationFile);
 
-        try (FileInputStream configurationInputStream = new FileInputStream(configurationFile))
+        try
         {
-            configuration.load(configurationInputStream);
+            ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
+            return objectMapper.readValue(file, Config.class);
         }
         catch (IOException e)
         {
-            LOG.warn("Unable to load configuration file {}, using default values", configurationFile);
+            throw new ConfigurationException("Unable to load configuration file " + file, e);
         }
-
-        return configuration;
     }
 
     private static void shutdown(ECChronos ecChronos, NativeConnectionProvider nativeConnectionProvider,
@@ -242,21 +246,22 @@ public class ECChronos implements Closeable
         }
     }
 
-    private static NativeConnectionProvider getNativeConnectionProvider(Properties configuration,
-            ConnectionProperties connectionProperties) throws ConfigurationException
+    private static NativeConnectionProvider getNativeConnectionProvider(Config configuration)
+            throws ConfigurationException
     {
-        return ReflectionUtils.construct(connectionProperties.getNativeConnectionProviderClass(), configuration);
+        return ReflectionUtils
+                .construct(configuration.getConnectionConfig().getCql().getProviderClass(), configuration);
     }
 
-    private static JmxConnectionProvider getJmxConnectionProvider(Properties configuration,
-            ConnectionProperties connectionProperties) throws ConfigurationException
+    private static JmxConnectionProvider getJmxConnectionProvider(Config configuration) throws ConfigurationException
     {
-        return ReflectionUtils.construct(connectionProperties.getJmxConnectionProviderClass(), configuration);
+        return ReflectionUtils
+                .construct(configuration.getConnectionConfig().getJmx().getProviderClass(), configuration);
     }
 
-    private static StatementDecorator getStatementDecorator(Properties configuration,
-            ConnectionProperties connectionProperties) throws ConfigurationException
+    private static StatementDecorator getStatementDecorator(Config configuration) throws ConfigurationException
     {
-        return ReflectionUtils.construct(connectionProperties.getStatementDecoratorClass(), configuration);
+        return ReflectionUtils
+                .construct(configuration.getConnectionConfig().getCql().getDecoratorClass(), configuration);
     }
 }

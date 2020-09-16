@@ -54,7 +54,7 @@ do
   JVM_OPTS="$JVM_OPTS $opt"
 done
 
-JVM_OPTS="$JVM_OPTS -Decchronos.config="$ECCHRONOS_HOME"/conf/ecc.cfg"
+JVM_OPTS="$JVM_OPTS -Decchronos.config="$ECCHRONOS_HOME"/conf/ecc.yml"
 
 if [ "$FOREGROUND" = "-f" ]; then
     java $JVM_OPTS -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.ECChronos $FOREGROUND
