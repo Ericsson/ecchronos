@@ -14,34 +14,23 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.standalone;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.TableMetadata;
-import com.datastax.driver.core.TokenRange;
+import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.schemabuilder.AbstractCreateStatement;
-import com.datastax.driver.core.schemabuilder.KeyspaceOptions;
-import com.datastax.driver.core.schemabuilder.SchemaBuilder;
 import com.datastax.driver.core.utils.UUIDs;
 import com.ericsson.bss.cassandra.ecchronos.core.CASLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairSchedulerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairEntry;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStatus;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairSchedulerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManagerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TokenSubRangeUtil;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
@@ -50,74 +39,57 @@ import com.google.common.collect.Sets;
 import net.jcip.annotations.NotThreadSafe;
 import org.assertj.core.util.Lists;
 import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
 
 import java.math.BigInteger;
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.OptionalLong;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyMapOf;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
 @NotThreadSafe
 public class ITTableRepairJob extends TestBase
 {
-    @Mock
-    private RepairFaultReporter myFaultReporter;
+    private static RepairFaultReporter mockFaultReporter;
 
-    @Mock
-    private TableRepairMetrics myTableRepairMetrics;
+    private static TableRepairMetrics mockTableRepairMetrics;
 
-    @Mock
-    private TableStorageStates myTableStorageStates;
+    private static TableStorageStates mockTableStorageStates;
 
-    private Metadata myMetadata;
+    private static Metadata myMetadata;
 
-    private Session mySession;
+    private static Session mySession;
 
-    private Host myLocalHost;
+    private static Host myLocalHost;
 
-    private HostStatesImpl myHostStates;
+    private static HostStatesImpl myHostStates;
 
-    private RepairHistoryProviderImpl myRepairHistoryProvider;
+    private static RepairHistoryProviderImpl myRepairHistoryProvider;
 
-    private DefaultRepairConfigurationProvider myDefaultRepairConfigurationProvider;
+    private static RepairSchedulerImpl myRepairSchedulerImpl;
 
-    private RepairSchedulerImpl myRepairSchedulerImpl;
+    private static ScheduleManagerImpl myScheduleManagerImpl;
 
-    private ScheduleManagerImpl myScheduleManagerImpl;
+    private static CASLockFactory myLockFactory;
 
-    private CASLockFactory myLockFactory;
+    private static RepairConfiguration myRepairConfiguration;
 
-    private List<String> myCreatedKeyspaces = new ArrayList<>();
+    private Set<TableReference> myRepairs = new HashSet<>();
 
-    @Before
-    public void init()
+    @BeforeClass
+    public static void init()
     {
+        mockFaultReporter = mock(RepairFaultReporter.class);
+        mockTableRepairMetrics = mock(TableRepairMetrics.class);
+        mockTableStorageStates = mock(TableStorageStates.class);
+
         myLocalHost = getNativeConnectionProvider().getLocalHost();
         mySession = getNativeConnectionProvider().getSession();
         Cluster cluster = mySession.getCluster();
@@ -128,7 +100,6 @@ public class ITTableRepairJob extends TestBase
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .build();
         myRepairHistoryProvider = new RepairHistoryProviderImpl(mySession, s -> s, TimeUnit.DAYS.toMillis(30));
-        ReplicatedTableProviderImpl replicatedTableProvider = new ReplicatedTableProviderImpl(myLocalHost, myMetadata);
 
         myLockFactory = CASLockFactory.builder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
@@ -148,49 +119,47 @@ public class ITTableRepairJob extends TestBase
                         .build())
                 .withMetadata(myMetadata)
                 .withRepairHistoryProvider(myRepairHistoryProvider)
-                .withTableRepairMetrics(myTableRepairMetrics)
+                .withTableRepairMetrics(mockTableRepairMetrics)
                 .build();
 
         myRepairSchedulerImpl = RepairSchedulerImpl.builder()
                 .withJmxProxyFactory(getJmxProxyFactory())
-                .withTableRepairMetrics(myTableRepairMetrics)
-                .withFaultReporter(myFaultReporter)
+                .withTableRepairMetrics(mockTableRepairMetrics)
+                .withFaultReporter(mockFaultReporter)
                 .withScheduleManager(myScheduleManagerImpl)
                 .withRepairStateFactory(repairStateFactory)
                 .withRepairLockType(RepairLockType.VNODE)
-                .withTableStorageStates(myTableStorageStates)
+                .withTableStorageStates(mockTableStorageStates)
                 .build();
 
-        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
+        myRepairConfiguration = RepairConfiguration.newBuilder()
                 .withRepairInterval(60, TimeUnit.MINUTES)
                 .withTargetRepairSizeInBytes(UnitConverter.toBytes("100m")) // 100MiB
-                .build();
-
-        myDefaultRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()
-                .withReplicatedTableProvider(replicatedTableProvider)
-                .withRepairScheduler(myRepairSchedulerImpl)
-                .withCluster(cluster)
-                .withDefaultRepairConfiguration(repairConfiguration)
                 .build();
     }
 
     @After
     public void clean()
     {
-        for (String keyspace : myCreatedKeyspaces)
+        for (TableReference tableReference : myRepairs)
         {
-            for (TableMetadata tableMetadata : myMetadata.getKeyspace(keyspace).getTables())
-            {
-                mySession.execute(QueryBuilder.delete()
-                        .from("system_distributed","repair_history")
-                        .where(QueryBuilder.eq("keyspace_name", keyspace))
-                        .and(QueryBuilder.eq("columnfamily_name", tableMetadata.getName())));
-            }
+            myRepairSchedulerImpl.removeConfiguration(tableReference);
 
-            mySession.execute(SchemaBuilder.dropKeyspace(keyspace).ifExists());
+            mySession.execute(QueryBuilder.delete()
+                    .from("system_distributed", "repair_history")
+                    .where(QueryBuilder.eq("keyspace_name", tableReference.getKeyspace()))
+                    .and(QueryBuilder.eq("columnfamily_name", tableReference.getTable())));
         }
+
+        reset(mockTableRepairMetrics);
+        reset(mockFaultReporter);
+        reset(mockTableStorageStates);
+    }
+
+    @AfterClass
+    public static void closeConnections()
+    {
         myHostStates.close();
-        myDefaultRepairConfigurationProvider.close();
         myRepairSchedulerImpl.close();
         myScheduleManagerImpl.close();
         myLockFactory.close();
@@ -206,16 +175,17 @@ public class ITTableRepairJob extends TestBase
     {
         long startTime = System.currentTimeMillis();
 
-        TableReference tableReference = new TableReference("ks", "tb");
+        TableReference tableReference = new TableReference("test", "table1");
 
-        createKeyspace(tableReference.getKeyspace(), 3);
         injectRepairHistory(tableReference, System.currentTimeMillis() - TimeUnit.HOURS.toMillis(2));
-        createTable(tableReference);
+
+        schedule(tableReference);
 
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference, startTime));
 
         verifyTableRepairedSince(tableReference, startTime);
-        verify(myFaultReporter, never()).raise(any(RepairFaultReporter.FaultCode.class), anyMapOf(String.class, Object.class));
+        verify(mockFaultReporter, never())
+                .raise(any(RepairFaultReporter.FaultCode.class), anyMapOf(String.class, Object.class));
     }
 
     /**
@@ -229,16 +199,17 @@ public class ITTableRepairJob extends TestBase
     {
         long startTime = System.currentTimeMillis();
 
-        TableReference tableReference = new TableReference("ks", "tb");
+        TableReference tableReference = new TableReference("test", "table1");
 
-        createKeyspace(tableReference.getKeyspace(), 3);
         injectRepairHistory(tableReference, System.currentTimeMillis() - TimeUnit.HOURS.toMillis(2), true);
-        createTable(tableReference);
+
+        schedule(tableReference);
 
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference, startTime));
 
         verifyTableRepairedSince(tableReference, startTime);
-        verify(myFaultReporter, never()).raise(any(RepairFaultReporter.FaultCode.class), anyMapOf(String.class, Object.class));
+        verify(mockFaultReporter, never())
+                .raise(any(RepairFaultReporter.FaultCode.class), anyMapOf(String.class, Object.class));
     }
 
     /**
@@ -251,13 +222,13 @@ public class ITTableRepairJob extends TestBase
     {
         long startTime = System.currentTimeMillis();
 
-        TableReference tableReference = new TableReference("ks", "tb");
+        TableReference tableReference = new TableReference("test", "table1");
 
-        when(myTableStorageStates.getDataSize(eq(tableReference))).thenReturn(UnitConverter.toBytes("10g"));
+        when(mockTableStorageStates.getDataSize(eq(tableReference))).thenReturn(UnitConverter.toBytes("10g"));
 
-        createKeyspace(tableReference.getKeyspace(), 3);
         injectRepairHistory(tableReference, System.currentTimeMillis() - TimeUnit.HOURS.toMillis(2));
-        createTable(tableReference);
+
+        schedule(tableReference);
 
         BigInteger numberOfRanges = BigInteger.valueOf(UnitConverter.toBytes("10g")).divide(BigInteger.valueOf(UnitConverter.toBytes("100m"))); // 102
 
@@ -266,7 +237,8 @@ public class ITTableRepairJob extends TestBase
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference, startTime, expectedRanges));
 
         verifyTableRepairedSinceWithSubRangeRepair(tableReference, startTime, expectedRanges);
-        verify(myFaultReporter, never()).raise(any(RepairFaultReporter.FaultCode.class), anyMapOf(String.class, Object.class));
+        verify(mockFaultReporter, never())
+                .raise(any(RepairFaultReporter.FaultCode.class), anyMapOf(String.class, Object.class));
     }
 
     /**
@@ -279,21 +251,22 @@ public class ITTableRepairJob extends TestBase
     {
         long startTime = System.currentTimeMillis();
 
-        TableReference tableReference = new TableReference("ks", "tb");
-        TableReference tableReference2 = new TableReference("ks", "tb2");
+        TableReference tableReference = new TableReference("test", "table1");
+        TableReference tableReference2 = new TableReference("test", "table2");
 
-        createKeyspace(tableReference.getKeyspace(), 3);
         injectRepairHistory(tableReference, System.currentTimeMillis() - TimeUnit.HOURS.toMillis(2));
         injectRepairHistory(tableReference2, System.currentTimeMillis() - TimeUnit.HOURS.toMillis(4));
-        createTable(tableReference);
-        createTable(tableReference2);
+
+        schedule(tableReference);
+        schedule(tableReference2);
 
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference, startTime));
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference2, startTime));
 
         verifyTableRepairedSince(tableReference, startTime);
         verifyTableRepairedSince(tableReference2, startTime);
-        verify(myFaultReporter, never()).raise(any(RepairFaultReporter.FaultCode.class), anyMapOf(String.class, Object.class));
+        verify(mockFaultReporter, never())
+                .raise(any(RepairFaultReporter.FaultCode.class), anyMapOf(String.class, Object.class));
     }
 
     /**
@@ -309,9 +282,8 @@ public class ITTableRepairJob extends TestBase
         long startTime = System.currentTimeMillis();
         long expectedRepairedInterval = startTime - TimeUnit.HOURS.toMillis(1);
 
-        TableReference tableReference = new TableReference("ks", "tb");
+        TableReference tableReference = new TableReference("test", "table1");
 
-        createKeyspace(tableReference.getKeyspace(), 3);
         injectRepairHistory(tableReference, System.currentTimeMillis() - TimeUnit.HOURS.toMillis(2));
 
         Set<TokenRange> expectedRepairedBefore = halfOfTokenRanges(tableReference);
@@ -320,12 +292,21 @@ public class ITTableRepairJob extends TestBase
         Set<TokenRange> allTokenRanges = myMetadata.getTokenRanges(tableReference.getKeyspace(), myLocalHost);
         Set<LongTokenRange> expectedRepairedRanges = Sets.difference(convertTokenRanges(allTokenRanges), convertTokenRanges(expectedRepairedBefore));
 
-        createTable(tableReference);
+        schedule(tableReference);
 
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference, startTime, expectedRepairedRanges));
 
         verifyTableRepairedSince(tableReference, expectedRepairedInterval, expectedRepairedRanges);
-        verify(myFaultReporter, never()).raise(any(RepairFaultReporter.FaultCode.class), anyMapOf(String.class, Object.class));
+        verify(mockFaultReporter, never())
+                .raise(any(RepairFaultReporter.FaultCode.class), anyMapOf(String.class, Object.class));
+    }
+
+    private void schedule(TableReference tableReference)
+    {
+        if (myRepairs.add(tableReference))
+        {
+            myRepairSchedulerImpl.putConfiguration(tableReference, myRepairConfiguration);
+        }
     }
 
     private void verifyTableRepairedSince(TableReference tableReference, long repairedSince)
@@ -338,10 +319,11 @@ public class ITTableRepairJob extends TestBase
         OptionalLong repairedAt = lastRepairedSince(tableReference, repairedSince, expectedRepaired);
         assertThat(repairedAt.isPresent()).isTrue();
 
-        verify(myTableRepairMetrics, timeout(5000)).lastRepairedAt(tableReference, repairedAt.getAsLong());
+        verify(mockTableRepairMetrics, timeout(5000)).lastRepairedAt(tableReference, repairedAt.getAsLong());
 
         int expectedTokenRanges = expectedRepaired.size();
-        verify(myTableRepairMetrics, times(expectedTokenRanges)).repairTiming(eq(tableReference), anyLong(), any(TimeUnit.class), eq(true));
+        verify(mockTableRepairMetrics, times(expectedTokenRanges))
+                .repairTiming(eq(tableReference), anyLong(), any(TimeUnit.class), eq(true));
     }
 
     private void verifyTableRepairedSince(TableReference tableReference, long repairedSince, Set<LongTokenRange> expectedRepaired)
@@ -349,10 +331,11 @@ public class ITTableRepairJob extends TestBase
         OptionalLong repairedAt = lastRepairedSince(tableReference, repairedSince);
         assertThat(repairedAt.isPresent()).isTrue();
 
-        verify(myTableRepairMetrics, timeout(5000)).lastRepairedAt(tableReference, repairedAt.getAsLong());
+        verify(mockTableRepairMetrics, timeout(5000)).lastRepairedAt(tableReference, repairedAt.getAsLong());
 
         int expectedTokenRanges = expectedRepaired.size();
-        verify(myTableRepairMetrics, times(expectedTokenRanges)).repairTiming(eq(tableReference), anyLong(), any(TimeUnit.class), eq(true));
+        verify(mockTableRepairMetrics, times(expectedTokenRanges))
+                .repairTiming(eq(tableReference), anyLong(), any(TimeUnit.class), eq(true));
     }
 
     private boolean isRepairedSince(TableReference tableReference, long repairedSince)
@@ -467,36 +450,6 @@ public class ITTableRepairJob extends TestBase
                 .value("status", "SUCCESS");
 
         mySession.execute(insert);
-    }
-
-    private void createKeyspace(String keyspaceName, int replicationFactor)
-    {
-        KeyspaceOptions createKeyspaceStatement = SchemaBuilder.createKeyspace(keyspaceName)
-                .with()
-                .replication(getReplicationMap(replicationFactor));
-
-        mySession.execute(createKeyspaceStatement);
-
-        myCreatedKeyspaces.add(keyspaceName);
-    }
-
-    private Map<String, Object> getReplicationMap(int replicationFactor)
-    {
-        Map<String, Object> replicationMap = new HashMap<>();
-
-        replicationMap.put("class", "NetworkTopologyStrategy");
-        replicationMap.put(myLocalHost.getDatacenter(), replicationFactor);
-
-        return replicationMap;
-    }
-
-    private void createTable(TableReference tableReference)
-    {
-        AbstractCreateStatement createTableStatement = SchemaBuilder.createTable(tableReference.getKeyspace(), tableReference.getTable())
-                .addPartitionKey("key", DataType.text())
-                .addColumn("value", DataType.text());
-
-        mySession.execute(createTableStatement);
     }
 
     private Set<TokenRange> halfOfTokenRanges(TableReference tableReference)

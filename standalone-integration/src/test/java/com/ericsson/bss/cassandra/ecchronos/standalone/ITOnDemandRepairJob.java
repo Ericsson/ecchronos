@@ -14,50 +14,14 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.standalone;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.OptionalLong;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import org.assertj.core.util.Lists;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.TableMetadata;
-import com.datastax.driver.core.TokenRange;
+import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.schemabuilder.AbstractCreateStatement;
-import com.datastax.driver.core.schemabuilder.KeyspaceOptions;
-import com.datastax.driver.core.schemabuilder.SchemaBuilder;
 import com.ericsson.bss.cassandra.ecchronos.core.CASLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStatesImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairSchedulerImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairEntry;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
@@ -66,37 +30,50 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManagerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-
 import net.jcip.annotations.NotThreadSafe;
+import org.assertj.core.util.Lists;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-@RunWith(MockitoJUnitRunner.class)
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
+
 @NotThreadSafe
 public class ITOnDemandRepairJob extends TestBase
 {
-    @Mock
-    private TableRepairMetrics myTableRepairMetrics;
+    private static TableRepairMetrics mockTableRepairMetrics;
 
-    private Metadata myMetadata;
+    private static Metadata myMetadata;
 
-    private Session mySession;
+    private static Session mySession;
 
-    private Host myLocalHost;
+    private static Host myLocalHost;
 
-    private HostStatesImpl myHostStates;
+    private static HostStatesImpl myHostStates;
 
-    private RepairHistoryProviderImpl myRepairHistoryProvider;
+    private static RepairHistoryProviderImpl myRepairHistoryProvider;
 
-    private OnDemandRepairSchedulerImpl myRepairSchedulerImpl;
+    private static OnDemandRepairSchedulerImpl myRepairSchedulerImpl;
 
-    private ScheduleManagerImpl myScheduleManagerImpl;
+    private static ScheduleManagerImpl myScheduleManagerImpl;
 
-    private CASLockFactory myLockFactory;
+    private static CASLockFactory myLockFactory;
 
-    private List<String> myCreatedKeyspaces = new ArrayList<>();
+    private Set<TableReference> myRepairs = new HashSet<>();
 
-    @Before
-    public void init()
+    @BeforeClass
+    public static void init()
     {
+        mockTableRepairMetrics = mock(TableRepairMetrics.class);
+
         myLocalHost = getNativeConnectionProvider().getLocalHost();
         mySession = getNativeConnectionProvider().getSession();
         Cluster cluster = mySession.getCluster();
@@ -122,7 +99,7 @@ public class ITOnDemandRepairJob extends TestBase
         ReplicationState replicationState = new ReplicationState(myMetadata, myLocalHost);
         myRepairSchedulerImpl = OnDemandRepairSchedulerImpl.builder()
                 .withJmxProxyFactory(getJmxProxyFactory())
-                .withTableRepairMetrics(myTableRepairMetrics)
+                .withTableRepairMetrics(mockTableRepairMetrics)
                 .withScheduleManager(myScheduleManagerImpl)
                 .withRepairLockType(RepairLockType.VNODE)
                 .withReplicationState(replicationState)
@@ -131,21 +108,24 @@ public class ITOnDemandRepairJob extends TestBase
                 .build();
     }
 
+
     @After
     public void clean()
     {
-        for (String keyspace : myCreatedKeyspaces)
+        for (TableReference tableReference : myRepairs)
         {
-            for (TableMetadata tableMetadata : myMetadata.getKeyspace(keyspace).getTables())
-            {
-                mySession.execute(QueryBuilder.delete()
-                        .from("system_distributed", "repair_history")
-                        .where(QueryBuilder.eq("keyspace_name", keyspace))
-                        .and(QueryBuilder.eq("columnfamily_name", tableMetadata.getName())));
-            }
-
-            mySession.execute(SchemaBuilder.dropKeyspace(keyspace).ifExists());
+            mySession.execute(QueryBuilder.delete()
+                    .from("system_distributed", "repair_history")
+                    .where(QueryBuilder.eq("keyspace_name", tableReference.getKeyspace()))
+                    .and(QueryBuilder.eq("columnfamily_name", tableReference.getTable())));
         }
+
+        reset(mockTableRepairMetrics);
+    }
+
+    @AfterClass
+    public static void closeConnections()
+    {
         myHostStates.close();
         myRepairSchedulerImpl.close();
         myScheduleManagerImpl.close();
@@ -159,12 +139,9 @@ public class ITOnDemandRepairJob extends TestBase
     public void repairSingleTable() throws EcChronosException
     {
         long startTime = System.currentTimeMillis();
-        TableReference tableReference = new TableReference("ks", "tb");
+        TableReference tableReference = new TableReference("test", "table1");
 
-        createKeyspace(tableReference.getKeyspace(), 3);
-        createTable(tableReference);
-
-        myRepairSchedulerImpl.scheduleJob(tableReference);
+        schedule(tableReference);
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
                 .until(() -> myRepairSchedulerImpl.getCurrentRepairJobs().isEmpty());
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
@@ -182,15 +159,11 @@ public class ITOnDemandRepairJob extends TestBase
     {
         long startTime = System.currentTimeMillis();
 
-        TableReference tableReference = new TableReference("ks", "tb");
-        TableReference tableReference2 = new TableReference("ks", "tb2");
+        TableReference tableReference = new TableReference("test", "table1");
+        TableReference tableReference2 = new TableReference("test", "table2");
 
-        createKeyspace(tableReference.getKeyspace(), 3);
-        createTable(tableReference);
-        createTable(tableReference2);
-
-        myRepairSchedulerImpl.scheduleJob(tableReference);
-        myRepairSchedulerImpl.scheduleJob(tableReference2);
+        schedule(tableReference);
+        schedule(tableReference2);
 
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
                 .until(() -> myRepairSchedulerImpl.getCurrentRepairJobs().isEmpty());
@@ -209,19 +182,22 @@ public class ITOnDemandRepairJob extends TestBase
     {
         long startTime = System.currentTimeMillis();
 
-        TableReference tableReference = new TableReference("ks", "tb");
+        TableReference tableReference = new TableReference("test", "table1");
 
-        createKeyspace(tableReference.getKeyspace(), 3);
-        createTable(tableReference);
-
-        myRepairSchedulerImpl.scheduleJob(tableReference);
-        myRepairSchedulerImpl.scheduleJob(tableReference);
+        schedule(tableReference);
+        schedule(tableReference);
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
                 .until(() -> myRepairSchedulerImpl.getCurrentRepairJobs().isEmpty());
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
                 .until(() ->myScheduleManagerImpl.getQueueSize() == 0);
 
         verifyTableRepairedSince(tableReference, startTime, tokenRangesFor(tableReference.getKeyspace()).size() * 2);
+    }
+
+    private void schedule(TableReference tableReference) throws EcChronosException
+    {
+        myRepairs.add(tableReference);
+        myRepairSchedulerImpl.scheduleJob(tableReference);
     }
 
     private void verifyTableRepairedSince(TableReference tableReference, long repairedSince)
@@ -234,7 +210,7 @@ public class ITOnDemandRepairJob extends TestBase
         OptionalLong repairedAt = lastRepairedSince(tableReference, repairedSince);
         assertThat(repairedAt.isPresent()).isTrue();
 
-        verify(myTableRepairMetrics, times(expectedTokenRanges)).repairTiming(eq(tableReference), anyLong(),
+        verify(mockTableRepairMetrics, times(expectedTokenRanges)).repairTiming(eq(tableReference), anyLong(),
                 any(TimeUnit.class), eq(true));
     }
 
@@ -277,37 +253,6 @@ public class ITOnDemandRepairJob extends TestBase
     private boolean fullyRepaired(RepairEntry repairEntry)
     {
         return repairEntry.getParticipants().size() == 3 && repairEntry.getStatus() == RepairStatus.SUCCESS;
-    }
-
-    private void createKeyspace(String keyspaceName, int replicationFactor)
-    {
-        KeyspaceOptions createKeyspaceStatement = SchemaBuilder.createKeyspace(keyspaceName)
-                .with()
-                .replication(getReplicationMap(replicationFactor));
-
-        mySession.execute(createKeyspaceStatement);
-
-        myCreatedKeyspaces.add(keyspaceName);
-    }
-
-    private Map<String, Object> getReplicationMap(int replicationFactor)
-    {
-        Map<String, Object> replicationMap = new HashMap<>();
-
-        replicationMap.put("class", "NetworkTopologyStrategy");
-        replicationMap.put(myLocalHost.getDatacenter(), replicationFactor);
-
-        return replicationMap;
-    }
-
-    private void createTable(TableReference tableReference)
-    {
-        AbstractCreateStatement createTableStatement = SchemaBuilder
-                .createTable(tableReference.getKeyspace(), tableReference.getTable())
-                .addPartitionKey("key", DataType.text())
-                .addColumn("value", DataType.text());
-
-        mySession.execute(createTableStatement);
     }
 
     private LongTokenRange convertTokenRange(TokenRange range)
