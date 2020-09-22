@@ -126,7 +126,7 @@ public class ITTableRepairJob extends TestBase
             mySession.execute(SchemaBuilder.dropKeyspace(keyspace).ifExists());
         }
 
-        await().atMost(10, TimeUnit.SECONDS).until(() -> myRepairScheduler.getCurrentRepairJobs().stream()
+        await().atMost(30, TimeUnit.SECONDS).until(() -> myRepairScheduler.getCurrentRepairJobs().stream()
                 .map(RepairJobView::getTableReference)
                 .filter(tb -> myCreatedKeyspaces.contains(tb.getKeyspace()))
                 .count() == 0);
