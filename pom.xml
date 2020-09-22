@@ -60,7 +60,7 @@
         <!-- Dependency versions -->
         <io.netty.version>4.0.47.Final</io.netty.version>
         <io.dropwizard.metrics.version>3.2.2</io.dropwizard.metrics.version>
-        <cassandra.driver.core.version>3.4.0</cassandra.driver.core.version>
+        <cassandra.driver.core.version>3.10.2</cassandra.driver.core.version>
         <guava.version>18.0</guava.version>
         <slf4j.version>1.7.23</slf4j.version>
         <logback.version>1.2.3</logback.version>
@@ -229,6 +229,18 @@
             </dependency>
 
             <!-- Jackson -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${com.fasterxml.jackson.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>${com.fasterxml.jackson.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>com.fasterxml.jackson.dataformat</groupId>
                 <artifactId>jackson-dataformat-yaml</artifactId>
