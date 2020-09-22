@@ -35,12 +35,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- REST -->
-        <dependency>
-            <groupId>javax.ws.rs</groupId>
-            <artifactId>javax.ws.rs-api</artifactId>
-        </dependency>
-
         <!-- OSGi -->
         <dependency>
             <groupId>org.osgi</groupId>
