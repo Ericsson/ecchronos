@@ -120,7 +120,7 @@ public class ECChronos implements Closeable
         return myOnDemandRepairSchedulerImpl;
     }
 
-    @Bean
+    @Bean(destroyMethod = "")
     public RepairScheduler repairScheduler()
     {
         return myRepairSchedulerImpl;

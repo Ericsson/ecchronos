@@ -16,6 +16,8 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
@@ -63,8 +65,10 @@ public class BeanConfigurator
     }
 
     @Bean
-    public ConfigurableServletWebServerFactory webServerFactory(Config configuration) {
+    public ConfigurableServletWebServerFactory webServerFactory(Config configuration) throws UnknownHostException
+    {
         TomcatServletWebServerFactory factory = new TomcatServletWebServerFactory();
+        factory.setAddress(InetAddress.getByName(configuration.getRestServer().getHost()));
         factory.setPort(configuration.getRestServer().getPort());
         return factory;
     }
