@@ -111,7 +111,7 @@ public class ECChronos implements Closeable
                 .withMetadata(metadata)
                 .withRepairConfiguration(repairConfiguration)
                 .build();
-
+        myECChronosInternals.addRunPolicy(myTimeBasedRunPolicy);
     }
 
     @Bean
@@ -124,11 +124,6 @@ public class ECChronos implements Closeable
     public RepairScheduler repairScheduler()
     {
         return myRepairSchedulerImpl;
-    }
-
-    public void start()
-    {
-        myECChronosInternals.addRunPolicy(myTimeBasedRunPolicy);
     }
 
     @Override

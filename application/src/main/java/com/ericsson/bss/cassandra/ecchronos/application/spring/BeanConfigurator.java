@@ -17,6 +17,8 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
 import java.io.File;
 import java.io.IOException;
 
+import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -58,6 +60,13 @@ public class BeanConfigurator
         {
             throw new ConfigurationException("Unable to load configuration file " + file, e);
         }
+    }
+
+    @Bean
+    public ConfigurableServletWebServerFactory webServerFactory(Config configuration) {
+        TomcatServletWebServerFactory factory = new TomcatServletWebServerFactory();
+        factory.setPort(configuration.getRestServer().getPort());
+        return factory;
     }
 
     @Bean

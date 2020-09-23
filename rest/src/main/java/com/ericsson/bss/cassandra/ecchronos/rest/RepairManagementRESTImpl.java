@@ -22,8 +22,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -47,8 +45,6 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
  * When updating the path it should also be updated in the OSGi component.
  */
 @RestController
-@Configuration
-@ComponentScan
 public class RepairManagementRESTImpl implements RepairManagementREST
 {
     private static final String PROTOCOL_VERSION = "v1";
