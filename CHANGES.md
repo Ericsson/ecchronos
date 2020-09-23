@@ -17,6 +17,7 @@
 * Make scheduler interval configurable - Issue #122
 * Add manual repair - Issue #14
 * Use yaml format for configuration - Issue #126
+* Use springboot for REST server - Issue #111
 
 ### Merged from 1.2
 

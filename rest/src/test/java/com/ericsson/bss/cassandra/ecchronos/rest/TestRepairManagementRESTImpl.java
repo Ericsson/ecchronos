@@ -19,7 +19,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.*;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.*;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
@@ -236,7 +235,6 @@ public class TestRepairManagementRESTImpl
     {
         long expectedLastRepairedAt = 234;
         long repairInterval = 123;
-        LongTokenRange longTokenRange = new LongTokenRange(2, 3);
         Host host = mock(Host.class);
         when(host.getBroadcastAddress()).thenReturn(InetAddress.getLocalHost());
 
