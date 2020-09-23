@@ -74,6 +74,7 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
         private String myLocalhost = DEFAULT_LOCAL_HOST;
         private int myPort = DEFAULT_NATIVE_PORT;
         private AuthProvider authProvider = AuthProvider.NONE;
+        private SSLOptions sslOptions = null;
 
         public Builder withLocalhost(String localhost)
         {
@@ -90,6 +91,12 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
         public Builder withAuthProvider(ExtendedAuthProvider authProvider)
         {
             this.authProvider = authProvider;
+            return this;
+        }
+
+        public Builder withSslOptions(SSLOptions sslOptions)
+        {
+            this.sslOptions = sslOptions;
             return this;
         }
 
@@ -156,7 +163,8 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
 
             return Cluster.builder()
                     .addContactPointsWithPorts(hostAddress)
-                    .withAuthProvider(builder.authProvider);
+                    .withAuthProvider(builder.authProvider)
+                    .withSSL(builder.sslOptions);
         }
 
         private static Host resolveLocalhost(Cluster cluster, String localhost)

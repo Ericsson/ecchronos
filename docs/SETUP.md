@@ -71,7 +71,7 @@ connection:
     port: 7199
 ```
 
-If you have authentication enabled you need to modify `conf/security.yml`:
+If you have authentication/tls enabled you need to modify `conf/security.yml`:
 
 ```
 cql:
@@ -79,6 +79,17 @@ cql:
     enabled: true
     username: cassandra
     password: cassandra
+  tls:
+    enabled: false
+    keystore: <keystore path>
+    keystore_password: ecchronos
+    truststore: <truststore path>
+    truststore_password: ecchronos
+    protocol: TLSv1.2
+    algorithm:
+    store_type: JKS
+    cipher_suites:
+    require_endpoint_verification: false
 jmx:
   credentials:
     enabled: true
@@ -86,9 +97,9 @@ jmx:
     password: cassandra
 ```
 
-The authentication parameters can be updated during runtime and will automatically be picked up by ecc.
+The security parameters can be updated during runtime and will automatically be picked up by ecc.
 
-If additional properties like SSL is needed it's possible to create custom connection providers.
+It's possible to override the default connection providers and create custom ones.
 More information about the custom connection provider can be found [here](STANDALONE.md).
 
 ## Running ecChronos

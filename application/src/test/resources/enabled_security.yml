@@ -18,6 +18,17 @@ cql:
     enabled: true
     username: cqluser
     password: cqlpassword
+  tls:
+    enabled: true
+    keystore: path_to_keystore
+    keystore_password: keystorepassword
+    truststore: path_to_truststore
+    truststore_password: truststorepassword
+    protocol: TLSv1.2
+    algorithm: SunX509
+    store_type: JKS
+    cipher_suites: VALID_CIPHER_SUITE,VALID_CIPHER_SUITE2
+    require_endpoint_verification: true
 
 jmx:
   credentials:

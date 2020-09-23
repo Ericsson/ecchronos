@@ -36,8 +36,21 @@ public class TestSecurity
 
         Credentials expectedCredentials = new Credentials(false, "cassandra", "cassandra");
 
+        TLSConfig tlsConfig = new TLSConfig();
+        tlsConfig.setEnabled(false);
+        tlsConfig.setKeystore("<keystore path>");
+        tlsConfig.setKeystore_password("ecchronos");
+        tlsConfig.setTruststore("<truststore path>");
+        tlsConfig.setTruststore_password("ecchronos");
+        tlsConfig.setProtocol("TLSv1.2");
+        tlsConfig.setAlgorithm(null);
+        tlsConfig.setStore_type("JKS");
+        tlsConfig.setCipher_suites(null);
+        tlsConfig.setRequire_endpoint_verification(false);
+
         assertThat(config.getCql().getCredentials()).isEqualTo(expectedCredentials);
         assertThat(config.getJmx().getCredentials()).isEqualTo(expectedCredentials);
+        assertThat(config.getCql().getTls()).isEqualTo(tlsConfig);
     }
 
     @Test
@@ -53,7 +66,20 @@ public class TestSecurity
         Credentials expectedCqlCredentials = new Credentials(true, "cqluser", "cqlpassword");
         Credentials expectedJmxCredentials = new Credentials(true, "jmxuser", "jmxpassword");
 
+        TLSConfig tlsConfig = new TLSConfig();
+        tlsConfig.setEnabled(true);
+        tlsConfig.setKeystore("path_to_keystore");
+        tlsConfig.setKeystore_password("keystorepassword");
+        tlsConfig.setTruststore("path_to_truststore");
+        tlsConfig.setTruststore_password("truststorepassword");
+        tlsConfig.setProtocol("TLSv1.2");
+        tlsConfig.setAlgorithm("SunX509");
+        tlsConfig.setStore_type("JKS");
+        tlsConfig.setCipher_suites("VALID_CIPHER_SUITE,VALID_CIPHER_SUITE2");
+        tlsConfig.setRequire_endpoint_verification(true);
+
         assertThat(config.getCql().getCredentials()).isEqualTo(expectedCqlCredentials);
         assertThat(config.getJmx().getCredentials()).isEqualTo(expectedJmxCredentials);
+        assertThat(config.getCql().getTls()).isEqualTo(tlsConfig);
     }
 }

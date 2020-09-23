@@ -42,6 +42,7 @@ public class Security
     public static class CqlSecurity
     {
         private Credentials credentials;
+        private TLSConfig tls;
 
         public Credentials getCredentials()
         {
@@ -51,6 +52,16 @@ public class Security
         public void setCredentials(Credentials credentials)
         {
             this.credentials = credentials;
+        }
+
+        public TLSConfig getTls()
+        {
+            return tls;
+        }
+
+        public void setTls(TLSConfig tls)
+        {
+            this.tls = tls;
         }
     }
 

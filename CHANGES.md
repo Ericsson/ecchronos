@@ -21,6 +21,7 @@
 * Add Health Endpoint - Issue #131
 * Use table id in metric names - Issue #120
 * Add authentication for CQL and JMX - Issue #129
+* Add TLS support for CQL - Issue #129
 
 ### Merged from 1.2
 
