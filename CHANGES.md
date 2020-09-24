@@ -18,7 +18,7 @@
 * Add manual repair - Issue #14
 * Use yaml format for configuration - Issue #126
 * Use springboot for REST server - Issue #111
-* Add Health Check - Issue #131
+* Add Health Endpoint - Issue #131
 
 ### Merged from 1.2
 
