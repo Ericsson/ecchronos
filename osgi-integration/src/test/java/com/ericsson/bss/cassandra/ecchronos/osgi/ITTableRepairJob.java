@@ -34,6 +34,8 @@ import java.util.stream.Collectors;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.Session;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
 import com.google.common.collect.Lists;
@@ -64,12 +66,12 @@ import org.ops4j.pax.exam.OptionUtils;
 import org.ops4j.pax.exam.cm.ConfigurationAdminOptions;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
-import org.ops4j.pax.exam.spi.reactors.PerMethod;
+import org.ops4j.pax.exam.spi.reactors.PerClass;
 
 import javax.inject.Inject;
 
 @RunWith(PaxExam.class)
-@ExamReactorStrategy(PerMethod.class)
+@ExamReactorStrategy(PerClass.class)
 public class ITTableRepairJob extends TestBase
 {
     private static final String REPAIR_CONFIGURATION_PID = "com.ericsson.bss.cassandra.ecchronos.core.osgi.DefaultRepairConfigurationProviderComponent";
@@ -80,6 +82,9 @@ public class ITTableRepairJob extends TestBase
 
     @Inject
     NativeConnectionProvider myNativeConnectionProvider;
+
+    @Inject
+    RepairScheduler myRepairScheduler;
 
     private Session mySession;
     private Metadata myMetadata;
@@ -120,6 +125,11 @@ public class ITTableRepairJob extends TestBase
 
             mySession.execute(SchemaBuilder.dropKeyspace(keyspace).ifExists());
         }
+
+        await().atMost(30, TimeUnit.SECONDS).until(() -> myRepairScheduler.getCurrentRepairJobs().stream()
+                .map(RepairJobView::getTableReference)
+                .filter(tb -> myCreatedKeyspaces.contains(tb.getKeyspace()))
+                .count() == 0);
     }
 
     /**
