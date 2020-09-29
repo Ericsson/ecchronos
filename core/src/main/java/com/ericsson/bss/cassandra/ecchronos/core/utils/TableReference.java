@@ -14,11 +14,20 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
+import java.util.UUID;
+
 /**
  * An interface containing keyspace/table mapping to avoid passing around two strings to refer to one specific table.
  */
 public interface TableReference
 {
+    /**
+     * Get the table id.
+     *
+     * @return The table id.
+     */
+    UUID getId();
+
     /**
      * Get the table name.
      *

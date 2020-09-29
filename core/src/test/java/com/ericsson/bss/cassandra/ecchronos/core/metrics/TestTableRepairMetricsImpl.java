@@ -194,8 +194,8 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.lastRepairedAt(tableReference2, expectedLastRepaired2);
         myTableRepairMetricsImpl.report();
 
-        double lastRepaired = getMetricValue(tableReference + "-LastRepairedAt");
-        double lastRepaired2 = getMetricValue(tableReference2 + "-LastRepairedAt");
+        double lastRepaired = getMetricValue(metricName(tableReference, "LastRepairedAt"));
+        double lastRepaired2 = getMetricValue(metricName(tableReference2, "LastRepairedAt"));
 
         assertThat(lastRepaired).isEqualTo(expectedLastRepaired);
         assertThat(lastRepaired2).isEqualTo(expectedLastRepaired2);
@@ -210,7 +210,7 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.repairTiming(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, true);
         myTableRepairMetricsImpl.report();
 
-        String metric = tableReference + "-RepairSuccessTime";
+        String metric = metricName(tableReference, "RepairSuccessTime");
 
         assertThat(getMetricValue(metric, 1, "Count")).isEqualTo(1);
         assertThat(getMetricValue(metric, 2, "Max")).isEqualTo(expectedRepairTime);
@@ -230,7 +230,7 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.repairTiming(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
         myTableRepairMetricsImpl.report();
 
-        String metric = tableReference + "-RepairFailedTime";
+        String metric = metricName(tableReference, "RepairFailedTime");
 
         assertThat(getMetricValue(metric, 1, "Count")).isEqualTo(1);
         assertThat(getMetricValue(metric, 2, "Max")).isEqualTo(expectedRepairTime);
@@ -279,6 +279,11 @@ public class TestTableRepairMetricsImpl
         assertThat(csvValue).isEqualTo(mBeanValue.doubleValue());
 
         return csvValue;
+    }
+
+    private String metricName(TableReference tableReference, String metric)
+    {
+        return tableReference.getKeyspace() + "." + tableReference.getTable() + "-" + tableReference.getId() + "-" + metric;
     }
 
     private Number getMBeanValue(String metric, String mBeanAttribute) throws Exception

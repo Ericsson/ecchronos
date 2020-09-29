@@ -75,6 +75,7 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
             table = tableMetadata.getName();
         }
 
+        @Override
         public UUID getId()
         {
             return uuid;

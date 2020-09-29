@@ -80,10 +80,10 @@ public class TestTableMetricHolder
         tableMetricHolder.init();
 
         assertThat(metricRegistry.getMetrics().keySet()).containsExactlyInAnyOrder(
-                tableMetricHolder.metricName(TableMetricHolder.LAST_REPAIRED_AT),
-                tableMetricHolder.metricName(TableMetricHolder.REPAIR_STATE),
-                tableMetricHolder.metricName(TableMetricHolder.REPAIR_TIMING_FAILED),
-                tableMetricHolder.metricName(TableMetricHolder.REPAIR_TIMING_SUCCESS));
+                metricName(TableMetricHolder.LAST_REPAIRED_AT),
+                metricName(TableMetricHolder.REPAIR_STATE),
+                metricName(TableMetricHolder.REPAIR_TIMING_FAILED),
+                metricName(TableMetricHolder.REPAIR_TIMING_SUCCESS));
 
         assertThat(getGague(TableMetricHolder.REPAIR_STATE).getValue()).isEqualTo(Double.NaN);
         assertThat(getGague(TableMetricHolder.LAST_REPAIRED_AT).getValue()).isEqualTo(0L);
@@ -174,11 +174,16 @@ public class TestTableMetricHolder
 
     private Timer getTimer(String name)
     {
-        return myMetricRegistry.getTimers().get(myTableMetricHolder.metricName(name));
+        return myMetricRegistry.getTimers().get(metricName(name));
     }
 
     private Gauge getGague(String name)
     {
-        return myMetricRegistry.getGauges().get(myTableMetricHolder.metricName(name));
+        return myMetricRegistry.getGauges().get(metricName(name));
+    }
+
+    private String metricName(String name)
+    {
+        return myTableReference.getKeyspace() + "." + myTableReference.getTable() + "-" + myTableReference.getId() + "-" + name;
     }
 }
