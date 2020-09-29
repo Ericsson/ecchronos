@@ -21,13 +21,10 @@ import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementREST;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementRESTImpl;
 import org.osgi.service.component.annotations.*;
 
-import javax.ws.rs.Path;
-
 /**
  * OSGi component wrapping {@link RepairManagementREST} bound with OSGi services.
  */
 @Component
-@Path("/repair-management/v1")
 public class RepairManagementRESTComponent implements RepairManagementREST
 {
     @Reference (service = RepairScheduler.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)

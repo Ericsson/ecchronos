@@ -58,8 +58,8 @@ LICENSE.txt
 NOTICE.txt
 ```
 
-Change the configuration in `conf/ecc.cfg`.
-To get started the connection properties needs to match your local setup:
+Change the configuration in `conf/ecc.yml`.
+To get started the connection configuration needs to match your local setup:
 
 ```
 ### Native connection properties

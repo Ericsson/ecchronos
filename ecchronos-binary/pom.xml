@@ -92,8 +92,10 @@
                                 <includedLicense>The Apache Software License, Version 2.0</includedLicense>
                                 <includedLicense>MIT License</includedLicense>
                                 <includedLicense>Eclipse Public License - v 1.0</includedLicense>
-                                <includedLicense>CDDL 1.1</includedLicense>
-                                <includedLicense>CDDL + GPLv2 with classpath exception</includedLicense>
+                                <includedLicense>EPL 2.0</includedLicense>
+                                <includedLicense>GPL2 w/ CPE</includedLicense>
+                                <includedLicense>Public Domain, per Creative Commons CC0</includedLicense>
+                                <includedLicense>BSD-2-Clause</includedLicense>
                             </includedLicenses>
                             <failOnBlacklist>true</failOnBlacklist>
                         </configuration>

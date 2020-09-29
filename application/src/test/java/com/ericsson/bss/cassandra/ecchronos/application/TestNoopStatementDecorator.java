@@ -15,12 +15,11 @@
 package com.ericsson.bss.cassandra.ecchronos.application;
 
 import com.datastax.driver.core.Statement;
+import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-
-import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,7 +32,7 @@ public class TestNoopStatementDecorator
     @Test
     public void testApplyPreservesStatement()
     {
-        NoopStatementDecorator noopStatementDecorator = new NoopStatementDecorator(new Properties());
+        NoopStatementDecorator noopStatementDecorator = new NoopStatementDecorator(new Config());
         assertThat(noopStatementDecorator.apply(mockStatement)).isEqualTo(mockStatement);
     }
 }

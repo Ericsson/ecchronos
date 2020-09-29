@@ -18,13 +18,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.types.CompleteRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
 /**
  * Repair scheduler rest interface.
  *
@@ -37,9 +30,6 @@ public interface RepairManagementREST
      *
      * @return A list of JSON representations of {@link ScheduledRepairJob}
      */
-    @GET
-    @Path("/status")
-    @Produces(MediaType.APPLICATION_JSON)
     String status();
 
     /**
@@ -48,10 +38,7 @@ public interface RepairManagementREST
      * @param keyspace The keyspace to list
      * @return A list of JSON representations of {@link ScheduledRepairJob}
      */
-    @GET
-    @Path("/status/keyspaces/{keyspace}")
-    @Produces(MediaType.APPLICATION_JSON)
-    String keyspaceStatus(@PathParam("keyspace") String keyspace); // NOPMD
+    String keyspaceStatus(String keyspace);
 
     /**
      * Get a list of the status of all scheduled repair jobs for a specific table.
@@ -60,11 +47,8 @@ public interface RepairManagementREST
      * @param table The table to get status of
      * @return A JSON representation of {@link ScheduledRepairJob}
      */
-    @GET
-    @Path("/status/keyspaces/{keyspace}/tables/{table}")
-    @Produces(MediaType.APPLICATION_JSON)
-    String tableStatus(@PathParam("keyspace") String keyspace, // NOPMD
-                       @PathParam("table") String table); // NOPMD
+    String tableStatus(String keyspace,
+                       String table);
 
     /**
      * Get status of a specific scheduled table repair job.
@@ -74,22 +58,16 @@ public interface RepairManagementREST
      * @param id The id of the job
      * @return A JSON representation of {@link CompleteRepairJob}
      */
-    @GET
-    @Path("/status/keyspaces/{keyspace}/tables/{table}/ids/{id}")
-    @Produces(MediaType.APPLICATION_JSON)
-    String jobStatus(@PathParam("keyspace") String keyspace, // NOPMD
-                     @PathParam("table") String table, // NOPMD
-                     @PathParam("id") String id);
+    String jobStatus(String keyspace,
+                     String table,
+                     String id);
 
     /**
      * Get a list of configuration of all scheduled repair jobs.
      *
      * @return A list of JSON representations of {@link TableRepairConfig}
      */
-    @GET
-    @Path("/config")
-    @Produces(MediaType.APPLICATION_JSON)
-    String config(); // NOPMD
+    String config();
 
     /**
      * Get a list of configuration of all scheduled repair jobs for a specific keyspace.
@@ -97,10 +75,7 @@ public interface RepairManagementREST
      * @param keyspace The keyspace to list
      * @return A list of JSON representations of {@link TableRepairConfig}
      */
-    @GET
-    @Path("/config/keyspaces/{keyspace}")
-    @Produces(MediaType.APPLICATION_JSON)
-    String keyspaceConfig(@PathParam("keyspace") String keyspace); // NOPMD
+    String keyspaceConfig(String keyspace);
 
     /**
      * Get configuration of a specific scheduled table repair job.
@@ -109,11 +84,8 @@ public interface RepairManagementREST
      * @param table The table to get configuration of
      * @return A JSON representation of {@link TableRepairConfig}
      */
-    @GET
-    @Path("/config/keyspaces/{keyspace}/tables/{table}")
-    @Produces(MediaType.APPLICATION_JSON)
-    String tableConfig(@PathParam("keyspace") String keyspace, // NOPMD
-                       @PathParam("table") String table); // NOPMD
+    String tableConfig(String keyspace,
+                       String table);
 
     /**
      * Schedule an on demand repair to be run on a specific table
@@ -122,9 +94,6 @@ public interface RepairManagementREST
      * @param table The table to get configuration of
      * @return A JSON representation of {@link ScheduledRepairJob}
      */
-    @POST
-    @Path("/schedule/keyspaces/{keyspace}/tables/{table}")
-    @Produces(MediaType.APPLICATION_JSON)
-    String scheduleJob(@PathParam("keyspace") String keyspace, // NOPMD
-                                @PathParam("table") String table); // NOPMD
+    String scheduleJob(String keyspace,
+                       String table);
 }

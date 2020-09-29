@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
+import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalJmxConnectionProvider;
 import org.slf4j.Logger;
@@ -21,7 +22,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.management.remote.JMXConnector;
 import java.io.IOException;
-import java.util.Properties;
 
 public class DefaultJmxConnectionProvider implements JmxConnectionProvider
 {
@@ -29,12 +29,14 @@ public class DefaultJmxConnectionProvider implements JmxConnectionProvider
 
     private final LocalJmxConnectionProvider myLocalJmxConnectionProvider;
 
-    public DefaultJmxConnectionProvider(Properties properties) throws IOException
+    public DefaultJmxConnectionProvider(Config config) throws IOException
     {
-        DefaultJmxConnectionProperties connectionProperties = DefaultJmxConnectionProperties.from(properties);
-        LOG.info("Connecting through JMX using {}", connectionProperties);
+        Config.Connection<JmxConnectionProvider> jmxConfig = config.getConnectionConfig().getJmx();
+        String host = jmxConfig.getHost();
+        int port = jmxConfig.getPort();
+        LOG.info("Connecting through JMX using {}:{}", host, port);
 
-        myLocalJmxConnectionProvider = new LocalJmxConnectionProvider(connectionProperties.getJmxHost(), connectionProperties.getJmxPort());
+        myLocalJmxConnectionProvider = new LocalJmxConnectionProvider(host, port);
     }
 
     @Override

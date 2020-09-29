@@ -14,6 +14,22 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
@@ -25,29 +41,26 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.google.gson.Gson;
 
-import javax.inject.Inject;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.Path;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 /**
  * When updating the path it should also be updated in the OSGi component.
  */
-@Path("/repair-management/v1")
+@RestController
 public class RepairManagementRESTImpl implements RepairManagementREST
 {
+    private static final String PROTOCOL_VERSION = "v1";
+    private static final String ENDPOINT_PREFIX = "/repair-management/" + PROTOCOL_VERSION;
+
     private static final Gson GSON = new Gson();
 
+    @Autowired
     private final RepairScheduler myRepairScheduler;
+
+    @Autowired
     private final OnDemandRepairScheduler myOnDemandRepairScheduler;
+
+    @Autowired
     private final TableReferenceFactory myTableReferenceFactory;
 
-    @Inject
     public RepairManagementRESTImpl(RepairScheduler repairScheduler, OnDemandRepairScheduler demandRepairScheduler,
             TableReferenceFactory tableReferenceFactory)
     {
@@ -57,6 +70,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
+    @GetMapping(ENDPOINT_PREFIX + "/status")
     public String status()
     {
         List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(job -> true);
@@ -65,7 +79,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
-    public String keyspaceStatus(String keyspace)
+    @GetMapping(ENDPOINT_PREFIX + "/status/keyspaces/{keyspace}")
+    public String keyspaceStatus(@PathVariable String keyspace)
     {
         List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(
                 job -> keyspace.equals(job.getTableReference().getKeyspace()));
@@ -74,7 +89,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
-    public String tableStatus(String keyspace, String table)
+    @GetMapping(ENDPOINT_PREFIX + "/status/keyspaces/{keyspace}/tables/{table}")
+    public String tableStatus(@PathVariable String keyspace, @PathVariable String table)
     {
         List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(forTable(keyspace, table));
 
@@ -82,7 +98,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
-    public String jobStatus(String keyspace, String table, String id)
+    @GetMapping(ENDPOINT_PREFIX + "/status/keyspaces/{keyspace}/tables/{table}/ids/{id}")
+    public String jobStatus(@PathVariable String keyspace, @PathVariable String table, @PathVariable String id)
     {
         try
         {
@@ -99,6 +116,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
+    @GetMapping(ENDPOINT_PREFIX + "/config")
     public String config()
     {
         List<TableRepairConfig> configurations = getTableRepairConfigs(job -> true);
@@ -107,7 +125,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
-    public String keyspaceConfig(String keyspace)
+    @GetMapping(ENDPOINT_PREFIX + "/config/keyspaces/{keyspace}")
+    public String keyspaceConfig(@PathVariable String keyspace)
     {
         List<TableRepairConfig> configurations = getTableRepairConfigs(
                 job -> job.getTableReference().getKeyspace().equals(keyspace));
@@ -116,7 +135,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
-    public String tableConfig(String keyspace, String table)
+    @GetMapping(ENDPOINT_PREFIX + "/config/keyspaces/{keyspace}/tables/{table}")
+    public String tableConfig(@PathVariable String keyspace, @PathVariable String table)
     {
         List<TableRepairConfig> configurations = getTableRepairConfigs(forTable(keyspace, table));
 
@@ -124,7 +144,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
-    public String scheduleJob(String keyspace, String table)
+    @PostMapping(ENDPOINT_PREFIX + "/schedule/keyspaces/{keyspace}/tables/{table}")
+    public String scheduleJob(@PathVariable String keyspace, @PathVariable String table)
     {
         RepairJobView repairJobView = null;
         try
@@ -132,7 +153,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
             repairJobView = myOnDemandRepairScheduler.scheduleJob(myTableReferenceFactory.forTable(keyspace, table));
         } catch (EcChronosException e)
         {
-            throw new NotFoundException(e);
+            throw new ResponseStatusException(NOT_FOUND, "Not Found", e);
         }
         return GSON.toJson(new ScheduledRepairJob(repairJobView));
     }

@@ -14,6 +14,29 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.osgi;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.ops4j.pax.exam.Configuration;
+import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.exam.OptionUtils;
+import org.ops4j.pax.exam.cm.ConfigurationAdminOptions;
+import org.ops4j.pax.exam.junit.PaxExam;
+import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
+import org.ops4j.pax.exam.spi.reactors.PerClass;
+
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
@@ -31,33 +54,11 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.ops4j.pax.exam.Configuration;
-import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.exam.OptionUtils;
-import org.ops4j.pax.exam.cm.ConfigurationAdminOptions;
-import org.ops4j.pax.exam.junit.PaxExam;
-import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
-import org.ops4j.pax.exam.spi.reactors.PerMethod;
-
-import javax.inject.Inject;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 @RunWith(PaxExam.class)
-@ExamReactorStrategy(PerMethod.class)
+@ExamReactorStrategy(PerClass.class)
 public class ITTableRepairJob extends TestBase
 {
     private static final String REPAIR_CONFIGURATION_PID = "com.ericsson.bss.cassandra.ecchronos.core.osgi.DefaultRepairConfigurationProviderComponent";
@@ -102,7 +103,6 @@ public class ITTableRepairJob extends TestBase
 
         myRepairConfiguration = RepairConfiguration.newBuilder()
                 .withRepairInterval(60, TimeUnit.MINUTES)
-                .withTargetRepairSizeInBytes(UnitConverter.toBytes("100m")) // 100MiB
                 .build();
     }
 
@@ -117,6 +117,8 @@ public class ITTableRepairJob extends TestBase
                         .from("system_distributed","repair_history")
                         .where(QueryBuilder.eq("keyspace_name", keyspace))
                         .and(QueryBuilder.eq("columnfamily_name", tableMetadata.getName())));
+                myRepairScheduler
+                        .removeConfiguration(myTableReferenceFactory.forTable(keyspace, tableMetadata.getName()));
             }
 
             mySession.execute(SchemaBuilder.dropKeyspace(keyspace).ifExists());

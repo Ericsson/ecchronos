@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 
 import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Metadata;
+import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
@@ -30,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 public class ECChronosInternals implements Closeable
@@ -51,12 +51,9 @@ public class ECChronosInternals implements Closeable
 
     private final CASLockFactory myLockFactory;
 
-    public ECChronosInternals(Properties configuration, NativeConnectionProvider nativeConnectionProvider,
+    public ECChronosInternals(Config configuration, NativeConnectionProvider nativeConnectionProvider,
                               JmxConnectionProvider jmxConnectionProvider, StatementDecorator statementDecorator)
-            throws ConfigurationException
     {
-        StatisticsProperties statisticsProperties = StatisticsProperties.from(configuration);
-
         myJmxProxyFactory = JmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(jmxConnectionProvider)
                 .build();
@@ -65,13 +62,11 @@ public class ECChronosInternals implements Closeable
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .build();
 
-        CASLockFactoryProperties casLockFactoryProperties = CASLockFactoryProperties.from(configuration);
-
         myLockFactory = CASLockFactory.builder()
                 .withNativeConnectionProvider(nativeConnectionProvider)
                 .withHostStates(myHostStatesImpl)
                 .withStatementDecorator(statementDecorator)
-                .withKeyspaceName(casLockFactoryProperties.getKeyspaceName())
+                .withKeyspaceName(configuration.getLockFactory().getCas().getKeyspace())
                 .build();
 
         Host host = nativeConnectionProvider.getLocalHost();
@@ -81,7 +76,7 @@ public class ECChronosInternals implements Closeable
 
         myReplicatedTableProvider = new ReplicatedTableProviderImpl(host, metadata, myTableReferenceFactory);
 
-        if (statisticsProperties.isEnabled())
+        if (configuration.getStatistics().isEnabled())
         {
             myTableStorageStatesImpl = TableStorageStatesImpl.builder()
                     .withReplicatedTableProvider(myReplicatedTableProvider)
@@ -90,7 +85,7 @@ public class ECChronosInternals implements Closeable
 
             myTableRepairMetricsImpl = TableRepairMetricsImpl.builder()
                     .withTableStorageStates(myTableStorageStatesImpl)
-                    .withStatisticsDirectory(statisticsProperties.getStatisticsDirectory().toString())
+                    .withStatisticsDirectory(configuration.getStatistics().getDirectory().toString())
                     .build();
         }
         else
@@ -99,11 +94,10 @@ public class ECChronosInternals implements Closeable
             myTableRepairMetricsImpl = null;
         }
 
-        SchedulerProperties schedulerProperties = SchedulerProperties.from(configuration);
-
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withLockFactory(myLockFactory)
-                .withRunInterval(schedulerProperties.getRunInterval(), schedulerProperties.getTimeUnit())
+                .withRunInterval(configuration.getScheduler().getFrequency().getInterval(TimeUnit.MILLISECONDS),
+                        TimeUnit.MILLISECONDS)
                 .build();
     }
 
