@@ -19,6 +19,7 @@ import static org.awaitility.Awaitility.await;
 
 import java.io.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -55,15 +56,14 @@ public class TestConfigRefresher
     {
         File file = temporaryFolder.newFile();
 
-        AtomicInteger runs = new AtomicInteger();
+        AtomicBoolean shouldThrow = new AtomicBoolean(true);
 
         try (ConfigRefresher configRefresher = new ConfigRefresher(temporaryFolder.getRoot().toPath()))
         {
             AtomicReference<String> reference = new AtomicReference<>(readFileContent(file));
 
             configRefresher.watch(file.toPath(), () -> {
-                int nRuns = runs.incrementAndGet();
-                if (nRuns == 1)
+                if (shouldThrow.get())
                 {
                     throw new NullPointerException();
                 }
@@ -76,6 +76,8 @@ public class TestConfigRefresher
             Thread.sleep(100);
 
             assertThat(reference).hasValue("");
+
+            shouldThrow.set(false);
 
             writeToFile(file, "some new content");
             await().atMost(1, TimeUnit.SECONDS).until(() -> "some new content".equals(reference.get()));
