@@ -28,11 +28,11 @@ public class ConfigRefresher implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigRefresher.class);
 
-    private static final ExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-
     private final ConcurrentMap<Path, Runnable> knownConfigs = new ConcurrentHashMap<>();
     private final Path baseDirectory;
     private final WatchService watcher;
+
+    private final ExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
     public ConfigRefresher(Path baseDirectory)
     {
