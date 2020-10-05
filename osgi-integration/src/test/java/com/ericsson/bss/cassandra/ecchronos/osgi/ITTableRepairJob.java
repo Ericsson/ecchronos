@@ -14,10 +14,28 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.osgi;
 
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.TokenRange;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+
+import org.junit.*;
+import org.junit.runner.RunWith;
+import org.ops4j.pax.exam.Configuration;
+import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.exam.OptionUtils;
+import org.ops4j.pax.exam.cm.ConfigurationAdminOptions;
+import org.ops4j.pax.exam.junit.PaxExam;
+import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
+import org.ops4j.pax.exam.spi.reactors.PerClass;
+
+import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.utils.UUIDs;
@@ -32,27 +50,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.ops4j.pax.exam.Configuration;
-import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.exam.OptionUtils;
-import org.ops4j.pax.exam.cm.ConfigurationAdminOptions;
-import org.ops4j.pax.exam.junit.PaxExam;
-import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
-import org.ops4j.pax.exam.spi.reactors.PerClass;
-
-import javax.inject.Inject;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
@@ -70,7 +67,8 @@ public class ITTableRepairJob extends TestBase
     @Inject
     RepairScheduler myRepairScheduler;
 
-    private Session mySession;
+    private static Cluster myAdminCluster;
+    private static Session myAdminSession;
     private Metadata myMetadata;
     private Host myLocalHost;
 
@@ -86,14 +84,24 @@ public class ITTableRepairJob extends TestBase
         return OptionUtils.combine(basicOptions(), scheduleManagerOptions(), repairSchedulerOptions());
     }
 
+    @BeforeClass
+    public static void setupAdminSession()
+    {
+        myAdminCluster = Cluster.builder().addContactPoint(CASSANDRA_HOST)
+                .withPort(Integer.valueOf(CASSANDRA_NATIVE_PORT))
+                .withCredentials("cassandra", "cassandra")
+                .build();
+        myAdminSession = myAdminCluster.connect();
+    }
+
     @Before
     public void init()
     {
-        mySession = myNativeConnectionProvider.getSession();
-        myMetadata = mySession.getCluster().getMetadata();
+        Session session = myNativeConnectionProvider.getSession();
+        myMetadata = session.getCluster().getMetadata();
         myLocalHost = myNativeConnectionProvider.getLocalHost();
 
-        myRepairHistoryProvider = new RepairHistoryProviderImpl(mySession, s -> s, TimeUnit.DAYS.toMillis(30));
+        myRepairHistoryProvider = new RepairHistoryProviderImpl(session, s -> s, TimeUnit.DAYS.toMillis(30));
 
         myRepairConfiguration = RepairConfiguration.newBuilder()
                 .withRepairInterval(1, TimeUnit.HOURS)
@@ -107,11 +115,18 @@ public class ITTableRepairJob extends TestBase
         {
             myRepairScheduler.removeConfiguration(tableReference);
 
-            mySession.execute(QueryBuilder.delete()
+            myAdminSession.execute(QueryBuilder.delete()
                     .from("system_distributed", "repair_history")
                     .where(QueryBuilder.eq("keyspace_name", tableReference.getKeyspace()))
                     .and(QueryBuilder.eq("columnfamily_name", tableReference.getTable())));
         }
+    }
+
+    @AfterClass
+    public static void shutdownAdminSession()
+    {
+        myAdminSession.close();
+        myAdminCluster.close();
     }
 
     /**
@@ -293,7 +308,7 @@ public class ITTableRepairJob extends TestBase
                 .value("range_end", tokenRange.getEnd().toString())
                 .value("status", "SUCCESS");
 
-        mySession.execute(insert);
+        myAdminSession.execute(insert);
     }
 
     private Set<TokenRange> halfOfTokenRanges(TableReference tableReference)

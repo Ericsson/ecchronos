@@ -33,6 +33,7 @@ import org.junit.Test;
 import javax.management.remote.JMXConnector;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -152,7 +153,7 @@ public class TestConfig
 
     public static class TestNativeConnectionProvider implements NativeConnectionProvider
     {
-        public TestNativeConnectionProvider(Config config)
+        public TestNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecurity)
         {
             // Empty constructor
         }
@@ -172,7 +173,7 @@ public class TestConfig
 
     public static class TestJmxConnectionProvider implements JmxConnectionProvider
     {
-        public TestJmxConnectionProvider(Config config)
+        public TestJmxConnectionProvider(Config config, Supplier<Security.JmxSecurity> jmxSecurity)
         {
             // Empty constructor
         }

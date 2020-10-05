@@ -65,7 +65,7 @@ public class ITTableRepairJob extends TestBase
 
     private static Metadata myMetadata;
 
-    private static Session mySession;
+    private static Session myAdminSession;
 
     private static Host myLocalHost;
 
@@ -90,16 +90,18 @@ public class ITTableRepairJob extends TestBase
         mockTableRepairMetrics = mock(TableRepairMetrics.class);
         mockTableStorageStates = mock(TableStorageStates.class);
 
+        myAdminSession = getAdminNativeConnectionProvider().getSession();
+
         myLocalHost = getNativeConnectionProvider().getLocalHost();
-        mySession = getNativeConnectionProvider().getSession();
-        Cluster cluster = mySession.getCluster();
+        Session session = getNativeConnectionProvider().getSession();
+        Cluster cluster = session.getCluster();
         myMetadata = cluster.getMetadata();
 
         myHostStates = HostStatesImpl.builder()
                 .withRefreshIntervalInMs(1000)
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .build();
-        myRepairHistoryProvider = new RepairHistoryProviderImpl(mySession, s -> s, TimeUnit.DAYS.toMillis(30));
+        myRepairHistoryProvider = new RepairHistoryProviderImpl(session, s -> s, TimeUnit.DAYS.toMillis(30));
 
         myLockFactory = CASLockFactory.builder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
@@ -145,7 +147,7 @@ public class ITTableRepairJob extends TestBase
         {
             myRepairSchedulerImpl.removeConfiguration(tableReference);
 
-            mySession.execute(QueryBuilder.delete()
+            myAdminSession.execute(QueryBuilder.delete()
                     .from("system_distributed", "repair_history")
                     .where(QueryBuilder.eq("keyspace_name", tableReference.getKeyspace()))
                     .and(QueryBuilder.eq("columnfamily_name", tableReference.getTable())));
@@ -449,7 +451,7 @@ public class ITTableRepairJob extends TestBase
                 .value("range_end", range_end)
                 .value("status", "SUCCESS");
 
-        mySession.execute(insert);
+        myAdminSession.execute(insert);
     }
 
     private Set<TokenRange> halfOfTokenRanges(TableReference tableReference)

@@ -45,6 +45,11 @@ sed "/jmx:/{n;s/host: .*/host: $CASSANDRA_IP/}" -i "$CONF_DIR"/ecc.yml
 sed "s/port: 9042/port: $CASSANDRA_NATIVE_PORT/g" -i "$CONF_DIR"/ecc.yml
 sed "s/port: 7199/port: $CASSANDRA_JMX_PORT/g" -i "$CONF_DIR"/ecc.yml
 
+## Security
+sed '/cql:/{n;/credentials/{n;s/enabled: .*/enabled: true/}}' -i "$CONF_DIR"/security.yml
+sed '/cql:/{n;/credentials/{n;/enabled: .*/{n;s/username: .*/username: eccuser/}}}' -i "$CONF_DIR"/security.yml
+sed '/cql:/{n;/credentials/{n;/enabled: .*/{n;/username: .*/{n;s/password: .*/password: eccpassword/}}}}' -i "$CONF_DIR"/security.yml
+
 # Logback
 
 sed 's;^\(\s*\)\(<appender-ref ref="STDOUT" />\)\s*$;\1<!-- \2 -->;g' -i "$CONF_DIR"/logback.xml

@@ -14,21 +14,18 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection.impl;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Session;
+import com.datastax.driver.core.*;
 import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
 import com.datastax.driver.core.policies.LoadBalancingPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
 import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 
 public class LocalNativeConnectionProvider implements NativeConnectionProvider
 {
@@ -76,6 +73,7 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
     {
         private String myLocalhost = DEFAULT_LOCAL_HOST;
         private int myPort = DEFAULT_NATIVE_PORT;
+        private AuthProvider authProvider = AuthProvider.NONE;
 
         public Builder withLocalhost(String localhost)
         {
@@ -89,6 +87,12 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
             return this;
         }
 
+        public Builder withAuthProvider(ExtendedAuthProvider authProvider)
+        {
+            this.authProvider = authProvider;
+            return this;
+        }
+
         public LocalNativeConnectionProvider build()
         {
             Cluster cluster = createCluster(this);
@@ -97,14 +101,15 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
             return new LocalNativeConnectionProvider(cluster, host);
         }
 
+        private InetSocketAddress localHostAddress()
+        {
+            return new InetSocketAddress(myLocalhost, myPort);
+        }
+
         private static Cluster createCluster(Builder builder)
         {
             String localhost = builder.myLocalhost;
-            int port = builder.myPort;
-
-            InetSocketAddress hostAddress = new InetSocketAddress(localhost, port);
-
-            String localDataCenter = resolveLocalDataCenter(hostAddress);
+            String localDataCenter = resolveLocalDataCenter(builder);
 
             LoadBalancingPolicy loadBalancingPolicy = DataCenterAwarePolicy.builder()
                     .withLocalDc(localDataCenter)
@@ -115,15 +120,16 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
 
             LOG.debug("Connecting to {}, local data center: {}", localhost, localDataCenter);
 
-            return Cluster.builder()
-                    .addContactPointsWithPorts(hostAddress)
+            return fromBuilder(builder)
                     .withLoadBalancingPolicy(loadBalancingPolicy)
                     .build();
         }
 
-        private static String resolveLocalDataCenter(InetSocketAddress hostAddress)
+        private static String resolveLocalDataCenter(Builder builder)
         {
-            try (Cluster cluster = Cluster.builder().addContactPointsWithPorts(hostAddress).build())
+            InetSocketAddress hostAddress = builder.localHostAddress();
+
+            try (Cluster cluster = fromBuilder(builder).build())
             {
                 InetAddress contactAddress = hostAddress.getAddress();
 
@@ -142,6 +148,15 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
             }
 
             throw new IllegalStateException("Unable to find local data center");
+        }
+
+        private static Cluster.Builder fromBuilder(Builder builder)
+        {
+            InetSocketAddress hostAddress = builder.localHostAddress();
+
+            return Cluster.builder()
+                    .addContactPointsWithPorts(hostAddress)
+                    .withAuthProvider(builder.authProvider);
         }
 
         private static Host resolveLocalhost(Cluster cluster, String localhost)

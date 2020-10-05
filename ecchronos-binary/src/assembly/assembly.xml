@@ -42,6 +42,7 @@
             <directory>${project.basedir}/src/resources</directory>
             <outputDirectory>conf</outputDirectory>
             <includes>
+                <include>security.yml</include>
                 <include>ecc.yml</include>
                 <include>jvm.options</include>
                 <include>logback.xml</include>

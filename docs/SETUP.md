@@ -62,16 +62,33 @@ Change the configuration in `conf/ecc.yml`.
 To get started the connection configuration needs to match your local setup:
 
 ```
-### Native connection properties
-#connection.native.host=localhost
-#connection.native.port=9042
-
-### JMX connection properties
-#connection.jmx.host=localhost
-#connection.jmx.port=7199
+connection:
+  cql:
+    host: localhost
+    port: 9042
+  jmx:
+    host: localhost
+    port: 7199
 ```
 
-If additional properties like SSL or authentication are needed it's possible to create custom connection providers.
+If you have authentication enabled you need to modify `conf/security.yml`:
+
+```
+cql:
+  credentials:
+    enabled: true
+    username: cassandra
+    password: cassandra
+jmx:
+  credentials:
+    enabled: true
+    username: cassandra
+    password: cassandra
+```
+
+The authentication parameters can be updated during runtime and will automatically be picked up by ecc.
+
+If additional properties like SSL is needed it's possible to create custom connection providers.
 More information about the custom connection provider can be found [here](STANDALONE.md).
 
 ## Running ecChronos

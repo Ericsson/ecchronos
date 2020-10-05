@@ -19,6 +19,7 @@
 * Use yaml format for configuration - Issue #126
 * Use springboot for REST server - Issue #111
 * Add Health Endpoint - Issue #131
+* Add authentication for CQL and JMX - Issue #129
 
 ### Merged from 1.2
 

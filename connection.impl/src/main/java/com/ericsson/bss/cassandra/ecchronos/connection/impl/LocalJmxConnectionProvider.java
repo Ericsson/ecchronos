@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
@@ -38,11 +39,18 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
 
     private final String myLocalhost;
     private final int myPort;
+    private final Supplier<String[]> credentialsSupplier;
 
     public LocalJmxConnectionProvider(String localhost, int port) throws IOException
     {
+        this(localhost, port, () -> null);
+    }
+
+    public LocalJmxConnectionProvider(String localhost, int port, Supplier<String[]> credentialsSupplier) throws IOException
+    {
         myLocalhost = localhost;
         myPort = port;
+        this.credentialsSupplier = credentialsSupplier;
 
         reconnect();
     }
@@ -71,6 +79,11 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
     {
         JMXServiceURL jmxUrl = new JMXServiceURL(String.format("service:jmx:rmi:///jndi/rmi://[%s]:%d/jmxrmi", myLocalhost, myPort));
         Map<String, Object> env = new HashMap<>();
+        String[] credentials = this.credentialsSupplier.get();
+        if (credentials != null)
+        {
+            env.put(JMXConnector.CREDENTIALS, credentials);
+        }
 
         LOG.debug("Connecting JMX through {}", jmxUrl);
         JMXConnector jmxConnector = JMXConnectorFactory.connect(jmxUrl, env);

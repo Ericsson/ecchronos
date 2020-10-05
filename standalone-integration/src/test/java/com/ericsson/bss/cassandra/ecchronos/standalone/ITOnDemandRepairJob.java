@@ -14,6 +14,21 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.standalone;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
+
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import org.assertj.core.util.Lists;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.ericsson.bss.cassandra.ecchronos.core.CASLockFactory;
@@ -30,21 +45,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManagerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+
 import net.jcip.annotations.NotThreadSafe;
-import org.assertj.core.util.Lists;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.*;
 
 @NotThreadSafe
 public class ITOnDemandRepairJob extends TestBase
@@ -52,8 +54,6 @@ public class ITOnDemandRepairJob extends TestBase
     private static TableRepairMetrics mockTableRepairMetrics;
 
     private static Metadata myMetadata;
-
-    private static Session mySession;
 
     private static Host myLocalHost;
 
@@ -75,8 +75,8 @@ public class ITOnDemandRepairJob extends TestBase
         mockTableRepairMetrics = mock(TableRepairMetrics.class);
 
         myLocalHost = getNativeConnectionProvider().getLocalHost();
-        mySession = getNativeConnectionProvider().getSession();
-        Cluster cluster = mySession.getCluster();
+        Session session = getNativeConnectionProvider().getSession();
+        Cluster cluster = session.getCluster();
         myMetadata = cluster.getMetadata();
 
         myHostStates = HostStatesImpl.builder()
@@ -84,7 +84,7 @@ public class ITOnDemandRepairJob extends TestBase
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .build();
 
-        myRepairHistoryProvider = new RepairHistoryProviderImpl(mySession, s -> s, TimeUnit.DAYS.toMillis(30));
+        myRepairHistoryProvider = new RepairHistoryProviderImpl(session, s -> s, TimeUnit.DAYS.toMillis(30));
 
         myLockFactory = CASLockFactory.builder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
@@ -108,13 +108,14 @@ public class ITOnDemandRepairJob extends TestBase
                 .build();
     }
 
-
     @After
     public void clean()
     {
+        Session adminSession = getAdminNativeConnectionProvider().getSession();
+
         for (TableReference tableReference : myRepairs)
         {
-            mySession.execute(QueryBuilder.delete()
+            adminSession.execute(QueryBuilder.delete()
                     .from("system_distributed", "repair_history")
                     .where(QueryBuilder.eq("keyspace_name", tableReference.getKeyspace()))
                     .and(QueryBuilder.eq("columnfamily_name", tableReference.getTable())));

@@ -14,13 +14,17 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
+import com.datastax.driver.core.ExtendedAuthProvider;
 import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Session;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
+import com.ericsson.bss.cassandra.ecchronos.application.config.Security;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalNativeConnectionProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.function.Supplier;
 
 public class DefaultNativeConnectionProvider implements NativeConnectionProvider
 {
@@ -28,16 +32,20 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
 
     private final LocalNativeConnectionProvider myLocalNativeConnectionProvider;
 
-    public DefaultNativeConnectionProvider(Config config)
+    public DefaultNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecuritySupplier)
     {
         Config.NativeConnection nativeConfig = config.getConnectionConfig().getCql();
         String host = nativeConfig.getHost();
         int port = nativeConfig.getPort();
-        LOG.info("Connecting through CQL using {}:{}", host, port);
+        boolean authEnabled = cqlSecuritySupplier.get().getCredentials().isEnabled();
+        LOG.info("Connecting through CQL using {}:{}, authentication {}", host, port, authEnabled ? "enabled" : "disabled");
+
+        ExtendedAuthProvider authProvider = new ReloadingAuthProvider(() -> cqlSecuritySupplier.get().getCredentials());
 
         myLocalNativeConnectionProvider = LocalNativeConnectionProvider.builder()
                 .withLocalhost(host)
                 .withPort(port)
+                .withAuthProvider(authProvider)
                 .build();
     }
 

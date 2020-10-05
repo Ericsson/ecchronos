@@ -523,6 +523,7 @@ limitations under the License.
                             <exclude>**/pom.xml.releaseBackup</exclude>
                             <exclude>**/*.options</exclude>
                             <exclude>release.properties</exclude>
+                            <exclude>**/credentials.properties</exclude>
                             <exclude>**/*.feature</exclude>
                             <exclude>**/*.pyc</exclude>
                             <exclude>code_style.xml</exclude>
@@ -703,14 +704,14 @@ limitations under the License.
                                                     <env>
                                                         <LOCAL_JMX>no</LOCAL_JMX>
                                                         <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap} -Xmn100M</JVM_OPTS>
-                                                        <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false</JVM_EXTRA_OPTS>
+                                                        <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0</JVM_EXTRA_OPTS>
                                                     </env>
                                                     <exposedPropertyKey>seed</exposedPropertyKey>
                                                     <wait>
                                                         <time>60000</time>
                                                         <tcp>
                                                             <ports>
-                                                                <port>7000</port>
+                                                                <port>9042</port>
                                                             </ports>
                                                         </tcp>
                                                     </wait>
@@ -727,13 +728,13 @@ limitations under the License.
                                                         <HOSTNAME>$HOSTNAME</HOSTNAME>
                                                         <CASSANDRA_SEEDS>$${docker.container.seed.ip}</CASSANDRA_SEEDS>
                                                         <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap} -Xmn100M</JVM_OPTS>
-                                                        <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false</JVM_EXTRA_OPTS>
+                                                        <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.ring_delay_ms=4000 </JVM_EXTRA_OPTS>
                                                     </env>
                                                     <wait>
                                                         <time>120000</time>
                                                         <tcp>
                                                             <ports>
-                                                                <port>7000</port>
+                                                                <port>9042</port>
                                                             </ports>
                                                         </tcp>
                                                     </wait>
@@ -749,13 +750,13 @@ limitations under the License.
                                                         <LOCAL_JMX>no</LOCAL_JMX>
                                                         <CASSANDRA_SEEDS>$${docker.container.seed.ip}</CASSANDRA_SEEDS>
                                                         <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap} -Xmn100M</JVM_OPTS>
-                                                        <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false</JVM_EXTRA_OPTS>
+                                                        <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.ring_delay_ms=4000</JVM_EXTRA_OPTS>
                                                     </env>
                                                     <wait>
                                                         <time>120000</time>
                                                         <tcp>
                                                             <ports>
-                                                                <port>7000</port>
+                                                                <port>9042</port>
                                                             </ports>
                                                         </tcp>
                                                     </wait>
@@ -771,7 +772,7 @@ limitations under the License.
                                                         <LOCAL_JMX>no</LOCAL_JMX>
                                                         <CASSANDRA_SEEDS>$${docker.container.seed.ip}</CASSANDRA_SEEDS>
                                                         <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap} -Xmn100M</JVM_OPTS>
-                                                        <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false</JVM_EXTRA_OPTS>
+                                                        <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.ring_delay_ms=4000</JVM_EXTRA_OPTS>
                                                     </env>
                                                     <wait>
                                                         <time>120000</time>
@@ -781,7 +782,7 @@ limitations under the License.
                                                             </ports>
                                                         </tcp>
                                                         <exec>
-                                                            <postStart>cqlsh -f /etc/cassandra/create_keyspaces.cql</postStart>
+                                                            <postStart>/etc/cassandra/setup_db.sh</postStart>
                                                         </exec>
                                                     </wait>
                                                 </run>
