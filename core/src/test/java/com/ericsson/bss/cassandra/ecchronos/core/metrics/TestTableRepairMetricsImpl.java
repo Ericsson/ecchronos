@@ -14,14 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -41,6 +35,12 @@ import java.lang.management.ManagementFactory;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestTableRepairMetricsImpl
@@ -82,7 +82,7 @@ public class TestTableRepairMetricsImpl
     @Test
     public void testFullRepairedSingleTable() throws Exception
     {
-        TableReference tableReference = new TableReference("keyspace", "table");
+        TableReference tableReference = tableReference("keyspace", "table");
 
         doReturn(1000L).when(myTableStorageStates).getDataSize();
         doReturn(1000L).when(myTableStorageStates).getDataSize(eq(tableReference));
@@ -100,7 +100,7 @@ public class TestTableRepairMetricsImpl
     @Test
     public void testHalfRepairedSingleTable() throws Exception
     {
-        TableReference tableReference = new TableReference("keyspace", "table");
+        TableReference tableReference = tableReference("keyspace", "table");
 
         doReturn(1000L).when(myTableStorageStates).getDataSize();
         doReturn(1000L).when(myTableStorageStates).getDataSize(eq(tableReference));
@@ -118,8 +118,8 @@ public class TestTableRepairMetricsImpl
     @Test
     public void testFullRepairedTwoTables() throws Exception
     {
-        TableReference tableReference = new TableReference("keyspace", "table");
-        TableReference tableReference2 = new TableReference("keyspace", "table2");
+        TableReference tableReference = tableReference("keyspace", "table");
+        TableReference tableReference2 = tableReference("keyspace", "table2");
 
         doReturn(2000L).when(myTableStorageStates).getDataSize();
         doReturn(1000L).when(myTableStorageStates).getDataSize(eq(tableReference));
@@ -139,8 +139,8 @@ public class TestTableRepairMetricsImpl
     @Test
     public void testHalfRepairedTwoTables() throws Exception
     {
-        TableReference tableReference = new TableReference("keyspace", "table");
-        TableReference tableReference2 = new TableReference("keyspace", "table2");
+        TableReference tableReference = tableReference("keyspace", "table");
+        TableReference tableReference2 = tableReference("keyspace", "table2");
 
         doReturn(2000L).when(myTableStorageStates).getDataSize();
         doReturn(1000L).when(myTableStorageStates).getDataSize(eq(tableReference));
@@ -164,8 +164,8 @@ public class TestTableRepairMetricsImpl
     @Test
     public void testOneRepairedOneNotRepairedTable() throws Exception
     {
-        TableReference tableReference = new TableReference("keyspace", "table");
-        TableReference tableReference2 = new TableReference("keyspace", "table2");
+        TableReference tableReference = tableReference("keyspace", "table");
+        TableReference tableReference2 = tableReference("keyspace", "table2");
 
         doReturn(1500L).when(myTableStorageStates).getDataSize();
         doReturn(1125L).when(myTableStorageStates).getDataSize(eq(tableReference)); // 75%
@@ -185,8 +185,8 @@ public class TestTableRepairMetricsImpl
     @Test
     public void testLastRepairedAt() throws Exception
     {
-        TableReference tableReference = new TableReference("keyspace", "table");
-        TableReference tableReference2 = new TableReference("keyspace", "table2");
+        TableReference tableReference = tableReference("keyspace", "table");
+        TableReference tableReference2 = tableReference("keyspace", "table2");
         long expectedLastRepaired = 1234567890L;
         long expectedLastRepaired2 = 9876543210L;
 
@@ -194,8 +194,8 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.lastRepairedAt(tableReference2, expectedLastRepaired2);
         myTableRepairMetricsImpl.report();
 
-        double lastRepaired = getMetricValue(tableReference + "-LastRepairedAt");
-        double lastRepaired2 = getMetricValue(tableReference2 + "-LastRepairedAt");
+        double lastRepaired = getMetricValue(metricName(tableReference, "LastRepairedAt"));
+        double lastRepaired2 = getMetricValue(metricName(tableReference2, "LastRepairedAt"));
 
         assertThat(lastRepaired).isEqualTo(expectedLastRepaired);
         assertThat(lastRepaired2).isEqualTo(expectedLastRepaired2);
@@ -204,13 +204,13 @@ public class TestTableRepairMetricsImpl
     @Test
     public void testSuccessfulRepairTiming() throws Exception
     {
-        TableReference tableReference = new TableReference("keyspace", "table");
+        TableReference tableReference = tableReference("keyspace", "table");
         long expectedRepairTime = 1234L;
 
         myTableRepairMetricsImpl.repairTiming(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, true);
         myTableRepairMetricsImpl.report();
 
-        String metric = tableReference + "-RepairSuccessTime";
+        String metric = metricName(tableReference, "RepairSuccessTime");
 
         assertThat(getMetricValue(metric, 1, "Count")).isEqualTo(1);
         assertThat(getMetricValue(metric, 2, "Max")).isEqualTo(expectedRepairTime);
@@ -224,13 +224,13 @@ public class TestTableRepairMetricsImpl
     @Test
     public void testFailedRepairTiming() throws Exception
     {
-        TableReference tableReference = new TableReference("keyspace", "table");
+        TableReference tableReference = tableReference("keyspace", "table");
         long expectedRepairTime = 12345L;
 
         myTableRepairMetricsImpl.repairTiming(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
         myTableRepairMetricsImpl.report();
 
-        String metric = tableReference + "-RepairFailedTime";
+        String metric = metricName(tableReference, "RepairFailedTime");
 
         assertThat(getMetricValue(metric, 1, "Count")).isEqualTo(1);
         assertThat(getMetricValue(metric, 2, "Max")).isEqualTo(expectedRepairTime);
@@ -244,8 +244,8 @@ public class TestTableRepairMetricsImpl
     @Test
     public void testGetRepairRatio()
     {
-        TableReference tableReference = new TableReference("keyspace", "table");
-        TableReference nonExistingRef = new TableReference("non", "existing");
+        TableReference tableReference = tableReference("keyspace", "table");
+        TableReference nonExistingRef = tableReference("non", "existing");
         myTableRepairMetricsImpl.repairState(tableReference, 4, 1);
 
         assertThat(myTableRepairMetricsImpl.getRepairRatio(tableReference)).contains(0.8);
@@ -279,6 +279,11 @@ public class TestTableRepairMetricsImpl
         assertThat(csvValue).isEqualTo(mBeanValue.doubleValue());
 
         return csvValue;
+    }
+
+    private String metricName(TableReference tableReference, String metric)
+    {
+        return tableReference.getKeyspace() + "." + tableReference.getTable() + "-" + tableReference.getId() + "-" + metric;
     }
 
     private Number getMBeanValue(String metric, String mBeanAttribute) throws Exception

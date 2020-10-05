@@ -32,6 +32,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -40,7 +41,7 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class TestVnodeRepairStateFactoryImpl
 {
-    private static final TableReference TABLE_REFERENCE = new TableReference("ks", "tb");
+    private static final TableReference TABLE_REFERENCE = tableReference("ks", "tb");
 
     @Mock
     private ReplicationState mockReplicationState;

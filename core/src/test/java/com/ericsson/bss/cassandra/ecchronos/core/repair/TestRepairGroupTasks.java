@@ -43,16 +43,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestRepairGroupTasks
 {
     private static final String keyspaceName = "keyspace";
     private static final String tableName = "table";
-    private static final TableReference tableReference = new TableReference(keyspaceName, tableName);
+    private static final TableReference tableReference = tableReference(keyspaceName, tableName);
     private static final int priority = 1;
 
     private static final long RUN_INTERVAL_IN_DAYS = 1;

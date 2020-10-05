@@ -14,12 +14,11 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-
-import java.util.concurrent.TimeUnit;
-
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,11 +26,12 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
-import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import java.util.concurrent.TimeUnit;
+
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestNodeMetricHolder
@@ -104,11 +104,11 @@ public class TestNodeMetricHolder
     public void testUpdateRepairStateTwoTables()
     {
         long expectedDataSize = 1234;
-        TableReference tableReference = new TableReference("keyspace", "table");
+        TableReference tableReference = tableReference("keyspace", "table");
         double repairedRatio = 0.3;
 
         long expectedDataSizeTableTwo = 2345;
-        TableReference tableReferenceTableTwo = new TableReference("keyspace", "table2");
+        TableReference tableReferenceTableTwo = tableReference("keyspace", "table2");
         double repairedRatioTableTwo = 0.5;
 
         long expectedFullDataSize = expectedDataSize + expectedDataSizeTableTwo;
@@ -157,9 +157,9 @@ public class TestNodeMetricHolder
     @Test
     public void testGetRepairRatio()
     {
-        TableReference tableReference = new TableReference("keyspace", "table");
+        TableReference tableReference = tableReference("keyspace", "table");
         addRepairedTable(tableReference, 0.3, 123);
-        TableReference nonExistingRef = new TableReference("non", "existing");
+        TableReference nonExistingRef = tableReference("non", "existing");
 
         assertThat(myNodeMetricHolder.getRepairRatio(tableReference)).isEqualTo(0.3);
         assertThat(myNodeMetricHolder.getRepairRatio(nonExistingRef)).isNull();
@@ -185,7 +185,7 @@ public class TestNodeMetricHolder
     {
         doReturn(tableSize).when(myTableStorageStates).getDataSize();
 
-        TableReference tableReference = new TableReference("keyspace", "table");
+        TableReference tableReference = tableReference("keyspace", "table");
         addRepairedTable(tableReference, repairedRatio, tableSize);
     }
 }

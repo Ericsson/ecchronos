@@ -14,30 +14,28 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.ignoreStubs;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
+import com.datastax.driver.core.Host;
+import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
+import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.google.common.collect.ImmutableSet;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.datastax.driver.core.Host;
-import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.google.common.collect.ImmutableSet;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestOnDemandRepairJob
@@ -63,7 +61,7 @@ public class TestOnDemandRepairJob
     @Mock
     private Host mockReplica3;
 
-    private final TableReference myTableReference = new TableReference(keyspaceName, tableName);
+    private final TableReference myTableReference = tableReference(keyspaceName, tableName);
 
     @After
     public void finalVerification()

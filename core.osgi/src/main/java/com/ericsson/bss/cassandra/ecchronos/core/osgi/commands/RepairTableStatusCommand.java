@@ -21,6 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapsho
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import org.apache.karaf.shell.api.action.Action;
@@ -87,7 +88,7 @@ public class RepairTableStatusCommand implements Action
     {
         return myRepairSchedulerService.getCurrentRepairJobs()
                 .stream()
-                .filter(repairJobView -> repairJobView.getTableReference().toString().equalsIgnoreCase(myTableRef))
+                .filter(this::correctTable)
                 .findFirst()
                 .map(RepairJobView::getRepairStateSnapshot)
                 .map(RepairStateSnapshot::getVnodeRepairStates)
@@ -124,6 +125,13 @@ public class RepairTableStatusCommand implements Action
                 .forEach(state -> table.addRow().addContent(getRowContent(state)));
 
         table.print(out);
+    }
+
+    private boolean correctTable(RepairJobView tableView)
+    {
+        TableReference tableReference = tableView.getTableReference();
+        String tableRef = tableReference.getKeyspace() + "." + tableReference.getTable();
+        return tableRef.equalsIgnoreCase(myTableRef);
     }
 
     private ShellTable createShellTable()

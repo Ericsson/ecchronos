@@ -28,11 +28,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestAlarmPostUpdateHook
@@ -54,7 +52,7 @@ public class TestAlarmPostUpdateHook
 
     private AlarmPostUpdateHook myPostUpdateHook;
 
-    private final TableReference myTableReference = new TableReference(keyspaceName, tableName);
+    private final TableReference myTableReference = tableReference(keyspaceName, tableName);
 
     @Before
     public void startup()

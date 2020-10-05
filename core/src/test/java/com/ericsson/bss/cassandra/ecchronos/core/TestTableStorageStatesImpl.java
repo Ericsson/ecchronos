@@ -14,17 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,8 +23,17 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestTableStorageStatesImpl
@@ -93,14 +93,15 @@ public class TestTableStorageStatesImpl
     @Test
     public void testTableStatesForNoTables()
     {
-        assertThat(myTableStorageeStatesImpl.getDataSize(new TableReference("non_existing_keyspace", "non_existing_table"))).isEqualTo(0);
+        assertThat(myTableStorageeStatesImpl.getDataSize(tableReference("non_existing_keyspace", "non_existing_table")))
+                .isEqualTo(0);
         assertThat(myTableStorageeStatesImpl.getDataSize()).isEqualTo(0);
     }
 
     @Test
     public void testTableStatesUnableToConnectToJmx() throws IOException
     {
-        TableReference tableReference = new TableReference("keyspace", "table");
+        TableReference tableReference = tableReference("keyspace", "table");
         long tableDataSize = 1000;
 
         doThrow(IOException.class).when(myJmxProxyFactory).connect();
@@ -116,7 +117,7 @@ public class TestTableStorageStatesImpl
     @Test
     public void testTableStatesUpdateUnableToConnectToJmx() throws IOException
     {
-        TableReference tableReference = new TableReference("keyspace", "table");
+        TableReference tableReference = tableReference("keyspace", "table");
         long expectedDataSize = 1000;
         long expectedTableDataSize = 1000;
         long notExpectedDataSize = 1500;
@@ -141,7 +142,7 @@ public class TestTableStorageStatesImpl
     @Test
     public void testTableStatesForUnexpectedTable()
     {
-        TableReference unexpectedTableReference = new TableReference("keyspace", "nonexistingtable");
+        TableReference unexpectedTableReference = tableReference("keyspace", "nonexistingtable");
 
         myTableStorageeStatesImpl.updateTableStates();
 
@@ -151,7 +152,7 @@ public class TestTableStorageStatesImpl
     @Test
     public void testTableStatesForSingleTable()
     {
-        TableReference tableReference = new TableReference("keyspace", "table");
+        TableReference tableReference = tableReference("keyspace", "table");
         long expectedDataSize = 1000;
         long expectedTableDataSize = 1000;
 
@@ -166,7 +167,7 @@ public class TestTableStorageStatesImpl
     @Test
     public void testTableStatesUpdatesForSingleTable()
     {
-        TableReference tableReference = new TableReference("keyspace", "table");
+        TableReference tableReference = tableReference("keyspace", "table");
         long expectedDataSize = 1000;
         long expectedTableDataSize = 1000;
 
@@ -193,8 +194,8 @@ public class TestTableStorageStatesImpl
     @Test
     public void testTableStatesForMultipleTables()
     {
-        TableReference tableReference1 = new TableReference("keyspace", "table");
-        TableReference tableReference2 = new TableReference("keyspace", "table2");
+        TableReference tableReference1 = tableReference("keyspace", "table");
+        TableReference tableReference2 = tableReference("keyspace", "table2");
         long expectedDataSize = 1500;
         long expectedTableDataSize1 = 1000;
         long expectedTableDataSize2 = 500;

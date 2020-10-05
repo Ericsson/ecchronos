@@ -24,6 +24,8 @@ import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.UserType;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
+import com.google.common.base.Preconditions;
 
 import java.io.Closeable;
 import java.util.function.Consumer;
@@ -39,6 +41,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
     private final ReplicatedTableProvider myReplicatedTableProvider;
     private final RepairScheduler myRepairScheduler;
     private final RepairConfiguration myDefaultRepairConfiguration;
+    private final TableReferenceFactory myTableReferenceFactory;
 
     private DefaultRepairConfigurationProvider(Builder builder)
     {
@@ -46,6 +49,8 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
         myReplicatedTableProvider = builder.myReplicatedTableProvider;
         myRepairScheduler = builder.myRepairScheduler;
         myDefaultRepairConfiguration = builder.myDefaultRepairConfiguration;
+        myTableReferenceFactory = Preconditions.checkNotNull(builder.myTableReferenceFactory,
+                "Table reference factory must be set");
 
         for (KeyspaceMetadata keyspaceMetadata : myCluster.getMetadata().getKeyspaces())
         {
@@ -76,7 +81,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
     {
         if (myReplicatedTableProvider.accept(table.getKeyspace().getName()))
         {
-            TableReference tableReference = new TableReference(table.getKeyspace().getName(), table.getName());
+            TableReference tableReference = myTableReferenceFactory.forTable(table.getKeyspace().getName(), table.getName());
             myRepairScheduler.putConfiguration(tableReference, myDefaultRepairConfiguration);
         }
     }
@@ -86,7 +91,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
     {
         if (myReplicatedTableProvider.accept(table.getKeyspace().getName()))
         {
-            TableReference tableReference = new TableReference(table.getKeyspace().getName(), table.getName());
+            TableReference tableReference = myTableReferenceFactory.forTable(table.getKeyspace().getName(), table.getName());
             myRepairScheduler.removeConfiguration(tableReference);
         }
     }
@@ -107,7 +112,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
         for (TableMetadata tableMetadata : myCluster.getMetadata().getKeyspace(keyspaceName).getTables())
         {
             String tableName = tableMetadata.getName();
-            TableReference tableReference = new TableReference(keyspaceName, tableName);
+            TableReference tableReference = myTableReferenceFactory.forTable(keyspaceName, tableName);
 
             consumer.accept(tableReference);
         }
@@ -124,6 +129,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
         private ReplicatedTableProvider myReplicatedTableProvider;
         private RepairScheduler myRepairScheduler;
         private RepairConfiguration myDefaultRepairConfiguration;
+        private TableReferenceFactory myTableReferenceFactory;
 
         public Builder withCluster(Cluster cluster)
         {
@@ -146,6 +152,12 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
         public Builder withRepairScheduler(RepairScheduler repairScheduler)
         {
             myRepairScheduler = repairScheduler;
+            return this;
+        }
+
+        public Builder withTableReferenceFactory(TableReferenceFactory tableReferenceFactory)
+        {
+            myTableReferenceFactory = tableReferenceFactory;
             return this;
         }
 

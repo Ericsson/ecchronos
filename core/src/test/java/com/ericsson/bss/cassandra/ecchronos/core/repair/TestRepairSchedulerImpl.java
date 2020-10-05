@@ -14,48 +14,35 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.ignoreStubs;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
+import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
+import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.google.common.collect.ImmutableSet;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStatesImpl;
-import com.google.common.collect.ImmutableSet;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-
-import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
 @RunWith (MockitoJUnitRunner.class)
 public class TestRepairSchedulerImpl
 {
-    private static final TableReference TABLE_REFERENCE = new TableReference("keyspace", "table");
-    private static final TableReference TABLE_REFERENCE2 = new TableReference("keyspace", "table2");
+    private static final TableReference TABLE_REFERENCE = tableReference("keyspace", "table");
+    private static final TableReference TABLE_REFERENCE2 = tableReference("keyspace", "table2");
     private static final VnodeRepairState VNODE_REPAIR_STATE = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), System.currentTimeMillis());
 
     @Mock

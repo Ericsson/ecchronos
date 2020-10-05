@@ -20,7 +20,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 import org.assertj.core.util.Preconditions;
 import org.mockito.internal.util.collections.Sets;
@@ -29,6 +28,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 
 public class TestUtils
 {
@@ -101,7 +102,6 @@ public class TestUtils
             return this;
         }
 
-
         public RepairJobBuilder withVnodeRepairStateSet(Collection<VnodeRepairState> vnodeRepairStateSet)
         {
             this.vnodeRepairStateSet = vnodeRepairStateSet;
@@ -137,7 +137,7 @@ public class TestUtils
                 vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Sets.newSet(vnodeRepairState)).build();
             }
 
-            return new RepairJobView(id, new TableReference(keyspace, table),
+            return new RepairJobView(id, tableReference(keyspace, table),
                     generateRepairConfiguration(repairInterval),
                     generateRepairStateSnapshot(lastRepairedAt, vnodeRepairStates), status,progress);
         }

@@ -48,6 +48,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvi
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -63,6 +64,9 @@ public class ITTableRepairJob extends TestBase
 
     @Inject
     NativeConnectionProvider myNativeConnectionProvider;
+
+    @Inject
+    TableReferenceFactory myTableReferenceFactory;
 
     @Inject
     RepairScheduler myRepairScheduler;
@@ -139,13 +143,14 @@ public class ITTableRepairJob extends TestBase
     {
         long startTime = System.currentTimeMillis();
 
-        TableReference tableReference = new TableReference("test", "table1");
+        TableReference tableReference = myTableReferenceFactory.forTable("test", "table1");
 
         injectRepairHistory(tableReference, System.currentTimeMillis() - TimeUnit.HOURS.toMillis(2));
 
         schedule(tableReference);
 
-        await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference, startTime));
+        await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
+                .until(() -> isRepairedSince(tableReference, startTime));
 
         verifyTableRepairedSince(tableReference, startTime);
     }
@@ -160,8 +165,8 @@ public class ITTableRepairJob extends TestBase
     {
         long startTime = System.currentTimeMillis();
 
-        TableReference tableReference = new TableReference("test", "table1");
-        TableReference tableReference2 = new TableReference("test", "table2");
+        TableReference tableReference = myTableReferenceFactory.forTable("test", "table1");
+        TableReference tableReference2 = myTableReferenceFactory.forTable("test", "table2");
 
         injectRepairHistory(tableReference, System.currentTimeMillis() - TimeUnit.HOURS.toMillis(2));
         injectRepairHistory(tableReference2, System.currentTimeMillis() - TimeUnit.HOURS.toMillis(4));
@@ -169,8 +174,10 @@ public class ITTableRepairJob extends TestBase
         schedule(tableReference);
         schedule(tableReference2);
 
-        await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference, startTime));
-        await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference2, startTime));
+        await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
+                .until(() -> isRepairedSince(tableReference, startTime));
+        await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
+                .until(() -> isRepairedSince(tableReference2, startTime));
 
         verifyTableRepairedSince(tableReference, startTime);
         verifyTableRepairedSince(tableReference2, startTime);
@@ -181,7 +188,8 @@ public class ITTableRepairJob extends TestBase
      *
      * It was also partially repaired by another node.
      *
-     * The repair factory should detect the table automatically and schedule it to run on the ranges that were not repaired.
+     * The repair factory should detect the table automatically and schedule it to run on the ranges that were not
+     * repaired.
      */
     @Test
     public void partialTableRepair()
@@ -189,19 +197,22 @@ public class ITTableRepairJob extends TestBase
         long startTime = System.currentTimeMillis();
         long expectedRepairedInterval = startTime - TimeUnit.HOURS.toMillis(1);
 
-        TableReference tableReference = new TableReference("test", "table1");
+        TableReference tableReference = myTableReferenceFactory.forTable("test", "table1");
 
         injectRepairHistory(tableReference, System.currentTimeMillis() - TimeUnit.HOURS.toMillis(2));
 
         Set<TokenRange> expectedRepairedBefore = halfOfTokenRanges(tableReference);
-        injectRepairHistory(tableReference, System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(30), expectedRepairedBefore);
+        injectRepairHistory(tableReference, System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(30),
+                expectedRepairedBefore);
 
         Set<TokenRange> allTokenRanges = myMetadata.getTokenRanges(tableReference.getKeyspace(), myLocalHost);
-        Set<LongTokenRange> expectedRepairedRanges = Sets.difference(convertTokenRanges(allTokenRanges), convertTokenRanges(expectedRepairedBefore));
+        Set<LongTokenRange> expectedRepairedRanges = Sets.difference(convertTokenRanges(allTokenRanges),
+                convertTokenRanges(expectedRepairedBefore));
 
         schedule(tableReference);
 
-        await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS).until(() -> isRepairedSince(tableReference, startTime, expectedRepairedRanges));
+        await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
+                .until(() -> isRepairedSince(tableReference, startTime, expectedRepairedRanges));
 
         verifyTableRepairedSince(tableReference, expectedRepairedInterval, expectedRepairedRanges);
     }
@@ -219,7 +230,8 @@ public class ITTableRepairJob extends TestBase
         verifyTableRepairedSince(tableReference, repairedSince, tokenRangesFor(tableReference.getKeyspace()));
     }
 
-    private void verifyTableRepairedSince(TableReference tableReference, long repairedSince, Set<LongTokenRange> expectedRepaired)
+    private void verifyTableRepairedSince(TableReference tableReference, long repairedSince,
+            Set<LongTokenRange> expectedRepaired)
     {
         OptionalLong repairedAt = lastRepairedSince(tableReference, repairedSince);
         assertThat(repairedAt).isPresent();
@@ -230,7 +242,8 @@ public class ITTableRepairJob extends TestBase
         return lastRepairedSince(tableReference, repairedSince).isPresent();
     }
 
-    private boolean isRepairedSince(TableReference tableReference, long repairedSince, Set<LongTokenRange> expectedRepaired)
+    private boolean isRepairedSince(TableReference tableReference, long repairedSince,
+            Set<LongTokenRange> expectedRepaired)
     {
         return lastRepairedSince(tableReference, repairedSince, expectedRepaired).isPresent();
     }
@@ -240,10 +253,13 @@ public class ITTableRepairJob extends TestBase
         return lastRepairedSince(tableReference, repairedSince, tokenRangesFor(tableReference.getKeyspace()));
     }
 
-    private OptionalLong lastRepairedSince(TableReference tableReference, long repairedSince, Set<LongTokenRange> expectedRepaired)
+    private OptionalLong lastRepairedSince(TableReference tableReference, long repairedSince,
+            Set<LongTokenRange> expectedRepaired)
     {
         Set<LongTokenRange> expectedRepairedCopy = new HashSet<>(expectedRepaired);
-        Iterator<RepairEntry> repairEntryIterator = myRepairHistoryProvider.iterate(tableReference, System.currentTimeMillis(), repairedSince, repairEntry -> fullyRepaired(repairEntry) && expectedRepairedCopy.remove(repairEntry.getRange()));
+        Iterator<RepairEntry> repairEntryIterator = myRepairHistoryProvider.iterate(tableReference,
+                System.currentTimeMillis(), repairedSince,
+                repairEntry -> fullyRepaired(repairEntry) && expectedRepairedCopy.remove(repairEntry.getRange()));
 
         List<RepairEntry> repairEntries = Lists.newArrayList(repairEntryIterator);
 
@@ -275,7 +291,8 @@ public class ITTableRepairJob extends TestBase
 
     private void injectRepairHistory(TableReference tableReference, long timestampMax)
     {
-        injectRepairHistory(tableReference, timestampMax, myMetadata.getTokenRanges(tableReference.getKeyspace(), myLocalHost));
+        injectRepairHistory(tableReference, timestampMax,
+                myMetadata.getTokenRanges(tableReference.getKeyspace(), myLocalHost));
     }
 
     private void injectRepairHistory(TableReference tableReference, long timestampMax, Set<TokenRange> tokenRanges)
@@ -295,7 +312,9 @@ public class ITTableRepairJob extends TestBase
         long started_at = timestamp;
         long finished_at = timestamp + 5;
 
-        Set<InetAddress> participants = myMetadata.getReplicas(tableReference.getKeyspace(), tokenRange).stream().map(Host::getAddress).collect(Collectors.toSet());
+        Set<InetAddress> participants = myMetadata.getReplicas(tableReference.getKeyspace(), tokenRange).stream()
+                .map(Host::getAddress)
+                .collect(Collectors.toSet());
 
         Insert insert = QueryBuilder.insertInto("system_distributed", "repair_history")
                 .value("keyspace_name", tableReference.getKeyspace())
