@@ -128,7 +128,7 @@ Usually the RepairFailedTime should be all zeros but if it's not the reason can 
 
 ### Table level
 
-  These metric files will be prefixed by the keyspace and table they represent.
+  These metric files will be prefixed by the keyspace name, table name and table id they represent.
 
 * RepairState
 
@@ -153,7 +153,7 @@ Usually the RepairFailedTime should be all zeros but if it's not the reason can 
 |------------|--------|
 | 1524472602 | 0.33   |
 
-\<keyspace\>.\<table\>-RepairState
+\<keyspace\>.\<table\>-\<table-id\>-RepairState
 
 Similar to the value presented in TableRepairState and DataRepairState this value shows the percentage of ranges repaired for a specific table.
 In this case the table has been `33%` repaired within the run interval.
@@ -165,7 +165,7 @@ If another node initiates the repair this value could differ as shown above.
 |------------|----------------|
 | 1524472602 | 1524395220751  |
 
-\<keyspace\>.\<table\>-LastRepairedAt
+\<keyspace\>.\<table\>-\<table-id\>-LastRepairedAt
 
 This value represents the last time the node perceived all of this tables ranges to be repaired.
 The value is in milliseconds since UNIX epoch time.

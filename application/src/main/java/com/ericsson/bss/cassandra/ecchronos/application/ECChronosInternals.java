@@ -26,9 +26,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetricsImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManagerImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProviderImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +46,7 @@ public class ECChronosInternals implements Closeable
     private final TableStorageStatesImpl myTableStorageStatesImpl;
     private final TableRepairMetricsImpl myTableRepairMetricsImpl;
 
+    private final TableReferenceFactory myTableReferenceFactory;
     private final JmxProxyFactory myJmxProxyFactory;
 
     private final CASLockFactory myLockFactory;
@@ -73,7 +72,9 @@ public class ECChronosInternals implements Closeable
         Host host = nativeConnectionProvider.getLocalHost();
         Metadata metadata = nativeConnectionProvider.getSession().getCluster().getMetadata();
 
-        myReplicatedTableProvider = new ReplicatedTableProviderImpl(host, metadata);
+        myTableReferenceFactory = new TableReferenceFactoryImpl(metadata);
+
+        myReplicatedTableProvider = new ReplicatedTableProviderImpl(host, metadata, myTableReferenceFactory);
 
         if (configuration.getStatistics().isEnabled())
         {
@@ -98,6 +99,11 @@ public class ECChronosInternals implements Closeable
                 .withRunInterval(configuration.getScheduler().getFrequency().getInterval(TimeUnit.MILLISECONDS),
                         TimeUnit.MILLISECONDS)
                 .build();
+    }
+
+    public TableReferenceFactory getTableReferenceFactory()
+    {
+        return myTableReferenceFactory;
     }
 
     public HostStates getHostStates()

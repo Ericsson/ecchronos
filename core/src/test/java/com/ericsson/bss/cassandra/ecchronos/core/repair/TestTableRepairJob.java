@@ -14,31 +14,16 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.ignoreStubs;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import com.datastax.driver.core.Host;
+import com.datastax.driver.core.KeyspaceMetadata;
+import com.datastax.driver.core.Metadata;
+import com.datastax.driver.core.exceptions.OverloadedException;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
+import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -51,12 +36,13 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.exceptions.OverloadedException;
-import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
 @RunWith (MockitoJUnitRunner.class)
 public class TestTableRepairJob
@@ -96,7 +82,7 @@ public class TestTableRepairJob
 
     private TableRepairJob myRepairJob;
 
-    private final TableReference myTableReference = new TableReference(keyspaceName, tableName);
+    private final TableReference myTableReference = tableReference(keyspaceName, tableName);
     private RepairConfiguration myRepairConfiguration;
 
     @Before

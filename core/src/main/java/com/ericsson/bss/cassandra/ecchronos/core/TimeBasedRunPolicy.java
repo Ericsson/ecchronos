@@ -14,15 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core;
 
-import java.io.Closeable;
-import java.time.Clock;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
+import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairJob;
@@ -30,20 +22,22 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.Closeable;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import static com.datastax.driver.core.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
@@ -77,7 +71,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     private final StatementDecorator myStatementDecorator;
     private final Session mySession;
     private final Clock myClock;
-    private final LoadingCache<TableReference, TimeRejectionCollection> myTimeRejectionCache;
+    private final LoadingCache<TableKey, TimeRejectionCollection> myTimeRejectionCache;
 
     public TimeBasedRunPolicy(Builder builder)
     {
@@ -93,14 +87,14 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         myTimeRejectionCache = createConfigCache(builder.myCacheExpireTime);
     }
 
-    private LoadingCache<TableReference, TimeRejectionCollection> createConfigCache(long expireAfter)
+    private LoadingCache<TableKey, TimeRejectionCollection> createConfigCache(long expireAfter)
     {
         return CacheBuilder.newBuilder()
                 .expireAfterWrite(expireAfter, TimeUnit.MILLISECONDS)
-                .build(new CacheLoader<TableReference, TimeRejectionCollection>()
+                .build(new CacheLoader<TableKey, TimeRejectionCollection>()
                 {
                     @Override
-                    public TimeRejectionCollection load(TableReference key)
+                    public TimeRejectionCollection load(TableKey key)
                     {
                         Statement decoratedStatement = myStatementDecorator.apply(myGetRejectionsStatement.bind(key.getKeyspace(), key.getTable()));
 
@@ -309,11 +303,11 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         long rejectTime = -1L;
         try
         {
-            TableReference[] tableKeys = new TableReference[]
+            TableKey[] tableKeys = new TableKey[]
                     {
-                            new TableReference("*", "*"),
-                            new TableReference("*", tableReference.getTable()),
-                            tableReference
+                            allKeyspaces(),
+                            allKeyspaces(tableReference.getTable()),
+                            forTable(tableReference)
                     };
 
             for (int i = 0; i < tableKeys.length && rejectTime == -1L; i++)
@@ -328,5 +322,60 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         }
 
         return rejectTime;
+    }
+
+    private TableKey allKeyspaces()
+    {
+        return new TableKey("*", "*");
+    }
+
+    private TableKey allKeyspaces(String table)
+    {
+        return new TableKey("*", table);
+    }
+
+    private TableKey forTable(TableReference tableReference)
+    {
+        return new TableKey(tableReference.getKeyspace(), tableReference.getTable());
+    }
+
+    static class TableKey
+    {
+        private final String keyspace;
+        private final String table;
+
+        TableKey(String keyspace, String table)
+        {
+            this.keyspace = keyspace;
+            this.table = table;
+        }
+
+        String getKeyspace()
+        {
+            return keyspace;
+        }
+
+        String getTable()
+        {
+            return table;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            TableKey tableKey = (TableKey) o;
+            return keyspace.equals(tableKey.keyspace) &&
+                    table.equals(tableKey.table);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(keyspace, table);
+        }
     }
 }

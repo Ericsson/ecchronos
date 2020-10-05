@@ -35,6 +35,8 @@ import java.util.stream.Collectors;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactoryImpl;
 import org.assertj.core.util.Lists;
 import org.junit.After;
 import org.junit.Before;
@@ -92,6 +94,8 @@ public class ITOnDemandRepairJob extends TestBase
 
     private CASLockFactory myLockFactory;
 
+    private TableReferenceFactory myTableReferenceFactory;
+
     private List<String> myCreatedKeyspaces = new ArrayList<>();
 
     @Before
@@ -101,6 +105,8 @@ public class ITOnDemandRepairJob extends TestBase
         mySession = getNativeConnectionProvider().getSession();
         Cluster cluster = mySession.getCluster();
         myMetadata = cluster.getMetadata();
+
+        myTableReferenceFactory = new TableReferenceFactoryImpl(myMetadata);
 
         myHostStates = HostStatesImpl.builder()
                 .withRefreshIntervalInMs(1000)
@@ -159,10 +165,11 @@ public class ITOnDemandRepairJob extends TestBase
     public void repairSingleTable() throws EcChronosException
     {
         long startTime = System.currentTimeMillis();
-        TableReference tableReference = new TableReference("ks", "tb");
 
-        createKeyspace(tableReference.getKeyspace(), 3);
-        createTable(tableReference);
+        createKeyspace("ks", 3);
+        createTable("ks", "tb");
+
+        TableReference tableReference = myTableReferenceFactory.forTable("ks", "tb");
 
         myRepairSchedulerImpl.scheduleJob(tableReference);
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
@@ -182,12 +189,12 @@ public class ITOnDemandRepairJob extends TestBase
     {
         long startTime = System.currentTimeMillis();
 
-        TableReference tableReference = new TableReference("ks", "tb");
-        TableReference tableReference2 = new TableReference("ks", "tb2");
+        createKeyspace("ks", 3);
+        createTable("ks", "tb");
+        createTable("ks", "tb2");
 
-        createKeyspace(tableReference.getKeyspace(), 3);
-        createTable(tableReference);
-        createTable(tableReference2);
+        TableReference tableReference = myTableReferenceFactory.forTable("ks", "tb");
+        TableReference tableReference2 = myTableReferenceFactory.forTable("ks", "tb2");
 
         myRepairSchedulerImpl.scheduleJob(tableReference);
         myRepairSchedulerImpl.scheduleJob(tableReference2);
@@ -209,10 +216,10 @@ public class ITOnDemandRepairJob extends TestBase
     {
         long startTime = System.currentTimeMillis();
 
-        TableReference tableReference = new TableReference("ks", "tb");
+        createKeyspace("ks", 3);
+        createTable("ks", "tb");
 
-        createKeyspace(tableReference.getKeyspace(), 3);
-        createTable(tableReference);
+        TableReference tableReference = myTableReferenceFactory.forTable("ks", "tb");
 
         myRepairSchedulerImpl.scheduleJob(tableReference);
         myRepairSchedulerImpl.scheduleJob(tableReference);
@@ -300,10 +307,10 @@ public class ITOnDemandRepairJob extends TestBase
         return replicationMap;
     }
 
-    private void createTable(TableReference tableReference)
+    private void createTable(String keyspace, String table)
     {
         AbstractCreateStatement createTableStatement = SchemaBuilder
-                .createTable(tableReference.getKeyspace(), tableReference.getTable())
+                .createTable(keyspace, table)
                 .addPartitionKey("key", DataType.text())
                 .addColumn("value", DataType.text());
 

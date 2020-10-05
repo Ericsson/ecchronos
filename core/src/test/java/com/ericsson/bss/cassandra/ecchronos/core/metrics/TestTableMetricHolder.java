@@ -14,14 +14,10 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.ignoreStubs;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-
-import java.util.concurrent.TimeUnit;
-
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,15 +25,17 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import java.util.concurrent.TimeUnit;
+
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestTableMetricHolder
 {
-    private final TableReference myTableReference = new TableReference("keyspace", "table");
+    private final TableReference myTableReference = tableReference("keyspace", "table");
 
     private final MetricRegistry myMetricRegistry = new MetricRegistry();
 
@@ -82,10 +80,10 @@ public class TestTableMetricHolder
         tableMetricHolder.init();
 
         assertThat(metricRegistry.getMetrics().keySet()).containsExactlyInAnyOrder(
-                tableMetricHolder.metricName(TableMetricHolder.LAST_REPAIRED_AT),
-                tableMetricHolder.metricName(TableMetricHolder.REPAIR_STATE),
-                tableMetricHolder.metricName(TableMetricHolder.REPAIR_TIMING_FAILED),
-                tableMetricHolder.metricName(TableMetricHolder.REPAIR_TIMING_SUCCESS));
+                metricName(TableMetricHolder.LAST_REPAIRED_AT),
+                metricName(TableMetricHolder.REPAIR_STATE),
+                metricName(TableMetricHolder.REPAIR_TIMING_FAILED),
+                metricName(TableMetricHolder.REPAIR_TIMING_SUCCESS));
 
         assertThat(getGague(TableMetricHolder.REPAIR_STATE).getValue()).isEqualTo(Double.NaN);
         assertThat(getGague(TableMetricHolder.LAST_REPAIRED_AT).getValue()).isEqualTo(0L);
@@ -176,11 +174,16 @@ public class TestTableMetricHolder
 
     private Timer getTimer(String name)
     {
-        return myMetricRegistry.getTimers().get(myTableMetricHolder.metricName(name));
+        return myMetricRegistry.getTimers().get(metricName(name));
     }
 
     private Gauge getGague(String name)
     {
-        return myMetricRegistry.getGauges().get(myTableMetricHolder.metricName(name));
+        return myMetricRegistry.getGauges().get(metricName(name));
+    }
+
+    private String metricName(String name)
+    {
+        return myTableReference.getKeyspace() + "." + myTableReference.getTable() + "-" + myTableReference.getId() + "-" + name;
     }
 }

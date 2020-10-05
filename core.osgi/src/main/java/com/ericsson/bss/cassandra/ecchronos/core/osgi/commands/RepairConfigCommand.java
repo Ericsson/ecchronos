@@ -14,20 +14,20 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
-import java.io.PrintStream;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Command;
 import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.support.table.ShellTable;
+
+import java.io.PrintStream;
+import java.util.Arrays;
+import java.util.List;
 
 @Service
 @Command(scope = "repair", name = "config", description = "Give the current repair configuration")
@@ -59,7 +59,7 @@ public class RepairConfigCommand implements Action
 
         myRepairScheduler.getCurrentRepairJobs()
                 .stream()
-                .sorted(Comparator.comparing(job -> job.getTableReference().toString()))
+                .sorted(RepairConfigCommand::sortedByName)
                 .forEach(job -> table.addRow().addContent(createRowContent(job)));
 
         table.print(out);
@@ -80,13 +80,28 @@ public class RepairConfigCommand implements Action
     private List<Object> createRowContent(RepairJobView job)
     {
         RepairConfiguration config = job.getRepairConfiguration();
+        String tableName = job.getTableReference().getKeyspace() + "." + job.getTableReference().getTable();
         return Arrays.asList(
-                job.getTableReference().toString(),
+                tableName,
                 PrintUtils.durationToHumanReadable(config.getRepairIntervalInMs()),
                 config.getRepairParallelism(),
                 PrintUtils.toPercentage(config.getRepairUnwindRatio()),
                 PrintUtils.durationToHumanReadable(config.getRepairWarningTimeInMs()),
                 PrintUtils.durationToHumanReadable(config.getRepairErrorTimeInMs())
                 );
+    }
+
+    private static int sortedByName(RepairJobView view1, RepairJobView view2)
+    {
+        TableReference table1 = view1.getTableReference();
+        TableReference table2 = view2.getTableReference();
+
+        int cmp = table1.getKeyspace().compareTo(table2.getKeyspace());
+        if (cmp != 0)
+        {
+            return cmp;
+        }
+
+        return table1.getTable().compareTo(table2.getKeyspace());
     }
 }

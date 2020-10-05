@@ -14,32 +14,13 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.ignoreStubs;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import javax.management.Notification;
-import javax.management.NotificationListener;
-import javax.management.remote.JMXConnectionNotification;
-
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxy;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
+import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairTask.ProgressEventType;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,11 +28,19 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairTask.ProgressEventType;
-import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
-import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import javax.management.Notification;
+import javax.management.NotificationListener;
+import javax.management.remote.JMXConnectionNotification;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestRepairTask
@@ -59,7 +48,7 @@ public class TestRepairTask
     private static final String KEYSPACE_NAME = "keyspace";
     private static final String TABLE_NAME = "table";
 
-    private static final TableReference TABLE_REFERENCE = new TableReference(KEYSPACE_NAME, TABLE_NAME);
+    private static final TableReference TABLE_REFERENCE = tableReference(KEYSPACE_NAME, TABLE_NAME);
 
     @Mock
     private JmxProxyFactory jmxProxyFactory;
@@ -69,7 +58,7 @@ public class TestRepairTask
 
     private MockedJmxProxy proxy = new MockedJmxProxy(KEYSPACE_NAME, TABLE_NAME);
 
-    private final TableReference myTableReference = new TableReference(KEYSPACE_NAME, TABLE_NAME);
+    private final TableReference myTableReference = tableReference(KEYSPACE_NAME, TABLE_NAME);
 
     @Before
     public void setup() throws IOException

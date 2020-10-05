@@ -14,40 +14,32 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.time.Clock;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import com.datastax.driver.core.Host;
+import com.datastax.driver.core.Metadata;
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.utils.UUIDs;
 import com.ericsson.bss.cassandra.ecchronos.core.AbstractCassandraTest;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.collect.Sets;
+import net.jcip.annotations.NotThreadSafe;
 import org.assertj.core.util.Lists;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import net.jcip.annotations.NotThreadSafe;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.time.Clock;
+import java.util.*;
 
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.utils.UUIDs;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.google.common.base.Predicates;
-import com.google.common.collect.Sets;
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @NotThreadSafe
 public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
@@ -62,7 +54,7 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
 
     private static PreparedStatement myInsertRecordStatement;
 
-    private final TableReference myTableReference = new TableReference(KEYSPACE, TABLE);
+    private final TableReference myTableReference = tableReference(KEYSPACE, TABLE);
 
     @BeforeClass
     public static void startup()

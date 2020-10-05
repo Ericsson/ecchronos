@@ -23,7 +23,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.RatioGauge;
 import com.codahale.metrics.Timer;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.google.common.annotations.VisibleForTesting;
 
 /**
  * Holder class for repair metrics related to a specific table.
@@ -124,10 +123,10 @@ public class TableMetricHolder implements Closeable
         myMetricRegistry.remove(metricName(REPAIR_STATE));
     }
 
-    @VisibleForTesting
-    String metricName(String name)
+    private String metricName(String name)
     {
-        return myTableReference + "-" + name;
+        return myTableReference.getKeyspace() + "." + myTableReference.getTable() + "-" + myTableReference.getId() + "-"
+                + name;
     }
 
     private Timer timer(String name)

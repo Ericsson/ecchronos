@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import org.osgi.service.component.annotations.*;
 
 import java.util.Set;
@@ -32,13 +33,17 @@ public class ReplicatedTableProviderService implements ReplicatedTableProvider
     @Reference(service = NativeConnectionProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile NativeConnectionProvider myNativeConnectionProvider;
 
+    @Reference(service = TableReferenceFactory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    private volatile TableReferenceFactory myTableReferenceFactory;
+
     @Activate
     public void activate()
     {
         Metadata metadata = myNativeConnectionProvider.getSession().getCluster().getMetadata();
         Host localhost = myNativeConnectionProvider.getLocalHost();
 
-        myDelegateReplicatedTableProvider = new ReplicatedTableProviderImpl(localhost, metadata);
+        myDelegateReplicatedTableProvider = new ReplicatedTableProviderImpl(localhost, metadata,
+                myTableReferenceFactory);
     }
 
     @Override
