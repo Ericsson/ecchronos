@@ -25,6 +25,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
 import java.io.File;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 public class Config
 {
@@ -109,14 +110,14 @@ public class Config
     public static class ConnectionConfig
     {
         private NativeConnection cql;
-        private Connection<JmxConnectionProvider> jmx;
+        private JmxConnection jmx;
 
         public NativeConnection getCql()
         {
             return cql;
         }
 
-        public Connection<JmxConnectionProvider> getJmx()
+        public JmxConnection getJmx()
         {
             return jmx;
         }
@@ -126,7 +127,7 @@ public class Config
             this.cql = cql;
         }
 
-        public void setJmx(Connection<JmxConnectionProvider> jmx)
+        public void setJmx(JmxConnection jmx)
         {
             this.jmx = jmx;
         }
@@ -138,7 +139,7 @@ public class Config
         }
     }
 
-    public static class Connection<T> 
+    public static abstract class Connection<T>
     {
         private String host;
         private int port;
@@ -171,10 +172,12 @@ public class Config
 
         public void setProvider(Class<T> provider) throws NoSuchMethodException
         {
-            provider.getDeclaredConstructor(Config.class);
+            provider.getDeclaredConstructor(expectedConstructor());
 
             this.provider = provider;
         }
+
+        protected abstract Class<?>[] expectedConstructor();
 
         @Override
         public String toString()
@@ -200,9 +203,24 @@ public class Config
         }
 
         @Override
+        protected Class<?>[] expectedConstructor()
+        {
+            return new Class<?>[] {Config.class, Supplier.class };
+        }
+
+        @Override
         public String toString()
         {
             return String.format("(%s:%d),provider=%s,decorator=%s", getHost(), getPort(), getProviderClass(), decoratorClass);
+        }
+    }
+
+    public static class JmxConnection extends Connection<JmxConnectionProvider>
+    {
+        @Override
+        protected Class<?>[] expectedConstructor()
+        {
+            return new Class<?>[] {Config.class, Supplier.class };
         }
     }
 

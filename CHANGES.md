@@ -20,6 +20,7 @@
 * Use springboot for REST server - Issue #111
 * Add Health Endpoint - Issue #131
 * Use table id in metric names - Issue #120
+* Add authentication for CQL and JMX - Issue #129
 
 ### Merged from 1.2
 

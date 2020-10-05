@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.standalone;
 
+import com.datastax.driver.core.PlainTextAuthProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactoryImpl;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -33,6 +34,7 @@ public class TestBase
     private static final int CASSANDRA_JMX_PORT = Integer.parseInt(System.getProperty("it-cassandra.jmx.port"));
 
     private static LocalNativeConnectionProvider myNativeConnectionProvider;
+    private static LocalNativeConnectionProvider myAdminNativeConnectionProvider;
     private static LocalJmxConnectionProvider myJmxConnectionProvider;
     private static JmxProxyFactoryImpl myJmxProxyFactory;
 
@@ -42,6 +44,12 @@ public class TestBase
         myNativeConnectionProvider = LocalNativeConnectionProvider.builder()
                 .withPort(CASSANDRA_NATIVE_PORT)
                 .withLocalhost(CASSANDRA_HOST)
+                .withAuthProvider(new PlainTextAuthProvider("eccuser", "eccpassword"))
+                .build();
+        myAdminNativeConnectionProvider = LocalNativeConnectionProvider.builder()
+                .withPort(CASSANDRA_NATIVE_PORT)
+                .withLocalhost(CASSANDRA_HOST)
+                .withAuthProvider(new PlainTextAuthProvider("cassandra", "cassandra"))
                 .build();
         myJmxConnectionProvider = new LocalJmxConnectionProvider(CASSANDRA_HOST, CASSANDRA_JMX_PORT);
 
@@ -53,13 +61,19 @@ public class TestBase
     @AfterClass
     public static void cleanup() throws IOException
     {
-        myNativeConnectionProvider.close();
         myJmxConnectionProvider.close();
+        myAdminNativeConnectionProvider.close();
+        myNativeConnectionProvider.close();
     }
 
     protected static LocalNativeConnectionProvider getNativeConnectionProvider()
     {
         return myNativeConnectionProvider;
+    }
+
+    protected static LocalNativeConnectionProvider getAdminNativeConnectionProvider()
+    {
+        return myAdminNativeConnectionProvider;
     }
 
     protected static LocalJmxConnectionProvider getJmxConnectionProvider()

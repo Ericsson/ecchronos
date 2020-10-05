@@ -8,7 +8,7 @@ The standalone ecChronos can be configured through the file `conf/ecc.yml`.
 
 In order to use custom connection providers in the standalone version of ecChronos there are a few things that needs to be considered.
 
-1. There must be a default constructor that takes `Config` as an argument.
+1. There must be a default constructor that takes `Config` and `Supplier` as an argument.
 2. The native connection provider must use `DataCenterAwarePolicy` which is located in the `connection` module.
 
 The provided configuration argument is read from the file `ecc.yml` so that custom connection providers could use the same configuration file if needed.

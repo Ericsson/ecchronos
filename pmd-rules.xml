@@ -28,6 +28,8 @@
         <exclude name="AvoidCatchingGenericException" /> <!-- Should consider fixing this -->
         <exclude name="LoosePackageCoupling" />
         <exclude name="DataClass" />
+        <exclude name="ExcessiveImports" />
+        <exclude name="AvoidUncheckedExceptionsInSignatures" />
     </rule>
 
     <rule ref="category/java/bestpractices.xml">
