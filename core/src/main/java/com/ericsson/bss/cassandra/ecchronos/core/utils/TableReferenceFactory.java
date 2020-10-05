@@ -15,7 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
 /**
- * A table reference factory to generate table references.
+ * A factory that generates table references based on keyspace and table name.
  */
 public interface TableReferenceFactory
 {

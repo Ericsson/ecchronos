@@ -21,24 +21,9 @@ import java.util.UUID;
  */
 public interface TableReference
 {
-    /**
-     * Get the table id.
-     *
-     * @return The table id.
-     */
     UUID getId();
 
-    /**
-     * Get the table name.
-     *
-     * @return The table name.
-     */
     String getTable();
 
-    /**
-     * Get the keyspace name.
-     *
-     * @return The keyspace name.
-     */
     String getKeyspace();
 }
