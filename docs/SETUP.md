@@ -81,9 +81,9 @@ cql:
     password: cassandra
   tls:
     enabled: false
-    keystore: <keystore path>
+    keystore: /path/to/keystore
     keystore_password: ecchronos
-    truststore: <truststore path>
+    truststore: /path/to/truststore
     truststore_password: ecchronos
     protocol: TLSv1.2
     algorithm:
@@ -95,6 +95,14 @@ jmx:
     enabled: true
     username: cassandra
     password: cassandra
+  tls:
+    enabled: false
+    keystore: /path/to/keystore
+    keystore_password: ecchronos
+    truststore: /path/to/truststore
+    truststore_password: ecchronos
+    protocol: TLSv1.2
+    cipher_suites:
 ```
 
 The security parameters can be updated during runtime and will automatically be picked up by ecc.

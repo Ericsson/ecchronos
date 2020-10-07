@@ -38,9 +38,9 @@ public class TestSecurity
 
         TLSConfig cqlTlsConfig = new TLSConfig();
         cqlTlsConfig.setEnabled(false);
-        cqlTlsConfig.setKeystore("<keystore path>");
+        cqlTlsConfig.setKeystore("/path/to/keystore");
         cqlTlsConfig.setKeystore_password("ecchronos");
-        cqlTlsConfig.setTruststore("<truststore path>");
+        cqlTlsConfig.setTruststore("/path/to/truststore");
         cqlTlsConfig.setTruststore_password("ecchronos");
         cqlTlsConfig.setProtocol("TLSv1.2");
         cqlTlsConfig.setAlgorithm(null);
@@ -50,9 +50,9 @@ public class TestSecurity
 
         TLSConfig jmxTlsConfig = new TLSConfig();
         jmxTlsConfig.setEnabled(false);
-        jmxTlsConfig.setKeystore("<keystore path>");
+        jmxTlsConfig.setKeystore("/path/to/keystore");
         jmxTlsConfig.setKeystore_password("ecchronos");
-        jmxTlsConfig.setTruststore("<truststore path>");
+        jmxTlsConfig.setTruststore("/path/to/truststore");
         jmxTlsConfig.setTruststore_password("ecchronos");
         jmxTlsConfig.setProtocol("TLSv1.2");
         jmxTlsConfig.setCipher_suites(null);

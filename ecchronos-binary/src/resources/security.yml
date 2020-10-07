@@ -20,9 +20,9 @@ cql:
     password: cassandra
   tls:
     enabled: false
-    keystore: <keystore path>
+    keystore: /path/to/keystore
     keystore_password: ecchronos
-    truststore: <truststore path>
+    truststore: /path/to/truststore
     truststore_password: ecchronos
     protocol: TLSv1.2
     algorithm:
@@ -38,9 +38,9 @@ jmx:
     password: cassandra
   tls:
     enabled: false
-    keystore: <keystore path>
+    keystore: /path/to/keystore
     keystore_password: ecchronos
-    truststore: <truststore path>
+    truststore: /path/to/truststore
     truststore_password: ecchronos
     protocol: TLSv1.2
     cipher_suites:
