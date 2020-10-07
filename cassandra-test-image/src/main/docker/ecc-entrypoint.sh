@@ -32,6 +32,9 @@ password = cassandra
 EOF
 
 if [ -f /etc/certificates/.keystore ]; then
+#
+# Setup CQL certificates
+#
   sed -i "/client_encryption_options:/{n;s/enabled: false/enabled: true/}" "$CASSANDRA_CONF"/cassandra.yaml
 
   sed -i "s;keystore: .*;keystore: /etc/certificates/.keystore;g" "$CASSANDRA_CONF"/cassandra.yaml
@@ -56,6 +59,27 @@ userkey = /etc/certificates/key.pem
 usercert = /etc/certificates/cert.crt
 version = TLSv1_2
 EOF
+
+#
+# Setup JMX certificates
+#
+
+# Comment rmi port to choose randomly
+  sed -ri "s/(.*jmxremote.rmi.port.*)/#\1/g" "$CASSANDRA_CONF"/cassandra-env.sh
+
+# Enable secure transport
+  sed -ri "s/#(.*jmxremote.ssl=true)/\1/g" "$CASSANDRA_CONF"/cassandra-env.sh
+  sed -ri "s/#(.*jmxremote.ssl.need_client_auth=true)/\1/g" "$CASSANDRA_CONF"/cassandra-env.sh
+
+# Set protocol
+  sed -ri 's/#(.*jmxremote.ssl.enabled.protocols)=.*/\1=TLSv1.2"/g' "$CASSANDRA_CONF"/cassandra-env.sh
+
+# Set keystore/truststore properties
+  sed -ri 's;#(.*keyStore)=.*;\1=/etc/certificates/.keystore";g' "$CASSANDRA_CONF"/cassandra-env.sh
+  sed -ri 's;#(.*trustStore)=.*;\1=/etc/certificates/.truststore";g' "$CASSANDRA_CONF"/cassandra-env.sh
+  sed -ri 's/#(.*keyStorePassword)=.*/\1=ecctest"/g' "$CASSANDRA_CONF"/cassandra-env.sh
+  sed -ri 's/#(.*trustStorePassword)=.*/\1=ecctest"/g' "$CASSANDRA_CONF"/cassandra-env.sh
+
 fi
 
 ./docker-entrypoint.sh

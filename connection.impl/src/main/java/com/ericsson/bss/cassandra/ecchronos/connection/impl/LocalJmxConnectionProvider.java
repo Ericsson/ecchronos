@@ -19,9 +19,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
+import javax.rmi.ssl.SslRMIClientSocketFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +34,8 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(LocalJmxConnectionProvider.class);
 
+    private static final String JMX_FORMAT_URL = "service:jmx:rmi:///jndi/rmi://[%s]:%d/jmxrmi";
+
     public static final int DEFAULT_PORT = 7199;
     public static final String DEFAULT_HOST = "localhost";
 
@@ -40,17 +44,20 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
     private final String myLocalhost;
     private final int myPort;
     private final Supplier<String[]> credentialsSupplier;
+    private final Supplier<Map<String, String>> tlsSupplier;
 
     public LocalJmxConnectionProvider(String localhost, int port) throws IOException
     {
-        this(localhost, port, () -> null);
+        this(localhost, port, () -> null, HashMap::new);
     }
 
-    public LocalJmxConnectionProvider(String localhost, int port, Supplier<String[]> credentialsSupplier) throws IOException
+    public LocalJmxConnectionProvider(String localhost, int port, Supplier<String[]> credentialsSupplier,
+            Supplier<Map<String, String>> tlsSupplier) throws IOException
     {
         myLocalhost = localhost;
         myPort = port;
         this.credentialsSupplier = credentialsSupplier;
+        this.tlsSupplier = tlsSupplier;
 
         reconnect();
     }
@@ -77,15 +84,35 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
 
     private void reconnect() throws IOException
     {
-        JMXServiceURL jmxUrl = new JMXServiceURL(String.format("service:jmx:rmi:///jndi/rmi://[%s]:%d/jmxrmi", myLocalhost, myPort));
+        JMXServiceURL jmxUrl = new JMXServiceURL(String.format(JMX_FORMAT_URL, myLocalhost, myPort));
         Map<String, Object> env = new HashMap<>();
         String[] credentials = this.credentialsSupplier.get();
         if (credentials != null)
         {
             env.put(JMXConnector.CREDENTIALS, credentials);
         }
+        Map<String, String> tls = this.tlsSupplier.get();
+        if (!tls.isEmpty())
+        {
+            for (Map.Entry<String, String> configEntry : tls.entrySet())
+            {
+                String key = configEntry.getKey();
+                String value = configEntry.getValue();
 
-        LOG.debug("Connecting JMX through {}", jmxUrl);
+                if (!value.isEmpty())
+                {
+                    System.setProperty(key, value);
+                }
+                else
+                {
+                    System.clearProperty(key);
+                }
+            }
+            env.put("com.sun.jndi.rmi.factory.socket", new SslRMIClientSocketFactory());
+        }
+
+        LOG.debug("Connecting JMX through {}, credentials: {}, tls: {}", jmxUrl, enabled(credentials != null),
+                enabled(!tls.isEmpty()));
         JMXConnector jmxConnector = JMXConnectorFactory.connect(jmxUrl, env);
         LOG.debug("Connected JMX for {}", jmxUrl);
 
@@ -114,5 +141,10 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
         }
 
         return true;
+    }
+
+    private static String enabled(boolean enabled)
+    {
+        return enabled ? "enabled" : "disabled";
     }
 }

@@ -20,10 +20,10 @@ cql:
     password: cqlpassword
   tls:
     enabled: true
-    keystore: path_to_keystore
-    keystore_password: keystorepassword
-    truststore: path_to_truststore
-    truststore_password: truststorepassword
+    keystore: /path/to/cql/keystore
+    keystore_password: cqlkeystorepassword
+    truststore: /path/to/cql/truststore
+    truststore_password: cqltruststorepassword
     protocol: TLSv1.2
     algorithm: SunX509
     store_type: JKS
@@ -35,3 +35,11 @@ jmx:
     enabled: true
     username: jmxuser
     password: jmxpassword
+  tls:
+    enabled: true
+    keystore: /path/to/jmx/keystore
+    keystore_password: jmxkeystorepassword
+    truststore: /path/to/jmx/truststore
+    truststore_password: jmxtruststorepassword
+    protocol: TLSv1.2
+    cipher_suites: VALID_CIPHER_SUITE,VALID_CIPHER_SUITE2
