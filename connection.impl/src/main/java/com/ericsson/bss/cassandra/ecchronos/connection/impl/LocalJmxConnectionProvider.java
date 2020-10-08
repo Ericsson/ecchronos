@@ -144,9 +144,4 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
 
         return true;
     }
-
-    private static String enabled(boolean enabled)
-    {
-        return enabled ? "enabled" : "disabled";
-    }
 }
