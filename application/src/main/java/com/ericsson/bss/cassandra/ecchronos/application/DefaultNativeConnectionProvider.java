@@ -42,8 +42,8 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
         Security.CqlSecurity cqlSecurity = cqlSecuritySupplier.get();
         boolean authEnabled = cqlSecurity.getCredentials().isEnabled();
         boolean tlsEnabled = cqlSecurity.getTls().isEnabled();
-        LOG.info("Connecting through CQL using {}:{}, authentication: {}, tls: {}", host, port, enabled(authEnabled),
-                enabled(tlsEnabled));
+        LOG.info("Connecting through CQL using {}:{}, authentication: {}, tls: {}", host, port, authEnabled,
+                tlsEnabled);
 
         ExtendedAuthProvider authProvider = new ReloadingAuthProvider(() -> cqlSecuritySupplier.get().getCredentials());
 
@@ -77,10 +77,5 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
     public void close()
     {
         myLocalNativeConnectionProvider.close();
-    }
-
-    private static String enabled(boolean enabled)
-    {
-        return enabled ? "enabled" : "disabled";
     }
 }

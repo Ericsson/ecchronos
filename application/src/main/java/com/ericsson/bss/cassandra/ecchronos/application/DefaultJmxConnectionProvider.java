@@ -14,6 +14,16 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Supplier;
+
+import javax.management.remote.JMXConnector;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Credentials;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Security;
@@ -21,14 +31,6 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.TLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalJmxConnectionProvider;
 import com.google.common.base.Joiner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.management.remote.JMXConnector;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Supplier;
 
 public class DefaultJmxConnectionProvider implements JmxConnectionProvider
 {
@@ -41,7 +43,10 @@ public class DefaultJmxConnectionProvider implements JmxConnectionProvider
         Config.Connection<JmxConnectionProvider> jmxConfig = config.getConnectionConfig().getJmx();
         String host = jmxConfig.getHost();
         int port = jmxConfig.getPort();
-        LOG.info("Connecting through JMX using {}:{}", host, port);
+        boolean authEnabled = jmxSecurity.get().getCredentials().isEnabled();
+        boolean tlsEnabled = jmxSecurity.get().getTls().isEnabled();
+        LOG.info("Connecting through JMX using {}:{}, authentication: {}, tls: {}", host, port, authEnabled,
+                tlsEnabled);
 
         Supplier<String[]> credentials = () -> convertCredentials(jmxSecurity);
         Supplier<Map<String, String>> tls = () -> convertTls(jmxSecurity);
@@ -91,6 +96,6 @@ public class DefaultJmxConnectionProvider implements JmxConnectionProvider
         {
             return null;
         }
-        return new String[] {credentials.getUsername(), credentials.getPassword()};
+        return new String[] { credentials.getUsername(), credentials.getPassword() };
     }
 }

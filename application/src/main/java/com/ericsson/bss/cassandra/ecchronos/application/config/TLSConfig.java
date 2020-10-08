@@ -142,12 +142,7 @@ public class TLSConfig
 
     private static String[] transformCiphers(String cipher_suites)
     {
-        if (cipher_suites == null)
-        {
-            return null;
-        }
-
-        return cipher_suites.split(",");
+        return cipher_suites == null ? null : cipher_suites.split(",");
     }
 
     @Override

@@ -111,8 +111,10 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
             env.put("com.sun.jndi.rmi.factory.socket", new SslRMIClientSocketFactory());
         }
 
-        LOG.debug("Connecting JMX through {}, credentials: {}, tls: {}", jmxUrl, enabled(credentials != null),
-                enabled(!tls.isEmpty()));
+        boolean authEnabled = credentials != null;
+        boolean tlsEnabled = !tls.isEmpty();
+
+        LOG.debug("Connecting JMX through {}, credentials: {}, tls: {}", jmxUrl, authEnabled, tlsEnabled);
         JMXConnector jmxConnector = JMXConnectorFactory.connect(jmxUrl, env);
         LOG.debug("Connected JMX for {}", jmxUrl);
 

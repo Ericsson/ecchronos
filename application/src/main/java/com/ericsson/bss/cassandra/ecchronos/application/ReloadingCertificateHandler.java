@@ -81,13 +81,13 @@ public class ReloadingCertificateHandler implements ExtendedRemoteEndpointAwareS
     @Override
     public SslHandler newSSLHandler(SocketChannel channel, InetSocketAddress remoteEndpoint)
     {
-        throw new UnsupportedOperationException("This method should never be used");
+        throw new UnsupportedOperationException("Unsupported method");
     }
 
     @Override
     public SslHandler newSSLHandler(SocketChannel channel)
     {
-        throw new UnsupportedOperationException("This method should never be used");
+        throw new UnsupportedOperationException("Unsupported method");
     }
 
     private Context getContext()

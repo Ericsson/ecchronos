@@ -107,7 +107,7 @@ jmx:
 
 The security parameters can be updated during runtime and will automatically be picked up by ecc.
 
-It's possible to override the default connection providers and create custom ones.
+It's possible to override the default connection providers if needed.
 More information about the custom connection provider can be found [here](STANDALONE.md).
 
 ## Running ecChronos
