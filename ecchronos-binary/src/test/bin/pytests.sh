@@ -33,6 +33,8 @@ BASE_DIR="$CURRENT_DIR"/ecchronos-binary-${project.version}
 CONF_DIR="$BASE_DIR"/conf
 PYLIB_DIR="$BASE_DIR"/pylib
 
+CERTIFICATE_DIRECTORY=${project.build.directory}/certificates/cert
+
 # Change configuration for ecchronos
 
 ## Connection
@@ -49,6 +51,12 @@ sed "s/port: 7199/port: $CASSANDRA_JMX_PORT/g" -i "$CONF_DIR"/ecc.yml
 sed '/cql:/{n;/credentials/{n;s/enabled: .*/enabled: true/}}' -i "$CONF_DIR"/security.yml
 sed '/cql:/{n;/credentials/{n;/enabled: .*/{n;s/username: .*/username: eccuser/}}}' -i "$CONF_DIR"/security.yml
 sed '/cql:/{n;/credentials/{n;/enabled: .*/{n;/username: .*/{n;s/password: .*/password: eccpassword/}}}}' -i "$CONF_DIR"/security.yml
+
+sed "/tls:/{n;s/enabled: .*/enabled: true/}" -i "$CONF_DIR"/security.yml
+sed "s;keystore: .*;keystore: $CERTIFICATE_DIRECTORY/.keystore;g" -i "$CONF_DIR"/security.yml
+sed "s/keystore_password: .*/keystore_password: ecctest/g" -i "$CONF_DIR"/security.yml
+sed "s;truststore: .*;truststore: $CERTIFICATE_DIRECTORY/.truststore;g" -i "$CONF_DIR"/security.yml
+sed "s/truststore_password: .*/truststore_password: ecctest/g" -i "$CONF_DIR"/security.yml
 
 # Logback
 

@@ -14,17 +14,19 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
+import java.util.function.Supplier;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.datastax.driver.core.ExtendedAuthProvider;
 import com.datastax.driver.core.Host;
+import com.datastax.driver.core.SSLOptions;
 import com.datastax.driver.core.Session;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Security;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalNativeConnectionProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.function.Supplier;
 
 public class DefaultNativeConnectionProvider implements NativeConnectionProvider
 {
@@ -37,15 +39,25 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
         Config.NativeConnection nativeConfig = config.getConnectionConfig().getCql();
         String host = nativeConfig.getHost();
         int port = nativeConfig.getPort();
-        boolean authEnabled = cqlSecuritySupplier.get().getCredentials().isEnabled();
-        LOG.info("Connecting through CQL using {}:{}, authentication {}", host, port, authEnabled ? "enabled" : "disabled");
+        Security.CqlSecurity cqlSecurity = cqlSecuritySupplier.get();
+        boolean authEnabled = cqlSecurity.getCredentials().isEnabled();
+        boolean tlsEnabled = cqlSecurity.getTls().isEnabled();
+        LOG.info("Connecting through CQL using {}:{}, authentication: {}, tls: {}", host, port, authEnabled,
+                tlsEnabled);
 
         ExtendedAuthProvider authProvider = new ReloadingAuthProvider(() -> cqlSecuritySupplier.get().getCredentials());
+
+        SSLOptions sslOptions = null;
+        if (tlsEnabled)
+        {
+            sslOptions = new ReloadingCertificateHandler(() -> cqlSecuritySupplier.get().getTls());
+        }
 
         myLocalNativeConnectionProvider = LocalNativeConnectionProvider.builder()
                 .withLocalhost(host)
                 .withPort(port)
                 .withAuthProvider(authProvider)
+                .withSslOptions(sslOptions)
                 .build();
     }
 

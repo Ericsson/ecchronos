@@ -14,17 +14,23 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
-import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
-import com.ericsson.bss.cassandra.ecchronos.application.config.Credentials;
-import com.ericsson.bss.cassandra.ecchronos.application.config.Security;
-import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalJmxConnectionProvider;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Supplier;
+
+import javax.management.remote.JMXConnector;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.management.remote.JMXConnector;
-import java.io.IOException;
-import java.util.function.Supplier;
+import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
+import com.ericsson.bss.cassandra.ecchronos.application.config.Credentials;
+import com.ericsson.bss.cassandra.ecchronos.application.config.Security;
+import com.ericsson.bss.cassandra.ecchronos.application.config.TLSConfig;
+import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalJmxConnectionProvider;
+import com.google.common.base.Joiner;
 
 public class DefaultJmxConnectionProvider implements JmxConnectionProvider
 {
@@ -37,11 +43,15 @@ public class DefaultJmxConnectionProvider implements JmxConnectionProvider
         Config.Connection<JmxConnectionProvider> jmxConfig = config.getConnectionConfig().getJmx();
         String host = jmxConfig.getHost();
         int port = jmxConfig.getPort();
-        LOG.info("Connecting through JMX using {}:{}", host, port);
+        boolean authEnabled = jmxSecurity.get().getCredentials().isEnabled();
+        boolean tlsEnabled = jmxSecurity.get().getTls().isEnabled();
+        LOG.info("Connecting through JMX using {}:{}, authentication: {}, tls: {}", host, port, authEnabled,
+                tlsEnabled);
 
-        Supplier<String[]> credentials = () -> convert(jmxSecurity);
+        Supplier<String[]> credentials = () -> convertCredentials(jmxSecurity);
+        Supplier<Map<String, String>> tls = () -> convertTls(jmxSecurity);
 
-        myLocalJmxConnectionProvider = new LocalJmxConnectionProvider(host, port, credentials);
+        myLocalJmxConnectionProvider = new LocalJmxConnectionProvider(host, port, credentials, tls);
     }
 
     @Override
@@ -56,13 +66,36 @@ public class DefaultJmxConnectionProvider implements JmxConnectionProvider
         myLocalJmxConnectionProvider.close();
     }
 
-    private String[] convert(Supplier<Security.JmxSecurity> jmxSecurity)
+    private Map<String, String> convertTls(Supplier<Security.JmxSecurity> jmxSecurity)
+    {
+        TLSConfig tlsConfig = jmxSecurity.get().getTls();
+        if (!tlsConfig.isEnabled())
+        {
+            return new HashMap<>();
+        }
+
+        Map<String, String> config = new HashMap<>();
+        config.put("com.sun.management.jmxremote.ssl.enabled.protocols", tlsConfig.getProtocol());
+        String ciphers = tlsConfig.getCipherSuites()
+                .map(Joiner.on(',')::join)
+                .orElse("");
+        config.put("com.sun.management.jmxremote.ssl.enabled.cipher.suites", ciphers);
+
+        config.put("javax.net.ssl.keyStore", tlsConfig.getKeystore());
+        config.put("javax.net.ssl.keyStorePassword", tlsConfig.getKeystorePassword());
+        config.put("javax.net.ssl.trustStore", tlsConfig.getTruststore());
+        config.put("javax.net.ssl.trustStorePassword", tlsConfig.getTruststorePassword());
+
+        return config;
+    }
+
+    private String[] convertCredentials(Supplier<Security.JmxSecurity> jmxSecurity)
     {
         Credentials credentials = jmxSecurity.get().getCredentials();
         if (!credentials.isEnabled())
         {
             return null;
         }
-        return new String[] {credentials.getUsername(), credentials.getPassword()};
+        return new String[] { credentials.getUsername(), credentials.getPassword() };
     }
 }

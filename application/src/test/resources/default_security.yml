@@ -18,9 +18,28 @@ cql:
     enabled: false
     username: cassandra
     password: cassandra
+  tls:
+    enabled: false
+    keystore: /path/to/keystore
+    keystore_password: ecchronos
+    truststore: /path/to/truststore
+    truststore_password: ecchronos
+    protocol: TLSv1.2
+    algorithm:
+    store_type: JKS
+    cipher_suites:
+    require_endpoint_verification: false
 
 jmx:
   credentials:
     enabled: false
     username: cassandra
     password: cassandra
+  tls:
+    enabled: false
+    keystore: /path/to/keystore
+    keystore_password: ecchronos
+    truststore: /path/to/truststore
+    truststore_password: ecchronos
+    protocol: TLSv1.2
+    cipher_suites:

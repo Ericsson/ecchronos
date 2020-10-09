@@ -102,7 +102,7 @@
         <org.apache.karaf.tooling.karaf-maven-plugin.version>3.0.3</org.apache.karaf.tooling.karaf-maven-plugin.version>
         <org.eluder.coveralls.coveralls-maven-plugin.version>4.3.0</org.eluder.coveralls.coveralls-maven-plugin.version>
         <org.jacoco.jacoco-maven-plugin.version>0.8.4</org.jacoco.jacoco-maven-plugin.version>
-        <org.codehaus.mojo.exec-maven-plugin.version>1.6.0</org.codehaus.mojo.exec-maven-plugin.version>
+        <org.codehaus.mojo.exec-maven-plugin.version>3.0.0</org.codehaus.mojo.exec-maven-plugin.version>
         <org.codehaus.mojo.license-maven-plugin.version>1.19</org.codehaus.mojo.license-maven-plugin.version>
         <org.springframework.boot.version>2.3.4.RELEASE</org.springframework.boot.version>
 
@@ -120,7 +120,7 @@
         <!-- Integration tests -->
         <it.cassandra.memory>1073741824</it.cassandra.memory>
         <it.cassandra.heap>256M</it.cassandra.heap>
-        <it.cassandra.version>3.0</it.cassandra.version>
+        <it.cassandra.version>3.11</it.cassandra.version>
     </properties>
 
     <dependencyManagement>
@@ -669,6 +669,30 @@ limitations under the License.
         <profile>
             <id>docker-integration-test</id>
             <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>generate-certificates-directory</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>mkdir</executable>
+                                    <arguments>
+                                        <argument>-p</argument>
+                                        <argument>certificates/cert</argument>
+                                    </arguments>
+                                    <workingDirectory>${project.build.directory}</workingDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+
                 <pluginManagement>
                     <plugins>
                         <plugin>
@@ -707,6 +731,11 @@ limitations under the License.
                                                         <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0</JVM_EXTRA_OPTS>
                                                     </env>
                                                     <exposedPropertyKey>seed</exposedPropertyKey>
+                                                    <volumes>
+                                                        <bind>
+                                                            <volume>${project.build.directory}/certificates/cert:/etc/certificates</volume>
+                                                        </bind>
+                                                    </volumes>
                                                     <wait>
                                                         <time>60000</time>
                                                         <tcp>
@@ -730,6 +759,11 @@ limitations under the License.
                                                         <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap} -Xmn100M</JVM_OPTS>
                                                         <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.ring_delay_ms=4000 </JVM_EXTRA_OPTS>
                                                     </env>
+                                                    <volumes>
+                                                        <bind>
+                                                            <volume>${project.build.directory}/certificates/cert:/etc/certificates</volume>
+                                                        </bind>
+                                                    </volumes>
                                                     <wait>
                                                         <time>120000</time>
                                                         <tcp>
@@ -752,6 +786,11 @@ limitations under the License.
                                                         <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap} -Xmn100M</JVM_OPTS>
                                                         <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.ring_delay_ms=4000</JVM_EXTRA_OPTS>
                                                     </env>
+                                                    <volumes>
+                                                        <bind>
+                                                            <volume>${project.build.directory}/certificates/cert:/etc/certificates</volume>
+                                                        </bind>
+                                                    </volumes>
                                                     <wait>
                                                         <time>120000</time>
                                                         <tcp>
@@ -774,6 +813,11 @@ limitations under the License.
                                                         <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap} -Xmn100M</JVM_OPTS>
                                                         <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.ring_delay_ms=4000</JVM_EXTRA_OPTS>
                                                     </env>
+                                                    <volumes>
+                                                        <bind>
+                                                            <volume>${project.build.directory}/certificates/cert:/etc/certificates</volume>
+                                                        </bind>
+                                                    </volumes>
                                                     <wait>
                                                         <time>120000</time>
                                                         <tcp>

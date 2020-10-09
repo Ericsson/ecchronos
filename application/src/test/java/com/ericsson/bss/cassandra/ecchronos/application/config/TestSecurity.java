@@ -36,8 +36,31 @@ public class TestSecurity
 
         Credentials expectedCredentials = new Credentials(false, "cassandra", "cassandra");
 
+        TLSConfig cqlTlsConfig = new TLSConfig();
+        cqlTlsConfig.setEnabled(false);
+        cqlTlsConfig.setKeystore("/path/to/keystore");
+        cqlTlsConfig.setKeystore_password("ecchronos");
+        cqlTlsConfig.setTruststore("/path/to/truststore");
+        cqlTlsConfig.setTruststore_password("ecchronos");
+        cqlTlsConfig.setProtocol("TLSv1.2");
+        cqlTlsConfig.setAlgorithm(null);
+        cqlTlsConfig.setStore_type("JKS");
+        cqlTlsConfig.setCipher_suites(null);
+        cqlTlsConfig.setRequire_endpoint_verification(false);
+
+        TLSConfig jmxTlsConfig = new TLSConfig();
+        jmxTlsConfig.setEnabled(false);
+        jmxTlsConfig.setKeystore("/path/to/keystore");
+        jmxTlsConfig.setKeystore_password("ecchronos");
+        jmxTlsConfig.setTruststore("/path/to/truststore");
+        jmxTlsConfig.setTruststore_password("ecchronos");
+        jmxTlsConfig.setProtocol("TLSv1.2");
+        jmxTlsConfig.setCipher_suites(null);
+
         assertThat(config.getCql().getCredentials()).isEqualTo(expectedCredentials);
         assertThat(config.getJmx().getCredentials()).isEqualTo(expectedCredentials);
+        assertThat(config.getCql().getTls()).isEqualTo(cqlTlsConfig);
+        assertThat(config.getJmx().getTls()).isEqualTo(jmxTlsConfig);
     }
 
     @Test
@@ -53,7 +76,30 @@ public class TestSecurity
         Credentials expectedCqlCredentials = new Credentials(true, "cqluser", "cqlpassword");
         Credentials expectedJmxCredentials = new Credentials(true, "jmxuser", "jmxpassword");
 
+        TLSConfig cqlTlsConfig = new TLSConfig();
+        cqlTlsConfig.setEnabled(true);
+        cqlTlsConfig.setKeystore("/path/to/cql/keystore");
+        cqlTlsConfig.setKeystore_password("cqlkeystorepassword");
+        cqlTlsConfig.setTruststore("/path/to/cql/truststore");
+        cqlTlsConfig.setTruststore_password("cqltruststorepassword");
+        cqlTlsConfig.setProtocol("TLSv1.2");
+        cqlTlsConfig.setAlgorithm("SunX509");
+        cqlTlsConfig.setStore_type("JKS");
+        cqlTlsConfig.setCipher_suites("VALID_CIPHER_SUITE,VALID_CIPHER_SUITE2");
+        cqlTlsConfig.setRequire_endpoint_verification(true);
+
+        TLSConfig jmxTlsConfig = new TLSConfig();
+        jmxTlsConfig.setEnabled(true);
+        jmxTlsConfig.setKeystore("/path/to/jmx/keystore");
+        jmxTlsConfig.setKeystore_password("jmxkeystorepassword");
+        jmxTlsConfig.setTruststore("/path/to/jmx/truststore");
+        jmxTlsConfig.setTruststore_password("jmxtruststorepassword");
+        jmxTlsConfig.setProtocol("TLSv1.2");
+        jmxTlsConfig.setCipher_suites("VALID_CIPHER_SUITE,VALID_CIPHER_SUITE2");
+
         assertThat(config.getCql().getCredentials()).isEqualTo(expectedCqlCredentials);
         assertThat(config.getJmx().getCredentials()).isEqualTo(expectedJmxCredentials);
+        assertThat(config.getCql().getTls()).isEqualTo(cqlTlsConfig);
+        assertThat(config.getJmx().getTls()).isEqualTo(jmxTlsConfig);
     }
 }
