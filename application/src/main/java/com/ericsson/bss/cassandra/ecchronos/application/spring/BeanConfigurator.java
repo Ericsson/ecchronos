@@ -148,7 +148,7 @@ public class BeanConfigurator
         }
         catch (IOException e)
         {
-            throw new ConfigurationException("Unable to load configuration file " + configurationFile, e);
+            throw new ConfigurationException("Unable to load configuration file from classpath", e);
         }
     }
 
