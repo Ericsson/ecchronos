@@ -71,16 +71,7 @@ public class ECChronos implements Closeable
 
         ReplicationState replicationState = new ReplicationStateImpl(nodeResolver, metadata, host);
 
-        EccRepairHistory repairHistory = EccRepairHistory.newBuilder()
-                .withSession(session)
-                .withReplicationState(replicationState)
-                .withLocalNode(localNode)
-                .withStatementDecorator(statementDecorator)
-                .withLookbackTime(repairConfig.getHistoryLookback().getInterval(TimeUnit.MILLISECONDS),
-                        TimeUnit.MILLISECONDS)
-                .withKeyspace(repairConfig.getHistory().getKeyspace())
-                .build();
-
+        RepairHistory repairHistory;
         RepairHistoryProvider repairHistoryProvider;
 
         if (repairConfig.getHistory().getProvider() == Config.RepairHistory.Provider.CASSANDRA)
@@ -88,10 +79,32 @@ public class ECChronos implements Closeable
             repairHistoryProvider = new RepairHistoryProviderImpl(nodeResolver,
                     session, statementDecorator,
                     repairConfig.getHistoryLookback().getInterval(TimeUnit.MILLISECONDS));
+            repairHistory = RepairHistory.NO_OP;
         }
         else
         {
-            repairHistoryProvider = repairHistory;
+            EccRepairHistory eccRepairHistory = EccRepairHistory.newBuilder()
+                    .withSession(session)
+                    .withReplicationState(replicationState)
+                    .withLocalNode(localNode)
+                    .withStatementDecorator(statementDecorator)
+                    .withLookbackTime(repairConfig.getHistoryLookback().getInterval(TimeUnit.MILLISECONDS),
+                            TimeUnit.MILLISECONDS)
+                    .withKeyspace(repairConfig.getHistory().getKeyspace())
+                    .build();
+
+            if (repairConfig.getHistory().getProvider() == Config.RepairHistory.Provider.UPGRADE)
+            {
+                repairHistoryProvider = new RepairHistoryProviderImpl(nodeResolver,
+                        session, statementDecorator,
+                        repairConfig.getHistoryLookback().getInterval(TimeUnit.MILLISECONDS));
+            }
+            else
+            {
+                repairHistoryProvider = eccRepairHistory;
+            }
+
+            repairHistory = eccRepairHistory;
         }
 
         RepairStateFactoryImpl repairStateFactoryImpl = RepairStateFactoryImpl.builder()

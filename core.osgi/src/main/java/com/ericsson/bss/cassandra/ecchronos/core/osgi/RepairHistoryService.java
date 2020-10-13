@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datastax.driver.core.Host;
+import com.datastax.driver.core.Session;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
@@ -43,11 +44,14 @@ public class RepairHistoryService implements RepairHistory, RepairHistoryProvide
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairHistoryService.class);
 
+    private static final String DEFAULT_PROVIDER_KEYSPACE = "ecchronos";
+
     private static final long DEFAULT_REPAIR_HISTORY_LOOKBACK_SECONDS = 30L * 24L * 60L * 60L;
 
     public enum Provider
     {
         CASSANDRA,
+        UPGRADE,
         ECC
     }
 
@@ -63,7 +67,7 @@ public class RepairHistoryService implements RepairHistory, RepairHistoryProvide
     @Reference(service = ReplicationState.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile ReplicationState replicationState;
 
-    private volatile EccRepairHistory delegateRepairHistory;
+    private volatile RepairHistory delegateRepairHistory;
 
     private volatile RepairHistoryProvider delegateRepairHistoryProvider;
 
@@ -79,24 +83,37 @@ public class RepairHistoryService implements RepairHistory, RepairHistoryProvide
         }
 
         long lookbackTimeInMillis = configuration.lookbackTimeSeconds() * 1000;
-        delegateRepairHistory = EccRepairHistory.newBuilder()
-                .withLocalNode(localNode.get())
-                .withReplicationState(replicationState)
-                .withSession(nativeConnectionProvider.getSession())
-                .withStatementDecorator(statementDecorator)
-                .withLookbackTime(lookbackTimeInMillis, TimeUnit.MILLISECONDS)
-                .build();
 
-        switch (configuration.provider())
+        Session session = nativeConnectionProvider.getSession();
+
+        if (configuration.provider() == Provider.CASSANDRA)
         {
-        case ECC:
-            delegateRepairHistoryProvider = delegateRepairHistory;
-            break;
-        case CASSANDRA:
-        default:
             delegateRepairHistoryProvider = new RepairHistoryProviderImpl(nodeResolver,
-                    nativeConnectionProvider.getSession(), statementDecorator, lookbackTimeInMillis);
-            break;
+                    session, statementDecorator,
+                    lookbackTimeInMillis);
+            delegateRepairHistory = RepairHistory.NO_OP;
+        }
+        else
+        {
+            EccRepairHistory eccRepairHistory = EccRepairHistory.newBuilder()
+                    .withLocalNode(localNode.get())
+                    .withReplicationState(replicationState)
+                    .withSession(nativeConnectionProvider.getSession())
+                    .withStatementDecorator(statementDecorator)
+                    .withLookbackTime(lookbackTimeInMillis, TimeUnit.MILLISECONDS)
+                    .build();
+
+            if (configuration.provider() == Provider.UPGRADE)
+            {
+                delegateRepairHistoryProvider = new RepairHistoryProviderImpl(nodeResolver, session, statementDecorator,
+                        lookbackTimeInMillis);
+            }
+            else
+            {
+                delegateRepairHistoryProvider = eccRepairHistory;
+            }
+
+            delegateRepairHistory = eccRepairHistory;
         }
     }
 
@@ -126,6 +143,9 @@ public class RepairHistoryService implements RepairHistory, RepairHistoryProvide
     {
         @AttributeDefinition(name = "The provider to use for repair history", description = "The provider to use for repair history")
         Provider provider() default Provider.ECC;
+
+        @AttributeDefinition(name = "Provider keyspace", description = "The keyspace used for ecc history if enabled")
+        String providerKeyspace() default DEFAULT_PROVIDER_KEYSPACE;
 
         @AttributeDefinition(name = "Repair history lookback time", description = "The lookback time in seconds for when the repair_history table is queried to get initial repair state at startup")
         long lookbackTimeSeconds() default DEFAULT_REPAIR_HISTORY_LOOKBACK_SECONDS;

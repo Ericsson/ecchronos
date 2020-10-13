@@ -23,6 +23,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
 public interface RepairHistory
 {
+    RepairHistory NO_OP = new NoOpRepairHistory();
+
     RepairSession newSession(TableReference tableReference, UUID jobId, LongTokenRange range, Set<Node> participants);
 
     interface RepairSession
@@ -30,6 +32,18 @@ public interface RepairHistory
         void start();
 
         void finish(RepairStatus repairStatus);
+    }
+
+    class NoOpRepairHistory implements RepairHistory
+    {
+        private static final RepairSession NO_OP = new NoOpRepairSession();
+
+        @Override
+        public RepairSession newSession(TableReference tableReference, UUID jobId, LongTokenRange range,
+                Set<Node> participants)
+        {
+            return NO_OP;
+        }
     }
 
     class NoOpRepairSession implements RepairSession

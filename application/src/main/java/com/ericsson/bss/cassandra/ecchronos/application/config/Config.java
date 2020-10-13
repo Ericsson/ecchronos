@@ -329,6 +329,7 @@ public class Config
         public enum Provider
         {
             CASSANDRA,
+            UPGRADE,
             ECC
         }
 
