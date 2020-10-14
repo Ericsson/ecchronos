@@ -41,6 +41,8 @@ public class TableRepairJob extends ScheduledJob
 {
     private static final Logger LOG = LoggerFactory.getLogger(TableRepairJob.class);
 
+    private static final RepairLockFactory repairLockFactory = new RepairLockFactoryImpl();
+
     private final TableReference myTableReference;
     private final JmxProxyFactory myJmxProxyFactory;
     private final RepairState myRepairState;
@@ -136,11 +138,18 @@ public class TableRepairJob extends ScheduledJob
 
             for (ReplicaRepairGroup replicaRepairGroup : repairStateSnapshot.getRepairGroups())
             {
-                taskList.add(new RepairGroup(getRealPriority(), myTableReference, myRepairConfiguration,
-                        replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
-                        myRepairLockType.getLockFactory(),
-                        new RepairLockFactoryImpl(),
-                        tokensPerRepair, myRepairPolicies));
+                RepairGroup.Builder builder = RepairGroup.newBuilder()
+                        .withTableReference(myTableReference)
+                        .withRepairConfiguration(myRepairConfiguration)
+                        .withReplicaRepairGroup(replicaRepairGroup)
+                        .withJmxProxyFactory(myJmxProxyFactory)
+                        .withTableRepairMetrics(myTableRepairMetrics)
+                        .withRepairResourceFactory(myRepairLockType.getLockFactory())
+                        .withRepairLockFactory(repairLockFactory)
+                        .withTokensPerRepair(tokensPerRepair)
+                        .withRepairPolicies(myRepairPolicies);
+
+                taskList.add(builder.build(getRealPriority()));
             }
 
             return taskList.iterator();

@@ -101,9 +101,7 @@ public class TestRepairGroup
         doReturn(repairResources).when(myRepairResourceFactory).getRepairResources(eq(replicaRepairGroup));
         doReturn(new DummyLock()).when(myRepairLockFactory).getLock(eq(myLockFactory), eq(repairResources), eq(metadata), eq(priority));
 
-        RepairGroup repairGroup = new RepairGroup(priority, tableReference,
-                repairConfiguration, replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
-                myRepairResourceFactory, myRepairLockFactory);
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).build(priority);
 
         repairGroup.getLock(myLockFactory);
 
@@ -123,9 +121,7 @@ public class TestRepairGroup
         doReturn(repairResources).when(myRepairResourceFactory).getRepairResources(eq(replicaRepairGroup));
         doThrow(LockException.class).when(myRepairLockFactory).getLock(eq(myLockFactory), eq(repairResources), eq(metadata), eq(priority));
 
-        RepairGroup repairGroup = new RepairGroup(priority, tableReference,
-                repairConfiguration, replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
-                myRepairResourceFactory, myRepairLockFactory);
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).build(priority);
 
         assertThatExceptionOfType(LockException.class).isThrownBy(() -> repairGroup.getLock(myLockFactory));
 
@@ -144,9 +140,7 @@ public class TestRepairGroup
 
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(hosts, ImmutableList.of(range));
 
-        RepairGroup repairGroup = new RepairGroup(priority, tableReference,
-                repairConfiguration, replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
-                myRepairResourceFactory, myRepairLockFactory);
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).build(priority);
 
         Collection<RepairTask> repairTasks = repairGroup.getRepairTasks();
 
@@ -180,10 +174,9 @@ public class TestRepairGroup
 
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(hosts, ImmutableList.of(vnode));
 
-        RepairGroup repairGroup = new RepairGroup(priority, tableReference,
-                repairConfiguration, replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
-                myRepairResourceFactory, myRepairLockFactory,
-                tokensPerRange);
+        RepairGroup repairGroup = builderFor(replicaRepairGroup)
+                .withTokensPerRepair(tokensPerRange)
+                .build(priority);
 
         Collection<RepairTask> repairTasks = repairGroup.getRepairTasks();
 
@@ -216,9 +209,7 @@ public class TestRepairGroup
 
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(host, host2), vnodes);
 
-        RepairGroup repairGroup = new RepairGroup(priority, tableReference,
-                repairConfiguration, replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
-                myRepairResourceFactory, myRepairLockFactory);
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).build(priority);
 
         Collection<RepairTask> tasks = repairGroup.getRepairTasks();
 
@@ -238,6 +229,18 @@ public class TestRepairGroup
         }
 
         assertThat(repairTaskRanges).containsExactlyElementsOf(vnodes);
+    }
+
+    private RepairGroup.Builder builderFor(ReplicaRepairGroup replicaRepairGroup)
+    {
+        return RepairGroup.newBuilder()
+                .withTableReference(tableReference)
+                .withRepairConfiguration(repairConfiguration)
+                .withReplicaRepairGroup(replicaRepairGroup)
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairResourceFactory(myRepairResourceFactory)
+                .withRepairLockFactory(myRepairLockFactory);
     }
 
     private Host mockHost(String dataCenter)

@@ -14,6 +14,30 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+
+import javax.management.Notification;
+import javax.management.NotificationListener;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+
 import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxy;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
@@ -26,28 +50,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-
-import javax.management.Notification;
-import javax.management.NotificationListener;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
-
-import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestRepairGroupTasks
@@ -101,9 +103,7 @@ public class TestRepairGroupTasks
         when(mockRepairResourceFactory.getRepairResources(eq(replicaRepairGroup))).thenReturn(repairResources);
         when(mockRepairLockFactory.getLock(eq(mockLockFactory), eq(repairResources), eq(metadata), eq(priority))).thenReturn(new DummyLock());
 
-        RepairGroup repairGroup = new RepairGroup(priority, tableReference,
-                repairConfiguration, replicaRepairGroup, mockJmxProxyFactory, mockTableRepairMetrics,
-                mockRepairResourceFactory, mockRepairLockFactory);
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).build(priority);
 
         assertThat(repairGroup.execute()).isTrue();
     }
@@ -133,13 +133,23 @@ public class TestRepairGroupTasks
             shouldRun.set(false);
         }));
 
-        RepairGroup repairGroup = new RepairGroup(priority, tableReference,
-                repairConfiguration, replicaRepairGroup, mockJmxProxyFactory, mockTableRepairMetrics,
-                mockRepairResourceFactory, mockRepairLockFactory,
-                LongTokenRange.FULL_RANGE,
-                Collections.singletonList(tableRepairPolicy));
+        RepairGroup repairGroup = builderFor(replicaRepairGroup)
+                .withRepairPolicies(Collections.singletonList(tableRepairPolicy))
+                .build(priority);
 
         assertThat(repairGroup.execute()).isFalse();
+    }
+
+    private RepairGroup.Builder builderFor(ReplicaRepairGroup replicaRepairGroup)
+    {
+        return RepairGroup.newBuilder()
+                .withTableReference(tableReference)
+                .withRepairConfiguration(repairConfiguration)
+                .withReplicaRepairGroup(replicaRepairGroup)
+                .withJmxProxyFactory(mockJmxProxyFactory)
+                .withTableRepairMetrics(mockTableRepairMetrics)
+                .withRepairResourceFactory(mockRepairResourceFactory)
+                .withRepairLockFactory(mockRepairLockFactory);
     }
 
     private void progressAndComplete(NotificationListener notificationListener, LongTokenRange range)

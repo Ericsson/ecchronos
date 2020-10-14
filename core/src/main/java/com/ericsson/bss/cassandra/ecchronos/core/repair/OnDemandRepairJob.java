@@ -47,6 +47,8 @@ public class OnDemandRepairJob extends ScheduledJob
 {
     private static final Logger LOG = LoggerFactory.getLogger(OnDemandRepairJob.class);
 
+    private static final RepairLockFactory repairLockFactory = new RepairLockFactoryImpl();
+
     private final TableReference myTableReference;
     private final JmxProxyFactory myJmxProxyFactory;
     private final RepairConfiguration myRepairConfiguration;
@@ -98,10 +100,15 @@ public class OnDemandRepairJob extends ScheduledJob
 
         for (ReplicaRepairGroup replicaRepairGroup : repairGroups)
         {
-            taskList.add(new RepairGroup(Priority.HIGHEST.getValue(), myTableReference, myRepairConfiguration,
-                    replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
-                    myRepairLockType.getLockFactory(),
-                    new RepairLockFactoryImpl()));
+            taskList.add(RepairGroup.newBuilder()
+                    .withTableReference(myTableReference)
+                    .withRepairConfiguration(myRepairConfiguration)
+                    .withReplicaRepairGroup(replicaRepairGroup)
+                    .withJmxProxyFactory(myJmxProxyFactory)
+                    .withTableRepairMetrics(myTableRepairMetrics)
+                    .withRepairResourceFactory(myRepairLockType.getLockFactory())
+                    .withRepairLockFactory(repairLockFactory)
+                    .build(Priority.HIGHEST.getValue()));
         }
         return taskList;
     }
