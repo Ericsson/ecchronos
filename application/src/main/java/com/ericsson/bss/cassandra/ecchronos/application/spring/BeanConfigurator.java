@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.FileSystems;
@@ -50,7 +51,6 @@ public class BeanConfigurator
     private static final Logger LOG = LoggerFactory.getLogger(BeanConfigurator.class);
 
     private static final String CONFIGURATION_DIRECTORY_PATH = "ecchronos.config";
-    private static final String DEFAULT_CONFIGURATION_DIRECTORY = "./conf/";
     private static final String CONFIGURATION_FILE = "ecc.yml";
     private static final String SECURITY_FILE = "security.yml";
 
@@ -59,21 +59,33 @@ public class BeanConfigurator
 
     private final ConfigRefresher configRefresher;
 
+    private boolean usePath = false;
+
     public BeanConfigurator() throws ConfigurationException
     {
-        configRefresher = new ConfigRefresher(getConfigPath());
+        if (System.getProperty(CONFIGURATION_DIRECTORY_PATH) != null)
+        {
+            configRefresher = new ConfigRefresher(getConfigPath());
+            configRefresher.watch(configFile(SECURITY_FILE).toPath(),
+                    () -> refreshSecurityConfig(cqlSecurity::set, jmxSecurity::set));
+            usePath = true;
+        }
+        else
+        {
+            configRefresher = null;
+        }
 
         Security security = getSecurityConfig();
         cqlSecurity.set(security.getCql());
         jmxSecurity.set(security.getJmx());
-
-        configRefresher.watch(configFile(SECURITY_FILE).toPath(),
-                () -> refreshSecurityConfig(cqlSecurity::set, jmxSecurity::set));
     }
 
     public void close()
     {
-        configRefresher.close();
+        if (configRefresher != null)
+        {
+            configRefresher.close();
+        }
     }
 
     @Bean
@@ -82,14 +94,34 @@ public class BeanConfigurator
         return getConfiguration();
     }
 
-    private static Security getSecurityConfig() throws ConfigurationException
+    private Security getSecurityConfig() throws ConfigurationException
     {
-        return getConfiguration(configFile(SECURITY_FILE), Security.class);
+        if (usePath)
+        {
+            return getConfiguration(configFile(SECURITY_FILE), Security.class);
+        }
+        else
+        {
+            return getFileFromClassPath(SECURITY_FILE, Security.class);
+        }
     }
 
-    private static Config getConfiguration() throws ConfigurationException
+    private <T> T getFileFromClassPath(String file, Class<T> clazz) throws ConfigurationException
     {
-        return getConfiguration(configFile(CONFIGURATION_FILE), Config.class);
+        ClassLoader loader = ClassLoader.getSystemClassLoader();
+        return getConfiguration(loader.getResourceAsStream(file), clazz);
+    }
+
+    private Config getConfiguration() throws ConfigurationException
+    {
+        if (usePath)
+        {
+            return getConfiguration(configFile(CONFIGURATION_FILE), Config.class);
+        }
+        else
+        {
+            return getFileFromClassPath(CONFIGURATION_FILE, Config.class);
+        }
     }
 
     private static <T> T getConfiguration(File configurationFile, Class<T> clazz) throws ConfigurationException
@@ -103,6 +135,20 @@ public class BeanConfigurator
         catch (IOException e)
         {
             throw new ConfigurationException("Unable to load configuration file " + configurationFile, e);
+        }
+    }
+
+    private static <T> T getConfiguration(InputStream configurationFile, Class<T> clazz) throws ConfigurationException
+    {
+        try
+        {
+            ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
+            return objectMapper.readValue(configurationFile, clazz);
+        }
+        catch (IOException e)
+        {
+            throw new ConfigurationException("Unable to load configuration file from classpath", e);
         }
     }
 
@@ -171,12 +217,10 @@ public class BeanConfigurator
 
     private static Path getConfigPath()
     {
-        String configurationFile = System.getProperty(CONFIGURATION_DIRECTORY_PATH, DEFAULT_CONFIGURATION_DIRECTORY);
-
-        return FileSystems.getDefault().getPath(configurationFile);
+        return FileSystems.getDefault().getPath(System.getProperty(CONFIGURATION_DIRECTORY_PATH));
     }
 
-    private static void refreshSecurityConfig(Consumer<Security.CqlSecurity> cqlSetter,
+    private void refreshSecurityConfig(Consumer<Security.CqlSecurity> cqlSetter,
             Consumer<Security.JmxSecurity> jmxSetter)
     {
         try
