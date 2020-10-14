@@ -113,26 +113,26 @@
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <executions>
-                <execution>
-                    <id>copy-config-resources</id>
-                    <phase>prepare-package</phase>
-                    <goals>
-                        <goal>copy-resources</goal>
-                    </goals>
-                    <configuration>
-                        <outputDirectory>${project.build.directory}</outputDirectory>
-                        <resources>
-                            <resource>
-                                <directory>${project.basedir}/../application/src/main/resources</directory>
-                                <filtering>false</filtering>
-                                <includes>
-                                    <include>ecc.yml</include>
-                                    <include>security.yml</include>
-                                </includes>
-                            </resource>
-                        </resources>
-                    </configuration>
-                </execution>
+                    <execution>
+                        <id>copy-config-resources</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/../application/src/main/resources</directory>
+                                    <filtering>false</filtering>
+                                    <includes>
+                                        <include>ecc.yml</include>
+                                        <include>security.yml</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>

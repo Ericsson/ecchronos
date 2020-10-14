@@ -99,7 +99,7 @@ public class TestConfig
     public void testDefault() throws Exception
     {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        File file = new File(classLoader.getResource("default.yml").getFile());
+        File file = new File(classLoader.getResource("ecc.yml").getFile());
 
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
 

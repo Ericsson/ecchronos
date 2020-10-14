@@ -28,7 +28,7 @@ public class TestSecurity
     public void testDefault() throws Exception
     {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        File file = new File(classLoader.getResource("default_security.yml").getFile());
+        File file = new File(classLoader.getResource("security.yml").getFile());
 
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
 
