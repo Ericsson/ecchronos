@@ -144,6 +144,7 @@ public class Config
         private String host;
         private int port;
         private Class<T> provider;
+        private long timeout;
 
         public String getHost()
         {
@@ -153,6 +154,11 @@ public class Config
         public int getPort()
         {
             return port;
+        }
+
+        public long getTimeout()
+        {
+            return timeout;
         }
 
         public Class<T> getProviderClass()
@@ -170,6 +176,11 @@ public class Config
             this.port = port;
         }
 
+        public void setTimeout(long timeout)
+        {
+            this.timeout = timeout;
+        }
+
         public void setProvider(Class<T> provider) throws NoSuchMethodException
         {
             provider.getDeclaredConstructor(expectedConstructor());
@@ -182,7 +193,7 @@ public class Config
         @Override
         public String toString()
         {
-            return String.format("(%s:%d),provider=%s", host, port, provider);
+            return String.format("(%s:%d:%d),provider=%s", host, port, timeout, provider);
         }
     }
 

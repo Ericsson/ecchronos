@@ -19,10 +19,8 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.driver.core.ExtendedAuthProvider;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.SSLOptions;
-import com.datastax.driver.core.Session;
+import com.datastax.driver.core.*;
+import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Security;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
@@ -53,12 +51,43 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
             sslOptions = new ReloadingCertificateHandler(() -> cqlSecuritySupplier.get().getTls());
         }
 
-        myLocalNativeConnectionProvider = LocalNativeConnectionProvider.builder()
+        LocalNativeConnectionProvider.Builder nativeConnectionBuilder = LocalNativeConnectionProvider.builder()
                 .withLocalhost(host)
                 .withPort(port)
                 .withAuthProvider(authProvider)
-                .withSslOptions(sslOptions)
+                .withSslOptions(sslOptions);
+        establishTemporaryConnection(LocalNativeConnectionProvider.Builder.fromBuilder(nativeConnectionBuilder).build(),
+                host, port, nativeConfig.getTimeout());
+
+        myLocalNativeConnectionProvider = nativeConnectionBuilder
                 .build();
+    }
+
+    private static Session establishTemporaryConnection(Cluster cluster, String host, int port, long timeout)
+    {
+        long startTime = System.currentTimeMillis();
+        long endTime = startTime + timeout;
+        while (endTime > System.currentTimeMillis())
+        {
+            try
+            {
+                return cluster.connect();
+            }
+            catch (NoHostAvailableException | IllegalStateException e)
+            {
+                try
+                {
+                    LOG.warn("Unable to connect through CQL using {}:{}, retrying", host, port);
+                    LOG.debug("Connection failed, retrying in {}", timeout, e);
+                    Thread.sleep(5000);
+                }
+                catch (InterruptedException e1)
+                {
+                    throw new RuntimeException("Unexpected interrupt", e);
+                }
+            }
+        }
+        return cluster.connect();
     }
 
     @Override

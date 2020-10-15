@@ -17,6 +17,7 @@ connection:
   cql:
     host: 127.0.0.2
     port: 9100
+    timeout: 4500
     provider: com.ericsson.bss.cassandra.ecchronos.application.config.TestConfig$TestNativeConnectionProvider
     decoratorClass: com.ericsson.bss.cassandra.ecchronos.application.config.TestConfig$TestStatementDecorator
   jmx:

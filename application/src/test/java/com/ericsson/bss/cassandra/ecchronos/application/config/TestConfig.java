@@ -54,6 +54,7 @@ public class TestConfig
         Config.NativeConnection nativeConnection = connection.getCql();
         assertThat(nativeConnection.getHost()).isEqualTo("127.0.0.2");
         assertThat(nativeConnection.getPort()).isEqualTo(9100);
+        assertThat(nativeConnection.getTimeout()).isEqualTo(4500);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(TestNativeConnectionProvider.class);
         assertThat(nativeConnection.getDecoratorClass()).isEqualTo(TestStatementDecorator.class);
 
@@ -110,6 +111,7 @@ public class TestConfig
         Config.NativeConnection nativeConnection = connection.getCql();
         assertThat(nativeConnection.getHost()).isEqualTo("localhost");
         assertThat(nativeConnection.getPort()).isEqualTo(9042);
+        assertThat(nativeConnection.getTimeout()).isEqualTo(0);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(DefaultNativeConnectionProvider.class);
         assertThat(nativeConnection.getDecoratorClass()).isEqualTo(NoopStatementDecorator.class);
 
