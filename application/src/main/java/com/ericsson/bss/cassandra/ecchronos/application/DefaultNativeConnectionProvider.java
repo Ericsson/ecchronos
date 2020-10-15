@@ -83,7 +83,8 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
                 }
                 catch (InterruptedException e1)
                 {
-                    throw new RuntimeException("Unexpected interrupt", e);
+                    // Should never occur
+                    throw new RuntimeException("Unexpected interrupt", e); //NOPMD
                 }
             }
         }
