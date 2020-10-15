@@ -15,39 +15,24 @@
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
 import org.osgi.service.component.annotations.*;
-import org.osgi.service.metatype.annotations.AttributeDefinition;
-import org.osgi.service.metatype.annotations.Designate;
-import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
 @Component(service = RepairStateFactory.class)
-@Designate(ocd = RepairStateFactoryService.Configuration.class)
 public class RepairStateFactoryService implements RepairStateFactory
 {
-    private static final long DEFAULT_REPAIR_HISTORY_LOOKBACK_SECONDS = 30L * 24L * 60L * 60L;
-
-    @Reference(service = StatementDecorator.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
-    private volatile StatementDecorator myStatementDecorator;
-
-    @Reference(service = NativeConnectionProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
-    private volatile NativeConnectionProvider myNativeConnectionProvider;
-
     @Reference(service = HostStates.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile HostStates myHostStates;
 
     @Reference(service = TableRepairMetrics.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile TableRepairMetrics myTableRepairMetrics;
 
-    @Reference(service = NodeResolver.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
-    private volatile NodeResolver myNodeResolver;
+    @Reference(service = RepairHistoryProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    private volatile RepairHistoryProvider myRepairHistoryProvider;
 
     @Reference(service = ReplicationState.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile ReplicationState myReplicationState;
@@ -55,16 +40,12 @@ public class RepairStateFactoryService implements RepairStateFactory
     private volatile RepairStateFactoryImpl myDelegateRepairStateFactory;
 
     @Activate
-    public void activate(Configuration configuration)
+    public void activate()
     {
-        long lookbackTimeInMillis = configuration.lookbackTimeSeconds() * 1000;
-        RepairHistoryProvider repairHistoryProvider = new RepairHistoryProviderImpl(myNodeResolver,
-                myNativeConnectionProvider.getSession(), myStatementDecorator, lookbackTimeInMillis);
-
         myDelegateRepairStateFactory = RepairStateFactoryImpl.builder()
                 .withReplicationState(myReplicationState)
                 .withHostStates(myHostStates)
-                .withRepairHistoryProvider(repairHistoryProvider)
+                .withRepairHistoryProvider(myRepairHistoryProvider)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .build();
     }
@@ -74,12 +55,5 @@ public class RepairStateFactoryService implements RepairStateFactory
             PostUpdateHook postUpdateHook)
     {
         return myDelegateRepairStateFactory.create(tableReference, repairConfiguration, postUpdateHook);
-    }
-
-    @ObjectClassDefinition
-    public @interface Configuration
-    {
-        @AttributeDefinition(name = "Repair history lookback time", description = "The lookback time in seconds for when the repair_history table is queried to get initial repair state at startup")
-        long lookbackTimeSeconds() default DEFAULT_REPAIR_HISTORY_LOOKBACK_SECONDS;
     }
 }
