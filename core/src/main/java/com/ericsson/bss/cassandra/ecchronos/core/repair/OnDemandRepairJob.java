@@ -15,16 +15,19 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.datastax.driver.core.UDTValue;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandStatus.OngoingJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
+
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
@@ -54,19 +57,25 @@ public class OnDemandRepairJob extends ScheduledJob
 
     private final TableRepairMetrics myTableRepairMetrics;
 
-    private final List<ScheduledTask> myTasks;
+    private final Map<ScheduledTask, Set<LongTokenRange>> myTasks;
 
     private final Map<LongTokenRange, ImmutableSet<Node>> myTokens;
+
+    private final Integer myTokenHash;
+
+    private final Set<UDTValue> myRepairedTokens;
 
     private final int myTotalTasks;
 
     private boolean failed = false;
 
+    private final OnDemandStatus myOnDemandStatus;
+
     public OnDemandRepairJob(OnDemandRepairJob.Builder builder)
     {
-        super(builder.configuration);
+        super(builder.configuration, builder.ongoingJob == null ? null : builder.ongoingJob.getJobId());
 
-        myTableReference = Preconditions.checkNotNull(builder.tableReference, "Table reference must be set");
+        myTableReference = Preconditions.checkNotNull(builder.ongoingJob == null ? builder.tableReference : builder.ongoingJob.getTableReference(), "Table reference must be set");
         myJmxProxyFactory = Preconditions.checkNotNull(builder.jmxProxyFactory, "JMX Proxy Factory must be set");
         myTableRepairMetrics = Preconditions.checkNotNull(builder.tableRepairMetrics, "Table repair metrics must be set");
         myRepairConfiguration = Preconditions.checkNotNull(builder.repairConfiguration, "Repair configuration must be set");
@@ -74,18 +83,48 @@ public class OnDemandRepairJob extends ScheduledJob
         myReplicationState = Preconditions.checkNotNull(builder.replicationState, "Replication state must be set");
         myOnFinishedHook = Preconditions.checkNotNull(builder.onFinishedHook, "On finished hook must be set");
         myRepairHistory = Preconditions.checkNotNull(builder.repairHistory, "Repair history must be set");
+        myOnDemandStatus = Preconditions.checkNotNull(builder.onDemandStatus, "OnDemandStatus must be set");
+
         myTokens = myReplicationState
                 .getTokenRangeToReplicas(myTableReference);
-        myTasks = new CopyOnWriteArrayList<>(createRepairTasks(myTokens));
+        if (builder.ongoingJob != null)
+        {
+            myTokenHash = builder.ongoingJob.getTokenMapHash();
+            myRepairedTokens = builder.ongoingJob.getRepiaredTokens();
+        }
+        else
+        {
+            myTokenHash = null;
+            myRepairedTokens = new HashSet<>();
+        }
+        myTasks = createRepairTasks(myTokens, myRepairedTokens);
         myTotalTasks = myTasks.size();
+
+        if(builder.ongoingJob == null)
+        {
+            myOnDemandStatus.addNewJob(getId(), myTableReference, myTokens.hashCode());
+        }
     }
 
-    private List<ScheduledTask> createRepairTasks(Map<LongTokenRange, ImmutableSet<Node>> tokenRanges)
+    private Map<ScheduledTask, Set<LongTokenRange>> createRepairTasks(Map<LongTokenRange, ImmutableSet<Node>> tokenRanges, Set<UDTValue> repairedTokens)
     {
-        List<ScheduledTask> taskList = new ArrayList<>();
+        Map<ScheduledTask, Set<LongTokenRange>> taskMap = new ConcurrentHashMap<>();
         List<VnodeRepairState> vnodeRepairStates = new ArrayList<>();
+        Map<LongTokenRange, ImmutableSet<Node>> remainingTokenRanges;
 
-        for (Map.Entry<LongTokenRange, ImmutableSet<Node>> entry : tokenRanges.entrySet())
+        if(repairedTokens.isEmpty())
+        {
+            remainingTokenRanges = tokenRanges;
+        }
+        else
+        {
+            Set<LongTokenRange> tokensToRemove = new HashSet<>();
+            repairedTokens.iterator().forEachRemaining(t -> tokensToRemove.add(new LongTokenRange(myOnDemandStatus.getStartTokenFrom(t), myOnDemandStatus.getEndTokenFrom(t))));
+            remainingTokenRanges = new HashMap<>(tokenRanges);
+            tokensToRemove.iterator().forEachRemaining(t -> remainingTokenRanges.remove(t));
+        }
+
+        for (Map.Entry<LongTokenRange, ImmutableSet<Node>> entry : remainingTokenRanges.entrySet())
         {
             LongTokenRange longTokenRange = entry.getKey();
             ImmutableSet<Node> replicas = entry.getValue();
@@ -97,7 +136,10 @@ public class OnDemandRepairJob extends ScheduledJob
 
         for (ReplicaRepairGroup replicaRepairGroup : repairGroups)
         {
-            taskList.add(RepairGroup.newBuilder()
+            Set<LongTokenRange> groupTokenRange = new HashSet<>();
+            replicaRepairGroup.iterator().forEachRemaining(t -> groupTokenRange.add(t));
+
+            taskMap.put(RepairGroup.newBuilder()
                     .withTableReference(myTableReference)
                     .withRepairConfiguration(myRepairConfiguration)
                     .withReplicaRepairGroup(replicaRepairGroup)
@@ -107,9 +149,9 @@ public class OnDemandRepairJob extends ScheduledJob
                     .withRepairLockFactory(repairLockFactory)
                     .withRepairHistory(myRepairHistory)
                     .withJobId(getId())
-                    .build(Priority.HIGHEST.getValue()));
+                    .build(Priority.HIGHEST.getValue()), groupTokenRange);
         }
-        return taskList;
+        return taskMap;
     }
 
     public TableReference getTableReference()
@@ -132,10 +174,9 @@ public class OnDemandRepairJob extends ScheduledJob
         return failed ? RepairJobView.Status.ERROR : RepairJobView.Status.IN_QUEUE;
     }
 
-    @Override
     public Iterator<ScheduledTask> iterator()
     {
-        return myTasks.iterator();
+        return myTasks.keySet().iterator();
     }
 
     @Override
@@ -147,12 +188,21 @@ public class OnDemandRepairJob extends ScheduledJob
             failed = true;
         }
 
-        myTasks.remove(task);
+        Set<LongTokenRange> tokenSet = myTasks.remove(task);
+        tokenSet.forEach(t -> myRepairedTokens.add(myOnDemandStatus.createUDTTokenRangeValue(t.start, t.end)));
+        myOnDemandStatus.updateJob(getId(), myRepairedTokens);
 
         if (myTasks.isEmpty())
         {
             myOnFinishedHook.accept(getId());
+            myOnDemandStatus.finishJob(getId());
         }
+
+        if(failed)
+        {
+            myOnDemandStatus.failJob(getId());
+        }
+
         super.postExecute(successful, task);
     }
 
@@ -176,8 +226,8 @@ public class OnDemandRepairJob extends ScheduledJob
             LOG.error("Repair job with id {} failed", getId());
             return State.FAILED;
         }
-        if (!myTokens.equals(myReplicationState
-            .getTokenRangeToReplicas(myTableReference)))
+        if (!myTokens.equals(myReplicationState.getTokenRangeToReplicas(myTableReference))
+                || (myTokenHash != null && myTokenHash != myTokens.hashCode()))
         {
             LOG.error("Repair job with id {} failed, token Ranges have changed since repair has was triggered", getId());
             failed = true;
@@ -213,6 +263,8 @@ public class OnDemandRepairJob extends ScheduledJob
         private Consumer<UUID> onFinishedHook = table -> {
         };
         private RepairHistory repairHistory;
+        private OnDemandStatus onDemandStatus;
+        private OngoingJob ongoingJob = null;
 
         public Builder withTableReference(TableReference tableReference)
         {
@@ -262,9 +314,21 @@ public class OnDemandRepairJob extends ScheduledJob
             return this;
         }
 
+        public Builder withOnDemandStatus(OnDemandStatus ondemandStatus)
+        {
+            this.onDemandStatus = ondemandStatus;
+            return this;
+        }
+
+        public Builder withOngoingJob(OngoingJob ongoingJob)
+        {
+            this.ongoingJob  = ongoingJob;
+            return this;
+        }
+
         public OnDemandRepairJob build()
         {
-            if (tableReference == null)
+            if (tableReference == null && ongoingJob == null)
             {
                 throw new IllegalArgumentException("Table reference cannot be null");
             }
@@ -279,6 +343,10 @@ public class OnDemandRepairJob extends ScheduledJob
             if (replicationState == null)
             {
                 throw new IllegalArgumentException("Replication State not set");
+            }
+            if (onDemandStatus == null)
+            {
+                throw new IllegalArgumentException("OnDemandStatus not set");
             }
             return new OnDemandRepairJob(this);
         }
