@@ -157,7 +157,7 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
             throw new IllegalStateException("Unable to find local data center");
         }
 
-        public static Cluster.Builder fromBuilder(Builder builder)
+        private static Cluster.Builder fromBuilder(Builder builder)
         {
             InetSocketAddress hostAddress = builder.localHostAddress();
 

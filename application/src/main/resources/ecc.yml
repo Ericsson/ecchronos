@@ -31,7 +31,9 @@ connection:
     ## Specify a time to wait for cassandra to come up.
     ## Connection is tried every five second until either the timeout time passes or the connection is successful.
     ##
-    timeout: 0
+    timeout:
+      time: 0
+      unit: seconds
     ##
     ## The class used to provide CQL connections to Apache Cassandra.
     ## The default provider will be used unless another is specified.
