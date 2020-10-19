@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
@@ -23,6 +24,7 @@ import com.datastax.driver.core.ExtendedAuthProvider;
 import com.datastax.driver.core.Host;
 import com.datastax.driver.core.SSLOptions;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Security;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
@@ -53,12 +55,46 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
             sslOptions = new ReloadingCertificateHandler(() -> cqlSecuritySupplier.get().getTls());
         }
 
-        myLocalNativeConnectionProvider = LocalNativeConnectionProvider.builder()
+        LocalNativeConnectionProvider.Builder nativeConnectionBuilder = LocalNativeConnectionProvider.builder()
                 .withLocalhost(host)
                 .withPort(port)
                 .withAuthProvider(authProvider)
-                .withSslOptions(sslOptions)
-                .build();
+                .withSslOptions(sslOptions);
+
+        myLocalNativeConnectionProvider = establishConnection(nativeConnectionBuilder,
+                host, port, nativeConfig.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS));
+    }
+
+    private static LocalNativeConnectionProvider establishConnection(LocalNativeConnectionProvider.Builder builder,
+                                                                     String host, int port, long timeout)
+    {
+        long startTime = System.currentTimeMillis();
+        long endTime = startTime + timeout;
+        while (endTime > System.currentTimeMillis())
+        {
+            try
+            {
+                return builder.build();
+            }
+            catch (NoHostAvailableException | IllegalStateException e)
+            {
+                try
+                {
+                    LOG.warn("Unable to connect through CQL using {}:{}, retrying", host, port);
+                    if (timeout != 0)
+                    {
+                        LOG.debug("Connection failed, retrying in 5 seconds", e);
+                        Thread.sleep(5000);
+                    }
+                }
+                catch (InterruptedException e1)
+                {
+                    // Should never occur
+                    throw new RuntimeException("Unexpected interrupt", e); // NOPMD
+                }
+            }
+        }
+        return builder.build();
     }
 
     @Override

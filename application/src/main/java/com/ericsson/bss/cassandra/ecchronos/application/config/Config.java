@@ -144,6 +144,7 @@ public class Config
         private String host;
         private int port;
         private Class<T> provider;
+        private Timeout timeout;
 
         public String getHost()
         {
@@ -155,9 +156,15 @@ public class Config
             return port;
         }
 
+
         public Class<T> getProviderClass()
         {
             return provider;
+        }
+
+        public Timeout getTimeout()
+        {
+            return timeout;
         }
 
         public void setHost(String host)
@@ -168,6 +175,11 @@ public class Config
         public void setPort(int port)
         {
             this.port = port;
+        }
+
+        public void setTimeout(Timeout timeout)
+        {
+            this.timeout = timeout;
         }
 
         public void setProvider(Class<T> provider) throws NoSuchMethodException
@@ -182,7 +194,28 @@ public class Config
         @Override
         public String toString()
         {
-            return String.format("(%s:%d),provider=%s", host, port, provider);
+            return String.format("(%s:%d:%s),provider=%s", host, port, timeout, provider);
+        }
+
+        public static class Timeout
+        {
+            private long time;
+            private TimeUnit unit;
+
+            public long getConnectionTimeout(TimeUnit unit)
+            {
+                return unit.convert(time, this.unit);
+            }
+
+            public void setTime(long time)
+            {
+                this.time = time;
+            }
+
+            public void setUnit(String unit)
+            {
+                this.unit = TimeUnit.valueOf(unit.toUpperCase(Locale.US));
+            }
         }
     }
 
