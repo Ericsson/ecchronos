@@ -81,8 +81,11 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
                 try
                 {
                     LOG.warn("Unable to connect through CQL using {}:{}, retrying", host, port);
-                    LOG.debug("Connection failed, retrying in 5 seconds", e);
-                    Thread.sleep(5000);
+                    if (timeout != 0)
+                    {
+                        LOG.debug("Connection failed, retrying in 5 seconds", e);
+                        Thread.sleep(5000);
+                    }
                 }
                 catch (InterruptedException e1)
                 {
