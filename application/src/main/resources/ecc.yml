@@ -126,6 +126,9 @@ repair:
   ## The main context for the "ecc" provider is an environment where the ip address of nodes might change.
   ## Possible values are "ecc", "upgrade" and "cassandra".
   ##
+  ## The keyspace parameter is only used by "ecc" and "upgrade" and points to the keyspace where the custom
+  ## 'repair_history' table is located.
+  ##
   history:
     provider: ecc
     keyspace: ecchronos

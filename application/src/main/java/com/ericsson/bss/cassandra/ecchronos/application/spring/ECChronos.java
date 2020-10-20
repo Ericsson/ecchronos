@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.Session;
 import com.ericsson.bss.cassandra.ecchronos.application.ECChronosInternals;
@@ -33,10 +32,10 @@ import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.*;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 
@@ -55,57 +54,18 @@ public class ECChronos implements Closeable
     public ECChronos(Config configuration, RepairFaultReporter repairFaultReporter,
             NativeConnectionProvider nativeConnectionProvider,
             JmxConnectionProvider jmxConnectionProvider,
-            StatementDecorator statementDecorator)
+            StatementDecorator statementDecorator,
+            ReplicationState replicationState,
+            RepairHistory repairHistory,
+            RepairHistoryProvider repairHistoryProvider)
     {
         myECChronosInternals = new ECChronosInternals(configuration, nativeConnectionProvider, jmxConnectionProvider,
                 statementDecorator);
 
-        Host host = nativeConnectionProvider.getLocalHost();
         Session session = nativeConnectionProvider.getSession();
         Metadata metadata = session.getCluster().getMetadata();
 
         Config.RepairConfig repairConfig = configuration.getRepair();
-
-        NodeResolver nodeResolver = new NodeResolverImpl(metadata);
-        Node localNode = nodeResolver.fromUUID(host.getHostId()).orElseThrow(IllegalStateException::new);
-
-        ReplicationState replicationState = new ReplicationStateImpl(nodeResolver, metadata, host);
-
-        RepairHistory repairHistory;
-        RepairHistoryProvider repairHistoryProvider;
-
-        if (repairConfig.getHistory().getProvider() == Config.RepairHistory.Provider.CASSANDRA)
-        {
-            repairHistoryProvider = new RepairHistoryProviderImpl(nodeResolver,
-                    session, statementDecorator,
-                    repairConfig.getHistoryLookback().getInterval(TimeUnit.MILLISECONDS));
-            repairHistory = RepairHistory.NO_OP;
-        }
-        else
-        {
-            EccRepairHistory eccRepairHistory = EccRepairHistory.newBuilder()
-                    .withSession(session)
-                    .withReplicationState(replicationState)
-                    .withLocalNode(localNode)
-                    .withStatementDecorator(statementDecorator)
-                    .withLookbackTime(repairConfig.getHistoryLookback().getInterval(TimeUnit.MILLISECONDS),
-                            TimeUnit.MILLISECONDS)
-                    .withKeyspace(repairConfig.getHistory().getKeyspace())
-                    .build();
-
-            if (repairConfig.getHistory().getProvider() == Config.RepairHistory.Provider.UPGRADE)
-            {
-                repairHistoryProvider = new RepairHistoryProviderImpl(nodeResolver,
-                        session, statementDecorator,
-                        repairConfig.getHistoryLookback().getInterval(TimeUnit.MILLISECONDS));
-            }
-            else
-            {
-                repairHistoryProvider = eccRepairHistory;
-            }
-
-            repairHistory = eccRepairHistory;
-        }
 
         RepairStateFactoryImpl repairStateFactoryImpl = RepairStateFactoryImpl.builder()
                 .withReplicationState(replicationState)
@@ -131,6 +91,7 @@ public class ECChronos implements Closeable
                 .withRepairPolicies(Collections.singletonList(myTimeBasedRunPolicy))
                 .withRepairHistory(repairHistory)
                 .build();
+
         RepairConfiguration repairConfiguration = getRepairConfiguration(repairConfig);
         myDefaultRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()
                 .withRepairScheduler(myRepairSchedulerImpl)
