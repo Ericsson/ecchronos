@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
+import com.codahale.metrics.MetricRegistry;
 import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
@@ -52,7 +53,8 @@ public class ECChronosInternals implements Closeable
     private final CASLockFactory myLockFactory;
 
     public ECChronosInternals(Config configuration, NativeConnectionProvider nativeConnectionProvider,
-                              JmxConnectionProvider jmxConnectionProvider, StatementDecorator statementDecorator)
+                              JmxConnectionProvider jmxConnectionProvider, StatementDecorator statementDecorator,
+                              MetricRegistry metricRegistry)
     {
         myJmxProxyFactory = JmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(jmxConnectionProvider)
@@ -86,6 +88,7 @@ public class ECChronosInternals implements Closeable
             myTableRepairMetricsImpl = TableRepairMetricsImpl.builder()
                     .withTableStorageStates(myTableStorageStatesImpl)
                     .withStatisticsDirectory(configuration.getStatistics().getDirectory().toString())
+                    .withMetricRegistry(metricRegistry)
                     .build();
         }
         else

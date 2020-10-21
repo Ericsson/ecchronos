@@ -37,11 +37,12 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
 
     private final ConcurrentHashMap<TableReference, TableMetricHolder> myTableMetricHolders = new ConcurrentHashMap<>();
 
-    private final MetricRegistry myMetricRegistry = new MetricRegistry();
+    private final MetricRegistry myMetricRegistry;
     private final NodeMetricHolder myNodeMetricHolder;
 
     private TableRepairMetricsImpl(Builder builder)
     {
+        myMetricRegistry = builder.myMetricRegistry;
         myNodeMetricHolder = new NodeMetricHolder(myMetricRegistry, builder.myTableStorageStates);
 
         myTopLevelCsvReporter = CsvReporter.forRegistry(myMetricRegistry)
@@ -112,6 +113,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         private TableStorageStates myTableStorageStates;
         private String myStatisticsDirectory = DEFAULT_STATISTICS_DIRECTORY;
         private long myReportIntervalInMs = DEFAULT_STATISTICS_REPORT_INTERVAL_IN_MS;
+        private MetricRegistry myMetricRegistry;
 
         public Builder withTableStorageStates(TableStorageStates tableStorageStates)
         {
@@ -131,11 +133,22 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
             return this;
         }
 
+        public Builder withMetricRegistry(MetricRegistry metricRegistry)
+        {
+            myMetricRegistry = metricRegistry;
+            return this;
+        }
+
         public TableRepairMetricsImpl build()
         {
             if (myTableStorageStates == null)
             {
                 throw new IllegalArgumentException("Table storage states cannot be null");
+            }
+
+            if (myMetricRegistry == null)
+            {
+                throw new IllegalArgumentException("Metric registry cannot be null");
             }
 
             return new TableRepairMetricsImpl(this);
