@@ -23,8 +23,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Metadata;
+import com.datastax.driver.core.Session;
 import com.ericsson.bss.cassandra.ecchronos.application.ECChronosInternals;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
@@ -32,7 +32,8 @@ import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.*;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
@@ -53,30 +54,28 @@ public class ECChronos implements Closeable
     public ECChronos(Config configuration, RepairFaultReporter repairFaultReporter,
             NativeConnectionProvider nativeConnectionProvider,
             JmxConnectionProvider jmxConnectionProvider,
-            StatementDecorator statementDecorator)
+            StatementDecorator statementDecorator,
+            ReplicationState replicationState,
+            RepairHistory repairHistory,
+            RepairHistoryProvider repairHistoryProvider)
     {
         myECChronosInternals = new ECChronosInternals(configuration, nativeConnectionProvider, jmxConnectionProvider,
                 statementDecorator);
 
-        Host host = nativeConnectionProvider.getLocalHost();
-        Metadata metadata = nativeConnectionProvider.getSession().getCluster().getMetadata();
+        Session session = nativeConnectionProvider.getSession();
+        Metadata metadata = session.getCluster().getMetadata();
 
         Config.RepairConfig repairConfig = configuration.getRepair();
 
-        RepairHistoryProviderImpl repairHistoryProvider = new RepairHistoryProviderImpl(
-                nativeConnectionProvider.getSession(), statementDecorator,
-                repairConfig.getHistoryLookback().getInterval(TimeUnit.MILLISECONDS));
-
         RepairStateFactoryImpl repairStateFactoryImpl = RepairStateFactoryImpl.builder()
-                .withMetadata(metadata)
-                .withHost(host)
+                .withReplicationState(replicationState)
                 .withHostStates(myECChronosInternals.getHostStates())
                 .withRepairHistoryProvider(repairHistoryProvider)
                 .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
                 .build();
 
         myTimeBasedRunPolicy = TimeBasedRunPolicy.builder()
-                .withSession(nativeConnectionProvider.getSession())
+                .withSession(session)
                 .withStatementDecorator(statementDecorator)
                 .withKeyspaceName(configuration.getRunPolicy().getTimeBased().getKeyspace())
                 .build();
@@ -90,16 +89,18 @@ public class ECChronos implements Closeable
                 .withRepairLockType(repairConfig.getLockType())
                 .withTableStorageStates(myECChronosInternals.getTableStorageStates())
                 .withRepairPolicies(Collections.singletonList(myTimeBasedRunPolicy))
+                .withRepairHistory(repairHistory)
                 .build();
+
         RepairConfiguration repairConfiguration = getRepairConfiguration(repairConfig);
         myDefaultRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()
                 .withRepairScheduler(myRepairSchedulerImpl)
-                .withCluster(nativeConnectionProvider.getSession().getCluster())
+                .withCluster(session.getCluster())
                 .withReplicatedTableProvider(myECChronosInternals.getReplicatedTableProvider())
                 .withDefaultRepairConfiguration(repairConfiguration)
                 .withTableReferenceFactory(myECChronosInternals.getTableReferenceFactory())
                 .build();
-        ReplicationState replicationState = new ReplicationState(metadata, host);
+
         myOnDemandRepairSchedulerImpl = OnDemandRepairSchedulerImpl.builder()
                 .withScheduleManager(myECChronosInternals.getScheduleManager())
                 .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
@@ -108,6 +109,7 @@ public class ECChronos implements Closeable
                 .withRepairLockType(repairConfig.getLockType())
                 .withMetadata(metadata)
                 .withRepairConfiguration(repairConfiguration)
+                .withRepairHistory(repairHistory)
                 .build();
         myECChronosInternals.addRunPolicy(myTimeBasedRunPolicy);
     }

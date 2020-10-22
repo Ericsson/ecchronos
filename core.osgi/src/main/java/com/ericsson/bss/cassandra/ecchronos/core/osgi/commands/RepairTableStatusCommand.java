@@ -14,16 +14,13 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
-import com.datastax.driver.core.Host;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableSet;
+import java.io.PrintStream;
+import java.net.InetAddress;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Command;
 import org.apache.karaf.shell.api.action.Completion;
@@ -34,10 +31,15 @@ import org.apache.karaf.shell.support.CommandException;
 import org.apache.karaf.shell.support.completers.StringsCompleter;
 import org.apache.karaf.shell.support.table.ShellTable;
 
-import java.io.PrintStream;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.google.common.annotations.VisibleForTesting;
 
 @Service
 @Command(scope = "repair", name = "table-status", description = "Give the current repair status for the given table")
@@ -53,8 +55,9 @@ public class RepairTableStatusCommand implements Action
     @Completion(TableReferenceCompleter.class)
     String myTableRef;
 
-    @Option(name = "-s", aliases = "--sort-by", description = "Sort output based on " + SORT_RANGE + "/"  + SORT_REPAIRED_AT)
-    @Completion(value = StringsCompleter.class, values = {SORT_RANGE, SORT_REPAIRED_AT})
+    @Option(name = "-s", aliases = "--sort-by", description = "Sort output based on " + SORT_RANGE + "/"
+            + SORT_REPAIRED_AT)
+    @Completion(value = StringsCompleter.class, values = { SORT_RANGE, SORT_REPAIRED_AT })
     String mySortBy = SORT_RANGE;
 
     @Option(name = "-r", aliases = "--reverse", description = "Reverse the sort order")
@@ -68,7 +71,8 @@ public class RepairTableStatusCommand implements Action
     }
 
     @VisibleForTesting
-    RepairTableStatusCommand(RepairScheduler repairScheduler, String tableRef, String sortBy, boolean reverse, int limit)
+    RepairTableStatusCommand(RepairScheduler repairScheduler, String tableRef, String sortBy, boolean reverse,
+            int limit)
     {
         myRepairSchedulerService = repairScheduler;
         myTableRef = tableRef;
@@ -92,7 +96,8 @@ public class RepairTableStatusCommand implements Action
                 .findFirst()
                 .map(RepairJobView::getRepairStateSnapshot)
                 .map(RepairStateSnapshot::getVnodeRepairStates)
-                .orElseThrow(() -> new CommandException("Table reference '" + myTableRef + "' was not found. Format must be <keyspace>.<table>"));
+                .orElseThrow(() -> new CommandException(
+                        "Table reference '" + myTableRef + "' was not found. Format must be <keyspace>.<table>"));
     }
 
     Comparator<VnodeRepairState> getRepairStateComparator()
@@ -100,13 +105,13 @@ public class RepairTableStatusCommand implements Action
         Comparator<VnodeRepairState> comparator;
         switch (mySortBy)
         {
-            case SORT_REPAIRED_AT:
-                comparator = Comparator.comparing(VnodeRepairState::lastRepairedAt);
-                break;
-            case SORT_RANGE:
-            default:
-                comparator = Comparator.comparing(vnodeRepairState -> vnodeRepairState.getTokenRange().start);
-                break;
+        case SORT_REPAIRED_AT:
+            comparator = Comparator.comparing(VnodeRepairState::lastRepairedAt);
+            break;
+        case SORT_RANGE:
+        default:
+            comparator = Comparator.comparing(vnodeRepairState -> vnodeRepairState.getTokenRange().start);
+            break;
         }
 
         return myReverse
@@ -147,7 +152,12 @@ public class RepairTableStatusCommand implements Action
     {
         LongTokenRange tokenRange = state.getTokenRange();
         String lastRepairedAt = PrintUtils.epochToHumanReadable(state.lastRepairedAt());
-        ImmutableSet<Host> replicas = state.getReplicas();
+        List<String> replicas = state.getReplicas().stream()
+                .map(Node::getPublicAddress)
+                .map(InetAddress::getHostAddress)
+                .sorted()
+                .distinct()
+                .collect(Collectors.toList());
         return Arrays.asList(tokenRange, lastRepairedAt, replicas);
     }
 }

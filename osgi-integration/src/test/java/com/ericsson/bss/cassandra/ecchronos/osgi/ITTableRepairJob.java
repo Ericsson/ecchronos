@@ -18,7 +18,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -44,11 +43,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairEntry;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStatus;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.*;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -71,12 +67,18 @@ public class ITTableRepairJob extends TestBase
     @Inject
     RepairScheduler myRepairScheduler;
 
+    @Inject
+    NodeResolver myNodeResolver;
+
+    @Inject
+    RepairHistoryProvider myRepairHistoryProvider;
+
     private static Cluster myAdminCluster;
     private static Session myAdminSession;
+
     private Metadata myMetadata;
     private Host myLocalHost;
-
-    private RepairHistoryProvider myRepairHistoryProvider;
+    private Node myLocalNode;
 
     private Set<TableReference> myRepairs = new HashSet<>();
 
@@ -105,7 +107,7 @@ public class ITTableRepairJob extends TestBase
         myMetadata = session.getCluster().getMetadata();
         myLocalHost = myNativeConnectionProvider.getLocalHost();
 
-        myRepairHistoryProvider = new RepairHistoryProviderImpl(session, s -> s, TimeUnit.DAYS.toMillis(30));
+        myLocalNode = myNodeResolver.fromUUID(myLocalHost.getHostId()).orElseThrow(IllegalStateException::new);
 
         myRepairConfiguration = RepairConfiguration.newBuilder()
                 .withRepairInterval(1, TimeUnit.HOURS)
@@ -115,14 +117,27 @@ public class ITTableRepairJob extends TestBase
     @After
     public void clean()
     {
+        List<ResultSetFuture> futures = new ArrayList<>();
         for (TableReference tableReference : myRepairs)
         {
             myRepairScheduler.removeConfiguration(tableReference);
 
-            myAdminSession.execute(QueryBuilder.delete()
+            futures.add(myAdminSession.executeAsync(QueryBuilder.delete()
                     .from("system_distributed", "repair_history")
                     .where(QueryBuilder.eq("keyspace_name", tableReference.getKeyspace()))
-                    .and(QueryBuilder.eq("columnfamily_name", tableReference.getTable())));
+                    .and(QueryBuilder.eq("columnfamily_name", tableReference.getTable()))));
+            for (Host host : myMetadata.getAllHosts())
+            {
+                futures.add(myAdminSession.executeAsync(QueryBuilder.delete()
+                        .from("ecchronos", "repair_history")
+                        .where(QueryBuilder.eq("table_id", tableReference.getId()))
+                        .and(QueryBuilder.eq("node_id", host.getHostId()))));
+            }
+        }
+
+        for (ResultSetFuture future : futures)
+        {
+            future.getUninterruptibly();
         }
     }
 
@@ -214,7 +229,7 @@ public class ITTableRepairJob extends TestBase
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
                 .until(() -> isRepairedSince(tableReference, startTime, expectedRepairedRanges));
 
-        verifyTableRepairedSince(tableReference, expectedRepairedInterval, expectedRepairedRanges);
+        verifyTableRepairedSince(tableReference, expectedRepairedInterval);
     }
 
     private void schedule(TableReference tableReference)
@@ -227,13 +242,8 @@ public class ITTableRepairJob extends TestBase
 
     private void verifyTableRepairedSince(TableReference tableReference, long repairedSince)
     {
-        verifyTableRepairedSince(tableReference, repairedSince, tokenRangesFor(tableReference.getKeyspace()));
-    }
-
-    private void verifyTableRepairedSince(TableReference tableReference, long repairedSince,
-            Set<LongTokenRange> expectedRepaired)
-    {
-        OptionalLong repairedAt = lastRepairedSince(tableReference, repairedSince);
+        OptionalLong repairedAt = lastRepairedSince(tableReference, repairedSince,
+                tokenRangesFor(tableReference.getKeyspace()));
         assertThat(repairedAt).isPresent();
     }
 
@@ -312,20 +322,22 @@ public class ITTableRepairJob extends TestBase
         long started_at = timestamp;
         long finished_at = timestamp + 5;
 
-        Set<InetAddress> participants = myMetadata.getReplicas(tableReference.getKeyspace(), tokenRange).stream()
-                .map(Host::getAddress)
+        Set<UUID> participants = myMetadata.getReplicas(tableReference.getKeyspace(), tokenRange).stream()
+                .map(Host::getHostId)
                 .collect(Collectors.toSet());
 
-        Insert insert = QueryBuilder.insertInto("system_distributed", "repair_history")
-                .value("keyspace_name", tableReference.getKeyspace())
-                .value("columnfamily_name", tableReference.getTable())
-                .value("participants", participants)
-                .value("id", UUIDs.startOf(started_at))
-                .value("started_at", new Date(started_at))
-                .value("finished_at", new Date(finished_at))
+        Insert insert = QueryBuilder.insertInto("ecchronos", "repair_history")
+                .value("table_id", tableReference.getId())
+                .value("node_id", myLocalNode.getId())
+                .value("repair_id", UUIDs.startOf(started_at))
+                .value("job_id", tableReference.getId())
+                .value("coordinator_id", myLocalNode.getId())
                 .value("range_begin", tokenRange.getStart().toString())
                 .value("range_end", tokenRange.getEnd().toString())
-                .value("status", "SUCCESS");
+                .value("participants", participants)
+                .value("status", "SUCCESS")
+                .value("started_at", new Date(started_at))
+                .value("finished_at", new Date(finished_at));
 
         myAdminSession.execute(insert);
     }

@@ -14,40 +14,46 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import com.datastax.driver.core.Host;
-import com.ericsson.bss.cassandra.ecchronos.core.JmxProxy;
-import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.DummyLock;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
-import javax.management.Notification;
-import javax.management.NotificationListener;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
-import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import javax.management.Notification;
+import javax.management.NotificationListener;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+
+import com.ericsson.bss.cassandra.ecchronos.core.JmxProxy;
+import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStatus;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
+import com.ericsson.bss.cassandra.ecchronos.core.scheduling.DummyLock;
+import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestRepairGroupTasks
@@ -75,7 +81,14 @@ public class TestRepairGroupTasks
     @Mock
     private RepairLockFactory mockRepairLockFactory;
 
+    @Mock
+    private RepairHistory mockRepairHistory;
+
+    private final UUID jobId = UUID.randomUUID();
+
     private RepairConfiguration repairConfiguration;
+
+    private final ConcurrentMap<LongTokenRange, RepairHistory.RepairSession> repairSessions = new ConcurrentHashMap<>();
 
     @Before
     public void init()
@@ -85,6 +98,13 @@ public class TestRepairGroupTasks
                 .withRepairWarningTime(RUN_INTERVAL_IN_DAYS * 2, TimeUnit.DAYS)
                 .withRepairErrorTime(GC_GRACE_DAYS, TimeUnit.DAYS)
                 .build();
+
+        when(mockRepairHistory.newSession(eq(tableReference), eq(jobId), any(), any())).thenAnswer(invocation -> {
+            LongTokenRange range = invocation.getArgumentAt(2, LongTokenRange.class);
+            RepairHistory.RepairSession repairSession = mock(RepairHistory.RepairSession.class);
+            repairSessions.put(range, repairSession);
+            return repairSession;
+        });
     }
 
     @Test
@@ -93,7 +113,8 @@ public class TestRepairGroupTasks
         Map<String, String> metadata = new HashMap<>();
         metadata.put("keyspace", keyspaceName);
         metadata.put("table", tableName);
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(withHost("127.0.0.1")), ImmutableList.of(range(1, 2)));
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(withNode("127.0.0.1")),
+                ImmutableList.of(range(1, 2)));
         Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1", "my-resource"));
 
         when(mockJmxProxyFactory.connect()).thenReturn(new CustomJmxProxy((notificationListener, i) -> progressAndComplete(notificationListener, range(1, 2))));
@@ -101,11 +122,12 @@ public class TestRepairGroupTasks
         when(mockRepairResourceFactory.getRepairResources(eq(replicaRepairGroup))).thenReturn(repairResources);
         when(mockRepairLockFactory.getLock(eq(mockLockFactory), eq(repairResources), eq(metadata), eq(priority))).thenReturn(new DummyLock());
 
-        RepairGroup repairGroup = new RepairGroup(priority, tableReference,
-                repairConfiguration, replicaRepairGroup, mockJmxProxyFactory, mockTableRepairMetrics,
-                mockRepairResourceFactory, mockRepairLockFactory);
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).build(priority);
 
         assertThat(repairGroup.execute()).isTrue();
+
+        verify(repairSessions.get(range(1, 2))).start();
+        verify(repairSessions.get(range(1, 2))).finish(RepairStatus.SUCCESS);
     }
 
     @Test (timeout = 1000L)
@@ -114,7 +136,8 @@ public class TestRepairGroupTasks
         Map<String, String> metadata = new HashMap<>();
         metadata.put("keyspace", keyspaceName);
         metadata.put("table", tableName);
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(withHost("127.0.0.1")), ImmutableList.of(range(1, 2), range(2, 3)));
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(withNode("127.0.0.1")),
+                ImmutableList.of(range(1, 2), range(2, 3)));
         Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1", "my-resource"));
         final AtomicBoolean shouldRun = new AtomicBoolean(true);
 
@@ -133,13 +156,30 @@ public class TestRepairGroupTasks
             shouldRun.set(false);
         }));
 
-        RepairGroup repairGroup = new RepairGroup(priority, tableReference,
-                repairConfiguration, replicaRepairGroup, mockJmxProxyFactory, mockTableRepairMetrics,
-                mockRepairResourceFactory, mockRepairLockFactory,
-                LongTokenRange.FULL_RANGE,
-                Collections.singletonList(tableRepairPolicy));
+        RepairGroup repairGroup = builderFor(replicaRepairGroup)
+                .withRepairPolicies(Collections.singletonList(tableRepairPolicy))
+                .build(priority);
 
         assertThat(repairGroup.execute()).isFalse();
+
+        verify(repairSessions.get(range(1, 2))).start();
+        verify(repairSessions.get(range(2, 3)), never()).start();
+        verify(repairSessions.get(range(1, 2))).finish(RepairStatus.SUCCESS);
+        verify(repairSessions.get(range(2, 3)), never()).finish(RepairStatus.FAILED);
+    }
+
+    private RepairGroup.Builder builderFor(ReplicaRepairGroup replicaRepairGroup)
+    {
+        return RepairGroup.newBuilder()
+                .withTableReference(tableReference)
+                .withRepairConfiguration(repairConfiguration)
+                .withReplicaRepairGroup(replicaRepairGroup)
+                .withJmxProxyFactory(mockJmxProxyFactory)
+                .withTableRepairMetrics(mockTableRepairMetrics)
+                .withRepairResourceFactory(mockRepairResourceFactory)
+                .withRepairLockFactory(mockRepairLockFactory)
+                .withRepairHistory(mockRepairHistory)
+                .withJobId(jobId);
     }
 
     private void progressAndComplete(NotificationListener notificationListener, LongTokenRange range)
@@ -163,13 +203,13 @@ public class TestRepairGroupTasks
         return new LongTokenRange(start, end);
     }
 
-    private Host withHost(String ip) throws UnknownHostException
+    private Node withNode(String ip) throws UnknownHostException
     {
-        Host host = mock(Host.class);
+        Node node = mock(Node.class);
 
-        when(host.getBroadcastAddress()).thenReturn(InetAddress.getByName(ip));
+        when(node.getPublicAddress()).thenReturn(InetAddress.getByName(ip));
 
-        return host;
+        return node;
     }
 
     private String getRepairMessage(LongTokenRange range)

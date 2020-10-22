@@ -14,26 +14,27 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.AlarmPostUpdateHook;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
+import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
+import com.google.common.base.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.Closeable;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.AlarmPostUpdateHook;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
-import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 
 /**
  * A factory creating {@link TableRepairJob}'s for tables based on the provided repair configuration.
@@ -55,6 +56,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
     private final RepairLockType myRepairLockType;
     private final TableStorageStates myTableStorageStates;
     private final List<TableRepairPolicy> myRepairPolicies;
+    private final RepairHistory myRepairHistory;
 
     private RepairSchedulerImpl(Builder builder)
     {
@@ -67,6 +69,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
         myRepairLockType = builder.myRepairLockType;
         myTableStorageStates = builder.myTableStorageStates;
         myRepairPolicies = new ArrayList<>(builder.myRepairPolicies);
+        myRepairHistory = Preconditions.checkNotNull(builder.myRepairHistory, "Repair history must be set");
     }
 
     @Override
@@ -123,7 +126,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
 
     private void handleTableConfigurationChange(TableReference tableReference, RepairConfiguration repairConfiguration)
     {
-        synchronized(myLock)
+        synchronized (myLock)
         {
             if (configurationHasChanged(tableReference, repairConfiguration))
             {
@@ -188,6 +191,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
                 .withRepairLockType(myRepairLockType)
                 .withTableStorageStates(myTableStorageStates)
                 .withRepairPolices(myRepairPolicies)
+                .withRepairHistory(myRepairHistory)
                 .build();
 
         job.runnable();
@@ -209,6 +213,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
         private RepairStateFactory myRepairStateFactory;
         private RepairLockType myRepairLockType;
         private TableStorageStates myTableStorageStates;
+        private RepairHistory myRepairHistory;
         private final List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
 
         public Builder withFaultReporter(RepairFaultReporter repairFaultReporter)
@@ -256,6 +261,12 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
         public Builder withRepairPolicies(Collection<TableRepairPolicy> tableRepairPolicies)
         {
             myRepairPolicies.addAll(tableRepairPolicies);
+            return this;
+        }
+
+        public Builder withRepairHistory(RepairHistory repairHistory)
+        {
+            myRepairHistory = repairHistory;
             return this;
         }
 

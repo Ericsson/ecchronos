@@ -66,6 +66,9 @@ public class TestRepairSchedulerImpl
     @Mock
     private TableStorageStates myTableStorageStates;
 
+    @Mock
+    private RepairHistory myRepairHistory;
+
     @Before
     public void init()
     {
@@ -222,6 +225,7 @@ public class TestRepairSchedulerImpl
                 .withScheduleManager(scheduleManager)
                 .withRepairStateFactory(myRepairStateFactory)
                 .withRepairLockType(RepairLockType.VNODE)
-                .withTableStorageStates(myTableStorageStates);
+                .withTableStorageStates(myTableStorageStates)
+                .withRepairHistory(myRepairHistory);
     }
 }

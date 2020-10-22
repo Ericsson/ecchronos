@@ -14,8 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -49,11 +49,11 @@ public final class VnodeRepairGroupFactory implements ReplicaRepairGroupFactory
                 .collect(Collectors.toList());
 
         List<ReplicaRepairGroup> sortedRepairGroups = new ArrayList<>();
-        Set<Set<Host>> countedReplicaGroups = new HashSet<>();
+        Set<Set<Node>> countedReplicaGroups = new HashSet<>();
 
         for (VnodeRepairState vnodeRepairState : sortedVnodeRepairStates)
         {
-            ImmutableSet<Host> replicas = vnodeRepairState.getReplicas();
+            ImmutableSet<Node> replicas = vnodeRepairState.getReplicas();
 
             if (countedReplicaGroups.add(replicas))
             {

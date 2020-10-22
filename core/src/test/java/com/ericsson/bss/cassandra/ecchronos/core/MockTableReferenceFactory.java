@@ -14,13 +14,13 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core;
 
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
-
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 
 public class MockTableReferenceFactory implements TableReferenceFactory
 {
@@ -38,7 +38,8 @@ public class MockTableReferenceFactory implements TableReferenceFactory
         TableReference tableReference = tableReferences.get(tableKey);
         if (tableReference == null)
         {
-            tableReference = tableReferences.computeIfAbsent(tableKey, tb -> new MockTableReference(UUID.randomUUID(), keyspace, table));
+            tableReference = tableReferences.computeIfAbsent(tableKey,
+                    tb -> new MockTableReference(UUID.randomUUID(), keyspace, table));
         }
 
         return tableReference;

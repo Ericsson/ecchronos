@@ -14,8 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Objects;
@@ -28,10 +28,10 @@ public class VnodeRepairState
     public static final long UNREPAIRED = -1L;
 
     private final LongTokenRange myTokenRange;
-    private final ImmutableSet<Host> myReplicas;
+    private final ImmutableSet<Node> myReplicas;
     private final long myLastRepairedAt;
 
-    public VnodeRepairState(LongTokenRange tokenRange, ImmutableSet<Host> replicas, long lastRepairedAt)
+    public VnodeRepairState(LongTokenRange tokenRange, ImmutableSet<Node> replicas, long lastRepairedAt)
     {
         myTokenRange = tokenRange;
         myReplicas = replicas;
@@ -43,7 +43,7 @@ public class VnodeRepairState
         return myTokenRange;
     }
 
-    public ImmutableSet<Host> getReplicas()
+    public ImmutableSet<Node> getReplicas()
     {
         return myReplicas;
     }

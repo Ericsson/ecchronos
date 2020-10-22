@@ -14,6 +14,11 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config; // NOPMD
 
+import java.io.File;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
+
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
@@ -21,11 +26,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
-
-import java.io.File;
-import java.util.Locale;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 public class Config
 {
@@ -238,13 +238,14 @@ public class Config
         @Override
         protected Class<?>[] expectedConstructor()
         {
-            return new Class<?>[] {Config.class, Supplier.class };
+            return new Class<?>[] { Config.class, Supplier.class };
         }
 
         @Override
         public String toString()
         {
-            return String.format("(%s:%d),provider=%s,decorator=%s", getHost(), getPort(), getProviderClass(), decoratorClass);
+            return String.format("(%s:%d),provider=%s,decorator=%s", getHost(), getPort(), getProviderClass(),
+                    decoratorClass);
         }
     }
 
@@ -253,11 +254,11 @@ public class Config
         @Override
         protected Class<?>[] expectedConstructor()
         {
-            return new Class<?>[] {Config.class, Supplier.class };
+            return new Class<?>[] { Config.class, Supplier.class };
         }
     }
 
-    public static class RepairConfig 
+    public static class RepairConfig
     {
         private Interval interval;
         private RepairOptions.RepairParallelism parallelism;
@@ -266,6 +267,7 @@ public class Config
         private double unwind_ratio;
         private Interval history_lookback;
         private long size_target;
+        private RepairHistory history;
 
         public Interval getInterval()
         {
@@ -344,9 +346,51 @@ public class Config
             }
         }
 
+        public RepairHistory getHistory()
+        {
+            return history;
+        }
+
+        public void setHistory(RepairHistory history)
+        {
+            this.history = history;
+        }
     }
 
-    public static class Alarm 
+    public static class RepairHistory
+    {
+        public enum Provider
+        {
+            CASSANDRA,
+            UPGRADE,
+            ECC
+        }
+
+        private Provider provider;
+        private String keyspace;
+
+        public Provider getProvider()
+        {
+            return provider;
+        }
+
+        public void setProvider(String provider)
+        {
+            this.provider = Provider.valueOf(provider.toUpperCase(Locale.US));
+        }
+
+        public String getKeyspace()
+        {
+            return keyspace;
+        }
+
+        public void setKeyspace(String keyspace)
+        {
+            this.keyspace = keyspace;
+        }
+    }
+
+    public static class Alarm
     {
         private Interval warn;
         private Interval error;
@@ -372,7 +416,7 @@ public class Config
         }
     }
 
-    public static class StatisticsConfig 
+    public static class StatisticsConfig
     {
         private boolean enabled;
         private File directory;
@@ -473,7 +517,7 @@ public class Config
         }
     }
 
-    public static class RestServerConfig 
+    public static class RestServerConfig
     {
         private String host;
         private int port;

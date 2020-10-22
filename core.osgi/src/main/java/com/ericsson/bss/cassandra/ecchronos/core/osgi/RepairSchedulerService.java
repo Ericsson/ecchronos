@@ -14,26 +14,22 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
-import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.*;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
+import java.util.List;
 
-import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.annotations.*;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
-import java.util.List;
+import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.*;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 
 /**
  * A factory creating {@link TableRepairJob}'s for tables that replicates data over multiple nodes.
@@ -47,7 +43,7 @@ public class RepairSchedulerService implements RepairScheduler
     @Reference(service = RepairFaultReporter.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile RepairFaultReporter myFaultReporter;
 
-    @Reference (service = JmxProxyFactory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = JmxProxyFactory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile JmxProxyFactory myJmxProxyFactory;
 
     @Reference(service = TableRepairMetrics.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
@@ -65,6 +61,8 @@ public class RepairSchedulerService implements RepairScheduler
     @Reference(service = TableRepairPolicy.class, cardinality = ReferenceCardinality.AT_LEAST_ONE, policy = ReferencePolicy.STATIC)
     private volatile List<TableRepairPolicy> myRepairPolicies;
 
+    @Reference(service = RepairHistory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    private volatile RepairHistory myRepairHistory;
 
     private volatile RepairSchedulerImpl myDelegateRepairSchedulerImpl;
 
@@ -80,6 +78,7 @@ public class RepairSchedulerService implements RepairScheduler
                 .withRepairLockType(configuration.repairLockType())
                 .withTableStorageStates(myTableStorageStates)
                 .withRepairPolicies(myRepairPolicies)
+                .withRepairHistory(myRepairHistory)
                 .build();
     }
 

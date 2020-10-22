@@ -30,6 +30,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.datastax.driver.core.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
@@ -53,6 +54,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     private final RepairLockType myRepairLockType;
     private final Metadata myMetadata;
     private final RepairConfiguration myRepairConfiguration;
+    private final RepairHistory myRepairHistory;
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor();
 
     private OnDemandRepairSchedulerImpl(Builder builder)
@@ -64,6 +66,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         myRepairLockType = builder.repairLockType;
         myMetadata = builder.metadata;
         myRepairConfiguration = builder.repairConfiguration;
+        myRepairHistory = builder.repairHistory;
         myExecutor.scheduleWithFixedDelay(() -> clearFailedJobs(), DEFAULT_INITIAL_DELAY_IN_DAYS, DEFAULT_DELAY_IN_DAYS, TimeUnit.DAYS);
     }
 
@@ -148,6 +151,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
                 .withRepairLockType(myRepairLockType)
                 .withOnFinished(this::removeScheduledJob)
                 .withRepairConfiguration(myRepairConfiguration)
+                .withRepairHistory(myRepairHistory)
                 .build();
         return job;
     }
@@ -166,6 +170,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         private RepairLockType repairLockType;
         private Metadata metadata;
         private RepairConfiguration repairConfiguration;
+        private RepairHistory repairHistory;
 
         public Builder withJmxProxyFactory(JmxProxyFactory jmxProxyFactory)
         {
@@ -206,6 +211,12 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         public Builder withRepairConfiguration(RepairConfiguration repairConfiguration)
         {
             this.repairConfiguration = repairConfiguration;
+            return this;
+        }
+
+        public Builder withRepairHistory(RepairHistory repairHistory)
+        {
+            this.repairHistory = repairHistory;
             return this;
         }
 

@@ -20,6 +20,7 @@ import java.net.InetAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +62,12 @@ public class HostStatesImpl implements HostStates, Closeable
     public boolean isUp(Host host)
     {
         return isUp(host.getBroadcastAddress());
+    }
+
+    @Override
+    public boolean isUp(Node node)
+    {
+        return isUp(node.getPublicAddress());
     }
 
     @Override

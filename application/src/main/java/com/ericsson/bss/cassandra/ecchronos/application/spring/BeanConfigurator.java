@@ -32,6 +32,8 @@ import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerF
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.datastax.driver.core.Host;
+import com.datastax.driver.core.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.application.ConfigurationException;
 import com.ericsson.bss.cassandra.ecchronos.application.ReflectionUtils;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
@@ -40,6 +42,10 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.Security;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationStateImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -234,5 +240,23 @@ public class BeanConfigurator
         {
             LOG.warn("Unable to refresh security config");
         }
+    }
+
+    @Bean
+    public NodeResolver nodeResolver(NativeConnectionProvider nativeConnectionProvider)
+    {
+        Metadata metadata = nativeConnectionProvider.getSession().getCluster().getMetadata();
+
+        return new NodeResolverImpl(metadata);
+    }
+
+    @Bean
+    public ReplicationState replicationState(NativeConnectionProvider nativeConnectionProvider,
+            NodeResolver nodeResolver)
+    {
+        Host host = nativeConnectionProvider.getLocalHost();
+        Metadata metadata = nativeConnectionProvider.getSession().getCluster().getMetadata();
+
+        return new ReplicationStateImpl(nodeResolver, metadata, host);
     }
 }

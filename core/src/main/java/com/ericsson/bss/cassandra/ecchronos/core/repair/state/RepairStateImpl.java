@@ -14,10 +14,10 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -188,11 +188,11 @@ public class RepairStateImpl implements RepairState
 
     private boolean replicasAreRepairable(VnodeRepairState vnodeRepairState)
     {
-        for (Host host : vnodeRepairState.getReplicas())
+        for (Node node : vnodeRepairState.getReplicas())
         {
-            if (!myHostStates.isUp(host))
+            if (!myHostStates.isUp(node))
             {
-                LOG.debug("{} not repairable, host {} is not up", vnodeRepairState, host);
+                LOG.debug("{} not repairable, host {} is not up", vnodeRepairState, node);
                 return false;
             }
         }

@@ -14,27 +14,24 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.osgi;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-import javax.inject.Inject;
-
+import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
-import com.ericsson.bss.cassandra.ecchronos.core.osgi.DefaultRepairConfigurationProviderComponent;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.osgi.DefaultRepairConfigurationProviderComponent;
+import com.ericsson.bss.cassandra.ecchronos.core.osgi.ReplicationStateService;
 import com.ericsson.bss.cassandra.ecchronos.core.osgi.ScheduleManagerService;
 import com.ericsson.bss.cassandra.ecchronos.core.osgi.TimeBasedRunPolicyService;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
@@ -44,6 +41,10 @@ import org.osgi.framework.BundleContext;
 import org.osgi.service.component.runtime.ServiceComponentRuntime;
 import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO;
 import org.osgi.util.tracker.ServiceTracker;
+
+import javax.inject.Inject;
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
@@ -56,6 +57,7 @@ public class ITTestECChronos extends TestBase
 
     private static final String TIME_BASED_RUN_POLICY_PID = "com.ericsson.bss.cassandra.ecchronos.core.osgi.TimeBasedRunPolicyService";
     private static final String REPAIR_CONFIGURATION_PID = "com.ericsson.bss.cassandra.ecchronos.core.osgi.DefaultRepairConfigurationProviderComponent";
+    private static final String REPLICATION_STATE_PID = "com.ericsson.bss.cassandra.ecchronos.core.osgi.ReplicationStateService";
 
     @Inject
     BundleContext myBundleContext;
@@ -171,6 +173,18 @@ public class ITTestECChronos extends TestBase
     }
 
     @Test
+    public void testGetNodeResolverService() throws InterruptedException
+    {
+        ServiceTracker serviceTracker = new ServiceTracker(myBundleContext, NodeResolver.class, null);
+        serviceTracker.open();
+
+        NodeResolver nodeResolver = (NodeResolver) serviceTracker.waitForService(TimeUnit.SECONDS.toMillis(10));
+        serviceTracker.close();
+
+        assertThat(nodeResolver).isNotNull();
+    }
+
+    @Test
     public void testGetScheduleManagerComponent()
     {
         assertComponentIsActive(SCHEDULE_MANAGER_PID, ScheduleManagerService.class);
@@ -186,6 +200,12 @@ public class ITTestECChronos extends TestBase
     public void testGetRepairConfigurationComponent()
     {
         assertComponentIsActive(REPAIR_CONFIGURATION_PID, DefaultRepairConfigurationProviderComponent.class);
+    }
+
+    @Test
+    public void testGetReplicationStateComponent()
+    {
+        assertComponentIsActive(REPLICATION_STATE_PID, ReplicationStateService.class);
     }
 
     private void assertComponentIsActive(String pid, Class clazz)
