@@ -26,6 +26,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 
 public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRepairMetricsProvider, Closeable
 {
@@ -42,8 +43,11 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
 
     private TableRepairMetricsImpl(Builder builder)
     {
-        myMetricRegistry = builder.myMetricRegistry;
-        myNodeMetricHolder = new NodeMetricHolder(myMetricRegistry, builder.myTableStorageStates);
+        myMetricRegistry = Preconditions.checkNotNull(builder.myMetricRegistry, "Metric registry cannot be null");
+
+        myNodeMetricHolder = new NodeMetricHolder(myMetricRegistry,
+                Preconditions.checkNotNull(builder.myTableStorageStates, "Table storage states cannot be null"));
+
 
         myTopLevelCsvReporter = CsvReporter.forRegistry(myMetricRegistry)
                 .convertDurationsTo(TimeUnit.MILLISECONDS)
@@ -141,16 +145,6 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
 
         public TableRepairMetricsImpl build()
         {
-            if (myTableStorageStates == null)
-            {
-                throw new IllegalArgumentException("Table storage states cannot be null");
-            }
-
-            if (myMetricRegistry == null)
-            {
-                throw new IllegalArgumentException("Metric registry cannot be null");
-            }
-
             return new TableRepairMetricsImpl(this);
         }
     }
