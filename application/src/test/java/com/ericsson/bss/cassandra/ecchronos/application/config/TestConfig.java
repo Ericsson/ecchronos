@@ -77,6 +77,8 @@ public class TestConfig
         assertThat(repairConfig.getUnwindRatio()).isEqualTo(0.5d);
         assertThat(repairConfig.getHistoryLookback().getInterval(TimeUnit.DAYS)).isEqualTo(13);
         assertThat(repairConfig.getSizeTargetInBytes()).isEqualTo(UnitConverter.toBytes("5m"));
+        assertThat(repairConfig.getHistory().getProvider()).isEqualTo(Config.RepairHistory.Provider.CASSANDRA);
+        assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("customkeyspace");
 
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isFalse();
@@ -134,6 +136,8 @@ public class TestConfig
         assertThat(repairConfig.getUnwindRatio()).isEqualTo(0.0d);
         assertThat(repairConfig.getHistoryLookback().getInterval(TimeUnit.DAYS)).isEqualTo(30);
         assertThat(repairConfig.getSizeTargetInBytes()).isEqualTo(Long.MAX_VALUE);
+        assertThat(repairConfig.getHistory().getProvider()).isEqualTo(Config.RepairHistory.Provider.ECC);
+        assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("ecchronos");
 
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isTrue();

@@ -14,8 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
@@ -31,10 +31,10 @@ public class TestRepairedAt
     {
         LongTokenRange range = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(2, 3);
-        Host host1 = mock(Host.class);
+        Node node1 = mock(Node.class);
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1), 1234L);
-        VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, ImmutableSet.of(host1), 1235L);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1), 1234L);
+        VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, ImmutableSet.of(node1), 1235L);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2))
                 .build();
@@ -52,10 +52,10 @@ public class TestRepairedAt
     {
         LongTokenRange range = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(2, 3);
-        Host host1 = mock(Host.class);
+        Node node1 = mock(Node.class);
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1), 1234L);
-        VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, ImmutableSet.of(host1), VnodeRepairState.UNREPAIRED);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1), 1234L);
+        VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, ImmutableSet.of(node1), VnodeRepairState.UNREPAIRED);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2))
                 .build();
@@ -73,10 +73,10 @@ public class TestRepairedAt
     {
         LongTokenRange range = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(2, 3);
-        Host host1 = mock(Host.class);
+        Node node1 = mock(Node.class);
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(host1), VnodeRepairState.UNREPAIRED);
-        VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, ImmutableSet.of(host1), VnodeRepairState.UNREPAIRED);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1), VnodeRepairState.UNREPAIRED);
+        VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, ImmutableSet.of(node1), VnodeRepairState.UNREPAIRED);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2))
                 .build();

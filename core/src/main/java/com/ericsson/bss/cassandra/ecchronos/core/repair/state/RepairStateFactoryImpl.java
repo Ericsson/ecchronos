@@ -14,8 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
@@ -29,20 +27,20 @@ public class RepairStateFactoryImpl implements RepairStateFactory
     private final VnodeRepairStateFactoryImpl myVnodeRepairStateFactory;
     private final VnodeRepairStateFactoryImpl mySubRangeRepairStateFactory;
 
-
-
     private RepairStateFactoryImpl(Builder builder)
     {
         myHostStates = builder.myHostStates;
         myTableRepairMetrics = builder.myTableRepairMetrics;
 
-        ReplicationState replicationState = new ReplicationState(builder.myMetadata, builder.myHost);
-        myVnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(replicationState, builder.myRepairHistoryProvider, false);
-        mySubRangeRepairStateFactory = new VnodeRepairStateFactoryImpl(replicationState, builder.myRepairHistoryProvider, true);
+        myVnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(builder.myReplicationState,
+                builder.myRepairHistoryProvider, false);
+        mySubRangeRepairStateFactory = new VnodeRepairStateFactoryImpl(builder.myReplicationState,
+                builder.myRepairHistoryProvider, true);
     }
 
     @Override
-    public RepairState create(TableReference tableReference, RepairConfiguration repairConfiguration, PostUpdateHook postUpdateHook)
+    public RepairState create(TableReference tableReference, RepairConfiguration repairConfiguration,
+            PostUpdateHook postUpdateHook)
     {
         ReplicaRepairGroupFactory replicaRepairGroupFactory = VnodeRepairGroupFactory.INSTANCE;
 
@@ -52,7 +50,8 @@ public class RepairStateFactoryImpl implements RepairStateFactory
             vnodeRepairStateFactory = mySubRangeRepairStateFactory;
         }
 
-        return new RepairStateImpl(tableReference, repairConfiguration, vnodeRepairStateFactory, myHostStates, myTableRepairMetrics, replicaRepairGroupFactory, postUpdateHook);
+        return new RepairStateImpl(tableReference, repairConfiguration, vnodeRepairStateFactory, myHostStates,
+                myTableRepairMetrics, replicaRepairGroupFactory, postUpdateHook);
     }
 
     public static Builder builder()
@@ -62,21 +61,14 @@ public class RepairStateFactoryImpl implements RepairStateFactory
 
     public static class Builder
     {
-        private Metadata myMetadata;
-        private Host myHost;
+        private ReplicationState myReplicationState;
         private HostStates myHostStates;
         private RepairHistoryProvider myRepairHistoryProvider;
         private TableRepairMetrics myTableRepairMetrics;
 
-        public Builder withMetadata(Metadata metadata)
+        public Builder withReplicationState(ReplicationState replicationState)
         {
-            myMetadata = metadata;
-            return this;
-        }
-
-        public Builder withHost(Host host)
-        {
-            myHost = host;
+            myReplicationState = replicationState;
             return this;
         }
 

@@ -16,6 +16,8 @@ package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -23,7 +25,6 @@ import java.util.TimeZone;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
@@ -31,6 +32,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 import junitparams.JUnitParamsRunner;
@@ -50,9 +52,9 @@ import static org.mockito.Mockito.when;
 @RunWith(JUnitParamsRunner.class)
 public class TestRepairTableStatusCommand
 {
-    private static final VnodeRepairState state1 = new VnodeRepairState(new LongTokenRange(5, 6), mockHosts("host1", "host2"), toMillis("2019-12-24T14:57:00Z"));
-    private static final VnodeRepairState state2 = new VnodeRepairState(new LongTokenRange(1, 2), mockHosts("host1", "host3"), toMillis("2019-11-12T00:26:59Z"));
-    private static final VnodeRepairState state3 = new VnodeRepairState(new LongTokenRange(3, 4), mockHosts("host2", "host3"), toMillis("1970-01-01T00:00:00Z"));
+    private static final VnodeRepairState state1 = new VnodeRepairState(new LongTokenRange(5, 6), mockNode("127.0.0.1", "127.0.0.2"), toMillis("2019-12-24T14:57:00Z"));
+    private static final VnodeRepairState state2 = new VnodeRepairState(new LongTokenRange(1, 2), mockNode("127.0.0.1", "127.0.0.3"), toMillis("2019-11-12T00:26:59Z"));
+    private static final VnodeRepairState state3 = new VnodeRepairState(new LongTokenRange(3, 4), mockNode("127.0.0.2", "127.0.0.3"), toMillis("1970-01-01T00:00:00Z"));
 
     private static final VnodeRepairStates states = createRepairStates(state1, state2, state3);
 
@@ -122,10 +124,10 @@ public class TestRepairTableStatusCommand
         // Then
         String expected =
                 "Range │ Last repaired at    │ Replicas\n" +
-                "──────┼─────────────────────┼───────────────\n" +
-                "(1,2] │ 2019-11-12 00:26:59 │ [host1, host3]\n" +
-                "(3,4] │ 1970-01-01 00:00:00 │ [host2, host3]\n" +
-                "(5,6] │ 2019-12-24 14:57:00 │ [host1, host2]\n";
+                "──────┼─────────────────────┼───────────────────────\n" +
+                "(1,2] │ 2019-11-12 00:26:59 │ [127.0.0.1, 127.0.0.3]\n" +
+                "(3,4] │ 1970-01-01 00:00:00 │ [127.0.0.2, 127.0.0.3]\n" +
+                "(5,6] │ 2019-12-24 14:57:00 │ [127.0.0.1, 127.0.0.2]\n";
         assertThat(os.toString()).isEqualTo(expected);
     }
 
@@ -142,25 +144,32 @@ public class TestRepairTableStatusCommand
         // Then
         String expected =
                 "Range │ Last repaired at    │ Replicas\n" +
-                "──────┼─────────────────────┼───────────────\n" +
-                "(5,6] │ 2019-12-24 14:57:00 │ [host1, host2]\n" +
-                "(1,2] │ 2019-11-12 00:26:59 │ [host1, host3]\n";
+                "──────┼─────────────────────┼───────────────────────\n" +
+                "(5,6] │ 2019-12-24 14:57:00 │ [127.0.0.1, 127.0.0.2]\n" +
+                "(1,2] │ 2019-11-12 00:26:59 │ [127.0.0.1, 127.0.0.3]\n";
         assertThat(os.toString()).isEqualTo(expected);
     }
 
-    private static ImmutableSet<Host> mockHosts(String... hosts)
+    private static ImmutableSet<Node> mockNode(String... hosts)
     {
-        ImmutableSet.Builder<Host> builder = ImmutableSet.builder();
+        ImmutableSet.Builder<Node> builder = ImmutableSet.builder();
         Stream.of(hosts)
-                .map(TestRepairTableStatusCommand::mockHost)
+                .map(TestRepairTableStatusCommand::mockNode)
                 .forEach(builder::add);
         return builder.build();
     }
 
-    private static Host mockHost(String hostName)
+    private static Node mockNode(String hostName)
     {
-        Host host = mock(Host.class);
-        when(host.toString()).thenReturn(hostName);
+        Node host = mock(Node.class);
+        try
+        {
+            when(host.getPublicAddress()).thenReturn(InetAddress.getByName(hostName));
+        }
+        catch (UnknownHostException e)
+        {
+            throw new RuntimeException("Unable to mock node", e);
+        }
         return host;
     }
 

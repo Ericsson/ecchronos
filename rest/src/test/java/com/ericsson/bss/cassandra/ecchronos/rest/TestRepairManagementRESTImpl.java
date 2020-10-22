@@ -40,6 +40,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.CompleteRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
@@ -235,10 +236,11 @@ public class TestRepairManagementRESTImpl
     {
         long expectedLastRepairedAt = 234;
         long repairInterval = 123;
-        Host host = mock(Host.class);
-        when(host.getBroadcastAddress()).thenReturn(InetAddress.getLocalHost());
+        Node replica = mock(Node.class);
+        when(replica.getPublicAddress()).thenReturn(InetAddress.getLocalHost());
 
-        VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(2, 3, ImmutableSet.of(host), expectedLastRepairedAt);
+        VnodeRepairState vnodeRepairState = TestUtils
+                .createVnodeRepairState(2, 3, ImmutableSet.of(replica), expectedLastRepairedAt);
         RepairJobView repairJobView = new TestUtils.RepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")

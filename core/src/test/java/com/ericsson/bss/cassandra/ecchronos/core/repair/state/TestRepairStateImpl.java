@@ -14,11 +14,11 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 import org.assertj.core.util.Lists;
@@ -74,7 +74,7 @@ public class TestRepairStateImpl
 
         RepairConfiguration repairConfiguration = repairConfiguration(repairIntervalInMs);
 
-        Host host = mockHost("DC1");
+        Node host = mockNode("DC1");
         when(mockHostStates.isUp(eq(host))).thenReturn(true);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(host), VnodeRepairState.UNREPAIRED);
@@ -108,11 +108,11 @@ public class TestRepairStateImpl
 
         RepairConfiguration repairConfiguration = repairConfiguration(repairIntervalInMs);
 
-        Host host = mockHost("DC1");
-        when(mockHostStates.isUp(eq(host))).thenReturn(true);
+        Node node = mockNode("DC1");
+        when(mockHostStates.isUp(eq(node))).thenReturn(true);
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(host), VnodeRepairState.UNREPAIRED);
-        VnodeRepairState repairedVnodeRepairState = new VnodeRepairState(new LongTokenRange(2, 3), ImmutableSet.of(host), now);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(node), VnodeRepairState.UNREPAIRED);
+        VnodeRepairState repairedVnodeRepairState = new VnodeRepairState(new LongTokenRange(2, 3), ImmutableSet.of(node), now);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState, repairedVnodeRepairState))
                 .build();
@@ -147,7 +147,7 @@ public class TestRepairStateImpl
 
         RepairConfiguration repairConfiguration = repairConfiguration(repairIntervalInMs);
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(mockHost("DC1")), expectedRepairedAt);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(mockNode("DC1")), expectedRepairedAt);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Collections.singletonList(vnodeRepairState))
                 .build();
@@ -208,10 +208,10 @@ public class TestRepairStateImpl
                 .build();
     }
 
-    private Host mockHost(String dataCenter)
+    private Node mockNode(String dataCenter)
     {
-        Host host = mock(Host.class);
-        when(host.getDatacenter()).thenReturn(dataCenter);
-        return host;
+        Node node = mock(Node.class);
+        when(node.getDatacenter()).thenReturn(dataCenter);
+        return node;
     }
 }

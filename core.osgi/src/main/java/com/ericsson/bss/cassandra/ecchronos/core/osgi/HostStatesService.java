@@ -14,19 +14,14 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
-import java.net.InetAddress;
-
+import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import org.osgi.service.component.annotations.*;
 
-import com.datastax.driver.core.Host;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
+import java.net.InetAddress;
 
 /**
  * Implementation of the {@link HostStates} interface using JMX to retrieve node statuses and then caches the retrieved statuses for some time.
@@ -63,5 +58,11 @@ public class HostStatesService implements HostStates
     public boolean isUp(Host host)
     {
         return myDelegateHostStates.isUp(host);
+    }
+
+    @Override
+    public boolean isUp(Node node)
+    {
+        return myDelegateHostStates.isUp(node);
     }
 }

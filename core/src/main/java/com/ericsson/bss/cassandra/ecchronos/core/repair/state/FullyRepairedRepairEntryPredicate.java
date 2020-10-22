@@ -14,23 +14,20 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.datastax.driver.core.Host;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.google.common.base.Predicate;
-
-import java.net.InetAddress;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
+
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.google.common.base.Predicate;
 
 public class FullyRepairedRepairEntryPredicate implements Predicate<RepairEntry>
 {
-    private final Map<LongTokenRange, Collection<Host>> myTokenToHostMap;
+    private final Map<LongTokenRange, Collection<Node>> myTokenToNodeMap;
 
-    public FullyRepairedRepairEntryPredicate(Map<LongTokenRange, Collection<Host>> tokenToHostMap)
+    public FullyRepairedRepairEntryPredicate(Map<LongTokenRange, Collection<Node>> tokenToNodeMap)
     {
-        myTokenToHostMap = tokenToHostMap;
+        myTokenToNodeMap = tokenToNodeMap;
     }
 
     @Override
@@ -38,16 +35,10 @@ public class FullyRepairedRepairEntryPredicate implements Predicate<RepairEntry>
     {
         if (repairEntry.getStatus() == RepairStatus.SUCCESS)
         {
-            Collection<Host> allReplicasHosts = myTokenToHostMap.get(repairEntry.getRange());
-            if (allReplicasHosts != null)
+            Collection<Node> replicas = myTokenToNodeMap.get(repairEntry.getRange());
+            if (replicas != null)
             {
-                Set<InetAddress> allReplicasAddress = new HashSet<>();
-                for (Host host : allReplicasHosts)
-                {
-                    allReplicasAddress.add(host.getAddress());
-                }
-
-                return repairEntry.getParticipants().containsAll(allReplicasAddress);
+                return repairEntry.getParticipants().containsAll(replicas);
             }
         }
         return false;

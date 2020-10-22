@@ -14,8 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,8 +33,8 @@ public class VnodeRepairResourceFactory implements RepairResourceFactory
                 .collect(Collectors.toSet());
     }
 
-    private RepairResource replicaToRepairResource(Host host)
+    private RepairResource replicaToRepairResource(Node node)
     {
-        return new RepairResource(host.getDatacenter(), host.getHostId().toString());
+        return new RepairResource(node.getDatacenter(), node.getId().toString());
     }
 }

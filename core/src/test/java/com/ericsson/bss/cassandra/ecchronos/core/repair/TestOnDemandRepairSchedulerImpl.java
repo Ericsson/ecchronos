@@ -20,6 +20,7 @@ import com.datastax.driver.core.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
@@ -53,6 +54,9 @@ public class TestOnDemandRepairSchedulerImpl
 
     @Mock
     private ReplicationState replicationState;
+
+    @Mock
+    private RepairHistory repairHistory;
 
     @Mock
     private Metadata metadata;
@@ -134,6 +138,8 @@ public class TestOnDemandRepairSchedulerImpl
                 .withScheduleManager(scheduleManager)
                 .withReplicationState(replicationState)
                 .withMetadata(metadata)
-                .withRepairLockType(RepairLockType.VNODE);
+                .withRepairLockType(RepairLockType.VNODE)
+                .withRepairConfiguration(RepairConfiguration.DEFAULT)
+                .withRepairHistory(repairHistory);
     }
 }
