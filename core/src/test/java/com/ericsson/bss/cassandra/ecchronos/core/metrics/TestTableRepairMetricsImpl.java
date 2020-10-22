@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
+import com.codahale.metrics.MetricRegistry;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import org.junit.After;
@@ -61,6 +62,7 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl = TableRepairMetricsImpl.builder()
                 .withTableStorageStates(myTableStorageStates)
                 .withStatisticsDirectory(metricsFolder.getRoot().getAbsolutePath())
+                .withMetricRegistry(new MetricRegistry())
                 .build();
     }
 
@@ -73,7 +75,7 @@ public class TestTableRepairMetricsImpl
     @Test
     public void testBuildWithNullTableStorageStates()
     {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(NullPointerException.class)
                 .isThrownBy(() -> TableRepairMetricsImpl.builder()
                         .withTableStorageStates(null)
                         .build());

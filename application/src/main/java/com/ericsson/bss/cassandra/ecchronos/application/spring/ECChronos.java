@@ -18,6 +18,7 @@ import java.io.Closeable;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
+import com.codahale.metrics.MetricRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -57,10 +58,11 @@ public class ECChronos implements Closeable
             StatementDecorator statementDecorator,
             ReplicationState replicationState,
             RepairHistory repairHistory,
-            RepairHistoryProvider repairHistoryProvider)
+            RepairHistoryProvider repairHistoryProvider,
+            MetricRegistry metricRegistry)
     {
         myECChronosInternals = new ECChronosInternals(configuration, nativeConnectionProvider, jmxConnectionProvider,
-                statementDecorator);
+                statementDecorator, metricRegistry);
 
         Session session = nativeConnectionProvider.getSession();
         Metadata metadata = session.getCluster().getMetadata();

@@ -21,13 +21,19 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import com.codahale.metrics.MetricRegistry;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.dropwizard.DropwizardExports;
+import io.prometheus.client.exporter.MetricsServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -213,6 +219,24 @@ public class BeanConfigurator
     public StatementDecorator statementDecorator(Config config) throws ConfigurationException
     {
         return getStatementDecorator(config);
+    }
+
+    @Bean
+    public MetricRegistry metricRegistry()
+    {
+        return new MetricRegistry();
+    }
+
+    @Bean
+    ServletRegistrationBean registerMetricsServlet(MetricRegistry metricRegistry)
+    {
+        CollectorRegistry collectorRegistry = new CollectorRegistry();
+        ServletRegistrationBean servletRegistrationBean = new ServletRegistrationBean();
+
+        collectorRegistry.register(new DropwizardExports(metricRegistry));
+        servletRegistrationBean.setServlet(new MetricsServlet(collectorRegistry));
+        servletRegistrationBean.setUrlMappings(Arrays.asList("/metrics/*"));
+        return servletRegistrationBean;
     }
 
     private static StatementDecorator getStatementDecorator(Config configuration) throws ConfigurationException

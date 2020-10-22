@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import com.codahale.metrics.MetricRegistry;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetricsImpl;
@@ -52,6 +53,7 @@ public final class TableRepairMetricsService implements TableRepairMetrics, Tabl
         myDelegateTableRepairMetrics = TableRepairMetricsImpl.builder()
                 .withTableStorageStates(myTableStorageStates)
                 .withStatisticsDirectory(statisticsDirectory)
+                .withMetricRegistry(new MetricRegistry())
                 .withReportInterval(reportIntervalInSeconds, TimeUnit.SECONDS)
                 .build();
     }

@@ -26,6 +26,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 
 public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRepairMetricsProvider, Closeable
 {
@@ -37,12 +38,16 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
 
     private final ConcurrentHashMap<TableReference, TableMetricHolder> myTableMetricHolders = new ConcurrentHashMap<>();
 
-    private final MetricRegistry myMetricRegistry = new MetricRegistry();
+    private final MetricRegistry myMetricRegistry;
     private final NodeMetricHolder myNodeMetricHolder;
 
     private TableRepairMetricsImpl(Builder builder)
     {
-        myNodeMetricHolder = new NodeMetricHolder(myMetricRegistry, builder.myTableStorageStates);
+        myMetricRegistry = Preconditions.checkNotNull(builder.myMetricRegistry, "Metric registry cannot be null");
+
+        myNodeMetricHolder = new NodeMetricHolder(myMetricRegistry,
+                Preconditions.checkNotNull(builder.myTableStorageStates, "Table storage states cannot be null"));
+
 
         myTopLevelCsvReporter = CsvReporter.forRegistry(myMetricRegistry)
                 .convertDurationsTo(TimeUnit.MILLISECONDS)
@@ -112,6 +117,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         private TableStorageStates myTableStorageStates;
         private String myStatisticsDirectory = DEFAULT_STATISTICS_DIRECTORY;
         private long myReportIntervalInMs = DEFAULT_STATISTICS_REPORT_INTERVAL_IN_MS;
+        private MetricRegistry myMetricRegistry;
 
         public Builder withTableStorageStates(TableStorageStates tableStorageStates)
         {
@@ -131,13 +137,14 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
             return this;
         }
 
+        public Builder withMetricRegistry(MetricRegistry metricRegistry)
+        {
+            myMetricRegistry = metricRegistry;
+            return this;
+        }
+
         public TableRepairMetricsImpl build()
         {
-            if (myTableStorageStates == null)
-            {
-                throw new IllegalArgumentException("Table storage states cannot be null");
-            }
-
             return new TableRepairMetricsImpl(this);
         }
     }

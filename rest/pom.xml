@@ -45,6 +45,23 @@
             <artifactId>gson</artifactId>
         </dependency>
 
+        <!-- Metrics -->
+        <dependency>
+            <groupId>io.prometheus</groupId>
+            <artifactId>simpleclient</artifactId>
+            <version>0.9.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.prometheus</groupId>
+            <artifactId>simpleclient_servlet</artifactId>
+            <version>0.9.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.prometheus</groupId>
+            <artifactId>simpleclient_dropwizard</artifactId>
+            <version>0.9.0</version>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
