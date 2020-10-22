@@ -75,7 +75,7 @@ public class TestTableRepairMetricsImpl
     @Test
     public void testBuildWithNullTableStorageStates()
     {
-        assertThatExceptionOfType(IllegalArgumentException.class)
+        assertThatExceptionOfType(NullPointerException.class)
                 .isThrownBy(() -> TableRepairMetricsImpl.builder()
                         .withTableStorageStates(null)
                         .build());
