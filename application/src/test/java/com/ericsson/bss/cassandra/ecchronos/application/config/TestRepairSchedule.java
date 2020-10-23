@@ -75,4 +75,42 @@ public class TestRepairSchedule
         assertThat(schedule.getRepairConfiguration("ks1", "tb2")).contains(ks1tb2);
         assertThat(schedule.getRepairConfiguration("ks2", "tb1")).contains(ks2tb1);
     }
+
+    @Test
+    public void testRegex() throws Exception
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("regex_schedule.yml").getFile());
+
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
+        RepairSchedule schedule = objectMapper.readValue(file, RepairSchedule.class);
+
+        RepairConfiguration allKeyspacesPattern = RepairConfiguration.newBuilder()
+                .withRepairInterval(8, TimeUnit.DAYS)
+                .build();
+
+        RepairConfiguration allKeyspacesTb2 = RepairConfiguration.newBuilder()
+                .withRepairInterval(5, TimeUnit.DAYS)
+                .build();
+
+        RepairConfiguration ks2Tb1 = RepairConfiguration.newBuilder()
+                .withRepairInterval(1, TimeUnit.DAYS)
+                .build();
+        RepairConfiguration ks2Tb2 = RepairConfiguration.newBuilder()
+                .withRepairInterval(2, TimeUnit.DAYS)
+                .build();
+
+        assertThat(schedule.getRepairConfiguration("any", "nonexisting")).isEmpty();
+
+        assertThat(schedule.getRepairConfiguration("any", "table_abc")).contains(allKeyspacesPattern);
+        assertThat(schedule.getRepairConfiguration("ks2", "table_abc")).contains(allKeyspacesPattern);
+
+        assertThat(schedule.getRepairConfiguration("any", "tb2")).contains(allKeyspacesTb2);
+
+        assertThat(schedule.getRepairConfiguration("ks2", "tb1")).contains(ks2Tb1);
+        assertThat(schedule.getRepairConfiguration("ks2", "tb2")).contains(ks2Tb2);
+
+        assertThat(schedule.getRepairConfiguration("ks2", "tb23")).isEmpty();
+    }
 }

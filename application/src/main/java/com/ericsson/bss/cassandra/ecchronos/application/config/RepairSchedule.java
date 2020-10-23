@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
@@ -36,14 +37,7 @@ public class RepairSchedule
 
     public Optional<RepairConfiguration> getRepairConfiguration(String keyspace, String table)
     {
-        KeyspaceSchedule keyspaceSchedule = keyspaces.get(keyspace);
-
-        if (keyspaceSchedule != null)
-        {
-            return keyspaceSchedule.get(table);
-        }
-
-        return Optional.empty();
+        return findMatching(keyspace, keyspaces, keyspaceSchedule -> keyspaceSchedule.get(table));
     }
 
     static class KeyspaceSchedule
@@ -63,19 +57,7 @@ public class RepairSchedule
 
         Optional<RepairConfiguration> get(String table)
         {
-            RepairConfig repairConfig = tables.get(table);
-
-            if (repairConfig != null)
-            {
-                return Optional.of(repairConfig.asRepairConfiguration());
-            }
-
-            return Optional.empty();
-        }
-
-        Map<String, TableRepairConfig> getTables()
-        {
-            return tables;
+            return findMatching(table, tables, repairConfig -> Optional.of(repairConfig.asRepairConfiguration()));
         }
 
         void setTables(List<TableRepairConfig> tables)
@@ -100,5 +82,34 @@ public class RepairSchedule
         {
             this.name = name;
         }
+    }
+
+    private static <T, V> Optional<V> findMatching(String searchTerm, Map<String, T> map,
+            Function<T, Optional<V>> function)
+    {
+        T exactMatch = map.get(searchTerm);
+        if (exactMatch != null)
+        {
+            Optional<V> optionalValue = function.apply(exactMatch);
+            if (optionalValue.isPresent())
+            {
+                return optionalValue;
+            }
+        }
+
+        for (Map.Entry<String, T> entry : map.entrySet())
+        {
+            String regex = entry.getKey();
+            if (searchTerm.matches(regex))
+            {
+                Optional<V> optionalValue = function.apply(entry.getValue());
+                if (optionalValue.isPresent())
+                {
+                    return optionalValue;
+                }
+            }
+        }
+
+        return Optional.empty();
     }
 }

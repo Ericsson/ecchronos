@@ -13,6 +13,21 @@
 # limitations under the License.
 #
 
+##
+## The schedules can be defined using exact keyspace/table names.
+## It's also possible to define the names using quoted regular expressions.
+##
+## When the repair scheduler configures repairs it adheres to the following order:
+## | Keyspace regex? | Table regex? |
+## |-----------------|--------------|
+## | No              | No           |
+## | No              | Yes          |
+## | Yes             | No           |
+## | Yes             | Yes          |
+##
+## If multiple regular expressions matches a single table there is no preference defined.
+##
+
 keyspaces:
 #  - name: ks1
 #    tables:
