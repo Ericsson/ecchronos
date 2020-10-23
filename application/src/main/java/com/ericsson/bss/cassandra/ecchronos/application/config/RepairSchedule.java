@@ -72,6 +72,7 @@ public class RepairSchedule
     static class TableRepairConfig extends RepairConfig
     {
         private String name;
+        private boolean enabled = true;
 
         String getName()
         {
@@ -81,6 +82,27 @@ public class RepairSchedule
         void setName(String name)
         {
             this.name = name;
+        }
+
+        public boolean isEnabled()
+        {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled)
+        {
+            this.enabled = enabled;
+        }
+
+        @Override
+        public RepairConfiguration asRepairConfiguration()
+        {
+            if (isEnabled())
+            {
+                return super.asRepairConfiguration();
+            }
+
+            return RepairConfiguration.DISABLED;
         }
     }
 

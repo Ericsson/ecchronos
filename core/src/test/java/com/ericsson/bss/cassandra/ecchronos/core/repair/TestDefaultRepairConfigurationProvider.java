@@ -261,6 +261,24 @@ public class TestDefaultRepairConfigurationProvider
         defaultRepairConfigurationProvider.close();
     }
 
+    @Test
+    public void testDisabledRepairConfiguration()
+    {
+        // Create the table metadata before creating the repair configuration provider
+        TableMetadata tableMetadata = mockReplicatedTable(TABLE_REFERENCE);
+        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
+                .withRepairConfiguration(tb -> RepairConfiguration.DISABLED)
+                .build();
+
+        verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
+
+        defaultRepairConfigurationProvider.onTableRemoved(tableMetadata);
+        verify(myRepairScheduler, times(2)).removeConfiguration(eq(TABLE_REFERENCE));
+
+        verifyNoMoreInteractions(myRepairScheduler);
+        defaultRepairConfigurationProvider.close();
+    }
+
     private DefaultRepairConfigurationProvider.Builder defaultRepairConfigurationProviderBuilder()
     {
         return DefaultRepairConfigurationProvider.newBuilder()

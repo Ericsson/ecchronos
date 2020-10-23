@@ -50,7 +50,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
             String keyspaceName = keyspaceMetadata.getName();
             if (myReplicatedTableProvider.accept(keyspaceName))
             {
-                allTableOperation(keyspaceName, this::putConfiguration);
+                allTableOperation(keyspaceName, this::updateConfiguration);
             }
         }
     }
@@ -61,7 +61,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
         String keyspaceName = current.getName();
         if (myReplicatedTableProvider.accept(keyspaceName))
         {
-            allTableOperation(keyspaceName, this::putConfiguration);
+            allTableOperation(keyspaceName, this::updateConfiguration);
         }
         else
         {
@@ -76,7 +76,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
         {
             TableReference tableReference = myTableReferenceFactory.forTable(table.getKeyspace().getName(),
                     table.getName());
-            putConfiguration(tableReference);
+            updateConfiguration(tableReference);
         }
     }
 
@@ -113,9 +113,18 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
         }
     }
 
-    private void putConfiguration(TableReference tableReference)
+    private void updateConfiguration(TableReference tableReference)
     {
-        myRepairScheduler.putConfiguration(tableReference, myRepairConfigurationFunction.apply(tableReference));
+        RepairConfiguration repairConfiguration = myRepairConfigurationFunction.apply(tableReference);
+
+        if (RepairConfiguration.DISABLED.equals(repairConfiguration))
+        {
+            myRepairScheduler.removeConfiguration(tableReference);
+        }
+        else
+        {
+            myRepairScheduler.putConfiguration(tableReference, myRepairConfigurationFunction.apply(tableReference));
+        }
     }
 
     public static Builder newBuilder()

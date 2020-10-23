@@ -48,3 +48,5 @@ keyspaces:
           unit: days
       unwind_ratio: 0.5
       size_target: 100m
+    - name: tb2
+      enabled: false

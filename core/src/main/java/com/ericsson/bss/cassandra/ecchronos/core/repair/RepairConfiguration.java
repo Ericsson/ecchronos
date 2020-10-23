@@ -33,6 +33,7 @@ public class RepairConfiguration
     private static final long DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES = FULL_REPAIR_SIZE;
 
     public static final RepairConfiguration DEFAULT = newBuilder().build();
+    public static final RepairConfiguration DISABLED = newBuilder().withRepairInterval(0, TimeUnit.MILLISECONDS).build();
 
     private final RepairOptions.RepairParallelism myRepairParallelism;
     private final long myRepairIntervalInMs;

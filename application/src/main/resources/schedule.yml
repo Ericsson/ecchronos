@@ -33,6 +33,11 @@ keyspaces:
 #    tables:
 #    - name: tb1
 ##
+## If repair should be enabled for this table.
+## This can be used to disable automatic repairs of certain tables.
+##
+#      enabled: true
+##
 ## How often repairs should be triggered for the table.
 ##
 #      interval:

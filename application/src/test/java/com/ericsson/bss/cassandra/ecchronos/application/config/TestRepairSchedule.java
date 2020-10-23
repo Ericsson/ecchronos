@@ -74,6 +74,7 @@ public class TestRepairSchedule
         assertThat(schedule.getRepairConfiguration("ks1", "tb1")).contains(ks1tb1);
         assertThat(schedule.getRepairConfiguration("ks1", "tb2")).contains(ks1tb2);
         assertThat(schedule.getRepairConfiguration("ks2", "tb1")).contains(ks2tb1);
+        assertThat(schedule.getRepairConfiguration("ks2", "tb2")).contains(RepairConfiguration.DISABLED);
     }
 
     @Test
