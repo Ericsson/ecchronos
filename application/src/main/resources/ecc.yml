@@ -62,6 +62,11 @@ connection:
 ##
 repair:
   ##
+  ## A class for providing repair configuration for tables.
+  ## The default FileBasedRepairConfiguration uses a schedule.yml file to define per-table configurations.
+  ##
+  provider: com.ericsson.bss.cassandra.ecchronos.application.FileBasedRepairConfiguration
+  ##
   ## How often repairs should be triggered for tables.
   ##
   interval:

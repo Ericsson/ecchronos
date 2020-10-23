@@ -19,18 +19,19 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import org.springframework.context.ApplicationContext;
+
+import com.ericsson.bss.cassandra.ecchronos.application.AbstractRepairConfigurationProvider;
+import com.ericsson.bss.cassandra.ecchronos.application.FileBasedRepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
 
 public class Config
 {
     private ConnectionConfig connection;
-    private RepairConfig repair;
+    private GlobalRepairConfig repair;
     private StatisticsConfig statistics;
     private LockFactoryConfig lock_factory;
     private RunPolicyConfig run_policy;
@@ -47,12 +48,12 @@ public class Config
         this.connection = connection;
     }
 
-    public RepairConfig getRepair()
+    public GlobalRepairConfig getRepair()
     {
         return repair;
     }
 
-    public void setRepair(RepairConfig repair)
+    public void setRepair(GlobalRepairConfig repair)
     {
         this.repair = repair;
     }
@@ -156,7 +157,6 @@ public class Config
             return port;
         }
 
-
         public Class<T> getProviderClass()
         {
             return provider;
@@ -258,40 +258,16 @@ public class Config
         }
     }
 
-    public static class RepairConfig
+    public static class GlobalRepairConfig extends RepairConfig
     {
-        private Interval interval;
-        private RepairOptions.RepairParallelism parallelism;
         private RepairLockType lock_type;
-        private Alarm alarm;
-        private double unwind_ratio;
         private Interval history_lookback;
-        private long size_target;
         private RepairHistory history;
-
-        public Interval getInterval()
-        {
-            return this.interval;
-        }
-
-        public RepairOptions.RepairParallelism getParallelism()
-        {
-            return parallelism;
-        }
+        private Class<? extends AbstractRepairConfigurationProvider> provider = FileBasedRepairConfiguration.class;
 
         public RepairLockType getLockType()
         {
             return lock_type;
-        }
-
-        public Alarm getAlarm()
-        {
-            return alarm;
-        }
-
-        public double getUnwindRatio()
-        {
-            return unwind_ratio;
         }
 
         public Interval getHistoryLookback()
@@ -299,51 +275,14 @@ public class Config
             return history_lookback;
         }
 
-        public long getSizeTargetInBytes()
-        {
-            return size_target;
-        }
-
-        public void setInterval(Interval interval)
-        {
-            this.interval = interval;
-        }
-
-        public void setParallelism(String parallelism)
-        {
-            this.parallelism = RepairOptions.RepairParallelism.valueOf(parallelism.toUpperCase(Locale.US));
-        }
-
         public void setLock_type(String lock_type)
         {
             this.lock_type = RepairLockType.valueOf(lock_type.toUpperCase(Locale.US));
         }
 
-        public void setAlarm(Alarm alarm)
-        {
-            this.alarm = alarm;
-        }
-
-        public void setUnwind_ratio(double unwind_ratio)
-        {
-            this.unwind_ratio = unwind_ratio;
-        }
-
         public void setHistory_lookback(Interval history_lookback)
         {
             this.history_lookback = history_lookback;
-        }
-
-        public void setSize_target(String size_target)
-        {
-            if (size_target == null)
-            {
-                this.size_target = RepairConfiguration.FULL_REPAIR_SIZE;
-            }
-            else
-            {
-                this.size_target = UnitConverter.toBytes(size_target);
-            }
         }
 
         public RepairHistory getHistory()
@@ -355,15 +294,26 @@ public class Config
         {
             this.history = history;
         }
+
+        public Class<? extends AbstractRepairConfigurationProvider> getProvider()
+        {
+            return provider;
+        }
+
+        public void setProvider(Class<? extends AbstractRepairConfigurationProvider> provider)
+                throws NoSuchMethodException
+        {
+            provider.getDeclaredConstructor(ApplicationContext.class);
+
+            this.provider = provider;
+        }
     }
 
     public static class RepairHistory
     {
         public enum Provider
         {
-            CASSANDRA,
-            UPGRADE,
-            ECC
+            CASSANDRA, UPGRADE, ECC
         }
 
         private Provider provider;
@@ -394,6 +344,17 @@ public class Config
     {
         private Interval warn;
         private Interval error;
+
+        public Alarm()
+        {
+            // Default constructor for jackson
+        }
+
+        public Alarm(Interval warn, Interval error)
+        {
+            this.warn = warn;
+            this.error = error;
+        }
 
         public Interval getWarn()
         {
@@ -547,6 +508,17 @@ public class Config
     {
         private long time;
         private TimeUnit unit;
+
+        public Interval()
+        {
+            // Default constructor for jackson
+        }
+
+        public Interval(long time, TimeUnit unit)
+        {
+            this.time = time;
+            this.unit = unit;
+        }
 
         public long getInterval(TimeUnit unit)
         {

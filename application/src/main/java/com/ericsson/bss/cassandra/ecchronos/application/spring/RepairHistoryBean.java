@@ -42,7 +42,7 @@ public class RepairHistoryBean
 
         Node localNode = nodeResolver.fromUUID(host.getHostId()).orElseThrow(IllegalStateException::new);
 
-        Config.RepairConfig repairConfig = configuration.getRepair();
+        Config.GlobalRepairConfig repairConfig = configuration.getRepair();
 
         if (repairConfig.getHistory().getProvider() == Config.RepairHistory.Provider.CASSANDRA)
         {
@@ -88,7 +88,8 @@ public class RepairHistoryBean
         return repairHistoryProvider;
     }
 
-    private RepairHistoryProvider createCassandraHistoryProvider(Config.RepairConfig repairConfig, Session session,
+    private RepairHistoryProvider createCassandraHistoryProvider(Config.GlobalRepairConfig repairConfig,
+            Session session,
             NodeResolver nodeResolver, StatementDecorator statementDecorator)
     {
         return new RepairHistoryProviderImpl(nodeResolver, session, statementDecorator,

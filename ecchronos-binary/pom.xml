@@ -128,6 +128,7 @@
                                     <includes>
                                         <include>ecc.yml</include>
                                         <include>security.yml</include>
+                                        <include>schedule.yml</include>
                                     </includes>
                                 </resource>
                             </resources>

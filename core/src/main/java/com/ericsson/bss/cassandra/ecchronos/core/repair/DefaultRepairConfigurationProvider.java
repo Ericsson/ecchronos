@@ -14,33 +14,26 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import com.datastax.driver.core.AggregateMetadata;
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.FunctionMetadata;
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.MaterializedViewMetadata;
-import com.datastax.driver.core.SchemaChangeListener;
-import com.datastax.driver.core.TableMetadata;
-import com.datastax.driver.core.UserType;
+import java.io.Closeable;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import com.datastax.driver.core.*;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.google.common.base.Preconditions;
 
-import java.io.Closeable;
-import java.util.function.Consumer;
-
 /**
- * A repair configuration provider that adds configuration to {@link RepairScheduler} based on
- * if the table is replicated locally using the default repair configuration provided during construction
- * of this object.
+ * A repair configuration provider that adds configuration to {@link RepairScheduler} based on if the table is
+ * replicated locally using the default repair configuration provided during construction of this object.
  */
 public class DefaultRepairConfigurationProvider implements SchemaChangeListener, Closeable
 {
     private final Cluster myCluster;
     private final ReplicatedTableProvider myReplicatedTableProvider;
     private final RepairScheduler myRepairScheduler;
-    private final RepairConfiguration myDefaultRepairConfiguration;
+    private final Function<TableReference, RepairConfiguration> myRepairConfigurationFunction;
     private final TableReferenceFactory myTableReferenceFactory;
 
     private DefaultRepairConfigurationProvider(Builder builder)
@@ -48,7 +41,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
         myCluster = builder.myCluster;
         myReplicatedTableProvider = builder.myReplicatedTableProvider;
         myRepairScheduler = builder.myRepairScheduler;
-        myDefaultRepairConfiguration = builder.myDefaultRepairConfiguration;
+        myRepairConfigurationFunction = builder.myRepairConfigurationFunction;
         myTableReferenceFactory = Preconditions.checkNotNull(builder.myTableReferenceFactory,
                 "Table reference factory must be set");
 
@@ -57,7 +50,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
             String keyspaceName = keyspaceMetadata.getName();
             if (myReplicatedTableProvider.accept(keyspaceName))
             {
-                allTableOperation(keyspaceName, (tableReference) -> myRepairScheduler.putConfiguration(tableReference, myDefaultRepairConfiguration));
+                allTableOperation(keyspaceName, this::putConfiguration);
             }
         }
     }
@@ -68,7 +61,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
         String keyspaceName = current.getName();
         if (myReplicatedTableProvider.accept(keyspaceName))
         {
-            allTableOperation(keyspaceName, (tableReference) -> myRepairScheduler.putConfiguration(tableReference, myDefaultRepairConfiguration));
+            allTableOperation(keyspaceName, this::putConfiguration);
         }
         else
         {
@@ -81,8 +74,9 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
     {
         if (myReplicatedTableProvider.accept(table.getKeyspace().getName()))
         {
-            TableReference tableReference = myTableReferenceFactory.forTable(table.getKeyspace().getName(), table.getName());
-            myRepairScheduler.putConfiguration(tableReference, myDefaultRepairConfiguration);
+            TableReference tableReference = myTableReferenceFactory.forTable(table.getKeyspace().getName(),
+                    table.getName());
+            putConfiguration(tableReference);
         }
     }
 
@@ -91,7 +85,8 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
     {
         if (myReplicatedTableProvider.accept(table.getKeyspace().getName()))
         {
-            TableReference tableReference = myTableReferenceFactory.forTable(table.getKeyspace().getName(), table.getName());
+            TableReference tableReference = myTableReferenceFactory.forTable(table.getKeyspace().getName(),
+                    table.getName());
             myRepairScheduler.removeConfiguration(tableReference);
         }
     }
@@ -118,6 +113,11 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
         }
     }
 
+    private void putConfiguration(TableReference tableReference)
+    {
+        myRepairScheduler.putConfiguration(tableReference, myRepairConfigurationFunction.apply(tableReference));
+    }
+
     public static Builder newBuilder()
     {
         return new Builder();
@@ -128,7 +128,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
         private Cluster myCluster;
         private ReplicatedTableProvider myReplicatedTableProvider;
         private RepairScheduler myRepairScheduler;
-        private RepairConfiguration myDefaultRepairConfiguration;
+        private Function<TableReference, RepairConfiguration> myRepairConfigurationFunction;
         private TableReferenceFactory myTableReferenceFactory;
 
         public Builder withCluster(Cluster cluster)
@@ -139,7 +139,13 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
 
         public Builder withDefaultRepairConfiguration(RepairConfiguration defaultRepairConfiguration)
         {
-            myDefaultRepairConfiguration = defaultRepairConfiguration;
+            myRepairConfigurationFunction = (tableReference) -> defaultRepairConfiguration;
+            return this;
+        }
+
+        public Builder withRepairConfiguration(Function<TableReference, RepairConfiguration> defaultRepairConfiguration)
+        {
+            myRepairConfigurationFunction = defaultRepairConfiguration;
             return this;
         }
 
