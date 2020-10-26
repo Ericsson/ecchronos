@@ -13,6 +13,24 @@
 # limitations under the License.
 #
 
+## Spring Boot
+# Description on all possible parameters can be found here:
+# https://docs.spring.io/spring-boot/docs/current/reference/html/appendix-application-properties.html#core-properties
+
 # Actuator Config
-management.endpoints.enabled-by-default=false
-management.endpoint.health.enabled=true
+management:
+  endpoints:
+    enabled-by-default: false
+  endpoint:
+    health:
+      enabled: true
+
+# Security Config
+#server:
+#  ssl:
+#    enabled: false
+#    key-store: <path to keystore>
+#    key-store-password: <password>
+#    key-store-type: <keystore type>
+#    key-alias: <key alias>
+#    key-password: <key password>
