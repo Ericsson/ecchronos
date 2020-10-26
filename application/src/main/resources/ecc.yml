@@ -73,11 +73,6 @@ repair:
     time: 7
     unit: days
   ##
-  ## Specifies the parallelism to use for repairs.
-  ## Possible values are "parallel".
-  ##
-  parallelism: parallel
-  ##
   ## Specifies the type of lock to use for repairs.
   ## "vnode" will lock each node involved in a repair individually and increase the number of
   ## parallel repairs that can run in a single data center.

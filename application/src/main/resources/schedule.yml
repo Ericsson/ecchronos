@@ -17,15 +17,15 @@
 ## The schedules can be defined using exact keyspace/table names.
 ## It's also possible to define the names using quoted regular expressions.
 ##
-## When the repair scheduler configures repairs it adheres to the following order:
-## | Keyspace regex? | Table regex? |
-## |-----------------|--------------|
-## | No              | No           |
-## | No              | Yes          |
-## | Yes             | No           |
-## | Yes             | Yes          |
+## When the repair scheduler configures repairs it configures in the following order:
 ##
-## If multiple regular expressions matches a single table there is no preference defined.
+## 1. Defined tables (ks1/tb1)
+## 2. Defined keyspaces with regex tables (ks1/[a-Z]123)
+## 3. Regex Keyspaces with defined tables ([a-Z]abc/tb2)
+## 4. Regex keyspaces with regex tables ([a-Z]abc/[a-Z]123)
+##
+## Multiple regular expressions matching a single table should be avoided as it will be difficult
+## to know which value will win out.
 ##
 
 keyspaces:
@@ -43,11 +43,6 @@ keyspaces:
 #      interval:
 #        time: 7
 #        unit: days
-##
-## Specifies the parallelism to use for repairs.
-## Possible values are "parallel".
-##
-#      parallelism: parallel
 ##
 ## Alarms are triggered when the table has not been repaired for a long amount of time.
 ## The warning alarm is meant to indicate early that repairs are falling behind.

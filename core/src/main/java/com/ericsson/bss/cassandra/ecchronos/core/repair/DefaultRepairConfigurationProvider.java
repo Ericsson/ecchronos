@@ -25,8 +25,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.google.common.base.Preconditions;
 
 /**
- * A repair configuration provider that adds configuration to {@link RepairScheduler} based on if the table is
- * replicated locally using the default repair configuration provided during construction of this object.
+ * A repair configuration provider that adds configuration to {@link RepairScheduler} based on whether or not the table
+ * is replicated locally using the default repair configuration provided during construction of this object.
  */
 public class DefaultRepairConfigurationProvider implements SchemaChangeListener, Closeable
 {

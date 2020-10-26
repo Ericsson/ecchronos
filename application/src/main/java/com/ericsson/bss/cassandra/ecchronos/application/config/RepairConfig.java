@@ -14,17 +14,14 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config;
 
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
 
 public class RepairConfig
 {
     private Config.Interval interval = new Config.Interval(7, TimeUnit.DAYS);
-    private RepairOptions.RepairParallelism parallelism = RepairOptions.RepairParallelism.PARALLEL;
     private Config.Alarm alarm = new Config.Alarm(new Config.Interval(8, TimeUnit.DAYS),
             new Config.Interval(10, TimeUnit.DAYS));
     private double unwind_ratio = 0.0d;
@@ -33,11 +30,6 @@ public class RepairConfig
     public void setInterval(Config.Interval interval)
     {
         this.interval = interval;
-    }
-
-    public void setParallelism(String parallelism)
-    {
-        this.parallelism = RepairOptions.RepairParallelism.valueOf(parallelism.toUpperCase(Locale.US));
     }
 
     public void setAlarm(Config.Alarm alarm)
@@ -67,7 +59,6 @@ public class RepairConfig
         return RepairConfiguration.newBuilder()
                 .withRepairInterval(interval.getInterval(TimeUnit.MILLISECONDS),
                         TimeUnit.MILLISECONDS)
-                .withParallelism(parallelism)
                 .withRepairWarningTime(alarm.getWarn().getInterval(TimeUnit.MILLISECONDS),
                         TimeUnit.MILLISECONDS)
                 .withRepairErrorTime(alarm.getError().getInterval(TimeUnit.MILLISECONDS),

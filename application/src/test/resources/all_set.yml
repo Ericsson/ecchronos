@@ -32,7 +32,6 @@ repair:
   interval:
     time: 1
     unit: days
-  parallelism: parallel
   lock_type: datacenter
   alarm:
     warn:
