@@ -42,9 +42,6 @@ def convert_config(config):
 
 
 def print_table_config(config_data):
-    if not isinstance(config_data, list):
-        config_data = [config_data]
-
     config_table = list()
     config_table.append(["Keyspace", "Table", "Interval", "Parallelism", "Unwind ratio", "Warning time", "Error time"])
     sorted_config_data = sorted(config_data, key=lambda config: (config.keyspace, config.table))
@@ -71,10 +68,7 @@ def main():
     arguments = parse_arguments()
     request = rest.RepairConfigRequest(base_url=arguments.url)
 
-    if arguments.table:
-        result = request.get(arguments.keyspace, arguments.table)
-    else:
-        result = request.list(keyspace=arguments.keyspace)
+    result = request.list(keyspace=arguments.keyspace, table=arguments.table)
 
     if result.is_successful():
         print_table_config(result.data)
