@@ -19,6 +19,11 @@ import re
 from subprocess import Popen, PIPE
 
 
+NAME_PATTERN = r'[a-zA-Z0-9]+'
+DURATION_PATTERN = r'\d+ day\(s\) \d+h \d+m \d+s'
+UNWIND_RATIO_PATTERN = r'\d+[.]\d+'
+
+
 def run_ecc_config(context, params):
     cmd = [context.config.userdata.get("ecc-config")] + params
     context.proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
@@ -26,8 +31,14 @@ def run_ecc_config(context, params):
 
 
 def table_row(keyspace, table):
-    duration = "\\d+ day\\(s\\) \\d+h \\d+m \\d+s"
-    return "\\| {0} \\| {1} \\| {dur} \\| PARALLEL | \\d+[.]\\d+ \\| {dur} \\| {dur} \\|".format(keyspace, table, dur=duration)
+    return table_pattern(keyspace, table)
+
+
+def table_pattern(keyspace=NAME_PATTERN, table=NAME_PATTERN, interval=DURATION_PATTERN, unwind_ratio=UNWIND_RATIO_PATTERN,
+                  warn_time=DURATION_PATTERN, error_time=DURATION_PATTERN):
+    return r'\| {keyspace} \| {table} \| {interval} \| PARALLEL | {unwind} \| {warn} \| {error} \|'\
+        .format(keyspace=keyspace, table=table, interval=interval, unwind=unwind_ratio,
+                warn=warn_time, error=error_time)
 
 
 def strip_and_collapse(line):
@@ -99,8 +110,45 @@ def step_validate_list_tables_row(context, keyspace, table):
             break
 
     assert found_row != -1, "{0} not found in {1}".format(expected_row, context.rows)
+    context.last_row = strip_and_collapse(context.rows[found_row])
     del context.rows[found_row]
     pass
+
+
+@then(u'the repair interval is {interval}')
+def step_validate_interval(context, interval):
+    row = context.last_row
+    assert row is not None
+
+    expected_row = table_pattern(interval=re.escape(interval))
+    assert re.match(expected_row, row), row
+
+
+@then(u'the unwind ratio is {unwind_ratio}')
+def step_validate_unwind_ratio(context, unwind_ratio):
+    row = context.last_row
+    assert row is not None
+
+    expected_row = table_pattern(unwind_ratio=re.escape(unwind_ratio))
+    assert re.match(expected_row, row), row
+
+
+@then(u'the warning time is {warn_time}')
+def step_validate_warn_time(context, warn_time):
+    row = context.last_row
+    assert row is not None
+
+    expected_row = table_pattern(warn_time=re.escape(warn_time))
+    assert re.match(expected_row, row), row
+
+
+@then(u'the error time is {error_time}')
+def step_validate_error_time(context, error_time):
+    row = context.last_row
+    assert row is not None
+
+    expected_row = table_pattern(error_time=re.escape(error_time))
+    assert re.match(expected_row, row), row
 
 
 @then(u'the config output should not contain more rows')
