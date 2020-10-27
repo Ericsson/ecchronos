@@ -22,6 +22,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.ConfigurationHelp
 import com.ericsson.bss.cassandra.ecchronos.application.config.RepairSchedule;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.google.common.annotations.VisibleForTesting;
 
 public class FileBasedRepairConfiguration extends AbstractRepairConfigurationProvider
 {
@@ -31,10 +32,16 @@ public class FileBasedRepairConfiguration extends AbstractRepairConfigurationPro
 
     public FileBasedRepairConfiguration(ApplicationContext applicationContext) throws ConfigurationException
     {
+        this(applicationContext, ConfigurationHelper.DEFAULT_INSTANCE, CONFIGURATION_FILE);
+    }
+
+    @VisibleForTesting
+    FileBasedRepairConfiguration(ApplicationContext applicationContext, ConfigurationHelper configurationHelper,
+            String configurationFile) throws ConfigurationException
+    {
         super(applicationContext);
 
-        repairSchedule = ConfigurationHelper.DEFAULT_INSTANCE.getConfiguration(CONFIGURATION_FILE,
-                RepairSchedule.class);
+        repairSchedule = configurationHelper.getConfiguration(configurationFile, RepairSchedule.class);
     }
 
     @Override
