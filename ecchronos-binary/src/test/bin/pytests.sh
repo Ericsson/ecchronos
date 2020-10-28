@@ -68,6 +68,27 @@ sed 's;^\(\s*\)\(<appender-ref ref="STDOUT" />\)\s*$;\1<!-- \2 -->;g' -i "$CONF_
 sed "s/#\?scheduler.run.interval.time=[0-9]\+/scheduler.run.interval.time=1/g" -i "$CONF_DIR"/ecc.cfg
 sed "s/#\?scheduler.run.interval.time.unit=seconds\+/scheduler.run.interval.time.unit=seconds/g" -i "$CONF_DIR"/ecc.cfg
 
+## Special config for test.table1
+
+cat <<EOF > "$CONF_DIR"/schedule.yml
+keyspaces:
+  - name: test
+    tables:
+    - name: table1
+      interval:
+        time: 1
+        unit: days
+      unwind_ratio: 0.1
+      alarm:
+        warn:
+          time: 4
+          unit: days
+        error:
+          time: 8
+          unit: days
+
+EOF
+
 cd $PYLIB_DIR
 
 python setup.py install

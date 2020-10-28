@@ -54,6 +54,7 @@
                 <include>security.yml</include>
                 <include>ecc.yml</include>
                 <include>application.yml</include>
+                <include>schedule.yml</include>
             </includes>
         </fileSet>
         <fileSet>

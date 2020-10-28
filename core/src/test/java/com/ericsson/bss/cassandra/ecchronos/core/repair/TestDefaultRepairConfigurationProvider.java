@@ -14,23 +14,25 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import com.datastax.driver.core.*;
-import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
+
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.util.*;
-
-import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.*;
+import com.datastax.driver.core.*;
+import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestDefaultRepairConfigurationProvider
@@ -97,7 +99,8 @@ public class TestDefaultRepairConfigurationProvider
     {
         // Create the table metadata before creating the repair configuration provider
         TableMetadata tableMetadata = mockReplicatedTable(TABLE_REFERENCE);
-        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder().build();
+        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
+                .build();
 
         verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
 
@@ -113,7 +116,8 @@ public class TestDefaultRepairConfigurationProvider
     {
         // Create the table metadata before creating the repair configuration provider
         TableMetadata tableMetadata = mockNonReplicatedTable(TABLE_REFERENCE);
-        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder().build();
+        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
+                .build();
 
         verify(myRepairScheduler, never()).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
 
@@ -127,7 +131,8 @@ public class TestDefaultRepairConfigurationProvider
     @Test
     public void testAddNewTable()
     {
-        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder().build();
+        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
+                .build();
         TableMetadata tableMetadata = mockReplicatedTable(TABLE_REFERENCE);
 
         defaultRepairConfigurationProvider.onTableAdded(tableMetadata);
@@ -143,7 +148,8 @@ public class TestDefaultRepairConfigurationProvider
     @Test
     public void testRemoveTable()
     {
-        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder().build();
+        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
+                .build();
         TableMetadata tableMetadata = mockReplicatedTable(TABLE_REFERENCE);
 
         defaultRepairConfigurationProvider.onTableAdded(tableMetadata);
@@ -160,7 +166,8 @@ public class TestDefaultRepairConfigurationProvider
     @Test
     public void testAddNewNonReplicatedTable()
     {
-        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder().build();
+        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
+                .build();
         TableMetadata tableMetadata = mockNonReplicatedTable(TABLE_REFERENCE);
 
         defaultRepairConfigurationProvider.onTableAdded(tableMetadata);
@@ -175,7 +182,8 @@ public class TestDefaultRepairConfigurationProvider
     @Test
     public void testAddNewReplicatedTableChangedToNonReplicated()
     {
-        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder().build();
+        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
+                .build();
         TableMetadata tableMetadata = mockReplicatedTable(TABLE_REFERENCE);
 
         defaultRepairConfigurationProvider.onTableAdded(tableMetadata);
@@ -196,7 +204,8 @@ public class TestDefaultRepairConfigurationProvider
     @Test
     public void testAddNewNonReplicatedTableChangedToReplicated()
     {
-        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder().build();
+        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
+                .build();
         TableMetadata tableMetadata = mockNonReplicatedTable(TABLE_REFERENCE);
 
         defaultRepairConfigurationProvider.onTableAdded(tableMetadata);
@@ -210,6 +219,61 @@ public class TestDefaultRepairConfigurationProvider
 
         verify(myRepairScheduler, never()).removeConfiguration(eq(TABLE_REFERENCE));
         verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+
+        verifyNoMoreInteractions(myRepairScheduler);
+        defaultRepairConfigurationProvider.close();
+    }
+
+    @Test
+    public void testMultipleTableSchedules()
+    {
+        // Create the table metadata before creating the repair configuration provider
+        TableMetadata tableMetadata = mockReplicatedTable(TABLE_REFERENCE);
+
+        TableReference tableReference2 = tableReference("keyspace2", TABLE_NAME);
+        TableMetadata tableMetadata2 = mockReplicatedTable(tableReference2);
+
+        RepairConfiguration customConfig = RepairConfiguration.newBuilder()
+                .withRepairInterval(1, TimeUnit.DAYS)
+                .build();
+
+        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
+                .withRepairConfiguration(tb -> {
+                    if (tb.equals(tableReference2))
+                    {
+                        return customConfig;
+                    }
+
+                    return RepairConfiguration.DEFAULT;
+                })
+                .build();
+
+        verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairScheduler).putConfiguration(eq(tableReference2), eq(customConfig));
+
+        defaultRepairConfigurationProvider.onTableRemoved(tableMetadata);
+        verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
+
+        defaultRepairConfigurationProvider.onTableRemoved(tableMetadata2);
+        verify(myRepairScheduler).removeConfiguration(eq(tableReference2));
+
+        verifyNoMoreInteractions(myRepairScheduler);
+        defaultRepairConfigurationProvider.close();
+    }
+
+    @Test
+    public void testDisabledRepairConfiguration()
+    {
+        // Create the table metadata before creating the repair configuration provider
+        TableMetadata tableMetadata = mockReplicatedTable(TABLE_REFERENCE);
+        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
+                .withRepairConfiguration(tb -> RepairConfiguration.DISABLED)
+                .build();
+
+        verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
+
+        defaultRepairConfigurationProvider.onTableRemoved(tableMetadata);
+        verify(myRepairScheduler, times(2)).removeConfiguration(eq(TABLE_REFERENCE));
 
         verifyNoMoreInteractions(myRepairScheduler);
         defaultRepairConfigurationProvider.close();

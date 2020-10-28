@@ -62,16 +62,16 @@ connection:
 ##
 repair:
   ##
+  ## A class for providing repair configuration for tables.
+  ## The default FileBasedRepairConfiguration uses a schedule.yml file to define per-table configurations.
+  ##
+  provider: com.ericsson.bss.cassandra.ecchronos.application.FileBasedRepairConfiguration
+  ##
   ## How often repairs should be triggered for tables.
   ##
   interval:
     time: 7
     unit: days
-  ##
-  ## Specifies the parallelism to use for repairs.
-  ## Possible values are "parallel".
-  ##
-  parallelism: parallel
   ##
   ## Specifies the type of lock to use for repairs.
   ## "vnode" will lock each node involved in a repair individually and increase the number of

@@ -123,19 +123,13 @@ class RepairConfigRequest(RestRequest):
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
 
-    def get(self, keyspace, table):
-        request_url = RepairConfigRequest.repair_management_table_config_url.format(keyspace, table)
-
-        result = self.request(request_url)
-        if result.is_successful():
-            result = result.transform_with_data(new_data=TableConfig(result.data))
-
-        return result
-
-    def list(self, keyspace=None):
+    def list(self, keyspace=None, table=None):
         request_url = RepairConfigRequest.repair_management_config_url
         if keyspace is not None:
-            request_url = "{0}/keyspaces/{1}".format(request_url, keyspace)
+            if table is not None:
+                request_url = RepairConfigRequest.repair_management_table_config_url.format(keyspace, table)
+            else:
+                request_url = "{0}/keyspaces/{1}".format(request_url, keyspace)
 
         result = self.request(request_url)
         if result.is_successful():

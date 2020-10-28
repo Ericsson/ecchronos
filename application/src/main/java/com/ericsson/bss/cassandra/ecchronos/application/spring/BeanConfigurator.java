@@ -14,22 +14,13 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import com.codahale.metrics.MetricRegistry;
-import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.dropwizard.DropwizardExports;
-import io.prometheus.client.exporter.MetricsServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
@@ -38,12 +29,14 @@ import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerF
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.codahale.metrics.MetricRegistry;
 import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.application.ConfigurationException;
 import com.ericsson.bss.cassandra.ecchronos.application.ReflectionUtils;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.ConfigRefresher;
+import com.ericsson.bss.cassandra.ecchronos.application.config.ConfigurationHelper;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Security;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
@@ -54,15 +47,16 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.dropwizard.DropwizardExports;
+import io.prometheus.client.exporter.MetricsServlet;
 
 @Configuration
 public class BeanConfigurator
 {
     private static final Logger LOG = LoggerFactory.getLogger(BeanConfigurator.class);
 
-    private static final String CONFIGURATION_DIRECTORY_PATH = "ecchronos.config";
     private static final String CONFIGURATION_FILE = "ecc.yml";
     private static final String SECURITY_FILE = "security.yml";
 
@@ -71,16 +65,13 @@ public class BeanConfigurator
 
     private final ConfigRefresher configRefresher;
 
-    private boolean usePath = false;
-
     public BeanConfigurator() throws ConfigurationException
     {
-        if (System.getProperty(CONFIGURATION_DIRECTORY_PATH) != null)
+        if (ConfigurationHelper.DEFAULT_INSTANCE.usePath())
         {
-            configRefresher = new ConfigRefresher(getConfigPath());
-            configRefresher.watch(configFile(SECURITY_FILE).toPath(),
+            configRefresher = new ConfigRefresher(ConfigurationHelper.DEFAULT_INSTANCE.getConfigPath());
+            configRefresher.watch(ConfigurationHelper.DEFAULT_INSTANCE.configFile(SECURITY_FILE).toPath(),
                     () -> refreshSecurityConfig(cqlSecurity::set, jmxSecurity::set));
-            usePath = true;
         }
         else
         {
@@ -108,65 +99,12 @@ public class BeanConfigurator
 
     private Security getSecurityConfig() throws ConfigurationException
     {
-        if (usePath)
-        {
-            return getConfiguration(configFile(SECURITY_FILE), Security.class);
-        }
-        else
-        {
-            return getFileFromClassPath(SECURITY_FILE, Security.class);
-        }
-    }
-
-    private <T> T getFileFromClassPath(String file, Class<T> clazz) throws ConfigurationException
-    {
-        ClassLoader loader = ClassLoader.getSystemClassLoader();
-        return getConfiguration(loader.getResourceAsStream(file), clazz);
+        return ConfigurationHelper.DEFAULT_INSTANCE.getConfiguration(SECURITY_FILE, Security.class);
     }
 
     private Config getConfiguration() throws ConfigurationException
     {
-        if (usePath)
-        {
-            return getConfiguration(configFile(CONFIGURATION_FILE), Config.class);
-        }
-        else
-        {
-            return getFileFromClassPath(CONFIGURATION_FILE, Config.class);
-        }
-    }
-
-    private static <T> T getConfiguration(File configurationFile, Class<T> clazz) throws ConfigurationException
-    {
-        try
-        {
-            ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-
-            return objectMapper.readValue(configurationFile, clazz);
-        }
-        catch (IOException e)
-        {
-            throw new ConfigurationException("Unable to load configuration file " + configurationFile, e);
-        }
-    }
-
-    private static <T> T getConfiguration(InputStream configurationFile, Class<T> clazz) throws ConfigurationException
-    {
-        try
-        {
-            ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-
-            return objectMapper.readValue(configurationFile, clazz);
-        }
-        catch (IOException e)
-        {
-            throw new ConfigurationException("Unable to load configuration file from classpath", e);
-        }
-    }
-
-    private static File configFile(String configFile)
-    {
-        return new File(getConfigPath().toFile(), configFile);
+        return ConfigurationHelper.DEFAULT_INSTANCE.getConfiguration(CONFIGURATION_FILE, Config.class);
     }
 
     @Bean
@@ -243,11 +181,6 @@ public class BeanConfigurator
     {
         return ReflectionUtils
                 .construct(configuration.getConnectionConfig().getCql().getDecoratorClass(), configuration);
-    }
-
-    private static Path getConfigPath()
-    {
-        return FileSystems.getDefault().getPath(System.getProperty(CONFIGURATION_DIRECTORY_PATH));
     }
 
     private void refreshSecurityConfig(Consumer<Security.CqlSecurity> cqlSetter,

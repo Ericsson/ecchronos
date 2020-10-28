@@ -14,28 +14,32 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config;
 
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
-import com.ericsson.bss.cassandra.ecchronos.application.DefaultJmxConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.application.DefaultNativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.application.NoopStatementDecorator;
-import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.management.remote.JMXConnector;
 import java.io.File;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import javax.management.remote.JMXConnector;
+
+import org.junit.Test;
+import org.springframework.context.ApplicationContext;
+
+import com.datastax.driver.core.Host;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.Statement;
+import com.ericsson.bss.cassandra.ecchronos.application.*;
+import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 public class TestConfig
 {
@@ -63,20 +67,22 @@ public class TestConfig
         assertThat(jmxConnection.getPort()).isEqualTo(7100);
         assertThat(jmxConnection.getProviderClass()).isEqualTo(TestJmxConnectionProvider.class);
 
-        Config.RepairConfig repairConfig = config.getRepair();
+        RepairConfiguration expectedConfiguration = RepairConfiguration.newBuilder()
+                .withRepairInterval(24, TimeUnit.HOURS)
+                .withParallelism(RepairOptions.RepairParallelism.PARALLEL)
+                .withRepairWarningTime(48, TimeUnit.HOURS)
+                .withRepairErrorTime(72, TimeUnit.HOURS)
+                .withRepairUnwindRatio(0.5d)
+                .withTargetRepairSizeInBytes(UnitConverter.toBytes("5m"))
+                .build();
 
-        Config.Interval repairInterval = repairConfig.getInterval();
-        assertThat(repairInterval.getInterval(TimeUnit.HOURS)).isEqualTo(24);
+        Config.GlobalRepairConfig repairConfig = config.getRepair();
+        assertThat(repairConfig.asRepairConfiguration()).isEqualTo(expectedConfiguration);
 
-        assertThat(repairConfig.getParallelism()).isEqualTo(RepairOptions.RepairParallelism.PARALLEL);
         assertThat(repairConfig.getLockType()).isEqualTo(RepairLockType.DATACENTER);
+        assertThat(repairConfig.getProvider()).isEqualTo(TestRepairConfigurationProvider.class);
 
-        assertThat(repairConfig.getAlarm().getWarn().getInterval(TimeUnit.HOURS)).isEqualTo(48);
-        assertThat(repairConfig.getAlarm().getError().getInterval(TimeUnit.HOURS)).isEqualTo(72);
-
-        assertThat(repairConfig.getUnwindRatio()).isEqualTo(0.5d);
         assertThat(repairConfig.getHistoryLookback().getInterval(TimeUnit.DAYS)).isEqualTo(13);
-        assertThat(repairConfig.getSizeTargetInBytes()).isEqualTo(UnitConverter.toBytes("5m"));
         assertThat(repairConfig.getHistory().getProvider()).isEqualTo(Config.RepairHistory.Provider.CASSANDRA);
         assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("customkeyspace");
 
@@ -122,20 +128,23 @@ public class TestConfig
         assertThat(jmxConnection.getPort()).isEqualTo(7199);
         assertThat(jmxConnection.getProviderClass()).isEqualTo(DefaultJmxConnectionProvider.class);
 
-        Config.RepairConfig repairConfig = config.getRepair();
+        RepairConfiguration expectedConfiguration = RepairConfiguration.newBuilder()
+                .withRepairInterval(7, TimeUnit.DAYS)
+                .withParallelism(RepairOptions.RepairParallelism.PARALLEL)
+                .withRepairWarningTime(8, TimeUnit.DAYS)
+                .withRepairErrorTime(10, TimeUnit.DAYS)
+                .withRepairUnwindRatio(0.0d)
+                .withTargetRepairSizeInBytes(Long.MAX_VALUE)
+                .build();
 
-        Config.Interval repairInterval = repairConfig.getInterval();
-        assertThat(repairInterval.getInterval(TimeUnit.DAYS)).isEqualTo(7);
+        Config.GlobalRepairConfig repairConfig = config.getRepair();
 
-        assertThat(repairConfig.getParallelism()).isEqualTo(RepairOptions.RepairParallelism.PARALLEL);
+        assertThat(repairConfig.asRepairConfiguration()).isEqualTo(expectedConfiguration);
+
         assertThat(repairConfig.getLockType()).isEqualTo(RepairLockType.VNODE);
+        assertThat(repairConfig.getProvider()).isEqualTo(FileBasedRepairConfiguration.class);
 
-        assertThat(repairConfig.getAlarm().getWarn().getInterval(TimeUnit.DAYS)).isEqualTo(8);
-        assertThat(repairConfig.getAlarm().getError().getInterval(TimeUnit.DAYS)).isEqualTo(10);
-
-        assertThat(repairConfig.getUnwindRatio()).isEqualTo(0.0d);
         assertThat(repairConfig.getHistoryLookback().getInterval(TimeUnit.DAYS)).isEqualTo(30);
-        assertThat(repairConfig.getSizeTargetInBytes()).isEqualTo(Long.MAX_VALUE);
         assertThat(repairConfig.getHistory().getProvider()).isEqualTo(Config.RepairHistory.Provider.ECC);
         assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("ecchronos");
 
@@ -202,6 +211,20 @@ public class TestConfig
         public Statement apply(Statement statement)
         {
             throw new UnsupportedOperationException();
+        }
+    }
+
+    public static class TestRepairConfigurationProvider extends AbstractRepairConfigurationProvider
+    {
+        protected TestRepairConfigurationProvider(ApplicationContext applicationContext)
+        {
+            super(applicationContext);
+        }
+
+        @Override
+        public Optional<RepairConfiguration> forTable(TableReference tableReference)
+        {
+            return Optional.empty();
         }
     }
 }

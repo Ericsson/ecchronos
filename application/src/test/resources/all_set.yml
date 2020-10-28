@@ -28,10 +28,10 @@ connection:
     provider: com.ericsson.bss.cassandra.ecchronos.application.config.TestConfig$TestJmxConnectionProvider
 
 repair:
+  provider: com.ericsson.bss.cassandra.ecchronos.application.config.TestConfig$TestRepairConfigurationProvider
   interval:
     time: 1
     unit: days
-  parallelism: parallel
   lock_type: datacenter
   alarm:
     warn:
