@@ -123,6 +123,7 @@ public class ITOnDemandRepairJob extends TestBase
                 .withMetadata(myMetadata)
                 .withRepairConfiguration(RepairConfiguration.DEFAULT)
                 .withRepairHistory(myEccRepairHistory)
+                .withNativeConnectionProvider(getNativeConnectionProvider())
                 .build();
     }
 
