@@ -23,6 +23,9 @@ import org.springframework.context.ApplicationContext;
 
 import com.ericsson.bss.cassandra.ecchronos.application.AbstractRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.FileBasedRepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.application.DefaultJmxConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.application.DefaultNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.application.NoopStatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
@@ -30,13 +33,13 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 
 public class Config
 {
-    private ConnectionConfig connection;
-    private GlobalRepairConfig repair;
-    private StatisticsConfig statistics;
-    private LockFactoryConfig lock_factory;
-    private RunPolicyConfig run_policy;
-    private SchedulerConfig scheduler;
-    private RestServerConfig rest_server;
+    private ConnectionConfig connection = new ConnectionConfig();
+    private GlobalRepairConfig repair = new GlobalRepairConfig();
+    private StatisticsConfig statistics = new StatisticsConfig();
+    private LockFactoryConfig lock_factory = new LockFactoryConfig();
+    private RunPolicyConfig run_policy = new RunPolicyConfig();
+    private SchedulerConfig scheduler = new SchedulerConfig();
+    private RestServerConfig rest_server = new RestServerConfig();
 
     public ConnectionConfig getConnectionConfig()
     {
@@ -45,7 +48,10 @@ public class Config
 
     public void setConnection(ConnectionConfig connection)
     {
-        this.connection = connection;
+        if (connection != null)
+        {
+            this.connection = connection;
+        }
     }
 
     public GlobalRepairConfig getRepair()
@@ -55,7 +61,10 @@ public class Config
 
     public void setRepair(GlobalRepairConfig repair)
     {
-        this.repair = repair;
+        if (repair != null)
+        {
+            this.repair = repair;
+        }
     }
 
     public StatisticsConfig getStatistics()
@@ -65,7 +74,10 @@ public class Config
 
     public void setStatistics(StatisticsConfig statistics)
     {
-        this.statistics = statistics;
+        if (statistics != null)
+        {
+            this.statistics = statistics;
+        }
     }
 
     public LockFactoryConfig getLockFactory()
@@ -75,7 +87,10 @@ public class Config
 
     public void setLock_factory(LockFactoryConfig lock_factory)
     {
-        this.lock_factory = lock_factory;
+        if (lock_factory != null)
+        {
+            this.lock_factory = lock_factory;
+        }
     }
 
     public RunPolicyConfig getRunPolicy()
@@ -85,7 +100,10 @@ public class Config
 
     public void setRun_policy(RunPolicyConfig run_policy)
     {
-        this.run_policy = run_policy;
+        if (run_policy != null)
+        {
+            this.run_policy = run_policy;
+        }
     }
 
     public SchedulerConfig getScheduler()
@@ -95,7 +113,10 @@ public class Config
 
     public void setScheduler(SchedulerConfig scheduler)
     {
-        this.scheduler = scheduler;
+        if (scheduler != null)
+        {
+            this.scheduler = scheduler;
+        }
     }
 
     public RestServerConfig getRestServer()
@@ -105,13 +126,16 @@ public class Config
 
     public void setRest_server(RestServerConfig rest_server)
     {
-        this.rest_server = rest_server;
+        if(rest_server != null)
+        {
+            this.rest_server = rest_server;
+        }
     }
 
     public static class ConnectionConfig
     {
-        private NativeConnection cql;
-        private JmxConnection jmx;
+        private NativeConnection cql = new NativeConnection();
+        private JmxConnection jmx = new JmxConnection();
 
         public NativeConnection getCql()
         {
@@ -125,12 +149,18 @@ public class Config
 
         public void setCql(NativeConnection cql)
         {
-            this.cql = cql;
+            if (cql != null)
+            {
+                this.cql = cql;
+            }
         }
 
         public void setJmx(JmxConnection jmx)
         {
-            this.jmx = jmx;
+            if (jmx != null)
+            {
+                this.jmx = jmx;
+            }
         }
 
         @Override
@@ -142,10 +172,10 @@ public class Config
 
     public static abstract class Connection<T>
     {
-        private String host;
-        private int port;
-        private Class<T> provider;
-        private Timeout timeout;
+        private String host = "localhost";
+        protected int port = 9042;
+        protected Class<? extends T> provider;
+        private Timeout timeout = new Timeout();
 
         public String getHost()
         {
@@ -157,7 +187,7 @@ public class Config
             return port;
         }
 
-        public Class<T> getProviderClass()
+        public Class<? extends T> getProviderClass()
         {
             return provider;
         }
@@ -182,7 +212,7 @@ public class Config
             this.timeout = timeout;
         }
 
-        public void setProvider(Class<T> provider) throws NoSuchMethodException
+        public void setProvider(Class<? extends T> provider) throws NoSuchMethodException
         {
             provider.getDeclaredConstructor(expectedConstructor());
 
@@ -199,8 +229,8 @@ public class Config
 
         public static class Timeout
         {
-            private long time;
-            private TimeUnit unit;
+            private long time = 0;
+            private TimeUnit unit = TimeUnit.MILLISECONDS;
 
             public long getConnectionTimeout(TimeUnit unit)
             {
@@ -221,9 +251,15 @@ public class Config
 
     public static class NativeConnection extends Connection<NativeConnectionProvider>
     {
-        private Class<StatementDecorator> decoratorClass;
+        private Class<? extends StatementDecorator> decoratorClass = NoopStatementDecorator.class;
 
-        public Class<StatementDecorator> getDecoratorClass()
+        public NativeConnection()
+        {
+            provider = DefaultNativeConnectionProvider.class;
+            port = 9042;
+        }
+
+        public Class<? extends StatementDecorator> getDecoratorClass()
         {
             return decoratorClass;
         }
@@ -251,6 +287,13 @@ public class Config
 
     public static class JmxConnection extends Connection<JmxConnectionProvider>
     {
+
+        public JmxConnection()
+        {
+            provider = DefaultJmxConnectionProvider.class;
+            port = 7199;
+        }
+
         @Override
         protected Class<?>[] expectedConstructor()
         {
@@ -260,10 +303,19 @@ public class Config
 
     public static class GlobalRepairConfig extends RepairConfig
     {
-        private RepairLockType lock_type;
-        private Interval history_lookback;
-        private RepairHistory history;
         private Class<? extends AbstractRepairConfigurationProvider> provider = FileBasedRepairConfiguration.class;
+        private Interval interval = new Interval(7, TimeUnit.DAYS);
+        private RepairLockType lock_type = RepairLockType.VNODE;
+        private Alarm alarm = new Alarm();
+        private double unwind_ratio = 0.0d;
+        private Interval history_lookback = new Interval(30, TimeUnit.DAYS);
+        private long size_target = Long.MAX_VALUE;
+        private RepairHistory history = new RepairHistory();
+
+        public Interval getInterval()
+        {
+            return this.interval;
+        }
 
         public RepairLockType getLockType()
         {
@@ -316,8 +368,8 @@ public class Config
             CASSANDRA, UPGRADE, ECC
         }
 
-        private Provider provider;
-        private String keyspace;
+        private Provider provider = Provider.ECC;
+        private String keyspace = "ecchronos";
 
         public Provider getProvider()
         {
@@ -342,8 +394,8 @@ public class Config
 
     public static class Alarm
     {
-        private Interval warn;
-        private Interval error;
+        private Interval warn = new Interval(8, TimeUnit.DAYS);
+        private Interval error = new Interval(10, TimeUnit.DAYS);;
 
         public Alarm()
         {
@@ -379,8 +431,8 @@ public class Config
 
     public static class StatisticsConfig
     {
-        private boolean enabled;
-        private File directory;
+        private boolean enabled = true;
+        private File directory = new File("./statistics");
 
         public boolean isEnabled()
         {
@@ -405,7 +457,7 @@ public class Config
 
     public static class LockFactoryConfig
     {
-        private CasLockFactoryConfig cas;
+        private CasLockFactoryConfig cas = new CasLockFactoryConfig();
 
         public CasLockFactoryConfig getCas()
         {
@@ -420,7 +472,7 @@ public class Config
 
     public static class CasLockFactoryConfig
     {
-        private String keyspace;
+        private String keyspace = "ecchronos";
 
         public String getKeyspace()
         {
@@ -435,7 +487,7 @@ public class Config
 
     public static class RunPolicyConfig
     {
-        private TimeBasedConfig time_based;
+        private TimeBasedConfig time_based = new TimeBasedConfig();
 
         public TimeBasedConfig getTimeBased()
         {
@@ -450,7 +502,7 @@ public class Config
 
     public static class TimeBasedConfig
     {
-        private String keyspace;
+        private String keyspace = "ecchronos";
 
         public String getKeyspace()
         {
@@ -465,7 +517,7 @@ public class Config
 
     public static class SchedulerConfig
     {
-        private Interval frequency;
+        private Interval frequency = new Interval(30, TimeUnit.SECONDS);
 
         public Interval getFrequency()
         {
@@ -480,8 +532,8 @@ public class Config
 
     public static class RestServerConfig
     {
-        private String host;
-        private int port;
+        private String host = "localhost";
+        private int port = 8080;
 
         public String getHost()
         {

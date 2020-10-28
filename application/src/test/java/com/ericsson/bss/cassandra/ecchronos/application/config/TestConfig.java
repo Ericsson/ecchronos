@@ -105,10 +105,72 @@ public class TestConfig
     }
 
     @Test
-    public void testDefault() throws Exception
+    public void testWithDefaultFile() throws Exception
     {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         File file = new File(classLoader.getResource("ecc.yml").getFile());
+
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
+        Config config = objectMapper.readValue(file, Config.class);
+
+        Config.ConnectionConfig connection = config.getConnectionConfig();
+
+        Config.NativeConnection nativeConnection = connection.getCql();
+        assertThat(nativeConnection.getHost()).isEqualTo("localhost");
+        assertThat(nativeConnection.getPort()).isEqualTo(9042);
+        assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS)).isEqualTo(0);
+        assertThat(nativeConnection.getProviderClass()).isEqualTo(DefaultNativeConnectionProvider.class);
+        assertThat(nativeConnection.getDecoratorClass()).isEqualTo(NoopStatementDecorator.class);
+
+        Config.Connection jmxConnection = connection.getJmx();
+        assertThat(jmxConnection.getHost()).isEqualTo("localhost");
+        assertThat(jmxConnection.getPort()).isEqualTo(7199);
+        assertThat(jmxConnection.getProviderClass()).isEqualTo(DefaultJmxConnectionProvider.class);
+
+        RepairConfiguration expectedConfiguration = RepairConfiguration.newBuilder()
+                .withRepairInterval(7, TimeUnit.DAYS)
+                .withParallelism(RepairOptions.RepairParallelism.PARALLEL)
+                .withRepairWarningTime(8, TimeUnit.DAYS)
+                .withRepairErrorTime(10, TimeUnit.DAYS)
+                .withRepairUnwindRatio(0.0d)
+                .withTargetRepairSizeInBytes(Long.MAX_VALUE)
+                .build();
+
+        Config.GlobalRepairConfig repairConfig = config.getRepair();
+
+        assertThat(repairConfig.asRepairConfiguration()).isEqualTo(expectedConfiguration);
+
+        assertThat(repairConfig.getLockType()).isEqualTo(RepairLockType.VNODE);
+        assertThat(repairConfig.getProvider()).isEqualTo(FileBasedRepairConfiguration.class);
+
+        assertThat(repairConfig.getHistoryLookback().getInterval(TimeUnit.DAYS)).isEqualTo(30);
+        assertThat(repairConfig.getHistory().getProvider()).isEqualTo(Config.RepairHistory.Provider.ECC);
+        assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("ecchronos");
+
+        Config.StatisticsConfig statisticsConfig = config.getStatistics();
+        assertThat(statisticsConfig.isEnabled()).isTrue();
+        assertThat(statisticsConfig.getDirectory()).isEqualTo(new File("./statistics"));
+
+        Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
+        assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecchronos");
+
+        Config.RunPolicyConfig runPolicyConfig = config.getRunPolicy();
+        assertThat(runPolicyConfig.getTimeBased().getKeyspace()).isEqualTo("ecchronos");
+
+        Config.SchedulerConfig schedulerConfig = config.getScheduler();
+        assertThat(schedulerConfig.getFrequency().getInterval(TimeUnit.SECONDS)).isEqualTo(30);
+
+        Config.RestServerConfig restServerConfig = config.getRestServer();
+        assertThat(restServerConfig.getHost()).isEqualTo("localhost");
+        assertThat(restServerConfig.getPort()).isEqualTo(8080);
+    }
+
+    @Test
+    public void testDefault() throws Exception
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("nothing_set.yml").getFile());
 
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
 
