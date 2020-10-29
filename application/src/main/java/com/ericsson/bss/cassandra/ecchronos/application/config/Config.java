@@ -304,18 +304,9 @@ public class Config
     public static class GlobalRepairConfig extends RepairConfig
     {
         private Class<? extends AbstractRepairConfigurationProvider> provider = FileBasedRepairConfiguration.class;
-        private Interval interval = new Interval(7, TimeUnit.DAYS);
         private RepairLockType lock_type = RepairLockType.VNODE;
-        private Alarm alarm = new Alarm();
-        private double unwind_ratio = 0.0d;
         private Interval history_lookback = new Interval(30, TimeUnit.DAYS);
-        private long size_target = Long.MAX_VALUE;
         private RepairHistory history = new RepairHistory();
-
-        public Interval getInterval()
-        {
-            return this.interval;
-        }
 
         public RepairLockType getLockType()
         {
