@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.Session;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.datastax.driver.core.Metadata;
@@ -34,7 +33,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandStatus.OngoingJob;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactoryImpl.Builder;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;

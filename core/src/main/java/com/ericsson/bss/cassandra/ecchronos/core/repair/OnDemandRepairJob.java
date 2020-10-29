@@ -174,6 +174,7 @@ public class OnDemandRepairJob extends ScheduledJob
         return failed ? RepairJobView.Status.ERROR : RepairJobView.Status.IN_QUEUE;
     }
 
+    @Override
     public Iterator<ScheduledTask> iterator()
     {
         return myTasks.keySet().iterator();
@@ -328,26 +329,6 @@ public class OnDemandRepairJob extends ScheduledJob
 
         public OnDemandRepairJob build()
         {
-            if (tableReference == null && ongoingJob == null)
-            {
-                throw new IllegalArgumentException("Table reference cannot be null");
-            }
-            if (jmxProxyFactory == null)
-            {
-                throw new IllegalArgumentException("JMX Proxy factory cannot be null");
-            }
-            if (tableRepairMetrics == null)
-            {
-                throw new IllegalArgumentException("Metric interface not set");
-            }
-            if (replicationState == null)
-            {
-                throw new IllegalArgumentException("Replication State not set");
-            }
-            if (onDemandStatus == null)
-            {
-                throw new IllegalArgumentException("OnDemandStatus not set");
-            }
             return new OnDemandRepairJob(this);
         }
     }

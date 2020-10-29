@@ -142,10 +142,6 @@ public class OnDemandStatus
                 {
                     ongoingJobs.add(new OngoingJob(jobId, tableReference, tokenMapHash, repiaredTokens));
                 }
-                else
-                {
-                    // Should we do something her? log?
-                }
             }
         }
 
