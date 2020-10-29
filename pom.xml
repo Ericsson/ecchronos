@@ -396,6 +396,7 @@
                         <rulesets>
                             <ruleset>${session.executionRootDirectory}/pmd-rules.xml</ruleset>
                         </rulesets>
+                        <verbose>true</verbose>
                     </configuration>
                 </plugin>
 
