@@ -134,7 +134,7 @@ public class TestConfig
                 .withRepairWarningTime(8, TimeUnit.DAYS)
                 .withRepairErrorTime(10, TimeUnit.DAYS)
                 .withRepairUnwindRatio(0.0d)
-                .withTargetRepairSizeInBytes(Long.MAX_VALUE)
+                .withTargetRepairSizeInBytes(RepairConfiguration.FULL_REPAIR_SIZE)
                 .build();
 
         Config.GlobalRepairConfig repairConfig = config.getRepair();
@@ -196,7 +196,7 @@ public class TestConfig
                 .withRepairWarningTime(8, TimeUnit.DAYS)
                 .withRepairErrorTime(10, TimeUnit.DAYS)
                 .withRepairUnwindRatio(0.0d)
-                .withTargetRepairSizeInBytes(Long.MAX_VALUE)
+                .withTargetRepairSizeInBytes(RepairConfiguration.FULL_REPAIR_SIZE)
                 .build();
 
         Config.GlobalRepairConfig repairConfig = config.getRepair();

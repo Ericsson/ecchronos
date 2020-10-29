@@ -173,7 +173,7 @@ public class Config
     public static abstract class Connection<T>
     {
         private String host = "localhost";
-        protected int port = 9042;
+        protected int port;
         protected Class<? extends T> provider;
         private Timeout timeout = new Timeout();
 
