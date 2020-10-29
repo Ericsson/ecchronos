@@ -126,7 +126,7 @@ public class Config
 
     public void setRest_server(RestServerConfig rest_server)
     {
-        if(rest_server != null)
+        if (rest_server != null)
         {
             this.rest_server = rest_server;
         }
@@ -386,7 +386,7 @@ public class Config
     public static class Alarm
     {
         private Interval warn = new Interval(8, TimeUnit.DAYS);
-        private Interval error = new Interval(10, TimeUnit.DAYS);;
+        private Interval error = new Interval(10, TimeUnit.DAYS);
 
         public Alarm()
         {
