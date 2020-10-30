@@ -36,8 +36,7 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.*;
 
 public class OnDemandStatus
 {
-
-	private static final String KEYSPACE_NAME = "ecchronos";
+    private static final String KEYSPACE_NAME = "ecchronos";
     private static final String TABLE_NAME = "ondemand_status";
     private static final String HOST_ID_COLUMN_NAME = "host_id";
     private static final String STATUS_COLUMN_NAME = "status";

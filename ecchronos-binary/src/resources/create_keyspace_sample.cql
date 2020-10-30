@@ -58,6 +58,6 @@ CREATE TABLE IF NOT EXISTS ecchronos.ondemand_status (
     token_map_hash int,
     repaired_tokens frozen<set<frozen<token_range>>>,
     status text,
-    PRIMARY KEY(node, job_id))
+    PRIMARY KEY(host_id, job_id))
     WITH default_time_to_live = 2592000
     AND gc_grace_seconds = 0;
