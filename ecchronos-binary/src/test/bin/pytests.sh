@@ -103,6 +103,13 @@ MAX_CHECK=10
 echo "Waiting for REST server to start..."
 until $(curl --silent --fail --head --output /dev/null http://localhost:8080/repair-management/v1/status); do
     if [ "$CHECKS" -eq "$MAX_CHECK" ]; then
+        if [ -f "$BASE_DIR"/ecc.debug.log ]; then
+            echo "===Debug log content==="
+            cat "$BASE_DIR"/ecc.debug.log
+            echo "===Debug log content==="
+        else
+            echo "No logs found"
+        fi
         exit 1
     fi
 
