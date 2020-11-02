@@ -37,7 +37,7 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.*;
 public class OnDemandStatus
 {
     private static final String KEYSPACE_NAME = "ecchronos";
-    private static final String TABLE_NAME = "ondemand_status";
+    private static final String TABLE_NAME = "on_demand_repair_status";
     private static final String HOST_ID_COLUMN_NAME = "host_id";
     private static final String STATUS_COLUMN_NAME = "status";
     private static final String JOB_ID_COLUMN_NAME = "job_id";
@@ -68,14 +68,14 @@ public class OnDemandStatus
         private final UUID myJobId;
         private final TableReference myTableReference;
         private final int myTokenMapHash;
-        private final Set<UDTValue> myRepiaredTokens;
+        private final Set<UDTValue> myRepairedTokens;
 
-        public OngoingJob(UUID jobId, TableReference tableReference, int tokenMapHash, Set<UDTValue> repiaredTokens)
+        public OngoingJob(UUID jobId, TableReference tableReference, int tokenMapHash, Set<UDTValue> repairedTokens)
         {
             myJobId = jobId;
             myTableReference = tableReference;
             myTokenMapHash = tokenMapHash;
-            myRepiaredTokens = repiaredTokens;
+            myRepairedTokens = repairedTokens;
         }
 
         public UUID getJobId()
@@ -93,9 +93,9 @@ public class OnDemandStatus
             return myTokenMapHash;
         }
 
-        public Set<UDTValue> getRepiaredTokens()
+        public Set<UDTValue> getRepairedTokens()
         {
-            return myRepiaredTokens;
+            return myRepairedTokens;
         }
     }
 

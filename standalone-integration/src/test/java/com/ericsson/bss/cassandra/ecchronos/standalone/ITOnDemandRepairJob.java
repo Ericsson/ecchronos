@@ -36,6 +36,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.HostStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairSchedulerImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
@@ -123,7 +124,7 @@ public class ITOnDemandRepairJob extends TestBase
                 .withMetadata(myMetadata)
                 .withRepairConfiguration(RepairConfiguration.DEFAULT)
                 .withRepairHistory(myEccRepairHistory)
-                .withNativeConnectionProvider(getNativeConnectionProvider())
+                .withOnDemandStatus(new OnDemandStatus(getNativeConnectionProvider()))
                 .build();
     }
 

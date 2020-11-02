@@ -58,7 +58,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     private final RepairConfiguration myRepairConfiguration;
     private final RepairHistory myRepairHistory;
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor();
-    private final OnDemandStatus myOndemandStatus;
+    private final OnDemandStatus myOnDemandStatus;
 
     private OnDemandRepairSchedulerImpl(Builder builder)
     {
@@ -71,9 +71,9 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         myRepairConfiguration = builder.repairConfiguration;
         myRepairHistory = builder.repairHistory;
         myExecutor.scheduleWithFixedDelay(() -> clearFailedJobs(), DEFAULT_INITIAL_DELAY_IN_DAYS, DEFAULT_DELAY_IN_DAYS, TimeUnit.DAYS);
-        myOndemandStatus = new OnDemandStatus(builder.nativeConnectionProvider);
+        myOnDemandStatus = builder.onDemandStatus;
 
-        Set<OngoingJob> ongoingJobs = myOndemandStatus.getMyOngoingJobs();
+        Set<OngoingJob> ongoingJobs = myOnDemandStatus.getMyOngoingJobs();
         ongoingJobs.forEach(j -> scheduleOngoingJob(j));
     }
 
@@ -170,7 +170,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
                 .withOnFinished(this::removeScheduledJob)
                 .withRepairConfiguration(myRepairConfiguration)
                 .withRepairHistory(myRepairHistory)
-                .withOnDemandStatus(myOndemandStatus)
+                .withOnDemandStatus(myOnDemandStatus)
                 .build();
         return job;
     }
@@ -185,7 +185,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
                 .withOnFinished(this::removeScheduledJob)
                 .withRepairConfiguration(myRepairConfiguration)
                 .withRepairHistory(myRepairHistory)
-                .withOnDemandStatus(myOndemandStatus)
+                .withOnDemandStatus(myOnDemandStatus)
                 .withOngoingJob(ongoingJob)
                 .build();
         return job;
@@ -206,7 +206,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         private Metadata metadata;
         private RepairConfiguration repairConfiguration;
         private RepairHistory repairHistory;
-        private NativeConnectionProvider nativeConnectionProvider;
+        private OnDemandStatus onDemandStatus;
 
         public Builder withJmxProxyFactory(JmxProxyFactory jmxProxyFactory)
         {
@@ -256,9 +256,9 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
             return this;
         }
 
-        public Builder withNativeConnectionProvider(NativeConnectionProvider nativeConnectionProvider)
+        public Builder withOnDemandStatus(OnDemandStatus onDemandStatus)
         {
-            this.nativeConnectionProvider = nativeConnectionProvider;
+            this.onDemandStatus = onDemandStatus;
             return this;
         }
 

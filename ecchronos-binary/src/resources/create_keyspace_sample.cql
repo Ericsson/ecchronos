@@ -51,7 +51,7 @@ CREATE TYPE IF NOT EXISTS ecchronos.table_reference (
     keyspace_name text,
     table_name text);
 
-CREATE TABLE IF NOT EXISTS ecchronos.ondemand_status (
+CREATE TABLE IF NOT EXISTS ecchronos.on_demand_repair_status (
     host_id uuid,
     job_id uuid,
     table_reference frozen<table_reference>,

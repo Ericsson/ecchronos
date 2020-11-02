@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestOnDemandStatus extends AbstractCassandraTest
 {
     private static final String KEYSPACE_NAME = "ecchronos";
-    private static final String TABLE_NAME = "ondemand_status";
+    private static final String TABLE_NAME = "on_demand_repair_status";
     private static final String HOST_ID_COLUMN_NAME = "host_id";
     private static final String STATUS_COLUMN_NAME = "status";
     private static final String JOB_ID_COLUMN_NAME = "job_id";
@@ -257,7 +257,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(ongoingJob.getTableReference().getKeyspace()).isEqualTo(KEYSPACE_NAME);
         assertThat(ongoingJob.getTableReference().getTable()).isEqualTo(TABLE_NAME);
         assertThat(ongoingJob.getTokenMapHash()).isEqualTo(hashValue);
-        assertThat(ongoingJob.getRepiaredTokens()).isEmpty();
+        assertThat(ongoingJob.getRepairedTokens()).isEmpty();
     }
 
     @Test
@@ -284,6 +284,6 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(ongoingJob.getTableReference().getKeyspace()).isEqualTo(KEYSPACE_NAME);
         assertThat(ongoingJob.getTableReference().getTable()).isEqualTo(TABLE_NAME);
         assertThat(ongoingJob.getTokenMapHash()).isEqualTo(hashValue);
-        assertThat(ongoingJob.getRepiaredTokens()).isEqualTo(repairedTokens);
+        assertThat(ongoingJob.getRepairedTokens()).isEqualTo(repairedTokens);
     }
 }

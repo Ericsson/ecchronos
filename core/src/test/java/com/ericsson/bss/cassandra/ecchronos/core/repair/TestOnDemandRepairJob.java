@@ -209,11 +209,11 @@ public class TestOnDemandRepairJob
         when(myOnDemandStatus.getStartTokenFrom(any())).thenReturn(range1.start);
         when(myOnDemandStatus.getEndTokenFrom(any())).thenReturn(range1.end);
 
-        Set<UDTValue> repiaredTokens = new HashSet<>();
-        repiaredTokens.add(myUDTValue);
+        Set<UDTValue> repairedTokens = new HashSet<>();
+        repairedTokens.add(myUDTValue);
 
         when(myOngoingJob.getJobId()).thenReturn(UUID.randomUUID());
-		when(myOngoingJob.getRepiaredTokens()).thenReturn(repiaredTokens);
+		when(myOngoingJob.getRepairedTokens()).thenReturn(repairedTokens);
         when(myOngoingJob.getTableReference()).thenReturn(myTableReference);
         when(myOngoingJob.getTokenMapHash()).thenReturn(tokenRangeToReplicas.hashCode());
 

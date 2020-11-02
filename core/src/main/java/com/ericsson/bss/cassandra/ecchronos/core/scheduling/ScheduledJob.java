@@ -32,11 +32,11 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     private final UUID myId;
 
     public ScheduledJob(Configuration configuration)
-	{
-		this(configuration, null);
-	}
+    {
+        this(configuration, null);
+    }
 
-	public ScheduledJob(Configuration configuration, UUID id)
+    public ScheduledJob(Configuration configuration, UUID id)
     {
         if(id == null)
         {

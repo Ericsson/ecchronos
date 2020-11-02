@@ -83,14 +83,14 @@ public class OnDemandRepairJob extends ScheduledJob
         myReplicationState = Preconditions.checkNotNull(builder.replicationState, "Replication state must be set");
         myOnFinishedHook = Preconditions.checkNotNull(builder.onFinishedHook, "On finished hook must be set");
         myRepairHistory = Preconditions.checkNotNull(builder.repairHistory, "Repair history must be set");
-        myOnDemandStatus = Preconditions.checkNotNull(builder.onDemandStatus, "OnDemandStatus must be set");
+        myOnDemandStatus = Preconditions.checkNotNull(builder.onDemandStatus, "On demand status must be set");
 
         myTokens = myReplicationState
                 .getTokenRangeToReplicas(myTableReference);
         if (builder.ongoingJob != null)
         {
             myTokenHash = builder.ongoingJob.getTokenMapHash();
-            myRepairedTokens = builder.ongoingJob.getRepiaredTokens();
+            myRepairedTokens = builder.ongoingJob.getRepairedTokens();
         }
         else
         {
@@ -315,9 +315,9 @@ public class OnDemandRepairJob extends ScheduledJob
             return this;
         }
 
-        public Builder withOnDemandStatus(OnDemandStatus ondemandStatus)
+        public Builder withOnDemandStatus(OnDemandStatus onDemandStatus)
         {
-            this.onDemandStatus = ondemandStatus;
+            this.onDemandStatus = onDemandStatus;
             return this;
         }
 
