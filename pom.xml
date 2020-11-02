@@ -529,6 +529,8 @@ limitations under the License.
                             <exclude>**/*.pyc</exclude>
                             <exclude>code_style.xml</exclude>
                             <exclude>**/Dockerfile</exclude>
+                            <exclude>**/__init__.py</exclude>
+                            <exclude>**/.pylintrc</exclude>
                         </excludes>
                     </configuration>
                 </plugin>

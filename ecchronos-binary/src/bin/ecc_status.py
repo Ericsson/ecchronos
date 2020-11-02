@@ -16,15 +16,18 @@
 # limitations under the License.
 #
 
-from argparse import ArgumentParser
+from __future__ import print_function
+
 import os
 import sys
+from argparse import ArgumentParser
+
 try:
     from ecchronoslib import rest, table_formatter
 except ImportError:
-    script_dir = os.path.dirname(__file__)
-    lib_dir = os.path.join(script_dir, "..", "pylib")
-    sys.path.append(lib_dir)
+    SCRIPT_DIR = os.path.dirname(__file__)
+    LIB_DIR = os.path.join(SCRIPT_DIR, "..", "pylib")
+    sys.path.append(LIB_DIR)
     from ecchronoslib import rest, table_formatter
 
 
@@ -77,21 +80,24 @@ def convert_repair_job(repair_job):
     entry.append(repair_job.get_last_repaired_at())
     entry.append(repair_job.get_next_repair())
     entry.append(repair_job.recurring)
-    entry.append(repair_job.id)
+    entry.append(repair_job.job_id)
 
     return entry
 
+
 def print_summary(repair_jobs):
-    status_list = map(lambda job: job.status, repair_jobs)
+    status_list = [job.status for job in repair_jobs]
     summary_format = "Summary: {0} completed, {1} in queue, {2} warning, {3} error"
     print(summary_format.format(status_list.count('COMPLETED'),
                                 status_list.count('IN_QUEUE'),
                                 status_list.count('WARNING'),
                                 status_list.count('ERROR')))
 
+
 def print_repair_jobs(repair_jobs, max_lines):
     repair_jobs_table = list()
-    repair_jobs_table.append(["Keyspace", "Table", "Status", "Repaired(%)", "Repaired at", "Next repair", "recurring", "id"])
+    repair_jobs_table.append(["Keyspace", "Table", "Status", "Repaired(%)",
+                              "Repaired at", "Next repair", "recurring", "id"])
     sorted_repair_jobs = sorted(repair_jobs, key=lambda job: job.last_repaired_at_in_ms)
 
     if max_lines > -1:
@@ -126,7 +132,7 @@ def main():
     request = rest.RepairSchedulerRequest(base_url=arguments.url)
 
     if arguments.table and arguments.id:
-        result = request.get(keyspace=arguments.keyspace, table=arguments.table, id=arguments.id)
+        result = request.get(keyspace=arguments.keyspace, table=arguments.table, job_id=arguments.id)
         if result.is_successful():
             print_verbose_repair_job(result.data, arguments.limit)
         else:

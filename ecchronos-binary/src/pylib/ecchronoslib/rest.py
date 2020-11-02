@@ -22,7 +22,7 @@ import json
 from ecchronoslib.types import RepairJob, VerboseRepairJob, TableConfig
 
 
-class RequestResult:
+class RequestResult(object):
     def __init__(self, status_code=None, data=None, exception=None, message=None):
         self.status_code = status_code
         self.data = data
@@ -47,10 +47,13 @@ class RequestResult:
         return self.status_code == 200
 
     def transform_with_data(self, new_data):
-        return RequestResult(status_code=self.status_code, data=new_data, exception=self.exception, message=self.message)
+        return RequestResult(status_code=self.status_code,
+                             data=new_data,
+                             exception=self.exception,
+                             message=self.message)
 
 
-class RestRequest:
+class RestRequest(object):
     default_base_url = 'http://localhost:8080'
 
     def __init__(self, base_url=None):
@@ -77,12 +80,16 @@ class RestRequest:
             response.close()
             return RequestResult(status_code=200, data=json_data)
         except HTTPError as e:
-            return RequestResult(status_code=e.code, message="Unable to retrieve resource {0}".format(request_url),
+            return RequestResult(status_code=e.code,
+                                 message="Unable to retrieve resource {0}".format(request_url),
                                  exception=e)
         except URLError as e:
-            return RequestResult(status_code=404, message="Unable to connect to {0}".format(request_url), exception=e)
-        except Exception as e:
-            return RequestResult(exception=e, message="Unable to retrieve resource {0}".format(request_url))
+            return RequestResult(status_code=404,
+                                 message="Unable to connect to {0}".format(request_url),
+                                 exception=e)
+        except Exception as e:  # pylint: disable=broad-except
+            return RequestResult(exception=e,
+                                 message="Unable to retrieve resource {0}".format(request_url))
 
 
 class RepairSchedulerRequest(RestRequest):
@@ -93,8 +100,8 @@ class RepairSchedulerRequest(RestRequest):
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
 
-    def get(self, keyspace, table, id):
-        request_url = RepairSchedulerRequest.repair_management_job_status_url.format(keyspace, table, id)
+    def get(self, keyspace, table, job_id):
+        request_url = RepairSchedulerRequest.repair_management_job_status_url.format(keyspace, table, job_id)
 
         result = self.request(request_url)
         if result.is_successful():

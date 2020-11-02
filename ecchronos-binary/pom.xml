@@ -137,6 +137,55 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-test-resources</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/test</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/test/bin</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                                <resource>
+                                    <directory>src/test/features</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>code-validation</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>bash</executable>
+                            <arguments>
+                                <argument>codestyle.sh</argument>
+                                <argument>${project.basedir}/src/bin</argument>
+                                <argument>${project.basedir}/src/pylib/ecchronoslib</argument>
+                            </arguments>
+                            <workingDirectory>${project.build.directory}/test</workingDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
@@ -162,7 +211,7 @@
                                             <artifactId>ecchronos-binary</artifactId>
                                             <version>${project.version}</version>
                                             <type>tar.gz</type>
-                                            <outputDirectory>${project.build.directory}/behave</outputDirectory>
+                                            <outputDirectory>${project.build.directory}/test</outputDirectory>
                                         </artifactItem>
                                     </artifactItems>
                                 </configuration>
@@ -182,32 +231,6 @@
                                             <outputDirectory>${project.build.directory}/certificates</outputDirectory>
                                         </artifactItem>
                                     </artifactItems>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>copy-test-resources</id>
-                                <phase>pre-integration-test</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${project.build.directory}/behave</outputDirectory>
-                                    <resources>
-                                        <resource>
-                                            <directory>src/test/bin</directory>
-                                            <filtering>true</filtering>
-                                        </resource>
-                                        <resource>
-                                            <directory>src/test/features</directory>
-                                            <filtering>false</filtering>
-                                        </resource>
-                                    </resources>
                                 </configuration>
                             </execution>
                         </executions>
@@ -244,7 +267,7 @@
                                         <argument>pytests.sh</argument>
                                         <argument>pytests.ret</argument>
                                     </arguments>
-                                    <workingDirectory>${project.build.directory}/behave</workingDirectory>
+                                    <workingDirectory>${project.build.directory}/test</workingDirectory>
                                     <environmentVariables>
                                         <CASSANDRA_IP>${docker.container.seed.ip}</CASSANDRA_IP>
                                         <CASSANDRA_JMX_PORT>7199</CASSANDRA_JMX_PORT>
@@ -265,7 +288,7 @@
                                         <argument>cleanup.sh</argument>
                                         <argument>cleanup.ret</argument>
                                     </arguments>
-                                    <workingDirectory>${project.build.directory}/behave</workingDirectory>
+                                    <workingDirectory>${project.build.directory}/test</workingDirectory>
                                 </configuration>
                             </execution>
                             <execution>
@@ -280,7 +303,7 @@
                                         <argument>verify.sh</argument>
                                         <argument>pytests.ret</argument>
                                     </arguments>
-                                    <workingDirectory>${project.build.directory}/behave</workingDirectory>
+                                    <workingDirectory>${project.build.directory}/test</workingDirectory>
                                 </configuration>
                             </execution>
                         </executions>

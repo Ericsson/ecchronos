@@ -27,12 +27,12 @@
             <destName>ecc</destName>
         </file>
         <file>
-            <source>${project.basedir}/src/bin/ecc-status.py</source>
+            <source>${project.basedir}/src/bin/ecc_status.py</source>
             <outputDirectory>bin</outputDirectory>
             <destName>ecc-status</destName>
         </file>
         <file>
-            <source>${project.basedir}/src/bin/ecc-config.py</source>
+            <source>${project.basedir}/src/bin/ecc_config.py</source>
             <outputDirectory>bin</outputDirectory>
             <destName>ecc-config</destName>
         </file>

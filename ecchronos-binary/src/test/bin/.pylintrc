@@ -1,0 +1,15 @@
+[MESSAGES CONTROL]
+disable=
+  missing-docstring
+
+[SIMILARITIES]
+ignore-imports=yes
+min-similarity-lines=8
+
+[FORMAT]
+max-line-length=120
+
+[BASIC]
+good-names=
+  e,
+  i

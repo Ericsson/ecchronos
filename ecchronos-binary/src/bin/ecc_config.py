@@ -16,15 +16,16 @@
 # limitations under the License.
 #
 
+from __future__ import print_function
 from argparse import ArgumentParser
 import os
 import sys
 try:
     from ecchronoslib import rest, table_formatter
 except ImportError:
-    script_dir = os.path.dirname(__file__)
-    lib_dir = os.path.join(script_dir, "..", "pylib")
-    sys.path.append(lib_dir)
+    SCRIPT_DIR = os.path.dirname(__file__)
+    LIB_DIR = os.path.join(SCRIPT_DIR, "..", "pylib")
+    sys.path.append(LIB_DIR)
     from ecchronoslib import rest, table_formatter
 
 
