@@ -27,6 +27,12 @@ echo "Installing pylint"
 
 pip install pylint
 
+echo "Installing behave dependencies"
+
+pip install behave
+pip install requests
+pip install jsonschema
+
 for directory in "$@"
 do
   echo "Running pylint for $directory"

@@ -14,6 +14,6 @@
 # limitations under the License.
 #
 
-CURRENT_DIR=$(cd $(dirname $0) ; pwd -P)
-VENV_DIR="$CURRENT_DIR"/venv
-PIDFILE="$CURRENT_DIR"/ecc.pid
+TEST_DIR=$(cd $(dirname $0) ; pwd -P)
+VENV_DIR="$TEST_DIR"/venv
+PIDFILE="$TEST_DIR"/ecc.pid

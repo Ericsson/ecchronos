@@ -155,7 +155,7 @@
                                     <filtering>true</filtering>
                                 </resource>
                                 <resource>
-                                    <directory>src/test/features</directory>
+                                    <directory>src/test/behave</directory>
                                     <filtering>false</filtering>
                                 </resource>
                             </resources>
@@ -180,6 +180,8 @@
                                 <argument>codestyle.sh</argument>
                                 <argument>${project.basedir}/src/bin</argument>
                                 <argument>${project.basedir}/src/pylib/ecchronoslib</argument>
+                                <argument>${project.basedir}/src/test/behave/ecc_step_library</argument>
+                                <argument>${project.basedir}/src/test/behave/features/steps</argument>
                             </arguments>
                             <workingDirectory>${project.build.directory}/test</workingDirectory>
                         </configuration>
