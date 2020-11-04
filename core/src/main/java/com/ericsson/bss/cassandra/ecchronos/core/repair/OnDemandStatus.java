@@ -28,6 +28,7 @@ import com.datastax.driver.core.UDTValue;
 import com.datastax.driver.core.UserType;
 import com.datastax.driver.core.querybuilder.BuiltStatement;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactoryImpl;
@@ -63,42 +64,6 @@ public class OnDemandStatus
     private final PreparedStatement myUpdateJobToFailedStatement;
     private final TableReferenceFactory myTableReferenceFactory;
 
-    public class OngoingJob
-    {
-        private final UUID myJobId;
-        private final TableReference myTableReference;
-        private final int myTokenMapHash;
-        private final Set<UDTValue> myRepairedTokens;
-
-        public OngoingJob(UUID jobId, TableReference tableReference, int tokenMapHash, Set<UDTValue> repairedTokens)
-        {
-            myJobId = jobId;
-            myTableReference = tableReference;
-            myTokenMapHash = tokenMapHash;
-            myRepairedTokens = repairedTokens;
-        }
-
-        public UUID getJobId()
-        {
-            return myJobId;
-        }
-
-        public TableReference getTableReference()
-        {
-            return myTableReference;
-        }
-
-        public int getTokenMapHash()
-        {
-            return myTokenMapHash;
-        }
-
-        public Set<UDTValue> getRepairedTokens()
-        {
-            return myRepairedTokens;
-        }
-    }
-
     public OnDemandStatus(NativeConnectionProvider nativeConnectionProvider)
     {
         mySession = nativeConnectionProvider.getSession();
@@ -120,7 +85,7 @@ public class OnDemandStatus
         myUpdateJobToFailedStatement = mySession.prepare(updateJobToFailedStatement).setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
     }
 
-    public Set<OngoingJob> getMyOngoingJobs()
+    public Set<OngoingJob> getMyOngoingJobs(ReplicationState replicationState)
     {
         ResultSet result = mySession.execute(myGetStatusStatement.bind(myHostId));
 
@@ -139,7 +104,13 @@ public class OnDemandStatus
 
                 if(uDTTableReference.getUUID(UDT_ID_NAME).equals(tableReference.getId()))
                 {
-                    ongoingJobs.add(new OngoingJob(jobId, tableReference, tokenMapHash, repiaredTokens));
+                    OngoingJob ongoingJob = new OngoingJob.Builder()
+                            .withOnDemandStatus(this)
+                            .withTableReference(tableReference)
+                            .withReplicationState(replicationState)
+                            .withOngoingJobInfo(jobId, tokenMapHash, repiaredTokens)
+                            .build();
+                    ongoingJobs.add(ongoingJob);
                 }
             }
         }

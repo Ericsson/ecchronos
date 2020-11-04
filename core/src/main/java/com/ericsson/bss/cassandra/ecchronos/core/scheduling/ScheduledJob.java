@@ -33,19 +33,12 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
 
     public ScheduledJob(Configuration configuration)
     {
-        this(configuration, null);
+        this(configuration, UUID.randomUUID());
     }
 
     public ScheduledJob(Configuration configuration, UUID id)
     {
-        if(id == null)
-        {
-            myId = UUID.randomUUID();
-        }
-        else
-        {
-            myId = id;
-        }
+        myId = id;
         myPriority = configuration.priority;
         myRunIntervalInMs = configuration.runIntervalInMs;
         myLastSuccessfulRun = System.currentTimeMillis() - myRunIntervalInMs;

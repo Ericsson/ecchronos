@@ -31,7 +31,9 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,6 +76,9 @@ public class TestOnDemandRepairSchedulerImpl
     @Mock
     private TableMetadata myTableMetadata;
 
+    @Mock
+    private OngoingJob myOngingJob;
+
     @Test
     public void testScheduleRepairOnTable() throws EcChronosException
     {
@@ -115,11 +120,23 @@ public class TestOnDemandRepairSchedulerImpl
         verifyNoMoreInteractions(scheduleManager);
     }
 
-//    @Test
-//    public void testRestartRepairOnTable() throws EcChronosException
-//    {
-//        verify(scheduleManager).schedule(any(ScheduledJob.class));
-//    }
+    @Test
+    public void testRestartRepairOnTable() throws EcChronosException
+    {
+        Set<OngoingJob> ongoingJobs = new HashSet<>();
+        ongoingJobs.add(myOngingJob);
+        when(myOnDemandStatus.getMyOngoingJobs(replicationState)).thenReturn(ongoingJobs);
+
+        OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
+
+        verify(scheduleManager).schedule(any(ScheduledJob.class));
+
+        repairScheduler.close();
+        verify(scheduleManager).deschedule(any(ScheduledJob.class));
+
+        verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
+        verifyNoMoreInteractions(scheduleManager);
+    }
 
     @Test (expected = EcChronosException.class)
     public void testScheduleRepairOnNonExistentKeyspaceTable() throws EcChronosException

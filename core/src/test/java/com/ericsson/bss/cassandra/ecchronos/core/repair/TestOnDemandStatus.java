@@ -14,27 +14,37 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.UDTValue;
 import com.datastax.driver.core.UserType;
 import com.ericsson.bss.cassandra.ecchronos.core.AbstractCassandraTest;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandStatus.OngoingJob;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactoryImpl;
+import com.google.common.collect.ImmutableSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
 
+@RunWith(MockitoJUnitRunner.class)
 public class TestOnDemandStatus extends AbstractCassandraTest
 {
     private static final String KEYSPACE_NAME = "ecchronos";
@@ -53,6 +63,9 @@ public class TestOnDemandStatus extends AbstractCassandraTest
     private UUID myHostId;
     private TableReferenceFactory myTableReferenceFactory;
     private UserType myUDTTableReferenceType;
+
+    @Mock
+    private ReplicationState myReplicationState;
 
 	@Before
     public void startup()
@@ -232,7 +245,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
     {
         OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());
 
-        Set<OngoingJob> ongoingJobs = onDemandStatus.getMyOngoingJobs();
+        Set<OngoingJob> ongoingJobs = onDemandStatus.getMyOngoingJobs(myReplicationState);
 
         assertThat(ongoingJobs).isEmpty();
     }
@@ -245,10 +258,12 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         UUID jobId = UUID.randomUUID();
         int hashValue = 1;
         TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TABLE_NAME);
+        Map<LongTokenRange, ImmutableSet<Node>> tokenMap = new HashMap<>();
+        when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap );
 
         onDemandStatus.addNewJob(jobId, tableReference, hashValue);
 
-        Set<OngoingJob> ongoingJobs = onDemandStatus.getMyOngoingJobs();
+        Set<OngoingJob> ongoingJobs = onDemandStatus.getMyOngoingJobs(myReplicationState);
 
         assertThat(ongoingJobs.size()).isEqualTo(1);
 
@@ -256,7 +271,6 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(ongoingJob.getJobId()).isEqualTo(jobId);
         assertThat(ongoingJob.getTableReference().getKeyspace()).isEqualTo(KEYSPACE_NAME);
         assertThat(ongoingJob.getTableReference().getTable()).isEqualTo(TABLE_NAME);
-        assertThat(ongoingJob.getTokenMapHash()).isEqualTo(hashValue);
         assertThat(ongoingJob.getRepairedTokens()).isEmpty();
     }
 
@@ -268,14 +282,17 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         UUID jobId = UUID.randomUUID();
         int hashValue = 1;
         TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TABLE_NAME);
-
+        Map<LongTokenRange, ImmutableSet<Node>> tokenMap = new HashMap<>();
+        when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap );
         onDemandStatus.addNewJob(jobId, tableReference, hashValue);
 
+        Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
+        expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
         Set<UDTValue> repairedTokens = new HashSet<>();
         repairedTokens.add(onDemandStatus.createUDTTokenRangeValue(-50L, 700L));
         onDemandStatus.updateJob(jobId, repairedTokens);
 
-        Set<OngoingJob> ongoingJobs = onDemandStatus.getMyOngoingJobs();
+        Set<OngoingJob> ongoingJobs = onDemandStatus.getMyOngoingJobs(myReplicationState);
 
         assertThat(ongoingJobs.size()).isEqualTo(1);
 
@@ -283,7 +300,6 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(ongoingJob.getJobId()).isEqualTo(jobId);
         assertThat(ongoingJob.getTableReference().getKeyspace()).isEqualTo(KEYSPACE_NAME);
         assertThat(ongoingJob.getTableReference().getTable()).isEqualTo(TABLE_NAME);
-        assertThat(ongoingJob.getTokenMapHash()).isEqualTo(hashValue);
-        assertThat(ongoingJob.getRepairedTokens()).isEqualTo(repairedTokens);
+        assertThat(ongoingJob.getRepairedTokens()).isEqualTo(expectedRepairedTokens);
     }
 }
