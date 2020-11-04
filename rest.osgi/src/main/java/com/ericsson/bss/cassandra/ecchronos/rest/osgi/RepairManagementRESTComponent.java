@@ -64,9 +64,9 @@ public class RepairManagementRESTComponent implements RepairManagementREST
     }
 
     @Override
-    public String jobStatus(String keyspace)
+    public String jobStatus(String id)
     {
-        return myDelegateRESTImpl.jobStatus(keyspace);
+        return myDelegateRESTImpl.jobStatus(id);
     }
 
     @Override
