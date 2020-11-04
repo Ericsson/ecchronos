@@ -98,13 +98,12 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
-    @GetMapping(ENDPOINT_PREFIX + "/status/keyspaces/{keyspace}/tables/{table}/ids/{id}")
-    public String jobStatus(@PathVariable String keyspace, @PathVariable String table, @PathVariable String id)
+    @GetMapping(ENDPOINT_PREFIX + "/status/ids/{id}")
+    public String jobStatus(@PathVariable String id)
     {
         try
         {
-            Optional<RepairJobView> repairJobView = getCompleteRepairJob(forTable(keyspace, table),
-                    UUID.fromString(id));
+            Optional<RepairJobView> repairJobView = getCompleteRepairJob(UUID.fromString(id));
             return repairJobView
                     .map(CompleteRepairJob::new)
                     .map(GSON::toJson)
@@ -168,14 +167,12 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                 .collect(Collectors.toList());
     }
 
-    private Optional<RepairJobView> getCompleteRepairJob(Predicate<RepairJobView> filter, UUID id)
+    private Optional<RepairJobView> getCompleteRepairJob(UUID id)
     {
-        Predicate<RepairJobView> matchesId = job -> job.getId().equals(id);
         return Stream
                 .concat(myRepairScheduler.getCurrentRepairJobs().stream(),
                         myOnDemandRepairScheduler.getCurrentRepairJobs().stream())
-                .filter(filter.and(matchesId))
-                .findFirst();
+                .filter(job -> job.getId().equals(id)).findFirst();
     }
 
     private List<TableRepairConfig> getTableRepairConfigs(Predicate<RepairJobView> filter)

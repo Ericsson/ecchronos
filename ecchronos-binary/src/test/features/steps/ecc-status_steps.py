@@ -69,7 +69,7 @@ def step_list_tables_with_limit(context, limit):
 
 @when(u'we list all tables for keyspace {keyspace} with a limit of {limit}')
 def step_list_tables_for_keyspace(context, keyspace, limit):
-    run_ecc_status(context, [keyspace, '--limit', limit])
+    run_ecc_status(context, ['--keyspace', keyspace, '--limit', limit])
 
     output_data = context.out.lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
@@ -80,7 +80,7 @@ def step_list_tables_for_keyspace(context, keyspace, limit):
 
 @when(u'we list all tables for keyspace {keyspace}')
 def step_list_tables_for_keyspace(context, keyspace):
-    run_ecc_status(context, [keyspace])
+    run_ecc_status(context, ['--keyspace', keyspace])
 
     output_data = context.out.lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
@@ -91,9 +91,9 @@ def step_list_tables_for_keyspace(context, keyspace):
 
 @when(u'we show job {keyspace}.{table} with a limit of {limit}')
 def step_show_table_with_limit(context, keyspace, table, limit):
-    run_ecc_status(context, [keyspace, table])
+    run_ecc_status(context, ['--keyspace', keyspace, '--table', table])
     id = re.search('[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}',context.out).group(0)
-    run_ecc_status(context, [keyspace, table, id, '--limit', limit])
+    run_ecc_status(context, ['--id', id, '--limit', limit])
     output_data = context.out.lstrip().rstrip().split('\n')
 
     context.table_info = output_data[0:7]
@@ -103,7 +103,7 @@ def step_show_table_with_limit(context, keyspace, table, limit):
 
 @when(u'we list jobs for table {keyspace}.{table}')
 def step_show_table(context, keyspace, table):
-    run_ecc_status(context, [keyspace, table])
+    run_ecc_status(context, ['--keyspace', keyspace, '--table', table])
 
     output_data = context.out.lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
@@ -221,7 +221,7 @@ def verify_job_disappeared(context, keyspace, table):
     timeout = time.time() + (150)
     output_data = []
     while "Repair job not found" not in output_data:
-        run_ecc_status(context, [keyspace, table, id, '--limit', "1"])
+        run_ecc_status(context, ['--id', id, '--limit', "1"])
         output_data = context.out.lstrip().rstrip().split('\n')
         time.sleep(1)
         assert time.time() < timeout

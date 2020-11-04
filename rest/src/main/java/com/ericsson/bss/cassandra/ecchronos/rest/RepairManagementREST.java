@@ -53,14 +53,10 @@ public interface RepairManagementREST
     /**
      * Get status of a specific scheduled table repair job.
      *
-     * @param keyspace The keyspace of the table
-     * @param table The table to get status of
      * @param id The id of the job
      * @return A JSON representation of {@link CompleteRepairJob}
      */
-    String jobStatus(String keyspace,
-                     String table,
-                     String id);
+    String jobStatus(String id);
 
     /**
      * Get a list of configuration of all scheduled repair jobs.

@@ -331,7 +331,7 @@ public class TestRepairManagementRESTImpl
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(repairJobViews);
 
-        CompleteRepairJob response = GSON.fromJson(repairManagementREST.jobStatus("ks", "tb", expectedId.toString()), CompleteRepairJob.class);
+        CompleteRepairJob response = GSON.fromJson(repairManagementREST.jobStatus(expectedId.toString()), CompleteRepairJob.class);
 
         assertThat(response).isEqualTo(expectedResponse);
     }
@@ -361,7 +361,7 @@ public class TestRepairManagementRESTImpl
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(repairJobViews);
 
-        String response = repairManagementREST.jobStatus("ks", "tb", UUID.randomUUID().toString());
+        String response = repairManagementREST.jobStatus(UUID.randomUUID().toString());
 
         assertThat(response).isEqualTo("{}");
     }
@@ -371,7 +371,7 @@ public class TestRepairManagementRESTImpl
     {
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.emptyList());
 
-        String response = repairManagementREST.jobStatus("ks", "tb", UUID.randomUUID().toString());
+        String response = repairManagementREST.jobStatus(UUID.randomUUID().toString());
 
         assertThat(response).isEqualTo("{}");
     }
@@ -381,7 +381,7 @@ public class TestRepairManagementRESTImpl
     {
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.emptyList());
 
-        String response = repairManagementREST.jobStatus("ks", "tb", "123");
+        String response = repairManagementREST.jobStatus("123");
 
         assertThat(response).isEqualTo("{}");
     }
