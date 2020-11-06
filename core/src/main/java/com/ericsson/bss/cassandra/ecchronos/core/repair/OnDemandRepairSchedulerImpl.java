@@ -71,7 +71,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         myExecutor.scheduleWithFixedDelay(() -> clearFailedJobs(), DEFAULT_INITIAL_DELAY_IN_DAYS, DEFAULT_DELAY_IN_DAYS, TimeUnit.DAYS);
         myOnDemandStatus = builder.onDemandStatus;
 
-        Set<OngoingJob> ongoingJobs = myOnDemandStatus.getMyOngoingJobs(myReplicationState);
+        Set<OngoingJob> ongoingJobs = myOnDemandStatus.getOngoingJobs(myReplicationState);
         ongoingJobs.forEach(j -> scheduleOngoingJob(j));
     }
 

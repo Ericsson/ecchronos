@@ -125,7 +125,7 @@ public class TestOnDemandRepairSchedulerImpl
     {
         Set<OngoingJob> ongoingJobs = new HashSet<>();
         ongoingJobs.add(myOngingJob);
-        when(myOnDemandStatus.getMyOngoingJobs(replicationState)).thenReturn(ongoingJobs);
+        when(myOnDemandStatus.getOngoingJobs(replicationState)).thenReturn(ongoingJobs);
 
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
 

@@ -105,11 +105,11 @@ public class OngoingJob
 		private ReplicationState replicationState;
 		private Integer tokenMapHash = null;
 
-        public Builder withOngoingJobInfo(UUID jobId, int tokenMapHash, Set<UDTValue> repiaredTokens)
+        public Builder withOngoingJobInfo(UUID jobId, int tokenMapHash, Set<UDTValue> repairedTokens)
         {
         	this.jobId = jobId;
         	this.tokenMapHash  = tokenMapHash;
-        	this.repairedTokens = repiaredTokens;
+        	this.repairedTokens = repairedTokens;
         	return this;
         }
 

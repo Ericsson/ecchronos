@@ -49,6 +49,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
 {
     private static final String KEYSPACE_NAME = "ecchronos";
     private static final String TABLE_NAME = "on_demand_repair_status";
+    private static final String TEST_TABLE_NAME = "test_table";
     private static final String HOST_ID_COLUMN_NAME = "host_id";
     private static final String STATUS_COLUMN_NAME = "status";
     private static final String JOB_ID_COLUMN_NAME = "job_id";
@@ -76,6 +77,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         mySession.execute(String.format("CREATE TYPE IF NOT EXISTS %s.token_range (start text, end text)", KEYSPACE_NAME));
         mySession.execute(String.format("CREATE TYPE IF NOT EXISTS %s.table_reference (id uuid, keyspace_name text, table_name text)", KEYSPACE_NAME));
         mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (host_id uuid, job_id uuid, table_reference frozen<table_reference>, token_map_hash int, repaired_tokens frozen<set<frozen<token_range>>>, status text, PRIMARY KEY(host_id, job_id)) WITH default_time_to_live = 2592000 AND gc_grace_seconds = 0", KEYSPACE_NAME, TABLE_NAME));
+        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (col1 int, col2 int, PRIMARY KEY(col1))", KEYSPACE_NAME, TEST_TABLE_NAME));
 
         myTableReferenceFactory = new TableReferenceFactoryImpl(mySession.getCluster().getMetadata());
         myUDTTableReferenceType = mySession.getCluster().getMetadata().getKeyspace(KEYSPACE_NAME).getUserType(UDT_TABLE_REFERENCE_NAME);
@@ -114,7 +116,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
 
         UUID jobId = UUID.randomUUID();
         int hashValue = 1;
-        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TABLE_NAME);
+        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
 
         onDemandStatus.addNewJob(jobId, tableReference, hashValue);
 
@@ -144,7 +146,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
 
         UUID jobId = UUID.randomUUID();
         int hashValue = 1;
-        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TABLE_NAME);
+        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
 
         onDemandStatus.addNewJob(jobId, tableReference, hashValue);
 
@@ -177,7 +179,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
 
         UUID jobId = UUID.randomUUID();
         int hashValue = 1;
-        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TABLE_NAME);
+        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
 
         onDemandStatus.addNewJob(jobId, tableReference, hashValue);
 
@@ -212,7 +214,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
 
         UUID jobId = UUID.randomUUID();
         int hashValue = 1;
-        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TABLE_NAME);
+        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
 
         onDemandStatus.addNewJob(jobId, tableReference, hashValue);
 
@@ -245,7 +247,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
     {
         OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());
 
-        Set<OngoingJob> ongoingJobs = onDemandStatus.getMyOngoingJobs(myReplicationState);
+        Set<OngoingJob> ongoingJobs = onDemandStatus.getOngoingJobs(myReplicationState);
 
         assertThat(ongoingJobs).isEmpty();
     }
@@ -257,20 +259,20 @@ public class TestOnDemandStatus extends AbstractCassandraTest
 
         UUID jobId = UUID.randomUUID();
         int hashValue = 1;
-        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TABLE_NAME);
+        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
         Map<LongTokenRange, ImmutableSet<Node>> tokenMap = new HashMap<>();
         when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap );
 
         onDemandStatus.addNewJob(jobId, tableReference, hashValue);
 
-        Set<OngoingJob> ongoingJobs = onDemandStatus.getMyOngoingJobs(myReplicationState);
+        Set<OngoingJob> ongoingJobs = onDemandStatus.getOngoingJobs(myReplicationState);
 
         assertThat(ongoingJobs.size()).isEqualTo(1);
 
         OngoingJob ongoingJob = ongoingJobs.iterator().next();
         assertThat(ongoingJob.getJobId()).isEqualTo(jobId);
         assertThat(ongoingJob.getTableReference().getKeyspace()).isEqualTo(KEYSPACE_NAME);
-        assertThat(ongoingJob.getTableReference().getTable()).isEqualTo(TABLE_NAME);
+        assertThat(ongoingJob.getTableReference().getTable()).isEqualTo(TEST_TABLE_NAME);
         assertThat(ongoingJob.getRepairedTokens()).isEmpty();
     }
 
@@ -281,7 +283,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
 
         UUID jobId = UUID.randomUUID();
         int hashValue = 1;
-        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TABLE_NAME);
+        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
         Map<LongTokenRange, ImmutableSet<Node>> tokenMap = new HashMap<>();
         when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap );
         onDemandStatus.addNewJob(jobId, tableReference, hashValue);
@@ -292,14 +294,11 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         repairedTokens.add(onDemandStatus.createUDTTokenRangeValue(-50L, 700L));
         onDemandStatus.updateJob(jobId, repairedTokens);
 
-        Set<OngoingJob> ongoingJobs = onDemandStatus.getMyOngoingJobs(myReplicationState);
+        mySession.execute("DROP TABLE " + KEYSPACE_NAME + "." + TEST_TABLE_NAME);
+        mySession.execute(String.format("CREATE TABLE %s.%s (col1 int, col2 int, PRIMARY KEY(col1))", KEYSPACE_NAME, TEST_TABLE_NAME));
 
-        assertThat(ongoingJobs.size()).isEqualTo(1);
+        Set<OngoingJob> ongoingJobs = onDemandStatus.getOngoingJobs(myReplicationState);
 
-        OngoingJob ongoingJob = ongoingJobs.iterator().next();
-        assertThat(ongoingJob.getJobId()).isEqualTo(jobId);
-        assertThat(ongoingJob.getTableReference().getKeyspace()).isEqualTo(KEYSPACE_NAME);
-        assertThat(ongoingJob.getTableReference().getTable()).isEqualTo(TABLE_NAME);
-        assertThat(ongoingJob.getRepairedTokens()).isEqualTo(expectedRepairedTokens);
+        assertThat(ongoingJobs).isEmpty();
     }
 }

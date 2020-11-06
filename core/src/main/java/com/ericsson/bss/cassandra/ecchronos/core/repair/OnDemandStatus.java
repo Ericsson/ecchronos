@@ -18,6 +18,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.PreparedStatement;
@@ -37,6 +40,8 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.*;
 
 public class OnDemandStatus
 {
+    private static final Logger LOG = LoggerFactory.getLogger(OnDemandStatus.class);
+
     private static final String KEYSPACE_NAME = "ecchronos";
     private static final String TABLE_NAME = "on_demand_repair_status";
     private static final String HOST_ID_COLUMN_NAME = "host_id";
@@ -50,7 +55,7 @@ public class OnDemandStatus
     private static final String UDT_END_TOKEN_NAME = "end";
     private static final String UDT_TABLE_REFERENCE_NAME = "table_reference";
     private static final String UDT_ID_NAME = "id";
-    private static final String UDT_KAYSPACE_NAME = "keyspace_name";
+    private static final String UDT_KEYSPACE_NAME = "keyspace_name";
     private static final String UDT_TABLE_NAME = "table_name";
 
     private final Session mySession;
@@ -85,7 +90,7 @@ public class OnDemandStatus
         myUpdateJobToFailedStatement = mySession.prepare(updateJobToFailedStatement).setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
     }
 
-    public Set<OngoingJob> getMyOngoingJobs(ReplicationState replicationState)
+    public Set<OngoingJob> getOngoingJobs(ReplicationState replicationState)
     {
         ResultSet result = mySession.execute(myGetStatusStatement.bind(myHostId));
 
@@ -96,9 +101,9 @@ public class OnDemandStatus
             {
                 UUID jobId = row.getUUID(JOB_ID_COLUMN_NAME);
                 int tokenMapHash = row.getInt(TOKEN_MAP_HASH_COLUMN_NAME);
-                Set<UDTValue> repiaredTokens = row.getSet(REPAIRED_TOKENS_COLUMN_NAME, UDTValue.class);
+                Set<UDTValue> repairedTokens = row.getSet(REPAIRED_TOKENS_COLUMN_NAME, UDTValue.class);
                 UDTValue uDTTableReference = row.getUDTValue(TABLE_REFERENCE_COLUMN_NAME);
-                String keyspace = uDTTableReference.getString(UDT_KAYSPACE_NAME);
+                String keyspace = uDTTableReference.getString(UDT_KEYSPACE_NAME);
                 String table = uDTTableReference.getString(UDT_TABLE_NAME);
                 TableReference tableReference = myTableReferenceFactory.forTable(keyspace, table);
 
@@ -108,9 +113,13 @@ public class OnDemandStatus
                             .withOnDemandStatus(this)
                             .withTableReference(tableReference)
                             .withReplicationState(replicationState)
-                            .withOngoingJobInfo(jobId, tokenMapHash, repiaredTokens)
+                            .withOngoingJobInfo(jobId, tokenMapHash, repairedTokens)
                             .build();
                     ongoingJobs.add(ongoingJob);
+                }
+                else
+                {
+                    LOG.info("Ignoring table repair job with id {} of table {} as it was for table {}.{}({})", jobId, tableReference, keyspace, table, uDTTableReference.getUUID(UDT_ID_NAME));
                 }
             }
         }
@@ -120,7 +129,7 @@ public class OnDemandStatus
 
     public void addNewJob(UUID jobId, TableReference tableReference, int tokenMapHash)
     {
-        UDTValue uDTTableReference = myUDTTableReferenceType.newValue().setUUID(UDT_ID_NAME, tableReference.getId()).setString(UDT_KAYSPACE_NAME, tableReference.getKeyspace()).setString(UDT_TABLE_NAME, tableReference.getTable());
+        UDTValue uDTTableReference = myUDTTableReferenceType.newValue().setUUID(UDT_ID_NAME, tableReference.getId()).setString(UDT_KEYSPACE_NAME, tableReference.getKeyspace()).setString(UDT_TABLE_NAME, tableReference.getTable());
         BoundStatement statement = myInsertNewJobStatement.bind(myHostId, jobId, uDTTableReference, tokenMapHash);
         mySession.execute(statement);
     }

@@ -28,7 +28,6 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.internal.matchers.CapturingMatcher;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import com.datastax.driver.core.UDTValue;
@@ -120,12 +119,12 @@ public class TestOngoingJob
 
         Set<LongTokenRange> finishedRanges = new HashSet<>();
         finishedRanges.add(new LongTokenRange(-50L, 700L));
-    	when(myOnDemandStatus.createUDTTokenRangeValue(-50L, 700L)).thenReturn(myUdtValue);
-		ongoingJob.finishRanges(finishedRanges);
-		
-		verify(myOnDemandStatus).updateJob(any(UUID.class), myUdtSetCaptor.capture());
-		Set<UDTValue> rangeSet = myUdtSetCaptor.getValue();
-		assertThat(rangeSet).containsOnly(myUdtValue);
+        when(myOnDemandStatus.createUDTTokenRangeValue(-50L, 700L)).thenReturn(myUdtValue);
+        ongoingJob.finishRanges(finishedRanges);
+
+        verify(myOnDemandStatus).updateJob(any(UUID.class), myUdtSetCaptor.capture());
+        Set<UDTValue> rangeSet = myUdtSetCaptor.getValue();
+        assertThat(rangeSet).containsOnly(myUdtValue);
     }
 
     @Test
