@@ -3,7 +3,8 @@ init-hook='import sys; sys.path.append("${project.basedir}/src/test/behave")'
 
 [MESSAGES CONTROL]
 disable=
-  missing-docstring
+  missing-docstring,
+  useless-object-inheritance
 
 [SIMILARITIES]
 ignore-imports=yes

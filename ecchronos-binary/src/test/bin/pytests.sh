@@ -18,10 +18,12 @@ source variables.sh
 
 echo "Installing virtualenv"
 
-# Install virtualenv and behave
-pip install --user virtualenv
-virtualenv "$VENV_DIR"
-source "$VENV_DIR"/bin/activate
+if [ -z "${CI}"]; then
+  # Install virtualenv and behave
+  pip install --user virtualenv
+  virtualenv "$VENV_DIR"
+  source "$VENV_DIR"/bin/activate
+fi
 
 echo "Installing behave"
 

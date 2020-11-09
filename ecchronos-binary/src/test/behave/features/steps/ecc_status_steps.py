@@ -52,7 +52,7 @@ def step_init(context):
 def step_list_tables(context):
     run_ecc_status(context, [])
 
-    output_data = context.out.lstrip().rstrip().split('\n')
+    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
     context.rows = output_data[3:-1]
     context.summary = output_data[-1:]
@@ -62,7 +62,7 @@ def step_list_tables(context):
 def step_list_tables_with_limit(context, limit):
     run_ecc_status(context, ['--limit', limit])
 
-    output_data = context.out.lstrip().rstrip().split('\n')
+    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
     context.rows = output_data[3:-1]
     context.summary = output_data[-1:]
@@ -70,9 +70,9 @@ def step_list_tables_with_limit(context, limit):
 
 @when(u'we list all tables for keyspace {keyspace} with a limit of {limit}')
 def step_list_tables_for_keyspace_with_limit(context, keyspace, limit):
-    run_ecc_status(context, [keyspace, '--limit', limit])
+    run_ecc_status(context, ['--keyspace', keyspace, '--limit', limit])
 
-    output_data = context.out.lstrip().rstrip().split('\n')
+    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
     context.rows = output_data[3:-1]
     context.summary = output_data[-1:]
@@ -80,9 +80,9 @@ def step_list_tables_for_keyspace_with_limit(context, keyspace, limit):
 
 @when(u'we list all tables for keyspace {keyspace}')
 def step_list_tables_for_keyspace(context, keyspace):
-    run_ecc_status(context, [keyspace])
+    run_ecc_status(context, ['--keyspace', keyspace])
 
-    output_data = context.out.lstrip().rstrip().split('\n')
+    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
     context.rows = output_data[3:-1]
     context.summary = output_data[-1:]
@@ -90,10 +90,10 @@ def step_list_tables_for_keyspace(context, keyspace):
 
 @when(u'we show job {keyspace}.{table} with a limit of {limit}')
 def step_show_table_with_limit(context, keyspace, table, limit):
-    run_ecc_status(context, [keyspace, table])
-    job_id = re.search(ID_PATTERN, context.out).group(0)
-    run_ecc_status(context, [keyspace, table, job_id, '--limit', limit])
-    output_data = context.out.lstrip().rstrip().split('\n')
+    run_ecc_status(context, ['--keyspace', keyspace, '--table', table])
+    job_id = re.search(ID_PATTERN, context.out.decode('ascii')).group(0)
+    run_ecc_status(context, ['--id', job_id, '--limit', limit])
+    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
 
     context.table_info = output_data[0:7]
     context.header = output_data[8:9]
@@ -102,9 +102,9 @@ def step_show_table_with_limit(context, keyspace, table, limit):
 
 @when(u'we list jobs for table {keyspace}.{table}')
 def step_show_table(context, keyspace, table):
-    run_ecc_status(context, [keyspace, table])
+    run_ecc_status(context, ['--keyspace', keyspace, '--table', table])
 
-    output_data = context.out.lstrip().rstrip().split('\n')
+    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
     context.rows = output_data[3:-1]
     context.summary = output_data[-1:]
@@ -190,12 +190,12 @@ def step_validate_token_list(context, limit):
 
 
 @then('the job for {keyspace}.{table} disappears when it is finished')
-def verify_job_disappeared(context, keyspace, table):
+def verify_job_disappeared(context, keyspace, table):  # pylint: disable=unused-argument
     job_id = re.search(ID_PATTERN, context.response.text).group(0)
     timeout = time.time() + 150
     output_data = []
     while "Repair job not found" not in output_data:
-        run_ecc_status(context, [keyspace, table, job_id, '--limit', "1"])
-        output_data = context.out.lstrip().rstrip().split('\n')
+        run_ecc_status(context, ['--id', job_id, '--limit', "1"])
+        output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
         time.sleep(1)
         assert time.time() < timeout

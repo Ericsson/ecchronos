@@ -24,15 +24,20 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
+
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -65,7 +70,18 @@ public class TestOnDemandRepairJob
     @Mock
     private Node mockReplica3;
 
+    @Mock
+    private OngoingJob myOngoingJob;
+
     private final TableReference myTableReference = tableReference(keyspaceName, tableName);
+
+    @Before
+    public void setup()
+    {
+        when(myOngoingJob.getTableReference()).thenReturn(myTableReference);
+        UUID uuid = UUID.randomUUID();
+        when(myOngoingJob.getJobId()).thenReturn(uuid );
+    }
 
     @After
     public void finalVerification()
@@ -93,7 +109,8 @@ public class TestOnDemandRepairJob
     public void testFailedJobCorrectlyReturned()
     {
         OnDemandRepairJob repairJob = createOnDemandRepairJob();
-        repairJob.postExecute(false, null);
+        Iterator<ScheduledTask> it = repairJob.iterator();
+        repairJob.postExecute(false, it.next());
         RepairJobView expectedView = new RepairJobView(repairJob.getId(), myTableReference, RepairConfiguration.DEFAULT, null, RepairJobView.Status.ERROR, 0);
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
         assertThat(repairJob.getRepairConfiguration()).isEqualTo(RepairConfiguration.DEFAULT);
@@ -117,10 +134,20 @@ public class TestOnDemandRepairJob
     }
 
     @Test
-    public void testJobFailedWithWrongTokens()
+    public void testJobFinishedAfterRestart()
+    {
+        OnDemandRepairJob repairJob = createRestartedOnDemandRepairJob();
+        Iterator<ScheduledTask> it = repairJob.iterator();
+        assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
+        repairJob.postExecute(true, it.next());
+        assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FINISHED);
+    }
+
+    @Test
+    public void testJobFailedWhenTopologyChange()
     {
         OnDemandRepairJob repairJob = createOnDemandRepairJob();
-        when(myReplicationState.getTokenRangeToReplicas(myTableReference)).thenReturn(new HashMap<>());
+        when(myOngoingJob.hasTopologyChanged()).thenReturn(true);
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FAILED);
     }
 
@@ -156,15 +183,38 @@ public class TestOnDemandRepairJob
                 ImmutableSet.of(mockReplica1, mockReplica2, mockReplica3));
         tokenRangeToReplicas.put(range2,
                 ImmutableSet.of(mockReplica1, mockReplica2));
-        when(myReplicationState.getTokenRangeToReplicas(myTableReference)).thenReturn(tokenRangeToReplicas);
+        when(myOngoingJob.getTokens()).thenReturn(tokenRangeToReplicas);
 
         return new OnDemandRepairJob.Builder()
-                .withTableReference(myTableReference)
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairLockType(RepairLockType.VNODE)
-                .withReplicationState(myReplicationState)
                 .withRepairHistory(myRepairHistory)
+                .withOngoingJob(myOngoingJob)
+                .build();
+    }
+
+    private OnDemandRepairJob createRestartedOnDemandRepairJob()
+    {
+        LongTokenRange range1 = new LongTokenRange(1, 2);
+        LongTokenRange range2 = new LongTokenRange(1, 3);
+        Map<LongTokenRange, ImmutableSet<Node>> tokenRangeToReplicas = new HashMap<>();
+        tokenRangeToReplicas.put(range1,
+                ImmutableSet.of(mockReplica1, mockReplica2, mockReplica3));
+        tokenRangeToReplicas.put(range2,
+                ImmutableSet.of(mockReplica1, mockReplica2));
+        when(myOngoingJob.getTokens()).thenReturn(tokenRangeToReplicas);
+
+        Set<LongTokenRange> repairedTokens = new HashSet<>();
+        repairedTokens.add(range1);
+        when(myOngoingJob.getRepairedTokens()).thenReturn(repairedTokens);
+
+        return new OnDemandRepairJob.Builder()
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairLockType(RepairLockType.VNODE)
+                .withRepairHistory(myRepairHistory)
+                .withOngoingJob(myOngoingJob)
                 .build();
     }
 }

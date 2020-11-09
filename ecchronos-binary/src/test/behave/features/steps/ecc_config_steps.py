@@ -58,7 +58,7 @@ def step_init(context):
 def step_list_configs(context):
     run_ecc_config(context, [])
 
-    output_data = context.out.lstrip().rstrip().split('\n')
+    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
     context.rows = output_data[3:]
 
@@ -67,7 +67,7 @@ def step_list_configs(context):
 def step_list_config_for_table(context, keyspace, table):
     run_ecc_config(context, [keyspace, table])
 
-    output_data = context.out.lstrip().rstrip().split('\n')
+    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
     context.rows = output_data[3:]
 
@@ -76,7 +76,7 @@ def step_list_config_for_table(context, keyspace, table):
 def step_list_configs_for_keyspace(context, keyspace):
     run_ecc_config(context, [keyspace])
 
-    output_data = context.out.lstrip().rstrip().split('\n')
+    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
     context.rows = output_data[3:]
 

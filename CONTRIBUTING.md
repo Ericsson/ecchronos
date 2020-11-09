@@ -33,8 +33,8 @@ If you're looking to contribute to ecChronos it is recommended that you sign up 
 The builds required to merge a pull requests are contained within the [Travis configuration](.travis.yml) and include tests, code coverage as well as PMD checks.
 
 All checks needs to pass before merging a pull request.
-The current PMD rules are a base that might need to be improved.
-If you encounter a rule that seems odd or non-relevant feel free to discuss it either within an issue or pull request.
+The current PMD rules are constantly evolving.
+If you encounter a PMD rule that seems odd or non-relevant feel free to discuss it within an issue or pull request.
 
 #### Built with
 
