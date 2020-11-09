@@ -110,6 +110,7 @@ public class ECChronos implements Closeable
                 .withMetadata(metadata)
                 .withRepairConfiguration(repairConfig.asRepairConfiguration())
                 .withRepairHistory(repairHistory)
+                .withOnDemandStatus(new OnDemandStatus(nativeConnectionProvider))
                 .build();
         myECChronosInternals.addRunPolicy(myTimeBasedRunPolicy);
     }

@@ -25,12 +25,15 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,16 +64,27 @@ public class TestOnDemandRepairSchedulerImpl
     @Mock
     private Metadata metadata;
 
-    KeyspaceMetadata keyspaceMetadata = mock(KeyspaceMetadata.class);
+    @Mock
+    private OnDemandStatus myOnDemandStatus;
 
-    TableMetadata tableMetadata = mock(TableMetadata.class);
+    @Mock
+    private Metadata myMetadata;
+
+    @Mock
+    private KeyspaceMetadata myKeyspaceMetadata;
+
+    @Mock
+    private TableMetadata myTableMetadata;
+
+    @Mock
+    private OngoingJob myOngingJob;
 
     @Test
     public void testScheduleRepairOnTable() throws EcChronosException
     {
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
-        when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(keyspaceMetadata);
-        when(keyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(tableMetadata);
+        when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(myKeyspaceMetadata);
+        when(myKeyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(myTableMetadata);
 
         verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
         RepairJobView repairJobView = repairScheduler.scheduleJob(TABLE_REFERENCE);
@@ -89,8 +103,8 @@ public class TestOnDemandRepairSchedulerImpl
     public void testScheduleTwoRepairOnTable() throws EcChronosException
     {
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
-        when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(keyspaceMetadata);
-        when(keyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(tableMetadata);
+        when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(myKeyspaceMetadata);
+        when(myKeyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(myTableMetadata);
 
         verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
         RepairJobView repairJobView = repairScheduler.scheduleJob(TABLE_REFERENCE);
@@ -101,6 +115,24 @@ public class TestOnDemandRepairSchedulerImpl
 
         repairScheduler.close();
         verify(scheduleManager, times(2)).deschedule(any(ScheduledJob.class));
+
+        verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
+        verifyNoMoreInteractions(scheduleManager);
+    }
+
+    @Test
+    public void testRestartRepairOnTable() throws EcChronosException
+    {
+        Set<OngoingJob> ongoingJobs = new HashSet<>();
+        ongoingJobs.add(myOngingJob);
+        when(myOnDemandStatus.getOngoingJobs(replicationState)).thenReturn(ongoingJobs);
+
+        OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
+
+        verify(scheduleManager).schedule(any(ScheduledJob.class));
+
+        repairScheduler.close();
+        verify(scheduleManager).deschedule(any(ScheduledJob.class));
 
         verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
         verifyNoMoreInteractions(scheduleManager);
@@ -119,7 +151,7 @@ public class TestOnDemandRepairSchedulerImpl
     public void testScheduleRepairOnNonExistentTable() throws EcChronosException
     {
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
-        when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(keyspaceMetadata);
+        when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(myKeyspaceMetadata);
         verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
         repairScheduler.scheduleJob(TABLE_REFERENCE);
     }
@@ -140,6 +172,7 @@ public class TestOnDemandRepairSchedulerImpl
                 .withMetadata(metadata)
                 .withRepairLockType(RepairLockType.VNODE)
                 .withRepairConfiguration(RepairConfiguration.DEFAULT)
-                .withRepairHistory(repairHistory);
+                .withRepairHistory(repairHistory)
+                .withOnDemandStatus(myOnDemandStatus);
     }
 }

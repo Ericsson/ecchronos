@@ -18,6 +18,7 @@ import java.io.Closeable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -26,7 +27,6 @@ import java.util.stream.Collectors;
 
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
-
 import com.datastax.driver.core.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
@@ -56,6 +56,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     private final RepairConfiguration myRepairConfiguration;
     private final RepairHistory myRepairHistory;
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor();
+    private final OnDemandStatus myOnDemandStatus;
 
     private OnDemandRepairSchedulerImpl(Builder builder)
     {
@@ -68,6 +69,10 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         myRepairConfiguration = builder.repairConfiguration;
         myRepairHistory = builder.repairHistory;
         myExecutor.scheduleWithFixedDelay(() -> clearFailedJobs(), DEFAULT_INITIAL_DELAY_IN_DAYS, DEFAULT_DELAY_IN_DAYS, TimeUnit.DAYS);
+        myOnDemandStatus = builder.onDemandStatus;
+
+        Set<OngoingJob> ongoingJobs = myOnDemandStatus.getOngoingJobs(myReplicationState);
+        ongoingJobs.forEach(j -> scheduleOngoingJob(j));
     }
 
     @Override
@@ -100,6 +105,17 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
                 throw new EcChronosException("Table does not exist");
             }
             OnDemandRepairJob job = getRepairJob(tableReference);
+            myScheduledJobs.put(job.getId(), job);
+            myScheduleManager.schedule(job);
+            return job.getView();
+        }
+    }
+
+    private RepairJobView scheduleOngoingJob(OngoingJob ongoingJob)
+    {
+        synchronized (myLock)
+        {
+            OnDemandRepairJob job = getOngoingRepairJob(ongoingJob);
             myScheduledJobs.put(job.getId(), job);
             myScheduleManager.schedule(job);
             return job.getView();
@@ -143,15 +159,33 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
 
     private OnDemandRepairJob getRepairJob(TableReference tableReference)
     {
+        OngoingJob ongoingJob = new OngoingJob.Builder()
+                .withOnDemandStatus(myOnDemandStatus)
+                .withTableReference(tableReference)
+                .withReplicationState(myReplicationState)
+                .build();
         OnDemandRepairJob job = new OnDemandRepairJob.Builder()
                 .withJmxProxyFactory(myJmxProxyFactory)
-                .withTableReference(tableReference)
                 .withTableRepairMetrics(myTableRepairMetrics)
-                .withReplicationState(myReplicationState)
                 .withRepairLockType(myRepairLockType)
                 .withOnFinished(this::removeScheduledJob)
                 .withRepairConfiguration(myRepairConfiguration)
                 .withRepairHistory(myRepairHistory)
+                .withOngoingJob(ongoingJob)
+                .build();
+        return job;
+    }
+
+    private OnDemandRepairJob getOngoingRepairJob(OngoingJob ongoingJob)
+    {
+        OnDemandRepairJob job = new OnDemandRepairJob.Builder()
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairLockType(myRepairLockType)
+                .withOnFinished(this::removeScheduledJob)
+                .withRepairConfiguration(myRepairConfiguration)
+                .withRepairHistory(myRepairHistory)
+                .withOngoingJob(ongoingJob)
                 .build();
         return job;
     }
@@ -171,6 +205,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         private Metadata metadata;
         private RepairConfiguration repairConfiguration;
         private RepairHistory repairHistory;
+        private OnDemandStatus onDemandStatus;
 
         public Builder withJmxProxyFactory(JmxProxyFactory jmxProxyFactory)
         {
@@ -217,6 +252,12 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         public Builder withRepairHistory(RepairHistory repairHistory)
         {
             this.repairHistory = repairHistory;
+            return this;
+        }
+
+        public Builder withOnDemandStatus(OnDemandStatus onDemandStatus)
+        {
+            this.onDemandStatus = onDemandStatus;
             return this;
         }
 

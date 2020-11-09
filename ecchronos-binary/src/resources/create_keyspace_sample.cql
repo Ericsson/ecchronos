@@ -41,3 +41,23 @@ CREATE TABLE IF NOT EXISTS ecchronos.repair_history(
     WITH compaction = {'class': 'TimeWindowCompactionStrategy'}
     AND default_time_to_live = 1728000
     AND CLUSTERING ORDER BY (repair_id DESC);
+
+CREATE TYPE IF NOT EXISTS ecchronos.token_range (
+    start text,
+    end text);
+
+CREATE TYPE IF NOT EXISTS ecchronos.table_reference (
+    id uuid,
+    keyspace_name text,
+    table_name text);
+
+CREATE TABLE IF NOT EXISTS ecchronos.on_demand_repair_status (
+    host_id uuid,
+    job_id uuid,
+    table_reference frozen<table_reference>,
+    token_map_hash int,
+    repaired_tokens frozen<set<frozen<token_range>>>,
+    status text,
+    PRIMARY KEY(host_id, job_id))
+    WITH default_time_to_live = 2592000
+    AND gc_grace_seconds = 0;
