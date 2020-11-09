@@ -106,11 +106,11 @@ def print_repair_jobs(repair_jobs, max_lines):
 
 def parse_arguments():
     parser = ArgumentParser(description='Show repair scheduler status')
-    parser.add_argument('keyspace', nargs='?',
+    parser.add_argument('-k', '--keyspace', type=str,
                         help='Print status(es) for a specific keyspace')
-    parser.add_argument('table', nargs='?',
-                        help='Print status(es) for a specific table')
-    parser.add_argument('id', nargs='?',
+    parser.add_argument('-t', '--table', type=str,
+                        help='Print status(es) for a specific table (Must be specified with keyspace)')
+    parser.add_argument('-i', '--id', type=str,
                         help='Print verbose status for a specific job')
     parser.add_argument('-l', '--limit', type=int,
                         help='Limit the number of tables or virtual nodes printed (-1 to disable)',
@@ -125,13 +125,16 @@ def main():
     arguments = parse_arguments()
     request = rest.RepairSchedulerRequest(base_url=arguments.url)
 
-    if arguments.table and arguments.id:
-        result = request.get(keyspace=arguments.keyspace, table=arguments.table, id=arguments.id)
+    if arguments.id:
+        result = request.get(id=arguments.id)
         if result.is_successful():
             print_verbose_repair_job(result.data, arguments.limit)
         else:
             print(result.format_exception())
     elif arguments.table:
+        if not arguments.keyspace:
+            print("Must specify keyspace")
+            exit(1)
         result = request.list(keyspace=arguments.keyspace, table=arguments.table)
         if result.is_successful():
             print_repair_jobs(result.data, arguments.limit)

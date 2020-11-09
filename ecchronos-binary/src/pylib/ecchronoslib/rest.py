@@ -88,13 +88,13 @@ class RestRequest:
 class RepairSchedulerRequest(RestRequest):
     repair_management_status_url = 'repair-management/v1/status'
     repair_management_table_status_url = 'repair-management/v1/status/keyspaces/{0}/tables/{1}'
-    repair_management_job_status_url = 'repair-management/v1/status/keyspaces/{0}/tables/{1}/ids/{2}'
+    repair_management_job_status_url = 'repair-management/v1/status/ids/{0}'
 
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
 
-    def get(self, keyspace, table, id):
-        request_url = RepairSchedulerRequest.repair_management_job_status_url.format(keyspace, table, id)
+    def get(self, id):
+        request_url = RepairSchedulerRequest.repair_management_job_status_url.format(id)
 
         result = self.request(request_url)
         if result.is_successful():
