@@ -18,7 +18,7 @@ source variables.sh
 
 echo "Installing virtualenv"
 
-if [ -z "${CI}"]; then
+if [ -z "${CI}" ]; then
   # Install virtualenv and behave
   pip install --user virtualenv
   virtualenv "$VENV_DIR"
