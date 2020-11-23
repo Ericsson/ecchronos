@@ -32,13 +32,15 @@ public class TestTableRepairConfig
     public void testFullyRepairedJob()
     {
         // Given
+        UUID id = UUID.randomUUID();
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
-        RepairJobView repairJobView = new RepairJobView(UUID.randomUUID(), tableReference("ks", "tbl"), repairConfig,
+        RepairJobView repairJobView = new RepairJobView(id, tableReference("ks", "tbl"), repairConfig,
                 null, RepairJobView.Status.COMPLETED, 0);
 
         // When
         TableRepairConfig tableRepairConfig = new TableRepairConfig(repairJobView);
         // Then
+        assertThat(tableRepairConfig.id).isEqualTo(id);
         assertThat(tableRepairConfig.keyspace).isEqualTo("ks");
         assertThat(tableRepairConfig.table).isEqualTo("tbl");
         assertThat(tableRepairConfig.repairIntervalInMs).isEqualTo(11);

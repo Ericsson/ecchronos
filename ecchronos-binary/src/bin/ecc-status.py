@@ -46,6 +46,7 @@ def print_verbose_repair_job(repair_job, max_lines):
 
     verbose_print_format = "{0:15s}: {1}"
 
+    print(verbose_print_format.format("Id", repair_job.id))
     print(verbose_print_format.format("Keyspace", repair_job.keyspace))
     print(verbose_print_format.format("Table", repair_job.table))
     print(verbose_print_format.format("Status", repair_job.status))
@@ -70,6 +71,7 @@ def print_verbose_repair_job(repair_job, max_lines):
 
 def convert_repair_job(repair_job):
     entry = list()
+    entry.append(repair_job.id)
     entry.append(repair_job.keyspace)
     entry.append(repair_job.table)
     entry.append(repair_job.status)
@@ -77,7 +79,6 @@ def convert_repair_job(repair_job):
     entry.append(repair_job.get_last_repaired_at())
     entry.append(repair_job.get_next_repair())
     entry.append(repair_job.recurring)
-    entry.append(repair_job.id)
 
     return entry
 
@@ -91,7 +92,8 @@ def print_summary(repair_jobs):
 
 def print_repair_jobs(repair_jobs, max_lines):
     repair_jobs_table = list()
-    repair_jobs_table.append(["Keyspace", "Table", "Status", "Repaired(%)", "Repaired at", "Next repair", "recurring", "id"])
+    repair_jobs_table.append(["Id", "Keyspace", "Table", "Status", "Repaired(%)",
+                              "Repaired at", "Next repair", "Recurring"])
     sorted_repair_jobs = sorted(repair_jobs, key=lambda job: job.last_repaired_at_in_ms)
 
     if max_lines > -1:

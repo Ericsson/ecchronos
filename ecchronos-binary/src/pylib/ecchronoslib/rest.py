@@ -119,9 +119,17 @@ class RepairSchedulerRequest(RestRequest):
 class RepairConfigRequest(RestRequest):
     repair_management_config_url = 'repair-management/v1/config'
     repair_management_table_config_url = 'repair-management/v1/config/keyspaces/{0}/tables/{1}'
+    repair_management_id_config_url = 'repair-management/v1/config/ids/{0}'
 
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
+
+    def get(self, id=None):
+        request_url = RepairConfigRequest.repair_management_id_config_url.format(id)
+        result = self.request(request_url)
+        if result.is_successful():
+            result = result.transform_with_data(new_data=TableConfig(result.data))
+        return result
 
     def list(self, keyspace=None, table=None):
         request_url = RepairConfigRequest.repair_management_config_url

@@ -82,6 +82,7 @@ class VerboseRepairJob(RepairJob):
 
 class TableConfig:
     def __init__(self, data):
+        self.id = data["id"] if "id" in data else "<UNKNOWN>"
         self.keyspace = data["keyspace"] if "keyspace" in data else "<UNKNOWN>"
         self.table = data["table"] if "table" in data else "<UNKNOWN>"
         self.repair_interval_in_ms = int(data["repairIntervalInMs"] if "repairIntervalInMs" in data else 0)

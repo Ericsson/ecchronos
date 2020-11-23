@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions.RepairPara
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * A representation of a table repair configuration.
@@ -28,6 +29,7 @@ import java.util.Objects;
  */
 public class TableRepairConfig
 {
+    public final UUID id;
     public final String keyspace;
     public final String table;
     public final long repairIntervalInMs;
@@ -41,6 +43,7 @@ public class TableRepairConfig
         RepairConfiguration config = repairJobView.getRepairConfiguration();
         TableReference tableReference = repairJobView.getTableReference();
 
+        this.id = repairJobView.getId();
         this.keyspace = tableReference.getKeyspace();
         this.table = tableReference.getTable();
         this.repairIntervalInMs = config.getRepairIntervalInMs();
@@ -58,7 +61,8 @@ public class TableRepairConfig
         if (o == null || getClass() != o.getClass())
             return false;
         TableRepairConfig that = (TableRepairConfig) o;
-        return repairIntervalInMs == that.repairIntervalInMs &&
+        return Objects.equals(id, that.id) &&
+                repairIntervalInMs == that.repairIntervalInMs &&
                 Double.compare(that.repairUnwindRatio, repairUnwindRatio) == 0 &&
                 repairWarningTimeInMs == that.repairWarningTimeInMs &&
                 repairErrorTimeInMs == that.repairErrorTimeInMs &&
@@ -71,7 +75,7 @@ public class TableRepairConfig
     public int hashCode()
     {
         return Objects
-                .hash(keyspace, table, repairIntervalInMs, repairParallelism, repairUnwindRatio, repairWarningTimeInMs,
+                .hash(id, keyspace, table, repairIntervalInMs, repairParallelism, repairUnwindRatio, repairWarningTimeInMs,
                         repairErrorTimeInMs);
     }
 }

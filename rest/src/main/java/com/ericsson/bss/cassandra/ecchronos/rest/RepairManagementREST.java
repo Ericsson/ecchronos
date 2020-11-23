@@ -84,6 +84,14 @@ public interface RepairManagementREST
                        String table);
 
     /**
+     * Get configuration of a specific scheduled table repair job.
+     *
+     * @param id The id of the table to get configuration of
+     * @return A JSON representation of {@link TableRepairConfig}
+     */
+    String jobConfig(String id);
+
+    /**
      * Schedule an on demand repair to be run on a specific table
      *
      * @param keyspace The keyspace of the table

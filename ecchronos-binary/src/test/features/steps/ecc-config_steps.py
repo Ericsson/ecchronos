@@ -36,7 +36,7 @@ def table_row(keyspace, table):
 
 def table_pattern(keyspace=NAME_PATTERN, table=NAME_PATTERN, interval=DURATION_PATTERN, unwind_ratio=UNWIND_RATIO_PATTERN,
                   warn_time=DURATION_PATTERN, error_time=DURATION_PATTERN):
-    return r'\| {keyspace} \| {table} \| {interval} \| PARALLEL | {unwind} \| {warn} \| {error} \|'\
+    return r'\| .* \| {keyspace} \| {table} \| {interval} \| PARALLEL | {unwind} \| {warn} \| {error} \|'\
         .format(keyspace=keyspace, table=table, interval=interval, unwind=unwind_ratio,
                 warn=warn_time, error=error_time)
 
@@ -81,6 +81,17 @@ def step_list_tables_for_keyspace(context, keyspace):
     context.rows = output_data[3:]
     pass
 
+@when(u'we list a specific config for keyspace {keyspace} and table {table}')
+def step_list_specific_config(context, keyspace, table):
+    run_ecc_config(context, [keyspace, table])
+    id = re.search('[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}', context.out).group(0)
+    run_ecc_config(context, ['--id', id])
+    output_data = context.out.lstrip().rstrip().split('\n')
+
+    context.header = output_data[0:3]
+    context.rows = output_data[3:]
+    pass
+
 
 @then(u'the config output should contain a valid header')
 def step_validate_list_tables_header(context):
@@ -91,7 +102,7 @@ def step_validate_list_tables_header(context):
     assert header[0] == len(header[0]) * header[0][0], header[0]  # -----
 
     header[1] = strip_and_collapse(header[1])
-    assert header[1] == "| Keyspace | Table | Interval | Parallelism | Unwind ratio | Warning time | Error time |", header[1]
+    assert header[1] == "| Id | Keyspace | Table | Interval | Parallelism | Unwind ratio | Warning time | Error time |", header[1]
 
     assert header[2] == len(header[2]) * header[2][0], header[2]  # -----
     pass

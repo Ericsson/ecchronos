@@ -143,6 +143,23 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
+    @GetMapping(ENDPOINT_PREFIX + "/config/ids/{id}")
+    public String jobConfig(@PathVariable String id)
+    {
+        try
+        {
+            Optional<RepairJobView> repairJobView = getCompleteRepairJob(UUID.fromString(id));
+            return repairJobView
+                    .map(TableRepairConfig::new)
+                    .map(GSON::toJson)
+                    .orElse("{}");
+        } catch (IllegalArgumentException e)
+        {
+            return "{}";
+        }
+    }
+
+    @Override
     @PostMapping(ENDPOINT_PREFIX + "/schedule/keyspaces/{keyspace}/tables/{table}")
     public String scheduleJob(@PathVariable String keyspace, @PathVariable String table)
     {
