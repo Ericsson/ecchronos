@@ -27,7 +27,7 @@ def run_ecc_status(context, params):
 
 
 def table_row(keyspace, table):
-    return "\\| {0} \\| {1} \\| (COMPLETED|IN_QUEUE|WARNING|ERROR) \\| \\d+[.]\\d+ \\| .* \\| .* \\|".format(keyspace, table)
+    return "\\| .* \\| {0} \\| {1} \\| (COMPLETED|IN_QUEUE|WARNING|ERROR) \\| \\d+[.]\\d+ \\| .* \\| .* \\|".format(keyspace, table)
 
 
 def token_row():
@@ -92,13 +92,13 @@ def step_list_tables_for_keyspace(context, keyspace):
 @when(u'we show job {keyspace}.{table} with a limit of {limit}')
 def step_show_table_with_limit(context, keyspace, table, limit):
     run_ecc_status(context, ['--keyspace', keyspace, '--table', table])
-    id = re.search('[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}',context.out).group(0)
+    id = re.search('[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}', context.out).group(0)
     run_ecc_status(context, ['--id', id, '--limit', limit])
     output_data = context.out.lstrip().rstrip().split('\n')
 
     context.table_info = output_data[0:7]
     context.header = output_data[8:9]
-    context.rows = output_data[10:]
+    context.rows = output_data[11:]
     pass
 
 @when(u'we list jobs for table {keyspace}.{table}')
@@ -121,7 +121,7 @@ def step_validate_list_tables_header(context):
     assert header[0] == len(header[0]) * header[0][0], header[0]  # -----
 
     header[1] = strip_and_collapse(header[1])
-    assert header[1] == "| Keyspace | Table | Status | Repaired(%) | Repaired at | Next repair | recurring | id |", header[1]
+    assert header[1] == "| Id | Keyspace | Table | Status | Repaired(%) | Repaired at | Next repair | Recurring |", header[1]
 
     assert header[2] == len(header[2]) * header[2][0], header[2]  # -----
     pass
@@ -181,12 +181,13 @@ def step_validate_list_tables_contains_rows(context):
 @then(u'the expected header should be for {keyspace}.{table}')
 def step_validate_expected_show_table_header(context, keyspace, table):
     table_info = context.table_info
-    assert strip_and_collapse(table_info[0]) == "Keyspace : {0}".format(keyspace), "Faulty keyspace '{0}'".format(table_info[0])
-    assert strip_and_collapse(table_info[1]) == "Table : {0}".format(table), "Faulty table '{0}'".format(table_info[1])
-    assert re.match("Status : (COMPLETED|IN_QUEUE|WARNING|ERROR)", strip_and_collapse(table_info[2])), "Faulty status '{0}'".format(table_info[2])
-    assert re.match("Repaired\\(%\\) : \\d+[.]\\d+", strip_and_collapse(table_info[3])), "Faulty repaired(%) '{0}'".format(table_info[3])
-    assert re.match("Repaired at : .*", strip_and_collapse(table_info[4])), "Faulty repaired at '{0}'".format(table_info[4])
-    assert re.match("Next repair : .*", strip_and_collapse(table_info[5])), "Faulty next repair '{0}'".format(table_info[5])
+    assert re.match("Id : .*", strip_and_collapse(table_info[0])), "Faulty Id '{0}'".format(table_info[0])
+    assert strip_and_collapse(table_info[1]) == "Keyspace : {0}".format(keyspace), "Faulty keyspace '{0}'".format(table_info[1])
+    assert strip_and_collapse(table_info[2]) == "Table : {0}".format(table), "Faulty table '{0}'".format(table_info[2])
+    assert re.match("Status : (COMPLETED|IN_QUEUE|WARNING|ERROR)", strip_and_collapse(table_info[3])), "Faulty status '{0}'".format(table_info[3])
+    assert re.match("Repaired\\(%\\) : \\d+[.]\\d+", strip_and_collapse(table_info[4])), "Faulty repaired(%) '{0}'".format(table_info[4])
+    assert re.match("Repaired at : .*", strip_and_collapse(table_info[5])), "Faulty repaired at '{0}'".format(table_info[5])
+    assert re.match("Next repair : .*", strip_and_collapse(table_info[6])), "Faulty next repair '{0}'".format(table_info[6])
 
     pass
 

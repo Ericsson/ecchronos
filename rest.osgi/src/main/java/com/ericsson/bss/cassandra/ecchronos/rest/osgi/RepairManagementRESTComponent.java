@@ -88,6 +88,12 @@ public class RepairManagementRESTComponent implements RepairManagementREST
     }
 
     @Override
+    public String jobConfig(String id)
+    {
+        return myDelegateRESTImpl.jobConfig(id);
+    }
+
+    @Override
     public String scheduleJob(String keyspace, String table)
     {
         return myDelegateRESTImpl.scheduleJob(keyspace, table);

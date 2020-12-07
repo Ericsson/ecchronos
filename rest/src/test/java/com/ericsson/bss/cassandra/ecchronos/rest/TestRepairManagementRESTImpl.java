@@ -534,6 +534,97 @@ public class TestRepairManagementRESTImpl
     }
 
     @Test
+    public void testConfigIdEntry() throws UnknownHostException
+    {
+        Host host = mock(Host.class);
+        when(host.getBroadcastAddress()).thenReturn(InetAddress.getLocalHost());
+        UUID expectedId = UUID.randomUUID();
+        RepairJobView expectedRepairJob = new TestUtils.RepairJobBuilder()
+                .withId(expectedId)
+                .withKeyspace("ks")
+                .withTable("tb")
+                .withLastRepairedAt(1234L)
+                .withRepairInterval(11)
+                .build();
+        RepairJobView job1 = new TestUtils.RepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb2")
+                .withLastRepairedAt(134L)
+                .withRepairInterval(112)
+                .build();
+        RepairJobView job2 = new TestUtils.RepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb")
+                .withLastRepairedAt(132L)
+                .withRepairInterval(132)
+                .build();
+
+        TableRepairConfig expectedResponse = new TableRepairConfig(expectedRepairJob);
+
+        List<RepairJobView> repairJobViews = Arrays.asList(
+                expectedRepairJob,
+                getOnDemandRepairJobView("ks", "tb"),
+                job1,
+                job2
+        );
+
+        when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(repairJobViews);
+
+        TableRepairConfig response = GSON.fromJson(repairManagementREST.jobConfig(expectedId.toString()), TableRepairConfig.class);
+        assertThat(response).isEqualTo(expectedResponse);
+    }
+
+    @Test
+    public void testConfigIdEntryNotFound() throws UnknownHostException
+    {
+        Host host = mock(Host.class);
+        when(host.getBroadcastAddress()).thenReturn(InetAddress.getLocalHost());
+        RepairJobView job1 = new TestUtils.RepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb")
+                .withLastRepairedAt(1234L)
+                .withRepairInterval(11)
+                .build();
+        RepairJobView job2 = new TestUtils.RepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb2")
+                .withLastRepairedAt(134L)
+                .withRepairInterval(112)
+                .build();
+        List<RepairJobView> repairJobViews = Arrays.asList(
+                job1,
+                job2,
+                getOnDemandRepairJobView("ks", "tb")
+        );
+
+        when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(repairJobViews);
+
+        String response = repairManagementREST.jobConfig(UUID.randomUUID().toString());
+
+        assertThat(response).isEqualTo("{}");
+    }
+
+    @Test
+    public void testConfigIdEntryEmpty()
+    {
+        when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.emptyList());
+
+        String response = repairManagementREST.jobConfig(UUID.randomUUID().toString());
+
+        assertThat(response).isEqualTo("{}");
+    }
+
+    @Test
+    public void testConfigIdInvalidUUID()
+    {
+        when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.emptyList());
+
+        String response = repairManagementREST.jobConfig("123");
+
+        assertThat(response).isEqualTo("{}");
+    }
+
+    @Test
     public void testScheduleRepair() throws EcChronosException
     {
         long expectedLastRepairedAt = 234;
