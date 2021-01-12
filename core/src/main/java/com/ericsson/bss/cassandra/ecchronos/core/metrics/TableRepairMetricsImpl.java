@@ -56,7 +56,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         File statisticsDirectory = new File(builder.myStatisticsDirectory);
         if(!statisticsDirectory.exists() && !statisticsDirectory.mkdirs())
         {
-            LOG.error("Failed to create statistics directory: {}, csv files will not be generated", builder.myStatisticsDirectory);
+            LOG.warn("Failed to create statistics directory: {}, csv files will not be generated", builder.myStatisticsDirectory);
         }
 
         myTopLevelCsvReporter = CsvReporter.forRegistry(myMetricRegistry)
