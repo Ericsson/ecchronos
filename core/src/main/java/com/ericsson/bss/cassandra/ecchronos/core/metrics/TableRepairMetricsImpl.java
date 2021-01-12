@@ -16,7 +16,6 @@ package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -27,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import com.codahale.metrics.CsvReporter;
 import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricRegistry;
-import com.ericsson.bss.cassandra.ecchronos.core.CASLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.annotations.VisibleForTesting;
@@ -56,12 +54,9 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
                 Preconditions.checkNotNull(builder.myTableStorageStates, "Table storage states cannot be null"));
 
         File statisticsDirectory = new File(builder.myStatisticsDirectory);
-        if(!statisticsDirectory.exists())
+        if(!statisticsDirectory.exists() && !statisticsDirectory.mkdirs())
         {
-        	if(!statisticsDirectory.mkdirs())
-        	{
-        		LOG.error("Failed to create statistics directory: {}, csv files will not be generated");
-        	}
+            LOG.error("Failed to create statistics directory: {}, csv files will not be generated", builder.myStatisticsDirectory);
         }
 
         myTopLevelCsvReporter = CsvReporter.forRegistry(myMetricRegistry)
