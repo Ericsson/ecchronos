@@ -16,13 +16,18 @@ package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.codahale.metrics.CsvReporter;
 import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricRegistry;
+import com.ericsson.bss.cassandra.ecchronos.core.CASLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.annotations.VisibleForTesting;
@@ -30,6 +35,8 @@ import com.google.common.base.Preconditions;
 
 public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRepairMetricsProvider, Closeable
 {
+	private static final Logger LOG = LoggerFactory.getLogger(TableRepairMetricsImpl.class);
+
     private static final String DEFAULT_STATISTICS_DIRECTORY = "/var/lib/cassandra/repair/metrics/";
     private static final long DEFAULT_STATISTICS_REPORT_INTERVAL_IN_MS = TimeUnit.SECONDS.toMillis(60);
 
@@ -48,11 +55,19 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         myNodeMetricHolder = new NodeMetricHolder(myMetricRegistry,
                 Preconditions.checkNotNull(builder.myTableStorageStates, "Table storage states cannot be null"));
 
+        File statisticsDirectory = new File(builder.myStatisticsDirectory);
+        if(!statisticsDirectory.exists())
+        {
+        	if(!statisticsDirectory.mkdirs())
+        	{
+        		LOG.error("Failed to create statistics directory: {}, csv files will not be generated");
+        	}
+        }
 
         myTopLevelCsvReporter = CsvReporter.forRegistry(myMetricRegistry)
                 .convertDurationsTo(TimeUnit.MILLISECONDS)
                 .convertRatesTo(TimeUnit.SECONDS)
-                .build(new File(builder.myStatisticsDirectory));
+                .build(statisticsDirectory);
         myTopLevelJmxReporter = JmxReporter.forRegistry(myMetricRegistry)
                 .build();
 
