@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import java.io.Closeable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.datastax.driver.core.Metadata;
+import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
@@ -58,6 +60,36 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor();
     private final OnDemandStatus myOnDemandStatus;
 
+    private class GetOngoingJobsThread extends Thread
+    {
+        @Override
+        public void run()
+        {
+            boolean done = false;
+            Set<OngoingJob> ongoingJobs = new HashSet<>();
+            while (!done)
+            {
+                done = true;
+                try
+                {
+                    ongoingJobs = myOnDemandStatus.getOngoingJobs(myReplicationState);
+                }
+                catch (NoHostAvailableException e)
+                {
+                    done = false;
+                    try
+                    {
+                        Thread.sleep(TimeUnit.SECONDS.toMillis(10));
+                    }
+                    catch (InterruptedException e1)
+                    {
+                    }
+                }
+            }
+            ongoingJobs.forEach(j -> scheduleOngoingJob(j));
+        }
+    }
+
     private OnDemandRepairSchedulerImpl(Builder builder)
     {
         myJmxProxyFactory = builder.myJmxProxyFactory;
@@ -71,8 +103,8 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         myExecutor.scheduleWithFixedDelay(() -> clearFailedJobs(), DEFAULT_INITIAL_DELAY_IN_DAYS, DEFAULT_DELAY_IN_DAYS, TimeUnit.DAYS);
         myOnDemandStatus = builder.onDemandStatus;
 
-        Set<OngoingJob> ongoingJobs = myOnDemandStatus.getOngoingJobs(myReplicationState);
-        ongoingJobs.forEach(j -> scheduleOngoingJob(j));
+        GetOngoingJobsThread getOngoingJobsThread = new GetOngoingJobsThread();
+        getOngoingJobsThread.start();
     }
 
     @Override
@@ -111,14 +143,15 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         }
     }
 
-    private RepairJobView scheduleOngoingJob(OngoingJob ongoingJob)
+    private void scheduleOngoingJob(OngoingJob ongoingJob)
     {
         synchronized (myLock)
         {
             OnDemandRepairJob job = getOngoingRepairJob(ongoingJob);
-            myScheduledJobs.put(job.getId(), job);
-            myScheduleManager.schedule(job);
-            return job.getView();
+            if(myScheduledJobs.putIfAbsent(job.getId(), job) == null)
+            {
+                myScheduleManager.schedule(job);
+            }
         }
     }
 

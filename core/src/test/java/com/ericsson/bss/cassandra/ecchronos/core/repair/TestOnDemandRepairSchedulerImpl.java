@@ -14,9 +14,11 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import com.datastax.driver.core.EndPoint;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.TableMetadata;
+import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
@@ -31,8 +33,10 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
@@ -128,6 +132,41 @@ public class TestOnDemandRepairSchedulerImpl
         when(myOnDemandStatus.getOngoingJobs(replicationState)).thenReturn(ongoingJobs);
 
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
+
+        try
+        {
+            Thread.sleep(1000);
+        }
+        catch (InterruptedException e)
+        {
+        }
+
+        verify(scheduleManager).schedule(any(ScheduledJob.class));
+
+        repairScheduler.close();
+        verify(scheduleManager).deschedule(any(ScheduledJob.class));
+
+        verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
+        verifyNoMoreInteractions(scheduleManager);
+    }
+
+    @Test
+    public void testRestartRepairOnTableWithException() throws EcChronosException
+    {
+        Set<OngoingJob> ongoingJobs = new HashSet<>();
+        ongoingJobs.add(myOngingJob);
+        Map<EndPoint, Throwable> errors = new HashMap<>();
+		when(myOnDemandStatus.getOngoingJobs(replicationState)).thenThrow(new NoHostAvailableException(errors )).thenReturn(ongoingJobs);
+
+        OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
+
+        try
+        {
+            Thread.sleep(11000);
+        }
+        catch (InterruptedException e)
+        {
+        }
 
         verify(scheduleManager).schedule(any(ScheduledJob.class));
 
