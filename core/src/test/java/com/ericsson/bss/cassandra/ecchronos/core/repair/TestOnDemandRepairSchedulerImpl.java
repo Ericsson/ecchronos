@@ -133,15 +133,7 @@ public class TestOnDemandRepairSchedulerImpl
 
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
 
-        try
-        {
-            Thread.sleep(1000);
-        }
-        catch (InterruptedException e)
-        {
-        }
-
-        verify(scheduleManager).schedule(any(ScheduledJob.class));
+        verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
 
         repairScheduler.close();
         verify(scheduleManager).deschedule(any(ScheduledJob.class));
@@ -156,19 +148,11 @@ public class TestOnDemandRepairSchedulerImpl
         Set<OngoingJob> ongoingJobs = new HashSet<>();
         ongoingJobs.add(myOngingJob);
         Map<EndPoint, Throwable> errors = new HashMap<>();
-		when(myOnDemandStatus.getOngoingJobs(replicationState)).thenThrow(new NoHostAvailableException(errors )).thenReturn(ongoingJobs);
+        when(myOnDemandStatus.getOngoingJobs(replicationState)).thenThrow(new NoHostAvailableException(errors )).thenReturn(ongoingJobs);
 
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
 
-        try
-        {
-            Thread.sleep(11000);
-        }
-        catch (InterruptedException e)
-        {
-        }
-
-        verify(scheduleManager).schedule(any(ScheduledJob.class));
+        verify(scheduleManager, timeout(15000)).schedule(any(ScheduledJob.class));
 
         repairScheduler.close();
         verify(scheduleManager).deschedule(any(ScheduledJob.class));
