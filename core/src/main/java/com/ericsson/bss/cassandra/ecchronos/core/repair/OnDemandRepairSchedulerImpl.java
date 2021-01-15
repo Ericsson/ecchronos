@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import java.io.Closeable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,9 +26,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.datastax.driver.core.Metadata;
+import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
@@ -41,6 +46,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
  */
 public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Closeable
 {
+    private static final Logger LOG = LoggerFactory.getLogger(OnDemandRepairSchedulerImpl.class);
+
     private static final int DEFAULT_INITIAL_DELAY_IN_DAYS = 1;
     private static final int DEFAULT_DELAY_IN_DAYS = 7;
 
@@ -71,8 +78,39 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         myExecutor.scheduleWithFixedDelay(() -> clearFailedJobs(), DEFAULT_INITIAL_DELAY_IN_DAYS, DEFAULT_DELAY_IN_DAYS, TimeUnit.DAYS);
         myOnDemandStatus = builder.onDemandStatus;
 
-        Set<OngoingJob> ongoingJobs = myOnDemandStatus.getOngoingJobs(myReplicationState);
-        ongoingJobs.forEach(j -> scheduleOngoingJob(j));
+        new Thread(this::getOngoingJobs).start();
+    }
+
+    private void getOngoingJobs()
+    {
+        boolean done = false;
+        Set<OngoingJob> ongoingJobs = new HashSet<>();
+        while (!done)
+        {
+            try
+            {
+                ongoingJobs = myOnDemandStatus.getOngoingJobs(myReplicationState);
+                LOG.info("Fetched ongoing ondemand jobs at startup");
+                ongoingJobs.forEach(j -> scheduleOngoingJob(j));
+                done = true;
+            }
+            catch (NoHostAvailableException e)
+            {
+                try
+                {
+                    LOG.info("Failed to get ongoing ondemand jobs during startup, automatic retry in 10s");
+                    Thread.sleep(TimeUnit.SECONDS.toMillis(10));
+                }
+                catch (InterruptedException e1)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            catch (Exception e)
+            {
+                LOG.error("Unexpected exception when fetching ongoing ondemand jobs at startup: {}", e.getMessage());
+            }
+        }
     }
 
     @Override
@@ -111,14 +149,15 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         }
     }
 
-    private RepairJobView scheduleOngoingJob(OngoingJob ongoingJob)
+    private void scheduleOngoingJob(OngoingJob ongoingJob)
     {
         synchronized (myLock)
         {
             OnDemandRepairJob job = getOngoingRepairJob(ongoingJob);
-            myScheduledJobs.put(job.getId(), job);
-            myScheduleManager.schedule(job);
-            return job.getView();
+            if(myScheduledJobs.putIfAbsent(job.getId(), job) == null)
+            {
+                myScheduleManager.schedule(job);
+            }
         }
     }
 
