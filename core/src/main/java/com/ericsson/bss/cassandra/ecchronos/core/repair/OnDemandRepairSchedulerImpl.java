@@ -98,7 +98,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
             {
                 try
                 {
-                    LOG.info("Failed to get ongoing ondemand jobs during startup, automtic retry in 10s");
+                    LOG.info("Failed to get ongoing ondemand jobs during startup, automatic retry in 10s");
                     Thread.sleep(TimeUnit.SECONDS.toMillis(10));
                 }
                 catch (InterruptedException e1)
