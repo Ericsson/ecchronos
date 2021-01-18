@@ -50,12 +50,6 @@ public class TestReloadingAuthProvider
     @Mock
     private EndPoint endPoint;
 
-    @Before
-    public void setup()
-    {
-        when(endPoint.resolve()).thenReturn(new InetSocketAddress(0));
-    }
-
     @Test
     public void testCorrectResponse()
     {
