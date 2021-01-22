@@ -34,3 +34,5 @@ management:
 #    key-store-type: <keystore type>
 #    key-alias: <key alias>
 #    key-password: <key password>
+# Rate at which certificate are reloaded automatically
+#    refresh-rate-in-ms: 60000
