@@ -23,6 +23,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -61,6 +62,7 @@ public class TestRepairLockFactoryImpl
         int priority = 1;
 
         verifyExceptionIsThrownWhenGettingLock(repairLockFactory, priority, metadata);
+        verify(mockLock, never()).close();
     }
 
     @Test
@@ -75,6 +77,7 @@ public class TestRepairLockFactoryImpl
         withSuccessfulLocking(repairResource, priority, metadata);
 
         verifyLocksAreTriedWhenGettingLock(repairLockFactory, priority, metadata, repairResource);
+        verify(mockLock, never()).close();
     }
 
     @Test
@@ -89,6 +92,7 @@ public class TestRepairLockFactoryImpl
         withSuccessfulLocking(repairResource, priority, metadata);
 
         verifyExceptionIsThrownWhenGettingLock(repairLockFactory, priority, metadata, repairResource);
+        verify(mockLock, never()).close();
     }
 
     @Test
@@ -103,6 +107,25 @@ public class TestRepairLockFactoryImpl
         withUnsuccessfulLocking(repairResource, priority, metadata);
 
         verifyExceptionIsThrownWhenGettingLock(repairLockFactory, priority, metadata, repairResource);
+        verify(mockLock, never()).close();
+    }
+
+    @Test
+    public void testUnexpectedException() throws LockException
+    {
+        RepairResource repairResource = new RepairResource("DC1", "my-resource-dc1");
+        RepairResource repairResource2 = new RepairResource("DC2", "my-resource-dc2");
+        RepairLockFactoryImpl repairLockFactory = new RepairLockFactoryImpl();
+        Map<String, String> metadata = Collections.singletonMap("metadatakey", "metadatavalue");
+        int priority = 1;
+
+        withSufficientNodesForLocking(repairResource);
+        withSufficientNodesForLocking(repairResource2);
+        withSuccessfulLocking(repairResource, priority, metadata);
+        withUnexpectedLockingFailure(repairResource2, priority, metadata, NullPointerException.class);
+
+        verifyExceptionIsThrownWhenGettingLock(repairLockFactory, priority, metadata, NullPointerException.class, repairResource, repairResource2);
+        verify(mockLock).close();
     }
 
     @Test
@@ -121,6 +144,7 @@ public class TestRepairLockFactoryImpl
         withSuccessfulLocking(repairResourceDc2, priority, metadata);
 
         verifyLocksAreTriedWhenGettingLock(repairLockFactory, priority, metadata, repairResourceDc1, repairResourceDc2);
+        verify(mockLock, never()).close();
     }
 
     @Test
@@ -136,6 +160,7 @@ public class TestRepairLockFactoryImpl
         withoutSufficientNodesForLocking(repairResourceDc2);
 
         verifyExceptionIsThrownWhenGettingLock(repairLockFactory, priority, metadata, repairResourceDc1, repairResourceDc2);
+        verify(mockLock, never()).close();
     }
 
     @Test
@@ -154,6 +179,7 @@ public class TestRepairLockFactoryImpl
         withUnsuccessfulLocking(repairResourceDc2, priority, metadata);
 
         verifyExceptionIsThrownWhenGettingLock(repairLockFactory, priority, metadata, repairResourceDc1, repairResourceDc2);
+        verify(mockLock).close();
     }
 
     @Test
@@ -175,6 +201,7 @@ public class TestRepairLockFactoryImpl
 
         verifyExceptionIsThrownWhenGettingLock(repairLockFactory, priority, metadata, repairResourceDc1, repairResourceDc2);
         verifyNoLockWasTried();
+        verify(mockLock, never()).close();
     }
 
     @Test
@@ -196,6 +223,7 @@ public class TestRepairLockFactoryImpl
 
         verifyExceptionIsThrownWhenGettingLock(repairLockFactory, priority, metadata, repairResourceDc1, repairResourceDc2);
         verifyNoLockWasTried();
+        verify(mockLock, never()).close();
     }
 
     private void verifyNoLockWasTried() throws LockException
@@ -205,10 +233,7 @@ public class TestRepairLockFactoryImpl
 
     private void verifyLocksAreTriedWhenGettingLock(RepairLockFactory repairLockFactory, int priority, Map<String, String> metadata, RepairResource... repairResources) throws LockException
     {
-        try (LockFactory.DistributedLock lock = repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResources), metadata, priority))
-        {
-            // Nothing to do here
-        }
+        repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResources), metadata, priority);
 
         for (RepairResource repairResource : repairResources)
         {
@@ -218,8 +243,13 @@ public class TestRepairLockFactoryImpl
 
     private void verifyExceptionIsThrownWhenGettingLock(RepairLockFactory repairLockFactory, int priority, Map<String, String> metadata, RepairResource... repairResources)
     {
-        assertThatExceptionOfType(LockException.class)
-                .isThrownBy(() -> repairLockFactory.getLock(mockLockFactory, Sets.newHashSet(repairResources), metadata, priority));
+        verifyExceptionIsThrownWhenGettingLock(repairLockFactory, priority, metadata, LockException.class, repairResources);
+    }
+
+    private void verifyExceptionIsThrownWhenGettingLock(RepairLockFactory repairLockFactory, int priority, Map<String, String> metadata, Class exceptionType, RepairResource... repairResources)
+    {
+        assertThatExceptionOfType(exceptionType)
+                .isThrownBy(() -> repairLockFactory.getLock(mockLockFactory, Sets.newLinkedHashSet(Arrays.asList(repairResources)), metadata, priority));
     }
 
     private void withUnsuccessfulCachedLock(RepairResource repairResource)
@@ -235,6 +265,11 @@ public class TestRepairLockFactoryImpl
     private void withUnsuccessfulLocking(RepairResource repairResource, int priority, Map<String, String> metadata) throws LockException
     {
         when(mockLockFactory.tryLock(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)), eq(priority), eq(metadata))).thenThrow(new LockException(""));
+    }
+
+    private void withUnexpectedLockingFailure(RepairResource repairResource, int priority, Map<String, String> metadata, Class exceptionClass) throws LockException
+    {
+        when(mockLockFactory.tryLock(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)), eq(priority), eq(metadata))).thenThrow(exceptionClass);
     }
 
     private void withSufficientNodesForLocking(RepairResource repairResource)

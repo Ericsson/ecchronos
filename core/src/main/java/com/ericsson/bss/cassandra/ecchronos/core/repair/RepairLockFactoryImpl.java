@@ -14,17 +14,19 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import com.ericsson.bss.cassandra.ecchronos.core.LockCollection;
-import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
-import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.ericsson.bss.cassandra.ecchronos.core.LockCollection;
+import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
+import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 
 public class RepairLockFactoryImpl implements RepairLockFactory
 {
@@ -72,37 +74,22 @@ public class RepairLockFactoryImpl implements RepairLockFactory
 
     private Collection<LockFactory.DistributedLock> getRepairResourceLocks(LockFactory lockFactory, Collection<RepairResource> repairResources, Map<String, String> metadata, int priority) throws LockException
     {
-        Collection<LockFactory.DistributedLock> locks = new ArrayList<>();
-
-        for (RepairResource repairResource : repairResources)
+        try (TemporaryLockHolder lockHolder = new TemporaryLockHolder())
         {
-            try
+            for (RepairResource repairResource : repairResources)
             {
-                locks.add(getLockForRepairResource(lockFactory, repairResource, metadata, priority));
+                try
+                {
+                    lockHolder.add(getLockForRepairResource(lockFactory, repairResource, metadata, priority));
+                }
+                catch (LockException e)
+                {
+                    LOG.debug("{} - Unable to get lock for repair resource '{}', releasing previously acquired locks - {}", this, repairResource, e.getMessage());
+                    throw e;
+                }
             }
-            catch (LockException e)
-            {
-                LOG.debug("{} - Unable to get lock for repair resource '{}', releasing previously acquired locks - {}", this, repairResource, e.getMessage());
-                releaseLocks(locks);
-                throw e;
-            }
-        }
 
-        return locks;
-    }
-
-    private void releaseLocks(Collection<LockFactory.DistributedLock> locks)
-    {
-        for (LockFactory.DistributedLock lock : locks)
-        {
-            try
-            {
-                lock.close();
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Unable to release lock {} for {} ", lock, this, e);
-            }
+            return lockHolder.getAndClear();
         }
     }
 
@@ -130,6 +117,39 @@ public class RepairLockFactoryImpl implements RepairLockFactory
         {
             LOG.debug("Lock ({} in datacenter {}) got error {}", resource, dataCenter, e.getMessage());
             throw e;
+        }
+    }
+
+    static class TemporaryLockHolder implements AutoCloseable
+    {
+        private final List<LockFactory.DistributedLock> temporaryLocks = new ArrayList<>();
+
+        void add(LockFactory.DistributedLock lock)
+        {
+            temporaryLocks.add(lock);
+        }
+
+        Collection<LockFactory.DistributedLock> getAndClear()
+        {
+            Collection<LockFactory.DistributedLock> allLocks = new ArrayList<>(temporaryLocks);
+            temporaryLocks.clear();
+            return allLocks;
+        }
+
+        @Override
+        public void close()
+        {
+            for (LockFactory.DistributedLock lock : temporaryLocks)
+            {
+                try
+                {
+                    lock.close();
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Unable to release temporary lock {} for {} ", lock, this, e);
+                }
+            }
         }
     }
 }
