@@ -1,5 +1,9 @@
 # Changes
 
+## Version 1.0.8
+
+* Locks get stuck when unexpected exception occurs - Issue #177
+
 ## Version 1.0.7
 
 * Avoid concurrent modification exception in RSI#close - Issue #99
