@@ -1,5 +1,11 @@
 # Changes
 
+## Version 1.2.0
+
+### Merged from 1.0
+
+* Locks get stuck when unexpected exception occurs - Issue #177
+
 ## Version 1.1.2
 
 * Add support for sub range repairs - Issue #96
