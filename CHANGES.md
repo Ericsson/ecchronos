@@ -1,5 +1,11 @@
 # Changes
 
+## Version 1.1.3
+
+### Merged from 1.0
+
+* Locks get stuck when unexpected exception occurs - Issue #177
+
 ## Version 1.1.2
 
 ### Merged from 1.0
