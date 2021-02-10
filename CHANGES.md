@@ -28,6 +28,7 @@
 ### Merged from 1.2
 
 * Add support for sub range repairs - Issue #96
+* Locks get stuck when unexpected exception occurs - Issue #177
 
 ### Merged from 1.1
 
