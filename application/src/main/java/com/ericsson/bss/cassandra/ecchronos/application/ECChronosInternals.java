@@ -46,6 +46,7 @@ public class ECChronosInternals implements Closeable
     private static final Logger LOG = LoggerFactory.getLogger(ECChronosInternals.class);
 
     private static final NoOpRepairMetrics NO_OP_REPAIR_METRICS = new NoOpRepairMetrics();
+    private static final NoOpTableStorageState NO_OP_TABLE_STORAGE_STATE = new NoOpTableStorageState();
 
     private final ScheduleManagerImpl myScheduleManagerImpl;
 
@@ -121,7 +122,7 @@ public class ECChronosInternals implements Closeable
 
     public TableRepairMetrics getTableRepairMetrics()
     {
-        if (myTableStorageStatesImpl == null)
+        if (myTableRepairMetricsImpl == null)
         {
             return NO_OP_REPAIR_METRICS;
         }
@@ -141,6 +142,10 @@ public class ECChronosInternals implements Closeable
 
     public TableStorageStates getTableStorageStates()
     {
+        if (myTableStorageStatesImpl == null)
+        {
+            return NO_OP_TABLE_STORAGE_STATE;
+        }
         return myTableStorageStatesImpl;
     }
 
@@ -196,6 +201,21 @@ public class ECChronosInternals implements Closeable
                 LOG.trace("Repair timing for table {} {}ms, it was {}", tableReference,
                         timeUnit.toMillis(timeTaken), successful ? "successful" : "not successful");
             }
+        }
+    }
+
+    private static class NoOpTableStorageState implements TableStorageStates
+    {
+        @Override
+        public long getDataSize(TableReference tableReference)
+        {
+            return -1;
+        }
+
+        @Override
+        public long getDataSize()
+        {
+            return -1;
         }
     }
 }
