@@ -2,6 +2,12 @@
 
 ## Version 2.0.0
 
+### Merged from 1.2
+
+* Repairs not scheduled when statistics disabled - Issue #176
+
+## Version 2.0.0-beta
+
 * Add Code Style - Issue #103
 * Avoid using concurrent map - Issue #101
 * Move alarm handling out of TableRepairJob
