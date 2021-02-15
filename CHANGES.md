@@ -1,5 +1,9 @@
 # Changes
 
+## Version 1.2.1
+
+* Repairs not scheduled when statistics disabled - Issue #175
+
 ## Version 1.2.0
 
 ### Merged from 1.0
