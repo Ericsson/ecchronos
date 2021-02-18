@@ -16,12 +16,30 @@ package com.ericsson.bss.cassandra.ecchronos.standalone;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.math.BigInteger;
 import java.net.InetAddress;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
+import java.util.OptionalLong;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -31,7 +49,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import com.datastax.driver.core.*;
+import net.jcip.annotations.NotThreadSafe;
+
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Host;
+import com.datastax.driver.core.Metadata;
+import com.datastax.driver.core.ResultSetFuture;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.TokenRange;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.utils.UUIDs;
@@ -42,13 +67,26 @@ import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairSchedulerImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.EccRepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairEntry;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStatus;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManagerImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.*;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TokenSubRangeUtil;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.google.common.collect.Sets;
-
-import net.jcip.annotations.NotThreadSafe;
 
 @RunWith(Parameterized.class)
 @NotThreadSafe
@@ -247,7 +285,7 @@ public class ITTableRepairJob extends TestBase
 
         verifyTableRepairedSince(tableReference, startTime);
         verify(mockFaultReporter, never())
-                .raise(any(RepairFaultReporter.FaultCode.class), anyMapOf(String.class, Object.class));
+                .raise(any(RepairFaultReporter.FaultCode.class), anyMap());
     }
 
     /**
@@ -272,7 +310,7 @@ public class ITTableRepairJob extends TestBase
 
         verifyTableRepairedSince(tableReference, startTime);
         verify(mockFaultReporter, never())
-                .raise(any(RepairFaultReporter.FaultCode.class), anyMapOf(String.class, Object.class));
+                .raise(any(RepairFaultReporter.FaultCode.class), anyMap());
     }
 
     /**
@@ -301,7 +339,7 @@ public class ITTableRepairJob extends TestBase
 
         verifyTableRepairedSinceWithSubRangeRepair(tableReference, startTime, expectedRanges);
         verify(mockFaultReporter, never())
-                .raise(any(RepairFaultReporter.FaultCode.class), anyMapOf(String.class, Object.class));
+                .raise(any(RepairFaultReporter.FaultCode.class), anyMap());
     }
 
     /**
@@ -331,7 +369,7 @@ public class ITTableRepairJob extends TestBase
         verifyTableRepairedSince(tableReference, startTime);
         verifyTableRepairedSince(tableReference2, startTime);
         verify(mockFaultReporter, never())
-                .raise(any(RepairFaultReporter.FaultCode.class), anyMapOf(String.class, Object.class));
+                .raise(any(RepairFaultReporter.FaultCode.class), anyMap());
     }
 
     /**
@@ -367,7 +405,7 @@ public class ITTableRepairJob extends TestBase
 
         verifyTableRepairedSince(tableReference, expectedRepairedInterval, expectedRepairedRanges);
         verify(mockFaultReporter, never())
-                .raise(any(RepairFaultReporter.FaultCode.class), anyMapOf(String.class, Object.class));
+                .raise(any(RepairFaultReporter.FaultCode.class), anyMap());
     }
 
     private void schedule(TableReference tableReference)
@@ -485,7 +523,7 @@ public class ITTableRepairJob extends TestBase
         for (TokenRange tokenRange : tokenRanges)
         {
             Set<InetAddress> participants = myMetadata.getReplicas(tableReference.getKeyspace(), tokenRange).stream()
-                    .map(Host::getAddress).collect(Collectors.toSet());
+                    .map(host -> host.getEndPoint().resolve().getAddress()).collect(Collectors.toSet());
 
             if (splitRanges)
             {
