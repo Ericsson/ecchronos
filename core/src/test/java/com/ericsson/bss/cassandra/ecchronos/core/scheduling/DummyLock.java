@@ -18,10 +18,6 @@ public class DummyLock implements LockFactory.DistributedLock
 {
     public volatile boolean closed = false;
 
-    public DummyLock()
-    {
-    }
-
     @Override
     public void close()
     {
