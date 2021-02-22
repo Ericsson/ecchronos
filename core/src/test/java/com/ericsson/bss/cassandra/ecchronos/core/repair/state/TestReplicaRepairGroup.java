@@ -38,7 +38,7 @@ public class TestReplicaRepairGroup
 
         assertThat(replicaRepairGroup.getDataCenters()).containsExactlyInAnyOrder("DC1", "DC2", "DC3");
         assertThat(replicaRepairGroup.getReplicas()).containsExactlyInAnyOrder(node1, node2, node3, node4);
-        assertThat(replicaRepairGroup.iterator()).containsExactly(range);
+        assertThat(replicaRepairGroup.iterator()).toIterable().containsExactly(range);
     }
 
     @Test
@@ -55,7 +55,7 @@ public class TestReplicaRepairGroup
 
         assertThat(replicaRepairGroup.getDataCenters()).containsExactlyInAnyOrder("DC1");
         assertThat(replicaRepairGroup.getReplicas()).containsExactlyInAnyOrder(node1, node2, node3);
-        assertThat(replicaRepairGroup.iterator()).containsExactly(range, range2, range3);
+        assertThat(replicaRepairGroup.iterator()).toIterable().containsExactly(range, range2, range3);
     }
 
     private Node mockNode(String dataCenter)
