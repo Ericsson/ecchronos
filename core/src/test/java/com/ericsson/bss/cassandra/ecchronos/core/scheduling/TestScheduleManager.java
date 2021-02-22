@@ -15,10 +15,10 @@
 package com.ericsson.bss.cassandra.ecchronos.core.scheduling;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyMapOf;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -36,12 +36,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
 
-@RunWith (MockitoJUnitRunner.class)
+@RunWith (MockitoJUnitRunner.Silent.class)
 public class TestScheduleManager
 {
     @Mock
@@ -61,7 +61,7 @@ public class TestScheduleManager
         myScheduler.addRunPolicy(job -> myRunPolicy.validate(job));
 
         when(myRunPolicy.validate(any(ScheduledJob.class))).thenReturn(-1L);
-        when(myLockFactory.tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class))).thenReturn(new DummyLock());
+        when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap())).thenReturn(new DummyLock());
     }
 
     @After
@@ -75,7 +75,7 @@ public class TestScheduleManager
     {
         myScheduler.run();
 
-        verify(myLockFactory, never()).tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class));
+        verify(myLockFactory, never()).tryLock(any(), anyString(), anyInt(), anyMap());
     }
 
     @Test
@@ -112,13 +112,13 @@ public class TestScheduleManager
         });
         myScheduler.schedule(job);
 
-        when(myLockFactory.tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class))).thenReturn(new DummyLock());
+        when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap())).thenReturn(new DummyLock());
 
         myScheduler.run();
 
         assertThat(job.getNumRuns()).isEqualTo(1);
         assertThat(myScheduler.getQueueSize()).isEqualTo(1);
-        verify(myLockFactory, times(1)).tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class));
+        verify(myLockFactory).tryLock(any(), anyString(), anyInt(), anyMap());
     }
 
     @Test
@@ -141,7 +141,7 @@ public class TestScheduleManager
         DummyJob job = new DummyJob(ScheduledJob.Priority.LOW);
         myScheduler.schedule(job);
 
-        when(myLockFactory.tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class))).thenThrow(new LockException(""));
+        when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap())).thenThrow(new LockException(""));
 
         myScheduler.run();
 
@@ -204,13 +204,13 @@ public class TestScheduleManager
         myScheduler.schedule(job);
         myScheduler.schedule(job2);
 
-        when(myLockFactory.tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class))).thenThrow(new LockException(""));
+        when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap())).thenThrow(new LockException(""));
 
         myScheduler.run();
 
         assertThat(job.hasRun()).isFalse();
         assertThat(myScheduler.getQueueSize()).isEqualTo(2);
-        verify(myLockFactory, times(2)).tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class));
+        verify(myLockFactory, times(2)).tryLock(any(), anyString(), anyInt(), anyMap());
     }
 
     @Test
@@ -219,7 +219,7 @@ public class TestScheduleManager
         ShortRunningMultipleTasks job = new ShortRunningMultipleTasks(ScheduledJob.Priority.LOW, 3);
         myScheduler.schedule(job);
 
-        when(myLockFactory.tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class)))
+        when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap()))
                 .thenReturn(new DummyLock())
                 .thenThrow(new LockException(""))
                 .thenReturn(new DummyLock());
@@ -228,7 +228,7 @@ public class TestScheduleManager
 
         assertThat(job.getNumRuns()).isEqualTo(2);
         assertThat(myScheduler.getQueueSize()).isEqualTo(1);
-        verify(myLockFactory, times(3)).tryLock(anyString(), anyString(), anyInt(), anyMapOf(String.class, String.class));
+        verify(myLockFactory, times(3)).tryLock(any(), anyString(), anyInt(), anyMap());
     }
 
     @Test (timeout = 2000L)
