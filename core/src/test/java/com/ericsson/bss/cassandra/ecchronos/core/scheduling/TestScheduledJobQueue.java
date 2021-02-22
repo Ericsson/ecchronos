@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
-import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -97,7 +96,7 @@ public class TestScheduledJobQueue
 
         queue.remove(job2);
 
-        Assertions.assertThat(iterator).toIterable().containsExactly(job, job2);
+        assertThat(iterator).toIterable().containsExactly(job, job2);
         assertThat(queue.iterator()).toIterable().containsExactly(job);
     }
 
@@ -116,8 +115,7 @@ public class TestScheduledJobQueue
         }
 
         assertThat(queue.size()).isEqualTo(1);
-
-        Assertions.assertThat(queue.iterator()).toIterable().containsExactly(job2);
+        assertThat(queue.iterator()).toIterable().containsExactly(job2);
     }
 
     @Test
@@ -135,8 +133,7 @@ public class TestScheduledJobQueue
         }
 
         assertThat(queue.size()).isEqualTo(1);
-
-        Assertions.assertThat(queue.iterator()).toIterable().containsExactly(job2);
+        assertThat(queue.iterator()).toIterable().containsExactly(job2);
     }
 
     private class Comp implements Comparator<ScheduledJob>
