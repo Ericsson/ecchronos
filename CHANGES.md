@@ -2,6 +2,8 @@
 
 ## Version 2.0.0
 
+* OnDemand Job throws NPE when scheduled on non-existing table/keyspace - Issue #183
+
 ### Merged from 1.2
 
 * Repairs not scheduled when statistics disabled - Issue #176

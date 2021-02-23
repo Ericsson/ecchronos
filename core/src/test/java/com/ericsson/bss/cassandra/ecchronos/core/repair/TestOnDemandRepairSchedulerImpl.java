@@ -179,6 +179,14 @@ public class TestOnDemandRepairSchedulerImpl
         repairScheduler.scheduleJob(TABLE_REFERENCE);
     }
 
+    @Test (expected = EcChronosException.class)
+    public void testScheduleRepairOnNull() throws EcChronosException
+    {
+        OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
+        verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
+        repairScheduler.scheduleJob(null);
+    }
+
     private void assertTableViewExist(OnDemandRepairScheduler repairScheduler, RepairJobView... expectedViews)
     {
         List<RepairJobView> repairJobViews = repairScheduler.getCurrentRepairJobs();

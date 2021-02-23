@@ -133,19 +133,18 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     {
         synchronized (myLock)
         {
-            KeyspaceMetadata ks = myMetadata.getKeyspace(tableReference.getKeyspace());
-            if (ks == null)
+            if (tableReference != null)
             {
-                throw new EcChronosException("Keyspace does not exist");
+                KeyspaceMetadata ks = myMetadata.getKeyspace(tableReference.getKeyspace());
+                if (ks != null && ks.getTable(tableReference.getTable()) != null)
+                {
+                    OnDemandRepairJob job = getRepairJob(tableReference);
+                    myScheduledJobs.put(job.getId(), job);
+                    myScheduleManager.schedule(job);
+                    return job.getView();
+                }
             }
-            if (ks.getTable(tableReference.getTable()) == null)
-            {
-                throw new EcChronosException("Table does not exist");
-            }
-            OnDemandRepairJob job = getRepairJob(tableReference);
-            myScheduledJobs.put(job.getId(), job);
-            myScheduleManager.schedule(job);
-            return job.getView();
+            throw new EcChronosException("Keyspace and/or table does not exist");
         }
     }
 

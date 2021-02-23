@@ -163,7 +163,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     @PostMapping(ENDPOINT_PREFIX + "/schedule/keyspaces/{keyspace}/tables/{table}")
     public String scheduleJob(@PathVariable String keyspace, @PathVariable String table)
     {
-        RepairJobView repairJobView = null;
+        RepairJobView repairJobView;
         try
         {
             repairJobView = myOnDemandRepairScheduler.scheduleJob(myTableReferenceFactory.forTable(keyspace, table));
