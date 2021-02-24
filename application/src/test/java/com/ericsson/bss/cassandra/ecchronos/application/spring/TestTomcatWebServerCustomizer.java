@@ -24,7 +24,7 @@ import static org.springframework.test.context.support.TestPropertySourceUtils.a
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
@@ -40,6 +40,7 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.SSLContextBuilder;
+import org.awaitility.Duration;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -105,7 +106,7 @@ public class TestTomcatWebServerCustomizer
     @Test
     public void testSuccessfulCertificateReloading()
     {
-        await().atMost(Duration.ofMillis(REFRESH_RATE * (INVOCATION_COUNT + 10)))
+        await().atMost(new Duration(REFRESH_RATE * (INVOCATION_COUNT + 10), TimeUnit.MILLISECONDS))
                 .untilAsserted(() -> verify(tomcatWebServerCustomizer, atLeast(INVOCATION_COUNT)).reloadSslContext());
     }
 
