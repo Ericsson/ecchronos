@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
-import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -45,7 +44,7 @@ public class TestScheduledJobQueue
 
         queue.add(job);
 
-        assertThat(queue.iterator()).containsExactly(job);
+        assertThat(queue.iterator()).toIterable().containsExactly(job);
     }
 
     @Test
@@ -57,13 +56,13 @@ public class TestScheduledJobQueue
         queue.add(job);
         queue.add(job2);
 
-        assertThat(queue.iterator()).containsExactly(job2, job);
+        assertThat(queue.iterator()).toIterable().containsExactly(job2, job);
     }
 
     @Test
     public void testEmptyQueue()
     {
-        assertThat(queue.iterator()).isEmpty();
+        assertThat(queue.iterator()).toIterable().isEmpty();
     }
 
     @Test
@@ -81,7 +80,7 @@ public class TestScheduledJobQueue
             job.postExecute(true, null);
         }
 
-        assertThat(queue.iterator()).isEmpty();
+        assertThat(queue.iterator()).toIterable().isEmpty();
     }
 
     @Test
@@ -97,8 +96,8 @@ public class TestScheduledJobQueue
 
         queue.remove(job2);
 
-        Assertions.assertThat(iterator).containsExactly(job, job2);
-        assertThat(queue.iterator()).containsExactly(job);
+        assertThat(iterator).toIterable().containsExactly(job, job2);
+        assertThat(queue.iterator()).toIterable().containsExactly(job);
     }
 
     @Test
@@ -116,8 +115,7 @@ public class TestScheduledJobQueue
         }
 
         assertThat(queue.size()).isEqualTo(1);
-
-        Assertions.assertThat(queue.iterator()).containsExactly(job2);
+        assertThat(queue.iterator()).toIterable().containsExactly(job2);
     }
 
     @Test
@@ -135,8 +133,7 @@ public class TestScheduledJobQueue
         }
 
         assertThat(queue.size()).isEqualTo(1);
-
-        Assertions.assertThat(queue.iterator()).containsExactly(job2);
+        assertThat(queue.iterator()).toIterable().containsExactly(job2);
     }
 
     private class Comp implements Comparator<ScheduledJob>
