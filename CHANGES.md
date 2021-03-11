@@ -1,5 +1,9 @@
 # Changes
 
+## Version 2.0.1
+
+* Process hangs on timeout - Issue #190
+
 ## Version 2.0.0
 
 * OnDemand Job throws NPE when scheduled on non-existing table/keyspace - Issue #183
