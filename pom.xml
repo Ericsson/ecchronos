@@ -58,7 +58,7 @@
         <bundle.namespace>${project.groupId}.${project.artifactId}</bundle.namespace>
 
         <!-- Dependency versions -->
-        <io.netty.version>4.0.53.Final</io.netty.version>
+        <io.netty.version>4.1.60.Final</io.netty.version>
         <io.dropwizard.metrics.version>3.2.2</io.dropwizard.metrics.version>
         <cassandra.driver.core.version>3.10.2</cassandra.driver.core.version>
         <guava.version>18.0</guava.version>
