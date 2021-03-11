@@ -90,7 +90,7 @@
         <org.apache.maven.plugins.maven-surefire-plugin.version>2.22.1</org.apache.maven.plugins.maven-surefire-plugin.version>
         <org.apache.maven.plugins.maven-failsafe-plugin.version>2.22.1</org.apache.maven.plugins.maven-failsafe-plugin.version>
         <org.apache.maven.plugins.maven-assembly-plugin.version>3.1.0</org.apache.maven.plugins.maven-assembly-plugin.version>
-        <org.apache.maven.plugins-maven-pmd-plugin.version>3.13.0</org.apache.maven.plugins-maven-pmd-plugin.version>
+        <org.apache.maven.plugins-maven-pmd-plugin.version>3.14.0</org.apache.maven.plugins-maven-pmd-plugin.version>
         <org.apache.maven.plugin.maven-jxr-plugin.version>3.0.0</org.apache.maven.plugin.maven-jxr-plugin.version>
         <org.apache.maven.plugins-maven-resources-plugin.version>3.1.0</org.apache.maven.plugins-maven-resources-plugin.version>
         <org.apache.maven.plugins-maven-dependency-plugin.version>3.1.1</org.apache.maven.plugins-maven-dependency-plugin.version>

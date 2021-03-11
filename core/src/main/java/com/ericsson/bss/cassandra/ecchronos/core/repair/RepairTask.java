@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  * <p>
  * If the repair failed the {@link #getUnknownRanges()} can be used to retrieve the ranges that have an unknown status during the repair.
  */
-public class RepairTask implements NotificationListener
+public class RepairTask implements NotificationListener //NOPMD Possible god class, needs refactoring
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairTask.class);
 

@@ -14,13 +14,11 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
-import com.ericsson.bss.cassandra.ecchronos.application.ECChronosInternals;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementRESTImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Import;
 

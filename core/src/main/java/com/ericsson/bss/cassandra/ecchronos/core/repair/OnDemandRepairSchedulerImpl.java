@@ -16,7 +16,6 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import java.io.Closeable;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -84,7 +83,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     private void getOngoingJobs()
     {
         boolean done = false;
-        Set<OngoingJob> ongoingJobs = new HashSet<>();
+        Set<OngoingJob> ongoingJobs;
         while (!done)
         {
             try
