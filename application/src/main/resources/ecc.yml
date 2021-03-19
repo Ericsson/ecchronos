@@ -44,6 +44,11 @@ connection:
     ## The default no-op decorator will be used unless another is specified.
     ##
     decoratorClass: com.ericsson.bss.cassandra.ecchronos.application.NoopStatementDecorator
+    ##
+    ## Allow routing requests directly to a remote datacenter.
+    ## This allows locks for other datacenters to be taken in that datacenter instead of via the local datacenter.
+    ##
+    remoteRouting: true
   jmx:
     ##
     ## Host and port properties for JMX.

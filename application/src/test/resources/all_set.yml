@@ -22,6 +22,7 @@ connection:
       unit: seconds
     provider: com.ericsson.bss.cassandra.ecchronos.application.config.TestConfig$TestNativeConnectionProvider
     decoratorClass: com.ericsson.bss.cassandra.ecchronos.application.config.TestConfig$TestStatementDecorator
+    remoteRouting: true
   jmx:
     host: 127.0.0.3
     port: 7100

@@ -73,6 +73,7 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
     {
         private String myLocalhost = DEFAULT_LOCAL_HOST;
         private int myPort = DEFAULT_NATIVE_PORT;
+        private boolean myRemoteRouting = true;
         private AuthProvider authProvider = AuthProvider.NONE;
         private SSLOptions sslOptions = null;
 
@@ -85,6 +86,12 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
         public Builder withPort(int port)
         {
             myPort = port;
+            return this;
+        }
+
+        public Builder withRemoteRouting(boolean remoteRouting)
+        {
+            myRemoteRouting = remoteRouting;
             return this;
         }
 
@@ -118,12 +125,17 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
             String localhost = builder.myLocalhost;
             String localDataCenter = resolveLocalDataCenter(builder);
 
-            LoadBalancingPolicy loadBalancingPolicy = DataCenterAwarePolicy.builder()
+            LoadBalancingPolicy loadBalancingPolicy = new TokenAwarePolicy(DCAwareRoundRobinPolicy.builder()
                     .withLocalDc(localDataCenter)
-                    .withChildPolicy(new TokenAwarePolicy(DCAwareRoundRobinPolicy.builder()
-                            .withLocalDc(localDataCenter)
-                            .build()))
-                    .build();
+                    .build());
+
+            if(builder.myRemoteRouting)
+            {
+                loadBalancingPolicy = DataCenterAwarePolicy.builder()
+                        .withLocalDc(localDataCenter)
+                        .withChildPolicy(loadBalancingPolicy)
+                        .build();
+            }
 
             LOG.debug("Connecting to {}, local data center: {}", localhost, localDataCenter);
 
