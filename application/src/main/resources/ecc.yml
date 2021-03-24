@@ -47,6 +47,9 @@ connection:
     ##
     ## Allow routing requests directly to a remote datacenter.
     ## This allows locks for other datacenters to be taken in that datacenter instead of via the local datacenter.
+    ## If clients are prevented from connecting directly to Cassandra nodes in other sites this is not possible.
+    ## If remote routing is disabled its not possible to use LOCAL_SERIAL consistency for the locking,
+    ## instead SERIAL consistency will be used for those request.
     ##
     remoteRouting: true
   jmx:

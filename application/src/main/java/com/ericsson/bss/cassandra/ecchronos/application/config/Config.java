@@ -277,7 +277,7 @@ public class Config
             return remoteRouting;
         }
 
-        public void serRemoteRouting(boolean remoteRouting)
+        public void setRemoteRouting(boolean remoteRouting)
         {
             this.remoteRouting = remoteRouting;
         }

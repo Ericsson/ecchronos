@@ -58,7 +58,7 @@ public class TestConfig
         Config.NativeConnection nativeConnection = connection.getCql();
         assertThat(nativeConnection.getHost()).isEqualTo("127.0.0.2");
         assertThat(nativeConnection.getPort()).isEqualTo(9100);
-        assertThat(nativeConnection.getRemoteRouting()).isTrue();
+        assertThat(nativeConnection.getRemoteRouting()).isFalse();
         assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.SECONDS)).isEqualTo(5);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(TestNativeConnectionProvider.class);
         assertThat(nativeConnection.getDecoratorClass()).isEqualTo(TestStatementDecorator.class);
