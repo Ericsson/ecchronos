@@ -143,20 +143,22 @@ public class CASLockFactory implements LockFactory, Closeable
                 .where(eq(COLUMN_RESOURCE, bindMarker()))
                 .and(eq(COLUMN_NODE, bindMarker()));
 
+        ConsistencyLevel serialConsistencyLevel = myRemoteRouting ? ConsistencyLevel.LOCAL_SERIAL : ConsistencyLevel.SERIAL;
+
         myLockStatement = mySession.prepare(insertLockStatement)
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                .setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+                .setSerialConsistencyLevel(serialConsistencyLevel);
 
         myGetLockMetadataStatement = mySession.prepare(getLockMetadataStatement)
-                .setConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+                .setConsistencyLevel(serialConsistencyLevel);
 
         myRemoveLockStatement = mySession.prepare(removeLockStatement)
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                .setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+                .setSerialConsistencyLevel(serialConsistencyLevel);
 
         myUpdateLockStatement = mySession.prepare(updateLockStatement)
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                .setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+                .setSerialConsistencyLevel(serialConsistencyLevel);
 
         myCompeteStatement = mySession.prepare(competeStatement)
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
