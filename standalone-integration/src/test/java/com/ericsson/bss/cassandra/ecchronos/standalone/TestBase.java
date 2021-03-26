@@ -37,8 +37,8 @@ public class TestBase
     private static LocalNativeConnectionProvider myAdminNativeConnectionProvider;
     private static LocalJmxConnectionProvider myJmxConnectionProvider;
     private static JmxProxyFactoryImpl myJmxProxyFactory;
+    protected static Boolean myRemoteRouting;
 
-    @BeforeClass
     public static void initialize() throws IOException
     {
         myNativeConnectionProvider = LocalNativeConnectionProvider.builder()
@@ -50,6 +50,7 @@ public class TestBase
                 .withPort(CASSANDRA_NATIVE_PORT)
                 .withLocalhost(CASSANDRA_HOST)
                 .withAuthProvider(new PlainTextAuthProvider("cassandra", "cassandra"))
+                .withRemoteRouting(myRemoteRouting)
                 .build();
         myJmxConnectionProvider = new LocalJmxConnectionProvider(CASSANDRA_HOST, CASSANDRA_JMX_PORT);
 

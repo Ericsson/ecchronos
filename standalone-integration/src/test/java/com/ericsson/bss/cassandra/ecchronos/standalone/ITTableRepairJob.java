@@ -28,10 +28,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -98,13 +100,21 @@ public class ITTableRepairJob extends TestBase
     }
 
     @Parameterized.Parameters
-    public static List<RepairHistoryType> repairHistoryTypes()
+    public static Collection repairHistoryTypes()
     {
-        return Arrays.asList(RepairHistoryType.values());
+        return Arrays.asList(new Object[][] {
+                {RepairHistoryType.CASSANDRA, true},
+                {RepairHistoryType.CASSANDRA, false},
+                {RepairHistoryType.ECC, true},
+                {RepairHistoryType.ECC, false}
+                });
     }
 
     @Parameterized.Parameter
     public RepairHistoryType myRepairHistoryType;
+
+    @Parameterized.Parameter(1)
+    public Boolean myRemoteRoutingOption;
 
     private static RepairFaultReporter mockFaultReporter;
 
@@ -139,8 +149,11 @@ public class ITTableRepairJob extends TestBase
     private Set<TableReference> myRepairs = new HashSet<>();
 
     @Parameterized.BeforeParam
-    public static void init(RepairHistoryType repairHistoryType)
+    public static void init(RepairHistoryType repairHistoryType, Boolean remoteRoutingOption) throws IOException
     {
+        myRemoteRouting = remoteRoutingOption;
+        initialize();
+
         mockFaultReporter = mock(RepairFaultReporter.class);
         mockTableRepairMetrics = mock(TableRepairMetrics.class);
         mockTableStorageStates = mock(TableStorageStates.class);
@@ -190,6 +203,7 @@ public class ITTableRepairJob extends TestBase
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(myHostStates)
                 .withStatementDecorator(s -> s)
+                .withRemoteRouting(myRemoteRouting)
                 .build();
 
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
