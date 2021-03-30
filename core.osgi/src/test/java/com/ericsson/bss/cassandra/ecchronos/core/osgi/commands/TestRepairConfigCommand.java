@@ -23,7 +23,9 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -81,6 +83,6 @@ public class TestRepairConfigCommand
         when(repairConfiguration.getRepairWarningTimeInMs()).thenReturn(warningTime);
         when(repairConfiguration.getRepairErrorTimeInMs()).thenReturn(errorTime);
 
-        return new RepairJobView(UUID.randomUUID(), tableReference, repairConfiguration, null, RepairJobView.Status.IN_QUEUE, 0);
+        return new ScheduledRepairJobView(UUID.randomUUID(), tableReference, repairConfiguration, null, RepairJobView.Status.IN_QUEUE, 0);
     }
 }

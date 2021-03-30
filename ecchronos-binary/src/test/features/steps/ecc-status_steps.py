@@ -121,7 +121,7 @@ def step_validate_list_tables_header(context):
     assert header[0] == len(header[0]) * header[0][0], header[0]  # -----
 
     header[1] = strip_and_collapse(header[1])
-    assert header[1] == "| Id | Keyspace | Table | Status | Repaired(%) | Repaired at | Next repair | Recurring |", header[1]
+    assert header[1] == "| Id | Keyspace | Table | Status | Repaired(%) | Completed at | Next repair | Recurring |", header[1]
 
     assert header[2] == len(header[2]) * header[2][0], header[2]  # -----
     pass
@@ -186,7 +186,7 @@ def step_validate_expected_show_table_header(context, keyspace, table):
     assert strip_and_collapse(table_info[2]) == "Table : {0}".format(table), "Faulty table '{0}'".format(table_info[2])
     assert re.match("Status : (COMPLETED|IN_QUEUE|WARNING|ERROR)", strip_and_collapse(table_info[3])), "Faulty status '{0}'".format(table_info[3])
     assert re.match("Repaired\\(%\\) : \\d+[.]\\d+", strip_and_collapse(table_info[4])), "Faulty repaired(%) '{0}'".format(table_info[4])
-    assert re.match("Repaired at : .*", strip_and_collapse(table_info[5])), "Faulty repaired at '{0}'".format(table_info[5])
+    assert re.match("Completed at : .*", strip_and_collapse(table_info[5])), "Faulty repaired at '{0}'".format(table_info[5])
     assert re.match("Next repair : .*", strip_and_collapse(table_info[6])), "Faulty next repair '{0}'".format(table_info[6])
 
     pass
@@ -222,6 +222,17 @@ def verify_job_disappeared(context, keyspace, table):
     timeout = time.time() + (150)
     output_data = []
     while "Repair job not found" not in output_data:
+        run_ecc_status(context, ['--id', id, '--limit', "1"])
+        output_data = context.out.lstrip().rstrip().split('\n')
+        time.sleep(1)
+        assert time.time() < timeout
+
+@then('the job for {keyspace}.{table} change status to completed')
+def verify_job_status_changed(context, keyspace, table):
+    id = re.search('[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}', context.response.text).group(0)
+    timeout = time.time() + (150)
+    output_data = []
+    while "Status         : COMPLETED" not in output_data:
         run_ecc_status(context, ['--id', id, '--limit', "1"])
         output_data = context.out.lstrip().rstrip().split('\n')
         time.sleep(1)

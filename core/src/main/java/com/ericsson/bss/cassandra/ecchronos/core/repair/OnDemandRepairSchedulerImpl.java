@@ -47,9 +47,6 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
 {
     private static final Logger LOG = LoggerFactory.getLogger(OnDemandRepairSchedulerImpl.class);
 
-    private static final int DEFAULT_INITIAL_DELAY_IN_DAYS = 1;
-    private static final int DEFAULT_DELAY_IN_DAYS = 7;
-
     private final Map<UUID, OnDemandRepairJob> myScheduledJobs = new HashMap<>();
     private final Object myLock = new Object();
 
@@ -61,7 +58,6 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     private final Metadata myMetadata;
     private final RepairConfiguration myRepairConfiguration;
     private final RepairHistory myRepairHistory;
-    private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor();
     private final OnDemandStatus myOnDemandStatus;
 
     private OnDemandRepairSchedulerImpl(Builder builder)
@@ -74,9 +70,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         myMetadata = builder.metadata;
         myRepairConfiguration = builder.repairConfiguration;
         myRepairHistory = builder.repairHistory;
-        myExecutor.scheduleWithFixedDelay(() -> clearFailedJobs(), DEFAULT_INITIAL_DELAY_IN_DAYS, DEFAULT_DELAY_IN_DAYS, TimeUnit.DAYS);
         myOnDemandStatus = builder.onDemandStatus;
-
         new Thread(this::getOngoingJobs).start();
     }
 
@@ -123,7 +117,6 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
             }
 
             myScheduledJobs.clear();
-            myExecutor.shutdown();
         }
     }
 
@@ -159,8 +152,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         }
     }
 
-    @Override
-    public List<RepairJobView> getCurrentRepairJobs()
+    public List<RepairJobView> getActiveRepairJobs()
     {
         synchronized (myLock)
         {
@@ -170,19 +162,21 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         }
     }
 
+    @Override
+    public List<RepairJobView> getCurrentRepairJobs()
+    {
+        return myOnDemandStatus.getAllJobs(myReplicationState).stream()
+                .map(job -> getOngoingRepairJob(job))
+                .map(OnDemandRepairJob::getView)
+                .collect(Collectors.toList());
+    }
+
     private void removeScheduledJob(UUID id)
     {
         synchronized (myLock)
         {
-            myScheduledJobs.remove(id);
-        }
-    }
-
-    private void clearFailedJobs()
-    {
-        synchronized (myLock)
-        {
-            myScheduledJobs.values().removeIf(job -> job.getState().equals(ScheduledJob.State.FAILED));
+            ScheduledJob job = myScheduledJobs.remove(id);
+            myScheduleManager.deschedule(job);
         }
     }
 

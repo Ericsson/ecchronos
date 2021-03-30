@@ -28,6 +28,11 @@ import com.google.common.collect.ImmutableSet;
 
 public class OngoingJob
 {
+    public enum Status
+    {
+        started, finished, failed
+    }
+
     private final UUID myJobId;
     private final TableReference myTableReference;
     private final Map<LongTokenRange, ImmutableSet<Node>> myTokens;
@@ -35,6 +40,8 @@ public class OngoingJob
     private final OnDemandStatus myOnDemandStatus;
 	private final ReplicationState myReplicationState;
     private final Integer myTokenHash;
+    private final Status myStatus;
+    private final long myCompletedTime;
 
     private OngoingJob(Builder builder)
     {
@@ -45,6 +52,8 @@ public class OngoingJob
         myTokens = myReplicationState.getTokenRangeToReplicas(myTableReference);
         myRepairedTokens = builder.repairedTokens;
         myTokenHash = builder.tokenMapHash;
+        myStatus = builder.status;
+        myCompletedTime = builder.completedTime;
 
         if(myTokenHash == null)
         {
@@ -55,6 +64,16 @@ public class OngoingJob
     public UUID getJobId()
     {
         return myJobId;
+    }
+
+    public Status getStatus()
+    {
+        return myStatus;
+    }
+
+    public long getCompletedTime()
+    {
+        return myCompletedTime;
     }
 
     public TableReference getTableReference()
@@ -101,16 +120,23 @@ public class OngoingJob
         private UUID jobId = null;
         private TableReference tableReference;
         private Set<UDTValue> repairedTokens = new HashSet<>();
-		private OnDemandStatus onDemandStatus;
-		private ReplicationState replicationState;
-		private Integer tokenMapHash = null;
+        private OnDemandStatus onDemandStatus;
+        private ReplicationState replicationState;
+        private Integer tokenMapHash = null;
+        private Status status = Status.started;
+        private long completedTime = -1;
 
-        public Builder withOngoingJobInfo(UUID jobId, int tokenMapHash, Set<UDTValue> repairedTokens)
+        public Builder withOngoingJobInfo(UUID jobId, int tokenMapHash, Set<UDTValue> repairedTokens, Status status, Long completedTime)
         {
-        	this.jobId = jobId;
-        	this.tokenMapHash  = tokenMapHash;
-        	this.repairedTokens = repairedTokens;
-        	return this;
+            this.jobId = jobId;
+            this.tokenMapHash  = tokenMapHash;
+            this.repairedTokens = repairedTokens;
+            this.status = status;
+            if(completedTime != null)
+            {
+                this.completedTime = completedTime;
+            }
+            return this;
         }
 
         public Builder withTableReference(TableReference tableReference)

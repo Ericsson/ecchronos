@@ -194,9 +194,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
 
     private List<TableRepairConfig> getTableRepairConfigs(Predicate<RepairJobView> filter)
     {
-        return Stream
-                .concat(myRepairScheduler.getCurrentRepairJobs().stream(),
-                        myOnDemandRepairScheduler.getCurrentRepairJobs().stream())
+        return myRepairScheduler.getCurrentRepairJobs().stream()
                 .filter(filter)
                 .map(TableRepairConfig::new)
                 .collect(Collectors.toList());

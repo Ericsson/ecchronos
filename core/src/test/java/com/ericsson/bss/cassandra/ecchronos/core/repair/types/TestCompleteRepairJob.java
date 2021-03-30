@@ -41,7 +41,7 @@ public class TestCompleteRepairJob
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), lastRepairedAt);
 
         UUID id = UUID.randomUUID();
-        RepairJobView repairJobView = new TestUtils.RepairJobBuilder()
+        RepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
                 .withId(id)
                 .withKeyspace("ks")
                 .withTable("tb")
@@ -74,7 +74,7 @@ public class TestCompleteRepairJob
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), lastRepairedAt);
 
         UUID id = UUID.randomUUID();
-        RepairJobView repairJobView = new TestUtils.RepairJobBuilder()
+        RepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
                 .withId(id)
                 .withKeyspace("ks")
                 .withTable("tb")
@@ -109,7 +109,7 @@ public class TestCompleteRepairJob
 
         UUID id = UUID.randomUUID();
 
-        RepairJobView repairJobView = new TestUtils.RepairJobBuilder()
+        RepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
                 .withId(id)
                 .withKeyspace("ks")
                 .withTable("tb")
@@ -137,7 +137,7 @@ public class TestCompleteRepairJob
     {
         long repairInterval = TimeUnit.DAYS.toMillis(5);
         long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(6);
-        RepairJobView repairJobView = new TestUtils.RepairJobBuilder()
+        RepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withLastRepairedAt(lastRepairedAt)

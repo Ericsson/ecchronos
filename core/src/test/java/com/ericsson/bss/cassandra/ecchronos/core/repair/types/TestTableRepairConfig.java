@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions.RepairParallelism;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TestUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
@@ -34,7 +35,7 @@ public class TestTableRepairConfig
         // Given
         UUID id = UUID.randomUUID();
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
-        RepairJobView repairJobView = new RepairJobView(id, tableReference("ks", "tbl"), repairConfig,
+        RepairJobView repairJobView = new ScheduledRepairJobView(id, tableReference("ks", "tbl"), repairConfig,
                 null, RepairJobView.Status.COMPLETED, 0);
 
         // When

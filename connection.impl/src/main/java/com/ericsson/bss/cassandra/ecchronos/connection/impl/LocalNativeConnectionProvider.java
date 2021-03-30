@@ -18,8 +18,10 @@ import com.datastax.driver.core.*;
 import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
 import com.datastax.driver.core.policies.LoadBalancingPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
+import com.datastax.driver.extras.codecs.date.SimpleTimestampCodec;
 import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,6 +120,7 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
         public LocalNativeConnectionProvider build()
         {
             Cluster cluster = createCluster(this);
+            cluster.getConfiguration().getCodecRegistry().register(SimpleTimestampCodec.instance);
             Host host = resolveLocalhost(cluster, myLocalhost);
 
             return new LocalNativeConnectionProvider(cluster, host, myRemoteRouting);

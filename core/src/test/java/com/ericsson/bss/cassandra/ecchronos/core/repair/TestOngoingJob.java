@@ -31,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import com.datastax.driver.core.UDTValue;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OngoingJob.Status;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
@@ -81,6 +82,8 @@ public class TestOngoingJob
         assertThat(ongoingJob.getRepairedTokens()).isEmpty();
         assertThat(ongoingJob.getTableReference()).isEqualTo(myTableReference);
         assertThat(ongoingJob.getTokens()).isEqualTo(myTokenMap);
+        assertThat(ongoingJob.getStatus()).isEqualTo(Status.started);
+        assertThat(ongoingJob.getCompletedTime()).isEqualTo(-1);
     }
 
     @Test
@@ -99,13 +102,42 @@ public class TestOngoingJob
                 .withOnDemandStatus(myOnDemandStatus)
                 .withReplicationState(myReplicationState)
                 .withTableReference(myTableReference)
-                .withOngoingJobInfo(jobId, myTokenMap.hashCode(), repiaredTokens)
+                .withOngoingJobInfo(jobId, myTokenMap.hashCode(), repiaredTokens, Status.started, null)
                 .build();
 
         assertThat(ongoingJob.getJobId()).isEqualTo(jobId);
         assertThat(ongoingJob.getRepairedTokens()).isEqualTo(expectedRepairedTokens);
         assertThat(ongoingJob.getTableReference()).isEqualTo(myTableReference);
         assertThat(ongoingJob.getTokens()).isEqualTo(myTokenMap);
+        assertThat(ongoingJob.getStatus()).isEqualTo(Status.started);
+        assertThat(ongoingJob.getCompletedTime()).isEqualTo(-1);
+    }
+
+    @Test
+    public void testOngoingJobForFinishedJobIsCreated()
+    {
+        UUID jobId = UUID.randomUUID();
+        Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
+        expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
+        Set<UDTValue> repiaredTokens = new HashSet<>();
+        repiaredTokens.add(myUdtValue);
+
+        when(myOnDemandStatus.getStartTokenFrom(myUdtValue)).thenReturn(-50L);
+        when(myOnDemandStatus.getEndTokenFrom(myUdtValue)).thenReturn(700L);
+
+        OngoingJob ongoingJob = new OngoingJob.Builder()
+                .withOnDemandStatus(myOnDemandStatus)
+                .withReplicationState(myReplicationState)
+                .withTableReference(myTableReference)
+                .withOngoingJobInfo(jobId, myTokenMap.hashCode(), repiaredTokens, Status.finished, 12345L)
+                .build();
+
+        assertThat(ongoingJob.getJobId()).isEqualTo(jobId);
+        assertThat(ongoingJob.getRepairedTokens()).isEqualTo(expectedRepairedTokens);
+        assertThat(ongoingJob.getTableReference()).isEqualTo(myTableReference);
+        assertThat(ongoingJob.getTokens()).isEqualTo(myTokenMap);
+        assertThat(ongoingJob.getStatus()).isEqualTo(Status.finished);
+        assertThat(ongoingJob.getCompletedTime()).isEqualTo(12345L);
     }
 
     @Test
@@ -198,7 +230,7 @@ public class TestOngoingJob
                 .withOnDemandStatus(myOnDemandStatus)
                 .withReplicationState(myReplicationState)
                 .withTableReference(myTableReference)
-                .withOngoingJobInfo(jobId, myTokenMap.hashCode(), repiaredTokens)
+                .withOngoingJobInfo(jobId, myTokenMap.hashCode(), repiaredTokens, Status.started, null)
                 .build();
 
         boolean result = ongoingJob.hasTopologyChanged();
@@ -219,7 +251,7 @@ public class TestOngoingJob
                 .withOnDemandStatus(myOnDemandStatus)
                 .withReplicationState(myReplicationState)
                 .withTableReference(myTableReference)
-                .withOngoingJobInfo(jobId, myTokenMap.hashCode() - 1, repiaredTokens)
+                .withOngoingJobInfo(jobId, myTokenMap.hashCode() - 1, repiaredTokens, Status.started, null)
                 .build();
 
         boolean result = ongoingJob.hasTopologyChanged();

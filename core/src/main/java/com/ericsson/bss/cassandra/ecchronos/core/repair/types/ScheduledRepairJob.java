@@ -56,18 +56,9 @@ public class ScheduledRepairJob
         this.table = repairJobView.getTableReference().getTable();
         this.status = repairJobView.getStatus();
         this.repairedRatio = repairJobView.getProgress();
-        if (repairJobView.getRepairStateSnapshot() != null)
-        {
-            this.lastRepairedAtInMs = repairJobView.getRepairStateSnapshot().lastRepairedAt();
-            this.nextRepairInMs = lastRepairedAtInMs + repairJobView.getRepairConfiguration().getRepairIntervalInMs();
-            this.recurring = true;
-        }
-        else
-        {
-            this.lastRepairedAtInMs = -1;
-            this.nextRepairInMs = -1;
-            this.recurring = false;
-        }
+        this.lastRepairedAtInMs = repairJobView.getLastRepairedAt();
+        this.nextRepairInMs = repairJobView.getNextRepair();
+        this.recurring = repairJobView.isRecurring();
     }
 
     @Override

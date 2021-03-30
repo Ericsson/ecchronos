@@ -37,7 +37,7 @@ public class TestScheduledRepairJob
         long repairInterval = TimeUnit.DAYS.toMillis(7);
         long lastRepairedAt = System.currentTimeMillis();
         UUID id = UUID.randomUUID();
-        RepairJobView repairJobView = new TestUtils.RepairJobBuilder()
+        RepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
                 .withId(id)
                 .withKeyspace("ks")
                 .withTable("tb")
@@ -64,7 +64,7 @@ public class TestScheduledRepairJob
         long repairInterval = TimeUnit.DAYS.toMillis(5);
         long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(7);
         UUID id = UUID.randomUUID();
-        RepairJobView repairJobView = new TestUtils.RepairJobBuilder()
+        RepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
                 .withId(id)
                 .withKeyspace("ks")
                 .withTable("tb")
@@ -95,7 +95,7 @@ public class TestScheduledRepairJob
 
         UUID id = UUID.randomUUID();
 
-        RepairJobView repairJobView = new TestUtils.RepairJobBuilder()
+        RepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
                 .withId(id)
                 .withKeyspace("ks")
                 .withTable("tb")
@@ -123,7 +123,7 @@ public class TestScheduledRepairJob
         long repairInterval = TimeUnit.DAYS.toMillis(7);
         long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(11);
         UUID id = UUID.randomUUID();
-        RepairJobView repairJobView = new TestUtils.RepairJobBuilder()
+        RepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
                 .withId(id)
                 .withKeyspace("ks")
                 .withTable("tb")

@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
@@ -35,8 +36,10 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
+
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
+
 import org.apache.karaf.shell.support.CommandException;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -183,7 +186,7 @@ public class TestRepairTableStatusCommand
         TableReference tableReference = createTableRef("ks1.tbl1");
         RepairStateSnapshot state = mock(RepairStateSnapshot.class);
         when(state.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
-        return new RepairJobView(UUID.randomUUID(), tableReference, null, state, RepairJobView.Status.IN_QUEUE, 0);
+        return new ScheduledRepairJobView(UUID.randomUUID(), tableReference, null, state, RepairJobView.Status.IN_QUEUE, 0);
     }
 
     private RepairTableStatusCommand mockCommand(String tableRef)

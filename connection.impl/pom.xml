@@ -40,6 +40,11 @@
             <artifactId>cassandra-driver-core</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.datastax.cassandra</groupId>
+            <artifactId>cassandra-driver-extras</artifactId>
+        </dependency>
+
         <!-- OSGi -->
         <dependency>
             <groupId>org.osgi</groupId>

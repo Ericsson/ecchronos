@@ -85,7 +85,7 @@ public class TableRepairJob extends ScheduledJob
     public RepairJobView getView()
     {
         long now = System.currentTimeMillis();
-        return new RepairJobView(getId(), myTableReference, myRepairConfiguration, myRepairState.getSnapshot(), getStatus(now), getProgress(now));
+        return new ScheduledRepairJobView(getId(), myTableReference, myRepairConfiguration, myRepairState.getSnapshot(), getStatus(now), getProgress(now));
     }
 
     private double getProgress(long timestamp)

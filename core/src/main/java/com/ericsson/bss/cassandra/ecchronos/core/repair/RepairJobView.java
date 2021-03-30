@@ -23,7 +23,7 @@ import java.util.UUID;
 /**
  * Read only view of a scheduled repair job.
  */
-public class RepairJobView
+public abstract class RepairJobView
 {
     private final UUID myId;
     private final TableReference myTableReference;
@@ -94,6 +94,21 @@ public class RepairJobView
     {
         return myProgress;
     }
+
+    /**
+     * @return When repair job was last repaired
+     */
+    public abstract long getLastRepairedAt();
+
+    /**
+     * @return By when the next repair will run
+     */
+    public abstract long getNextRepair();
+
+    /**
+     * @return if repair job is on ondemand or recurring
+     */
+    public abstract Boolean isRecurring();
 
 
     @Override

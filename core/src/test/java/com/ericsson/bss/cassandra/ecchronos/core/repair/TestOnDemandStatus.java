@@ -36,6 +36,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.UDTValue;
 import com.datastax.driver.core.UserType;
 import com.ericsson.bss.cassandra.ecchronos.core.AbstractCassandraTest;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OngoingJob.Status;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
@@ -47,7 +48,10 @@ import com.google.common.collect.ImmutableSet;
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class TestOnDemandStatus extends AbstractCassandraTest
 {
-    private static final String KEYSPACE_NAME = "ecchronos";
+    private static final String STATUS_FAILED = "failed";
+	private static final String STATUS_FINISHED = "finished";
+	private static final String STATUS_STARTED = "started";
+	private static final String KEYSPACE_NAME = "ecchronos";
     private static final String TABLE_NAME = "on_demand_repair_status";
     private static final String TEST_TABLE_NAME = "test_table";
     private static final String HOST_ID_COLUMN_NAME = "host_id";
@@ -60,6 +64,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
     private static final String UDT_ID_NAME = "id";
     private static final String UDT_KAYSPACE_NAME = "keyspace_name";
     private static final String UDT_TABLE_NAME = "table_name";
+    private static final String COMPLEDED_TIME_COLUMN_NAME = "completed_time";
 
     private UUID myHostId;
     private TableReferenceFactory myTableReferenceFactory;
@@ -76,7 +81,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         mySession.execute(String.format("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {'class': 'NetworkTopologyStrategy', 'DC1': 1}", KEYSPACE_NAME ));
         mySession.execute(String.format("CREATE TYPE IF NOT EXISTS %s.token_range (start text, end text)", KEYSPACE_NAME));
         mySession.execute(String.format("CREATE TYPE IF NOT EXISTS %s.table_reference (id uuid, keyspace_name text, table_name text)", KEYSPACE_NAME));
-        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (host_id uuid, job_id uuid, table_reference frozen<table_reference>, token_map_hash int, repaired_tokens frozen<set<frozen<token_range>>>, status text, PRIMARY KEY(host_id, job_id)) WITH default_time_to_live = 2592000 AND gc_grace_seconds = 0", KEYSPACE_NAME, TABLE_NAME));
+        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (host_id uuid, job_id uuid, table_reference frozen<table_reference>, token_map_hash int, repaired_tokens frozen<set<frozen<token_range>>>, status text, completed_time timestamp, PRIMARY KEY(host_id, job_id)) WITH default_time_to_live = 2592000 AND gc_grace_seconds = 0", KEYSPACE_NAME, TABLE_NAME));
         mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (col1 int, col2 int, PRIMARY KEY(col1))", KEYSPACE_NAME, TEST_TABLE_NAME));
 
         myTableReferenceFactory = new TableReferenceFactoryImpl(mySession.getCluster().getMetadata());
@@ -136,7 +141,8 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(uDTTableReference.getString(UDT_TABLE_NAME)).isEqualTo(tableReference.getTable());
         assertThat(row.getInt(TOKEN_MAP_HASH_COLUMN_NAME)).isEqualTo(hashValue);
         assertThat(row.getSet(REPAIRED_TOKENS_COLUMN_NAME, UDTValue.class)).isEmpty();
-        assertThat(row.getString(STATUS_COLUMN_NAME)).isEqualTo("started");
+        assertThat(row.getString(STATUS_COLUMN_NAME)).isEqualTo(STATUS_STARTED);
+        assertThat(row.get(COMPLEDED_TIME_COLUMN_NAME, Long.class)).isNull();
     }
 
     @Test
@@ -169,7 +175,8 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(uDTTableReference.getString(UDT_KAYSPACE_NAME)).isEqualTo(tableReference.getKeyspace());
         assertThat(row.getInt(TOKEN_MAP_HASH_COLUMN_NAME)).isEqualTo(hashValue);
         assertThat(row.getSet(REPAIRED_TOKENS_COLUMN_NAME, UDTValue.class)).isEqualTo(repairedTokens);
-        assertThat(row.getString(STATUS_COLUMN_NAME)).isEqualTo("started");
+        assertThat(row.getString(STATUS_COLUMN_NAME)).isEqualTo(STATUS_STARTED);
+        assertThat(row.get(COMPLEDED_TIME_COLUMN_NAME, Long.class)).isNull();
     }
 
     @Test
@@ -204,7 +211,8 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(uDTTableReference.getString(UDT_KAYSPACE_NAME)).isEqualTo(tableReference.getKeyspace());
         assertThat(row.getInt(TOKEN_MAP_HASH_COLUMN_NAME)).isEqualTo(hashValue);
         assertThat(row.getSet(REPAIRED_TOKENS_COLUMN_NAME, UDTValue.class)).isEqualTo(repairedTokens);
-        assertThat(row.getString(STATUS_COLUMN_NAME)).isEqualTo("finished");
+        assertThat(row.getString(STATUS_COLUMN_NAME)).isEqualTo(STATUS_FINISHED);
+        assertThat(row.get(COMPLEDED_TIME_COLUMN_NAME, Long.class)).isNotNull();
     }
 
     @Test
@@ -239,7 +247,8 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(uDTTableReference.getString(UDT_KAYSPACE_NAME)).isEqualTo(tableReference.getKeyspace());
         assertThat(row.getInt(TOKEN_MAP_HASH_COLUMN_NAME)).isEqualTo(hashValue);
         assertThat(row.getSet(REPAIRED_TOKENS_COLUMN_NAME, UDTValue.class)).isEqualTo(repairedTokens);
-        assertThat(row.getString(STATUS_COLUMN_NAME)).isEqualTo("failed");
+        assertThat(row.getString(STATUS_COLUMN_NAME)).isEqualTo(STATUS_FAILED);
+        assertThat(row.get(COMPLEDED_TIME_COLUMN_NAME, Long.class)).isNotNull();
     }
 
     @Test
@@ -274,6 +283,28 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(ongoingJob.getTableReference().getKeyspace()).isEqualTo(KEYSPACE_NAME);
         assertThat(ongoingJob.getTableReference().getTable()).isEqualTo(TEST_TABLE_NAME);
         assertThat(ongoingJob.getRepairedTokens()).isEmpty();
+        assertThat(ongoingJob.getStatus()).isEqualTo(Status.started);
+        assertThat(ongoingJob.getCompletedTime()).isEqualTo(-1L);
+    }
+
+    @Test
+    public void testGetOngoingJobsWithNewTable()
+    {
+        OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());
+
+        UUID jobId = UUID.randomUUID();
+        int hashValue = 1;
+        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
+        Map<LongTokenRange, ImmutableSet<Node>> tokenMap = new HashMap<>();
+        when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap );
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+
+        mySession.execute("DROP TABLE " + KEYSPACE_NAME + "." + TEST_TABLE_NAME);
+        mySession.execute(String.format("CREATE TABLE %s.%s (col1 int, col2 int, PRIMARY KEY(col1))", KEYSPACE_NAME, TEST_TABLE_NAME));
+
+        Set<OngoingJob> ongoingJobs = onDemandStatus.getOngoingJobs(myReplicationState);
+
+        assertThat(ongoingJobs).isEmpty();
     }
 
     @Test
@@ -294,11 +325,207 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         repairedTokens.add(onDemandStatus.createUDTTokenRangeValue(-50L, 700L));
         onDemandStatus.updateJob(jobId, repairedTokens);
 
-        mySession.execute("DROP TABLE " + KEYSPACE_NAME + "." + TEST_TABLE_NAME);
-        mySession.execute(String.format("CREATE TABLE %s.%s (col1 int, col2 int, PRIMARY KEY(col1))", KEYSPACE_NAME, TEST_TABLE_NAME));
+        Set<OngoingJob> ongoingJobs = onDemandStatus.getOngoingJobs(myReplicationState);
+
+        OngoingJob ongoingJob = ongoingJobs.iterator().next();
+        assertThat(ongoingJob.getJobId()).isEqualTo(jobId);
+        assertThat(ongoingJob.getTableReference().getKeyspace()).isEqualTo(KEYSPACE_NAME);
+        assertThat(ongoingJob.getTableReference().getTable()).isEqualTo(TEST_TABLE_NAME);
+        assertThat(ongoingJob.getRepairedTokens()).isEqualTo(expectedRepairedTokens);
+        assertThat(ongoingJob.getStatus()).isEqualTo(Status.started);
+        assertThat(ongoingJob.getCompletedTime()).isEqualTo(-1L);
+    }
+
+    @Test
+    public void testGetOngoingJobsWithFinishedJob()
+    {
+        OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());
+
+        UUID jobId = UUID.randomUUID();
+        int hashValue = 1;
+        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
+        Map<LongTokenRange, ImmutableSet<Node>> tokenMap = new HashMap<>();
+        when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap );
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+
+        Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
+        expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
+        Set<UDTValue> repairedTokens = new HashSet<>();
+        repairedTokens.add(onDemandStatus.createUDTTokenRangeValue(-50L, 700L));
+        onDemandStatus.updateJob(jobId, repairedTokens);
+        onDemandStatus.finishJob(jobId);
 
         Set<OngoingJob> ongoingJobs = onDemandStatus.getOngoingJobs(myReplicationState);
 
         assertThat(ongoingJobs).isEmpty();
     }
+
+    @Test
+    public void testGetOngoingJobsWithFailedJob()
+    {
+        OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());
+
+        UUID jobId = UUID.randomUUID();
+        int hashValue = 1;
+        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
+        Map<LongTokenRange, ImmutableSet<Node>> tokenMap = new HashMap<>();
+        when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap );
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+
+        Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
+        expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
+        Set<UDTValue> repairedTokens = new HashSet<>();
+        repairedTokens.add(onDemandStatus.createUDTTokenRangeValue(-50L, 700L));
+        onDemandStatus.updateJob(jobId, repairedTokens);
+        onDemandStatus.failJob(jobId);
+
+        Set<OngoingJob> ongoingJobs = onDemandStatus.getOngoingJobs(myReplicationState);
+
+        assertThat(ongoingJobs).isEmpty();
+    }
+
+    @Test
+    public void testGetAllJobsNoJobs()
+    {
+        OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());
+
+        Set<OngoingJob> ongoingJobs = onDemandStatus.getAllJobs(myReplicationState);
+
+        assertThat(ongoingJobs).isEmpty();
+    }
+
+    @Test
+    public void testGetAllJobsWithNewJob()
+    {
+        OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());
+
+        UUID jobId = UUID.randomUUID();
+        int hashValue = 1;
+        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
+        Map<LongTokenRange, ImmutableSet<Node>> tokenMap = new HashMap<>();
+        when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap );
+
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+
+        Set<OngoingJob> ongoingJobs = onDemandStatus.getAllJobs(myReplicationState);
+
+        assertThat(ongoingJobs.size()).isEqualTo(1);
+
+        OngoingJob ongoingJob = ongoingJobs.iterator().next();
+        assertThat(ongoingJob.getJobId()).isEqualTo(jobId);
+        assertThat(ongoingJob.getTableReference().getKeyspace()).isEqualTo(KEYSPACE_NAME);
+        assertThat(ongoingJob.getTableReference().getTable()).isEqualTo(TEST_TABLE_NAME);
+        assertThat(ongoingJob.getRepairedTokens()).isEmpty();
+        assertThat(ongoingJob.getStatus()).isEqualTo(Status.started);
+        assertThat(ongoingJob.getCompletedTime()).isEqualTo(-1L);
+    }
+
+    @Test
+    public void testGetAllJobsWithNewTable()
+    {
+        OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());
+
+        UUID jobId = UUID.randomUUID();
+        int hashValue = 1;
+        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
+        Map<LongTokenRange, ImmutableSet<Node>> tokenMap = new HashMap<>();
+        when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap );
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+
+        mySession.execute("DROP TABLE " + KEYSPACE_NAME + "." + TEST_TABLE_NAME);
+        mySession.execute(String.format("CREATE TABLE %s.%s (col1 int, col2 int, PRIMARY KEY(col1))", KEYSPACE_NAME, TEST_TABLE_NAME));
+
+        Set<OngoingJob> ongoingJobs = onDemandStatus.getAllJobs(myReplicationState);
+
+        assertThat(ongoingJobs).isEmpty();
+    }
+
+    @Test
+    public void testGetAllJobsWithUpdatedJob()
+    {
+        OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());
+
+        UUID jobId = UUID.randomUUID();
+        int hashValue = 1;
+        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
+        Map<LongTokenRange, ImmutableSet<Node>> tokenMap = new HashMap<>();
+        when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap );
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+
+        Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
+        expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
+        Set<UDTValue> repairedTokens = new HashSet<>();
+        repairedTokens.add(onDemandStatus.createUDTTokenRangeValue(-50L, 700L));
+        onDemandStatus.updateJob(jobId, repairedTokens);
+
+        Set<OngoingJob> ongoingJobs = onDemandStatus.getAllJobs(myReplicationState);
+
+        OngoingJob ongoingJob = ongoingJobs.iterator().next();
+        assertThat(ongoingJob.getJobId()).isEqualTo(jobId);
+        assertThat(ongoingJob.getTableReference().getKeyspace()).isEqualTo(KEYSPACE_NAME);
+        assertThat(ongoingJob.getTableReference().getTable()).isEqualTo(TEST_TABLE_NAME);
+        assertThat(ongoingJob.getRepairedTokens()).isEqualTo(expectedRepairedTokens);
+        assertThat(ongoingJob.getStatus()).isEqualTo(Status.started);
+        assertThat(ongoingJob.getCompletedTime()).isEqualTo(-1L);
+    }
+
+    @Test
+    public void testGetAllJobsWithFinishedJob()
+    {
+        OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());
+
+        UUID jobId = UUID.randomUUID();
+        int hashValue = 1;
+        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
+        Map<LongTokenRange, ImmutableSet<Node>> tokenMap = new HashMap<>();
+        when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap );
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+
+        Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
+        expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
+        Set<UDTValue> repairedTokens = new HashSet<>();
+        repairedTokens.add(onDemandStatus.createUDTTokenRangeValue(-50L, 700L));
+        onDemandStatus.updateJob(jobId, repairedTokens);
+        onDemandStatus.finishJob(jobId);
+
+        Set<OngoingJob> ongoingJobs = onDemandStatus.getAllJobs(myReplicationState);
+
+        OngoingJob ongoingJob = ongoingJobs.iterator().next();
+        assertThat(ongoingJob.getJobId()).isEqualTo(jobId);
+        assertThat(ongoingJob.getTableReference().getKeyspace()).isEqualTo(KEYSPACE_NAME);
+        assertThat(ongoingJob.getTableReference().getTable()).isEqualTo(TEST_TABLE_NAME);
+        assertThat(ongoingJob.getRepairedTokens()).isEqualTo(expectedRepairedTokens);
+        assertThat(ongoingJob.getStatus()).isEqualTo(Status.finished);
+        assertThat(ongoingJob.getCompletedTime()).isPositive();
+    }
+
+    @Test
+    public void testGetAllJobsWithFailedJob()
+    {
+        OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());
+
+        UUID jobId = UUID.randomUUID();
+        int hashValue = 1;
+        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
+        Map<LongTokenRange, ImmutableSet<Node>> tokenMap = new HashMap<>();
+        when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap );
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+
+        Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
+        expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
+        Set<UDTValue> repairedTokens = new HashSet<>();
+        repairedTokens.add(onDemandStatus.createUDTTokenRangeValue(-50L, 700L));
+        onDemandStatus.updateJob(jobId, repairedTokens);
+        onDemandStatus.failJob(jobId);
+
+        Set<OngoingJob> ongoingJobs = onDemandStatus.getAllJobs(myReplicationState);
+
+        OngoingJob ongoingJob = ongoingJobs.iterator().next();
+        assertThat(ongoingJob.getJobId()).isEqualTo(jobId);
+        assertThat(ongoingJob.getTableReference().getKeyspace()).isEqualTo(KEYSPACE_NAME);
+        assertThat(ongoingJob.getTableReference().getTable()).isEqualTo(TEST_TABLE_NAME);
+        assertThat(ongoingJob.getRepairedTokens()).isEqualTo(expectedRepairedTokens);
+        assertThat(ongoingJob.getStatus()).isEqualTo(Status.failed);
+        assertThat(ongoingJob.getCompletedTime()).isPositive();
+   }
 }
