@@ -29,6 +29,8 @@ public interface NativeConnectionProvider extends Closeable
 
     Host getLocalHost();
 
+    boolean getRemoteRouting();
+
     @Override
     default void close() throws IOException {}
 }

@@ -100,11 +100,11 @@ public class CASLockFactory implements LockFactory, Closeable
         myStatementDecorator = builder.myStatementDecorator;
         myHostStates = builder.myHostStates;
         myKeyspaceName = builder.myKeyspaceName;
-        myRemoteRouting = builder.myRemoteRouting;
 
         myExecutor = Executors.newSingleThreadScheduledExecutor();
 
         mySession = builder.myNativeConnectionProvider.getSession();
+        myRemoteRouting = builder.myNativeConnectionProvider.getRemoteRouting();
 
         verifySchemasExists();
 
@@ -274,7 +274,6 @@ public class CASLockFactory implements LockFactory, Closeable
         private HostStates myHostStates;
         private StatementDecorator myStatementDecorator;
         private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
-        private boolean myRemoteRouting = true;
 
         public Builder withNativeConnectionProvider(NativeConnectionProvider nativeConnectionProvider)
         {
@@ -297,12 +296,6 @@ public class CASLockFactory implements LockFactory, Closeable
         public Builder withKeyspaceName(String keyspaceName)
         {
             myKeyspaceName = keyspaceName;
-            return this;
-        }
-
-        public Builder withRemoteRouting(boolean remoteRouting)
-        {
-            myRemoteRouting = remoteRouting;
             return this;
         }
 

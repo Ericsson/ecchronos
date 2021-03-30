@@ -79,7 +79,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactoryImpl
 public class ITOnDemandRepairJob extends TestBase
 {
     @Parameterized.Parameters
-    public static List<Boolean> repairHistoryTypes()
+    public static List<Boolean> routingOptions()
     {
         return Arrays.asList(true, false);
     }
@@ -150,7 +150,6 @@ public class ITOnDemandRepairJob extends TestBase
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(myHostStates)
                 .withStatementDecorator(s -> s)
-                .withRemoteRouting(myRemoteRouting)
                 .build();
 
         myScheduleManagerImpl = ScheduleManagerImpl.builder()

@@ -249,6 +249,12 @@ public class TestConfig
         {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public boolean getRemoteRouting()
+        {
+            throw new UnsupportedOperationException();
+        }
     }
 
     public static class TestJmxConnectionProvider implements JmxConnectionProvider

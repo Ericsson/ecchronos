@@ -112,6 +112,12 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
     }
 
     @Override
+    public boolean getRemoteRouting()
+    {
+        return myLocalNativeConnectionProvider.getRemoteRouting();
+    }
+
+    @Override
     public void close()
     {
         myLocalNativeConnectionProvider.close();

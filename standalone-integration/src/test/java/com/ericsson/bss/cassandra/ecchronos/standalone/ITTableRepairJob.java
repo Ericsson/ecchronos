@@ -203,7 +203,6 @@ public class ITTableRepairJob extends TestBase
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(myHostStates)
                 .withStatementDecorator(s -> s)
-                .withRemoteRouting(myRemoteRouting)
                 .build();
 
         myScheduleManagerImpl = ScheduleManagerImpl.builder()

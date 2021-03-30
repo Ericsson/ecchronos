@@ -37,12 +37,14 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
     private final Cluster myCluster;
     private final Session mySession;
     private final Host myLocalHost;
+    private final boolean myRemoteRouting;
 
-    private LocalNativeConnectionProvider(Cluster cluster, Host host)
+    private LocalNativeConnectionProvider(Cluster cluster, Host host, boolean remoteRouting)
     {
         myCluster = cluster;
         mySession = cluster.connect();
         myLocalHost = host;
+        myRemoteRouting = remoteRouting;
     }
 
     @Override
@@ -55,6 +57,12 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
     public Host getLocalHost()
     {
         return myLocalHost;
+    }
+
+    @Override
+    public boolean getRemoteRouting()
+    {
+        return myRemoteRouting;
     }
 
     @Override
@@ -112,7 +120,7 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
             Cluster cluster = createCluster(this);
             Host host = resolveLocalhost(cluster, myLocalhost);
 
-            return new LocalNativeConnectionProvider(cluster, host);
+            return new LocalNativeConnectionProvider(cluster, host, myRemoteRouting);
         }
 
         private InetSocketAddress localHostAddress()
