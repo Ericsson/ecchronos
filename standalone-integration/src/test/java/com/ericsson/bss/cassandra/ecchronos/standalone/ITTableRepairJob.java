@@ -100,7 +100,7 @@ public class ITTableRepairJob extends TestBase
     }
 
     @Parameterized.Parameters
-    public static Collection repairHistoryTypes()
+    public static Collection parameters()
     {
         return Arrays.asList(new Object[][] {
                 {RepairHistoryType.CASSANDRA, true},

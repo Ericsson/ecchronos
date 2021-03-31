@@ -18,7 +18,6 @@ import com.datastax.driver.core.Host;
 import com.datastax.driver.core.PlainTextAuthProvider;
 import com.datastax.driver.core.Session;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
-
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;

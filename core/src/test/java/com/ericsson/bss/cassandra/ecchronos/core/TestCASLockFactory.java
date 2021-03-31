@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 
 import com.datastax.driver.core.Row;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
-
 import org.apache.cassandra.db.Keyspace;
 import org.apache.cassandra.metrics.TableMetrics;
 import org.junit.After;
@@ -57,7 +56,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory.DistributedLock;
 
 import net.jcip.annotations.NotThreadSafe;
-
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
