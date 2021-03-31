@@ -24,6 +24,8 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -37,6 +39,8 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import net.jcip.annotations.NotThreadSafe;
 
@@ -70,9 +74,19 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactoryImpl;
 
+@RunWith(Parameterized.class)
 @NotThreadSafe
 public class ITOnDemandRepairJob extends TestBase
 {
+    @Parameterized.Parameters
+    public static List<Boolean> routingOptions()
+    {
+        return Arrays.asList(true, false);
+    }
+
+    @Parameterized.Parameter
+    public Boolean myRemoteRoutingOption;
+
     private static TableRepairMetrics mockTableRepairMetrics;
 
     private static Metadata myMetadata;
@@ -95,9 +109,12 @@ public class ITOnDemandRepairJob extends TestBase
 
     private Set<TableReference> myRepairs = new HashSet<>();
 
-    @BeforeClass
-    public static void init()
+    @Parameterized.BeforeParam
+    public static void init(Boolean remoteRoutingOption) throws IOException
     {
+        myRemoteRouting = remoteRoutingOption;
+        initialize();
+
         mockTableRepairMetrics = mock(TableRepairMetrics.class);
 
         myLocalHost = getNativeConnectionProvider().getLocalHost();

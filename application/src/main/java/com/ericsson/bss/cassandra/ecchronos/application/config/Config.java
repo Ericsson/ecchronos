@@ -252,6 +252,7 @@ public class Config
     public static class NativeConnection extends Connection<NativeConnectionProvider>
     {
         private Class<? extends StatementDecorator> decoratorClass = NoopStatementDecorator.class;
+        private boolean remoteRouting = true;
 
         public NativeConnection()
         {
@@ -269,6 +270,16 @@ public class Config
             decoratorClass.getDeclaredConstructor(Config.class);
 
             this.decoratorClass = decoratorClass;
+        }
+
+        public boolean getRemoteRouting()
+        {
+            return remoteRouting;
+        }
+
+        public void setRemoteRouting(boolean remoteRouting)
+        {
+            this.remoteRouting = remoteRouting;
         }
 
         @Override

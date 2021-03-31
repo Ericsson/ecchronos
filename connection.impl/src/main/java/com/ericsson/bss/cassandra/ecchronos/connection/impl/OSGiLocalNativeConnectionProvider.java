@@ -49,10 +49,12 @@ public class OSGiLocalNativeConnectionProvider implements NativeConnectionProvid
     {
         String localhost = configuration.localHost();
         int port = configuration.nativePort();
+        boolean remoteRouting = configuration.remoteRouting();
 
         LocalNativeConnectionProvider.Builder builder = LocalNativeConnectionProvider.builder()
                 .withLocalhost(localhost)
-                .withPort(port);
+                .withPort(port)
+                .withRemoteRouting(remoteRouting);
 
         if (!configuration.credentialsFile().isEmpty())
         {
@@ -91,6 +93,12 @@ public class OSGiLocalNativeConnectionProvider implements NativeConnectionProvid
         return myDelegateNativeConnectionProvider.getLocalHost();
     }
 
+    @Override
+    public boolean getRemoteRouting()
+    {
+        return myDelegateNativeConnectionProvider.getRemoteRouting();
+    }
+
     @ObjectClassDefinition
     public @interface Configuration
     {
@@ -102,5 +110,8 @@ public class OSGiLocalNativeConnectionProvider implements NativeConnectionProvid
 
         @AttributeDefinition(name = "Credentials file", description = "A file containing credentials for communication with Cassandra")
         String credentialsFile() default "";
+
+        @AttributeDefinition(name = "Remote routing", description = "Enables remote routing between datacenters")
+        boolean remoteRouting() default true;
     }
 }

@@ -85,6 +85,12 @@ public abstract class AbstractCassandraTest
             {
                 return finalHost;
             }
+
+            @Override
+            public boolean getRemoteRouting()
+            {
+                return true;
+            }
         };
     }
 

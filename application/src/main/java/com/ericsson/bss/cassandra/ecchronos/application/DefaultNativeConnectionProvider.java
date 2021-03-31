@@ -41,6 +41,7 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
         Config.NativeConnection nativeConfig = config.getConnectionConfig().getCql();
         String host = nativeConfig.getHost();
         int port = nativeConfig.getPort();
+        boolean remoteRouting = nativeConfig.getRemoteRouting();
         Security.CqlSecurity cqlSecurity = cqlSecuritySupplier.get();
         boolean authEnabled = cqlSecurity.getCredentials().isEnabled();
         boolean tlsEnabled = cqlSecurity.getTls().isEnabled();
@@ -58,6 +59,7 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
         LocalNativeConnectionProvider.Builder nativeConnectionBuilder = LocalNativeConnectionProvider.builder()
                 .withLocalhost(host)
                 .withPort(port)
+                .withRemoteRouting(remoteRouting)
                 .withAuthProvider(authProvider)
                 .withSslOptions(sslOptions);
 
@@ -107,6 +109,12 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
     public Host getLocalHost()
     {
         return myLocalNativeConnectionProvider.getLocalHost();
+    }
+
+    @Override
+    public boolean getRemoteRouting()
+    {
+        return myLocalNativeConnectionProvider.getRemoteRouting();
     }
 
     @Override

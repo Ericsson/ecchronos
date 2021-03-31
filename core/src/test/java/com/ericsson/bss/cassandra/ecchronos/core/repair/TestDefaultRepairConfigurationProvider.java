@@ -99,6 +99,12 @@ public class TestDefaultRepairConfigurationProvider
             {
                 return localhost;
             }
+
+            @Override
+            public boolean getRemoteRouting()
+            {
+                return true;
+            }
         };
 
         when(session.getCluster()).thenReturn(cluster);

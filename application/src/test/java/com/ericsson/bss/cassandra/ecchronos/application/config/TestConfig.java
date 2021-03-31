@@ -58,6 +58,7 @@ public class TestConfig
         Config.NativeConnection nativeConnection = connection.getCql();
         assertThat(nativeConnection.getHost()).isEqualTo("127.0.0.2");
         assertThat(nativeConnection.getPort()).isEqualTo(9100);
+        assertThat(nativeConnection.getRemoteRouting()).isFalse();
         assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.SECONDS)).isEqualTo(5);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(TestNativeConnectionProvider.class);
         assertThat(nativeConnection.getDecoratorClass()).isEqualTo(TestStatementDecorator.class);
@@ -119,6 +120,7 @@ public class TestConfig
         Config.NativeConnection nativeConnection = connection.getCql();
         assertThat(nativeConnection.getHost()).isEqualTo("localhost");
         assertThat(nativeConnection.getPort()).isEqualTo(9042);
+        assertThat(nativeConnection.getRemoteRouting()).isTrue();
         assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS)).isEqualTo(0);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(DefaultNativeConnectionProvider.class);
         assertThat(nativeConnection.getDecoratorClass()).isEqualTo(NoopStatementDecorator.class);
@@ -181,6 +183,7 @@ public class TestConfig
         Config.NativeConnection nativeConnection = connection.getCql();
         assertThat(nativeConnection.getHost()).isEqualTo("localhost");
         assertThat(nativeConnection.getPort()).isEqualTo(9042);
+        assertThat(nativeConnection.getRemoteRouting()).isTrue();
         assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS)).isEqualTo(0);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(DefaultNativeConnectionProvider.class);
         assertThat(nativeConnection.getDecoratorClass()).isEqualTo(NoopStatementDecorator.class);
@@ -243,6 +246,12 @@ public class TestConfig
 
         @Override
         public Host getLocalHost()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean getRemoteRouting()
         {
             throw new UnsupportedOperationException();
         }

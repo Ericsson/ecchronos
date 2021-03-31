@@ -323,6 +323,12 @@ public class TestCASLockFactory extends AbstractCassandraTest
                             {
                                 return null;
                             }
+
+                            @Override
+                            public boolean getRemoteRouting()
+                            {
+                                return true;
+                            }
                         })
                         .withHostStates(hostStates)
                         .withStatementDecorator(s -> s)

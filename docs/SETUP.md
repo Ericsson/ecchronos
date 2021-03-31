@@ -127,6 +127,15 @@ jmx:
 
 The security parameters can be updated during runtime and will automatically be picked up by ecc.
 
+If ecChrones is deployed in a multi-site environment where clients can't connect to Cassandra nodes in remote sites
+the remoteRouting must be disabled. If remote routing is enabled, locks will be taken in the remote data center.
+Disabling remote routing will cause locks to be taken locally but with SERIAL consistency instead of LOCAL_SERIAL consistency.
+
+```
+cql:
+  remoteRouting: false
+```
+
 It's possible to override the default connection providers if needed.
 More information about the custom connection provider can be found [here](STANDALONE.md).
 

@@ -82,6 +82,7 @@ public class CASLockFactory implements LockFactory, Closeable
 
     private final StatementDecorator myStatementDecorator;
     private final HostStates myHostStates;
+    private final boolean myRemoteRouting;
 
     private final Session mySession;
     private final String myKeyspaceName;
@@ -103,6 +104,7 @@ public class CASLockFactory implements LockFactory, Closeable
         myExecutor = Executors.newSingleThreadScheduledExecutor();
 
         mySession = builder.myNativeConnectionProvider.getSession();
+        myRemoteRouting = builder.myNativeConnectionProvider.getRemoteRouting();
 
         verifySchemasExists();
 
@@ -141,20 +143,22 @@ public class CASLockFactory implements LockFactory, Closeable
                 .where(eq(COLUMN_RESOURCE, bindMarker()))
                 .and(eq(COLUMN_NODE, bindMarker()));
 
+        ConsistencyLevel serialConsistencyLevel = myRemoteRouting ? ConsistencyLevel.LOCAL_SERIAL : ConsistencyLevel.SERIAL;
+
         myLockStatement = mySession.prepare(insertLockStatement)
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                .setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+                .setSerialConsistencyLevel(serialConsistencyLevel);
 
         myGetLockMetadataStatement = mySession.prepare(getLockMetadataStatement)
-                .setConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+                .setConsistencyLevel(serialConsistencyLevel);
 
         myRemoveLockStatement = mySession.prepare(removeLockStatement)
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                .setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+                .setSerialConsistencyLevel(serialConsistencyLevel);
 
         myUpdateLockStatement = mySession.prepare(updateLockStatement)
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                .setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+                .setSerialConsistencyLevel(serialConsistencyLevel);
 
         myCompeteStatement = mySession.prepare(competeStatement)
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
@@ -386,7 +390,7 @@ public class CASLockFactory implements LockFactory, Closeable
     {
         Statement executeStatement;
 
-        if (dataCenter != null)
+        if (dataCenter != null && myRemoteRouting)
         {
             executeStatement = new DataCenterAwareStatement(statement, dataCenter);
         }
