@@ -2,6 +2,8 @@
 
 ## Version 2.0.1
 
+* Add possibilities to only take local locks - Issue #175
+* Remove default limit of ecc-status
 * Process hangs on timeout - Issue #190
 
 ## Version 2.0.0

@@ -116,7 +116,7 @@ def parse_arguments():
                         help='Print verbose status for a specific job')
     parser.add_argument('-l', '--limit', type=int,
                         help='Limit the number of tables or virtual nodes printed (-1 to disable)',
-                        default=15)
+                        default=-1)
     parser.add_argument('-u', '--url', type=str,
                         help='The host to connect to with the format (http://<host>:port)',
                         default=None)
