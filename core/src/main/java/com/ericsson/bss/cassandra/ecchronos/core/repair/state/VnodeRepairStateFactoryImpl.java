@@ -114,7 +114,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
             return VnodeRepairState.UNREPAIRED;
         }
 
-        long defaultUsedLastRepairedAt = previous.lastRepairedAt();
+        long defaultUsedLastRepairedAt = previous.lastCompletedAt();
 
         long lastRepairedAt = Long.MAX_VALUE;
 

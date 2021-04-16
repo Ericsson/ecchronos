@@ -29,7 +29,7 @@ public class OnDemandRepairJobView extends RepairJobView
     }
 
     @Override
-    public long getLastRepairedAt()
+    public long getLastCompletedAt()
     {
         return completionTime;
     }

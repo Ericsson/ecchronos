@@ -56,7 +56,7 @@ public class ScheduledRepairJob
         this.table = repairJobView.getTableReference().getTable();
         this.status = repairJobView.getStatus();
         this.repairedRatio = repairJobView.getProgress();
-        this.lastRepairedAtInMs = repairJobView.getLastRepairedAt();
+        this.lastRepairedAtInMs = repairJobView.getLastCompletedAt();
         this.nextRepairInMs = repairJobView.getNextRepair();
         this.recurring = repairJobView.isRecurring();
     }

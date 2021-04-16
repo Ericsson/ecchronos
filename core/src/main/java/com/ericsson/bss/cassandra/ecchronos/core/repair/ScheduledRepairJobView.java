@@ -28,15 +28,15 @@ public class ScheduledRepairJobView extends RepairJobView
     }
 
     @Override
-    public long getLastRepairedAt()
+    public long getLastCompletedAt()
     {
-        return getRepairStateSnapshot().lastRepairedAt();
+        return getRepairStateSnapshot().lastCompletedAt();
     }
 
     @Override
     public long getNextRepair()
     {
-        return getRepairStateSnapshot().lastRepairedAt() + getRepairConfiguration().getRepairIntervalInMs();
+        return getRepairStateSnapshot().lastCompletedAt() + getRepairConfiguration().getRepairIntervalInMs();
     }
 
     @Override

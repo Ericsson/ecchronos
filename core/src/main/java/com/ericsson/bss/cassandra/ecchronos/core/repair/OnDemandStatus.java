@@ -106,7 +106,7 @@ public class OnDemandStatus
             }
             catch (IllegalArgumentException e)
             {
-                LOG.info("Ignoring table repair job with id {}, unable to parse status", row.getUUID(JOB_ID_COLUMN_NAME));
+                LOG.warn("Ignoring table repair job with id {}, unable to parse status", row.getUUID(JOB_ID_COLUMN_NAME));
                 continue;
             }
 
@@ -133,7 +133,7 @@ public class OnDemandStatus
             }
             catch (IllegalArgumentException e)
             {
-                LOG.info("Ignoring table repair job with id {}, unable to parse status", row.getUUID(JOB_ID_COLUMN_NAME));
+                LOG.warn("Ignoring table repair job with id {}, unable to parse status", row.getUUID(JOB_ID_COLUMN_NAME));
                 continue;
             }
 

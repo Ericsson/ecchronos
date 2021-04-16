@@ -36,7 +36,7 @@ public class TestUtils
     public static RepairStateSnapshot generateRepairStateSnapshot(long lastRepairedAt, VnodeRepairStates vnodeRepairStates)
     {
         return RepairStateSnapshot.newBuilder()
-                .withLastRepairedAt(lastRepairedAt)
+                .withLastCompletedAt(lastRepairedAt)
                 .withVnodeRepairStates(vnodeRepairStates)
                 .withReplicaRepairGroups(Collections.emptyList())
                 .build();

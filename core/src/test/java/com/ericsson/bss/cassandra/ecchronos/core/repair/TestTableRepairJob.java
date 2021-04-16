@@ -114,7 +114,7 @@ public class TestTableRepairJob
     @Before
     public void startup()
     {
-        doReturn(-1L).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(-1L).when(myRepairStateSnapshot).lastCompletedAt();
         doReturn(myRepairStateSnapshot).when(myRepairState).getSnapshot();
 
         doNothing().when(myRepairState).update();
@@ -224,7 +224,7 @@ public class TestTableRepairJob
     {
         // mock
         long repairedAt = System.currentTimeMillis();
-        doReturn(repairedAt).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
         doReturn(false).when(myRepairStateSnapshot).canRepair();
 
         myRepairJob.postExecute(true, null);
@@ -238,7 +238,7 @@ public class TestTableRepairJob
     {
         // mock
         long repairedAt = System.currentTimeMillis();
-        doReturn(repairedAt).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
         doReturn(false).when(myRepairStateSnapshot).canRepair();
 
         myRepairJob.postExecute(false, null);
@@ -317,7 +317,7 @@ public class TestTableRepairJob
 
         RepairStateSnapshot repairStateSnapshot = RepairStateSnapshot.newBuilder()
                 .withReplicaRepairGroups(Collections.singletonList(replicaRepairGroup))
-                .withLastRepairedAt(1234L)
+                .withLastCompletedAt(1234L)
                 .withVnodeRepairStates(vnodeRepairStates)
                 .build();
         when(myRepairState.getSnapshot()).thenReturn(repairStateSnapshot);
@@ -361,7 +361,7 @@ public class TestTableRepairJob
 
         RepairStateSnapshot repairStateSnapshot = RepairStateSnapshot.newBuilder()
                 .withReplicaRepairGroups(Collections.singletonList(replicaRepairGroup))
-                .withLastRepairedAt(1234L)
+                .withLastCompletedAt(1234L)
                 .withVnodeRepairStates(vnodeRepairStates)
                 .build();
         when(myRepairState.getSnapshot()).thenReturn(repairStateSnapshot);
@@ -393,7 +393,7 @@ public class TestTableRepairJob
     public void testStatusCompleted()
     {
         long repairedAt = System.currentTimeMillis();
-        doReturn(repairedAt).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), repairedAt);
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState)).build();
         when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
@@ -408,7 +408,7 @@ public class TestTableRepairJob
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), repairedAt);
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState)).build();
         when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
-        doReturn(repairedAt).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 
         assertThat(myRepairJob.getView().getStatus()).isEqualTo(RepairJobView.Status.ERROR);
     }
@@ -420,7 +420,7 @@ public class TestTableRepairJob
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), repairedAt);
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState)).build();
         when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
-        doReturn(repairedAt).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 
         assertThat(myRepairJob.getView().getStatus()).isEqualTo(RepairJobView.Status.IN_QUEUE);
     }
@@ -432,7 +432,7 @@ public class TestTableRepairJob
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), repairedAt);
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState)).build();
         when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
-        doReturn(repairedAt).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 
         assertThat(myRepairJob.getView().getStatus()).isEqualTo(RepairJobView.Status.WARNING);
     }
@@ -450,7 +450,7 @@ public class TestTableRepairJob
 
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2)).build();
         doReturn(vnodeRepairStates).when(myRepairStateSnapshot).getVnodeRepairStates();
-        doReturn(repairedAtFirst).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(repairedAtFirst).when(myRepairStateSnapshot).lastCompletedAt();
 
         assertThat(myRepairJob.getView().getProgress()).isEqualTo(0.5d);
     }
@@ -464,7 +464,7 @@ public class TestTableRepairJob
 
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState)).build();
         doReturn(vnodeRepairStates).when(myRepairStateSnapshot).getVnodeRepairStates();
-        doReturn(repairedAt).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 
         assertThat(myRepairJob.getView().getProgress()).isEqualTo(1);
     }
@@ -480,7 +480,7 @@ public class TestTableRepairJob
 
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2)).build();
         doReturn(vnodeRepairStates).when(myRepairStateSnapshot).getVnodeRepairStates();
-        doReturn(repairedAt).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 
         assertThat(myRepairJob.getView().getProgress()).isEqualTo(0);
     }

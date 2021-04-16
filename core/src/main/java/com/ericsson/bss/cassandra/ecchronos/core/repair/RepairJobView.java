@@ -98,7 +98,7 @@ public abstract class RepairJobView
     /**
      * @return When repair job was last repaired
      */
-    public abstract long getLastRepairedAt();
+    public abstract long getLastCompletedAt();
 
     /**
      * @return By when the next repair will run

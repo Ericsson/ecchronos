@@ -23,7 +23,7 @@ import java.util.List;
  *
  * The repair state describes the current state of repairs for a table.
  * <ul>
- *     <li>When the table was last repaired - {@link #lastRepairedAt()}</li>
+ *     <li>When the table was last repaired - {@link #lastCompletedAt()}</li>
  *     <li>The next repair(s) to run - {@link #getRepairGroups()}</li>
  *     <li>The vnodes for the table and when they were last repaired - {@link #getVnodeRepairStates()}</li>
  *     <li>If there is a repair available - {@link #canRepair()}</li>
@@ -32,13 +32,13 @@ import java.util.List;
 public class RepairStateSnapshot
 {
     private final boolean canRepair;
-    private final long myLastRepairedAt;
+    private final long myLastCompletedAt;
     private final ImmutableList<ReplicaRepairGroup> myReplicaRepairGroup;
     private final VnodeRepairStates myVnodeRepairStates;
 
     private RepairStateSnapshot(Builder builder)
     {
-        myLastRepairedAt = builder.myLastRepairedAt;
+        myLastCompletedAt = builder.myLastCompletedAt;
         myReplicaRepairGroup = builder.myReplicaRepairGroup;
         myVnodeRepairStates = builder.myVnodeRepairStates;
 
@@ -60,9 +60,9 @@ public class RepairStateSnapshot
      *
      * @return The time the table was last repaired or -1 if no information is available.
      */
-    public long lastRepairedAt()
+    public long lastCompletedAt()
     {
-        return myLastRepairedAt;
+        return myLastCompletedAt;
     }
 
     /**
@@ -83,7 +83,7 @@ public class RepairStateSnapshot
     @Override
     public String toString()
     {
-        return String.format("(canRepair=%b,lastRepaired=%d,replicaRepairGroup=%s)", canRepair, myLastRepairedAt, myReplicaRepairGroup);
+        return String.format("(canRepair=%b,lastRepaired=%d,replicaRepairGroup=%s)", canRepair, myLastCompletedAt, myReplicaRepairGroup);
     }
 
     public static Builder newBuilder()
@@ -93,13 +93,13 @@ public class RepairStateSnapshot
 
     public static class Builder
     {
-        private Long myLastRepairedAt;
+        private Long myLastCompletedAt;
         private ImmutableList<ReplicaRepairGroup> myReplicaRepairGroup;
         private VnodeRepairStates myVnodeRepairStates;
 
-        public Builder withLastRepairedAt(long lastRepairedAt)
+        public Builder withLastCompletedAt(long lastCompletedAt)
         {
-            myLastRepairedAt = lastRepairedAt;
+            myLastCompletedAt = lastCompletedAt;
             return this;
         }
 

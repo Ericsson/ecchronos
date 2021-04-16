@@ -109,7 +109,7 @@ public class TableRepairJob extends ScheduledJob
 
     private RepairJobView.Status getStatus(long timestamp)
     {
-        long repairedAt = myRepairState.getSnapshot().lastRepairedAt();
+        long repairedAt = myRepairState.getSnapshot().lastCompletedAt();
         long msSinceLastRepair = timestamp - repairedAt;
         RepairConfiguration config = myRepairConfiguration;
 
@@ -182,7 +182,7 @@ public class TableRepairJob extends ScheduledJob
     @Override
     public long getLastSuccessfulRun()
     {
-        return myRepairState.getSnapshot().lastRepairedAt();
+        return myRepairState.getSnapshot().lastCompletedAt();
     }
 
     @Override

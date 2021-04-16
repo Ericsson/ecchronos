@@ -255,7 +255,7 @@ public class TestVnodeRepairStateFactoryImpl
     private RepairStateSnapshot snapshot(long repairedAt, VnodeRepairState... states)
     {
         return RepairStateSnapshot.newBuilder()
-                .withLastRepairedAt(repairedAt)
+                .withLastCompletedAt(repairedAt)
                 .withReplicaRepairGroups(Collections.emptyList())
                 .withVnodeRepairStates(vnodeRepairStates(states))
                 .build();

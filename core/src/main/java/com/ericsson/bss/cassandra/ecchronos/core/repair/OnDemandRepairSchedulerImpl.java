@@ -161,7 +161,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     }
 
     @Override
-    public List<RepairJobView> getCurrentRepairJobs()
+    public List<RepairJobView> getAllRepairJobs()
     {
         return myOnDemandStatus.getAllJobs(myReplicationState).stream()
                 .map(job -> getOngoingRepairJob(job))

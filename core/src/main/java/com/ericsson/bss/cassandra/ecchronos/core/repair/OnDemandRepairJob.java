@@ -138,7 +138,8 @@ public class OnDemandRepairJob extends ScheduledJob
         return new OnDemandRepairJobView(
                 getId(),
                 myOngoingJob.getTableReference(),
-                myRepairConfiguration, getStatus(),
+                myRepairConfiguration,
+                getStatus(),
                 getProgress(),
                 myOngoingJob.getCompletedTime());
     }

@@ -178,7 +178,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     {
         return Stream
                 .concat(myRepairScheduler.getCurrentRepairJobs().stream(),
-                        myOnDemandRepairScheduler.getCurrentRepairJobs().stream())
+                        myOnDemandRepairScheduler.getAllRepairJobs().stream())
                 .filter(filter)
                 .map(ScheduledRepairJob::new)
                 .collect(Collectors.toList());
@@ -188,7 +188,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     {
         return Stream
                 .concat(myRepairScheduler.getCurrentRepairJobs().stream(),
-                        myOnDemandRepairScheduler.getCurrentRepairJobs().stream())
+                        myOnDemandRepairScheduler.getAllRepairJobs().stream())
                 .filter(job -> job.getId().equals(id)).findFirst();
     }
 

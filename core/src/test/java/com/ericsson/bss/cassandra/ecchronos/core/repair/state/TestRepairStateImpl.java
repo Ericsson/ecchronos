@@ -101,7 +101,7 @@ public class TestRepairStateImpl
         assertRepairStateSnapshot(repairStateSnapshot, expectedAtLeastRepairedAt, Lists.emptyList(), vnodeRepairStates);
 
         verify(mockTableRepairMetrics).repairState(eq(tableReference), eq(1), eq(0));
-        verify(mockTableRepairMetrics).lastRepairedAt(eq(tableReference), eq(repairStateSnapshot.lastRepairedAt()));
+        verify(mockTableRepairMetrics).lastRepairedAt(eq(tableReference), eq(repairStateSnapshot.lastCompletedAt()));
         verify(mockPostUpdateHook, times(1)).postUpdate(repairStateSnapshot);
     }
 
@@ -141,7 +141,7 @@ public class TestRepairStateImpl
         assertRepairStateSnapshot(repairStateSnapshot, expectedAtLeastRepairedAt, Collections.singletonList(mockReplicaRepairGroup), vnodeRepairStates);
 
         verify(mockTableRepairMetrics).repairState(eq(tableReference), eq(1), eq(1));
-        verify(mockTableRepairMetrics).lastRepairedAt(eq(tableReference), eq(repairStateSnapshot.lastRepairedAt()));
+        verify(mockTableRepairMetrics).lastRepairedAt(eq(tableReference), eq(repairStateSnapshot.lastCompletedAt()));
         verify(mockPostUpdateHook, times(1)).postUpdate(repairStateSnapshot);
     }
 
@@ -191,11 +191,11 @@ public class TestRepairStateImpl
         boolean canRepair = !replicaRepairGroups.isEmpty();
 
         assertThat(repairStateSnapshot).isNotNull();
-        assertThat(repairStateSnapshot.lastRepairedAt()).isGreaterThanOrEqualTo(expectedAtLeastRepairedAt);
-        assertThat(repairStateSnapshot.lastRepairedAt()).isLessThanOrEqualTo(expectedAtMostRepairedAt);
+        assertThat(repairStateSnapshot.lastCompletedAt()).isGreaterThanOrEqualTo(expectedAtLeastRepairedAt);
+        assertThat(repairStateSnapshot.lastCompletedAt()).isLessThanOrEqualTo(expectedAtMostRepairedAt);
         assertThat(repairStateSnapshot.getRepairGroups()).isEqualTo(replicaRepairGroups);
         assertThat(repairStateSnapshot.canRepair()).isEqualTo(canRepair);
-        assertThat(repairStateSnapshot.getVnodeRepairStates()).isEqualTo(vnodeRepairStatesBase.combineWithRepairedAt(repairStateSnapshot.lastRepairedAt()));
+        assertThat(repairStateSnapshot.getVnodeRepairStates()).isEqualTo(vnodeRepairStatesBase.combineWithRepairedAt(repairStateSnapshot.lastCompletedAt()));
     }
 
     private void assertVnodeRepairStateRepairedBefore(VnodeRepairState baseVnodeRepairState, VnodeRepairState actualVnodeRepairState, long repairedBefore)
