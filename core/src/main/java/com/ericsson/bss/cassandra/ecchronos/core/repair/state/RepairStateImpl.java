@@ -68,12 +68,12 @@ public class RepairStateImpl implements RepairState
         RepairStateSnapshot oldRepairStateSnapshot = myRepairStateSnapshot.get();
 
         if (oldRepairStateSnapshot == null
-                || oldRepairStateSnapshot.lastRepairedAt() < System.currentTimeMillis() - myRepairConfiguration.getRepairIntervalInMs())
+                || oldRepairStateSnapshot.lastCompletedAt() < System.currentTimeMillis() - myRepairConfiguration.getRepairIntervalInMs())
         {
             RepairStateSnapshot newRepairStateSnapshot = generateNewRepairState(oldRepairStateSnapshot);
             if (myRepairStateSnapshot.compareAndSet(oldRepairStateSnapshot, newRepairStateSnapshot))
             {
-                myTableRepairMetrics.lastRepairedAt(myTableReference, newRepairStateSnapshot.lastRepairedAt());
+                myTableRepairMetrics.lastRepairedAt(myTableReference, newRepairStateSnapshot.lastCompletedAt());
 
                 int nonRepairedRanges = (int)newRepairStateSnapshot.getVnodeRepairStates().getVnodeRepairStates().stream()
                         .filter(this::vnodeIsRepairable)
@@ -119,7 +119,7 @@ public class RepairStateImpl implements RepairState
         List<ReplicaRepairGroup> replicaRepairGroups = myReplicaRepairGroupFactory.generateReplicaRepairGroups(repairableVnodes);
 
         return RepairStateSnapshot.newBuilder()
-                .withLastRepairedAt(repairedAt)
+                .withLastCompletedAt(repairedAt)
                 .withVnodeRepairStates(updatedVnodeRepairStates)
                 .withReplicaRepairGroups(replicaRepairGroups)
                 .build();

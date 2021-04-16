@@ -19,14 +19,17 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import com.datastax.driver.core.Host;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+
 import net.jcip.annotations.NotThreadSafe;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.extras.codecs.date.SimpleTimestampCodec;
 
 @NotThreadSafe
 public abstract class AbstractCassandraTest
@@ -44,6 +47,7 @@ public abstract class AbstractCassandraTest
         myCassandraDaemon = CassandraDaemonForECChronos.getInstance();
 
         myCluster = myCassandraDaemon.getCluster();
+        myCluster.getConfiguration().getCodecRegistry().register(SimpleTimestampCodec.instance);
         mySession = myCluster.connect();
 
         Host tmpHost = null;

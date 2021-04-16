@@ -44,7 +44,7 @@ public class AlarmPostUpdateHook implements PostUpdateHook
     @Override
     public void postUpdate(RepairStateSnapshot repairStateSnapshot)
     {
-        long lastRepaired = repairStateSnapshot.lastRepairedAt();
+        long lastRepaired = repairStateSnapshot.lastCompletedAt();
 
         if (lastRepaired != VnodeRepairState.UNREPAIRED)
         {

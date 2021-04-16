@@ -196,7 +196,7 @@ public class ScheduleManagerImpl implements ScheduleManager, Closeable
         {
             try
             {
-                LOG.info("Running scheduled task {}", task);
+                LOG.info("Running task {}", task);
                 return task.execute();
             }
             catch (Exception e)

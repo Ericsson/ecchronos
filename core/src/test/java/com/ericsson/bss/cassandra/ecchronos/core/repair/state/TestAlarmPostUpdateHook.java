@@ -79,7 +79,7 @@ public class TestAlarmPostUpdateHook
         expectedData.put(RepairFaultReporter.FAULT_TABLE, tableName);
 
         // mock - not repaired
-        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastCompletedAt();
         when(myClock.millis()).thenReturn(start);
 
         myPostUpdateHook.postUpdate(myRepairStateSnapshot);
@@ -92,7 +92,7 @@ public class TestAlarmPostUpdateHook
         start = System.currentTimeMillis();
 
         // mock - repaired
-        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastCompletedAt();
         when(myClock.millis()).thenReturn(start);
 
         myPostUpdateHook.postUpdate(myRepairStateSnapshot);
@@ -120,7 +120,7 @@ public class TestAlarmPostUpdateHook
         expectedData.put(RepairFaultReporter.FAULT_TABLE, tableName);
 
         // mock - not repaired
-        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastCompletedAt();
         when(myClock.millis()).thenReturn(start);
 
         myPostUpdateHook.postUpdate(myRepairStateSnapshot);
@@ -133,7 +133,7 @@ public class TestAlarmPostUpdateHook
         start = System.currentTimeMillis();
 
         // mock - repaired
-        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastCompletedAt();
         when(myClock.millis()).thenReturn(start);
 
         myPostUpdateHook.postUpdate(myRepairStateSnapshot);

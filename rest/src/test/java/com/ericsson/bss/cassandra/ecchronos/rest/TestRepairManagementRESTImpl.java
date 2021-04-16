@@ -30,6 +30,8 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.*;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,12 +41,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView.Status;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.TestUtils;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.CompleteRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
@@ -96,7 +93,7 @@ public class TestRepairManagementRESTImpl
         long repairInterval = TimeUnit.DAYS.toMillis(7);
         long lastRepairedAt = System.currentTimeMillis();
 
-        RepairJobView repairJobView = new TestUtils.RepairJobBuilder()
+        RepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withLastRepairedAt(lastRepairedAt)
@@ -114,22 +111,27 @@ public class TestRepairManagementRESTImpl
     @Test
     public void testStatusMultipleEntries()
     {
-        RepairJobView job1 = new TestUtils.RepairJobBuilder()
+        RepairJobView job1 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withLastRepairedAt(1234L)
                 .withRepairInterval(11)
                 .build();
-        RepairJobView job2 = new TestUtils.RepairJobBuilder()
+        RepairJobView job2 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb2")
                 .withLastRepairedAt(2345L)
                 .withRepairInterval(12)
                 .build();
+        RepairJobView job3 = new TestUtils.OnDemandRepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb2")
+                .withCompletedAt(3456L)
+                .build();
         List<RepairJobView> repairJobViews = Arrays.asList(
                 job1,
                 job2,
-                getOnDemandRepairJobView("ks", "tb")
+                job3
         );
 
         List<ScheduledRepairJob> expectedResponse = repairJobViews.stream()
@@ -141,10 +143,6 @@ public class TestRepairManagementRESTImpl
         List<ScheduledRepairJob> response = GSON.fromJson(repairManagementREST.status(), scheduledRepairJobListType);
 
         assertThat(response).isEqualTo(expectedResponse);
-    }
-
-    private RepairJobView getOnDemandRepairJobView(String ks, String tb) {
-        return new RepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable(ks, tb), RepairConfiguration.DEFAULT, null, Status.IN_QUEUE, 0);
     }
 
     @Test
@@ -163,7 +161,7 @@ public class TestRepairManagementRESTImpl
         long expectedLastRepairedAt = 234;
         long expectedRepairInterval = 123;
 
-        RepairJobView repairJobView = new TestUtils.RepairJobBuilder()
+        RepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withLastRepairedAt(expectedLastRepairedAt)
@@ -183,7 +181,7 @@ public class TestRepairManagementRESTImpl
         long expectedLastRepairedAt = 234;
         long repairInterval = 123;
 
-        RepairJobView repairJobView = new TestUtils.RepairJobBuilder()
+        RepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
             .withKeyspace("ks")
             .withTable("tb")
             .withLastRepairedAt(expectedLastRepairedAt)
@@ -201,22 +199,27 @@ public class TestRepairManagementRESTImpl
     @Test
     public void testKeyspaceStatusMultipleEntries()
     {
-        RepairJobView job1 = new TestUtils.RepairJobBuilder()
+        RepairJobView job1 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withLastRepairedAt(1234L)
                 .withRepairInterval(11)
                 .build();
-        RepairJobView job2 = new TestUtils.RepairJobBuilder()
+        RepairJobView job2 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb2")
                 .withLastRepairedAt(2345L)
                 .withRepairInterval(45)
                 .build();
+        RepairJobView job3 = new TestUtils.OnDemandRepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb2")
+                .withCompletedAt(3456L)
+                .build();
         List<RepairJobView> repairJobViews = Arrays.asList(
                 job1,
                 job2,
-                getOnDemandRepairJobView("ks", "tb")
+                job3
         );
         List<ScheduledRepairJob> expectedResponse = repairJobViews.stream()
                 .map(ScheduledRepairJob::new)
@@ -249,7 +252,7 @@ public class TestRepairManagementRESTImpl
 
         VnodeRepairState vnodeRepairState = TestUtils
                 .createVnodeRepairState(2, 3, ImmutableSet.of(replica), expectedLastRepairedAt);
-        RepairJobView repairJobView = new TestUtils.RepairJobBuilder()
+        RepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withLastRepairedAt(expectedLastRepairedAt)
@@ -272,22 +275,27 @@ public class TestRepairManagementRESTImpl
     {
         Host host = mock(Host.class);
         when(host.getBroadcastAddress()).thenReturn(InetAddress.getLocalHost());
-        RepairJobView job1 = new TestUtils.RepairJobBuilder()
+        RepairJobView job1 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withLastRepairedAt(1234L)
                 .withRepairInterval(11)
                 .build();
-        RepairJobView job2 = new TestUtils.RepairJobBuilder()
+        RepairJobView job2 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb2")
                 .withLastRepairedAt(134L)
                 .withRepairInterval(112)
                 .build();
+        RepairJobView job3 = new TestUtils.OnDemandRepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb2")
+                .withCompletedAt(3456L)
+                .build();
         List<RepairJobView> repairJobViews = Arrays.asList(
                 job1,
                 job2,
-                getOnDemandRepairJobView("ks", "tb")
+                job3
         );
 
         List<ScheduledRepairJob> expectedResponse = repairJobViews.stream()
@@ -308,31 +316,36 @@ public class TestRepairManagementRESTImpl
         Host host = mock(Host.class);
         when(host.getBroadcastAddress()).thenReturn(InetAddress.getLocalHost());
         UUID expectedId = UUID.randomUUID();
-        RepairJobView expectedRepairJob = new TestUtils.RepairJobBuilder()
+        RepairJobView expectedRepairJob = new TestUtils.ScheduledRepairJobBuilder()
                 .withId(expectedId)
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withLastRepairedAt(1234L)
                 .withRepairInterval(11)
                 .build();
-        RepairJobView job1 = new TestUtils.RepairJobBuilder()
+        RepairJobView job1 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb2")
                 .withLastRepairedAt(134L)
                 .withRepairInterval(112)
                 .build();
-        RepairJobView job2 = new TestUtils.RepairJobBuilder()
+        RepairJobView job2 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withLastRepairedAt(132L)
                 .withRepairInterval(132)
+                .build();
+        RepairJobView job3 = new TestUtils.OnDemandRepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb2")
+                .withCompletedAt(3456L)
                 .build();
 
         CompleteRepairJob expectedResponse = new CompleteRepairJob(expectedRepairJob);
 
         List<RepairJobView> repairJobViews = Arrays.asList(
                 expectedRepairJob,
-                getOnDemandRepairJobView("ks", "tb"),
+                job3,
                 job1,
                 job2
         );
@@ -349,22 +362,27 @@ public class TestRepairManagementRESTImpl
     {
         Host host = mock(Host.class);
         when(host.getBroadcastAddress()).thenReturn(InetAddress.getLocalHost());
-        RepairJobView job1 = new TestUtils.RepairJobBuilder()
+        RepairJobView job1 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withLastRepairedAt(1234L)
                 .withRepairInterval(11)
                 .build();
-        RepairJobView job2 = new TestUtils.RepairJobBuilder()
+        RepairJobView job2 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb2")
                 .withLastRepairedAt(134L)
                 .withRepairInterval(112)
                 .build();
+        RepairJobView job3 = new TestUtils.OnDemandRepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb2")
+                .withCompletedAt(3456L)
+                .build();
         List<RepairJobView> repairJobViews = Arrays.asList(
                 job1,
                 job2,
-                getOnDemandRepairJobView("ks", "tb")
+                job3
         );
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(repairJobViews);
@@ -409,7 +427,7 @@ public class TestRepairManagementRESTImpl
     {
         // Given
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
-        RepairJobView repairJobView = new RepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable("ks", "tbl"), repairConfig, null, Status.IN_QUEUE, 0);
+        RepairJobView repairJobView = new ScheduledRepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable("ks", "tbl"), repairConfig, null, Status.IN_QUEUE, 0);
         TableRepairConfig expectedResponse = new TableRepairConfig(repairJobView);
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
@@ -424,12 +442,12 @@ public class TestRepairManagementRESTImpl
     {
         // Given
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
-        RepairJobView repairJobView = new RepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable("ks", "tbl"), repairConfig, null, Status.IN_QUEUE, 0);
+        RepairJobView repairJobView = new ScheduledRepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable("ks", "tbl"), repairConfig, null, Status.IN_QUEUE, 0);
 
         RepairConfiguration repairConfig2 = TestUtils.createRepairConfiguration(22, 3.3, 44, 55);
-        RepairJobView repairJobView2 = new RepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable("ks2", "tbl"), repairConfig2, null, Status.IN_QUEUE, 0);
+        RepairJobView repairJobView2 = new ScheduledRepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable("ks2", "tbl"), repairConfig2, null, Status.IN_QUEUE, 0);
 
-        RepairJobView repairJobView3 = getOnDemandRepairJobView("ks", "tbl");
+        RepairJobView repairJobView3 = new OnDemandRepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable("ks", "tbl"), RepairConfiguration.DEFAULT, Status.IN_QUEUE, 0, System.currentTimeMillis());
 
         List<TableRepairConfig> expectedResponse = Arrays.asList(
                 new TableRepairConfig(repairJobView),
@@ -458,7 +476,7 @@ public class TestRepairManagementRESTImpl
     public void testKeyspaceConfigNonExisting()
     {
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
-        RepairJobView repairJobView = new RepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable("ks", "tbl"), repairConfig, null, Status.IN_QUEUE, 0);
+        RepairJobView repairJobView = new ScheduledRepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable("ks", "tbl"), repairConfig, null, Status.IN_QUEUE, 0);
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
 
@@ -471,7 +489,7 @@ public class TestRepairManagementRESTImpl
     public void testKeyspaceConfigEntry()
     {
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
-        RepairJobView repairJobView = new RepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable("ks", "tbl"), repairConfig, null, Status.IN_QUEUE, 0);
+        RepairJobView repairJobView = new ScheduledRepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable("ks", "tbl"), repairConfig, null, Status.IN_QUEUE, 0);
 
         TableRepairConfig expectedResponse = new TableRepairConfig(repairJobView);
 
@@ -486,10 +504,10 @@ public class TestRepairManagementRESTImpl
     public void testKeyspaceConfigMultipleEntries()
     {
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
-        RepairJobView repairJobView = new RepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable("ks", "tbl"), repairConfig, null, Status.IN_QUEUE, 0);
+        RepairJobView repairJobView = new ScheduledRepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable("ks", "tbl"), repairConfig, null, Status.IN_QUEUE, 0);
 
         RepairConfiguration repairConfig2 = TestUtils.createRepairConfiguration(22, 3.3, 44, 55);
-        RepairJobView repairJobView2 = new RepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable("ks", "tbl2"), repairConfig2, null, Status.IN_QUEUE, 0);
+        RepairJobView repairJobView2 = new ScheduledRepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable("ks", "tbl2"), repairConfig2, null, Status.IN_QUEUE, 0);
 
         List<TableRepairConfig> expectedResponse = Arrays.asList(
                 new TableRepairConfig(repairJobView),
@@ -517,7 +535,7 @@ public class TestRepairManagementRESTImpl
     public void testTableConfigNonExisting()
     {
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
-        RepairJobView repairJobView = new RepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable("ks", "tbl"), repairConfig, null, Status.IN_QUEUE, 0);
+        RepairJobView repairJobView = new ScheduledRepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable("ks", "tbl"), repairConfig, null, Status.IN_QUEUE, 0);
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.singletonList(repairJobView));
 
@@ -530,7 +548,7 @@ public class TestRepairManagementRESTImpl
     public void testTableConfigEntry()
     {
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
-        RepairJobView repairJobView = new RepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable("ks", "tbl"), repairConfig, null, Status.IN_QUEUE, 0);
+        RepairJobView repairJobView = new ScheduledRepairJobView(UUID.randomUUID(), myTableReferenceFactory.forTable("ks", "tbl"), repairConfig, null, Status.IN_QUEUE, 0);
 
         List<TableRepairConfig> expectedResponse = Collections.singletonList(new TableRepairConfig(repairJobView));
 
@@ -547,31 +565,36 @@ public class TestRepairManagementRESTImpl
         Host host = mock(Host.class);
         when(host.getBroadcastAddress()).thenReturn(InetAddress.getLocalHost());
         UUID expectedId = UUID.randomUUID();
-        RepairJobView expectedRepairJob = new TestUtils.RepairJobBuilder()
+        RepairJobView expectedRepairJob = new TestUtils.ScheduledRepairJobBuilder()
                 .withId(expectedId)
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withLastRepairedAt(1234L)
                 .withRepairInterval(11)
                 .build();
-        RepairJobView job1 = new TestUtils.RepairJobBuilder()
+        RepairJobView job1 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb2")
                 .withLastRepairedAt(134L)
                 .withRepairInterval(112)
                 .build();
-        RepairJobView job2 = new TestUtils.RepairJobBuilder()
+        RepairJobView job2 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withLastRepairedAt(132L)
                 .withRepairInterval(132)
+                .build();
+        RepairJobView job3 = new TestUtils.OnDemandRepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb2")
+                .withCompletedAt(3456L)
                 .build();
 
         TableRepairConfig expectedResponse = new TableRepairConfig(expectedRepairJob);
 
         List<RepairJobView> repairJobViews = Arrays.asList(
                 expectedRepairJob,
-                getOnDemandRepairJobView("ks", "tb"),
+                job3,
                 job1,
                 job2
         );
@@ -587,22 +610,27 @@ public class TestRepairManagementRESTImpl
     {
         Host host = mock(Host.class);
         when(host.getBroadcastAddress()).thenReturn(InetAddress.getLocalHost());
-        RepairJobView job1 = new TestUtils.RepairJobBuilder()
+        RepairJobView job1 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withLastRepairedAt(1234L)
                 .withRepairInterval(11)
                 .build();
-        RepairJobView job2 = new TestUtils.RepairJobBuilder()
+        RepairJobView job2 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb2")
                 .withLastRepairedAt(134L)
                 .withRepairInterval(112)
                 .build();
+        RepairJobView job3 = new TestUtils.OnDemandRepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb2")
+                .withCompletedAt(3456L)
+                .build();
         List<RepairJobView> repairJobViews = Arrays.asList(
                 job1,
                 job2,
-                getOnDemandRepairJobView("ks", "tb")
+                job3
         );
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(repairJobViews);
@@ -638,7 +666,7 @@ public class TestRepairManagementRESTImpl
         long expectedLastRepairedAt = 234;
         long repairInterval = 123;
 
-        RepairJobView repairJobView = new TestUtils.RepairJobBuilder()
+        RepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withLastRepairedAt(expectedLastRepairedAt)

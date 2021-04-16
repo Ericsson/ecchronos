@@ -208,7 +208,7 @@ public class ITOnDemandRepairJob extends TestBase
         schedule(tableReference);
 
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
-                .until(() -> myRepairSchedulerImpl.getCurrentRepairJobs().isEmpty());
+                .until(() -> myRepairSchedulerImpl.getActiveRepairJobs().isEmpty());
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
                 .until(() -> myScheduleManagerImpl.getQueueSize() == 0);
 
@@ -230,7 +230,7 @@ public class ITOnDemandRepairJob extends TestBase
         schedule(tableReference2);
 
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
-                .until(() -> myRepairSchedulerImpl.getCurrentRepairJobs().isEmpty());
+                .until(() -> myRepairSchedulerImpl.getActiveRepairJobs().isEmpty());
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
                 .until(() -> myScheduleManagerImpl.getQueueSize() == 0);
 
@@ -252,7 +252,7 @@ public class ITOnDemandRepairJob extends TestBase
         schedule(tableReference);
 
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
-                .until(() -> myRepairSchedulerImpl.getCurrentRepairJobs().isEmpty());
+                .until(() -> myRepairSchedulerImpl.getActiveRepairJobs().isEmpty());
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
                 .until(() -> myScheduleManagerImpl.getQueueSize() == 0);
 

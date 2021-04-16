@@ -36,7 +36,7 @@ public class TestUtils
     public static RepairStateSnapshot generateRepairStateSnapshot(long lastRepairedAt, VnodeRepairStates vnodeRepairStates)
     {
         return RepairStateSnapshot.newBuilder()
-                .withLastRepairedAt(lastRepairedAt)
+                .withLastCompletedAt(lastRepairedAt)
                 .withVnodeRepairStates(vnodeRepairStates)
                 .withReplicaRepairGroups(Collections.emptyList())
                 .build();
@@ -58,7 +58,7 @@ public class TestUtils
                 .build();
     }
 
-    public static class RepairJobBuilder
+    public static class ScheduledRepairJobBuilder
     {
         private UUID id = UUID.randomUUID();
         private String keyspace;
@@ -72,49 +72,49 @@ public class TestUtils
         private double progress = 0;
         private RepairJobView.Status status = RepairJobView.Status.IN_QUEUE;
 
-        public RepairJobBuilder withId(UUID id)
+        public ScheduledRepairJobBuilder withId(UUID id)
         {
             this.id = id;
             return this;
         }
 
-        public RepairJobBuilder withKeyspace(String keyspace)
+        public ScheduledRepairJobBuilder withKeyspace(String keyspace)
         {
             this.keyspace = keyspace;
             return this;
         }
 
-        public RepairJobBuilder withTable(String table)
+        public ScheduledRepairJobBuilder withTable(String table)
         {
             this.table = table;
             return this;
         }
 
-        public RepairJobBuilder withLastRepairedAt(long lastRepairedAt)
+        public ScheduledRepairJobBuilder withLastRepairedAt(long lastRepairedAt)
         {
             this.lastRepairedAt = lastRepairedAt;
             return this;
         }
 
-        public RepairJobBuilder withRepairInterval(long repairInterval)
+        public ScheduledRepairJobBuilder withRepairInterval(long repairInterval)
         {
             this.repairInterval = repairInterval;
             return this;
         }
 
-        public RepairJobBuilder withVnodeRepairStateSet(Collection<VnodeRepairState> vnodeRepairStateSet)
+        public ScheduledRepairJobBuilder withVnodeRepairStateSet(Collection<VnodeRepairState> vnodeRepairStateSet)
         {
             this.vnodeRepairStateSet = vnodeRepairStateSet;
             return this;
         }
 
-        public RepairJobBuilder withStatus(RepairJobView.Status status)
+        public ScheduledRepairJobBuilder withStatus(RepairJobView.Status status)
         {
             this.status = status;
             return this;
         }
 
-        public RepairJobBuilder withProgress(double progress)
+        public ScheduledRepairJobBuilder withProgress(double progress)
         {
             this.progress = progress;
             return this;
@@ -137,9 +137,73 @@ public class TestUtils
                 vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Sets.newSet(vnodeRepairState)).build();
             }
 
-            return new RepairJobView(id, tableReference(keyspace, table),
+            return new ScheduledRepairJobView(id, tableReference(keyspace, table),
                     generateRepairConfiguration(repairInterval),
                     generateRepairStateSnapshot(lastRepairedAt, vnodeRepairStates), status,progress);
+        }
+    }
+
+    public static class OnDemandRepairJobBuilder
+    {
+        private UUID id = UUID.randomUUID();
+        private String keyspace;
+        private String table;
+        private long completedAt = 0;
+
+        private double progress = 0;
+        private RepairJobView.Status status = RepairJobView.Status.IN_QUEUE;
+		private RepairConfiguration repairConfiguration = RepairConfiguration.DEFAULT;
+
+        public OnDemandRepairJobBuilder withId(UUID id)
+        {
+            this.id = id;
+            return this;
+        }
+
+        public OnDemandRepairJobBuilder withKeyspace(String keyspace)
+        {
+            this.keyspace = keyspace;
+            return this;
+        }
+
+        public OnDemandRepairJobBuilder withTable(String table)
+        {
+            this.table = table;
+            return this;
+        }
+
+        public OnDemandRepairJobBuilder withCompletedAt(long completedAt)
+        {
+            this.completedAt = completedAt;
+            return this;
+        }
+
+        public OnDemandRepairJobBuilder withRepairConfiguration(RepairConfiguration repairConfiguration)
+        {
+            this.repairConfiguration = repairConfiguration;
+            return this;
+        }
+
+        public OnDemandRepairJobBuilder withStatus(RepairJobView.Status status)
+        {
+            this.status = status;
+            return this;
+        }
+
+        public OnDemandRepairJobBuilder withProgress(double progress)
+        {
+            this.progress = progress;
+            return this;
+        }
+
+        public RepairJobView build()
+        {
+            Preconditions.checkNotNull(keyspace, "Keyspace cannot be null");
+            Preconditions.checkNotNull(table, "Table cannot be null");
+            Preconditions.checkArgument(completedAt > 0 || completedAt == -1, "Last repaired not set");
+
+            return new OnDemandRepairJobView(id, tableReference(keyspace, table), repairConfiguration,
+                    status, progress, completedAt);
         }
     }
 

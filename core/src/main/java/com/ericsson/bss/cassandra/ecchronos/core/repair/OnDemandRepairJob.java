@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OngoingJob.Status;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
@@ -60,7 +61,7 @@ public class OnDemandRepairJob extends ScheduledJob
 
     private final OngoingJob myOngoingJob;
 
-    public OnDemandRepairJob(OnDemandRepairJob.Builder builder)
+    private OnDemandRepairJob(OnDemandRepairJob.Builder builder)
     {
         super(builder.configuration, builder.ongoingJob.getJobId());
 
@@ -134,12 +135,26 @@ public class OnDemandRepairJob extends ScheduledJob
 
     public RepairJobView getView()
     {
-        return new RepairJobView(getId(), myOngoingJob.getTableReference(), myRepairConfiguration, null, getStatus(), getProgress());
+        return new OnDemandRepairJobView(
+                getId(),
+                myOngoingJob.getTableReference(),
+                myRepairConfiguration,
+                getStatus(),
+                getProgress(),
+                myOngoingJob.getCompletedTime());
     }
 
     private RepairJobView.Status getStatus()
     {
-        return failed ? RepairJobView.Status.ERROR : RepairJobView.Status.IN_QUEUE;
+        if (failed || myOngoingJob.getStatus() == Status.failed)
+        {
+            return RepairJobView.Status.ERROR;
+        }
+        else if(myOngoingJob.getStatus() == Status.finished)
+        {
+            return RepairJobView.Status.COMPLETED;
+        }
+        return RepairJobView.Status.IN_QUEUE;
     }
 
     @Override
@@ -156,9 +171,11 @@ public class OnDemandRepairJob extends ScheduledJob
             LOG.error("Error running {}", task);
             failed = true;
         }
-
-        Set<LongTokenRange> repairedTokenSet = myTasks.remove(task);
-        myOngoingJob.finishRanges(repairedTokenSet);
+        else
+        {
+            Set<LongTokenRange> repairedTokenSet = myTasks.remove(task);
+            myOngoingJob.finishRanges(repairedTokenSet);
+        }
 
         if (myTasks.isEmpty())
         {
@@ -168,6 +185,7 @@ public class OnDemandRepairJob extends ScheduledJob
 
         if(failed)
         {
+            myOnFinishedHook.accept(getId());
             myOngoingJob.failJob();
         }
 
@@ -206,7 +224,7 @@ public class OnDemandRepairJob extends ScheduledJob
     public double getProgress()
     {
         int finishedTasks = myTotalTasks - myTasks.size();
-        return myTotalTasks == 0 ? 0 : (double) finishedTasks / myTotalTasks;
+        return myTotalTasks == 0 ? 1 : (double) finishedTasks / myTotalTasks;
     }
 
     @Override

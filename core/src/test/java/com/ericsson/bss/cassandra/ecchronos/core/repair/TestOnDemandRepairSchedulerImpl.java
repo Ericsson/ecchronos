@@ -187,9 +187,9 @@ public class TestOnDemandRepairSchedulerImpl
         repairScheduler.scheduleJob(null);
     }
 
-    private void assertTableViewExist(OnDemandRepairScheduler repairScheduler, RepairJobView... expectedViews)
+    private void assertTableViewExist(OnDemandRepairSchedulerImpl repairScheduler, RepairJobView... expectedViews)
     {
-        List<RepairJobView> repairJobViews = repairScheduler.getCurrentRepairJobs();
+        List<RepairJobView> repairJobViews = repairScheduler.getActiveRepairJobs();
         assertThat(repairJobViews).containsExactlyInAnyOrder(expectedViews);
     }
 

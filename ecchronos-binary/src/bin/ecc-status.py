@@ -51,7 +51,7 @@ def print_verbose_repair_job(repair_job, max_lines):
     print(verbose_print_format.format("Table", repair_job.table))
     print(verbose_print_format.format("Status", repair_job.status))
     print(verbose_print_format.format("Repaired(%)", repair_job.get_repair_percentage()))
-    print(verbose_print_format.format("Repaired at", repair_job.get_last_repaired_at()))
+    print(verbose_print_format.format("Completed at", repair_job.get_last_repaired_at()))
     print(verbose_print_format.format("Next repair", repair_job.get_next_repair()))
     print(verbose_print_format.format("Recurring", repair_job.recurring))
 
@@ -93,7 +93,7 @@ def print_summary(repair_jobs):
 def print_repair_jobs(repair_jobs, max_lines):
     repair_jobs_table = list()
     repair_jobs_table.append(["Id", "Keyspace", "Table", "Status", "Repaired(%)",
-                              "Repaired at", "Next repair", "Recurring"])
+                              "Completed at", "Next repair", "Recurring"])
     sorted_repair_jobs = sorted(repair_jobs, key=lambda job: job.last_repaired_at_in_ms)
 
     if max_lines > -1:

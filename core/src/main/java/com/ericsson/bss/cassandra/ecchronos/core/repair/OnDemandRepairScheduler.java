@@ -36,7 +36,7 @@ public interface OnDemandRepairScheduler
     RepairJobView scheduleJob(TableReference tableReference) throws EcChronosException;
 
     /**
-     * @return the list of the currently ongoing repair jobs.
+     * @return the list of all repair jobs.
      */
-    List<RepairJobView> getCurrentRepairJobs();
+    List<RepairJobView> getAllRepairJobs();
 }

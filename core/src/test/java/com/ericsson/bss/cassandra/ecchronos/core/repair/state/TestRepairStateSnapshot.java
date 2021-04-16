@@ -38,13 +38,13 @@ public class TestRepairStateSnapshot
         RepairStateSnapshot repairStateSnapshot = RepairStateSnapshot.newBuilder()
                 .withReplicaRepairGroups(Collections.emptyList())
                 .withVnodeRepairStates(mockVnodeRepairStates)
-                .withLastRepairedAt(VnodeRepairState.UNREPAIRED)
+                .withLastCompletedAt(VnodeRepairState.UNREPAIRED)
                 .build();
 
         assertThat(repairStateSnapshot.canRepair()).isFalse();
         assertThat(repairStateSnapshot.getRepairGroups()).isEmpty();
         assertThat(repairStateSnapshot.getVnodeRepairStates()).isEqualTo(mockVnodeRepairStates);
-        assertThat(repairStateSnapshot.lastRepairedAt()).isEqualTo(VnodeRepairState.UNREPAIRED);
+        assertThat(repairStateSnapshot.lastCompletedAt()).isEqualTo(VnodeRepairState.UNREPAIRED);
     }
 
     @Test
@@ -53,13 +53,13 @@ public class TestRepairStateSnapshot
         RepairStateSnapshot repairStateSnapshot = RepairStateSnapshot.newBuilder()
                 .withReplicaRepairGroups(Collections.singletonList(mockRepairGroup))
                 .withVnodeRepairStates(mockVnodeRepairStates)
-                .withLastRepairedAt(VnodeRepairState.UNREPAIRED)
+                .withLastCompletedAt(VnodeRepairState.UNREPAIRED)
                 .build();
 
         assertThat(repairStateSnapshot.canRepair()).isTrue();
         assertThat(repairStateSnapshot.getRepairGroups()).containsExactly(mockRepairGroup);
         assertThat(repairStateSnapshot.getVnodeRepairStates()).isEqualTo(mockVnodeRepairStates);
-        assertThat(repairStateSnapshot.lastRepairedAt()).isEqualTo(VnodeRepairState.UNREPAIRED);
+        assertThat(repairStateSnapshot.lastCompletedAt()).isEqualTo(VnodeRepairState.UNREPAIRED);
     }
 
     @Test
@@ -68,12 +68,12 @@ public class TestRepairStateSnapshot
         RepairStateSnapshot repairStateSnapshot = RepairStateSnapshot.newBuilder()
                 .withReplicaRepairGroups(Collections.emptyList())
                 .withVnodeRepairStates(mockVnodeRepairStates)
-                .withLastRepairedAt(1234L)
+                .withLastCompletedAt(1234L)
                 .build();
 
         assertThat(repairStateSnapshot.canRepair()).isFalse();
         assertThat(repairStateSnapshot.getRepairGroups()).isEmpty();
         assertThat(repairStateSnapshot.getVnodeRepairStates()).isEqualTo(mockVnodeRepairStates);
-        assertThat(repairStateSnapshot.lastRepairedAt()).isEqualTo(1234L);
+        assertThat(repairStateSnapshot.lastCompletedAt()).isEqualTo(1234L);
     }
 }
