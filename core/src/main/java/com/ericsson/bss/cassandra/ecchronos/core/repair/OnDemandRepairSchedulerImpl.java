@@ -81,7 +81,6 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
             try
             {
                 ongoingJobs = myOnDemandStatus.getOngoingJobs(myReplicationState);
-                LOG.info("Fetched ongoing ondemand jobs at startup");
                 ongoingJobs.forEach(j -> scheduleOngoingJob(j));
                 done = true;
             }

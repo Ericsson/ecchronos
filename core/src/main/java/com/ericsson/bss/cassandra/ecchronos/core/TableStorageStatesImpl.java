@@ -144,7 +144,6 @@ public class TableStorageStatesImpl implements TableStorageStates, Closeable
     {
         if (myJmxProxyFactory != null)
         {
-            LOG.debug("Updating table states");
             try (JmxProxy jmxProxy = myJmxProxyFactory.connect())
             {
                 myTableSizes.set(getTableSizes(jmxProxy));
