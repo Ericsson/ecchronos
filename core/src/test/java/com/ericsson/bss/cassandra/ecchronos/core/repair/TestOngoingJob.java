@@ -230,7 +230,7 @@ public class TestOngoingJob
                 .withOnDemandStatus(myOnDemandStatus)
                 .withReplicationState(myReplicationState)
                 .withTableReference(myTableReference)
-                .withOngoingJobInfo(jobId, myTokenMap.hashCode(), repiaredTokens, Status.started, null)
+                .withOngoingJobInfo(jobId, myTokenMap.keySet().hashCode(), repiaredTokens, Status.started, null)
                 .build();
 
         boolean result = ongoingJob.hasTopologyChanged();
@@ -251,7 +251,7 @@ public class TestOngoingJob
                 .withOnDemandStatus(myOnDemandStatus)
                 .withReplicationState(myReplicationState)
                 .withTableReference(myTableReference)
-                .withOngoingJobInfo(jobId, myTokenMap.hashCode() - 1, repiaredTokens, Status.started, null)
+                .withOngoingJobInfo(jobId, myTokenMap.keySet().hashCode() - 1, repiaredTokens, Status.started, null)
                 .build();
 
         boolean result = ongoingJob.hasTopologyChanged();
