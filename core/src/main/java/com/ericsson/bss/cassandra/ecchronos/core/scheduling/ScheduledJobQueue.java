@@ -137,17 +137,18 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
             {
                 ScheduledJob job = myBaseIterator.next();
 
-                if (job.getState() == ScheduledJob.State.FAILED)
+                ScheduledJob.State state = job.getState();
+                if (state == ScheduledJob.State.FAILED)
                 {
                     LOG.error("{} failed, descheduling", job);
                     ScheduledJobQueue.this.remove(job);
                 }
-                else if (job.getState() == ScheduledJob.State.FINISHED)
+                else if (state == ScheduledJob.State.FINISHED)
                 {
                     LOG.debug("{} completed, descheduling", job);
                     ScheduledJobQueue.this.remove(job);
                 }
-                else if (job.getState() != ScheduledJob.State.PARKED)
+                else if (state != ScheduledJob.State.PARKED)
                 {
                     LOG.debug("Retrieving job: {}, Priority: {}", job, job.getPriority());
                     return job;

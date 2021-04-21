@@ -181,6 +181,7 @@ public class OnDemandRepairJob extends ScheduledJob
         {
             myOnFinishedHook.accept(getId());
             myOngoingJob.finishJob();
+            LOG.info("Completed {}", task);
         }
 
         if(failed)

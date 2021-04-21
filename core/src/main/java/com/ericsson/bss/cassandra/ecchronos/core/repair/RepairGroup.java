@@ -71,7 +71,7 @@ public class RepairGroup extends ScheduledTask
     @Override
     public boolean execute()
     {
-        LOG.info("Table {} running repair job {}", myTableReference, myReplicaRepairGroup);
+        LOG.debug("Table {} running repair job {}", myTableReference, myReplicaRepairGroup);
         boolean successful = true;
 
         for (RepairTask repairTask : getRepairTasks())

@@ -184,7 +184,7 @@ public class ECChronosInternals implements Closeable
         @Override
         public void repairState(TableReference tableReference, int repairedRanges, int notRepairedRanges)
         {
-            LOG.debug("Updated repair state of {}, {}/{} repaired ranges", tableReference, repairedRanges, notRepairedRanges);
+            LOG.trace("Updated repair state of {}, {}/{} repaired ranges", tableReference, repairedRanges, notRepairedRanges);
         }
 
         @Override

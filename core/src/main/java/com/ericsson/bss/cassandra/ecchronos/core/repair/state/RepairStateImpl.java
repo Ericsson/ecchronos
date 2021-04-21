@@ -82,12 +82,12 @@ public class RepairStateImpl implements RepairState
                 int repairedRanges = newRepairStateSnapshot.getVnodeRepairStates().getVnodeRepairStates().size() - nonRepairedRanges;
                 myTableRepairMetrics.repairState(myTableReference, repairedRanges, nonRepairedRanges);
 
-                LOG.debug("Table {} switched to repair state {}", myTableReference, newRepairStateSnapshot);
+                LOG.trace("Table {} switched to repair state {}", myTableReference, newRepairStateSnapshot);
             }
         }
         else
         {
-            LOG.debug("Table {} keeping repair state {}", myTableReference, oldRepairStateSnapshot);
+            LOG.trace("Table {} keeping repair state {}", myTableReference, oldRepairStateSnapshot);
         }
         myPostUpdateHook.postUpdate(myRepairStateSnapshot.get());
     }
@@ -128,7 +128,7 @@ public class RepairStateImpl implements RepairState
     private long calculateRepairedAt(VnodeRepairStates vnodeRepairStates)
     {
         RepairedAt repairedAt = RepairedAt.generate(vnodeRepairStates);
-        LOG.debug("RepairedAt: {}, calculated from: {}", repairedAt, vnodeRepairStates);
+        LOG.trace("RepairedAt: {}, calculated from: {}", repairedAt, vnodeRepairStates);
 
         long calculatedRepairedAt;
 
@@ -192,7 +192,7 @@ public class RepairStateImpl implements RepairState
         {
             if (!myHostStates.isUp(node))
             {
-                LOG.debug("{} not repairable, host {} is not up", vnodeRepairState, node);
+                LOG.trace("{} not repairable, host {} is not up", vnodeRepairState, node);
                 return false;
             }
         }
