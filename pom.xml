@@ -82,7 +82,7 @@
         <jcip.version>1.0</jcip.version>
         <junitparams.version>1.1.1</junitparams.version>
         <equalsverifier.version>3.5</equalsverifier.version>
-        <org.springframework.boot.version>2.4.3</org.springframework.boot.version>
+        <org.springframework.boot.version>2.4.4</org.springframework.boot.version>
 
         <!-- Plugin versions -->
         <org.apache.maven.plugins.maven-compiler-plugin.version>3.8.0</org.apache.maven.plugins.maven-compiler-plugin.version>
