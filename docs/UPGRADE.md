@@ -2,7 +2,7 @@
 
 ## From 2.0.0
 
-A new table has been added to the table `ecchronos.on_demand_repair_status`, this must be added before upgrading.
+A new column has been added to the table `ecchronos.on_demand_repair_status`, this must be added before upgrading.
 
 The command to add the column is shown below:
 ```
@@ -13,7 +13,7 @@ Note: Make sure that you create the column with the cql_type timestamp since its
 
 ## From versions before 2.0.0
 
-A new column has been introduced and must be present before upgrading.
+A new table has been introduced and must be present before upgrading.
 
 The required table is shown below:
 ```
