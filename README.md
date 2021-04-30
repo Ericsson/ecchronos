@@ -26,6 +26,10 @@ More details on the underlying infrastructure can be found in [ARCHITECTURE.md](
 
 Installation instructions can be found in [SETUP.md](docs/SETUP.md).
 
+### Upgrade
+
+Upgrade instructions can be found in [UPGRADE.md](docs/UPGRADE.md).
+
 ## Contributing
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, development, and the process for submitting pull requests to us.
