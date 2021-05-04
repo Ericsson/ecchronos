@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.fm.impl;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
@@ -26,16 +27,23 @@ import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 public class LoggingFaultReporter implements RepairFaultReporter
 {
     private static final Logger LOG = LoggerFactory.getLogger(LoggingFaultReporter.class);
+    Map<Integer, FaultCode> alarms = new HashMap<>();
 
     @Override
     public void raise(FaultCode faultCode, Map<String, Object> data)
     {
+        alarms.put(data.hashCode(), faultCode);
         LOG.error("Raising alarm: {} - {}", faultCode, data);
     }
 
     @Override
     public void cease(FaultCode faultCode, Map<String, Object> data)
     {
-        LOG.info("Ceasing alarm: {} - {}", faultCode, data);
+        FaultCode code = alarms.get(data.hashCode());
+        if (code != null)
+        {
+            LOG.info("Ceasing alarm: {} - {}", code , data);
+            alarms.remove(data.hashCode(), code);
+        }
     }
 }

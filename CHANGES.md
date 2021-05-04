@@ -2,6 +2,7 @@
 
 ## Version 1.0.8
 
+* Improve Alarm logging - Issue #191
 * Locks get stuck when unexpected exception occurs - Issue #177
 
 ## Version 1.0.7
