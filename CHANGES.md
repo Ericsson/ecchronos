@@ -4,6 +4,10 @@
 
 * Repairs not scheduled when statistics disabled - Issue #175
 
+### Merged from 1.0
+
+* Improve Alarm logging - Issue #191
+
 ## Version 1.2.0
 
 ### Merged from 1.0
