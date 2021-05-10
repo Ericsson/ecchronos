@@ -177,20 +177,26 @@ public class OnDemandRepairJob extends ScheduledJob
             myOngoingJob.finishRanges(repairedTokenSet);
         }
 
+        super.postExecute(successful, task);
+    }
+
+    @Override
+    public void finishJob()
+    {
+        UUID id = getId();
         if (myTasks.isEmpty())
         {
-            myOnFinishedHook.accept(getId());
+            myOnFinishedHook.accept(id);
             myOngoingJob.finishJob();
-            LOG.info("Completed {}", task);
+            LOG.info("Completed On Demand Repair: {}", id);
         }
 
-        if(failed)
+        if (failed)
         {
             myOnFinishedHook.accept(getId());
             myOngoingJob.failJob();
+            LOG.error("Failed On Demand Repair: {}", id);
         }
-
-        super.postExecute(successful, task);
     }
 
     @Override

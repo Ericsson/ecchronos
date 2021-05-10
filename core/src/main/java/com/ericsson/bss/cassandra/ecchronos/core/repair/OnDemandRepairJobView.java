@@ -43,6 +43,6 @@ public class OnDemandRepairJobView extends RepairJobView
     @Override
     public Boolean isRecurring()
     {
-        return true;
+        return false;
     }
 }
