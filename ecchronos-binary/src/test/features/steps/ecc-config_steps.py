@@ -56,7 +56,7 @@ def step_init(context):
 def step_list_tables(context):
     run_ecc_config(context, [])
 
-    output_data = context.out.lstrip().rstrip().split('\n')
+    output_data = context.out.decode().lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
     context.rows = output_data[3:]
     pass
@@ -66,7 +66,7 @@ def step_list_tables(context):
 def step_list_tables_for_keyspace(context, keyspace, table):
     run_ecc_config(context, [keyspace, table])
 
-    output_data = context.out.lstrip().rstrip().split('\n')
+    output_data = context.out.decode().lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
     context.rows = output_data[3:]
     pass
@@ -76,7 +76,7 @@ def step_list_tables_for_keyspace(context, keyspace, table):
 def step_list_tables_for_keyspace(context, keyspace):
     run_ecc_config(context, [keyspace])
 
-    output_data = context.out.lstrip().rstrip().split('\n')
+    output_data = context.out.decode().lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
     context.rows = output_data[3:]
     pass
@@ -84,9 +84,9 @@ def step_list_tables_for_keyspace(context, keyspace):
 @when(u'we list a specific config for keyspace {keyspace} and table {table}')
 def step_list_specific_config(context, keyspace, table):
     run_ecc_config(context, [keyspace, table])
-    id = re.search('[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}', context.out).group(0)
+    id = re.search('[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}', context.out.decode()).group(0)
     run_ecc_config(context, ['--id', id])
-    output_data = context.out.lstrip().rstrip().split('\n')
+    output_data = context.out.decode().lstrip().rstrip().split('\n')
 
     context.header = output_data[0:3]
     context.rows = output_data[3:]
