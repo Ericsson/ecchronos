@@ -197,6 +197,7 @@ public class OnDemandRepairJob extends ScheduledJob
             myOngoingJob.failJob();
             LOG.error("Failed On Demand Repair: {}", id);
         }
+        super.finishJob();
     }
 
     @Override
