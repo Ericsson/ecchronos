@@ -68,6 +68,11 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     }
 
     /**
+     * This method gets run after the job is removed from the Queue. It will run whether the job fails or succeeds.
+     */
+    protected void finishJob() {}
+
+    /**
      * Set the job to be runnable again after the given delay has elapsed.
      *
      * @param delay

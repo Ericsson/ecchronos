@@ -42,6 +42,6 @@ public class ScheduledRepairJobView extends RepairJobView
     @Override
     public Boolean isRecurring()
     {
-        return false;
+        return true;
     }
 }

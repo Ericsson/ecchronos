@@ -102,7 +102,7 @@ public class OngoingJob
     public boolean hasTopologyChanged()
     {
     	return !myTokens.equals(myReplicationState.getTokenRangeToReplicas(myTableReference))
-                || (myTokenHash != null && (myTokenHash != myTokens.keySet().hashCode() || myTokenHash != myTokens.hashCode()));
+                || (myTokenHash != null && (myTokenHash != myTokens.keySet().hashCode() && myTokenHash != myTokens.hashCode()));
     }
 
     public void finishJob()
