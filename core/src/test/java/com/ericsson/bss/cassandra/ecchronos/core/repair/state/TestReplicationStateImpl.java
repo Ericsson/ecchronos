@@ -82,7 +82,6 @@ public class TestReplicationStateImpl
         when(mockReplica1.getBroadcastAddress()).thenReturn(address1);
         when(mockReplica2.getBroadcastAddress()).thenReturn(address2);
         when(mockReplica3.getBroadcastAddress()).thenReturn(address3);
-        when(mockReplica4.getBroadcastAddress()).thenReturn(address1);
 
         UUID uuid = UUID.randomUUID();
 		when(mockReplica1.getHostId()).thenReturn(uuid);
