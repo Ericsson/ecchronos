@@ -13,117 +13,93 @@
 # limitations under the License.
 #
 
-from behave import given, when, then, step
 import os
 import re
 from subprocess import Popen, PIPE
-
+from behave import given, when, then  # pylint: disable=no-name-in-module
+from ecc_step_library.common_steps import match_and_remove_row, validate_header, validate_last_table_row
 
 NAME_PATTERN = r'[a-zA-Z0-9]+'
 DURATION_PATTERN = r'\d+ day\(s\) \d+h \d+m \d+s'
 UNWIND_RATIO_PATTERN = r'\d+[.]\d+'
+ID_PATTERN = r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
+
+CONFIG_HEADER = r'| Id | Keyspace | Table | Interval | Parallelism | Unwind ratio | Warning time | Error time |'
 
 
 def run_ecc_config(context, params):
     cmd = [context.config.userdata.get("ecc-config")] + params
-    context.proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
-    (context.out, context.err) = context.proc.communicate()
+    with Popen(cmd, stdout=PIPE, stderr=PIPE) as context.proc:
+        (context.out, context.err) = context.proc.communicate()
 
 
 def table_row(keyspace, table):
     return table_pattern(keyspace, table)
 
 
-def table_pattern(keyspace=NAME_PATTERN, table=NAME_PATTERN, interval=DURATION_PATTERN, unwind_ratio=UNWIND_RATIO_PATTERN,
-                  warn_time=DURATION_PATTERN, error_time=DURATION_PATTERN):
-    return r'\| .* \| {keyspace} \| {table} \| {interval} \| PARALLEL | {unwind} \| {warn} \| {error} \|'\
+def table_pattern(keyspace=NAME_PATTERN,  # pylint: disable=too-many-arguments
+                  table=NAME_PATTERN,
+                  interval=DURATION_PATTERN,
+                  unwind_ratio=UNWIND_RATIO_PATTERN,
+                  warn_time=DURATION_PATTERN,
+                  error_time=DURATION_PATTERN):
+    return r'\| .* \| {keyspace} \| {table} \| {interval} \| PARALLEL \| {unwind} \| {warn} \| {error} \|'\
         .format(keyspace=keyspace, table=table, interval=interval, unwind=unwind_ratio,
                 warn=warn_time, error=error_time)
-
-
-def strip_and_collapse(line):
-    return re.sub(' +', ' ', line.rstrip().lstrip())
 
 
 @given(u'we have access to ecc-config')
 def step_init(context):
     assert context.config.userdata.get("ecc-config") is not False
     assert os.path.isfile(context.config.userdata.get("ecc-config"))
-    pass
 
 
 @when(u'we list config')
-def step_list_tables(context):
+def step_list_configs(context):
     run_ecc_config(context, [])
 
-    output_data = context.out.decode().lstrip().rstrip().split('\n')
+    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
     context.rows = output_data[3:]
-    pass
 
 
 @when(u'we list config for keyspace {keyspace} and table {table}')
-def step_list_tables_for_keyspace(context, keyspace, table):
+def step_list_config_for_table(context, keyspace, table):
     run_ecc_config(context, [keyspace, table])
 
-    output_data = context.out.decode().lstrip().rstrip().split('\n')
+    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
     context.rows = output_data[3:]
-    pass
 
 
 @when(u'we list config for keyspace {keyspace}')
-def step_list_tables_for_keyspace(context, keyspace):
+def step_list_configs_for_keyspace(context, keyspace):
     run_ecc_config(context, [keyspace])
 
-    output_data = context.out.decode().lstrip().rstrip().split('\n')
+    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
     context.rows = output_data[3:]
-    pass
 
 @when(u'we list a specific config for keyspace {keyspace} and table {table}')
 def step_list_specific_config(context, keyspace, table):
     run_ecc_config(context, [keyspace, table])
-    id = re.search('[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}', context.out.decode()).group(0)
-    run_ecc_config(context, ['--id', id])
-    output_data = context.out.decode().lstrip().rstrip().split('\n')
+    job_id = re.search(ID_PATTERN, context.out.decode('ascii')).group(0)
+    run_ecc_config(context, ['--id', job_id])
+    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
 
     context.header = output_data[0:3]
     context.rows = output_data[3:]
-    pass
 
 
 @then(u'the config output should contain a valid header')
 def step_validate_list_tables_header(context):
-    header = context.header
-
-    assert len(header) == 3, header
-
-    assert header[0] == len(header[0]) * header[0][0], header[0]  # -----
-
-    header[1] = strip_and_collapse(header[1])
-    assert header[1] == "| Id | Keyspace | Table | Interval | Parallelism | Unwind ratio | Warning time | Error time |", header[1]
-
-    assert header[2] == len(header[2]) * header[2][0], header[2]  # -----
-    pass
+    validate_header(context.header, CONFIG_HEADER)
 
 
 @then(u'the config output should contain a row for {keyspace}.{table}')
 def step_validate_list_tables_row(context, keyspace, table):
     expected_row = table_row(keyspace, table)
-
-    found_row = -1
-
-    for idx, row in enumerate(context.rows):
-        row = strip_and_collapse(row)
-        if re.match(expected_row, row):
-            found_row = int(idx)
-            break
-
-    assert found_row != -1, "{0} not found in {1}".format(expected_row, context.rows)
-    context.last_row = strip_and_collapse(context.rows[found_row])
-    del context.rows[found_row]
-    pass
+    context.last_row = match_and_remove_row(context.rows, expected_row)
 
 
 @then(u'the repair interval is {interval}')
@@ -164,9 +140,4 @@ def step_validate_error_time(context, error_time):
 
 @then(u'the config output should not contain more rows')
 def step_validate_list_rows_clear(context):
-    rows = context.rows
-
-    assert len(rows) == 1, "Expecting last element to be '---' in {0}".format(rows)
-    assert rows[0] == len(rows[0]) * rows[0][0], rows[0]  # -----
-    assert len(rows) == 1, "{0} not empty".format(rows)
-    pass
+    validate_last_table_row(context.rows)

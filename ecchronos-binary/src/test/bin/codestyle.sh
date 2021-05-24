@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2019 Telefonaktiebolaget LM Ericsson
+# Copyright 2020 Telefonaktiebolaget LM Ericsson
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,29 @@
 # limitations under the License.
 #
 
-TEST_DIR=$(cd $(dirname $0) ; pwd -P)
-VENV_DIR="$TEST_DIR"/venv
-PIDFILE="$TEST_DIR"/ecc.pid
+source variables.sh
+
+echo "Installing virtualenv"
+
+# Install virtualenv and pylint
+if [ -z "${CI}" ]; then
+  pip install --user virtualenv
+  virtualenv "$VENV_DIR"
+  source "$VENV_DIR"/bin/activate
+fi
+
+echo "Installing pylint"
+
+pip install pylint
+
+echo "Installing behave dependencies"
+
+pip install behave
+pip install requests
+pip install jsonschema
+
+for directory in "$@"
+do
+  echo "Running pylint for $directory"
+  pylint "$directory" || exit 1
+done

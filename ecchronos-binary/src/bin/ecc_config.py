@@ -16,21 +16,22 @@
 # limitations under the License.
 #
 
+from __future__ import print_function
 from argparse import ArgumentParser
 import os
 import sys
 try:
     from ecchronoslib import rest, table_formatter
 except ImportError:
-    script_dir = os.path.dirname(__file__)
-    lib_dir = os.path.join(script_dir, "..", "pylib")
-    sys.path.append(lib_dir)
+    SCRIPT_DIR = os.path.dirname(__file__)
+    LIB_DIR = os.path.join(SCRIPT_DIR, "..", "pylib")
+    sys.path.append(LIB_DIR)
     from ecchronoslib import rest, table_formatter
 
 
 def convert_config(config):
     entry = list()
-    entry.append(config.id)
+    entry.append(config.job_id)
     entry.append(config.keyspace)
     entry.append(config.table)
     entry.append(config.get_repair_interval())
@@ -44,8 +45,9 @@ def convert_config(config):
 
 def print_table_config(config_data):
     config_table = list()
-    config_table.append(["Id", "Keyspace", "Table", "Interval", "Parallelism", "Unwind ratio", "Warning time", "Error time"])
-    if type(config_data) is list:
+    config_table.append(["Id", "Keyspace", "Table", "Interval",
+                         "Parallelism", "Unwind ratio", "Warning time", "Error time"])
+    if isinstance(config_data, list):
         sorted_config_data = sorted(config_data, key=lambda config: (config.keyspace, config.table))
         for config in sorted_config_data:
             if config.is_valid():
@@ -76,9 +78,9 @@ def main():
     if arguments.id:
         if arguments.keyspace or arguments.table:
             print("id must be specified alone")
-            exit(1)
+            sys.exit(1)
         else:
-            result = request.get(id=arguments.id)
+            result = request.get(job_id=arguments.id)
     else:
         result = request.list(keyspace=arguments.keyspace, table=arguments.table)
 

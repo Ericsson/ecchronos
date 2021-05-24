@@ -19,9 +19,11 @@ source variables.sh
 echo "Installing virtualenv"
 
 # Install virtualenv and behave
-pip install --user virtualenv
-virtualenv "$VENV_DIR"
-source "$VENV_DIR"/bin/activate
+if [ -z "${CI}" ]; then
+  pip install --user virtualenv
+  virtualenv "$VENV_DIR"
+  source "$VENV_DIR"/bin/activate
+fi
 
 echo "Installing behave"
 
@@ -29,7 +31,7 @@ pip install behave
 pip install requests
 pip install jsonschema
 
-BASE_DIR="$CURRENT_DIR"/ecchronos-binary-${project.version}
+BASE_DIR="$TEST_DIR"/ecchronos-binary-${project.version}
 CONF_DIR="$BASE_DIR"/conf
 PYLIB_DIR="$BASE_DIR"/pylib
 
@@ -120,7 +122,7 @@ done
 
 echo "Starting behave"
 
-cd "$TEMP_DIR"
+cd "$TEST_DIR"
 
 behave --define ecc-status="$BASE_DIR"/bin/ecc-status --define ecc-config="$BASE_DIR"/bin/ecc-config
 RETURN=$?
