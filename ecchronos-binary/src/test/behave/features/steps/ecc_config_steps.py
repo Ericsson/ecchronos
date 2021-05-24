@@ -29,7 +29,7 @@ CONFIG_HEADER = r'| Id | Keyspace | Table | Interval | Parallelism | Unwind rati
 
 def run_ecc_config(context, params):
     cmd = [context.config.userdata.get("ecc-config")] + params
-    with Popen(cmd, stdout=PIPE, stderr=PIPE) as context.proc:
+    with Popen(cmd, stdout=PIPE, stderr=PIPE) as context.proc: # pylint: disable=not-context-manager
         (context.out, context.err) = context.proc.communicate()
 
 
