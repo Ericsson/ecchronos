@@ -30,8 +30,8 @@ TABLE_HEADER = r'| Id | Keyspace | Table | Status | Repaired(%) | Completed at |
 
 def run_ecc_status(context, params):
     cmd = [context.config.userdata.get("ecc-status")] + params
-    with Popen(cmd, stdout=PIPE, stderr=PIPE) as context.proc: # pylint: disable=not-context-manager
-        (context.out, context.err) = context.proc.communicate()
+    context.proc = Popen(cmd, stdout=PIPE, stderr=PIPE) # pylint: disable=consider-using-with
+    (context.out, context.err) = context.proc.communicate()
 
 
 def table_row(keyspace, table):

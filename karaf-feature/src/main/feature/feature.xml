@@ -11,8 +11,10 @@
         <bundle>mvn:io.netty/netty-buffer/${io.netty.version}</bundle>
         <bundle>mvn:io.netty/netty-handler/${io.netty.version}</bundle>
         <bundle>mvn:io.netty/netty-codec/${io.netty.version}</bundle>
+        <bundle>mvn:io.netty/netty-resolver/${io.netty.version}</bundle>
         <bundle>mvn:io.dropwizard.metrics/metrics-core/${io.dropwizard.metrics.version}</bundle>
         <bundle>mvn:com.datastax.cassandra/cassandra-driver-core/${cassandra.driver.core.version}</bundle>
+        <bundle>mvn:com.datastax.cassandra/cassandra-driver-extras/${cassandra.driver.core.version}</bundle>
         <bundle>mvn:com.google.guava/guava/${guava.version}</bundle>
         <bundle>mvn:com.fasterxml.jackson.core/jackson-core/${com.fasterxml.jackson.version}</bundle>
         <bundle>mvn:com.fasterxml.jackson.core/jackson-annotations/${com.fasterxml.jackson.version}</bundle>
