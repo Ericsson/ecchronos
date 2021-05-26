@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<features xmlns="http://karaf.apache.org/xmlns/features/v1.2.1" name="karaf-feature">
+    <feature name="karaf-feature" description="karaf-feature" version="${project.version}">
+        <details>Utility module creating a feature file for OSGi</details>
+        <bundle>mvn:com.ericsson.bss.cassandra.ecchronos/fm/${project.version}</bundle>
+        <bundle>mvn:com.ericsson.bss.cassandra.ecchronos/connection/${project.version}</bundle>
+        <bundle>mvn:com.ericsson.bss.cassandra.ecchronos/core/${project.version}</bundle>
+        <bundle>mvn:com.ericsson.bss.cassandra.ecchronos/core.osgi/${project.version}</bundle>
+        <bundle>mvn:io.netty/netty-common/${io.netty.version}</bundle>
+        <bundle>mvn:io.netty/netty-transport/${io.netty.version}</bundle>
+        <bundle>mvn:io.netty/netty-buffer/${io.netty.version}</bundle>
+        <bundle>mvn:io.netty/netty-handler/${io.netty.version}</bundle>
+        <bundle>mvn:io.netty/netty-codec/${io.netty.version}</bundle>
+        <bundle>mvn:io.netty/netty-resolver/${io.netty.version}</bundle>
+        <bundle>mvn:io.dropwizard.metrics/metrics-core/${io.dropwizard.metrics.version}</bundle>
+        <bundle>mvn:com.datastax.cassandra/cassandra-driver-core/${cassandra.driver.core.version}</bundle>
+        <bundle>mvn:com.datastax.cassandra/cassandra-driver-extras/${cassandra.driver.core.version}</bundle>
+        <bundle>mvn:com.google.guava/guava/${guava.version}</bundle>
+        <bundle>mvn:com.fasterxml.jackson.core/jackson-core/${com.fasterxml.jackson.version}</bundle>
+        <bundle>mvn:com.fasterxml.jackson.core/jackson-annotations/${com.fasterxml.jackson.version}</bundle>
+        <bundle>mvn:com.fasterxml.jackson.core/jackson-databind/${com.fasterxml.jackson.version}</bundle>
+    </feature>
+</features>

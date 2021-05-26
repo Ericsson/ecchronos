@@ -31,7 +31,9 @@ def parse_interval(time_in_ms):
     return "{0:2d} day(s) {1:02d}h {2:02d}m {3:02d}s".format(days, hours, minutes, seconds)
 
 
-class VnodeState:
+class VnodeState(object):
+    # pylint: disable=too-few-public-methods
+
     def __init__(self, data):
         self.start_token = data["startToken"] if "startToken" in data else "UNKNOWN"
         self.end_token = data["endToken"] if "endToken" in data else "UNKNOWN"
@@ -43,7 +45,9 @@ class VnodeState:
         return datetime.datetime.fromtimestamp(self.last_repaired_at_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
 
 
-class RepairJob:
+class RepairJob(object):
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(self, data):
         self.keyspace = data["keyspace"] if "keyspace" in data else "<UNKNOWN>"
         self.table = data["table"] if "table" in data else "<UNKNOWN>"
@@ -52,7 +56,7 @@ class RepairJob:
         self.status = data["status"] if "status" in data else "<UNKNOWN>"
         self.next_repair_in_ms = int(data["nextRepairInMs"] if "nextRepairInMs" in data else -1)
         self.recurring = data["recurring"] if "recurring" in data else "<UNKNOWN>"
-        self.id = data["id"] if "id" in data else "<UNKNOWN>"
+        self.job_id = data["id"] if "id" in data else "<UNKNOWN>"
 
     def is_valid(self):
         return self.keyspace != "<UNKNOWN>"
@@ -80,9 +84,11 @@ class VerboseRepairJob(RepairJob):
                 self.vnode_states.append(VnodeState(vnode_data))
 
 
-class TableConfig:
+class TableConfig(object):
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(self, data):
-        self.id = data["id"] if "id" in data else "<UNKNOWN>"
+        self.job_id = data["id"] if "id" in data else "<UNKNOWN>"
         self.keyspace = data["keyspace"] if "keyspace" in data else "<UNKNOWN>"
         self.table = data["table"] if "table" in data else "<UNKNOWN>"
         self.repair_interval_in_ms = int(data["repairIntervalInMs"] if "repairIntervalInMs" in data else 0)
@@ -102,4 +108,3 @@ class TableConfig:
 
     def get_repair_error_time(self):
         return parse_interval(self.repair_error_time_in_ms)
-

@@ -13,6 +13,8 @@
 # limitations under the License.
 #
 
+from __future__ import print_function
+
 
 def calculate_max_len(data, i):
     max_len = 0
