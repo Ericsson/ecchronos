@@ -17,3 +17,6 @@ max-line-length=120
 good-names=
   e,
   i
+
+[TYPECHECK]
+disable=bad-option-value
