@@ -4,12 +4,14 @@
 
 The REST interface for the repair scheduler is located under the path `<host>/repair-management/v1/`.
 
-The interface is only exposing state and configuration for scheduled tables.
+The interface is exposing state and configuration for scheduled tables and allows triggering manual repairs.
 
 
 ### Resources
 
 * &lt;host&gt;/repair-management/v1/status
+  - Valid verbs: GET
+* &lt;host&gt;/repair-management/v1/status/ids/&lt;id&gt;
   - Valid verbs: GET
 * &lt;host&gt;/repair-management/v1/status/keyspaces/&lt;keyspace&gt;
   - Valid verbs: GET
@@ -17,15 +19,19 @@ The interface is only exposing state and configuration for scheduled tables.
   - Valid verbs: GET
 * &lt;host&gt;/repair-management/v1/config
   - Valid verbs: GET
+* &lt;host&gt;/repair-management/v1/config/ids/&lt;id&gt;
+  - Valid verbs: GET
 * &lt;host&gt;/repair-management/v1/config/keyspaces/&lt;keyspace&gt;
   - Valid verbs: GET
 * &lt;host&gt;/repair-management/v1/config/keyspaces/&lt;keyspace&gt;/tables/&lt;table&gt;
   - Valid verbs: GET
+* &lt;host&gt;/repair-management/v1/schedule/keyspaces/&lt;keyspace&gt;/tables/&lt;table&gt;
+  - Valid verbs: POST
 
 
 ### Get specific table repair status
 
-When performing GET on `<host>/repair-management/v1/status/keyspaces/mykeyspace/tables/mytable` a JSON object of the [RepairJob](../ecchronos-binary/src/test/features/repair_job.json) type will be returned.
+When performing GET on `<host>/repair-management/v1/status/keyspaces/mykeyspace/tables/mytable` or a GET on `<host>/repair-management/v1/status/ids/d53c2490-548a-11ea-8366-d174199d777a` a JSON object of the [RepairJob](../ecchronos-binary/src/test/features/repair_job.json) type will be returned.
 
 *Note: The field virtualNodeStates will only be used when showing a specific table.
 When listing multiple table repair jobs the field will not be used.*
@@ -44,7 +50,11 @@ When performing GET on `<host>/repair-management/v1/config` a [JSON list of Repa
 
 When performing GET on `<host>/repair-management/v1/config/keyspaces/mykeyspace` a JSON list of RepairConfig for the keyspace "mykeyspace" will be returned.
 
-When performing GET on `<host>/repair-management/v1/config/keyspaces/mykeyspace/tables/mytable` a JSON object of the [RepairConfig](../ecchronos-binary/src/test/features/repair_config.json) type will be returned.
+When performing GET on `<host>/repair-management/v1/config/keyspaces/mykeyspace/tables/mytable` or `<host>/repair-management/v1/config/ids/d53c2490-548a-11ea-8366-d174199d777a` a JSON object of the [RepairConfig](../ecchronos-binary/src/test/features/repair_config.json) type will be returned.
+
+### Schedule table repair
+
+When performing POST on `<host>/repair-management/v1/schedule/keyspaces/mykeyspace/tables/mytable` a JSON object of the [RepairJob](../ecchronos-binary/src/test/features/repair_job.json) type will be returned.
 
 
 ### Types
@@ -53,6 +63,7 @@ RepairJob:
 
 | Key                    | Type                   | Example value                           | Optional  |
 |------------------------|------------------------|-----------------------------------------|-----------|
+| id                     | UUID                   | d53c2490-548a-11ea-8366-d174199d777a    | Mandatory |
 | keyspace               | String                 | mykeyspace                              | Mandatory |
 | table                  | String                 | mytable                                 | Mandatory |
 | status                 | String                 | COMPLETED                               | Mandatory |
@@ -73,12 +84,13 @@ VirtualNodeState:
 
 RepairConfig:
 
-| Key                    | Type       | Example value       | Optional  |
-|------------------------|------------|---------------------|-----------|
-| keyspace               | String     | mykeyspace          | Mandatory |
-| table                  | String     | mytable             | Mandatory |
-| repairIntervalInMs     | long       | 432000000 (5 days)  | Mandatory |
-| repairParallelism      | String     | PARALLEL            | Mandatory |
-| repairUnwindRatio      | double     | 0.5 (50%)           | Mandatory |
-| repairWarningTimeInMs  | long       | 604800000 (7 days)  | Mandatory |
-| repairErrorTimeInMs    | long       | 864000000 (10 days) | Mandatory |
+| Key                    | Type       | Example value                           | Optional  |
+|------------------------|------------|-----------------------------------------|-----------|
+| id                     | UUID       | d53c2490-548a-11ea-8366-d174199d777a    | Mandatory |
+| keyspace               | String     | mykeyspace                              | Mandatory |
+| table                  | String     | mytable                                 | Mandatory |
+| repairIntervalInMs     | long       | 432000000 (5 days)                      | Mandatory |
+| repairParallelism      | String     | PARALLEL                                | Mandatory |
+| repairUnwindRatio      | double     | 0.5 (50%)                               | Mandatory |
+| repairWarningTimeInMs  | long       | 604800000 (7 days)                      | Mandatory |
+| repairErrorTimeInMs    | long       | 864000000 (10 days)                     | Mandatory |

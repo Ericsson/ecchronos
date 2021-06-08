@@ -18,6 +18,8 @@ The interval is configurable but defaults to seven days.
 
 More details on the underlying infrastructure can be found in [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+More information on the REST interface of ecChronos is described in [REST.md](docs/REST.md).
+
 ### Prerequisites
 
 * JDK8
@@ -32,7 +34,7 @@ Upgrade instructions can be found in [UPGRADE.md](docs/UPGRADE.md).
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, development, and the process for submitting pull requests to us.
+Please read [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on our code of conduct, development, and the process for submitting pull requests to us.
 
 ## Versioning
 

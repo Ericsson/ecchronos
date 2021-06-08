@@ -22,7 +22,7 @@ New features should, in general, be added to the master branch.
 ### Code Style
 
 This project uses the cassandra code style which is based on Sun’s Java coding conventions.
-Formatting rules for eclipse can be found [here](code_style.xml).
+Formatting rules for eclipse can be found [here](../code_style.xml).
 
 Provided patches should be contained and should not modify code outside of the scope of the patch.
 This will make it quicker to perform reviews and merging the pull requests.
@@ -30,7 +30,7 @@ This will make it quicker to perform reviews and merging the pull requests.
 ### Builds
 
 If you're looking to contribute to ecChronos it is recommended that you sign up on [Travis](https://travis-ci.org/) and [Coveralls](https://coveralls.io/) and enable builds and reports on your own fork of ecChronos.
-The builds required to merge a pull requests are contained within the [Travis configuration](.travis.yml) and include tests, code coverage as well as PMD checks.
+The builds required to merge a pull requests are contained within the [Travis configuration](../.travis.yml) and include tests, code coverage as well as PMD checks.
 
 All checks needs to pass before merging a pull request.
 The current PMD rules are constantly evolving.
