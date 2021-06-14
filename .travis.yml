@@ -5,6 +5,11 @@ jdk: openjdk8
 cache:
   directories:
   - $HOME/.m2
+
+
+before_install:
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
 matrix:
   include:
   - name: "Style check"
