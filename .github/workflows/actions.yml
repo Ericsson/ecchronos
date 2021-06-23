@@ -1,0 +1,54 @@
+name: Test report
+
+on: [push]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+       include:
+         - name: "Unit tests"
+           test_suite: 'test jacoco:report'
+         - name: "Style check"
+           test_suite: 'compile com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
+         - name: "OSGi integration"
+           test_suite: 'install -P docker-integration-test,osgi-integration-tests -Dit.cassandra.version=3.0 -DskipUTs'
+         - name: "Standalone integration 3.0"
+           test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=3.0 -DskipUTs'
+         - name: "Standalone integration 3.11"
+           test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=3.11 -DskipUTs'
+         - name: "Python 2.7 integration"
+           test_suite: 'verify -P docker-integration-test,python-integration-tests -DskipUTs'
+           language: python
+           python: 2.7
+         - name: "Python 3.6 integration"
+           test_suite: 'verify -P docker-integration-test,python-integration-tests -DskipUTs'
+           language: python
+           python: 3.6
+      
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache local Maven repository
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: build-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            build-${{ runner.os }}-maven-
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: '8'
+          distribution: 'adopt'
+      - name: install dependencies
+        run: mvn install -DskipTests=true
+      - run: mvn $TEST_SUITE -B
+        env:
+          TEST_SUITE: ${{ matrix.test_suite }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./**/target/site/jacoco/jacoco.xml
