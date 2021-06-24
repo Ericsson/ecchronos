@@ -26,9 +26,8 @@ Provided patches should be contained and should not modify code outside of the s
 This will make it quicker to perform reviews and merging the pull requests.
 
 ### Builds
-    
-If you're looking to contribute to ecChronos it is recommended that you sign up on [Travis](https://travis-ci.org/) and [Coveralls](https://coveralls.io/) and enable builds and reports on your own fork of ecChronos.
-The builds required to merge a pull requests are contained within the [Travis configuration](.travis.yml) and include tests, code coverage as well as PMD checks.
+
+The builds required to merge a pull request are contained within the [Github configuration](../.github/workflows/actions.yml) and include tests, code coverage as well as PMD checks.
 
 All checks needs to pass before merging a pull request.
 The current PMD rules are constantly evolving.
