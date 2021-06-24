@@ -1,6 +1,9 @@
 name: Test report
 
-on: [push]
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
 
 jobs:
   tests:
