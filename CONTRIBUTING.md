@@ -27,7 +27,7 @@ This will make it quicker to perform reviews and merging the pull requests.
 
 ### Builds
 
-The builds required to merge a pull request are contained within the [Github configuration](../.github/workflows/actions.yml) and include tests, code coverage as well as PMD checks.
+The builds required to merge a pull request are contained within the [Github configuration](.github/workflows/actions.yml) and include tests, code coverage as well as PMD checks.
 
 All checks needs to pass before merging a pull request.
 The current PMD rules are constantly evolving.
