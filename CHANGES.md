@@ -10,6 +10,7 @@
 
 ### Merged from 1.0
 
+* Step karaf to 4.2.8
 * Improve Alarm logging - Issue #191
 
 ## Version 2.0.1
