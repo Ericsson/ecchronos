@@ -17,12 +17,18 @@ package com.ericsson.bss.cassandra.ecchronos.application.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
+import java.net.InetSocketAddress;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import javax.management.remote.JMXConnector;
+import javax.net.ssl.SSLEngine;
 
+import com.datastax.driver.core.EndPoint;
+import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.ssl.SslHandler;
 import org.junit.Test;
 import org.springframework.context.ApplicationContext;
 
@@ -61,6 +67,7 @@ public class TestConfig
         assertThat(nativeConnection.getRemoteRouting()).isFalse();
         assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.SECONDS)).isEqualTo(5);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(TestNativeConnectionProvider.class);
+        assertThat(nativeConnection.getCertificateHandlerClass()).isEqualTo(TestCertificateHandler.class);
         assertThat(nativeConnection.getDecoratorClass()).isEqualTo(TestStatementDecorator.class);
 
         Config.Connection jmxConnection = connection.getJmx();
@@ -123,6 +130,7 @@ public class TestConfig
         assertThat(nativeConnection.getRemoteRouting()).isTrue();
         assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS)).isEqualTo(0);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(DefaultNativeConnectionProvider.class);
+        assertThat(nativeConnection.getCertificateHandlerClass()).isEqualTo(ReloadingCertificateHandler.class);
         assertThat(nativeConnection.getDecoratorClass()).isEqualTo(NoopStatementDecorator.class);
 
         Config.Connection jmxConnection = connection.getJmx();
@@ -186,6 +194,7 @@ public class TestConfig
         assertThat(nativeConnection.getRemoteRouting()).isTrue();
         assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS)).isEqualTo(0);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(DefaultNativeConnectionProvider.class);
+        assertThat(nativeConnection.getCertificateHandlerClass()).isEqualTo(ReloadingCertificateHandler.class);
         assertThat(nativeConnection.getDecoratorClass()).isEqualTo(NoopStatementDecorator.class);
 
         Config.Connection jmxConnection = connection.getJmx();
@@ -252,6 +261,37 @@ public class TestConfig
 
         @Override
         public boolean getRemoteRouting()
+        {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    public static class TestCertificateHandler implements CertificateHandler
+    {
+        public TestCertificateHandler(Supplier<TLSConfig> tlsConfigSupplier)
+        {
+            // Empty constructor
+        }
+        @Override
+        public SslHandler newSSLHandler(SocketChannel channel, EndPoint remoteEndpoint)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public SSLEngine newSSLEngine(EndPoint remoteEndpoint)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public SslHandler newSSLHandler(SocketChannel channel, InetSocketAddress remoteEndpoint)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public SslHandler newSSLHandler(SocketChannel channel)
         {
             throw new UnsupportedOperationException();
         }

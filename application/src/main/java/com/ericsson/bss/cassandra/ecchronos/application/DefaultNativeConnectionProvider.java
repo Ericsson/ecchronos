@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,7 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
 
     private final LocalNativeConnectionProvider myLocalNativeConnectionProvider;
 
-    public DefaultNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecuritySupplier)
+    public DefaultNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecuritySupplier, CertificateHandler certificateHandler)
     {
         Config.NativeConnection nativeConfig = config.getConnectionConfig().getCql();
         String host = nativeConfig.getHost();
@@ -53,7 +54,7 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
         SSLOptions sslOptions = null;
         if (tlsEnabled)
         {
-            sslOptions = new ReloadingCertificateHandler(() -> cqlSecuritySupplier.get().getTls());
+            sslOptions = certificateHandler;
         }
 
         LocalNativeConnectionProvider.Builder nativeConnectionBuilder = LocalNativeConnectionProvider.builder()
@@ -65,6 +66,11 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
 
         myLocalNativeConnectionProvider = establishConnection(nativeConnectionBuilder,
                 host, port, nativeConfig.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS));
+    }
+
+    public DefaultNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecuritySupplier)
+    {
+        this(config, cqlSecuritySupplier, new ReloadingCertificateHandler(() -> cqlSecuritySupplier.get().getTls()));
     }
 
     private static LocalNativeConnectionProvider establishConnection(LocalNativeConnectionProvider.Builder builder,

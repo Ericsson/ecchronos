@@ -2,6 +2,7 @@
 
 ## Version 2.0.2
 
+* Support certificatehandler pluggability
 * Improve logging - Issue #191
 * Fix On Demand Repair Jobs always showing topology changed after restart
 * Fix reoccurring flag in ecc-status showing incorrect value

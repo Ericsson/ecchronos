@@ -21,6 +21,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import com.ericsson.bss.cassandra.ecchronos.application.ReloadingCertificateHandler;
+import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
@@ -132,9 +134,28 @@ public class BeanConfigurator
             Supplier<Security.CqlSecurity> securitySupplier)
             throws ConfigurationException
     {
+        Supplier tlsSupplier = () -> securitySupplier.get().getTls();
+
+        CertificateHandler certificateHandler = ReflectionUtils.construct(configuration.getConnectionConfig().getCql().getCertificateHandlerClass(),
+                new Class<?>[]{ Supplier.class }, tlsSupplier);
+        try
+        {
+            return ReflectionUtils
+                    .construct(configuration.getConnectionConfig().getCql().getProviderClass(),
+                            new Class<?>[] { Config.class, Supplier.class, CertificateHandler.class },
+                            configuration, securitySupplier, certificateHandler);
+        } catch (ConfigurationException e)
+        {
+            if (!ReloadingCertificateHandler.class.equals(certificateHandler.getClass()) && e.getCause() instanceof NoSuchMethodException)
+            {
+                throw new ConfigurationException("Invalid configuration, connection provider does not support configured certificate handler", e);
+            }
+        }
+
+        // Check for old versions of DefaultNativeConnectionProvider
         return ReflectionUtils
                 .construct(configuration.getConnectionConfig().getCql().getProviderClass(),
-                        new Class<?>[] { Config.class, Supplier.class },
+                        new Class<?>[]{ Config.class, Supplier.class },
                         configuration, securitySupplier);
     }
 
