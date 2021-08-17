@@ -27,7 +27,7 @@ import java.security.GeneralSecurityException;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLException;
 
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
@@ -121,9 +121,8 @@ public class TestTomcatWebServerCustomizer
     public void testExceptionWhenExpiredCertificate() throws IOException, GeneralSecurityException
     {
         HttpClient httpClient = configureHttpClient(CLIENT_EXPIRED_PATH);
-        assertThatExceptionOfType(SSLHandshakeException.class)
-                .isThrownBy(() -> httpClient.execute(new HttpGet(httpsUrl)))
-                .withMessageContaining("Received fatal alert: certificate_unknown");
+        assertThatExceptionOfType(SSLException.class)
+                .isThrownBy(() -> httpClient.execute(new HttpGet(httpsUrl)));
     }
 
     private HttpClient configureHttpClient(String storePath) throws IOException, GeneralSecurityException

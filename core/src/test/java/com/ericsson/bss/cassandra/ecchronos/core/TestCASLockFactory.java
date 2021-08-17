@@ -146,10 +146,16 @@ public class TestCASLockFactory extends AbstractCassandraTest
         assertThat(myLockFactory.getCachedFailure(null, "lock")).isNotEmpty();
     }
 
-    @Test
-    public void testGlobalLockTakenIsCachedOnSecondTry()
+    @Test(timeout = 1000)
+    public void testGlobalLockTakenIsCachedOnSecondTry() throws InterruptedException
     {
         execute(myLockStatement.bind("lock", UUID.randomUUID(), new HashMap<>()));
+
+        Host host = mySession.getState().getConnectedHosts().iterator().next();
+        while (mySession.getState().getInFlightQueries(host) != 0) // Make sure no requests are still being processed
+        {
+            Thread.sleep(100);
+        }
 
         long expectedLockReadCount = getReadCount(TABLE_LOCK) + 1; // We do a read due to CAS
         long expectedLockWriteCount = getWriteCount(TABLE_LOCK); // No writes as the lock is already held
