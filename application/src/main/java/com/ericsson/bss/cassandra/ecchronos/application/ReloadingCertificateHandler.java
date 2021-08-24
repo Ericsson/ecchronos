@@ -75,17 +75,12 @@ public class ReloadingCertificateHandler implements CertificateHandler
 
         if (tlsConfig.requiresEndpointVerification())
         {
-            sslEngine.setSSLParameters(getSSLParameters(sslEngine));
+            SSLParameters sslParameters = new SSLParameters();
+            sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
+            sslEngine.setSSLParameters(sslParameters);
         }
         tlsConfig.getCipherSuites().ifPresent(sslEngine::setEnabledCipherSuites);
         return sslEngine;
-    }
-
-    public SSLParameters getSSLParameters(SSLEngine sslEngine)
-    {
-        SSLParameters sslParameters = new SSLParameters();
-        sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
-        return sslParameters;
     }
 
     @Override
