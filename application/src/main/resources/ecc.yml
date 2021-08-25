@@ -40,6 +40,11 @@ connection:
     ##
     provider: com.ericsson.bss.cassandra.ecchronos.application.DefaultNativeConnectionProvider
     ##
+    ## The class used to provide an SSL context to the NativeConnectionProvider.
+    ## Extending this allows to manipulate the SSLEngine and SSLParameters.
+    ##
+    certificateHandler: com.ericsson.bss.cassandra.ecchronos.application.ReloadingCertificateHandler
+    ##
     ## The class used to decorate CQL statements.
     ## The default no-op decorator will be used unless another is specified.
     ##

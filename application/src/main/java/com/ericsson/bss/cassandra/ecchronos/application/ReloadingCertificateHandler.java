@@ -25,17 +25,17 @@ import java.util.function.Supplier;
 
 import javax.net.ssl.*;
 
+import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datastax.driver.core.EndPoint;
-import com.datastax.driver.core.ExtendedRemoteEndpointAwareSslOptions;
 import com.ericsson.bss.cassandra.ecchronos.application.config.TLSConfig;
 
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.ssl.SslHandler;
 
-public class ReloadingCertificateHandler implements ExtendedRemoteEndpointAwareSslOptions
+public class ReloadingCertificateHandler implements CertificateHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ReloadingCertificateHandler.class);
 
@@ -49,6 +49,13 @@ public class ReloadingCertificateHandler implements ExtendedRemoteEndpointAwareS
 
     @Override
     public SslHandler newSSLHandler(SocketChannel channel, EndPoint remoteEndpoint)
+    {
+        SSLEngine sslEngine = newSSLEngine(remoteEndpoint);
+        return new SslHandler(sslEngine);
+    }
+
+    @Override
+    public SSLEngine newSSLEngine(EndPoint remoteEndpoint)
     {
         Context context = getContext();
         TLSConfig tlsConfig = context.getTlsConfig();
@@ -72,10 +79,8 @@ public class ReloadingCertificateHandler implements ExtendedRemoteEndpointAwareS
             sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
             sslEngine.setSSLParameters(sslParameters);
         }
-
         tlsConfig.getCipherSuites().ifPresent(sslEngine::setEnabledCipherSuites);
-
-        return new SslHandler(sslEngine);
+        return sslEngine;
     }
 
     @Override
@@ -90,7 +95,7 @@ public class ReloadingCertificateHandler implements ExtendedRemoteEndpointAwareS
         throw new UnsupportedOperationException("Unsupported method");
     }
 
-    private Context getContext()
+    protected Context getContext()
     {
         TLSConfig tlsConfig = tlsConfigSupplier.get();
         Context context = currentContext.get();
@@ -120,7 +125,7 @@ public class ReloadingCertificateHandler implements ExtendedRemoteEndpointAwareS
         return context;
     }
 
-    static final class Context
+    protected static final class Context
     {
         private final TLSConfig tlsConfig;
         private final SSLContext sslContext;
@@ -148,7 +153,7 @@ public class ReloadingCertificateHandler implements ExtendedRemoteEndpointAwareS
         }
     }
 
-    private static SSLContext createSSLContext(TLSConfig tlsConfig) throws IOException, NoSuchAlgorithmException,
+    protected static SSLContext createSSLContext(TLSConfig tlsConfig) throws IOException, NoSuchAlgorithmException,
             KeyStoreException, CertificateException, UnrecoverableKeyException, KeyManagementException
     {
         SSLContext sslContext = SSLContext.getInstance(tlsConfig.getProtocol());
@@ -160,7 +165,7 @@ public class ReloadingCertificateHandler implements ExtendedRemoteEndpointAwareS
         return sslContext;
     }
 
-    private static KeyManagerFactory getKeyManagerFactory(TLSConfig tlsConfig) throws IOException,
+    protected static KeyManagerFactory getKeyManagerFactory(TLSConfig tlsConfig) throws IOException,
             NoSuchAlgorithmException, KeyStoreException, CertificateException, UnrecoverableKeyException
     {
         String algorithm = tlsConfig.getAlgorithm().orElse(KeyManagerFactory.getDefaultAlgorithm());
@@ -176,7 +181,7 @@ public class ReloadingCertificateHandler implements ExtendedRemoteEndpointAwareS
         }
     }
 
-    private static TrustManagerFactory getTrustManagerFactory(TLSConfig tlsConfig)
+    protected static TrustManagerFactory getTrustManagerFactory(TLSConfig tlsConfig)
             throws IOException, NoSuchAlgorithmException, KeyStoreException, CertificateException
     {
         String algorithm = tlsConfig.getAlgorithm().orElse(TrustManagerFactory.getDefaultAlgorithm());
