@@ -14,21 +14,24 @@ jobs:
        include:
          - name: "Unit tests"
            test_suite: 'test jacoco:report'
+           python: 3.6
          - name: "Style check"
            test_suite: 'compile com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
+           python: 3.6
          - name: "OSGi integration"
            test_suite: 'install -P docker-integration-test,osgi-integration-tests -Dit.cassandra.version=3.0 -DskipUTs'
+           python: 3.6
          - name: "Standalone integration 3.0"
            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=3.0 -DskipUTs'
+           python: 3.6
          - name: "Standalone integration 3.11"
            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=3.11 -DskipUTs'
+           python: 3.6
          - name: "Python 2.7 integration"
            test_suite: 'verify -P docker-integration-test,python-integration-tests -DskipUTs'
-           language: python
            python: 2.7
          - name: "Python 3.6 integration"
            test_suite: 'verify -P docker-integration-test,python-integration-tests -DskipUTs'
-           language: python
            python: 3.6
 
     steps:
@@ -45,6 +48,11 @@ jobs:
         with:
           java-version: '8'
           distribution: 'adopt'
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
       - name: install dependencies
         run: mvn install -DskipTests=true
       - run: mvn $TEST_SUITE -B

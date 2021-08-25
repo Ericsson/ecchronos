@@ -15,6 +15,7 @@
 
 import json
 import os
+import io
 from jsonschema import validate
 import requests
 from behave import given, when, then  # pylint: disable=no-name-in-module
@@ -32,7 +33,7 @@ def get_behave_dir():
 def step_import_schema(context, schema_name):
     schema_file = os.path.join(get_behave_dir(), "{0}.json".format(schema_name))
 
-    with open(schema_file, "r") as jsonfile:
+    with io.open(schema_file, "r", encoding="utf-8") as jsonfile:
         setattr(context, schema_name, json.loads(jsonfile.read()))
 
 
