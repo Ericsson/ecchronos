@@ -78,7 +78,7 @@ class RepairJob(object):
 class VerboseRepairJob(RepairJob):
     def __init__(self, data):
         RepairJob.__init__(self, data)
-        self.vnode_states = list()
+        self.vnode_states = []
         if "virtualNodeStates" in data:
             for vnode_data in data["virtualNodeStates"]:
                 self.vnode_states.append(VnodeState(vnode_data))

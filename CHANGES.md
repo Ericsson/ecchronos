@@ -7,7 +7,8 @@
 * Fix On Demand Repair Jobs always showing topology changed after restart
 * Fix reoccurring flag in ecc-status showing incorrect value
 * Update Netty io version to 4.1.62.Final
-* Update commons-io to 2.7 
+* Update commons-io to 2.7
+* Update spring-boot-dependencies to 2.5.3 - Issue #223
 
 ### Merged from 1.0
 

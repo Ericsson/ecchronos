@@ -32,12 +32,8 @@ except ImportError:
 
 
 def add_vnode_state_to_table(vnode_state, table):
-    entry = list()
-    entry.append(vnode_state.start_token)
-    entry.append(vnode_state.end_token)
-    entry.append(', '.join(vnode_state.replicas))
-    entry.append(vnode_state.get_last_repaired_at())
-    entry.append(vnode_state.repaired)
+    entry = [vnode_state.start_token, vnode_state.end_token, ', '.join(vnode_state.replicas),
+             vnode_state.get_last_repaired_at(), vnode_state.repaired]
 
     table.append(entry)
 
@@ -58,8 +54,7 @@ def print_verbose_repair_job(repair_job, max_lines):
     print(verbose_print_format.format("Next repair", repair_job.get_next_repair()))
     print(verbose_print_format.format("Recurring", repair_job.recurring))
 
-    vnode_state_table = list()
-    vnode_state_table.append(["Start token", "End token", "Replicas", "Repaired at", "Repaired"])
+    vnode_state_table = [["Start token", "End token", "Replicas", "Repaired at", "Repaired"]]
 
     sorted_vnode_states = sorted(repair_job.vnode_states, key=lambda vnode: vnode.last_repaired_at_in_ms)
 
@@ -73,15 +68,9 @@ def print_verbose_repair_job(repair_job, max_lines):
 
 
 def convert_repair_job(repair_job):
-    entry = list()
-    entry.append(repair_job.job_id)
-    entry.append(repair_job.keyspace)
-    entry.append(repair_job.table)
-    entry.append(repair_job.status)
-    entry.append(repair_job.get_repair_percentage())
-    entry.append(repair_job.get_last_repaired_at())
-    entry.append(repair_job.get_next_repair())
-    entry.append(repair_job.recurring)
+    entry = [repair_job.job_id, repair_job.keyspace, repair_job.table, repair_job.status,
+             repair_job.get_repair_percentage(), repair_job.get_last_repaired_at(), repair_job.get_next_repair(),
+             repair_job.recurring]
 
     return entry
 
@@ -96,9 +85,8 @@ def print_summary(repair_jobs):
 
 
 def print_repair_jobs(repair_jobs, max_lines):
-    repair_jobs_table = list()
-    repair_jobs_table.append(["Id", "Keyspace", "Table", "Status", "Repaired(%)",
-                              "Completed at", "Next repair", "Recurring"])
+    repair_jobs_table = [["Id", "Keyspace", "Table", "Status", "Repaired(%)",
+                          "Completed at", "Next repair", "Recurring"]]
     sorted_repair_jobs = sorted(repair_jobs, key=lambda job: job.last_repaired_at_in_ms)
 
     if max_lines > -1:
