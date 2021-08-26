@@ -100,7 +100,7 @@
         <com.mycila.license-maven-plugin.version>3.0</com.mycila.license-maven-plugin.version>
         <io.fabric8.docker-maven-plugin.version>0.35.0</io.fabric8.docker-maven-plugin.version>
         <org.apache.servicemix.tooling.depends-maven-plugin.version>1.2</org.apache.servicemix.tooling.depends-maven-plugin.version>
-        <org.apache.karaf.tooling.karaf-maven-plugin.version>4.3.0</org.apache.karaf.tooling.karaf-maven-plugin.version>
+        <org.apache.karaf.tooling.karaf-maven-plugin.version>3.0.3</org.apache.karaf.tooling.karaf-maven-plugin.version>
         <org.jacoco.jacoco-maven-plugin.version>0.8.4</org.jacoco.jacoco-maven-plugin.version>
         <org.codehaus.mojo.exec-maven-plugin.version>3.0.0</org.codehaus.mojo.exec-maven-plugin.version>
         <org.codehaus.mojo.license-maven-plugin.version>1.19</org.codehaus.mojo.license-maven-plugin.version>
