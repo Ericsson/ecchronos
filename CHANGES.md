@@ -1,6 +1,10 @@
 # Changes
 
-## Version 2.0.2
+## Version 2.0.3
+
+* Fixed signing issue of karaf feature artifact
+
+## Version 2.0.2 (Not Released)
 
 * Support certificatehandler pluggability
 * Improve logging - Issue #191
