@@ -1,5 +1,9 @@
 # Changes
 
+## Version 2.0.4
+
+* Step simpleclient to 0.10.0
+
 ## Version 2.0.3
 
 * Fixed signing issue of karaf feature artifact
