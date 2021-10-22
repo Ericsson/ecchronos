@@ -19,9 +19,8 @@ import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.TableMetadata;
 import com.google.common.base.Preconditions;
 
+import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * A table reference factory using tables existing in Cassandra.
@@ -29,8 +28,6 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class TableReferenceFactoryImpl implements TableReferenceFactory
 {
-    private final ConcurrentMap<UUID, UuidTableReference> tableReferences = new ConcurrentHashMap<>();
-
     private final Metadata metadata;
 
     public TableReferenceFactoryImpl(Metadata metadata)
@@ -51,15 +48,14 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
         {
             return null;
         }
-        UUID tableId = tableMetadata.getId();
 
-        TableReference tableReference = tableReferences.get(tableId);
-        if (tableReference == null)
-        {
-            tableReference = tableReferences.computeIfAbsent(tableId, k -> new UuidTableReference(tableMetadata));
-        }
+        return new UuidTableReference(tableMetadata);
+    }
 
-        return tableReference;
+    @Override
+    public TableReference forTable(TableMetadata table)
+    {
+        return new UuidTableReference(table);
     }
 
     class UuidTableReference implements TableReference
@@ -97,6 +93,21 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
         public String toString()
         {
             return keyspace + "." + table;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            UuidTableReference that = (UuidTableReference) o;
+            return uuid.equals(that.uuid) && keyspace.equals(that.keyspace) && table.equals(that.table);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(uuid, keyspace, table);
         }
     }
 }

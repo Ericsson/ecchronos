@@ -69,7 +69,7 @@ public class TestTableReferenceFactory
         mockTable("keyspace", "table"); // New table uuid
         TableReference tableReference2 = tableReferenceFactory.forTable("keyspace", "table");
 
-        assertThat(tableReference1).isNotSameAs(tableReference2);
+        assertThat(tableReference1).isNotEqualTo(tableReference2);
     }
 
     @Test
@@ -80,7 +80,7 @@ public class TestTableReferenceFactory
         TableReference tableReference1 = tableReferenceFactory.forTable("keyspace", "table");
         TableReference tableReference2 = tableReferenceFactory.forTable("keyspace", "table");
 
-        assertThat(tableReference1).isSameAs(tableReference2);
+        assertThat(tableReference1).isEqualTo(tableReference2);
     }
 
     @Test
@@ -131,6 +131,37 @@ public class TestTableReferenceFactory
         mockedKeyspaces.put(keyspace, keyspaceMetadata);
 
         when(mockMetadata.getKeyspace(eq(keyspace))).thenReturn(keyspaceMetadata);
+    }
+
+    @Test
+    public void testTableDoesNotExist()
+    {
+        TableMetadata tableMetadata = mockRemovedTable("keyspace", "table");
+
+        assertThat(tableReferenceFactory.forTable("keyspace", "table")).isNull();
+
+        TableReference tableReference = tableReferenceFactory.forTable(tableMetadata);
+        assertThat(tableReference.getKeyspace()).isEqualTo(tableMetadata.getKeyspace().getName());
+        assertThat(tableReference.getTable()).isEqualTo(tableMetadata.getName());
+        assertThat(tableReference.getId()).isEqualTo(tableMetadata.getId());
+    }
+
+    private TableMetadata mockRemovedTable(String keyspace, String table)
+    {
+        KeyspaceMetadata keyspaceMetadata = mockedKeyspaces.computeIfAbsent(keyspace, k -> {
+            KeyspaceMetadata mockedKeyspace = mock(KeyspaceMetadata.class);
+            when(mockedKeyspace.getName()).thenReturn(keyspace);
+            return mockedKeyspace;
+        });
+
+        TableMetadata tableMetadata = mock(TableMetadata.class);
+        when(tableMetadata.getId()).thenReturn(UUID.randomUUID());
+        when(tableMetadata.getName()).thenReturn(table);
+        when(tableMetadata.getKeyspace()).thenReturn(keyspaceMetadata);
+
+        when(keyspaceMetadata.getTable(eq(table))).thenReturn(null);
+        when(mockMetadata.getKeyspace(eq(keyspace))).thenReturn(keyspaceMetadata);
+        return tableMetadata;
     }
 
     private void mockTable(String keyspace, String table)
