@@ -85,8 +85,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
     {
         if (myReplicatedTableProvider.accept(table.getKeyspace().getName()))
         {
-            TableReference tableReference = myTableReferenceFactory.forTable(table.getKeyspace().getName(),
-                    table.getName());
+            TableReference tableReference = myTableReferenceFactory.forTable(table);
             myRepairScheduler.removeConfiguration(tableReference);
         }
     }

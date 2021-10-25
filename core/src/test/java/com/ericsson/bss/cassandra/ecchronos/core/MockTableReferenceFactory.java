@@ -19,6 +19,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import com.datastax.driver.core.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 
@@ -30,6 +31,12 @@ public class MockTableReferenceFactory implements TableReferenceFactory
     public TableReference forTable(String keyspace, String table)
     {
         return tableReference(keyspace, table);
+    }
+
+    @Override
+    public TableReference forTable(TableMetadata table)
+    {
+        return tableReference(table);
     }
 
     public static TableReference tableReference(String keyspace, String table)
@@ -45,6 +52,11 @@ public class MockTableReferenceFactory implements TableReferenceFactory
         return tableReference;
     }
 
+    public static TableReference tableReference(TableMetadata table)
+    {
+        return new MockTableReference(table);
+    }
+
     static class MockTableReference implements TableReference
     {
         private final UUID id;
@@ -56,6 +68,13 @@ public class MockTableReferenceFactory implements TableReferenceFactory
             this.id = id;
             this.keyspace = keyspace;
             this.table = table;
+        }
+
+        MockTableReference(TableMetadata tableMetadata)
+        {
+            this.id = tableMetadata.getId();
+            this.keyspace = tableMetadata.getKeyspace().getName();
+            this.table = tableMetadata.getName();
         }
 
         @Override
