@@ -30,23 +30,15 @@ except ImportError:
 
 
 def convert_config(config):
-    entry = list()
-    entry.append(config.job_id)
-    entry.append(config.keyspace)
-    entry.append(config.table)
-    entry.append(config.get_repair_interval())
-    entry.append(config.repair_parallelism)
-    entry.append(config.repair_unwind_ratio)
-    entry.append(config.get_repair_warning_time())
-    entry.append(config.get_repair_error_time())
+    entry = [config.job_id, config.keyspace, config.table, config.get_repair_interval(), config.repair_parallelism,
+             config.repair_unwind_ratio, config.get_repair_warning_time(), config.get_repair_error_time()]
 
     return entry
 
 
 def print_table_config(config_data):
-    config_table = list()
-    config_table.append(["Id", "Keyspace", "Table", "Interval",
-                         "Parallelism", "Unwind ratio", "Warning time", "Error time"])
+    config_table = [["Id", "Keyspace", "Table", "Interval",
+                     "Parallelism", "Unwind ratio", "Warning time", "Error time"]]
     if isinstance(config_data, list):
         sorted_config_data = sorted(config_data, key=lambda config: (config.keyspace, config.table))
         for config in sorted_config_data:

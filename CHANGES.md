@@ -1,7 +1,18 @@
 # Changes
 
-## Version 2.0.2
+## Version 2.0.4
 
+* Update netty to 4.1.68.Final
+* Schedules are not deleted when dropping tables - Issue #230
+* Step simpleclient to 0.10.0
+
+## Version 2.0.3
+
+* Fixed signing issue of karaf feature artifact
+
+## Version 2.0.2 (Not Released)
+
+* Support certificatehandler pluggability
 * Improve logging - Issue #191
 * Fix On Demand Repair Jobs always showing topology changed after restart
 * Fix reoccurring flag in ecc-status showing incorrect value

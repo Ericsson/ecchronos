@@ -331,7 +331,7 @@ public class TestDefaultRepairConfigurationProvider
 
         when(tableMetadata.getKeyspace()).thenReturn(keyspaceMetadata);
         when(tableMetadata.getName()).thenReturn(tableReference.getTable());
-        when(tableMetadata.getId()).thenReturn(UUID.randomUUID());
+        when(tableMetadata.getId()).thenReturn(tableReference.getId());
 
         when(keyspaceMetadata.getName()).thenReturn(tableReference.getKeyspace());
         when(keyspaceMetadata.getTables()).thenReturn(Collections.singletonList(tableMetadata));

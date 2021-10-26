@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
 import com.datastax.driver.core.Metadata;
+import com.datastax.driver.core.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
@@ -41,5 +42,11 @@ public class TableReferenceFactoryService implements TableReferenceFactory
     public TableReference forTable(String keyspace, String table)
     {
         return delegateTableReferenceFactory.forTable(keyspace, table);
+    }
+
+    @Override
+    public TableReference forTable(TableMetadata table)
+    {
+        return delegateTableReferenceFactory.forTable(table);
     }
 }

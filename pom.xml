@@ -20,7 +20,7 @@
 
     <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
     <artifactId>parent</artifactId>
-    <version>2.0.2-SNAPSHOT</version>
+    <version>2.0.4-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Ericsson Cassandra Chronos</name>
@@ -58,7 +58,7 @@
         <bundle.namespace>${project.groupId}.${project.artifactId}</bundle.namespace>
 
         <!-- Dependency versions -->
-        <io.netty.version>4.1.62.Final</io.netty.version>
+        <io.netty.version>4.1.68.Final</io.netty.version>
         <io.dropwizard.metrics.version>3.2.2</io.dropwizard.metrics.version>
         <cassandra.driver.core.version>3.10.2</cassandra.driver.core.version>
         <guava.version>18.0</guava.version>
@@ -84,6 +84,10 @@
         <junitparams.version>1.1.1</junitparams.version>
         <equalsverifier.version>3.5</equalsverifier.version>
         <org.springframework.boot.version>2.5.3</org.springframework.boot.version>
+<<<<<<< HEAD
+=======
+        <io.prometheus.simpleclient>0.10.0</io.prometheus.simpleclient>
+>>>>>>> 3889d16ae993e36db6d4615a19c4b3ed95c488df
 
         <!-- Plugin versions -->
         <org.apache.maven.plugins.maven-compiler-plugin.version>3.8.0</org.apache.maven.plugins.maven-compiler-plugin.version>
@@ -100,7 +104,7 @@
         <com.mycila.license-maven-plugin.version>3.0</com.mycila.license-maven-plugin.version>
         <io.fabric8.docker-maven-plugin.version>0.35.0</io.fabric8.docker-maven-plugin.version>
         <org.apache.servicemix.tooling.depends-maven-plugin.version>1.2</org.apache.servicemix.tooling.depends-maven-plugin.version>
-        <org.apache.karaf.tooling.karaf-maven-plugin.version>4.3.0</org.apache.karaf.tooling.karaf-maven-plugin.version>
+        <org.apache.karaf.tooling.karaf-maven-plugin.version>3.0.3</org.apache.karaf.tooling.karaf-maven-plugin.version>
         <org.jacoco.jacoco-maven-plugin.version>0.8.4</org.jacoco.jacoco-maven-plugin.version>
         <org.codehaus.mojo.exec-maven-plugin.version>3.0.0</org.codehaus.mojo.exec-maven-plugin.version>
         <org.codehaus.mojo.license-maven-plugin.version>1.19</org.codehaus.mojo.license-maven-plugin.version>
@@ -238,6 +242,24 @@
                 <version>${org.springframework.boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.prometheus</groupId>
+                <artifactId>simpleclient</artifactId>
+                <version>${io.prometheus.simpleclient}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.prometheus</groupId>
+                <artifactId>simpleclient_servlet</artifactId>
+                <version>${io.prometheus.simpleclient}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.prometheus</groupId>
+                <artifactId>simpleclient_dropwizard</artifactId>
+                <version>${io.prometheus.simpleclient}</version>
             </dependency>
 
             <!-- REST -->

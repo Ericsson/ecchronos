@@ -19,13 +19,10 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import com.ericsson.bss.cassandra.ecchronos.application.*;
+import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import org.springframework.context.ApplicationContext;
 
-import com.ericsson.bss.cassandra.ecchronos.application.AbstractRepairConfigurationProvider;
-import com.ericsson.bss.cassandra.ecchronos.application.FileBasedRepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.application.DefaultJmxConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.application.DefaultNativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.application.NoopStatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
@@ -175,6 +172,7 @@ public class Config
         private String host = "localhost";
         protected int port;
         protected Class<? extends T> provider;
+        protected Class<? extends CertificateHandler> certificateHandler;
         private Timeout timeout = new Timeout();
 
         public String getHost()
@@ -190,6 +188,11 @@ public class Config
         public Class<? extends T> getProviderClass()
         {
             return provider;
+        }
+
+        public Class<? extends CertificateHandler> getCertificateHandlerClass()
+        {
+            return certificateHandler;
         }
 
         public Timeout getTimeout()
@@ -221,10 +224,22 @@ public class Config
 
         protected abstract Class<?>[] expectedConstructor();
 
+        public void setCertificateHandler(Class<CertificateHandler> certificateHandler) throws NoSuchMethodException
+        {
+            certificateHandler.getDeclaredConstructor(expectedCertHandlerConstructor());
+
+            this.certificateHandler = certificateHandler;
+        }
+
+        protected Class<?>[] expectedCertHandlerConstructor()
+        {
+            return new Class<?>[] { Supplier.class };
+        }
+
         @Override
         public String toString()
         {
-            return String.format("(%s:%d:%s),provider=%s", host, port, timeout, provider);
+            return String.format("(%s:%d:%s),provider=%s,certificateHandler=%s", host, port, timeout, provider, certificateHandler);
         }
 
         public static class Timeout
@@ -257,6 +272,7 @@ public class Config
         public NativeConnection()
         {
             provider = DefaultNativeConnectionProvider.class;
+            certificateHandler = ReloadingCertificateHandler.class;
             port = 9042;
         }
 
@@ -291,7 +307,7 @@ public class Config
         @Override
         public String toString()
         {
-            return String.format("(%s:%d),provider=%s,decorator=%s", getHost(), getPort(), getProviderClass(),
+            return String.format("(%s:%d),provider=%s,certificateHandler=%s,decorator=%s", getHost(), getPort(), getProviderClass(), getCertificateHandlerClass(),
                     decoratorClass);
         }
     }

@@ -21,6 +21,7 @@ connection:
       time: 5
       unit: seconds
     provider: com.ericsson.bss.cassandra.ecchronos.application.config.TestConfig$TestNativeConnectionProvider
+    certificateHandler: com.ericsson.bss.cassandra.ecchronos.application.config.TestConfig$TestCertificateHandler
     decoratorClass: com.ericsson.bss.cassandra.ecchronos.application.config.TestConfig$TestStatementDecorator
     remoteRouting: false
   jmx:

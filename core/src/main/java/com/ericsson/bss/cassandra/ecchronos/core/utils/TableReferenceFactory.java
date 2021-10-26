@@ -14,6 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
+import com.datastax.driver.core.TableMetadata;
+
 /**
  * A factory that generates table references based on keyspace and table name.
  */
@@ -24,7 +26,15 @@ public interface TableReferenceFactory
      *
      * @param keyspace The keyspace name.
      * @param table The table name.
-     * @return A table reference for the provided keyspace/table pair..
+     * @return A table reference for the provided keyspace/table pair or null if table does not exist.
      */
     TableReference forTable(String keyspace, String table);
+
+    /**
+     * Get a table reference for the provided TableMetadata.
+     *
+     * @param table the TableMetadata.
+     * @return A table reference for the provided keyspace/table pair.
+     */
+    TableReference forTable(TableMetadata table);
 }
