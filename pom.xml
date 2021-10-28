@@ -83,7 +83,7 @@
         <jcip.version>1.0</jcip.version>
         <junitparams.version>1.1.1</junitparams.version>
         <equalsverifier.version>3.5</equalsverifier.version>
-        <org.springframework.boot.version>2.5.3</org.springframework.boot.version>
+        <org.springframework.boot.version>2.5.6</org.springframework.boot.version>
         <io.prometheus.simpleclient>0.10.0</io.prometheus.simpleclient>
 
         <!-- Plugin versions -->
