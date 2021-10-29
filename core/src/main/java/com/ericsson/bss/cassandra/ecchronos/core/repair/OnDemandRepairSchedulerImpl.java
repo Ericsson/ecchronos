@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
@@ -84,21 +83,17 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
                 ongoingJobs.forEach(j -> scheduleOngoingJob(j));
                 done = true;
             }
-            catch (NoHostAvailableException e)
+            catch (Exception e)
             {
                 try
                 {
-                    LOG.info("Failed to get ongoing ondemand jobs during startup, automatic retry in 10s");
+                    LOG.info("Failed to get ongoing ondemand jobs during startup: {}, automatic retry in 10s", e.getMessage());
                     Thread.sleep(TimeUnit.SECONDS.toMillis(10));
                 }
                 catch (InterruptedException e1)
                 {
                     Thread.currentThread().interrupt();
                 }
-            }
-            catch (Exception e)
-            {
-                LOG.error("Unexpected exception when fetching ongoing ondemand jobs at startup: {}", e.getMessage());
             }
         }
     }
