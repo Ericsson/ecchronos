@@ -2,7 +2,8 @@
 
 ## Version 2.0.4
 
-* Update netty to 4.1.68.Final
+* Update springbootframework to 2.5.6 - Issue #233
+* Update netty to 4.1.68.Final - Issue #228
 * Schedules are not deleted when dropping tables - Issue #230
 * Step simpleclient to 0.10.0
 
