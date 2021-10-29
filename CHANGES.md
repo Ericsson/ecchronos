@@ -2,6 +2,7 @@
 
 ## Version 2.0.4
 
+* Many exceptions if Ongoing Repair jobs cannot be fetched - Issue #236
 * Update springbootframework to 2.5.6 - Issue #233
 * Update netty to 4.1.68.Final - Issue #228
 * Schedules are not deleted when dropping tables - Issue #230
