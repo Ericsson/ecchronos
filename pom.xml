@@ -58,7 +58,7 @@
         <bundle.namespace>${project.groupId}.${project.artifactId}</bundle.namespace>
 
         <!-- Dependency versions -->
-        <io.netty.version>4.1.68.Final</io.netty.version>
+        <io.netty.version>4.1.69.Final</io.netty.version>
         <io.dropwizard.metrics.version>3.2.2</io.dropwizard.metrics.version>
         <cassandra.driver.core.version>3.10.2</cassandra.driver.core.version>
         <guava.version>18.0</guava.version>
@@ -162,6 +162,13 @@
                 <version>${io.netty.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-all</artifactId>
+                <version>${io.netty.version}</version>
+                <scope>test</scope>
+            </dependency>
+
             <!-- Jackson -->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
@@ -229,19 +236,6 @@
                 <groupId>org.apache.cassandra</groupId>
                 <artifactId>cassandra-all</artifactId>
                 <version>${cassandra.version}</version>
-                <scope>test</scope>
-                <exclusions>
-                    <exclusion>
-                        <groupId>io.netty</groupId>
-                        <artifactId>netty-all</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-all</artifactId>
-                <version>${io.netty.version}</version>
                 <scope>test</scope>
             </dependency>
 
