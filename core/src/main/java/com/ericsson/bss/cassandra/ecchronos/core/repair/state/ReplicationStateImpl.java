@@ -45,15 +45,13 @@ public class ReplicationStateImpl implements ReplicationState
 
     private final NodeResolver myNodeResolver;
     private final Metadata myMetadata;
-    private final UUID myLocalHostId;
-    private Host myLocalHost;
+    private final Host myLocalHost;
 
     public ReplicationStateImpl(NodeResolver nodeResolver, Metadata metadata, Host localhost)
     {
         myNodeResolver = nodeResolver;
         myMetadata = metadata;
         myLocalHost = localhost;
-        myLocalHostId = localhost.getHostId();
     }
 
     @Override
@@ -92,10 +90,6 @@ public class ReplicationStateImpl implements ReplicationState
     {
         ImmutableMap<LongTokenRange, ImmutableSet<Node>> replication = buildTokenMap(keyspace);
 
-        if(replication.isEmpty())
-        {
-            return keyspaceReplicationCache.get(keyspace);
-        }
         return keyspaceReplicationCache.compute(keyspace, (k, v) -> !replication.equals(v) ? replication : v);
     }
 
@@ -105,22 +99,7 @@ public class ReplicationStateImpl implements ReplicationState
 
         Map<Set<Host>, ImmutableSet<Node>> replicaCache = new HashMap<>();
 
-        Set<TokenRange> tokenRanges = myMetadata.getTokenRanges(keyspace, myLocalHost);
-
-        if(tokenRanges.isEmpty())
-        {
-            for(Host host : myMetadata.getAllHosts())
-            {
-                if(host.getHostId().equals(myLocalHostId))
-                {
-                    myLocalHost = host;
-                    tokenRanges = myMetadata.getTokenRanges(keyspace, myLocalHost);
-                    break;
-                }
-            }
-        }
-
-        for (TokenRange tokenRange : tokenRanges)
+        for (TokenRange tokenRange : myMetadata.getTokenRanges(keyspace, myLocalHost))
         {
             LongTokenRange longTokenRange = convert(tokenRange);
             ImmutableSet<Node> replicas = replicaCache.computeIfAbsent(myMetadata.getReplicas(keyspace, tokenRange),
