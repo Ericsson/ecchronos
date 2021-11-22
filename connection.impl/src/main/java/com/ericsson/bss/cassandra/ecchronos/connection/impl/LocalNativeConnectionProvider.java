@@ -14,20 +14,26 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection.impl;
 
-import com.datastax.driver.core.*;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.datastax.driver.core.AuthProvider;
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.DefaultEndPointFactory;
+import com.datastax.driver.core.EndPoint;
+import com.datastax.driver.core.EndPointFactory;
+import com.datastax.driver.core.ExtendedAuthProvider;
+import com.datastax.driver.core.Host;
+import com.datastax.driver.core.SSLOptions;
+import com.datastax.driver.core.Session;
 import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
 import com.datastax.driver.core.policies.LoadBalancingPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
 import com.datastax.driver.extras.codecs.date.SimpleTimestampCodec;
 import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 
 public class LocalNativeConnectionProvider implements NativeConnectionProvider
 {
@@ -121,58 +127,58 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
         {
             Cluster cluster = createCluster(this);
             cluster.getConfiguration().getCodecRegistry().register(SimpleTimestampCodec.instance);
-            Host host = resolveLocalhost(cluster, myLocalhost);
+            Host host = resolveLocalhost(cluster, localEndPoint());
 
             return new LocalNativeConnectionProvider(cluster, host, myRemoteRouting);
         }
 
-        private InetSocketAddress localHostAddress()
+        private EndPoint localEndPoint()
         {
-            return new InetSocketAddress(myLocalhost, myPort);
+            return new ContactEndPoint(myLocalhost, myPort);
         }
 
         private static Cluster createCluster(Builder builder)
         {
-            String localhost = builder.myLocalhost;
-            String localDataCenter = resolveLocalDataCenter(builder);
+            EndPoint contactEndPoint = builder.localEndPoint();
+
+            InitialContact initialContact = resolveInitialContact(contactEndPoint, builder);
 
             LoadBalancingPolicy loadBalancingPolicy = new TokenAwarePolicy(DCAwareRoundRobinPolicy.builder()
-                    .withLocalDc(localDataCenter)
+                    .withLocalDc(initialContact.getDataCenter())
                     .build());
 
-            if(builder.myRemoteRouting)
+            if (builder.myRemoteRouting)
             {
                 loadBalancingPolicy = DataCenterAwarePolicy.builder()
-                        .withLocalDc(localDataCenter)
+                        .withLocalDc(initialContact.getDataCenter())
                         .withChildPolicy(loadBalancingPolicy)
                         .build();
             }
 
-            LOG.debug("Connecting to {}, local data center: {}", localhost, localDataCenter);
+            LOG.debug("Connecting to {}({}), local data center: {}", contactEndPoint, initialContact.getHostId(),
+                    initialContact.getDataCenter());
 
-            return fromBuilder(builder)
+            EndPointFactory endPointFactory = new DefaultEndPointFactory();
+            EccEndPointFactory eccEndPointFactory = new EccEndPointFactory(contactEndPoint, initialContact.getHostId(),
+                    endPointFactory);
+
+            Cluster cluster = fromBuilder(builder)
+                    .withEndPointFactory(eccEndPointFactory)
                     .withLoadBalancingPolicy(loadBalancingPolicy)
                     .build();
+            cluster.register(eccEndPointFactory);
+            return cluster;
         }
 
-        private static String resolveLocalDataCenter(Builder builder)
+        private static InitialContact resolveInitialContact(EndPoint contactEndPoint, Builder builder)
         {
-            InetSocketAddress hostAddress = builder.localHostAddress();
-
             try (Cluster cluster = fromBuilder(builder).build())
             {
-                InetAddress contactAddress = hostAddress.getAddress();
-
                 for (Host host : cluster.getMetadata().getAllHosts())
                 {
-                    if (contactAddress.equals(host.getAddress()))
+                    if (host.getEndPoint().equals(contactEndPoint))
                     {
-                        String dataCenter = host.getDatacenter();
-
-                        if (dataCenter != null)
-                        {
-                            return dataCenter;
-                        }
+                        return new InitialContact(host.getDatacenter(), host.getHostId());
                     }
                 }
             }
@@ -182,41 +188,52 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
 
         private static Cluster.Builder fromBuilder(Builder builder)
         {
-            InetSocketAddress hostAddress = builder.localHostAddress();
-
             return Cluster.builder()
-                    .addContactPointsWithPorts(hostAddress)
+                    .addContactPoint(builder.localEndPoint())
                     .withAuthProvider(builder.authProvider)
                     .withSSL(builder.sslOptions);
         }
 
-        private static Host resolveLocalhost(Cluster cluster, String localhost)
+        private static Host resolveLocalhost(Cluster cluster, EndPoint localEndpoint)
         {
             Host tmpHost = null;
 
-            try
+            for (Host host : cluster.getMetadata().getAllHosts())
             {
-                InetAddress localhostAddress = InetAddress.getByName(localhost);
-
-                for (Host host : cluster.getMetadata().getAllHosts())
+                if (host.getEndPoint().equals(localEndpoint))
                 {
-                    if (host.getAddress().equals(localhostAddress))
-                    {
-                        tmpHost = host;
-                    }
+                    tmpHost = host;
                 }
-            }
-            catch (UnknownHostException e)
-            {
-                throw new IllegalArgumentException(e);
             }
 
             if (tmpHost == null)
             {
-                throw new IllegalArgumentException("Host " + localhost + " not found among cassandra hosts");
+                throw new IllegalArgumentException("Host " + localEndpoint + " not found among cassandra hosts");
             }
 
             return tmpHost;
+        }
+    }
+
+    static class InitialContact
+    {
+        private final String dataCenter;
+        private final UUID hostId;
+
+        InitialContact(String dataCenter, UUID hostId)
+        {
+            this.dataCenter = dataCenter;
+            this.hostId = hostId;
+        }
+
+        String getDataCenter()
+        {
+            return dataCenter;
+        }
+
+        UUID getHostId()
+        {
+            return hostId;
         }
     }
 }
