@@ -2,7 +2,7 @@
 
 ## Version 2.0.4
 
-* Handle endpoints with changing IP addresses
+* Handle endpoints with changing IP addresses - Issue #243
 * Log exceptions during creation/deletion of schedules
 * Update gson to 2.8.9 - Issue #239
 * Update netty to 4.1.69.Final
