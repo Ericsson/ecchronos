@@ -18,7 +18,6 @@ import java.net.InetSocketAddress;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,10 +29,10 @@ import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Row;
 
 /**
- * EndPointFactory that creates wrapped end points for remote hosts and always returns the same end point for the local
+ * EndPointFactory that creates wrapped EndPoints for remote hosts and always returns the same EndPoint for the local
  * host.
  *
- * The wrapped end points determine equality based on the host_id value of the row to allow for changing EndPoints.
+ * The wrapped EndPoints determine equality based on the host_id value of the row to allow for changing IP addresses.
  */
 public class EccEndPointFactory implements EndPointFactory, Host.StateListener
 {
@@ -41,13 +40,13 @@ public class EccEndPointFactory implements EndPointFactory, Host.StateListener
 
     private final ConcurrentHashMap<UUID, HostIdEndPoint> hostIdEndPointMap = new ConcurrentHashMap<>();
 
-    private final EndPoint localEndpoint;
+    private final EndPoint localEndPoint;
     private final UUID localHost;
     private final EndPointFactory delegateEndpointFactory;
 
-    public EccEndPointFactory(EndPoint localEndpoint, UUID localHost, EndPointFactory delegateEndpointFactory)
+    public EccEndPointFactory(EndPoint localEndPoint, UUID localHost, EndPointFactory delegateEndpointFactory)
     {
-        this.localEndpoint = localEndpoint;
+        this.localEndPoint = localEndPoint;
         this.localHost = localHost;
         this.delegateEndpointFactory = delegateEndpointFactory;
     }
@@ -69,12 +68,24 @@ public class EccEndPointFactory implements EndPointFactory, Host.StateListener
 
         if (localHost.equals(hostId))
         {
-            return localEndpoint;
+            return localEndPoint;
         }
 
         EndPoint endPoint = delegateEndpointFactory.create(peersRow);
         if (endPoint != null)
         {
+            HostIdEndPoint existing = hostIdEndPointMap.get(hostId);
+
+            if (existing != null)
+            {
+                EndPoint existingWrapped = existing.getWrapped();
+                LOG.info("Updating host EndPoint for '{}' from '{}' -> '{}'", hostId, existingWrapped, endPoint);
+                existing.setEndPoint(endPoint);
+                return existing;
+            }
+
+            LOG.info("Adding host '{}' to known hosts with EndPoint '{}'", hostId, endPoint);
+
             // Retain the wrapping EndPoint object but replace the wrapped EndPoint as the driver
             // reuses the old Host object if the EndPoints are equal.
             return hostIdEndPointMap.compute(hostId, (uuid, old) -> {
@@ -115,7 +126,15 @@ public class EccEndPointFactory implements EndPointFactory, Host.StateListener
         UUID hostId = host.getHostId();
         if (hostId != null)
         {
-            hostIdEndPointMap.remove(hostId);
+            HostIdEndPoint removedEndPoint = hostIdEndPointMap.remove(hostId);
+            if (removedEndPoint != null)
+            {
+                LOG.info("Removed host '{}' with EndPoint '{}' from known hosts", hostId, removedEndPoint.getWrapped());
+            }
+            else
+            {
+                LOG.debug("Host '{}' was already removed from known hosts, notified more than once", hostId);
+            }
         }
         else
         {
@@ -149,6 +168,11 @@ public class EccEndPointFactory implements EndPointFactory, Host.StateListener
         void setEndPoint(EndPoint wrapped)
         {
             this.wrapped = wrapped;
+        }
+
+        EndPoint getWrapped()
+        {
+            return wrapped;
         }
 
         @Override

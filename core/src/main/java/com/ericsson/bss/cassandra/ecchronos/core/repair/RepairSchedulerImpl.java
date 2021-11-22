@@ -128,16 +128,9 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
     {
         synchronized (myLock)
         {
-            try
+            if (configurationHasChanged(tableReference, repairConfiguration))
             {
-                if (configurationHasChanged(tableReference, repairConfiguration))
-                {
-                    createTableSchedule(tableReference, repairConfiguration);
-                }
-            }
-            catch (Exception e)
-            {
-                LOG.error("Error during Schedule change of {}:", tableReference, e);
+                createTableSchedule(tableReference, repairConfiguration);
             }
         }
     }
