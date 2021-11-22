@@ -2,6 +2,7 @@
 
 ## Version 2.0.4
 
+* Log exceptions during creation/deletion of schedules
 * Update gson to 2.8.9 - Issue #239
 * Update netty to 4.1.69.Final
 * Many exceptions if Ongoing Repair jobs cannot be fetched - Issue #236

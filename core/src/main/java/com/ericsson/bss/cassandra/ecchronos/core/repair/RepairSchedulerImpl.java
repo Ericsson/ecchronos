@@ -128,9 +128,15 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
     {
         synchronized (myLock)
         {
-            if (configurationHasChanged(tableReference, repairConfiguration))
+            try
             {
-                createTableSchedule(tableReference, repairConfiguration);
+                if (configurationHasChanged(tableReference, repairConfiguration))
+                {
+                    createTableSchedule(tableReference, repairConfiguration);
+                }
+            } catch (Exception e)
+            {
+                LOG.error("Unexpected error during schedule change of {}:", tableReference, e);
             }
         }
     }
@@ -157,8 +163,14 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
     {
         synchronized (myLock)
         {
-            ScheduledJob job = myScheduledJobs.remove(tableReference);
-            descheduleTableJob(job);
+            try
+            {
+                ScheduledJob job = myScheduledJobs.remove(tableReference);
+                descheduleTableJob(job);
+            } catch (Exception e)
+            {
+                LOG.error("Unexpected error during schedule removal of {}:", tableReference, e);
+            }
         }
     }
 
