@@ -149,7 +149,7 @@ public class TestRepairTask
         cdl.await();
 
         assertThat(repairTask.getUnknownRanges()).isNull();
-        assertThat(repairTask.getCompletedRanges()).containsExactlyElementsOf(ranges);
+        assertThat(repairTask.getCompletedRanges()).containsExactlyInAnyOrderElementsOf(ranges);
         assertThat(proxy.myOptions.get(RepairOptions.RANGES_KEY)).isNotEmpty();
 
         verify(myTableRepairMetrics).repairTiming(eq(TABLE_REFERENCE), anyLong(), any(TimeUnit.class), eq(true));
@@ -324,7 +324,7 @@ public class TestRepairTask
         cdl.await();
 
         assertThat(repairTask.getUnknownRanges()).isNull();
-        assertThat(repairTask.getCompletedRanges()).containsExactlyElementsOf(ranges);
+        assertThat(repairTask.getCompletedRanges()).containsExactlyInAnyOrderElementsOf(ranges);
         assertThat(proxy.myOptions.get(RepairOptions.RANGES_KEY)).isNotEmpty();
 
         verify(myTableRepairMetrics).repairTiming(eq(TABLE_REFERENCE), anyLong(), any(TimeUnit.class), eq(true));
