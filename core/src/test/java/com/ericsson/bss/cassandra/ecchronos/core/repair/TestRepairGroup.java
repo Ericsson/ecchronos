@@ -255,7 +255,7 @@ public class TestRepairGroup
             assertThat(repairTask.getRepairConfiguration().getRepairParallelism()).isEqualTo(RepairOptions.RepairParallelism.PARALLEL);
         }
 
-        assertThat(repairTaskRanges).containsExactlyElementsOf(vnodes);
+        assertThat(repairTaskRanges).containsExactlyInAnyOrderElementsOf(vnodes);
     }
 
     private RepairGroup.Builder builderFor(ReplicaRepairGroup replicaRepairGroup)
