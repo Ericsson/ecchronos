@@ -20,7 +20,7 @@
     <parent>
         <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
         <artifactId>parent</artifactId>
-        <version>2.0.5-SNAPSHOT</version>
+        <version>2.0.5</version>
     </parent>
     <artifactId>connection.impl</artifactId>
     <packaging>bundle</packaging>
