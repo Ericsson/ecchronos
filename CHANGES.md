@@ -1,5 +1,9 @@
 # Changes
 
+## Version 2.0.5
+
+* Step log4j-api version to 2.15.0 - Issue #245
+
 ## Version 2.0.4
 
 * Handle endpoints with changing IP addresses - Issue #243
