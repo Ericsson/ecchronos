@@ -72,7 +72,7 @@
         <junit.version>5.7.0</junit.version>
         <org.apache.commons.io.version>2.7</org.apache.commons.io.version>
         <com.fasterxml.jackson.version>2.12.3</com.fasterxml.jackson.version>
-        <org.apache.logging.log4j.version>2.15.0</org.apache.logging.log4j.version>
+        <org.apache.logging.log4j.version>2.17.1</org.apache.logging.log4j.version>
 
         <pax-exam.version>4.13.1</pax-exam.version>
         <pax-logging-logback.version>1.8.4</pax-logging-logback.version>
