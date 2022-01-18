@@ -70,15 +70,16 @@ class RestRequest(object):
     def get_charset(response):
         return RestRequest.get_param(response.info(), 'charset') or 'utf-8'
 
-    def request(self, url):
+    def request(self, url, method='GET'):
         request_url = "{0}/{1}".format(self.base_url, url)
         try:
             request = Request(request_url)
+            request.get_method = lambda: method
             response = urlopen(request)
             json_data = json.loads(response.read().decode(RestRequest.get_charset(response)))
 
             response.close()
-            return RequestResult(status_code=200, data=json_data)
+            return RequestResult(status_code=response.getcode(), data=json_data)
         except HTTPError as e:
             return RequestResult(status_code=e.code,
                                  message="Unable to retrieve resource {0}".format(request_url),
@@ -96,6 +97,7 @@ class RepairSchedulerRequest(RestRequest):
     repair_management_status_url = 'repair-management/v1/status'
     repair_management_table_status_url = 'repair-management/v1/status/keyspaces/{0}/tables/{1}'
     repair_management_job_status_url = 'repair-management/v1/status/ids/{0}'
+    repair_management_job_schedule_url = 'repair-management/v1/schedule/keyspaces/{0}/tables/{1}'
 
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
@@ -120,6 +122,13 @@ class RepairSchedulerRequest(RestRequest):
         if result.is_successful():
             result = result.transform_with_data(new_data=[RepairJob(x) for x in result.data])
 
+        return result
+
+    def post(self, keyspace=None, table=None):
+        request_url = RepairSchedulerRequest.repair_management_job_schedule_url.format(keyspace, table)
+        result = self.request(request_url, 'POST')
+        if result.is_successful():
+            result = result.transform_with_data(RepairJob(result.data))
         return result
 
 
