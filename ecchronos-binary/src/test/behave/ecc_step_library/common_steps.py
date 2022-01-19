@@ -14,6 +14,8 @@
 #
 
 import re
+import os
+from behave import given  # pylint: disable=no-name-in-module
 
 
 def strip_and_collapse(line):
@@ -51,3 +53,8 @@ def validate_last_table_row(rows):
     assert len(rows) == 1, "Expecting last element to be '---' in {0}".format(rows)
     assert rows[0] == len(rows[0]) * rows[0][0], rows[0]  # -----
     assert len(rows) == 1, "{0} not empty".format(rows)
+
+@given(u'we have access to ecc')
+def step_init(context):
+    assert context.config.userdata.get("ecc") is not False
+    assert os.path.isfile(context.config.userdata.get("ecc"))

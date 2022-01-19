@@ -3,6 +3,7 @@
 ## Version 2.0.6
 
 * Add ecc-schedule command - Issue #158
+* Consolidate all scripts into single script with subcommands - Issue #170
 
 ## Version 2.0.5
 

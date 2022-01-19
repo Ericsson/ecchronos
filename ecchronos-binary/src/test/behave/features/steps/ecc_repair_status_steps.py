@@ -14,10 +14,9 @@
 #
 
 import time
-import os
 import re
 from subprocess import Popen, PIPE
-from behave import given, when, then  # pylint: disable=no-name-in-module
+from behave import when, then  # pylint: disable=no-name-in-module
 from ecc_step_library.common_steps import match_and_remove_row, strip_and_collapse, validate_header, validate_last_table_row  # pylint: disable=line-too-long
 
 
@@ -28,8 +27,8 @@ SUMMARY_PATTERN = r'Summary: \d+ completed, \d+ in queue, \d+ warning, \d+ error
 TABLE_HEADER = r'| Id | Keyspace | Table | Status | Repaired(%) | Completed at | Next repair | Recurring |'
 
 
-def run_ecc_status(context, params):
-    cmd = [context.config.userdata.get("ecc-status")] + params
+def run_ecc_repair_status(context, params):
+    cmd = [context.config.userdata.get("ecc")] + ["repair-status"] + params
     context.proc = Popen(cmd, stdout=PIPE, stderr=PIPE) # pylint: disable=consider-using-with
     (context.out, context.err) = context.proc.communicate()
 
@@ -42,15 +41,9 @@ def token_row():
     return "\\| [-]?\\d+ \\| [-]?\\d+ \\| .* \\| .* \\| (True|False) \\|"
 
 
-@given(u'we have access to ecc-status')
-def step_init(context):
-    assert context.config.userdata.get("ecc-status") is not False
-    assert os.path.isfile(context.config.userdata.get("ecc-status"))
-
-
 @when(u'we list all tables')
 def step_list_tables(context):
-    run_ecc_status(context, [])
+    run_ecc_repair_status(context, [])
 
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
@@ -60,7 +53,7 @@ def step_list_tables(context):
 
 @when(u'we list all tables with a limit of {limit}')
 def step_list_tables_with_limit(context, limit):
-    run_ecc_status(context, ['--limit', limit])
+    run_ecc_repair_status(context, ['--limit', limit])
 
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
@@ -70,7 +63,7 @@ def step_list_tables_with_limit(context, limit):
 
 @when(u'we list all tables for keyspace {keyspace} with a limit of {limit}')
 def step_list_tables_for_keyspace_with_limit(context, keyspace, limit):
-    run_ecc_status(context, ['--keyspace', keyspace, '--limit', limit])
+    run_ecc_repair_status(context, ['--keyspace', keyspace, '--limit', limit])
 
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
@@ -80,7 +73,7 @@ def step_list_tables_for_keyspace_with_limit(context, keyspace, limit):
 
 @when(u'we list all tables for keyspace {keyspace}')
 def step_list_tables_for_keyspace(context, keyspace):
-    run_ecc_status(context, ['--keyspace', keyspace])
+    run_ecc_repair_status(context, ['--keyspace', keyspace])
 
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
@@ -90,11 +83,11 @@ def step_list_tables_for_keyspace(context, keyspace):
 
 @when(u'we show job {keyspace}.{table} with a limit of {limit}')
 def step_show_table_with_limit(context, keyspace, table, limit):
-    run_ecc_status(context, ['--keyspace', keyspace, '--table', table])
+    run_ecc_repair_status(context, ['--keyspace', keyspace, '--table', table])
 
     job_id = re.search(ID_PATTERN, context.out.decode('ascii')).group(0)
     assert job_id
-    run_ecc_status(context, ['--id', job_id, '--limit', limit])
+    run_ecc_repair_status(context, ['--id', job_id, '--limit', limit])
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
 
     context.table_info = output_data[0:7]
@@ -104,7 +97,7 @@ def step_show_table_with_limit(context, keyspace, table, limit):
 
 @when(u'we list jobs for table {keyspace}.{table}')
 def step_show_table(context, keyspace, table):
-    run_ecc_status(context, ['--keyspace', keyspace, '--table', table])
+    run_ecc_repair_status(context, ['--keyspace', keyspace, '--table', table])
 
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
@@ -196,7 +189,7 @@ def verify_job_disappeared(context, keyspace, table):  # pylint: disable=unused-
     timeout = time.time() + 150
     output_data = []
     while "Repair job not found" not in output_data:
-        run_ecc_status(context, ['--id', job_id, '--limit', "1"])
+        run_ecc_repair_status(context, ['--id', job_id, '--limit', "1"])
         output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
         time.sleep(1)
         assert time.time() < timeout
@@ -209,7 +202,7 @@ def verify_job_status_changed(context, keyspace, table):  # pylint: disable=unus
     timeout = time.time() + 150
     output_data = []
     while "Status         : COMPLETED" not in output_data:
-        run_ecc_status(context, ['--id', job_id, '--limit', "1"])
+        run_ecc_repair_status(context, ['--id', job_id, '--limit', "1"])
         output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
         time.sleep(1)
         assert time.time() < timeout

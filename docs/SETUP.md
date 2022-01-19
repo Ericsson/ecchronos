@@ -142,6 +142,6 @@ More information about the custom connection provider can be found [here](STANDA
 
 ## Running ecChronos
 
-To run ecChronos execute `bin/ecc` from the root directory.
+To run ecChronos execute `bin/ecc start` from the root directory.
 It is possible to use the flag `-f` to keep the process running in the foreground.
 With the default setup a logfile will be created in the root directory called `ecc.log`.
