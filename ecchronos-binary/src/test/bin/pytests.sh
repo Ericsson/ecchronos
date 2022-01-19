@@ -124,7 +124,7 @@ echo "Starting behave"
 
 cd "$TEST_DIR"
 
-behave --define ecc-status="$BASE_DIR"/bin/ecc-status --define ecc-config="$BASE_DIR"/bin/ecc-config
+behave --define ecc-status="$BASE_DIR"/bin/ecc-status --define ecc-config="$BASE_DIR"/bin/ecc-config --define ecc-schedule="$BASE_DIR"/bin/ecc-schedule
 RETURN=$?
 
 if [ -f $PIDFILE ]; then
