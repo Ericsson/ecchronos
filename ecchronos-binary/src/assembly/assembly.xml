@@ -36,6 +36,11 @@
             <outputDirectory>bin</outputDirectory>
             <destName>ecc-config</destName>
         </file>
+        <file>
+            <source>${project.basedir}/src/bin/ecc_schedule.py</source>
+            <outputDirectory>bin</outputDirectory>
+            <destName>ecc-schedule</destName>
+        </file>
     </files>
     <fileSets>
         <fileSet>
