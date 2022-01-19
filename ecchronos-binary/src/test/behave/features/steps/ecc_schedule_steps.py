@@ -20,9 +20,6 @@ from ecc_step_library.common_steps import match_and_remove_row, validate_header,
 
 
 TABLE_ROW_FORMAT_PATTERN = r'\| .* \| {0} \| {1} \| (COMPLETED|IN_QUEUE|WARNING|ERROR) \| \d+[.]\d+ \| .* \| .* \|'
-ID_PATTERN = r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
-SUMMARY_PATTERN = r'Summary: \d+ completed, \d+ in queue, \d+ warning, \d+ error'
-
 TABLE_HEADER = r'| Id | Keyspace | Table | Status | Repaired(%) | Completed at | Next repair | Recurring |'
 
 
@@ -34,10 +31,6 @@ def run_ecc_schedule(context, params):
 
 def table_row(keyspace, table):
     return TABLE_ROW_FORMAT_PATTERN.format(keyspace, table)
-
-
-def token_row():
-    return "\\| [-]?\\d+ \\| [-]?\\d+ \\| .* \\| .* \\| (True|False) \\|"
 
 
 @given(u'we have access to ecc-schedule')
@@ -52,7 +45,7 @@ def step_schedule_repair(context, keyspace, table):
 
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
-    context.rows = output_data[3:-1]
+    context.rows = output_data[3:]
 
 
 @then(u'the schedule output should contain a valid header')
