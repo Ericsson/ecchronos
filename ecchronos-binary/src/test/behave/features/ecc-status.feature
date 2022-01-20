@@ -11,6 +11,7 @@ Feature: ecc-status
     And the output should contain a row for test2.table2
     And the output should contain a row for test2.table2
     And the output should contain a row for test2.table2
+    And the output should contain a row for test2.table2
     And the output should not contain more rows
     And the output should contain summary
 

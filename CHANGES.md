@@ -1,5 +1,9 @@
 # Changes
 
+## Version 2.0.6
+
+* Add ecc-schedule command - Issue #158
+
 ## Version 2.0.5
 
 * Step log4j-api version to 2.15.0 - Issue #245
