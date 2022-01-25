@@ -24,6 +24,7 @@ import sys
 import glob
 import subprocess
 from argparse import ArgumentParser
+from io import open
 
 try:
     from ecchronoslib import rest, table_printer
@@ -162,7 +163,7 @@ def get_class_path(conf_dir, ecchronos_home_dir):
 
 def get_jvm_opts(conf_dir):
     jvm_opts = ""
-    with open(os.path.join(conf_dir, "jvm.options"), "r") as options_file:
+    with open(os.path.join(conf_dir, "jvm.options"), "r", encoding="utf-8") as options_file:
         for line in options_file.readlines():
             if line.startswith("-"):
                 jvm_opts += "{0} ".format(line)
@@ -171,15 +172,15 @@ def get_jvm_opts(conf_dir):
 def run_ecc(cwd, command, arguments):
     if arguments.foreground:
         command += " -f"
-    proc = subprocess.Popen(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+    proc = subprocess.Popen(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, # pylint: disable=consider-using-with
                             cwd=cwd)
     pid = proc.pid
     print("ecc started with pid {0}".format(pid))
     pid_file = os.path.join(cwd, DEFAULT_PID_FILE)
     if arguments.pidfile:
         pid_file = arguments.pidfile
-    with open(pid_file, "w") as p_file:
-        p_file.write("{0}".format(pid))
+    with open(pid_file, "w", encoding="utf-8") as p_file:
+        p_file.write(u"{0}".format(pid))
     if arguments.foreground:
         while True:
             line = proc.stdout.readline()
@@ -194,7 +195,7 @@ def stop(arguments):
     pid_file = os.path.join(ecchronos_home_dir, DEFAULT_PID_FILE)
     if arguments.pidfile:
         pid_file = arguments.pidfile
-    with open(pid_file, "r") as p_file:
+    with open(pid_file, "r", encoding="utf-8") as p_file:
         pid = int(p_file.readline())
         print("Killing ecc with pid {0}".format(pid))
         os.kill(pid, signal.SIGTERM)
