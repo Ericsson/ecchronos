@@ -28,7 +28,7 @@ TABLE_HEADER = r'| Id | Keyspace | Table | Status | Repaired(%) | Completed at |
 
 
 def run_ecc_repair_status(context, params):
-    cmd = [context.config.userdata.get("ecc")] + ["repair-status"] + params
+    cmd = [context.config.userdata.get("ecctool")] + ["repair-status"] + params
     context.proc = Popen(cmd, stdout=PIPE, stderr=PIPE) # pylint: disable=consider-using-with
     (context.out, context.err) = context.proc.communicate()
 

@@ -54,7 +54,7 @@ def validate_last_table_row(rows):
     assert rows[0] == len(rows[0]) * rows[0][0], rows[0]  # -----
     assert len(rows) == 1, "{0} not empty".format(rows)
 
-@given(u'we have access to ecc')
+@given(u'we have access to ecctool')
 def step_init(context):
-    assert context.config.userdata.get("ecc") is not False
-    assert os.path.isfile(context.config.userdata.get("ecc"))
+    assert context.config.userdata.get("ecctool") is not False
+    assert os.path.isfile(context.config.userdata.get("ecctool"))

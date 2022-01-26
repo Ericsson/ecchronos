@@ -135,8 +135,7 @@ def repair_config(arguments):
         if arguments.keyspace or arguments.table:
             print("id must be specified alone")
             sys.exit(1)
-        else:
-            result = request.get(job_id=arguments.id)
+        result = request.get(job_id=arguments.id)
     else:
         result = request.list(keyspace=arguments.keyspace, table=arguments.table)
 

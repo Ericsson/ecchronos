@@ -97,7 +97,7 @@ python setup.py install
 
 cd $BASE_DIR
 
-bin/ecc start -p $PIDFILE
+bin/ecctool start -p $PIDFILE
 
 CHECKS=0
 MAX_CHECK=10
@@ -124,12 +124,12 @@ echo "Starting behave"
 
 cd "$TEST_DIR"
 
-behave --define ecc="$BASE_DIR"/bin/ecc
+behave --define ecctool="$BASE_DIR"/bin/ecctool
 RETURN=$?
 
 if [ -f $PIDFILE ]; then
     cd -
-    bin/ecc stop -p $PIDFILE
+    bin/ecctool stop -p $PIDFILE
 fi
 
 exit $RETURN

@@ -27,7 +27,7 @@ CONFIG_HEADER = r'| Id | Keyspace | Table | Interval | Parallelism | Unwind rati
 
 
 def run_ecc_repair_config(context, params):
-    cmd = [context.config.userdata.get("ecc")] + ["repair-config"] + params
+    cmd = [context.config.userdata.get("ecctool")] + ["repair-config"] + params
     context.proc = Popen(cmd, stdout=PIPE, stderr=PIPE) # pylint: disable=consider-using-with
     (context.out, context.err) = context.proc.communicate()
 

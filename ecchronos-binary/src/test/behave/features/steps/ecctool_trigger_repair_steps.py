@@ -23,7 +23,7 @@ TABLE_HEADER = r'| Id | Keyspace | Table | Status | Repaired(%) | Completed at |
 
 
 def run_ecc_trigger_repair(context, params):
-    cmd = [context.config.userdata.get("ecc")] + ["trigger-repair"] + params
+    cmd = [context.config.userdata.get("ecctool")] + ["trigger-repair"] + params
     context.proc = Popen(cmd, stdout=PIPE, stderr=PIPE) # pylint: disable=consider-using-with
     (context.out, context.err) = context.proc.communicate()
 
