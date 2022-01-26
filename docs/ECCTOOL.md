@@ -6,13 +6,14 @@ Standalone ecChronos includes a commandline utlity (ecctool) to check repair sta
 
 The following subcommands are available:
 
-| Command                                                           | Description                           |
-|-------------------------------------------------------------------|---------------------------------------|
-| `ecctool repair-status`                                           | Repair status overview                |
-| `ecctool repair-config`                                           | Configuration overview                |
-| `ecctool start`                                                   | Start ecChronos service               |
-| `ecctool stop  `                                                  | Stop ecChronos service                |
-| `ecctool trigger-repair`                                          | Trigger a single repair               |
+| Command                                                             | Description                           |
+|---------------------------------------------------------------------|---------------------------------------|
+| `ecctool repair-status`                                             | Repair status overview                |
+| `ecctool repair-config`                                             | Configuration overview                |
+| `ecctool trigger-repair`                                            | Trigger a single repair               |
+| `ecctool start`                                                     | Start ecChronos service               |
+| `ecctool stop`                                                      | Stop ecChronos service                |
+| `ecctool status`                                                    | Show status of ecChronos service      |
 
 ### Flags
 

@@ -45,6 +45,7 @@ def parse_arguments():
     add_trigger_repair_subcommand(sub_parsers)
     add_start_subcommand(sub_parsers)
     add_stop_subcommand(sub_parsers)
+    add_status_subcommand(sub_parsers)
 
     return parser.parse_args()
 
@@ -77,6 +78,18 @@ def add_repair_config_subcommand(sub_parsers):
                                       help="The host to connect to with the format (http://<host>:port)",
                                       default=None)
 
+def add_trigger_repair_subcommand(sub_parsers):
+    parser_trigger_repair = sub_parsers.add_parser("trigger-repair",
+                                                   description="Trigger a single repair")
+    parser_trigger_repair.add_argument("-u", "--url", type=str,
+                                       help="The host to connect to with the format (http://<host>:port)",
+                                       default=None)
+    required_args = parser_trigger_repair.add_argument_group("required arguments")
+    required_args.add_argument("-k", "--keyspace", type=str,
+                               help="Keyspace where the repair should be triggered", required=True)
+    required_args.add_argument("-t", "--table", type=str,
+                               help="Table where the repair should be triggered", required=True)
+
 def add_start_subcommand(sub_parsers):
     parser_config = sub_parsers.add_parser("start",
                                            description="Start ecChronos service")
@@ -91,17 +104,12 @@ def add_stop_subcommand(sub_parsers):
     parser_stop.add_argument("-p", "--pidfile", type=str,
                              help="Pidfile where to retrieve the pid, default $ECCHRONOS_HOME/ecc.pid")
 
-def add_trigger_repair_subcommand(sub_parsers):
-    parser_trigger_repair = sub_parsers.add_parser("trigger-repair",
-                                                   description="Trigger a single repair")
-    parser_trigger_repair.add_argument("-u", "--url", type=str,
-                                       help="The host to connect to with the format (http://<host>:port)",
-                                       default=None)
-    required_args = parser_trigger_repair.add_argument_group("required arguments")
-    required_args.add_argument("-k", "--keyspace", type=str,
-                               help="Keyspace where the repair should be triggered", required=True)
-    required_args.add_argument("-t", "--table", type=str,
-                               help="Table where the repair should be triggered", required=True)
+def add_status_subcommand(sub_parsers):
+    parser_status = sub_parsers.add_parser("status",
+                                           description="Show status of ecChronos service")
+    parser_status.add_argument("-u", "--url", type=str,
+                               help="The host to connect to with the format (http://<host>:port)",
+                               default=None)
 
 def repair_status(arguments):
     request = rest.RepairSchedulerRequest(base_url=arguments.url)
@@ -141,6 +149,14 @@ def repair_config(arguments):
 
     if result.is_successful():
         table_printer.print_table_config(result.data)
+    else:
+        print(result.format_exception())
+
+def trigger_repair(arguments):
+    request = rest.RepairSchedulerRequest(base_url=arguments.url)
+    result = request.post(keyspace=arguments.keyspace, table=arguments.table)
+    if result.is_successful():
+        table_printer.print_repair_job(result.data)
     else:
         print(result.format_exception())
 
@@ -200,25 +216,32 @@ def stop(arguments):
         os.kill(pid, signal.SIGTERM)
     os.remove(pid_file)
 
-def trigger_repair(arguments):
+def status(arguments, print_running=False):
     request = rest.RepairSchedulerRequest(base_url=arguments.url)
-    result = request.post(keyspace=arguments.keyspace, table=arguments.table)
+    result = request.list()
     if result.is_successful():
-        table_printer.print_repair_job(result.data)
+        if print_running:
+            print("ecChronos is running")
     else:
-        print(result.format_exception())
+        print("ecChronos is not running")
+        sys.exit(1)
 
 def run_subcommand(arguments):
     if arguments.subcommand == "repair-status":
+        status(arguments)
         repair_status(arguments)
     elif arguments.subcommand == "repair-config":
+        status(arguments)
         repair_config(arguments)
+    elif arguments.subcommand == "trigger-repair":
+        status(arguments)
+        trigger_repair(arguments)
     elif arguments.subcommand == "start":
         start(arguments)
     elif arguments.subcommand == "stop":
         stop(arguments)
-    elif arguments.subcommand == "trigger-repair":
-        trigger_repair(arguments)
+    elif arguments.subcommand == "status":
+        status(arguments, print_running=True)
 
 def main():
     run_subcommand(parse_arguments())
