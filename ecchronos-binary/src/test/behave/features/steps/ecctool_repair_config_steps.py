@@ -13,10 +13,9 @@
 # limitations under the License.
 #
 
-import os
 import re
 from subprocess import Popen, PIPE
-from behave import given, when, then  # pylint: disable=no-name-in-module
+from behave import when, then  # pylint: disable=no-name-in-module
 from ecc_step_library.common_steps import match_and_remove_row, validate_header, validate_last_table_row
 
 NAME_PATTERN = r'[a-zA-Z0-9]+'
@@ -27,8 +26,8 @@ ID_PATTERN = r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a
 CONFIG_HEADER = r'| Id | Keyspace | Table | Interval | Parallelism | Unwind ratio | Warning time | Error time |'
 
 
-def run_ecc_config(context, params):
-    cmd = [context.config.userdata.get("ecc-config")] + params
+def run_ecc_repair_config(context, params):
+    cmd = [context.config.userdata.get("ecctool")] + ["repair-config"] + params
     context.proc = Popen(cmd, stdout=PIPE, stderr=PIPE) # pylint: disable=consider-using-with
     (context.out, context.err) = context.proc.communicate()
 
@@ -48,15 +47,9 @@ def table_pattern(keyspace=NAME_PATTERN,  # pylint: disable=too-many-arguments
                 warn=warn_time, error=error_time)
 
 
-@given(u'we have access to ecc-config')
-def step_init(context):
-    assert context.config.userdata.get("ecc-config") is not False
-    assert os.path.isfile(context.config.userdata.get("ecc-config"))
-
-
 @when(u'we list config')
 def step_list_configs(context):
-    run_ecc_config(context, [])
+    run_ecc_repair_config(context, [])
 
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
@@ -65,7 +58,7 @@ def step_list_configs(context):
 
 @when(u'we list config for keyspace {keyspace} and table {table}')
 def step_list_config_for_table(context, keyspace, table):
-    run_ecc_config(context, [keyspace, table])
+    run_ecc_repair_config(context, ['--keyspace', keyspace, '--table', table])
 
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
@@ -74,7 +67,7 @@ def step_list_config_for_table(context, keyspace, table):
 
 @when(u'we list config for keyspace {keyspace}')
 def step_list_configs_for_keyspace(context, keyspace):
-    run_ecc_config(context, [keyspace])
+    run_ecc_repair_config(context, ['--keyspace', keyspace])
 
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
@@ -82,9 +75,9 @@ def step_list_configs_for_keyspace(context, keyspace):
 
 @when(u'we list a specific config for keyspace {keyspace} and table {table}')
 def step_list_specific_config(context, keyspace, table):
-    run_ecc_config(context, [keyspace, table])
+    run_ecc_repair_config(context, ['--keyspace', keyspace, '--table', table])
     job_id = re.search(ID_PATTERN, context.out.decode('ascii')).group(0)
-    run_ecc_config(context, ['--id', job_id])
+    run_ecc_repair_config(context, ['--id', job_id])
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
 
     context.header = output_data[0:3]

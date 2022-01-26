@@ -57,6 +57,7 @@ def parse_arguments():
 
 
 def main():
+    print("Deprecated, please use ecctool instead")
     arguments = parse_arguments()
     request = rest.RepairSchedulerRequest(base_url=arguments.url)
     result = request.post(keyspace=arguments.keyspace, table=arguments.table)
