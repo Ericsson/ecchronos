@@ -5,7 +5,7 @@
 * Add ecc-schedule command - Issue #158
 * Consolidate all scripts into single script with subcommands - Issue #170
 * Bump springboot from 2.5.6 to 2.6.3 (CVE-2021-22060)
-* Bump springboot from 1.2.3 to 1.2.10 (CVE-2021-42550)
+* Bump logback from 1.2.3 to 1.2.10 (CVE-2021-42550)
 
 ## Version 2.0.5
 
