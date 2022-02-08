@@ -35,7 +35,7 @@ def print_verbose_repair_job(repair_job, max_lines):
 
     vnode_state_table = [["Start token", "End token", "Replicas", "Repaired at", "Repaired"]]
 
-    sorted_vnode_states = sorted(repair_job.vnode_states, key=lambda vnode: vnode.last_repaired_at_in_ms)
+    sorted_vnode_states = sorted(repair_job.vnode_states, key=lambda vnode: vnode.last_repaired_at_in_ms, reverse=True)
 
     if max_lines > -1:
         sorted_vnode_states = sorted_vnode_states[:max_lines]
@@ -62,7 +62,7 @@ def print_summary(repair_jobs):
 def print_repair_jobs(repair_jobs, max_lines):
     repair_jobs_table = [["Id", "Keyspace", "Table", "Status", "Repaired(%)",
                           "Completed at", "Next repair", "Recurring"]]
-    sorted_repair_jobs = sorted(repair_jobs, key=lambda job: job.last_repaired_at_in_ms)
+    sorted_repair_jobs = sorted(repair_jobs, key=lambda job: job.last_repaired_at_in_ms, reverse=True)
 
     if max_lines > -1:
         sorted_repair_jobs = sorted_repair_jobs[:max_lines]

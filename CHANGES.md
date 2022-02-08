@@ -8,6 +8,7 @@
 * Bump logback from 1.2.3 to 1.2.10 (CVE-2021-42550)
 * Bump apache-karaf from 4.2.8 to 4.3.6 (CVE-2021-41766, CVE-2022-22932)
 * Always create pidfile - Issue #253
+* Sort repair-status on newest first - Issue #261
 
 ## Version 2.0.5
 
