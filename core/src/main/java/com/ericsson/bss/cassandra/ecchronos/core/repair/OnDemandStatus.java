@@ -59,6 +59,7 @@ public class OnDemandStatus
     private static final String UDT_KEYSPACE_NAME = "keyspace_name";
     private static final String UDT_TABLE_NAME = "table_name";
     private static final String COMPLEDED_TIME_COLUMN_NAME = "completed_time";
+    private static final String STARTED_TIME_COLUMN_NAME = "started_time";
 
     private final Session mySession;
     private final UUID myHostId;
@@ -80,7 +81,7 @@ public class OnDemandStatus
         myUDTTableReferenceType = mySession.getCluster().getMetadata().getKeyspace(KEYSPACE_NAME).getUserType(UDT_TABLE_REFERENCE_NAME);
 
         BuiltStatement getStatusStatement = select().from(KEYSPACE_NAME, TABLE_NAME).where(eq(HOST_ID_COLUMN_NAME, bindMarker()));
-        BuiltStatement insertNewJobStatement = insertInto(KEYSPACE_NAME, TABLE_NAME).value(HOST_ID_COLUMN_NAME, bindMarker()).value(JOB_ID_COLUMN_NAME, bindMarker()).value(TABLE_REFERENCE_COLUMN_NAME, bindMarker()).value(TOKEN_MAP_HASH_COLUMN_NAME, bindMarker()).value(STATUS_COLUMN_NAME, "started");
+        BuiltStatement insertNewJobStatement = insertInto(KEYSPACE_NAME, TABLE_NAME).value(HOST_ID_COLUMN_NAME, bindMarker()).value(JOB_ID_COLUMN_NAME, bindMarker()).value(TABLE_REFERENCE_COLUMN_NAME, bindMarker()).value(TOKEN_MAP_HASH_COLUMN_NAME, bindMarker()).value(STARTED_TIME_COLUMN_NAME, bindMarker()).value(STATUS_COLUMN_NAME, "started");
         BuiltStatement updateRepairedTokenForJobStatement = update(KEYSPACE_NAME, TABLE_NAME).with(set(REPAIRED_TOKENS_COLUMN_NAME, bindMarker())).where(eq(HOST_ID_COLUMN_NAME, bindMarker())).and(eq(JOB_ID_COLUMN_NAME, bindMarker()));
         BuiltStatement updateJobToFinishedStatement = update(KEYSPACE_NAME, TABLE_NAME).with(set(STATUS_COLUMN_NAME, "finished")).and(set(COMPLEDED_TIME_COLUMN_NAME, bindMarker())).where(eq(HOST_ID_COLUMN_NAME, bindMarker())).and(eq(JOB_ID_COLUMN_NAME, bindMarker()));
         BuiltStatement updateJobToFailedStatement = update(KEYSPACE_NAME, TABLE_NAME).with(set(STATUS_COLUMN_NAME, "failed")).and(set(COMPLEDED_TIME_COLUMN_NAME, bindMarker())).where(eq(HOST_ID_COLUMN_NAME, bindMarker())).and(eq(JOB_ID_COLUMN_NAME, bindMarker()));
@@ -153,6 +154,7 @@ public class OnDemandStatus
         String table = uDTTableReference.getString(UDT_TABLE_NAME);
         TableReference tableReference = myTableReferenceFactory.forTable(keyspace, table);
         Long completedTime = row.get(COMPLEDED_TIME_COLUMN_NAME, Long.class);
+        Long startedTime = row.get(STARTED_TIME_COLUMN_NAME, Long.class);
 
         if(uDTTableReference.getUUID(UDT_ID_NAME).equals(tableReference.getId()))
         {
@@ -160,7 +162,7 @@ public class OnDemandStatus
                     .withOnDemandStatus(this)
                     .withTableReference(tableReference)
                     .withReplicationState(replicationState)
-                    .withOngoingJobInfo(jobId, tokenMapHash, repairedTokens, status, completedTime)
+                    .withOngoingJobInfo(jobId, tokenMapHash, repairedTokens, status, completedTime, startedTime)
                     .build();
             ongoingJobs.add(ongoingJob);
         }
@@ -173,7 +175,7 @@ public class OnDemandStatus
     public void addNewJob(UUID jobId, TableReference tableReference, int tokenMapHash)
     {
         UDTValue uDTTableReference = myUDTTableReferenceType.newValue().setUUID(UDT_ID_NAME, tableReference.getId()).setString(UDT_KEYSPACE_NAME, tableReference.getKeyspace()).setString(UDT_TABLE_NAME, tableReference.getTable());
-        BoundStatement statement = myInsertNewJobStatement.bind(myHostId, jobId, uDTTableReference, tokenMapHash);
+        BoundStatement statement = myInsertNewJobStatement.bind(myHostId, jobId, uDTTableReference, tokenMapHash, System.currentTimeMillis());
         mySession.execute(statement);
     }
 

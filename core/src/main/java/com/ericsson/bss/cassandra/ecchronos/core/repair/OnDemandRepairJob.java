@@ -14,11 +14,14 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,13 +56,11 @@ public class OnDemandRepairJob extends ScheduledJob
 
     private final TableRepairMetrics myTableRepairMetrics;
 
-    private final Map<ScheduledTask, Set<LongTokenRange>> myTasks;
-
-    private final int myTotalTasks;
-
     private boolean failed = false;
 
     private final OngoingJob myOngoingJob;
+    private final TableStorageStates myTableStorageStates;
+    private final RepairState myRepairState;
 
     private OnDemandRepairJob(OnDemandRepairJob.Builder builder)
     {
@@ -72,55 +73,9 @@ public class OnDemandRepairJob extends ScheduledJob
         myRepairLockType = Preconditions.checkNotNull(builder.repairLockType, "Repair lock type must be set");
         myOnFinishedHook = Preconditions.checkNotNull(builder.onFinishedHook, "On finished hook must be set");
         myRepairHistory = Preconditions.checkNotNull(builder.repairHistory, "Repair history must be set");
-
-        myTasks = createRepairTasks(myOngoingJob.getTokens(), myOngoingJob.getRepairedTokens());
-        myTotalTasks = myTasks.size();
-    }
-
-    private Map<ScheduledTask, Set<LongTokenRange>> createRepairTasks(Map<LongTokenRange, ImmutableSet<Node>> tokenRanges, Set<LongTokenRange> repairedTokens)
-    {
-        Map<ScheduledTask, Set<LongTokenRange>> taskMap = new ConcurrentHashMap<>();
-        List<VnodeRepairState> vnodeRepairStates = new ArrayList<>();
-        Map<LongTokenRange, ImmutableSet<Node>> remainingTokenRanges;
-
-        if(repairedTokens.isEmpty())
-        {
-            remainingTokenRanges = tokenRanges;
-        }
-        else
-        {
-            remainingTokenRanges = new HashMap<>(tokenRanges);
-            repairedTokens.iterator().forEachRemaining(t -> remainingTokenRanges.remove(t));
-        }
-
-        for (Map.Entry<LongTokenRange, ImmutableSet<Node>> entry : remainingTokenRanges.entrySet())
-        {
-            LongTokenRange longTokenRange = entry.getKey();
-            ImmutableSet<Node> replicas = entry.getValue();
-            vnodeRepairStates.add(new VnodeRepairState(longTokenRange, replicas, -1));
-        }
-
-        List<ReplicaRepairGroup> repairGroups = VnodeRepairGroupFactory.INSTANCE
-                .generateReplicaRepairGroups(vnodeRepairStates);
-
-        for (ReplicaRepairGroup replicaRepairGroup : repairGroups)
-        {
-            Set<LongTokenRange> groupTokenRange = new HashSet<>();
-            replicaRepairGroup.iterator().forEachRemaining(t -> groupTokenRange.add(t));
-
-            taskMap.put(RepairGroup.newBuilder()
-                    .withTableReference(myOngoingJob.getTableReference())
-                    .withRepairConfiguration(myRepairConfiguration)
-                    .withReplicaRepairGroup(replicaRepairGroup)
-                    .withJmxProxyFactory(myJmxProxyFactory)
-                    .withTableRepairMetrics(myTableRepairMetrics)
-                    .withRepairResourceFactory(myRepairLockType.getLockFactory())
-                    .withRepairLockFactory(repairLockFactory)
-                    .withRepairHistory(myRepairHistory)
-                    .withJobId(getId())
-                    .build(Priority.HIGHEST.getValue()), groupTokenRange);
-        }
-        return taskMap;
+        myTableStorageStates = Preconditions
+                .checkNotNull(builder.tableStorageStates, "Table storage states must be set");
+        myRepairState = Preconditions.checkNotNull(builder.repairState, "Repair state must be set");
     }
 
     public TableReference getTableReference()
@@ -160,23 +115,68 @@ public class OnDemandRepairJob extends ScheduledJob
     @Override
     public Iterator<ScheduledTask> iterator()
     {
-        return myTasks.keySet().iterator();
+        RepairStateSnapshot repairStateSnapshot = myRepairState.getSnapshot();
+        if (repairStateSnapshot.canRepair())
+        {
+            List<ScheduledTask> taskList = new ArrayList<>();
+            BigInteger tokensPerRepair = getTokensPerRepair(repairStateSnapshot.getVnodeRepairStates());
+            for (ReplicaRepairGroup replicaRepairGroup : repairStateSnapshot.getRepairGroups())
+            {
+                RepairGroup repairGroup = RepairGroup.newBuilder()
+                        .withTableReference(getTableReference())
+                        .withRepairConfiguration(myRepairConfiguration)
+                        .withReplicaRepairGroup(replicaRepairGroup)
+                        .withJmxProxyFactory(myJmxProxyFactory)
+                        .withTableRepairMetrics(myTableRepairMetrics)
+                        .withRepairResourceFactory(myRepairLockType.getLockFactory())
+                        .withRepairLockFactory(repairLockFactory)
+                        .withTokensPerRepair(tokensPerRepair)
+                        .withRepairHistory(myRepairHistory)
+                        .withJobId(getId())
+                        .build(Priority.HIGHEST.getValue());
+                taskList.add(repairGroup);
+            }
+            return taskList.iterator();
+        }
+        return Collections.emptyIterator();
+    }
+
+    private BigInteger getTokensPerRepair(VnodeRepairStates vnodeRepairStates)
+    {
+        BigInteger tokensPerRepair = LongTokenRange.FULL_RANGE;
+        if (myRepairConfiguration.getTargetRepairSizeInBytes() != RepairConfiguration.FULL_REPAIR_SIZE)
+        {
+            BigInteger tableSizeInBytes = BigInteger.valueOf(myTableStorageStates.getDataSize(getTableReference()));
+            if (!BigInteger.ZERO.equals(tableSizeInBytes))
+            {
+                BigInteger fullRangeSize = vnodeRepairStates.getVnodeRepairStates().stream()
+                        .map(VnodeRepairState::getTokenRange)
+                        .map(LongTokenRange::rangeSize)
+                        .reduce(BigInteger.ZERO, BigInteger::add);
+                BigInteger targetSizeInBytes = BigInteger.valueOf(myRepairConfiguration.getTargetRepairSizeInBytes());
+                BigInteger targetRepairs = tableSizeInBytes.divide(targetSizeInBytes);
+                tokensPerRepair = fullRangeSize.divide(targetRepairs);
+            }
+        }
+        return tokensPerRepair;
     }
 
     @Override
     public void postExecute(boolean successful, ScheduledTask task)
     {
+        try
+        {
+            myRepairState.update();
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Unable to check repair history, {}", this, e);
+        }
         if (!successful)
         {
             LOG.error("Error running {}", task);
             failed = true;
         }
-        else
-        {
-            Set<LongTokenRange> repairedTokenSet = myTasks.remove(task);
-            myOngoingJob.finishRanges(repairedTokenSet);
-        }
-
         super.postExecute(successful, task);
     }
 
@@ -184,7 +184,7 @@ public class OnDemandRepairJob extends ScheduledJob
     public void finishJob()
     {
         UUID id = getId();
-        if (myTasks.isEmpty())
+        if (getProgress() == 1.0)
         {
             myOnFinishedHook.accept(id);
             myOngoingJob.finishJob();
@@ -203,7 +203,7 @@ public class OnDemandRepairJob extends ScheduledJob
     @Override
     public long getLastSuccessfulRun()
     {
-        return -1;
+        return myOngoingJob.getCompletedTime() != -1 ? myOngoingJob.getCompletedTime() : myRepairState.getSnapshot().lastCompletedAt();
     }
 
     @Override
@@ -226,13 +226,28 @@ public class OnDemandRepairJob extends ScheduledJob
             failed = true;
             return State.FAILED;
         }
-        return myTasks.isEmpty() ? State.FINISHED : State.RUNNABLE;
+        return getProgress() == 1.0 ? State.FINISHED : State.RUNNABLE;
     }
 
     public double getProgress()
     {
-        int finishedTasks = myTotalTasks - myTasks.size();
-        return myTotalTasks == 0 ? 1 : (double) finishedTasks / myTotalTasks;
+        if (myOngoingJob.getCompletedTime() != -1)
+        {
+            return 1.0;
+        }
+        long interval = myRepairConfiguration.getRepairIntervalInMs();
+        Collection<VnodeRepairState> states = myRepairState.getSnapshot().getVnodeRepairStates().getVnodeRepairStates();
+        long nRepaired = states.stream()
+                .filter(isRepaired(myOngoingJob.getStartedTime(), interval))
+                .count();
+        return states.isEmpty()
+                ? 0
+                : (double) nRepaired / states.size();
+    }
+
+    private Predicate<VnodeRepairState> isRepaired(long timestamp, long interval)
+    {
+        return state -> timestamp - state.lastRepairedAt() <= interval;
     }
 
     @Override
@@ -249,12 +264,14 @@ public class OnDemandRepairJob extends ScheduledJob
                 .build();
         private JmxProxyFactory jmxProxyFactory;
         private TableRepairMetrics tableRepairMetrics = null;
-        private RepairConfiguration repairConfiguration = RepairConfiguration.DEFAULT;
+        private RepairConfiguration repairConfiguration = RepairConfiguration.DISABLED;
         private RepairLockType repairLockType;
         private Consumer<UUID> onFinishedHook = table -> {
         };
         private RepairHistory repairHistory;
         private OngoingJob ongoingJob;
+        private RepairState repairState;
+        private TableStorageStates tableStorageStates;
 
         public Builder withJmxProxyFactory(JmxProxyFactory jmxProxyFactory)
         {
@@ -295,6 +312,18 @@ public class OnDemandRepairJob extends ScheduledJob
         public Builder withOngoingJob(OngoingJob ongoingJob)
         {
             this.ongoingJob = ongoingJob;
+            return this;
+        }
+
+        public Builder withRepairState(RepairState repairState)
+        {
+            this.repairState = repairState;
+            return this;
+        }
+
+        public Builder withTableStorageStates(TableStorageStates tableStorageStates)
+        {
+            this.tableStorageStates = tableStorageStates;
             return this;
         }
 

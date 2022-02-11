@@ -20,24 +20,39 @@ import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.TableMetadata;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.PostUpdateHook;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -82,6 +97,15 @@ public class TestOnDemandRepairSchedulerImpl
 
     @Mock
     private OngoingJob myOngingJob;
+
+    @Mock
+    private TableStorageStates myTableStorageStates;
+
+    @Mock
+    private RepairStateFactory myRepairStateFactory;
+
+    @Mock
+    private RepairState myRepairState;
 
     @Test
     public void testScheduleRepairOnTable() throws EcChronosException
@@ -195,6 +219,8 @@ public class TestOnDemandRepairSchedulerImpl
 
     private OnDemandRepairSchedulerImpl.Builder defaultOnDemandRepairSchedulerImplBuilder()
     {
+        when(myRepairStateFactory.create(any(), any(), any())).thenReturn(myRepairState);
+        mockRepairStateSnapshot(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(10));
         return OnDemandRepairSchedulerImpl.builder()
                 .withJmxProxyFactory(jmxProxyFactory)
                 .withTableRepairMetrics(myTableRepairMetrics)
@@ -204,6 +230,27 @@ public class TestOnDemandRepairSchedulerImpl
                 .withRepairLockType(RepairLockType.VNODE)
                 .withRepairConfiguration(RepairConfiguration.DEFAULT)
                 .withRepairHistory(repairHistory)
-                .withOnDemandStatus(myOnDemandStatus);
+                .withOnDemandStatus(myOnDemandStatus)
+                .withRepairStateFactory(myRepairStateFactory)
+                .withTableStorageStates(myTableStorageStates);
+    }
+
+    private void mockRepairStateSnapshot(long lastRepairedAt)
+    {
+        LongTokenRange tokenRange = new LongTokenRange(0, 10);
+        ImmutableSet<Node> replicas = ImmutableSet.of(mock(Node.class), mock(Node.class));
+        ImmutableList<LongTokenRange> vnodes = ImmutableList.of(tokenRange);
+
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl
+                .newBuilder(ImmutableList.of(new VnodeRepairState(tokenRange, replicas, lastRepairedAt)))
+                .build();
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(replicas, vnodes);
+
+        RepairStateSnapshot repairStateSnapshot = RepairStateSnapshot.newBuilder()
+                .withReplicaRepairGroups(Collections.singletonList(replicaRepairGroup))
+                .withLastCompletedAt(lastRepairedAt)
+                .withVnodeRepairStates(vnodeRepairStates)
+                .build();
+        when(myRepairState.getSnapshot()).thenReturn(repairStateSnapshot);
     }
 }

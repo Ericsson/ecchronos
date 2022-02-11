@@ -67,4 +67,18 @@ public class RepairConfig
                 .withTargetRepairSizeInBytes(size_target)
                 .build();
     }
+
+    public RepairConfiguration asRepairConfigurationOnDemand()
+    {
+        return RepairConfiguration.newBuilder()
+                .withRepairInterval(0,
+                        TimeUnit.MILLISECONDS)
+                .withRepairWarningTime(alarm.getWarn().getInterval(TimeUnit.MILLISECONDS),
+                        TimeUnit.MILLISECONDS)
+                .withRepairErrorTime(alarm.getError().getInterval(TimeUnit.MILLISECONDS),
+                        TimeUnit.MILLISECONDS)
+                .withRepairUnwindRatio(unwind_ratio)
+                .withTargetRepairSizeInBytes(size_target)
+                .build();
+    }
 }

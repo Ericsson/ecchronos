@@ -98,11 +98,12 @@ public class TestOngoingJob
         when(myOnDemandStatus.getStartTokenFrom(myUdtValue)).thenReturn(-50L);
         when(myOnDemandStatus.getEndTokenFrom(myUdtValue)).thenReturn(700L);
 
+        Long startedTime = System.currentTimeMillis();
         OngoingJob ongoingJob = new OngoingJob.Builder()
                 .withOnDemandStatus(myOnDemandStatus)
                 .withReplicationState(myReplicationState)
                 .withTableReference(myTableReference)
-                .withOngoingJobInfo(jobId, myTokenMap.hashCode(), repiaredTokens, Status.started, null)
+                .withOngoingJobInfo(jobId, myTokenMap.hashCode(), repiaredTokens, Status.started, null, startedTime)
                 .build();
 
         assertThat(ongoingJob.getJobId()).isEqualTo(jobId);
@@ -111,6 +112,7 @@ public class TestOngoingJob
         assertThat(ongoingJob.getTokens()).isEqualTo(myTokenMap);
         assertThat(ongoingJob.getStatus()).isEqualTo(Status.started);
         assertThat(ongoingJob.getCompletedTime()).isEqualTo(-1);
+        assertThat(ongoingJob.getStartedTime()).isEqualTo(startedTime);
     }
 
     @Test
@@ -125,11 +127,12 @@ public class TestOngoingJob
         when(myOnDemandStatus.getStartTokenFrom(myUdtValue)).thenReturn(-50L);
         when(myOnDemandStatus.getEndTokenFrom(myUdtValue)).thenReturn(700L);
 
+        Long startedTime = System.currentTimeMillis();
         OngoingJob ongoingJob = new OngoingJob.Builder()
                 .withOnDemandStatus(myOnDemandStatus)
                 .withReplicationState(myReplicationState)
                 .withTableReference(myTableReference)
-                .withOngoingJobInfo(jobId, myTokenMap.hashCode(), repiaredTokens, Status.finished, 12345L)
+                .withOngoingJobInfo(jobId, myTokenMap.hashCode(), repiaredTokens, Status.finished, 12345L, startedTime)
                 .build();
 
         assertThat(ongoingJob.getJobId()).isEqualTo(jobId);
@@ -138,6 +141,7 @@ public class TestOngoingJob
         assertThat(ongoingJob.getTokens()).isEqualTo(myTokenMap);
         assertThat(ongoingJob.getStatus()).isEqualTo(Status.finished);
         assertThat(ongoingJob.getCompletedTime()).isEqualTo(12345L);
+        assertThat(ongoingJob.getStartedTime()).isEqualTo(startedTime);
     }
 
     @Test
@@ -230,7 +234,7 @@ public class TestOngoingJob
                 .withOnDemandStatus(myOnDemandStatus)
                 .withReplicationState(myReplicationState)
                 .withTableReference(myTableReference)
-                .withOngoingJobInfo(jobId, myTokenMap.keySet().hashCode(), repiaredTokens, Status.started, null)
+                .withOngoingJobInfo(jobId, myTokenMap.keySet().hashCode(), repiaredTokens, Status.started, null, null)
                 .build();
 
         boolean result = ongoingJob.hasTopologyChanged();
@@ -251,7 +255,7 @@ public class TestOngoingJob
                 .withOnDemandStatus(myOnDemandStatus)
                 .withReplicationState(myReplicationState)
                 .withTableReference(myTableReference)
-                .withOngoingJobInfo(jobId, myTokenMap.keySet().hashCode() - 1, repiaredTokens, Status.started, null)
+                .withOngoingJobInfo(jobId, myTokenMap.keySet().hashCode() - 1, repiaredTokens, Status.started, null, null)
                 .build();
 
         boolean result = ongoingJob.hasTopologyChanged();

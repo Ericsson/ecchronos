@@ -23,6 +23,10 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
+import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +60,8 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     private final RepairConfiguration myRepairConfiguration;
     private final RepairHistory myRepairHistory;
     private final OnDemandStatus myOnDemandStatus;
+    private final RepairStateFactory myRepairStateFactory;
+    private final TableStorageStates myTableStorageStates;
 
     private OnDemandRepairSchedulerImpl(Builder builder)
     {
@@ -68,6 +74,8 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         myRepairConfiguration = builder.repairConfiguration;
         myRepairHistory = builder.repairHistory;
         myOnDemandStatus = builder.onDemandStatus;
+        myRepairStateFactory = builder.myRepairStateFactory;
+        myTableStorageStates = builder.myTableStorageStates;
         new Thread(this::getOngoingJobs).start();
     }
 
@@ -136,7 +144,8 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     {
         synchronized (myLock)
         {
-            OnDemandRepairJob job = getOngoingRepairJob(ongoingJob);
+            LOG.info("OnDemand job {} did not finish correctly, re-triggering to finish remaining token ranges", ongoingJob.getJobId());
+            OnDemandRepairJob job = getOngoingRepairJob(ongoingJob, true);
             if(myScheduledJobs.putIfAbsent(job.getId(), job) == null)
             {
                 myScheduleManager.schedule(job);
@@ -187,6 +196,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
                 .withTableReference(tableReference)
                 .withReplicationState(myReplicationState)
                 .build();
+        RepairState repairState = myRepairStateFactory.create(tableReference, myRepairConfiguration, null);
         OnDemandRepairJob job = new OnDemandRepairJob.Builder()
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withTableRepairMetrics(myTableRepairMetrics)
@@ -195,20 +205,44 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
                 .withRepairConfiguration(myRepairConfiguration)
                 .withRepairHistory(myRepairHistory)
                 .withOngoingJob(ongoingJob)
+                .withRepairState(repairState)
+                .withTableStorageStates(myTableStorageStates)
                 .build();
         return job;
     }
 
     private OnDemandRepairJob getOngoingRepairJob(OngoingJob ongoingJob)
     {
+        return getOngoingRepairJob(ongoingJob, false);
+    }
+
+    private OnDemandRepairJob getOngoingRepairJob(OngoingJob ongoingJob, boolean rescheduled)
+    {
+        RepairConfiguration repairConfiguration = myRepairConfiguration;
+        if (rescheduled)
+        {
+            repairConfiguration = RepairConfiguration.newBuilder()
+                    .withRepairInterval(System.currentTimeMillis() - ongoingJob.getStartedTime(),
+                            TimeUnit.MILLISECONDS)
+                    .withRepairWarningTime(myRepairConfiguration.getRepairWarningTimeInMs(), TimeUnit.MILLISECONDS)
+                    .withRepairErrorTime(myRepairConfiguration.getRepairErrorTimeInMs(),
+                            TimeUnit.MILLISECONDS)
+                    .withRepairUnwindRatio(myRepairConfiguration.getRepairUnwindRatio())
+                    .withTargetRepairSizeInBytes(myRepairConfiguration.getTargetRepairSizeInBytes())
+                    .build();
+        }
+        RepairState repairState = myRepairStateFactory.create(ongoingJob.getTableReference(), repairConfiguration, null);
+
         OnDemandRepairJob job = new OnDemandRepairJob.Builder()
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairLockType(myRepairLockType)
                 .withOnFinished(this::removeScheduledJob)
-                .withRepairConfiguration(myRepairConfiguration)
+                .withRepairConfiguration(repairConfiguration)
                 .withRepairHistory(myRepairHistory)
                 .withOngoingJob(ongoingJob)
+                .withRepairState(repairState)
+                .withTableStorageStates(myTableStorageStates)
                 .build();
         return job;
     }
@@ -229,6 +263,8 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         private RepairConfiguration repairConfiguration;
         private RepairHistory repairHistory;
         private OnDemandStatus onDemandStatus;
+        private RepairStateFactory myRepairStateFactory;
+        private TableStorageStates myTableStorageStates;
 
         public Builder withJmxProxyFactory(JmxProxyFactory jmxProxyFactory)
         {
@@ -281,6 +317,18 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         public Builder withOnDemandStatus(OnDemandStatus onDemandStatus)
         {
             this.onDemandStatus = onDemandStatus;
+            return this;
+        }
+
+        public Builder withRepairStateFactory(RepairStateFactory repairStateFactory)
+        {
+            myRepairStateFactory = repairStateFactory;
+            return this;
+        }
+
+        public Builder withTableStorageStates(TableStorageStates tableStorageStates)
+        {
+            myTableStorageStates = tableStorageStates;
             return this;
         }
 

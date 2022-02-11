@@ -100,7 +100,6 @@ public class ECChronos implements Closeable
                 .withRepairConfiguration(repairConfigurationProvider::get)
                 .withTableReferenceFactory(myECChronosInternals.getTableReferenceFactory())
                 .build();
-
         myOnDemandRepairSchedulerImpl = OnDemandRepairSchedulerImpl.builder()
                 .withScheduleManager(myECChronosInternals.getScheduleManager())
                 .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
@@ -108,9 +107,11 @@ public class ECChronos implements Closeable
                 .withReplicationState(replicationState)
                 .withRepairLockType(repairConfig.getLockType())
                 .withMetadata(metadata)
-                .withRepairConfiguration(repairConfig.asRepairConfiguration())
+                .withRepairConfiguration(repairConfig.asRepairConfigurationOnDemand())
                 .withRepairHistory(repairHistory)
                 .withOnDemandStatus(new OnDemandStatus(nativeConnectionProvider))
+                .withRepairStateFactory(repairStateFactoryImpl)
+                .withTableStorageStates(myECChronosInternals.getTableStorageStates())
                 .build();
         myECChronosInternals.addRunPolicy(myTimeBasedRunPolicy);
     }

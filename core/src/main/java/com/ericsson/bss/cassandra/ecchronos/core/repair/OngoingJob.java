@@ -42,6 +42,7 @@ public class OngoingJob
     private final Integer myTokenHash;
     private final Status myStatus;
     private final long myCompletedTime;
+    private final long myStartedTime;
 
     private OngoingJob(Builder builder)
     {
@@ -54,6 +55,7 @@ public class OngoingJob
         myTokenHash = builder.tokenMapHash;
         myStatus = builder.status;
         myCompletedTime = builder.completedTime;
+        myStartedTime = builder.startedTime;
 
         if(myTokenHash == null)
         {
@@ -74,6 +76,11 @@ public class OngoingJob
     public long getCompletedTime()
     {
         return myCompletedTime;
+    }
+
+    public long getStartedTime()
+    {
+        return myStartedTime;
     }
 
     public TableReference getTableReference()
@@ -125,8 +132,9 @@ public class OngoingJob
         private Integer tokenMapHash = null;
         private Status status = Status.started;
         private long completedTime = -1;
+        private long startedTime = System.currentTimeMillis();
 
-        public Builder withOngoingJobInfo(UUID jobId, int tokenMapHash, Set<UDTValue> repairedTokens, Status status, Long completedTime)
+        public Builder withOngoingJobInfo(UUID jobId, int tokenMapHash, Set<UDTValue> repairedTokens, Status status, Long completedTime, Long startedTime)
         {
             this.jobId = jobId;
             this.tokenMapHash  = tokenMapHash;
@@ -135,6 +143,10 @@ public class OngoingJob
             if(completedTime != null)
             {
                 this.completedTime = completedTime;
+            }
+            if(startedTime != null)
+            {
+                this.startedTime = startedTime;
             }
             return this;
         }

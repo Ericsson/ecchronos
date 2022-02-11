@@ -89,7 +89,10 @@ public class RepairStateImpl implements RepairState
         {
             LOG.trace("Table {} keeping repair state {}", myTableReference, oldRepairStateSnapshot);
         }
-        myPostUpdateHook.postUpdate(myRepairStateSnapshot.get());
+        if (myPostUpdateHook != null)
+        {
+            myPostUpdateHook.postUpdate(myRepairStateSnapshot.get());
+        }
     }
 
     @Override
@@ -130,7 +133,7 @@ public class RepairStateImpl implements RepairState
         RepairedAt repairedAt = RepairedAt.generate(vnodeRepairStates);
         LOG.trace("RepairedAt: {}, calculated from: {}", repairedAt, vnodeRepairStates);
 
-        long calculatedRepairedAt;
+        long calculatedRepairedAt = 0;
 
         if (!repairedAt.isRepaired())
         {
@@ -138,7 +141,7 @@ public class RepairStateImpl implements RepairState
             {
                 calculatedRepairedAt = partiallyRepairedTableRepairedAt(repairedAt.getMaxRepairedAt());
             }
-            else
+            else if(myRepairConfiguration.getRepairIntervalInMs() != 0)
             {
                 calculatedRepairedAt = newTableRepairedAt();
             }
@@ -153,7 +156,7 @@ public class RepairStateImpl implements RepairState
 
     private long repairedTableRepairedAt(long repairedAt)
     {
-        if (LOG.isInfoEnabled())
+        if (LOG.isInfoEnabled() && myRepairConfiguration.getRepairIntervalInMs() != 0)
         {
             LOG.info("Table {} last repaired at {}, next repair {}", myTableReference, myDateFormat.get().format(new Date(repairedAt)), myDateFormat.get().format(new Date(repairedAt + myRepairConfiguration.getRepairIntervalInMs())));
         }
@@ -164,7 +167,7 @@ public class RepairStateImpl implements RepairState
     {
         long runIntervalInMs = myRepairConfiguration.getRepairIntervalInMs();
         long repairedAt = Math.min(System.currentTimeMillis() - runIntervalInMs, maxRepairedAt);
-        if (LOG.isInfoEnabled())
+        if (LOG.isInfoEnabled() && myRepairConfiguration.getRepairIntervalInMs() != 0)
         {
             LOG.info("Table {} has been partially repaired, next repair {}", myTableReference, myDateFormat.get().format(new Date(repairedAt + runIntervalInMs)));
         }

@@ -65,6 +65,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
     private static final String UDT_KAYSPACE_NAME = "keyspace_name";
     private static final String UDT_TABLE_NAME = "table_name";
     private static final String COMPLEDED_TIME_COLUMN_NAME = "completed_time";
+    private static final String STARTED_TIME_COLUMN_NAME = "started_time";
 
     private UUID myHostId;
     private TableReferenceFactory myTableReferenceFactory;
@@ -81,7 +82,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         mySession.execute(String.format("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {'class': 'NetworkTopologyStrategy', 'DC1': 1}", KEYSPACE_NAME ));
         mySession.execute(String.format("CREATE TYPE IF NOT EXISTS %s.token_range (start text, end text)", KEYSPACE_NAME));
         mySession.execute(String.format("CREATE TYPE IF NOT EXISTS %s.table_reference (id uuid, keyspace_name text, table_name text)", KEYSPACE_NAME));
-        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (host_id uuid, job_id uuid, table_reference frozen<table_reference>, token_map_hash int, repaired_tokens frozen<set<frozen<token_range>>>, status text, completed_time timestamp, PRIMARY KEY(host_id, job_id)) WITH default_time_to_live = 2592000 AND gc_grace_seconds = 0", KEYSPACE_NAME, TABLE_NAME));
+        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (host_id uuid, job_id uuid, table_reference frozen<table_reference>, token_map_hash int, repaired_tokens frozen<set<frozen<token_range>>>, status text, completed_time timestamp, started_time timestamp, PRIMARY KEY(host_id, job_id)) WITH default_time_to_live = 2592000 AND gc_grace_seconds = 0", KEYSPACE_NAME, TABLE_NAME));
         mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (col1 int, col2 int, PRIMARY KEY(col1))", KEYSPACE_NAME, TEST_TABLE_NAME));
 
         myTableReferenceFactory = new TableReferenceFactoryImpl(mySession.getCluster().getMetadata());
@@ -143,6 +144,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(row.getSet(REPAIRED_TOKENS_COLUMN_NAME, UDTValue.class)).isEmpty();
         assertThat(row.getString(STATUS_COLUMN_NAME)).isEqualTo(STATUS_STARTED);
         assertThat(row.get(COMPLEDED_TIME_COLUMN_NAME, Long.class)).isNull();
+        assertThat(row.get(STARTED_TIME_COLUMN_NAME, Long.class)).isLessThan(System.currentTimeMillis());
     }
 
     @Test
