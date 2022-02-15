@@ -577,6 +577,7 @@ public class ITTableRepairJob extends TestBase
                     .value("keyspace_name", tableReference.getKeyspace())
                     .value("columnfamily_name", tableReference.getTable())
                     .value("participants", participants)
+                    .value("coordinator", myLocalNode.getPublicAddress())
                     .value("id", UUIDs.startOf(started_at))
                     .value("started_at", new Date(started_at))
                     .value("finished_at", new Date(finished_at))

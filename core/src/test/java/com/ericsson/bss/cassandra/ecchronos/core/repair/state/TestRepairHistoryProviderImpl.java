@@ -61,7 +61,7 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     @BeforeClass
     public static void startup()
     {
-        myInsertRecordStatement = mySession.prepare("INSERT INTO system_distributed.repair_history (keyspace_name, columnfamily_name, participants, id, started_at, finished_at, range_begin, range_end, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        myInsertRecordStatement = mySession.prepare("INSERT INTO system_distributed.repair_history (keyspace_name, columnfamily_name, coordinator, participants, id, started_at, finished_at, range_begin, range_end, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         NodeResolver nodeResolver = new NodeResolverImpl(myCluster.getMetadata());
 
@@ -341,6 +341,7 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
         mySession.execute(myInsertRecordStatement.bind(
                 keyspace,
                 table,
+                nodes.stream().findFirst().get(),
                 nodes,
                 UUIDs.startOf(started),
                 new Date(started),
@@ -362,6 +363,7 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
         mySession.execute(myInsertRecordStatement.bind(
                 keyspace,
                 table,
+                nodeAddresses.stream().findFirst().get(),
                 nodeAddresses,
                 UUIDs.startOf(repairEntry.getStartedAt()),
                 new Date(repairEntry.getStartedAt()),

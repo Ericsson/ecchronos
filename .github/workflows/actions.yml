@@ -30,6 +30,9 @@ jobs:
          - name: "Standalone integration 3.11"
            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=3.11 -DskipUTs'
            python: 3.6
+         - name: "Standalone integration 4.0"
+           test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=4.0 -DskipUTs'
+           python: 3.6
          - name: "Python 2.7 integration"
            test_suite: 'verify -P docker-integration-test,python-integration-tests -DskipUTs'
            python: 2.7
