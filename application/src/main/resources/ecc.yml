@@ -134,9 +134,9 @@ repair:
   ## This is an estimation assuming uniform data distribution among partition keys.
   ## The value should be either a number or a number with a unit of measurement:
   ## 12  (12 B)
-  ## 12k (1 KiB)
-  ## 12m (1 MiB)
-  ## 12g (1 GiB)
+  ## 12k (12 KiB)
+  ## 12m (12 MiB)
+  ## 12g (12 GiB)
   ##
   size_target:
   ##
