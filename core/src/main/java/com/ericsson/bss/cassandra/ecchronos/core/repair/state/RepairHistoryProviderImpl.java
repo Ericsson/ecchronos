@@ -43,12 +43,13 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     private static final String ID_COLUMN = "id";
     private static final String STATUS_COLUMN = "status";
     private static final String PARTICIPANTS_COLUMN = "participants";
+    private static final String COORDINATOR_COLUMN = "coordinator";
 
     private static final String KEYSPACE_NAME = "system_distributed";
     private static final String REPAIR_HISTORY = "repair_history";
 
     private static final String REPAIR_HISTORY_BY_TIME_STATEMENT = String
-            .format("SELECT id, range_begin, range_end, status, participants FROM %s.%s WHERE keyspace_name=? AND columnfamily_name=? AND id >= minTimeuuid(?) and id <= maxTimeuuid(?)", KEYSPACE_NAME, REPAIR_HISTORY);
+            .format("SELECT id, range_begin, range_end, status, participants, coordinator FROM %s.%s WHERE keyspace_name=? AND columnfamily_name=? AND id >= minTimeuuid(?) and id <= maxTimeuuid(?)", KEYSPACE_NAME, REPAIR_HISTORY);
 
     private final NodeResolver myNodeResolver;
     private final Session mySession;
@@ -127,6 +128,16 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
                     UUID id = row.getUUID(ID_COLUMN);
                     Set<InetAddress> participants = row.getSet(PARTICIPANTS_COLUMN, InetAddress.class);
                     Set<Node> nodes = new HashSet<>();
+                    InetAddress coordinator = row.getInet(COORDINATOR_COLUMN);
+                    Optional<Node> coordinatorNode = myNodeResolver.fromIp(coordinator);
+                    if (!coordinatorNode.isPresent())
+                    {
+                        LOG.warn("Coordinator node {} not found in metadata", coordinator);
+                    }
+                    else
+                    {
+                        nodes.add(coordinatorNode.get());
+                    }
                     for (InetAddress participant : participants)
                     {
                         Optional<Node> node = myNodeResolver.fromIp(participant);
@@ -160,7 +171,8 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
             return !row.isNull(PARTICIPANTS_COLUMN) &&
                     !row.isNull(RANGE_BEGIN_COLUMN) &&
                     !row.isNull(RANGE_END_COLUMN) &&
-                    !row.isNull(ID_COLUMN);
+                    !row.isNull(ID_COLUMN) &&
+                    !row.isNull(COORDINATOR_COLUMN);
         }
     }
 }

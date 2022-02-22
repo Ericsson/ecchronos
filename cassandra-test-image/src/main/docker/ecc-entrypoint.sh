@@ -17,7 +17,7 @@
 set -e
 
 sed -i "s/authenticator: .*/authenticator: PasswordAuthenticator/g" "$CASSANDRA_CONF"/cassandra.yaml
-sed -i "s/authorizer: .*/authorizer: CassandraAuthorizer/g" "$CASSANDRA_CONF"/cassandra.yaml
+sed -i "s/^authorizer: .*/authorizer: CassandraAuthorizer/g" "$CASSANDRA_CONF"/cassandra.yaml
 
 sed -i "s/num_tokens: .*/num_tokens: 16/g" "$CASSANDRA_CONF"/cassandra.yaml
 sed -i "s/auto_snapshot: .*/auto_snapshot: false/g" "$CASSANDRA_CONF"/cassandra.yaml
@@ -82,4 +82,4 @@ EOF
 
 fi
 
-./docker-entrypoint.sh
+docker-entrypoint.sh
