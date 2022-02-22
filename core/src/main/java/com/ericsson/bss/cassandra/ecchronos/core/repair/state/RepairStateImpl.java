@@ -89,7 +89,10 @@ public class RepairStateImpl implements RepairState
         {
             LOG.trace("Table {} keeping repair state {}", myTableReference, oldRepairStateSnapshot);
         }
-        myPostUpdateHook.postUpdate(myRepairStateSnapshot.get());
+        if(myPostUpdateHook != null)
+        {
+            myPostUpdateHook.postUpdate(myRepairStateSnapshot.get());
+        }
     }
 
     @Override
@@ -130,7 +133,7 @@ public class RepairStateImpl implements RepairState
         RepairedAt repairedAt = RepairedAt.generate(vnodeRepairStates);
         LOG.trace("RepairedAt: {}, calculated from: {}", repairedAt, vnodeRepairStates);
 
-        long calculatedRepairedAt;
+        long calculatedRepairedAt = 0;
 
         if (!repairedAt.isRepaired())
         {
@@ -138,7 +141,7 @@ public class RepairStateImpl implements RepairState
             {
                 calculatedRepairedAt = partiallyRepairedTableRepairedAt(repairedAt.getMaxRepairedAt());
             }
-            else
+            else if(myRepairConfiguration.getRepairIntervalInMs() != 0)
             {
                 calculatedRepairedAt = newTableRepairedAt();
             }

@@ -41,6 +41,7 @@ def parse_arguments():
     parser = ArgumentParser(description="ecChronos utility command")
     sub_parsers = parser.add_subparsers(dest="subcommand")
     add_repair_status_subcommand(sub_parsers)
+    add_repair_queue_subcommand(sub_parsers)
     add_repair_config_subcommand(sub_parsers)
     add_trigger_repair_subcommand(sub_parsers)
     add_start_subcommand(sub_parsers)
@@ -61,6 +62,20 @@ def add_repair_status_subcommand(sub_parsers):
                                       default=None)
     parser_repair_status.add_argument("-i", "--id", type=str,
                                       help="Print verbose status for a specific job")
+    parser_repair_status.add_argument("-l", "--limit", type=int,
+                                      help="Limit the number of tables or virtual nodes printed (-1 to disable)",
+                                      default=-1)
+
+def add_repair_queue_subcommand(sub_parsers):
+    parser_repair_status = sub_parsers.add_parser("repair-queue",
+                                                  description="Show repair queue")
+    parser_repair_status.add_argument("-k", "--keyspace", type=str,
+                                      help="Print queue for a specific keyspace")
+    parser_repair_status.add_argument("-t", "--table", type=str,
+                                      help="Print queue for a specific table (Must be specified with keyspace)")
+    parser_repair_status.add_argument("-u", "--url", type=str,
+                                      help="The host to connect to with the format (http://<host>:port)",
+                                      default=None)
     parser_repair_status.add_argument("-l", "--limit", type=int,
                                       help="Limit the number of tables or virtual nodes printed (-1 to disable)",
                                       default=-1)
@@ -117,7 +132,7 @@ def repair_status(arguments):
     if arguments.id:
         result = request.get(job_id=arguments.id)
         if result.is_successful():
-            table_printer.print_verbose_repair_job(result.data, arguments.limit)
+            table_printer.print_verbose_schedule(result.data, arguments.limit)
         else:
             print(result.format_exception())
     elif arguments.table:
@@ -126,13 +141,32 @@ def repair_status(arguments):
             sys.exit(1)
         result = request.list(keyspace=arguments.keyspace, table=arguments.table)
         if result.is_successful():
-            table_printer.print_repair_jobs(result.data, arguments.limit)
+            table_printer.print_schedules(result.data, arguments.limit)
         else:
             print(result.format_exception())
     else:
         result = request.list(keyspace=arguments.keyspace)
         if result.is_successful():
-            table_printer.print_repair_jobs(result.data, arguments.limit)
+            table_printer.print_schedules(result.data, arguments.limit)
+        else:
+            print(result.format_exception())
+
+def repair_queue(arguments):
+    request = rest.RepairSchedulerRequest(base_url=arguments.url)
+
+    if arguments.table:
+        if not arguments.keyspace:
+            print("Must specify keyspace")
+            sys.exit(1)
+        result = request.repair_queue(keyspace=arguments.keyspace, table=arguments.table)
+        if result.is_successful():
+            table_printer.print_repairs(result.data, arguments.limit)
+        else:
+            print(result.format_exception())
+    else:
+        result = request.repair_queue(keyspace=arguments.keyspace)
+        if result.is_successful():
+            table_printer.print_repairs(result.data, arguments.limit)
         else:
             print(result.format_exception())
 
@@ -156,7 +190,7 @@ def trigger_repair(arguments):
     request = rest.RepairSchedulerRequest(base_url=arguments.url)
     result = request.post(keyspace=arguments.keyspace, table=arguments.table)
     if result.is_successful():
-        table_printer.print_repair_job(result.data)
+        table_printer.print_repair(result.data)
     else:
         print(result.format_exception())
 
@@ -230,6 +264,9 @@ def run_subcommand(arguments):
     if arguments.subcommand == "repair-status":
         status(arguments)
         repair_status(arguments)
+    elif arguments.subcommand == "repair-queue":
+        status(arguments)
+        repair_queue(arguments)
     elif arguments.subcommand == "repair-config":
         status(arguments)
         repair_config(arguments)

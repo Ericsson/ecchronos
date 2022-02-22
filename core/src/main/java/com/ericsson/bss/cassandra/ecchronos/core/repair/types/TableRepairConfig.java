@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions.RepairParallelism;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduleView;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
 import java.util.Objects;
@@ -44,6 +45,21 @@ public class TableRepairConfig
         TableReference tableReference = repairJobView.getTableReference();
 
         this.id = repairJobView.getId();
+        this.keyspace = tableReference.getKeyspace();
+        this.table = tableReference.getTable();
+        this.repairIntervalInMs = config.getRepairIntervalInMs();
+        this.repairParallelism = config.getRepairParallelism();
+        this.repairUnwindRatio = config.getRepairUnwindRatio();
+        this.repairWarningTimeInMs = config.getRepairWarningTimeInMs();
+        this.repairErrorTimeInMs = config.getRepairErrorTimeInMs();
+    }
+
+    public TableRepairConfig(ScheduleView scheduleView)
+    {
+        RepairConfiguration config = scheduleView.getRepairConfiguration();
+        TableReference tableReference = scheduleView.getTableReference();
+
+        this.id = scheduleView.getId();
         this.keyspace = tableReference.getKeyspace();
         this.table = tableReference.getTable();
         this.repairIntervalInMs = config.getRepairIntervalInMs();

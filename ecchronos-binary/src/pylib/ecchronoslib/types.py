@@ -44,8 +44,30 @@ class VnodeState(object):
     def get_last_repaired_at(self):
         return datetime.datetime.fromtimestamp(self.last_repaired_at_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
 
+class Repair(object):
+    # pylint: disable=too-many-instance-attributes
 
-class RepairJob(object):
+    def __init__(self, data):
+        self.keyspace = data["keyspace"] if "keyspace" in data else "<UNKNOWN>"
+        self.table = data["table"] if "table" in data else "<UNKNOWN>"
+        self.started_at_in_ms = int(data["startedAt"] if "startedAt" in data else -1)
+        self.finished_at_in_ms = int(data["finishedAt"] if "finishedAt" in data else -1)
+        self.status = data["status"] if "status" in data else "<UNKNOWN>"
+        self.repair_id = data["id"] if "id" in data else "<UNKNOWN>"
+        self.triggered_by = data["triggeredBy"] if "triggeredBy" in data else "<UNKNOWN>"
+        self.remaining_tasks = int(data["remainingTasks"] if "remainingTasks" in data else -1)
+
+    def get_started_at(self):
+        if self.started_at_in_ms == -1:
+            return "-"
+        return datetime.datetime.fromtimestamp(self.started_at_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
+
+    def get_finished_at(self):
+        if self.finished_at_in_ms == -1:
+            return "-"
+        return datetime.datetime.fromtimestamp(self.finished_at_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
+
+class Schedule(object):
     # pylint: disable=too-many-instance-attributes
 
     def __init__(self, data):
@@ -55,11 +77,7 @@ class RepairJob(object):
         self.repaired_ratio = float(data["repairedRatio"] if "repairedRatio" in data else 0)
         self.status = data["status"] if "status" in data else "<UNKNOWN>"
         self.next_repair_in_ms = int(data["nextRepairInMs"] if "nextRepairInMs" in data else -1)
-        self.recurring = data["recurring"] if "recurring" in data else "<UNKNOWN>"
         self.job_id = data["id"] if "id" in data else "<UNKNOWN>"
-
-    def is_valid(self):
-        return self.keyspace != "<UNKNOWN>"
 
     def get_last_repaired_at(self):
         if self.last_repaired_at_in_ms == -1:
@@ -74,15 +92,16 @@ class RepairJob(object):
             return "-"
         return datetime.datetime.fromtimestamp(self.next_repair_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
 
+    def is_valid(self):
+        return self.keyspace != "<UNKNOWN>"
 
-class VerboseRepairJob(RepairJob):
+class VerboseSchedule(Schedule):
     def __init__(self, data):
-        RepairJob.__init__(self, data)
+        Schedule.__init__(self, data)
         self.vnode_states = []
         if "virtualNodeStates" in data:
             for vnode_data in data["virtualNodeStates"]:
                 self.vnode_states.append(VnodeState(vnode_data))
-
 
 class TableConfig(object):
     # pylint: disable=too-many-instance-attributes

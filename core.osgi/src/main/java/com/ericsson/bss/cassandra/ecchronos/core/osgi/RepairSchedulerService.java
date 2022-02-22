@@ -106,6 +106,24 @@ public class RepairSchedulerService implements RepairScheduler
         return myDelegateRepairSchedulerImpl.getCurrentRepairJobs();
     }
 
+    @Override
+    public OngoingRepair scheduleOnDemandRepair(TableReference tableReference)
+    {
+        return myDelegateRepairSchedulerImpl.scheduleOnDemandRepair(tableReference);
+    }
+
+    @Override
+    public List<ScheduleView> getSchedules()
+    {
+        return myDelegateRepairSchedulerImpl.getSchedules();
+    }
+
+    @Override
+    public List<OngoingRepair> getRepairs()
+    {
+        return myDelegateRepairSchedulerImpl.getRepairs();
+    }
+
     @ObjectClassDefinition
     public @interface Configuration
     {

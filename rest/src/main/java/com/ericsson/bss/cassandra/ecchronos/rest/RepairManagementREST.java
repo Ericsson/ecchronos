@@ -44,11 +44,11 @@ public interface RepairManagementREST
      * Get a list of the status of all scheduled repair jobs for a specific table.
      *
      * @param keyspace The keyspace of the table
-     * @param table The table to get status of
+     * @param table    The table to get status of
      * @return A JSON representation of {@link ScheduledRepairJob}
      */
     String tableStatus(String keyspace,
-                       String table);
+            String table);
 
     /**
      * Get status of a specific scheduled table repair job.
@@ -77,11 +77,11 @@ public interface RepairManagementREST
      * Get configuration of a specific scheduled table repair job.
      *
      * @param keyspace The keyspace of the table
-     * @param table The table to get configuration of
+     * @param table    The table to get configuration of
      * @return A JSON representation of {@link TableRepairConfig}
      */
     String tableConfig(String keyspace,
-                       String table);
+            String table);
 
     /**
      * Get configuration of a specific scheduled table repair job.
@@ -95,9 +95,9 @@ public interface RepairManagementREST
      * Schedule an on demand repair to be run on a specific table
      *
      * @param keyspace The keyspace of the table
-     * @param table The table to get configuration of
+     * @param table    The table to get configuration of
      * @return A JSON representation of {@link ScheduledRepairJob}
      */
     String scheduleJob(String keyspace,
-                       String table);
+            String table);
 }

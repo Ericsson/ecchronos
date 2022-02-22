@@ -14,6 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import com.datastax.driver.core.KeyspaceMetadata;
+import com.datastax.driver.core.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
@@ -30,7 +32,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -43,7 +52,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairSchedulerImpl.class);
 
-    private final Map<TableReference, TableRepairJob> myScheduledJobs = new HashMap<>();
+    private final Map<UUID, TableRepairJob> myScheduledJobs = new HashMap<>();
     private final Object myLock = new Object();
 
     private final ExecutorService myExecutor;
@@ -57,6 +66,8 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
     private final TableStorageStates myTableStorageStates;
     private final List<TableRepairPolicy> myRepairPolicies;
     private final RepairHistory myRepairHistory;
+    private final RepairStatus myRepairStatus;
+    private final Metadata myMetadata;
 
     private RepairSchedulerImpl(Builder builder)
     {
@@ -70,6 +81,51 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
         myTableStorageStates = builder.myTableStorageStates;
         myRepairPolicies = new ArrayList<>(builder.myRepairPolicies);
         myRepairHistory = Preconditions.checkNotNull(builder.myRepairHistory, "Repair history must be set");
+        myRepairStatus = Preconditions.checkNotNull(builder.myRepairStatus, "Repair status must be set");
+        myMetadata = Preconditions.checkNotNull(builder.myMetaData, "Metadata must be set");
+        new Thread(this::getOngoingRepairs).start();
+    }
+
+    private void getOngoingRepairs()
+    {
+        boolean done = false;
+        Set<OngoingRepair> ongoingRepairs;
+        while(!done)
+        {
+            try
+            {
+                ongoingRepairs = myRepairStatus.getUnfinishedOnDemandRepairs();
+                ongoingRepairs.forEach(j -> scheduleUnfinishedOnDemandRepairs(j));
+                done = true;
+            }
+            catch(Exception e)
+            {
+                try
+                {
+                    LOG.info("Failed to get ongoing ondemand repairs during startup: {}, automatic retry in 10s",
+                            e.getMessage());
+                    Thread.sleep(TimeUnit.SECONDS.toMillis(10));
+                }
+                catch(InterruptedException e1)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+    }
+
+    private void scheduleUnfinishedOnDemandRepairs(OngoingRepair ongoingRepair)
+    {
+        synchronized(myLock)
+        {
+            LOG.info("Repair {} did not finish correctly, will be rescheduled", ongoingRepair.getRepairId());
+            TableRepairJob job = getOnDemandRepairJob(ongoingRepair.getTableReference(), RepairConfiguration.DISABLED,
+                    ongoingRepair.getRepairId(), ongoingRepair.getStartedAt());
+            if(myScheduledJobs.putIfAbsent(job.getId(), job) == null)
+            {
+                myScheduleManager.schedule(job);
+            }
+        }
     }
 
     @Override
@@ -78,22 +134,22 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
         myExecutor.shutdown();
         try
         {
-            if (!myExecutor.awaitTermination(10, TimeUnit.SECONDS))
+            if(!myExecutor.awaitTermination(10, TimeUnit.SECONDS))
             {
                 LOG.warn("Waited 10 seconds for executor to shutdown, still not shut down");
             }
         }
-        catch (InterruptedException e)
+        catch(InterruptedException e)
         {
             LOG.error("Interrupted while waiting for executor to shutdown", e);
             Thread.currentThread().interrupt();
         }
 
-        synchronized (myLock)
+        synchronized(myLock)
         {
-            for (TableReference tableReference : myScheduledJobs.keySet())
+            for(UUID id : myScheduledJobs.keySet())
             {
-                ScheduledJob job = myScheduledJobs.get(tableReference);
+                ScheduledJob job = myScheduledJobs.get(id);
                 descheduleTableJob(job);
             }
 
@@ -107,6 +163,51 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
         myExecutor.execute(() -> handleTableConfigurationChange(tableReference, repairConfiguration));
     }
 
+    private void handleTableConfigurationChange(TableReference tableReference,
+            RepairConfiguration repairConfiguration)
+    {
+        synchronized(myLock)
+        {
+            try
+            {
+                if(configurationHasChanged(tableReference, repairConfiguration))
+                {
+                    Optional<OngoingRepair> unfinishedJob = myRepairStatus.getUnfinishedRepairs().stream()
+                            .filter(o -> o.getTriggeredBy().equals(tableReference.getId().toString()))
+                            .findFirst();
+                    if(unfinishedJob.isPresent())
+                    {
+                        UUID id = unfinishedJob.get().getRepairId();
+                        long startedAt = unfinishedJob.get().getStartedAt();
+                        LOG.info("Unfinished scheduled job with id {} and startedAt {}, will reuse for next schedule",
+                                id, startedAt);
+                        createTableSchedule(tableReference, repairConfiguration, id, startedAt);
+                    }
+                    else
+                    {
+                        createTableSchedule(tableReference, repairConfiguration);
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                LOG.error("Unexpected error during schedule change of {}:", tableReference, e);
+            }
+        }
+    }
+
+    private boolean configurationHasChanged(TableReference tableReference, RepairConfiguration repairConfiguration)
+    {
+        for(TableRepairJob tableRepairJob : myScheduledJobs.values())
+        {
+            if(!tableRepairJob.isOnDemand() && tableRepairJob.getTableReference().equals(tableReference))
+            {
+                return !repairConfiguration.equals(tableRepairJob.getRepairConfiguration());
+            }
+        }
+        return true;
+    }
+
     @Override
     public void removeConfiguration(TableReference tableReference)
     {
@@ -116,58 +217,30 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
     @Override
     public List<RepairJobView> getCurrentRepairJobs()
     {
-        synchronized (myLock)
+        synchronized(myLock)
         {
             return myScheduledJobs.values().stream()
-                    .map(TableRepairJob::getView)
+                    .map(TableRepairJob::getOldView)
                     .collect(Collectors.toList());
         }
     }
 
-    private void handleTableConfigurationChange(TableReference tableReference, RepairConfiguration repairConfiguration)
-    {
-        synchronized (myLock)
-        {
-            try
-            {
-                if (configurationHasChanged(tableReference, repairConfiguration))
-                {
-                    createTableSchedule(tableReference, repairConfiguration);
-                }
-            } catch (Exception e)
-            {
-                LOG.error("Unexpected error during schedule change of {}:", tableReference, e);
-            }
-        }
-    }
-
-    private boolean configurationHasChanged(TableReference tableReference, RepairConfiguration repairConfiguration)
-    {
-        TableRepairJob tableRepairJob = myScheduledJobs.get(tableReference);
-
-        return tableRepairJob == null || !repairConfiguration.equals(tableRepairJob.getRepairConfiguration());
-    }
-
-    private void createTableSchedule(TableReference tableReference, RepairConfiguration repairConfiguration)
-    {
-        TableRepairJob oldTableRepairJob = myScheduledJobs.get(tableReference);
-
-        descheduleTableJob(oldTableRepairJob);
-
-        TableRepairJob job = getRepairJob(tableReference, repairConfiguration);
-        myScheduledJobs.put(tableReference, job);
-        myScheduleManager.schedule(job);
-    }
-
     private void handleTableConfigurationRemoved(TableReference tableReference)
     {
-        synchronized (myLock)
+        synchronized(myLock)
         {
             try
             {
-                ScheduledJob job = myScheduledJobs.remove(tableReference);
-                descheduleTableJob(job);
-            } catch (Exception e)
+                for(TableRepairJob tableRepairJob : myScheduledJobs.values())
+                {
+                    if(!tableRepairJob.isOnDemand() && tableRepairJob.getTableReference().equals(tableReference))
+                    {
+                        myScheduledJobs.remove(tableRepairJob.getId());
+                        descheduleTableJob(tableRepairJob);
+                    }
+                }
+            }
+            catch(Exception e)
             {
                 LOG.error("Unexpected error during schedule removal of {}:", tableReference, e);
             }
@@ -176,23 +249,41 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
 
     private void descheduleTableJob(ScheduledJob job)
     {
-        if (job != null)
+        if(job != null)
         {
             myScheduleManager.deschedule(job);
         }
     }
 
-    private TableRepairJob getRepairJob(TableReference tableReference, RepairConfiguration repairConfiguration)
+    @Override
+    public OngoingRepair scheduleOnDemandRepair(TableReference tableReference)
     {
-        long repairIntervalInMs = repairConfiguration.getRepairIntervalInMs();
+        synchronized(myLock)
+        {
+            KeyspaceMetadata ks = myMetadata.getKeyspace(tableReference.getKeyspace());
+            if(ks != null && ks.getTable(tableReference.getTable()) != null)
+            {
+                UUID repairId = UUID.randomUUID();
+                TableRepairJob job =
+                        getOnDemandRepairJob(tableReference, RepairConfiguration.DISABLED, repairId,
+                                System.currentTimeMillis());
+                myScheduledJobs.put(job.getId(), job);
+                myScheduleManager.schedule(job);
+                return new OngoingRepair.Builder().withOngoingRepairInfo(repairId, OngoingRepair.Status.started, -1L,
+                        -1L, "user", -1).withTableReference(tableReference).build();
+            }
+        }
+        return null;
+    }
 
+    private TableRepairJob getOnDemandRepairJob(TableReference tableReference, RepairConfiguration repairConfiguration,
+            UUID repairId, long startedAt)
+    {
         ScheduledJob.Configuration configuration = new ScheduledJob.ConfigurationBuilder()
-                .withPriority(ScheduledJob.Priority.LOW)
-                .withRunInterval(repairIntervalInMs, TimeUnit.MILLISECONDS)
+                .withPriority(ScheduledJob.Priority.HIGHEST)
+                .withRunInterval(0, TimeUnit.MILLISECONDS)
                 .build();
-        AlarmPostUpdateHook alarmPostUpdateHook = new AlarmPostUpdateHook(tableReference, repairConfiguration, myFaultReporter);
-        RepairState repairState = myRepairStateFactory.create(tableReference, repairConfiguration, alarmPostUpdateHook);
-
+        RepairState repairState = myRepairStateFactory.create(tableReference, repairConfiguration, null);
         TableRepairJob job = new TableRepairJob.Builder()
                 .withConfiguration(configuration)
                 .withJmxProxyFactory(myJmxProxyFactory)
@@ -204,11 +295,103 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
                 .withTableStorageStates(myTableStorageStates)
                 .withRepairPolices(myRepairPolicies)
                 .withRepairHistory(myRepairHistory)
+                .withOnFinished(this::removeJob)
+                .withRepairStatus(myRepairStatus)
+                .withRepairId(repairId)
+                .withStartedAt(startedAt)
+                .withJobId(UUID.randomUUID())
+                .withTriggeredBy("user")
                 .build();
-
         job.runnable();
-
         return job;
+    }
+
+    @Override
+    public List<ScheduleView> getSchedules()
+    {
+        synchronized(myLock)
+        {
+            List<ScheduleView> schedules = myScheduledJobs.values().stream()
+                    .filter(s -> !s.isOnDemand())
+                    .map(TableRepairJob::getView)
+                    .collect(Collectors.toList());
+            return schedules;
+        }
+    }
+
+    @Override
+    public List<OngoingRepair> getRepairs()
+    {
+        List<OngoingRepair> jobs = myRepairStatus.getAllRepairs().stream().collect(Collectors.toList());
+        return jobs;
+    }
+
+    private void reschedule(TableRepairJob oldJob)
+    {
+        synchronized(myLock)
+        {
+            LOG.info("job: {} finished, rescheduling", oldJob.getId());
+            createTableSchedule(oldJob.getTableReference(), oldJob.getRepairConfiguration(), UUID.randomUUID(),
+                    -1L);
+        }
+    }
+
+    private void createTableSchedule(TableReference tableReference, RepairConfiguration repairConfiguration)
+    {
+        createTableSchedule(tableReference, repairConfiguration, UUID.randomUUID(), -1L);
+    }
+
+    private void createTableSchedule(TableReference tableReference, RepairConfiguration repairConfiguration,
+            UUID repairId, long startedAt)
+    {
+        TableRepairJob oldTableRepairJob = myScheduledJobs.get(tableReference.getId());
+
+        descheduleTableJob(oldTableRepairJob);
+
+        TableRepairJob job = getRepairJob(tableReference, repairConfiguration, repairId, startedAt);
+        myScheduledJobs.put(job.getId(), job);
+        myScheduleManager.schedule(job);
+    }
+
+    private TableRepairJob getRepairJob(TableReference tableReference, RepairConfiguration repairConfiguration,
+            UUID repairId, long startedAt)
+    {
+        ScheduledJob.Configuration configuration = new ScheduledJob.ConfigurationBuilder()
+                .withPriority(ScheduledJob.Priority.LOW)
+                .withRunInterval(repairConfiguration.getRepairIntervalInMs(), TimeUnit.MILLISECONDS)
+                .build();
+        AlarmPostUpdateHook alarmPostUpdateHook =
+                new AlarmPostUpdateHook(tableReference, repairConfiguration, myFaultReporter);
+        RepairState repairState = myRepairStateFactory.create(tableReference, repairConfiguration, alarmPostUpdateHook);
+        TableRepairJob job = new TableRepairJob.Builder()
+                .withConfiguration(configuration)
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withTableReference(tableReference)
+                .withRepairState(repairState)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairConfiguration(repairConfiguration)
+                .withRepairLockType(myRepairLockType)
+                .withTableStorageStates(myTableStorageStates)
+                .withRepairPolices(myRepairPolicies)
+                .withRepairHistory(myRepairHistory)
+                .withOnFinished(this::reschedule)
+                .withRepairStatus(myRepairStatus)
+                .withRepairId(repairId)
+                .withJobId(tableReference.getId())
+                .withStartedAt(startedAt)
+                .withTriggeredBy(tableReference.getId().toString())
+                .build();
+        job.runnable();
+        return job;
+    }
+
+    private void removeJob(TableRepairJob oldJob)
+    {
+        synchronized(myLock)
+        {
+            myScheduledJobs.remove(oldJob.getId());
+            myScheduleManager.deschedule(oldJob);
+        }
     }
 
     public static Builder builder()
@@ -227,6 +410,8 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
         private TableStorageStates myTableStorageStates;
         private RepairHistory myRepairHistory;
         private final List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
+        private RepairStatus myRepairStatus;
+        private Metadata myMetaData;
 
         public Builder withFaultReporter(RepairFaultReporter repairFaultReporter)
         {
@@ -282,9 +467,21 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
             return this;
         }
 
+        public Builder withRepairStatus(RepairStatus repairStatus)
+        {
+            myRepairStatus = repairStatus;
+            return this;
+        }
+
         public RepairSchedulerImpl build()
         {
             return new RepairSchedulerImpl(this);
+        }
+
+        public Builder withMetadata(Metadata metadata)
+        {
+            myMetaData = metadata;
+            return this;
         }
     }
 }

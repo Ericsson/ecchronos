@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 
 import java.util.List;
 import java.util.Optional;

@@ -16,26 +16,53 @@
 from __future__ import print_function
 from ecchronoslib import table_formatter
 
+def print_summary(repair_jobs):
+    status_list = [job.status for job in repair_jobs]
+    summary_format = "Summary: {0} completed, {1} in queue, {2} warning, {3} error"
+    print(summary_format.format(status_list.count('COMPLETED'),
+                                status_list.count('IN_QUEUE'),
+                                status_list.count('WARNING'),
+                                status_list.count('ERROR')))
 
-def print_verbose_repair_job(repair_job, max_lines):
-    if not repair_job.is_valid():
-        print('Repair job not found')
+def print_schedules(schedules, max_lines):
+    schedules_table = [["Id", "Keyspace", "Table", "Status", "Repaired(%)",
+                        "Last repair", "Next repair"]]
+    sorted_schedules = sorted(schedules, key=lambda schedule: schedule.last_repaired_at_in_ms, reverse=True)
+
+    if max_lines > -1:
+        sorted_schedules = sorted_schedules[:max_lines]
+
+    for schedule in sorted_schedules:
+        schedules_table.append(_convert_schedule(schedule))
+    table_formatter.format_table(schedules_table)
+
+def print_schedule(schedule):
+    schedules_table = [["Id", "Keyspace", "Table", "Status", "Repaired(%)",
+                        "Last repair", "Next repair"]]
+    schedules_table.append(_convert_schedule(schedule))
+    table_formatter.format_table(schedules_table)
+
+def _convert_schedule(schedule):
+    entry = [schedule.job_id, schedule.keyspace, schedule.table, schedule.status,
+             schedule.get_repair_percentage(), schedule.get_last_repaired_at(), schedule.get_next_repair()]
+    return entry
+
+def print_verbose_schedule(schedule, max_lines):
+    if not schedule.is_valid():
+        print('Schedule not found')
         return
 
     verbose_print_format = "{0:15s}: {1}"
 
-    print(verbose_print_format.format("Id", repair_job.job_id))
-    print(verbose_print_format.format("Keyspace", repair_job.keyspace))
-    print(verbose_print_format.format("Table", repair_job.table))
-    print(verbose_print_format.format("Status", repair_job.status))
-    print(verbose_print_format.format("Repaired(%)", repair_job.get_repair_percentage()))
-    print(verbose_print_format.format("Completed at", repair_job.get_last_repaired_at()))
-    print(verbose_print_format.format("Next repair", repair_job.get_next_repair()))
-    print(verbose_print_format.format("Recurring", repair_job.recurring))
-
+    print(verbose_print_format.format("Id", schedule.job_id))
+    print(verbose_print_format.format("Keyspace", schedule.keyspace))
+    print(verbose_print_format.format("Table", schedule.table))
+    print(verbose_print_format.format("Status", schedule.status))
+    print(verbose_print_format.format("Repaired(%)", schedule.get_repair_percentage()))
+    print(verbose_print_format.format("Last repair", schedule.get_last_repaired_at()))
+    print(verbose_print_format.format("Next repair", schedule.get_next_repair()))
     vnode_state_table = [["Start token", "End token", "Replicas", "Repaired at", "Repaired"]]
-
-    sorted_vnode_states = sorted(repair_job.vnode_states, key=lambda vnode: vnode.last_repaired_at_in_ms, reverse=True)
+    sorted_vnode_states = sorted(schedule.vnode_states, key=lambda vnode: vnode.last_repaired_at_in_ms, reverse=True)
 
     if max_lines > -1:
         sorted_vnode_states = sorted_vnode_states[:max_lines]
@@ -51,39 +78,27 @@ def _add_vnode_state_to_table(vnode_state, table):
 
     table.append(entry)
 
-def print_summary(repair_jobs):
-    status_list = [job.status for job in repair_jobs]
-    summary_format = "Summary: {0} completed, {1} in queue, {2} warning, {3} error"
-    print(summary_format.format(status_list.count('COMPLETED'),
-                                status_list.count('IN_QUEUE'),
-                                status_list.count('WARNING'),
-                                status_list.count('ERROR')))
-
-def print_repair_jobs(repair_jobs, max_lines):
-    repair_jobs_table = [["Id", "Keyspace", "Table", "Status", "Repaired(%)",
-                          "Completed at", "Next repair", "Recurring"]]
-    sorted_repair_jobs = sorted(repair_jobs, key=lambda job: job.last_repaired_at_in_ms, reverse=True)
+def print_repairs(repairs, max_lines):
+    repairs_table = [["Id", "Keyspace", "Table", "Status", "Remaining tasks",
+                      "Triggered by", "Started at", "Finished at"]]
+    sorted_repairs = sorted(repairs, key=lambda repair: repair.finished_at_in_ms, reverse=True)
 
     if max_lines > -1:
-        sorted_repair_jobs = sorted_repair_jobs[:max_lines]
+        sorted_repairs = sorted_repairs[:max_lines]
 
-    for repair_job in sorted_repair_jobs:
-        repair_jobs_table.append(_convert_repair_job(repair_job))
-    table_formatter.format_table(repair_jobs_table)
+    for repair in sorted_repairs:
+        repairs_table.append(_convert_repair(repair))
+    table_formatter.format_table(repairs_table)
 
-    print_summary(repair_jobs)
+def print_repair(repair):
+    repairs_table = [["Id", "Keyspace", "Table", "Status", "Remaining tasks",
+                      "Triggered by", "Started at", "Finished at"]]
+    repairs_table.append(_convert_repair(repair))
+    table_formatter.format_table(repairs_table)
 
-def print_repair_job(repair_job):
-    repair_jobs_table = [["Id", "Keyspace", "Table", "Status", "Repaired(%)",
-                          "Completed at", "Next repair", "Recurring"]]
-    repair_jobs_table.append(_convert_repair_job(repair_job))
-    table_formatter.format_table(repair_jobs_table)
-
-def _convert_repair_job(repair_job):
-    entry = [repair_job.job_id, repair_job.keyspace, repair_job.table, repair_job.status,
-             repair_job.get_repair_percentage(), repair_job.get_last_repaired_at(), repair_job.get_next_repair(),
-             repair_job.recurring]
-
+def _convert_repair(repair):
+    entry = [repair.repair_id, repair.keyspace, repair.table, repair.status,
+             repair.remaining_tasks, repair.triggered_by, repair.get_started_at(), repair.get_finished_at()]
     return entry
 
 def print_table_config(config_data):

@@ -28,7 +28,7 @@ public interface RepairScheduler
     /**
      * Create or update repair configuration for the specified table.
      *
-     * @param tableReference The table to put configuration for.
+     * @param tableReference      The table to put configuration for.
      * @param repairConfiguration The new or updated repair configuration.
      */
     void putConfiguration(TableReference tableReference, RepairConfiguration repairConfiguration);
@@ -44,4 +44,23 @@ public interface RepairScheduler
      * @return the list of the currently scheduled repair jobs.
      */
     List<RepairJobView> getCurrentRepairJobs();
+
+    /**
+     * Schedule on demand repair
+     *
+     * @param tableReference The table to schedule repair on
+     *
+     * @return Ongoing repair representing repair that will be started
+     */
+    OngoingRepair scheduleOnDemandRepair(TableReference tableReference);
+
+    /**
+     * @return the list of the current schedules.
+     */
+    List<ScheduleView> getSchedules();
+
+    /**
+     * @return the list of all repairs
+     */
+    List<OngoingRepair> getRepairs();
 }
