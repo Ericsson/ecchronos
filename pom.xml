@@ -766,7 +766,7 @@ limitations under the License.
                                                         </bind>
                                                     </volumes>
                                                     <wait>
-                                                        <time>60000</time>
+                                                        <time>120000</time>
                                                         <tcp>
                                                             <ports>
                                                                 <port>9042</port>
