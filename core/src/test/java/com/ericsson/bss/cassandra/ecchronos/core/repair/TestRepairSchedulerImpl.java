@@ -103,7 +103,7 @@ public class TestRepairSchedulerImpl
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
         verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
-        verify(myRepairState, atLeastOnce()).update();
+        verify(myRepairState, atLeastOnce()).update(any(long.class));
         assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
 
         repairSchedulerImpl.close();
@@ -126,7 +126,7 @@ public class TestRepairSchedulerImpl
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
         verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
         verify(myRepairStateFactory).create(eq(TABLE_REFERENCE2), eq(RepairConfiguration.DEFAULT), any());
-        verify(myRepairState, atLeastOnce()).update();
+        verify(myRepairState, atLeastOnce()).update(any(long.class));
 
         repairSchedulerImpl.close();
         verify(scheduleManager, times(2)).deschedule(any(ScheduledJob.class));
@@ -146,7 +146,7 @@ public class TestRepairSchedulerImpl
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
         verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
-        verify(myRepairState, atLeastOnce()).update();
+        verify(myRepairState, atLeastOnce()).update(any(long.class));
         assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
 
         repairSchedulerImpl.removeConfiguration(TABLE_REFERENCE);
@@ -175,7 +175,7 @@ public class TestRepairSchedulerImpl
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
         verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
-        verify(myRepairState, atLeastOnce()).update();
+        verify(myRepairState, atLeastOnce()).update(any(long.class));
         assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
 
         repairSchedulerImpl.putConfiguration(TABLE_REFERENCE, updatedRepairConfiguration);
@@ -183,7 +183,7 @@ public class TestRepairSchedulerImpl
         verify(scheduleManager, timeout(1000).times(2)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, timeout(1000)).deschedule(any(ScheduledJob.class));
         verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(updatedRepairConfiguration), any());
-        verify(myRepairState, atLeastOnce()).update();
+        verify(myRepairState, atLeastOnce()).update(any(long.class));
         assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, updatedRepairConfiguration);
 
         repairSchedulerImpl.close();
@@ -205,7 +205,7 @@ public class TestRepairSchedulerImpl
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
         verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
-        verify(myRepairState, atLeastOnce()).update();
+        verify(myRepairState, atLeastOnce()).update(any(long.class));
         assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
 
         repairSchedulerImpl.putConfiguration(TABLE_REFERENCE, RepairConfiguration.DEFAULT);
@@ -242,7 +242,7 @@ public class TestRepairSchedulerImpl
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
         verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT), any());
-        verify(myRepairState, atLeastOnce()).update();
+        verify(myRepairState, atLeastOnce()).update(startedAt);
         assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
         Optional<ScheduleView> schedule = repairSchedulerImpl.getSchedules().stream().findFirst();
         assertThat(schedule).isNotEmpty();
@@ -270,7 +270,7 @@ public class TestRepairSchedulerImpl
         verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(any(ScheduledJob.class));
         verify(myRepairStateFactory).create(eq(TABLE_REFERENCE), eq(RepairConfiguration.DISABLED), any());
-        verify(myRepairState, atLeastOnce()).update();
+        verify(myRepairState, atLeastOnce()).update(any(long.class));
         assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DISABLED);
 
         repairSchedulerImpl.close();

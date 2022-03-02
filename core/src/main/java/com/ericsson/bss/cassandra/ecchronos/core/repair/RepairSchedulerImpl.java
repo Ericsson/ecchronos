@@ -266,7 +266,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
                 UUID repairId = UUID.randomUUID();
                 TableRepairJob job =
                         getOnDemandRepairJob(tableReference, RepairConfiguration.DISABLED, repairId,
-                                System.currentTimeMillis());
+                                -1L);
                 myScheduledJobs.put(job.getId(), job);
                 myScheduleManager.schedule(job);
                 return new OngoingRepair.Builder().withOngoingRepairInfo(repairId, OngoingRepair.Status.started, -1L,

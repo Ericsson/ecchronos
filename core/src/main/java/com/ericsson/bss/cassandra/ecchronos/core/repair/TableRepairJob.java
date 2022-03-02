@@ -134,7 +134,15 @@ public class TableRepairJob extends ScheduledJob
         {
             try
             {
-                myRepairState.update();
+                if (myStartedAt == -1L)
+                {
+                    //Only update if we haven't started
+                    myRepairState.update(System.currentTimeMillis());
+                }
+                else
+                {
+                    myRepairState.update(myStartedAt);
+                }
             }
             catch(Exception e)
             {
@@ -165,6 +173,7 @@ public class TableRepairJob extends ScheduledJob
             {
                 myStartedAt = System.currentTimeMillis();
             }
+            myRepairState.update(myStartedAt);
             myTasks = getTasks();
             myTotalTasks = myTasks.size();
             LOG.debug("Starting running {}, total tasks: {}", getId(), myTotalTasks);

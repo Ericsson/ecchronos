@@ -119,7 +119,7 @@ public class TestTableRepairJob
         doReturn(-1L).when(myRepairStateSnapshot).lastCompletedAt();
         doReturn(myRepairStateSnapshot).when(myRepairState).getSnapshot();
 
-        doNothing().when(myRepairState).update();
+        doNothing().when(myRepairState).update(any(long.class));
 
         when(myRepairHistory.newSession(any(), any(), any(), any())).thenReturn(myRepairSession);
 
@@ -168,7 +168,7 @@ public class TestTableRepairJob
 
         assertThat(myRepairJob.runnable()).isFalse();
 
-        verify(myRepairState, times(1)).update();
+        verify(myRepairState, times(1)).update(any(long.class));
         verify(myRepairStateSnapshot, times(1)).canRepair();
     }
 
@@ -180,7 +180,7 @@ public class TestTableRepairJob
 
         assertThat(myRepairJob.runnable()).isTrue();
 
-        verify(myRepairState, times(1)).update();
+        verify(myRepairState, times(1)).update(any(long.class));
         verify(myRepairStateSnapshot, times(1)).canRepair();
     }
 
@@ -193,7 +193,7 @@ public class TestTableRepairJob
         assertThat(myRepairJob.runnable()).isFalse();
         assertThat(myRepairJob.runnable()).isTrue();
 
-        verify(myRepairState, times(2)).update();
+        verify(myRepairState, times(2)).update(any(long.class));
         verify(myRepairStateSnapshot, times(2)).canRepair();
     }
 
@@ -202,7 +202,7 @@ public class TestTableRepairJob
     {
         // mock
         doReturn(false).when(myRepairStateSnapshot).canRepair();
-        doThrow(new OverloadedException(null, "Expected exception")).when(myRepairState).update();
+        doThrow(new OverloadedException(null, "Expected exception")).when(myRepairState).update(any(long.class));
 
         assertThat(myRepairJob.runnable()).isFalse();
 
@@ -214,7 +214,7 @@ public class TestTableRepairJob
     {
         // mock
         doReturn(false).when(myRepairStateSnapshot).canRepair();
-        doThrow(new RuntimeException("Expected exception")).when(myRepairState).update();
+        doThrow(new RuntimeException("Expected exception")).when(myRepairState).update(any(long.class));
 
         assertThat(myRepairJob.runnable()).isFalse();
 
@@ -232,7 +232,7 @@ public class TestTableRepairJob
         myRepairJob.postExecute(true, null);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(repairedAt);
-        verify(myRepairState, times(1)).update();
+        verify(myRepairState, times(1)).update(any(long.class));
     }
 
     @Test
@@ -246,7 +246,7 @@ public class TestTableRepairJob
         myRepairJob.postExecute(false, null);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(repairedAt);
-        verify(myRepairState, times(1)).update();
+        verify(myRepairState, times(1)).update(any(long.class));
     }
 
     @Test
@@ -260,7 +260,7 @@ public class TestTableRepairJob
         myRepairJob.postExecute(true, null);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(lastRun);
-        verify(myRepairState, times(1)).update();
+        verify(myRepairState, times(1)).update(any(long.class));
     }
 
     @Test
@@ -274,14 +274,14 @@ public class TestTableRepairJob
         myRepairJob.postExecute(false, null);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(lastRun);
-        verify(myRepairState, times(1)).update();
+        verify(myRepairState, times(1)).update(any(long.class));
     }
 
     @Test
     public void testPostExecuteUpdateThrowsException()
     {
         // mock
-        doThrow(new RuntimeException("Expected exception")).when(myRepairState).update();
+        doThrow(new RuntimeException("Expected exception")).when(myRepairState).update(any(long.class));
 
         long lastRun = myRepairJob.getLastSuccessfulRun();
 

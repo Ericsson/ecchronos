@@ -23,8 +23,10 @@ public interface RepairState
 {
     /**
      * Update the repair state for the table.
+     *
+     * @param since include only vnodes not repaired since this time
      */
-    void update();
+    void update(long since);
 
     /**
      * Get an immutable copy of the current repair state.
