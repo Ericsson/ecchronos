@@ -69,7 +69,7 @@ public class TableRepairJob extends ScheduledJob
     private final UUID myRepairId;
     private State myCurrentState;
     private long myStartedAt;
-    private List<ScheduledTask> myTasks;
+    private List<ScheduledTask> myTasks = new ArrayList<>();
     private int myTotalTasks;
 
     TableRepairJob(Builder builder)
@@ -130,7 +130,8 @@ public class TableRepairJob extends ScheduledJob
     @Override
     public boolean runnable()
     {
-        if(super.runnable())
+        boolean isRunnable = super.runnable();
+        if(isRunnable)
         {
             try
             {
@@ -149,8 +150,9 @@ public class TableRepairJob extends ScheduledJob
                 LOG.warn("Unable to check repair history, {}", this, e);
             }
         }
-        LOG.debug("Can repair: {} super: {}", myRepairState.getSnapshot().canRepair(), super.runnable());
-        return myRepairState.getSnapshot().canRepair() && super.runnable();
+        boolean canRepair = myRepairState.getSnapshot().canRepair();
+        LOG.debug("Can repair: {} super: {}", canRepair, isRunnable);
+        return canRepair && isRunnable;
     }
 
     @Override
@@ -182,6 +184,11 @@ public class TableRepairJob extends ScheduledJob
         myCurrentState = newState;
         LOG.debug("Schedule: {} having state {}", getId(), myCurrentState);
         return newState;
+    }
+
+    private boolean isFinished()
+    {
+        return getProgress() == 1.0;
     }
 
     private List<ScheduledTask> getTasks()
@@ -286,11 +293,6 @@ public class TableRepairJob extends ScheduledJob
     private Predicate<VnodeRepairState> isRepaired(long timestamp, long interval)
     {
         return state -> timestamp - state.lastRepairedAt() <= interval;
-    }
-
-    private boolean isFinished()
-    {
-        return getProgress() == 1.0;
     }
 
     private double getProgress()

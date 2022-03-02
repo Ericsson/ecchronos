@@ -23,6 +23,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.ignoreStubs;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -66,7 +67,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 @RunWith (MockitoJUnitRunner.Silent.class)
-@Ignore //TODO
 public class TestTableRepairJob
 {
     private static final String keyspaceName = "keyspace";
@@ -108,6 +108,9 @@ public class TestTableRepairJob
     @Mock
     private RepairHistory.RepairSession myRepairSession;
 
+    @Mock
+    private RepairStatus myRepairStatus;
+
     private TableRepairJob myRepairJob;
 
     private final TableReference myTableReference = tableReference(keyspaceName, tableName);
@@ -136,7 +139,7 @@ public class TestTableRepairJob
                 .withTargetRepairSizeInBytes(HUNDRED_MB_IN_BYTES)
                 .build();
 
-        myRepairJob = new TableRepairJob.Builder()
+        myRepairJob = spy(new TableRepairJob.Builder()
                 .withConfiguration(configuration)
                 .withTableReference(myTableReference)
                 .withJmxProxyFactory(myJmxProxyFactory)
@@ -146,7 +149,11 @@ public class TestTableRepairJob
                 .withRepairLockType(RepairLockType.VNODE)
                 .withTableStorageStates(myTableStorageStates)
                 .withRepairHistory(myRepairHistory)
-                .build();
+                .withRepairStatus(myRepairStatus)
+                .withTriggeredBy("unittest")
+                .withRepairId(myTableReference.getId())
+                .withJobId(myTableReference.getId())
+                .build());
     }
 
     @After
@@ -232,7 +239,6 @@ public class TestTableRepairJob
         myRepairJob.postExecute(true, null);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(repairedAt);
-        verify(myRepairState, times(1)).update(any(long.class));
     }
 
     @Test
@@ -246,7 +252,6 @@ public class TestTableRepairJob
         myRepairJob.postExecute(false, null);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(repairedAt);
-        verify(myRepairState, times(1)).update(any(long.class));
     }
 
     @Test
@@ -260,7 +265,6 @@ public class TestTableRepairJob
         myRepairJob.postExecute(true, null);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(lastRun);
-        verify(myRepairState, times(1)).update(any(long.class));
     }
 
     @Test
@@ -274,7 +278,6 @@ public class TestTableRepairJob
         myRepairJob.postExecute(false, null);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(lastRun);
-        verify(myRepairState, times(1)).update(any(long.class));
     }
 
     @Test
@@ -309,6 +312,8 @@ public class TestTableRepairJob
                 .build();
         when(myRepairState.getSnapshot()).thenReturn(repairStateSnapshot);
 
+        doReturn(true).when(myRepairJob).runnable();
+        assertThat(myRepairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
         Iterator<ScheduledTask> iterator = myRepairJob.iterator();
 
         ScheduledTask task = iterator.next();
@@ -355,6 +360,8 @@ public class TestTableRepairJob
         // 100 MB target size, 1000MB in table
         when(myTableStorageStates.getDataSize(eq(myTableReference))).thenReturn(THOUSAND_MB_IN_BYTES);
 
+        doReturn(true).when(myRepairJob).runnable();
+        assertThat(myRepairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
         Iterator<ScheduledTask> iterator = myRepairJob.iterator();
 
         ScheduledTask task = iterator.next();
@@ -390,7 +397,37 @@ public class TestTableRepairJob
         doReturn(vnodeRepairStates).when(myRepairStateSnapshot).getVnodeRepairStates();
         doReturn(repairedAtFirst).when(myRepairStateSnapshot).lastCompletedAt();
 
-        //assertThat(myRepairJob.getView().getProgress()).isEqualTo(0.5d);
+        assertThat(myRepairJob.getOldView().getProgress()).isEqualTo(0.5d);
+    }
+
+    @Test
+    public void testHalfCompleteProgressNew()
+    {
+        long repairedAtFirst = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(7);
+        long lastRepairedAtSecond = System.currentTimeMillis();
+        long lastRepairedAtThird = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(9);
+
+        LongTokenRange tokenRange = new LongTokenRange(0, 10);
+        ImmutableSet<Node> replicas = ImmutableSet.of(mock(Node.class), mock(Node.class));
+        ImmutableSet<Node> replicas2 = ImmutableSet.of(mock(Node.class), mock(Node.class));
+        ImmutableList<LongTokenRange> vnodes = ImmutableList.of(tokenRange);
+
+        VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, replicas, lastRepairedAtThird);
+        VnodeRepairState vnodeRepairState2 = TestUtils.createVnodeRepairState(3, 4, replicas2, lastRepairedAtSecond);
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(ImmutableList.of(vnodeRepairState, vnodeRepairState2)).build();
+        doReturn(vnodeRepairStates).when(myRepairStateSnapshot).getVnodeRepairStates();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
+        doReturn(repairedAtFirst).when(myRepairStateSnapshot).lastCompletedAt();
+        assertThat(myRepairJob.getView().getProgress()).isEqualTo(0);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(replicas, vnodes);
+        ReplicaRepairGroup replicaRepairGroup2 = new ReplicaRepairGroup(replicas2, vnodes);
+        doReturn(ImmutableList.of(replicaRepairGroup, replicaRepairGroup2)).when(myRepairStateSnapshot).getRepairGroups();
+        doReturn(true).when(myRepairJob).runnable();
+        assertThat(myRepairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
+        ScheduledTask task = myRepairJob.iterator().next();
+        assertThat(task).isNotNull();
+        myRepairJob.postExecute(true, task);
+        assertThat(myRepairJob.getView().getProgress()).isEqualTo(0.5d);
     }
 
     @Test
@@ -404,11 +441,36 @@ public class TestTableRepairJob
         doReturn(vnodeRepairStates).when(myRepairStateSnapshot).getVnodeRepairStates();
         doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 
-        //assertThat(myRepairJob.getView().getProgress()).isEqualTo(1);
+        assertThat(myRepairJob.getOldView().getProgress()).isEqualTo(1);
     }
 
     @Test
-    public void testInQueueProgress()
+    public void testCompletedProgressNew()
+    {
+        long repairedAt = System.currentTimeMillis();
+
+        LongTokenRange tokenRange = new LongTokenRange(0, 10);
+        ImmutableSet<Node> replicas = ImmutableSet.of(mock(Node.class), mock(Node.class));
+        ImmutableList<LongTokenRange> vnodes = ImmutableList.of(tokenRange);
+
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(ImmutableList.of(new VnodeRepairState(tokenRange, replicas, repairedAt))).build();
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(replicas, vnodes);
+        doReturn(vnodeRepairStates).when(myRepairStateSnapshot).getVnodeRepairStates();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
+        assertThat(myRepairJob.getView().getProgress()).isEqualTo(0);
+        doReturn(ImmutableList.of(replicaRepairGroup)).when(myRepairStateSnapshot).getRepairGroups();
+        doReturn(true).when(myRepairJob).runnable();
+        assertThat(myRepairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
+        ScheduledTask task = myRepairJob.iterator().next();
+        assertThat(task).isNotNull();
+        myRepairJob.postExecute(true, task);
+        assertThat(myRepairJob.getView().getProgress()).isEqualTo(1);
+        assertThat(myRepairJob.getState()).isEqualTo(ScheduledJob.State.FINISHED);
+    }
+
+    @Test
+    public void testNotCompletedProgress()
     {
         long repairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(2);
         long repairedAtSecond = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(4);
@@ -420,7 +482,7 @@ public class TestTableRepairJob
         doReturn(vnodeRepairStates).when(myRepairStateSnapshot).getVnodeRepairStates();
         doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 
-        //assertThat(myRepairJob.getView().getProgress()).isEqualTo(0);
+        assertThat(myRepairJob.getView().getProgress()).isEqualTo(0);
+        assertThat(myRepairJob.getOldView().getProgress()).isEqualTo(0);
     }
-
 }
