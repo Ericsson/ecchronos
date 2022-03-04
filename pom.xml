@@ -757,7 +757,7 @@ limitations under the License.
                                                     <env>
                                                         <LOCAL_JMX>no</LOCAL_JMX>
                                                         <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap} -Xmn100M</JVM_OPTS>
-                                                        <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0</JVM_EXTRA_OPTS>
+                                                        <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.ring_delay_ms=0</JVM_EXTRA_OPTS>
                                                     </env>
                                                     <exposedPropertyKey>seed</exposedPropertyKey>
                                                     <volumes>
