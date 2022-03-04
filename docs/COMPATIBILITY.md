@@ -1,8 +1,6 @@
-# Compatibilty
+# Compatibility
 
-## Matrix
-Below matrix defines which ecchronos versions have been tested and verified with which Cassandra version.
-
+Below matrix defines which ecChronos versions have been tested and verified with which Cassandra version.
 
 | ecchronos version | Cassandra 3.0.X              | Cassandra 3.11.X | Cassandra 4.0.X |
 |-------------------|------------------------------|------------------|-----------------|

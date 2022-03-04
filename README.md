@@ -34,7 +34,7 @@ Upgrade instructions can be found in [UPGRADE.md](docs/UPGRADE.md).
 
 ### Compatibility with Cassandra versions
 
-Compability document can be found in [COMPABILITY.md](docs/COMPATIBILITY.md)
+For information about which ecChronos versions have been tested with which Cassandra versions can be found in [COMPATIBILITY.md](docs/COMPATIBILITY.md)
 
 ## Contributing
 
