@@ -14,14 +14,15 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import java.util.UUID;
-
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
+import java.util.UUID;
+
 public class ScheduledRepairJobView extends RepairJobView
 {
-    private long myNextRepair;
+    private final long myNextRepair;
+
     public ScheduledRepairJobView(UUID id, TableReference tableReference, RepairConfiguration repairConfiguration,
             RepairStateSnapshot repairStateSnapshot, Status status, double progress, long nextRepair)
     {

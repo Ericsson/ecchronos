@@ -14,8 +14,11 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.datastax.driver.core.*;
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.Statement;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
@@ -29,7 +32,11 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.time.Clock;
-import java.util.*;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Implementation of the RepairHistoryProvider interface that retrieves the repair history from Cassandra.
@@ -50,7 +57,8 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     private static final String REPAIR_HISTORY = "repair_history";
 
     private static final String REPAIR_HISTORY_BY_TIME_STATEMENT = String
-            .format("SELECT started_at, finished_at, range_begin, range_end, status, participants, coordinator FROM %s.%s WHERE keyspace_name=? AND columnfamily_name=? AND id >= minTimeuuid(?) and id <= maxTimeuuid(?)", KEYSPACE_NAME, REPAIR_HISTORY);
+            .format("SELECT started_at, finished_at, range_begin, range_end, status, participants, coordinator FROM %s.%s WHERE keyspace_name=? AND columnfamily_name=? AND id >= minTimeuuid(?) and id <= maxTimeuuid(?)",
+                    KEYSPACE_NAME, REPAIR_HISTORY);
 
     private final NodeResolver myNodeResolver;
     private final Session mySession;
@@ -60,13 +68,15 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     private final long myLookbackTime;
     private final Clock myClock;
 
-    public RepairHistoryProviderImpl(NodeResolver nodeResolver, Session session, StatementDecorator statementDecorator, long lookbackTime)
+    public RepairHistoryProviderImpl(NodeResolver nodeResolver, Session session, StatementDecorator statementDecorator,
+            long lookbackTime)
     {
         this(nodeResolver, session, statementDecorator, lookbackTime, Clock.systemDefaultZone());
     }
 
     @VisibleForTesting
-    RepairHistoryProviderImpl(NodeResolver nodeResolver, Session session, StatementDecorator statementDecorator, long lookbackTime, Clock clock)
+    RepairHistoryProviderImpl(NodeResolver nodeResolver, Session session, StatementDecorator statementDecorator,
+            long lookbackTime, Clock clock)
     {
         myNodeResolver = nodeResolver;
         mySession = session;
@@ -84,15 +94,19 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     }
 
     @Override
-    public Iterator<RepairEntry> iterate(TableReference tableReference, long to, long from, Predicate<RepairEntry> predicate)
+    public Iterator<RepairEntry> iterate(TableReference tableReference, long to, long from,
+            Predicate<RepairEntry> predicate)
     {
         Date fromDate = new Date(from);
         Date toDate = new Date(to);
-        if (!fromDate.before(toDate))
+        if(!fromDate.before(toDate))
         {
-            throw new IllegalArgumentException("Invalid range when iterating " + tableReference + ", from (" + fromDate + ") to (" + toDate + ")");
+            throw new IllegalArgumentException(
+                    "Invalid range when iterating " + tableReference + ", from (" + fromDate + ") to (" + toDate + ")");
         }
-        ResultSet resultSet = execute(myRepairHistoryByTimeStatement.bind(tableReference.getKeyspace(), tableReference.getTable(), fromDate, toDate));
+        ResultSet resultSet =
+                execute(myRepairHistoryByTimeStatement.bind(tableReference.getKeyspace(), tableReference.getTable(),
+                        fromDate, toDate));
 
         return new RepairEntryIterator(resultSet.iterator(), predicate);
     }
@@ -116,11 +130,11 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
         @Override
         protected RepairEntry computeNext()
         {
-            while (myIterator.hasNext())
+            while(myIterator.hasNext())
             {
                 Row row = myIterator.next();
 
-                if (validateFields(row))
+                if(validateFields(row))
                 {
                     long rangeBegin = Long.parseLong(row.getString(RANGE_BEGIN_COLUMN));
                     long rangeEnd = Long.parseLong(row.getString(RANGE_END_COLUMN));
@@ -130,7 +144,7 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
                     Set<Node> nodes = new HashSet<>();
                     InetAddress coordinator = row.getInet(COORDINATOR_COLUMN);
                     Optional<Node> coordinatorNode = myNodeResolver.fromIp(coordinator);
-                    if (!coordinatorNode.isPresent())
+                    if(!coordinatorNode.isPresent())
                     {
                         LOG.warn("Coordinator node {} not found in metadata", coordinator);
                     }
@@ -138,10 +152,10 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
                     {
                         nodes.add(coordinatorNode.get());
                     }
-                    for (InetAddress participant : participants)
+                    for(InetAddress participant : participants)
                     {
                         Optional<Node> node = myNodeResolver.fromIp(participant);
-                        if (!node.isPresent())
+                        if(!node.isPresent())
                         {
                             LOG.warn("Node {} not found in metadata", participant);
                         }
@@ -161,7 +175,7 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
 
                     RepairEntry repairEntry = new RepairEntry(tokenRange, startedAt, finishedAt, nodes, status);
 
-                    if (myPredicate.apply(repairEntry))
+                    if(myPredicate.apply(repairEntry))
                     {
                         return repairEntry;
                     }
