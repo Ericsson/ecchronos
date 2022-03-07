@@ -36,7 +36,7 @@ public class TestTableRepairConfig
         UUID id = UUID.randomUUID();
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
         RepairJobView repairJobView = new ScheduledRepairJobView(id, tableReference("ks", "tbl"), repairConfig,
-                null, RepairJobView.Status.COMPLETED, 0);
+                null, RepairJobView.Status.COMPLETED, 0, 0);
 
         // When
         TableRepairConfig tableRepairConfig = new TableRepairConfig(repairJobView);

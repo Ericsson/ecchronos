@@ -29,13 +29,20 @@ public class VnodeRepairState
 
     private final LongTokenRange myTokenRange;
     private final ImmutableSet<Node> myReplicas;
-    private final long myLastRepairedAt;
+    private final long myStartedAt;
+    private final long myFinishedAt;
 
-    public VnodeRepairState(LongTokenRange tokenRange, ImmutableSet<Node> replicas, long lastRepairedAt)
+    public VnodeRepairState(LongTokenRange tokenRange, ImmutableSet<Node> replicas, long startedAt)
+    {
+        this(tokenRange, replicas, startedAt, UNREPAIRED);
+    }
+
+    public VnodeRepairState(LongTokenRange tokenRange, ImmutableSet<Node> replicas, long startedAt, long finishedAt)
     {
         myTokenRange = tokenRange;
         myReplicas = replicas;
-        myLastRepairedAt = lastRepairedAt;
+        myStartedAt = startedAt;
+        myFinishedAt = finishedAt;
     }
 
     public LongTokenRange getTokenRange()
@@ -50,7 +57,17 @@ public class VnodeRepairState
 
     public long lastRepairedAt()
     {
-        return myLastRepairedAt;
+        return myStartedAt;
+    }
+
+    public long getFinishedAt()
+    {
+        return myFinishedAt;
+    }
+
+    public long getStartedAt()
+    {
+        return myStartedAt;
     }
 
     /**
@@ -69,7 +86,12 @@ public class VnodeRepairState
     @Override
     public String toString()
     {
-        return String.format("(tokenRange=%s,replicas=%s,repairedAt=%d)", myTokenRange, myReplicas, myLastRepairedAt);
+        return "VnodeRepairState{" +
+                "myTokenRange=" + myTokenRange +
+                ", myReplicas=" + myReplicas +
+                ", myStartedAt=" + myStartedAt +
+                ", myFinishedAt=" + myFinishedAt +
+                '}';
     }
 
     @Override
@@ -78,7 +100,8 @@ public class VnodeRepairState
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         VnodeRepairState that = (VnodeRepairState) o;
-        return myLastRepairedAt == that.myLastRepairedAt &&
+        return myStartedAt == that.myStartedAt &&
+                myFinishedAt == that.myFinishedAt &&
                 Objects.equals(myTokenRange, that.myTokenRange) &&
                 Objects.equals(myReplicas, that.myReplicas);
     }
@@ -86,6 +109,6 @@ public class VnodeRepairState
     @Override
     public int hashCode()
     {
-        return Objects.hash(myTokenRange, myReplicas, myLastRepairedAt);
+        return Objects.hash(myTokenRange, myReplicas, myStartedAt, myFinishedAt);
     }
 }

@@ -40,16 +40,17 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
 
     private static final String RANGE_BEGIN_COLUMN = "range_begin";
     private static final String RANGE_END_COLUMN = "range_end";
-    private static final String ID_COLUMN = "id";
     private static final String STATUS_COLUMN = "status";
     private static final String PARTICIPANTS_COLUMN = "participants";
     private static final String COORDINATOR_COLUMN = "coordinator";
+    private static final String STARTED_AT_COLUMN = "started_at";
+    private static final String FINISHED_AT_COLUMN = "finished_at";
 
     private static final String KEYSPACE_NAME = "system_distributed";
     private static final String REPAIR_HISTORY = "repair_history";
 
     private static final String REPAIR_HISTORY_BY_TIME_STATEMENT = String
-            .format("SELECT id, range_begin, range_end, status, participants, coordinator FROM %s.%s WHERE keyspace_name=? AND columnfamily_name=? AND id >= minTimeuuid(?) and id <= maxTimeuuid(?)", KEYSPACE_NAME, REPAIR_HISTORY);
+            .format("SELECT started_at, finished_at, range_begin, range_end, status, participants, coordinator FROM %s.%s WHERE keyspace_name=? AND columnfamily_name=? AND id >= minTimeuuid(?) and id <= maxTimeuuid(?)", KEYSPACE_NAME, REPAIR_HISTORY);
 
     private final NodeResolver myNodeResolver;
     private final Session mySession;
@@ -125,7 +126,6 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
                     long rangeEnd = Long.parseLong(row.getString(RANGE_END_COLUMN));
 
                     LongTokenRange tokenRange = new LongTokenRange(rangeBegin, rangeEnd);
-                    UUID id = row.getUUID(ID_COLUMN);
                     Set<InetAddress> participants = row.getSet(PARTICIPANTS_COLUMN, InetAddress.class);
                     Set<Node> nodes = new HashSet<>();
                     InetAddress coordinator = row.getInet(COORDINATOR_COLUMN);
@@ -151,10 +151,15 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
                         }
                     }
                     String status = row.getString(STATUS_COLUMN);
+                    long startedAt = row.getTimestamp(STARTED_AT_COLUMN).getTime();
+                    Date finished = row.getTimestamp(FINISHED_AT_COLUMN);
+                    long finishedAt = -1L;
+                    if(finished != null)
+                    {
+                        finishedAt = finished.getTime();
+                    }
 
-                    long startedAt = UUIDs.unixTimestamp(id);
-
-                    RepairEntry repairEntry = new RepairEntry(tokenRange, startedAt, nodes, status);
+                    RepairEntry repairEntry = new RepairEntry(tokenRange, startedAt, finishedAt, nodes, status);
 
                     if (myPredicate.apply(repairEntry))
                     {
@@ -171,8 +176,8 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
             return !row.isNull(PARTICIPANTS_COLUMN) &&
                     !row.isNull(RANGE_BEGIN_COLUMN) &&
                     !row.isNull(RANGE_END_COLUMN) &&
-                    !row.isNull(ID_COLUMN) &&
-                    !row.isNull(COORDINATOR_COLUMN);
+                    !row.isNull(COORDINATOR_COLUMN) &&
+                    !row.isNull(STARTED_AT_COLUMN);
         }
     }
 }

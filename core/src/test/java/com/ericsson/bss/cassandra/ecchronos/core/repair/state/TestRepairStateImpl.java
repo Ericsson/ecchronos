@@ -207,6 +207,41 @@ public class TestRepairStateImpl
         assertThat(actualVnodeRepairState.lastRepairedAt()).isLessThanOrEqualTo(repairedBefore);
     }
 
+    @Test
+    public void testIsRepairNeeded()
+    {
+        long startedAt = 9000L;
+        long finishedAt = 9500L;
+        long repairIntervalInMs = TimeUnit.MILLISECONDS.toMillis(1000);
+
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(mockNode("DC1")), startedAt, finishedAt);
+        RepairConfiguration repairConfiguration = repairConfiguration(repairIntervalInMs);
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Collections.singletonList(vnodeRepairState))
+                .build();
+        when(mockVnodeRepairStateFactory.calculateNewState(eq(tableReference), isNull())).thenReturn(vnodeRepairStates);
+        when(mockReplicaRepairGroupFactory.generateReplicaRepairGroups(repairGroupCaptor.capture())).thenReturn(Lists.emptyList());
+        RepairStateImpl repairState = new RepairStateImpl(tableReference, repairConfiguration,
+                mockVnodeRepairStateFactory, mockHostStates,
+                mockTableRepairMetrics, mockReplicaRepairGroupFactory, mockPostUpdateHook);
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 0L, 9000L)).isFalse();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 0L, 9500L)).isFalse();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 0L, 10000L)).isTrue();
+
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 500L, 9000L)).isFalse();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 500L, 9499L)).isFalse();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 500L, 9500L)).isTrue();
+
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 1000L, 9000L)).isTrue();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 1000L, 9499L)).isTrue();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 1000L, 9500L)).isTrue();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 1000L, 10000L)).isTrue();
+        //Repair takes longer time than interval
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 5000L, 9000L)).isTrue();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 5000L, 9499L)).isTrue();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 5000L, 9500L)).isTrue();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 5000L, 10000L)).isTrue();
+    }
+
     private RepairConfiguration repairConfiguration(long repairIntervalInMs)
     {
         return RepairConfiguration.newBuilder()

@@ -15,6 +15,8 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.google.common.collect.ImmutableList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -35,14 +37,30 @@ public class RepairStateSnapshot
     private final long myLastCompletedAt;
     private final ImmutableList<ReplicaRepairGroup> myReplicaRepairGroup;
     private final VnodeRepairStates myVnodeRepairStates;
+    private final long myEstimatedRepairTime;
 
     private RepairStateSnapshot(Builder builder)
     {
         myLastCompletedAt = builder.myLastCompletedAt;
         myReplicaRepairGroup = builder.myReplicaRepairGroup;
         myVnodeRepairStates = builder.myVnodeRepairStates;
-
+        myEstimatedRepairTime = calculateRepairTime();
         canRepair = !myReplicaRepairGroup.isEmpty();
+    }
+
+    private long calculateRepairTime()
+    {
+        long sum = 0;
+        for(VnodeRepairState vnodeRepairState : myVnodeRepairStates.getVnodeRepairStates())
+        {
+            long finishedAt = vnodeRepairState.getFinishedAt();
+            if(finishedAt != VnodeRepairState.UNREPAIRED)
+            {
+                long timeForVnode = finishedAt - vnodeRepairState.getStartedAt();
+                sum += timeForVnode;
+            }
+        }
+        return sum;
     }
 
     /**
@@ -65,6 +83,11 @@ public class RepairStateSnapshot
         return myLastCompletedAt;
     }
 
+    public long getEstimatedRepairTime()
+    {
+        return myEstimatedRepairTime;
+    }
+
     /**
      * Information needed to run the next repair(s).
      *
@@ -83,7 +106,12 @@ public class RepairStateSnapshot
     @Override
     public String toString()
     {
-        return String.format("(canRepair=%b,lastRepaired=%d,replicaRepairGroup=%s)", canRepair, myLastCompletedAt, myReplicaRepairGroup);
+        return "RepairStateSnapshot{" +
+                "canRepair=" + canRepair +
+                ", myLastCompletedAt=" + myLastCompletedAt +
+                ", myReplicaRepairGroup=" + myReplicaRepairGroup +
+                ", myEstimatedRepairTime=" + myEstimatedRepairTime +
+                '}';
     }
 
     public static Builder newBuilder()

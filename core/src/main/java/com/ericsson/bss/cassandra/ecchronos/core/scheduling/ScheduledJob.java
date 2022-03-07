@@ -29,6 +29,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
 
     protected volatile long myLastSuccessfulRun = -1;
     private volatile long myNextRunTime = -1;
+    private volatile long myRunOffset = 0;
     private final UUID myId;
 
     public ScheduledJob(Configuration configuration)
@@ -141,9 +142,9 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     {
         long now = System.currentTimeMillis();
 
-        long diff = now - (getLastSuccessfulRun() + myRunIntervalInMs);
+        long diff = now - (getLastSuccessfulRun() + myRunIntervalInMs) + getRunOffset();
 
-        if (diff < 0)
+        if (diff < getRunOffset())
         {
             return -1;
         }
@@ -151,6 +152,11 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         int hours = (int) (diff / 3600000) + 1;
 
         return hours * myPriority.getValue();
+    }
+
+    public long getRunOffset()
+    {
+        return myRunOffset;
     }
 
     /**
