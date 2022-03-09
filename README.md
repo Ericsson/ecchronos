@@ -32,6 +32,10 @@ Installation instructions can be found in [SETUP.md](docs/SETUP.md).
 
 Upgrade instructions can be found in [UPGRADE.md](docs/UPGRADE.md).
 
+### Compatibility with Cassandra versions
+
+For information about which ecChronos versions have been tested with which Cassandra versions can be found in [COMPATIBILITY.md](docs/COMPATIBILITY.md)
+
 ## Contributing
 
 Please read [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on our code of conduct, development, and the process for submitting pull requests to us.
