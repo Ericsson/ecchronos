@@ -168,7 +168,7 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
                     long startedAt = row.getTimestamp(STARTED_AT_COLUMN).getTime();
                     Date finished = row.getTimestamp(FINISHED_AT_COLUMN);
                     long finishedAt = -1L;
-                    if(finished != null)
+                    if (finished != null)
                     {
                         finishedAt = finished.getTime();
                     }

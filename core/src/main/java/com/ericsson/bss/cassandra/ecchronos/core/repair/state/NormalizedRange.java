@@ -75,9 +75,9 @@ public class NormalizedRange implements Comparable<NormalizedRange>
     }
 
     /**
-     * Get the repair timestamp of this sub range.
+     * Get the finished repair timestamp of this sub range.
      *
-     * @return The repair timestamp.
+     * @return The finished repair timestamp or -1 if not finished.
      */
     public long getFinishedAt()
     {
@@ -127,6 +127,7 @@ public class NormalizedRange implements Comparable<NormalizedRange>
      *
      * @param other The new normalized start token to use.
      * @param startedAt The repair timestamp to use for the new normalized range.
+     * @param finishedAt The repair finish timestamp to use for the new normalized range.
      * @return The new normalized range.
      */
     public NormalizedRange between(NormalizedRange other, long startedAt, long finishedAt)

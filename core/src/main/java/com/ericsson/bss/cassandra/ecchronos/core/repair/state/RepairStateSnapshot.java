@@ -49,10 +49,10 @@ public class RepairStateSnapshot
     private long calculateRepairTime()
     {
         long sum = 0;
-        for(VnodeRepairState vnodeRepairState : myVnodeRepairStates.getVnodeRepairStates())
+        for (VnodeRepairState vnodeRepairState : myVnodeRepairStates.getVnodeRepairStates())
         {
             long finishedAt = vnodeRepairState.getFinishedAt();
-            if(finishedAt != VnodeRepairState.UNREPAIRED)
+            if (finishedAt != VnodeRepairState.UNREPAIRED)
             {
                 long timeForVnode = finishedAt - vnodeRepairState.getStartedAt();
                 sum += timeForVnode;
