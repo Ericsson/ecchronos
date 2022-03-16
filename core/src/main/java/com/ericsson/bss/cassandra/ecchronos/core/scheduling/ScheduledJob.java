@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 public abstract class ScheduledJob implements Iterable<ScheduledTask>
 {
     public static final long DEFAULT_WAIT_BETWEEN_UNSUCCESSFUL_RUNS_IN_MILLISECONDS = TimeUnit.MINUTES.toMillis(30);
-
     private final Priority myPriority;
     protected final long myRunIntervalInMs;
 
@@ -141,10 +140,9 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     public final int getRealPriority()
     {
         long now = System.currentTimeMillis();
+        long diff = now - (getLastSuccessfulRun() + myRunIntervalInMs - getRunOffset());
 
-        long diff = now - (getLastSuccessfulRun() + myRunIntervalInMs) + getRunOffset();
-
-        if (diff < getRunOffset())
+        if (diff < 0)
         {
             return -1;
         }

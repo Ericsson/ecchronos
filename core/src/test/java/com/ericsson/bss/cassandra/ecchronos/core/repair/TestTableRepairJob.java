@@ -485,4 +485,52 @@ public class TestTableRepairJob
         assertThat(myRepairJob.getView().getProgress()).isEqualTo(0);
     }
 
+    @Test
+    public void testRunnable()
+    {
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
+        //Runinterval is 1 day
+        long repairedAt = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(25);
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
+        assertThat(myRepairJob.runnable()).isTrue();
+
+        repairedAt = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(24);
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
+        assertThat(myRepairJob.runnable()).isTrue();
+
+        // Make sure we don't repair too early
+        repairedAt = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(23);
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
+        assertThat(myRepairJob.runnable()).isFalse();
+
+        repairedAt = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(22);
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
+        assertThat(myRepairJob.runnable()).isFalse();
+    }
+
+    @Test
+    public void testRunnableWithOffset()
+    {
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
+        //Runinterval is 1 day
+        long offset = TimeUnit.HOURS.toMillis(1);
+        doReturn(offset).when(myRepairStateSnapshot).getEstimatedRepairTime();
+
+        long repairedAt = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(25);
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
+        assertThat(myRepairJob.runnable()).isTrue();
+
+        repairedAt = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(24);
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
+        assertThat(myRepairJob.runnable()).isTrue();
+
+        repairedAt = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(23);
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
+        assertThat(myRepairJob.runnable()).isTrue();
+
+        // Make sure we don't repair too early
+        repairedAt = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(22);
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
+        assertThat(myRepairJob.runnable()).isFalse();
+    }
 }
