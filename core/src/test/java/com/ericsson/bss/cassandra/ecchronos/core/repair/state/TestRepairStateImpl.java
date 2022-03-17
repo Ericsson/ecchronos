@@ -117,7 +117,7 @@ public class TestRepairStateImpl
         Node node = mockNode("DC1");
         when(mockHostStates.isUp(eq(node))).thenReturn(true);
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(node), VnodeRepairState.UNREPAIRED);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(node), expectedAtLeastRepairedAt);
         VnodeRepairState repairedVnodeRepairState = new VnodeRepairState(new LongTokenRange(2, 3), ImmutableSet.of(node), now);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState, repairedVnodeRepairState))
