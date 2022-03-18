@@ -80,6 +80,7 @@ public class TestTableMetricHolder
         tableMetricHolder.init();
 
         assertThat(metricRegistry.getMetrics().keySet()).containsExactlyInAnyOrder(
+                metricName(TableMetricHolder.REMAINING_REPAIR_TIME),
                 metricName(TableMetricHolder.LAST_REPAIRED_AT),
                 metricName(TableMetricHolder.REPAIR_STATE),
                 metricName(TableMetricHolder.REPAIR_TIMING_FAILED),
@@ -87,6 +88,7 @@ public class TestTableMetricHolder
 
         assertThat(getGague(TableMetricHolder.REPAIR_STATE).getValue()).isEqualTo(Double.NaN);
         assertThat(getGague(TableMetricHolder.LAST_REPAIRED_AT).getValue()).isEqualTo(0L);
+        assertThat(getGague(TableMetricHolder.REMAINING_REPAIR_TIME).getValue()).isEqualTo(0L);
     }
 
     @Test

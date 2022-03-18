@@ -102,6 +102,7 @@ public class TestRepairStateImpl
 
         verify(mockTableRepairMetrics).repairState(eq(tableReference), eq(1), eq(0));
         verify(mockTableRepairMetrics).lastRepairedAt(eq(tableReference), eq(repairStateSnapshot.lastCompletedAt()));
+        verify(mockTableRepairMetrics).remainingRepairTime(eq(tableReference), eq(0L));
         verify(mockPostUpdateHook, times(1)).postUpdate(repairStateSnapshot);
     }
 
@@ -111,14 +112,16 @@ public class TestRepairStateImpl
         long now = System.currentTimeMillis();
         long repairIntervalInMs = TimeUnit.HOURS.toMillis(1);
         long expectedAtLeastRepairedAt = now - repairIntervalInMs;
+        long vnodeRepairTime = 5L;
+        long needRepairFinishedAt = expectedAtLeastRepairedAt + vnodeRepairTime;
 
         RepairConfiguration repairConfiguration = repairConfiguration(repairIntervalInMs);
 
         Node node = mockNode("DC1");
         when(mockHostStates.isUp(eq(node))).thenReturn(true);
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(node), expectedAtLeastRepairedAt);
-        VnodeRepairState repairedVnodeRepairState = new VnodeRepairState(new LongTokenRange(2, 3), ImmutableSet.of(node), now);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(node), expectedAtLeastRepairedAt, needRepairFinishedAt);
+        VnodeRepairState repairedVnodeRepairState = new VnodeRepairState(new LongTokenRange(2, 3), ImmutableSet.of(node), now, now);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState, repairedVnodeRepairState))
                 .build();
@@ -142,6 +145,7 @@ public class TestRepairStateImpl
 
         verify(mockTableRepairMetrics).repairState(eq(tableReference), eq(1), eq(1));
         verify(mockTableRepairMetrics).lastRepairedAt(eq(tableReference), eq(repairStateSnapshot.lastCompletedAt()));
+        verify(mockTableRepairMetrics).remainingRepairTime(eq(tableReference), eq(vnodeRepairTime));
         verify(mockPostUpdateHook, times(1)).postUpdate(repairStateSnapshot);
     }
 
@@ -149,11 +153,12 @@ public class TestRepairStateImpl
     public void testUpdateRepaired()
     {
         long expectedRepairedAt = System.currentTimeMillis();
+        long finishedAt = expectedRepairedAt + TimeUnit.SECONDS.toMillis(5);
         long repairIntervalInMs = TimeUnit.HOURS.toMillis(1);
 
         RepairConfiguration repairConfiguration = repairConfiguration(repairIntervalInMs);
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(mockNode("DC1")), expectedRepairedAt);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(mockNode("DC1")), expectedRepairedAt, finishedAt);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Collections.singletonList(vnodeRepairState))
                 .build();
@@ -174,9 +179,11 @@ public class TestRepairStateImpl
 
         verify(mockTableRepairMetrics).repairState(eq(tableReference), eq(1), eq(0));
         verify(mockTableRepairMetrics).lastRepairedAt(eq(tableReference), eq(expectedRepairedAt));
+        verify(mockTableRepairMetrics).remainingRepairTime(eq(tableReference), eq(0L));
         reset(mockTableRepairMetrics);
 
         // Perform update
+        when(mockVnodeRepairStateFactory.calculateNewState(eq(tableReference), eq(repairStateSnapshot))).thenReturn(vnodeRepairStates);
         repairState.update();
 
         RepairStateSnapshot updatedRepairStateSnapshot = repairState.getSnapshot();

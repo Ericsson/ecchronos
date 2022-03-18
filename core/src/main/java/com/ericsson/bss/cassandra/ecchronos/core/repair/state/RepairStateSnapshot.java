@@ -51,14 +51,32 @@ public class RepairStateSnapshot
         long sum = 0;
         for (VnodeRepairState vnodeRepairState : myVnodeRepairStates.getVnodeRepairStates())
         {
-            long finishedAt = vnodeRepairState.getFinishedAt();
-            if (finishedAt != VnodeRepairState.UNREPAIRED)
+            sum += getRepairTimeForVnode(vnodeRepairState);
+        }
+        return sum;
+    }
+
+    public long getRemainingRepairTime(long now, long repairIntervalMs)
+    {
+        long sum = 0;
+        for (VnodeRepairState vnodeRepairState : myVnodeRepairStates.getVnodeRepairStates())
+        {
+            if(vnodeRepairState.lastRepairedAt() + (repairIntervalMs - myEstimatedRepairTime) <= now)
             {
-                long timeForVnode = finishedAt - vnodeRepairState.getStartedAt();
-                sum += timeForVnode;
+                sum += getRepairTimeForVnode(vnodeRepairState);
             }
         }
         return sum;
+    }
+
+    private long getRepairTimeForVnode(VnodeRepairState vnodeRepairState)
+    {
+        long finishedAt = vnodeRepairState.getFinishedAt();
+        if (finishedAt != VnodeRepairState.UNREPAIRED)
+        {
+            return finishedAt - vnodeRepairState.getStartedAt();
+        }
+        return 0L;
     }
 
     /**

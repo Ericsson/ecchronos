@@ -41,6 +41,13 @@ public interface TableRepairMetrics
     void lastRepairedAt(TableReference tableReference, long lastRepairedAt);
 
     /**
+     * Report the remaining repair time for table.
+     * @param tableReference The table to update the remaining repair time for.
+     * @param remainingRepairTime The remaining time to fully repair the table.
+     */
+    void remainingRepairTime(TableReference tableReference, long remainingRepairTime);
+
+    /**
      * Report the time it took to issue one repair command (session) and whether it was successful or not.
      *
      * @param tableReference The table the repair was performed on.
