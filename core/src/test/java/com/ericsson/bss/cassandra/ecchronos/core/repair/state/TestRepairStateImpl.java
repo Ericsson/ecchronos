@@ -112,15 +112,13 @@ public class TestRepairStateImpl
         long now = System.currentTimeMillis();
         long repairIntervalInMs = TimeUnit.HOURS.toMillis(1);
         long expectedAtLeastRepairedAt = now - repairIntervalInMs;
-        long vnodeRepairTime = 5L;
-        long needRepairFinishedAt = expectedAtLeastRepairedAt + vnodeRepairTime;
 
         RepairConfiguration repairConfiguration = repairConfiguration(repairIntervalInMs);
 
         Node node = mockNode("DC1");
         when(mockHostStates.isUp(eq(node))).thenReturn(true);
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(node), expectedAtLeastRepairedAt, needRepairFinishedAt);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(node), VnodeRepairState.UNREPAIRED);
         VnodeRepairState repairedVnodeRepairState = new VnodeRepairState(new LongTokenRange(2, 3), ImmutableSet.of(node), now, now);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState, repairedVnodeRepairState))
@@ -145,7 +143,7 @@ public class TestRepairStateImpl
 
         verify(mockTableRepairMetrics).repairState(eq(tableReference), eq(1), eq(1));
         verify(mockTableRepairMetrics).lastRepairedAt(eq(tableReference), eq(repairStateSnapshot.lastCompletedAt()));
-        verify(mockTableRepairMetrics).remainingRepairTime(eq(tableReference), eq(vnodeRepairTime));
+        verify(mockTableRepairMetrics).remainingRepairTime(eq(tableReference), eq(0L));
         verify(mockPostUpdateHook, times(1)).postUpdate(repairStateSnapshot);
     }
 
@@ -233,6 +231,7 @@ public class TestRepairStateImpl
         assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 0L, 9000L)).isFalse();
         assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 0L, 9500L)).isFalse();
         assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 0L, 10000L)).isTrue();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 0L, 999999L)).isTrue();
 
         assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 500L, 9000L)).isFalse();
         assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 500L, 9499L)).isFalse();

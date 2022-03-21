@@ -92,6 +92,13 @@ public class TestTableMetricHolder
     }
 
     @Test
+    public void testClose()
+    {
+        myTableMetricHolder.close();
+        assertThat(myMetricRegistry.getMetrics()).isEmpty();
+    }
+
+    @Test
     public void testUpdateLastRepairedAt()
     {
         long expectedLastRepaired = 1234;
@@ -99,6 +106,16 @@ public class TestTableMetricHolder
         myTableMetricHolder.lastRepairedAt(expectedLastRepaired);
 
         assertThat(getGague(TableMetricHolder.LAST_REPAIRED_AT).getValue()).isEqualTo(expectedLastRepaired);
+    }
+
+    @Test
+    public void testUpdateRemainingRepairTime()
+    {
+        long remainingRepairTime = 1234L;
+
+        myTableMetricHolder.remainingRepairTime(remainingRepairTime);
+
+        assertThat(getGague(TableMetricHolder.REMAINING_REPAIR_TIME).getValue()).isEqualTo(remainingRepairTime);
     }
 
     @Test

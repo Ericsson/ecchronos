@@ -67,10 +67,8 @@ public class RepairStateImpl implements RepairState
     public final void update()
     {
         RepairStateSnapshot oldRepairStateSnapshot = myRepairStateSnapshot.get();
-
-        long now = System.currentTimeMillis();
         if (oldRepairStateSnapshot == null
-                || isRepairNeeded(oldRepairStateSnapshot.lastCompletedAt(), oldRepairStateSnapshot.getEstimatedRepairTime(), now))
+                || isRepairNeeded(oldRepairStateSnapshot.lastCompletedAt(), oldRepairStateSnapshot.getEstimatedRepairTime(), System.currentTimeMillis()))
         {
             RepairStateSnapshot newRepairStateSnapshot = generateNewRepairState(oldRepairStateSnapshot);
             if (myRepairStateSnapshot.compareAndSet(oldRepairStateSnapshot, newRepairStateSnapshot))
@@ -78,12 +76,12 @@ public class RepairStateImpl implements RepairState
                 myTableRepairMetrics.lastRepairedAt(myTableReference, newRepairStateSnapshot.lastCompletedAt());
 
                 int nonRepairedRanges = (int)newRepairStateSnapshot.getVnodeRepairStates().getVnodeRepairStates().stream()
-                        .filter(v -> vnodeIsRepairable(v, newRepairStateSnapshot, now))
+                        .filter(v -> vnodeIsRepairable(v, newRepairStateSnapshot, System.currentTimeMillis()))
                         .count();
 
                 int repairedRanges = newRepairStateSnapshot.getVnodeRepairStates().getVnodeRepairStates().size() - nonRepairedRanges;
                 myTableRepairMetrics.repairState(myTableReference, repairedRanges, nonRepairedRanges);
-                myTableRepairMetrics.remainingRepairTime(myTableReference, newRepairStateSnapshot.getRemainingRepairTime(now,
+                myTableRepairMetrics.remainingRepairTime(myTableReference, newRepairStateSnapshot.getRemainingRepairTime(System.currentTimeMillis(),
                         myRepairConfiguration.getRepairIntervalInMs()));
                 LOG.trace("Table {} switched to repair state {}", myTableReference, newRepairStateSnapshot);
             }
