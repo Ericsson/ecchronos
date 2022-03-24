@@ -41,7 +41,8 @@ public interface TableRepairMetrics
     void lastRepairedAt(TableReference tableReference, long lastRepairedAt);
 
     /**
-     * Report the remaining repair time for table.
+     * Report the effective remaining repair time for table (time ecChronos waits for cassandra to perform repair).
+     *
      * @param tableReference The table to update the remaining repair time for.
      * @param remainingRepairTime The remaining time to fully repair the table.
      */
