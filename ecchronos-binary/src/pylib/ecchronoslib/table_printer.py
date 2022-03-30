@@ -53,9 +53,10 @@ def _add_vnode_state_to_table(vnode_state, table):
 
 def print_summary(repair_jobs):
     status_list = [job.status for job in repair_jobs]
-    summary_format = "Summary: {0} completed, {1} in queue, {2} warning, {3} error"
+    summary_format = "Summary: {0} completed, {1} in queue, {2} blocked, {3} warning, {4} error"
     print(summary_format.format(status_list.count('COMPLETED'),
                                 status_list.count('IN_QUEUE'),
+                                status_list.count('BLOCKED'),
                                 status_list.count('WARNING'),
                                 status_list.count('ERROR')))
 
