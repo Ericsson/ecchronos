@@ -20,7 +20,7 @@
 
     <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
     <artifactId>parent</artifactId>
-    <version>2.0.6-SNAPSHOT</version>
+    <version>2.0.6</version>
     <packaging>pom</packaging>
 
     <name>Ericsson Cassandra Chronos</name>
@@ -935,6 +935,6 @@ limitations under the License.
         <url>https://github.com/ericsson/ecchronos</url>
         <connection>scm:git:git@github.com:ericsson/ecchronos.git</connection>
         <developerConnection>scm:git:git@github.com:ericsson/ecchronos.git</developerConnection>
-      <tag>HEAD</tag>
+      <tag>ecchronos-2.0.6</tag>
   </scm>
 </project>
