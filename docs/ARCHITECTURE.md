@@ -54,6 +54,7 @@ Run policies are used to prevent jobs from running.
 Before a job is started the run policies are consulted to see if it is appropriate for the job to run at this time.
 
 The default implementation is time based and reads configuration from a table in Apache Cassandra.
+For more information about time based run policy refer to [Time based run policy](TIME_BASED_RUN_POLICY.md)
 
 ### Repair scheduling
 
