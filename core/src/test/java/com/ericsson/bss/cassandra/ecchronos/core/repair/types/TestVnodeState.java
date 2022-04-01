@@ -91,6 +91,6 @@ public class TestVnodeState
     @Test
     public void testEqualsContract()
     {
-        EqualsVerifier.forClass(VirtualNodeState.class).usingGetClass().withNonnullFields("replicas").verify();
+        EqualsVerifier.simple().forClass(VirtualNodeState.class).usingGetClass().withNonnullFields("replicas").verify();
     }
 }

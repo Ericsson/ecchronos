@@ -17,6 +17,9 @@ package com.ericsson.bss.cassandra.ecchronos.rest;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.CompleteRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
+import org.springframework.http.ResponseEntity;
+
+import java.util.List;
 
 /**
  * Repair scheduler rest interface.
@@ -30,7 +33,7 @@ public interface RepairManagementREST
      *
      * @return A list of JSON representations of {@link ScheduledRepairJob}
      */
-    String status();
+    ResponseEntity<List<ScheduledRepairJob>> status();
 
     /**
      * Get a list of the status of all scheduled repair jobs for a specific keyspace.
@@ -38,7 +41,7 @@ public interface RepairManagementREST
      * @param keyspace The keyspace to list
      * @return A list of JSON representations of {@link ScheduledRepairJob}
      */
-    String keyspaceStatus(String keyspace);
+    ResponseEntity<List<ScheduledRepairJob>> keyspaceStatus(String keyspace);
 
     /**
      * Get a list of the status of all scheduled repair jobs for a specific table.
@@ -47,8 +50,7 @@ public interface RepairManagementREST
      * @param table The table to get status of
      * @return A JSON representation of {@link ScheduledRepairJob}
      */
-    String tableStatus(String keyspace,
-                       String table);
+    ResponseEntity<List<ScheduledRepairJob>> tableStatus(String keyspace, String table);
 
     /**
      * Get status of a specific scheduled table repair job.
@@ -56,14 +58,14 @@ public interface RepairManagementREST
      * @param id The id of the job
      * @return A JSON representation of {@link CompleteRepairJob}
      */
-    String jobStatus(String id);
+    ResponseEntity<CompleteRepairJob> jobStatus(String id);
 
     /**
      * Get a list of configuration of all scheduled repair jobs.
      *
      * @return A list of JSON representations of {@link TableRepairConfig}
      */
-    String config();
+    ResponseEntity<List<TableRepairConfig>> config();
 
     /**
      * Get a list of configuration of all scheduled repair jobs for a specific keyspace.
@@ -71,7 +73,7 @@ public interface RepairManagementREST
      * @param keyspace The keyspace to list
      * @return A list of JSON representations of {@link TableRepairConfig}
      */
-    String keyspaceConfig(String keyspace);
+    ResponseEntity<List<TableRepairConfig>> keyspaceConfig(String keyspace);
 
     /**
      * Get configuration of a specific scheduled table repair job.
@@ -80,8 +82,7 @@ public interface RepairManagementREST
      * @param table The table to get configuration of
      * @return A JSON representation of {@link TableRepairConfig}
      */
-    String tableConfig(String keyspace,
-                       String table);
+    ResponseEntity<List<TableRepairConfig>> tableConfig(String keyspace, String table);
 
     /**
      * Get configuration of a specific scheduled table repair job.
@@ -89,7 +90,7 @@ public interface RepairManagementREST
      * @param id The id of the table to get configuration of
      * @return A JSON representation of {@link TableRepairConfig}
      */
-    String jobConfig(String id);
+    ResponseEntity<TableRepairConfig> jobConfig(String id);
 
     /**
      * Schedule an on demand repair to be run on a specific table
@@ -98,6 +99,5 @@ public interface RepairManagementREST
      * @param table The table to get configuration of
      * @return A JSON representation of {@link ScheduledRepairJob}
      */
-    String scheduleJob(String keyspace,
-                       String table);
+    ResponseEntity<ScheduledRepairJob> scheduleJob(String keyspace, String table);
 }

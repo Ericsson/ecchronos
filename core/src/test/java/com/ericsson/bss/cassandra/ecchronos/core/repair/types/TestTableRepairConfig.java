@@ -54,6 +54,6 @@ public class TestTableRepairConfig
     @Test
     public void testEqualsContract()
     {
-        EqualsVerifier.forClass(TableRepairConfig.class).usingGetClass().verify();
+        EqualsVerifier.simple().forClass(TableRepairConfig.class).usingGetClass().verify();
     }
 }

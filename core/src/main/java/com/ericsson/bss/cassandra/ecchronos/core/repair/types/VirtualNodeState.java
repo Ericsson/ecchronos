@@ -29,11 +29,15 @@ import java.util.stream.Collectors;
  */
 public class VirtualNodeState
 {
-    public final long startToken;
-    public final long endToken;
-    public final Set<InetAddress> replicas;
-    public final long lastRepairedAtInMs;
-    public final boolean repaired;
+    public long startToken;
+    public long endToken;
+    public Set<InetAddress> replicas;
+    public long lastRepairedAtInMs;
+    public boolean repaired;
+
+    public VirtualNodeState()
+    {
+    }
 
     public VirtualNodeState(long startToken, long endToken, Set<InetAddress> replicas, long lastRepairedAtInMs, boolean repaired)
     {

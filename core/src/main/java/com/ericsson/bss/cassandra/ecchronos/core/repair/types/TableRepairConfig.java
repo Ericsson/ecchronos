@@ -29,14 +29,18 @@ import java.util.UUID;
  */
 public class TableRepairConfig
 {
-    public final UUID id;
-    public final String keyspace;
-    public final String table;
-    public final long repairIntervalInMs;
-    public final RepairParallelism repairParallelism;
-    public final double repairUnwindRatio;
-    public final long repairWarningTimeInMs;
-    public final long repairErrorTimeInMs;
+    public UUID id;
+    public String keyspace;
+    public String table;
+    public long repairIntervalInMs;
+    public RepairParallelism repairParallelism;
+    public double repairUnwindRatio;
+    public long repairWarningTimeInMs;
+    public long repairErrorTimeInMs;
+
+    public TableRepairConfig()
+    {
+    }
 
     public TableRepairConfig(RepairJobView repairJobView)
     {
