@@ -20,7 +20,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-        <version>2.0.7-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
     </parent>
     <artifactId>osgi-integration</artifactId>
     <description>Integration tests for an OSGi environment</description>
