@@ -18,7 +18,6 @@ import java.util.Objects;
 import java.util.UUID;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 
 /**
