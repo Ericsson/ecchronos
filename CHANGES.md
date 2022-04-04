@@ -2,6 +2,8 @@
 
 ## Version 3.0.0
 
+* Add blocked status - Issue #284
+
 ## Version 2.0.6
 
 * Add ecc-schedule command - Issue #158
