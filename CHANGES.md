@@ -2,6 +2,8 @@
 
 ## Version 3.0.0
 
+* Remove deprecated scripts (ecc-schedule, ecc-status, ecc-config)
+
 ## Version 2.0.6
 
 * Add ecc-schedule command - Issue #158
