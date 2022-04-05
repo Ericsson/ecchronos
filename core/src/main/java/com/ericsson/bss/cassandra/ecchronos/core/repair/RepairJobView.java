@@ -34,7 +34,7 @@ public abstract class RepairJobView
 
     public enum Status
     {
-        COMPLETED, IN_QUEUE, WARNING, ERROR
+        COMPLETED, IN_QUEUE, WARNING, ERROR, BLOCKED
     }
 
     public RepairJobView(UUID id, TableReference tableReference, RepairConfiguration repairConfiguration, RepairStateSnapshot repairStateSnapshot, Status status, double progress)

@@ -124,6 +124,10 @@ public class TableRepairJob extends ScheduledJob
 
     private RepairJobView.Status getStatus(long timestamp)
     {
+        if (getRealPriority() != -1 && !super.runnable())
+        {
+            return RepairJobView.Status.BLOCKED;
+        }
         long repairedAt = myRepairState.getSnapshot().lastCompletedAt();
         long msSinceLastRepair = timestamp - repairedAt;
         RepairConfiguration config = myRepairConfiguration;

@@ -6,7 +6,7 @@ The configuration is read from a table `ecchronos.reject_configuration`.
 When a job is about to run, it's validated against the time based run policy to check if it's allowed to,
 if not the job will be run after the run policy allows it.
 
-Currently, the only way to see if the job is halted because of run policy is to look at the debug logs.
+To see if the job is blocked by the run policy check `repair-status` using [ecctool](ECCTOOL.md).
 
 ## Example configuration
 

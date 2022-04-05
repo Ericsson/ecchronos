@@ -437,6 +437,19 @@ public class TestTableRepairJob
         assertThat(myRepairJob.getView().getStatus()).isEqualTo(RepairJobView.Status.WARNING);
     }
 
+    @Test
+    public void testStatusBlocked()
+    {
+        long repairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(7);
+        VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), repairedAt);
+        VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState)).build();
+        when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
+        doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
+        myRepairJob.setRunnableIn(TimeUnit.HOURS.toMillis(1));
+
+        assertThat(myRepairJob.getView().getStatus()).isEqualTo(RepairJobView.Status.BLOCKED);
+    }
+
 
     @Test
     public void testHalfCompleteProgress()
