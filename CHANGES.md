@@ -2,6 +2,7 @@
 
 ## Version 3.0.0
 
+* Bump springboot from 2.6.4 to 2.6.6
 * Add blocked status - Issue #284
 
 ## Version 2.0.6
