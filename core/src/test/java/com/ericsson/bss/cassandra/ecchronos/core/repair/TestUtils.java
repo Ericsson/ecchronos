@@ -139,7 +139,7 @@ public class TestUtils
 
             return new ScheduledRepairJobView(id, tableReference(keyspace, table),
                     generateRepairConfiguration(repairInterval),
-                    generateRepairStateSnapshot(lastRepairedAt, vnodeRepairStates), status,progress);
+                    generateRepairStateSnapshot(lastRepairedAt, vnodeRepairStates), status,progress, lastRepairedAt + repairInterval);
         }
     }
 

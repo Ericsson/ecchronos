@@ -38,13 +38,15 @@ public class TestRepairEntry
     {
         LongTokenRange expectedLongTokenRange = new LongTokenRange(0, 1);
         long expectedStartedAt = 5;
+        long expectedFinishedAt = expectedStartedAt + 5;
         Set<Node> expectedParticipants = Sets.newHashSet(mockNode);
         RepairStatus expectedStatus = RepairStatus.SUCCESS;
 
-        RepairEntry repairEntry = new RepairEntry(expectedLongTokenRange, expectedStartedAt, expectedParticipants, expectedStatus.toString());
+        RepairEntry repairEntry = new RepairEntry(expectedLongTokenRange, expectedStartedAt, expectedFinishedAt, expectedParticipants, expectedStatus.toString());
 
         assertThat(repairEntry.getRange()).isEqualTo(expectedLongTokenRange);
         assertThat(repairEntry.getStartedAt()).isEqualTo(expectedStartedAt);
+        assertThat(repairEntry.getFinishedAt()).isEqualTo(expectedFinishedAt);
         assertThat(repairEntry.getParticipants()).isEqualTo(expectedParticipants);
         assertThat(repairEntry.getStatus()).isEqualTo(expectedStatus);
     }
@@ -52,8 +54,8 @@ public class TestRepairEntry
     @Test
     public void testRepairEntriesAreEqual()
     {
-        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, Sets.newHashSet(mockNode), "SUCCESS");
-        RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(0, 1), 5, Sets.newHashSet(mockNode), "SUCCESS");
+        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, 5, Sets.newHashSet(mockNode), "SUCCESS");
+        RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(0, 1), 5, 5, Sets.newHashSet(mockNode), "SUCCESS");
 
         assertThat(repairEntry).isEqualTo(repairEntry2);
         assertThat(repairEntry.hashCode()).isEqualTo(repairEntry2.hashCode());
@@ -62,8 +64,17 @@ public class TestRepairEntry
     @Test
     public void testRepairEntriesWithDifferentRangeAreNotEqual()
     {
-        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, Sets.newHashSet(mockNode), "SUCCESS");
-        RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(1, 2), 5, Sets.newHashSet(mockNode), "SUCCESS");
+        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, 5, Sets.newHashSet(mockNode), "SUCCESS");
+        RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(1, 2), 5, 5, Sets.newHashSet(mockNode), "SUCCESS");
+
+        assertThat(repairEntry).isNotEqualTo(repairEntry2);
+    }
+
+    @Test
+    public void testRepairEntriesWithDifferentStartedAtAreNotEqual()
+    {
+        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, 7, Sets.newHashSet(mockNode), "SUCCESS");
+        RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(0, 1), 6, 7, Sets.newHashSet(mockNode), "SUCCESS");
 
         assertThat(repairEntry).isNotEqualTo(repairEntry2);
     }
@@ -71,8 +82,8 @@ public class TestRepairEntry
     @Test
     public void testRepairEntriesWithDifferentFinishedAtAreNotEqual()
     {
-        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, Sets.newHashSet(mockNode), "SUCCESS");
-        RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(0, 1), 6, Sets.newHashSet(mockNode), "SUCCESS");
+        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, 6, Sets.newHashSet(mockNode), "SUCCESS");
+        RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(0, 1), 5, 7, Sets.newHashSet(mockNode), "SUCCESS");
 
         assertThat(repairEntry).isNotEqualTo(repairEntry2);
     }
@@ -80,8 +91,8 @@ public class TestRepairEntry
     @Test
     public void testRepairEntriesWithDifferentParticipantsAreNotEqual()
     {
-        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, Sets.newHashSet(mockNode), "SUCCESS");
-        RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(0, 1), 6, Sets.newHashSet(), "SUCCESS");
+        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, 5, Sets.newHashSet(mockNode), "SUCCESS");
+        RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(0, 1), 5, 5, Sets.newHashSet(), "SUCCESS");
 
         assertThat(repairEntry).isNotEqualTo(repairEntry2);
     }
@@ -89,8 +100,8 @@ public class TestRepairEntry
     @Test
     public void testRepairEntriesWithDifferentStatusAreNotEqual()
     {
-        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, Sets.newHashSet(mockNode), "SUCCESS");
-        RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(0, 1), 6, Sets.newHashSet(mockNode), "FAILED");
+        RepairEntry repairEntry = new RepairEntry(new LongTokenRange(0, 1), 5, 5, Sets.newHashSet(mockNode), "SUCCESS");
+        RepairEntry repairEntry2 = new RepairEntry(new LongTokenRange(0, 1), 5, 5, Sets.newHashSet(mockNode), "FAILED");
 
         assertThat(repairEntry).isNotEqualTo(repairEntry2);
     }

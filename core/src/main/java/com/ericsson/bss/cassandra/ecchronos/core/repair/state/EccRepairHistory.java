@@ -99,7 +99,7 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
 
         iterateStatement = session.prepare(
-                QueryBuilder.select(COLUMN_STARTED_AT, COLUMN_STATUS, COLUMN_RANGE_BEGIN, COLUMN_RANGE_END)
+                QueryBuilder.select(COLUMN_STARTED_AT, COLUMN_FINISHED_AT, COLUMN_STATUS, COLUMN_RANGE_BEGIN, COLUMN_RANGE_END)
                         .from(builder.keyspaceName, "repair_history")
                         .where(eq(COLUMN_TABLE_ID, bindMarker()))
                         .and(eq(COLUMN_NODE_ID, bindMarker()))
@@ -193,6 +193,12 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
 
             LongTokenRange tokenRange = new LongTokenRange(rangeBegin, rangeEnd);
             long startedAt = row.getTimestamp(COLUMN_STARTED_AT).getTime();
+            Date finished = row.getTimestamp(COLUMN_FINISHED_AT);
+            long finishedAt = -1L;
+            if(finished != null)
+            {
+                finishedAt = finished.getTime();
+            }
             Set<Node> nodes = replicationState.getNodes(tableReference, tokenRange);
             if (nodes == null)
             {
@@ -201,7 +207,7 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
             }
             String status = row.getString(COLUMN_STATUS);
 
-            return new RepairEntry(tokenRange, startedAt, nodes, status);
+            return new RepairEntry(tokenRange, startedAt, finishedAt, nodes, status);
         }
 
         private boolean validateFields(Row row)
@@ -234,17 +240,16 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
     {
         private final UUID tableId;
         private final UUID nodeId;
-        private final UUID repairId;
         private final UUID jobId;
         private final LongTokenRange range;
         private final Set<UUID> participants;
         private final AtomicReference<SessionState> sessionState = new AtomicReference<>(SessionState.NO_STATE);
+        private final AtomicReference<UUID> repairId = new AtomicReference<>(null);
 
         RepairSessionImpl(UUID tableId, UUID nodeId, UUID jobId, LongTokenRange range, Set<Node> participants)
         {
             this.tableId = tableId;
             this.nodeId = nodeId;
-            this.repairId = UUIDs.timeBased();
             this.jobId = jobId;
             this.range = range;
             this.participants = participants.stream()
@@ -255,16 +260,17 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
         @VisibleForTesting
         UUID getId()
         {
-            return repairId;
+            return repairId.get();
         }
 
         @Override
         public void start()
         {
+            repairId.compareAndSet(null, UUIDs.timeBased());
             transitionTo(SessionState.STARTED);
             String range_begin = Long.toString(range.start);
             String range_end = Long.toString(range.end);
-            Date started_at = new Date(UUIDs.unixTimestamp(repairId));
+            Date started_at = new Date(UUIDs.unixTimestamp(repairId.get()));
 
             insertWithRetry(participant -> insertStart(range_begin, range_end, started_at, participant));
         }
@@ -323,7 +329,7 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
 
         private ResultSetFuture insertStart(String range_begin, String range_end, Date started_at, UUID participant)
         {
-            Statement statement = initiateStatement.bind(tableId, participant, repairId, jobId, nodeId, range_begin,
+            Statement statement = initiateStatement.bind(tableId, participant, repairId.get(), jobId, nodeId, range_begin,
                     range_end, RepairStatus.STARTED.toString(), started_at);
             return executeAsync(statement);
         }
@@ -331,14 +337,14 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
         private ResultSetFuture insertFinish(RepairStatus repairStatus, Date finished_at, UUID participant)
         {
             Statement statement = finishStatement.bind(repairStatus.toString(), finished_at, tableId, participant,
-                    repairId);
+                    repairId.get());
             return executeAsync(statement);
         }
 
         @Override
         public String toString()
         {
-            return String.format("table_id=%s,repair_id=%s,job_id=%s,range=%s,participants=%s", tableId, repairId,
+            return String.format("table_id=%s,repair_id=%s,job_id=%s,range=%s,participants=%s", tableId, repairId.get(),
                     jobId, range, participants);
         }
 

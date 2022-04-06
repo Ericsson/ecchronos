@@ -146,6 +146,9 @@ Usually the RepairFailedTime should be all zeros but if it's not the reason can 
 
     Timers for the repair session that were not successful.
 
+* RemainingRepairTime
+
+    The effective remaining repair time (in milliseconds) for the table to be fully repaired (time ecChronos waits for cassandra to perform repair).
 
 #### Examples
 
@@ -170,3 +173,14 @@ If another node initiates the repair this value could differ as shown above.
 This value represents the last time the node perceived all of this tables ranges to be repaired.
 The value is in milliseconds since UNIX epoch time.
 If this value is beyond the alarm intervals an alarm should have been sent.
+
+| t          | value    |
+|------------|----------|
+| 1647956237 | 55740    |
+
+\<keyspace\>.\<table\>-\<table-id\>-RemainingRepairTime
+
+The value represents the effective remaining repair time for the table to be fully repaired in milliseconds.
+This is the time ecChronos will have to wait for Cassandra to perform repair,
+this is an estimation based on the last repair of the table.
+The value should be `0` if there is no repair ongoing for this table.

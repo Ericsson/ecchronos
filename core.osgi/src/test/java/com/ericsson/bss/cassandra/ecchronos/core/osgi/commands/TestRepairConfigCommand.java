@@ -83,6 +83,6 @@ public class TestRepairConfigCommand
         when(repairConfiguration.getRepairWarningTimeInMs()).thenReturn(warningTime);
         when(repairConfiguration.getRepairErrorTimeInMs()).thenReturn(errorTime);
 
-        return new ScheduledRepairJobView(UUID.randomUUID(), tableReference, repairConfiguration, null, RepairJobView.Status.IN_QUEUE, 0);
+        return new ScheduledRepairJobView(UUID.randomUUID(), tableReference, repairConfiguration, null, RepairJobView.Status.IN_QUEUE, 0, 0);
     }
 }

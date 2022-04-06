@@ -204,6 +204,25 @@ public class TestTableRepairMetricsImpl
     }
 
     @Test
+    public void testRemainingRepairTime() throws Exception
+    {
+        TableReference tableReference = tableReference("keyspace", "table");
+        TableReference tableReference2 = tableReference("keyspace", "table2");
+        long expectedRemainingRepairTime = 10L;
+        long expectedRemainingRepairTime2 = 20L;
+
+        myTableRepairMetricsImpl.remainingRepairTime(tableReference, expectedRemainingRepairTime);
+        myTableRepairMetricsImpl.remainingRepairTime(tableReference2, expectedRemainingRepairTime2);
+        myTableRepairMetricsImpl.report();
+
+        double remainingRepairTime = getMetricValue(metricName(tableReference, "RemainingRepairTime"));
+        double remainingRepairTime2 = getMetricValue(metricName(tableReference2, "RemainingRepairTime"));
+
+        assertThat(remainingRepairTime).isEqualTo(expectedRemainingRepairTime);
+        assertThat(remainingRepairTime2).isEqualTo(expectedRemainingRepairTime2);
+    }
+
+    @Test
     public void testSuccessfulRepairTiming() throws Exception
     {
         TableReference tableReference = tableReference("keyspace", "table");

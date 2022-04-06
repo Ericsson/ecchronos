@@ -2,6 +2,10 @@
 
 ## Version 3.0.0
 
+* Offset next runtime with repair time taken - Issue #121
+* Remove deprecated scripts (ecc-schedule, ecc-status, ecc-config)
+* Add blocked status - Issue #284
+
 ## Version 2.0.6
 
 * Add ecc-schedule command - Issue #158
