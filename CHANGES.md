@@ -2,6 +2,7 @@
 
 ## Version 3.0.0
 
+* Remove deprecated scripts (ecc-schedule, ecc-status, ecc-config)
 * Add blocked status - Issue #284
 
 ## Version 2.0.6

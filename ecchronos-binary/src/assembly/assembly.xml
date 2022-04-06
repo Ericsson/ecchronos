@@ -27,21 +27,6 @@
             <destName>ecc</destName>
         </file>
         <file>
-            <source>${project.basedir}/src/bin/ecc_status.py</source>
-            <outputDirectory>bin</outputDirectory>
-            <destName>ecc-status</destName>
-        </file>
-        <file>
-            <source>${project.basedir}/src/bin/ecc_config.py</source>
-            <outputDirectory>bin</outputDirectory>
-            <destName>ecc-config</destName>
-        </file>
-        <file>
-            <source>${project.basedir}/src/bin/ecc_schedule.py</source>
-            <outputDirectory>bin</outputDirectory>
-            <destName>ecc-schedule</destName>
-        </file>
-        <file>
             <source>${project.basedir}/src/bin/ecctool.py</source>
             <outputDirectory>bin</outputDirectory>
             <destName>ecctool</destName>
