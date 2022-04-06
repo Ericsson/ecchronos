@@ -216,6 +216,7 @@ public class TestEccRepairHistory extends AbstractCassandraTest
         assertThat(repairEntry.getStatus()).isEqualTo(RepairStatus.STARTED);
         assertThat(repairEntry.getRange()).isEqualTo(range);
         assertThat(repairEntry.getStartedAt()).isBetween(from, to);
+        assertThat(repairEntry.getFinishedAt()).isEqualTo(-1L);
         assertThat(repairEntryIterator.hasNext()).isFalse();
 
         repairSession.finish(RepairStatus.SUCCESS);
@@ -228,6 +229,7 @@ public class TestEccRepairHistory extends AbstractCassandraTest
         assertThat(repairEntry.getStatus()).isEqualTo(RepairStatus.SUCCESS);
         assertThat(repairEntry.getRange()).isEqualTo(range);
         assertThat(repairEntry.getStartedAt()).isBetween(from, to);
+        assertThat(repairEntry.getFinishedAt()).isGreaterThanOrEqualTo(to);
         assertThat(repairEntryIterator.hasNext()).isFalse();
     }
 
@@ -237,7 +239,7 @@ public class TestEccRepairHistory extends AbstractCassandraTest
         long from = System.currentTimeMillis();
 
         // Assert that history is empty
-        assertThat(repairHistoryProvider.iterate(tableReference, from + 5000, from, Predicates.alwaysTrue())).toIterable().isEmpty();;
+        assertThat(repairHistoryProvider.iterate(tableReference, from + 5000, from, Predicates.alwaysTrue())).toIterable().isEmpty();
 
         UUID jobId = UUID.randomUUID();
         LongTokenRange range = new LongTokenRange(1, 2);

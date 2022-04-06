@@ -17,7 +17,12 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
@@ -27,7 +32,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
@@ -85,7 +94,13 @@ public class TableRepairJob extends ScheduledJob
     public RepairJobView getView()
     {
         long now = System.currentTimeMillis();
-        return new ScheduledRepairJobView(getId(), myTableReference, myRepairConfiguration, myRepairState.getSnapshot(), getStatus(now), getProgress(now));
+        return new ScheduledRepairJobView(getId(), myTableReference, myRepairConfiguration, myRepairState.getSnapshot(),
+                getStatus(now), getProgress(now), getNextRunInMs());
+    }
+
+    private long getNextRunInMs()
+    {
+        return (getLastSuccessfulRun() + getRepairConfiguration().getRepairIntervalInMs()) - getRunOffset();
     }
 
     private double getProgress(long timestamp)
@@ -125,7 +140,7 @@ public class TableRepairJob extends ScheduledJob
         {
             return RepairJobView.Status.WARNING;
         }
-        if (msSinceLastRepair >= config.getRepairIntervalInMs())
+        if (msSinceLastRepair >= (config.getRepairIntervalInMs() - getRunOffset()))
         {
             return RepairJobView.Status.IN_QUEUE;
         }
@@ -190,6 +205,12 @@ public class TableRepairJob extends ScheduledJob
     }
 
     @Override
+    public long getRunOffset()
+    {
+        return myRepairState.getSnapshot().getEstimatedRepairTime();
+    }
+
+    @Override
     public boolean runnable()
     {
         if (super.runnable())
@@ -197,7 +218,8 @@ public class TableRepairJob extends ScheduledJob
             try
             {
                 myRepairState.update();
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 LOG.warn("Unable to check repair history, {}", this, e);
             }

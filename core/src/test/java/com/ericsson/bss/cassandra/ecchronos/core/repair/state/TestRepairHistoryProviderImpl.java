@@ -48,7 +48,7 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     private static final String TABLE = "table";
     private static int LOOKBACK_TIME = 100;
     private static int CLOCK_TIME = 25;
-    private static int LAST_REPAIRED_AT = 20;
+    private static int STARTED_AT = CLOCK_TIME - 5;
 
     private static RepairHistoryProviderImpl repairHistoryProvider;
 
@@ -92,7 +92,7 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     {
         insertRecord(KEYSPACE, TABLE, new LongTokenRange(0, 1));
 
-        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME, Predicates.<RepairEntry> alwaysFalse());
+        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME, Predicates.alwaysFalse());
 
         assertThat(repairEntryIterator.hasNext()).isFalse();
     }
@@ -100,11 +100,11 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     @Test
     public void testIterateAcceptedRepairHistory()
     {
-        RepairEntry expectedRepairEntry = new RepairEntry(new LongTokenRange(0, 1), LAST_REPAIRED_AT,
-                Sets.newHashSet(myLocalNode), "SUCCESS");
+        RepairEntry expectedRepairEntry = new RepairEntry(new LongTokenRange(0, 1), STARTED_AT,
+                CLOCK_TIME, Sets.newHashSet(myLocalNode), "SUCCESS");
         insertRecord(KEYSPACE, TABLE, expectedRepairEntry);
 
-        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME, Predicates.<RepairEntry> alwaysTrue());
+        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME, Predicates.alwaysTrue());
 
         assertThat(repairEntryIterator.hasNext()).isTrue();
         assertThat(repairEntryIterator.next()).isEqualTo(expectedRepairEntry);
@@ -115,10 +115,10 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     {
         int timeOutsideLookback = CLOCK_TIME - LOOKBACK_TIME - 1;
         RepairEntry expectedRepairEntry = new RepairEntry(new LongTokenRange(0, 1), timeOutsideLookback,
-                Sets.newHashSet(myLocalNode), "SUCCESS");
+                timeOutsideLookback, Sets.newHashSet(myLocalNode), "SUCCESS");
         insertRecord(KEYSPACE, TABLE, expectedRepairEntry);
 
-        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME, Predicates.<RepairEntry> alwaysTrue());
+        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME, Predicates.alwaysTrue());
 
         assertThat(repairEntryIterator.hasNext()).isFalse();
     }
@@ -126,8 +126,8 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     @Test
     public void testIterateSuccessfulRepairHistory()
     {
-        RepairEntry expectedRepairEntry = new RepairEntry(new LongTokenRange(0, 1), LAST_REPAIRED_AT,
-                Sets.newHashSet(myLocalNode), "SUCCESS");
+        RepairEntry expectedRepairEntry = new RepairEntry(new LongTokenRange(0, 1),  STARTED_AT,
+                CLOCK_TIME, Sets.newHashSet(myLocalNode), "SUCCESS");
         insertRecord(KEYSPACE, TABLE, expectedRepairEntry);
 
         Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider
@@ -152,7 +152,7 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     public void testIterateOtherNodesRepairHistory() throws UnknownHostException
     {
         insertRecordWithAddresses(KEYSPACE, TABLE, Sets.newHashSet(InetAddress.getByName("127.0.0.2")),
-                new LongTokenRange(0, 1), CLOCK_TIME - 5, CLOCK_TIME, RepairStatus.SUCCESS);
+                new LongTokenRange(0, 1), STARTED_AT, CLOCK_TIME, RepairStatus.SUCCESS);
 
         Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider
                 .iterate(myTableReference, CLOCK_TIME, new SuccessfulRepairEntryPredicate(myLocalNode));
@@ -163,17 +163,17 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     @Test
     public void testIterateWithOlderHistory()
     {
-        long repair_end = CLOCK_TIME - 5000;
-        long repair_start = repair_end - 5;
+        long finishedAt = CLOCK_TIME - 5000;
+        long startedAt = finishedAt - 5;
 
-        long iterate_start = repair_end + 1000;
-        long iterate_end = CLOCK_TIME;
+        long iterateStart = finishedAt + 1000;
+        long iterateEnd = CLOCK_TIME;
 
-        insertRecord(KEYSPACE, TABLE, Sets.newHashSet(myLocalNode), new LongTokenRange(0, 1), repair_start, repair_end,
+        insertRecord(KEYSPACE, TABLE, Sets.newHashSet(myLocalNode), new LongTokenRange(0, 1), startedAt, finishedAt,
                 RepairStatus.SUCCESS);
 
         Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider
-                .iterate(myTableReference, iterate_end, iterate_start, new SuccessfulRepairEntryPredicate(myLocalNode));
+                .iterate(myTableReference, iterateEnd, iterateStart, new SuccessfulRepairEntryPredicate(myLocalNode));
 
         assertThat(repairEntryIterator.hasNext()).isFalse();
     }
@@ -181,18 +181,18 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     @Test
     public void testIterateWithHistory()
     {
-        long repair_end = 10;
-        long repair_start = repair_end - 5;
+        long finishedAt = 10;
+        long startedAt = finishedAt - 5;
 
-        long iterate_start = repair_start - 5;
-        long iterate_end = repair_end + 5;
+        long iterateStart = startedAt - 5;
+        long iterateEnd = finishedAt + 5;
 
-        RepairEntry expectedRepairEntry = new RepairEntry(new LongTokenRange(0, 1), repair_start,
-                Sets.newHashSet(myLocalNode), "SUCCESS");
+        RepairEntry expectedRepairEntry = new RepairEntry(new LongTokenRange(0, 1), startedAt,
+                finishedAt, Sets.newHashSet(myLocalNode), "SUCCESS");
         insertRecord(KEYSPACE, TABLE, expectedRepairEntry);
 
         Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider
-                .iterate(myTableReference, iterate_end, iterate_start, new SuccessfulRepairEntryPredicate(myLocalNode));
+                .iterate(myTableReference, iterateEnd, iterateStart, new SuccessfulRepairEntryPredicate(myLocalNode));
 
         assertThat(repairEntryIterator.hasNext()).isTrue();
         assertThat(repairEntryIterator.next()).isEqualTo(expectedRepairEntry);
@@ -201,22 +201,22 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     @Test
     public void testIPartiallyRepairedINegative()
     {
-        long repair_end = CLOCK_TIME - 5000;
-        long repair_start = repair_end - 5;
+        long finishedAt = CLOCK_TIME - 5000;
+        long startedAt = finishedAt - 5;
 
-        long iterate_start = repair_start - 5;
-        long iterate_end = CLOCK_TIME;
+        long iterateStart = startedAt - 5;
+        long iterateEnd = CLOCK_TIME;
 
-        insertRecord(KEYSPACE, TABLE, Sets.newHashSet(myLocalNode), new LongTokenRange(0, 1), repair_start, repair_end,
+        insertRecord(KEYSPACE, TABLE, Sets.newHashSet(myLocalNode), new LongTokenRange(0, 1), startedAt, finishedAt,
                 RepairStatus.UNKNOWN);
-        insertRecord(KEYSPACE, TABLE, Sets.newHashSet(myLocalNode), new LongTokenRange(0, 1), repair_start, repair_end,
+        insertRecord(KEYSPACE, TABLE, Sets.newHashSet(myLocalNode), new LongTokenRange(0, 1), startedAt, finishedAt,
                 RepairStatus.FAILED);
-        insertRecord(KEYSPACE, TABLE, Sets.newHashSet(myLocalNode), new LongTokenRange(0, 1), repair_start, repair_end,
+        insertRecord(KEYSPACE, TABLE, Sets.newHashSet(myLocalNode), new LongTokenRange(0, 1), startedAt, finishedAt,
                 RepairStatus.STARTED);
 
         Map<LongTokenRange, Collection<Node>> tokenToNodeMap = new HashMap<>();
         Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider
-                .iterate(myTableReference, iterate_end, iterate_start,
+                .iterate(myTableReference, iterateEnd, iterateStart,
                         new FullyRepairedRepairEntryPredicate(tokenToNodeMap));
 
         assertThat(repairEntryIterator.hasNext()).isFalse();
@@ -225,11 +225,11 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     @Test
     public void testFullyRepairedPositive()
     {
-        long repair_end = 10;
-        long repair_start = repair_end - 5;
+        long finishedAt = 10;
+        long startedAt = finishedAt - 5;
 
-        long iterate_start = repair_start - 5;
-        long iterate_end = repair_end + 10;
+        long iterateStart = startedAt - 5;
+        long iterateEnd = finishedAt + 10;
 
         Map<LongTokenRange, Collection<Node>> tokenToNodeMap = new HashMap<>();
         Metadata metadata = mySession.getCluster().getMetadata();
@@ -243,12 +243,12 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
         List<RepairEntry> expectedRepairEntries = new ArrayList<>();
 
         expectedRepairEntries
-                .add(new RepairEntry(new LongTokenRange(0, 1), repair_start, Sets.newHashSet(node),
+                .add(new RepairEntry(new LongTokenRange(0, 1), startedAt, finishedAt, Sets.newHashSet(node),
                         "SUCCESS"));
-        expectedRepairEntries.add(new RepairEntry(new LongTokenRange(2, 3), repair_start + 1,
-                Sets.newHashSet(node), "SUCCESS"));
-        expectedRepairEntries.add(new RepairEntry(new LongTokenRange(4, 5), repair_start + 2,
-                Sets.newHashSet(node), "SUCCESS"));
+        expectedRepairEntries.add(new RepairEntry(new LongTokenRange(2, 3), startedAt + 1,
+                finishedAt +1, Sets.newHashSet(node), "SUCCESS"));
+        expectedRepairEntries.add(new RepairEntry(new LongTokenRange(4, 5), startedAt + 2,
+                finishedAt +2, Sets.newHashSet(node), "SUCCESS"));
 
         for (RepairEntry repairEntry : expectedRepairEntries)
         {
@@ -260,7 +260,7 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
         tokenToNodeMap.put(new LongTokenRange(4, 5), Sets.newHashSet(node));
 
         Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider
-                .iterate(myTableReference, iterate_end, iterate_start,
+                .iterate(myTableReference, iterateEnd, iterateStart,
                         new FullyRepairedRepairEntryPredicate(tokenToNodeMap));
 
         List<RepairEntry> actualRepairEntries = Lists.newArrayList(repairEntryIterator);
@@ -271,18 +271,18 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     @Test
     public void testFullyRepairedNegative() throws UnknownHostException
     {
-        long repair_end = CLOCK_TIME - 5000;
-        long repair_start = repair_end - 5;
+        long finishedAt = CLOCK_TIME - 5000;
+        long startedAt = finishedAt - 5;
 
-        long iterate_start = repair_start - 5;
-        long iterate_end = CLOCK_TIME;
+        long iterateStart = startedAt - 5;
+        long iterateEnd = CLOCK_TIME;
 
         insertRecordWithAddresses(KEYSPACE, TABLE, Sets.newHashSet(InetAddress.getByName("198.162.0.1")),
-                new LongTokenRange(0, 1), repair_start, repair_end, RepairStatus.SUCCESS);
+                new LongTokenRange(0, 1), startedAt, finishedAt, RepairStatus.SUCCESS);
         insertRecordWithAddresses(KEYSPACE, TABLE, Sets.newHashSet(InetAddress.getByName("198.162.0.2")),
-                new LongTokenRange(2, 3), repair_start, repair_end, RepairStatus.SUCCESS);
+                new LongTokenRange(2, 3), startedAt, finishedAt, RepairStatus.SUCCESS);
         insertRecordWithAddresses(KEYSPACE, TABLE, Sets.newHashSet(InetAddress.getByName("198.162.0.3")),
-                new LongTokenRange(4, 5), repair_start, repair_end, RepairStatus.SUCCESS);
+                new LongTokenRange(4, 5), startedAt, finishedAt, RepairStatus.SUCCESS);
 
         Map<LongTokenRange, Collection<Node>> tokenToNodeMap = new HashMap<>();
         Metadata metadata = mySession.getCluster().getMetadata();
@@ -301,7 +301,7 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
         tokenToNodeMap.put(new LongTokenRange(4, 5), nodes);
 
         Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider
-                .iterate(myTableReference, iterate_end, iterate_start,
+                .iterate(myTableReference, iterateEnd, iterateStart,
                         new FullyRepairedRepairEntryPredicate(tokenToNodeMap));
 
         assertThat(repairEntryIterator.hasNext()).isFalse();
@@ -317,7 +317,7 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
 
     private void insertRecord(String keyspace, String table, LongTokenRange range, RepairStatus repairStatus)
     {
-        insertRecord(keyspace, table, Sets.newHashSet(myLocalNode), range, CLOCK_TIME - 5, CLOCK_TIME, repairStatus);
+        insertRecord(keyspace, table, Sets.newHashSet(myLocalNode), range, STARTED_AT, CLOCK_TIME, repairStatus);
     }
 
     private void insertRecord(String keyspace, String table, LongTokenRange range)

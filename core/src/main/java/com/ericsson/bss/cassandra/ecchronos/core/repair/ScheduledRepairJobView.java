@@ -14,17 +14,20 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import java.util.UUID;
-
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
+import java.util.UUID;
+
 public class ScheduledRepairJobView extends RepairJobView
 {
+    private final long myNextRepair;
+
     public ScheduledRepairJobView(UUID id, TableReference tableReference, RepairConfiguration repairConfiguration,
-            RepairStateSnapshot repairStateSnapshot, Status status, double progress)
+            RepairStateSnapshot repairStateSnapshot, Status status, double progress, long nextRepair)
     {
         super(id, tableReference, repairConfiguration, repairStateSnapshot, status, progress);
+        myNextRepair = nextRepair;
     }
 
     @Override
@@ -36,7 +39,7 @@ public class ScheduledRepairJobView extends RepairJobView
     @Override
     public long getNextRepair()
     {
-        return getRepairStateSnapshot().lastCompletedAt() + getRepairConfiguration().getRepairIntervalInMs();
+        return myNextRepair;
     }
 
     @Override

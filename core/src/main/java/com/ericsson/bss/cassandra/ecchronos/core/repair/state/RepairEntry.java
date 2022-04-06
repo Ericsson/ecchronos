@@ -30,11 +30,13 @@ public class RepairEntry
     private final long myStartedAt;
     private final Set<Node> myParticipants;
     private final RepairStatus myStatus;
+    private final long myFinishedAt;
 
-    public RepairEntry(LongTokenRange range, long startedAt, Set<Node> participants, String status)
+    public RepairEntry(LongTokenRange range, long startedAt, long finishedAt, Set<Node> participants, String status)
     {
         myRange = range;
         myStartedAt = startedAt;
+        myFinishedAt = finishedAt;
         myParticipants = Collections.unmodifiableSet(participants);
         myStatus = RepairStatus.getFromStatus(status);
     }
@@ -47,6 +49,11 @@ public class RepairEntry
     public long getStartedAt()
     {
         return myStartedAt;
+    }
+
+    public long getFinishedAt()
+    {
+        return myFinishedAt;
     }
 
     public Set<Node> getParticipants()
@@ -66,6 +73,7 @@ public class RepairEntry
         if (o == null || getClass() != o.getClass()) return false;
         RepairEntry that = (RepairEntry) o;
         return myStartedAt == that.myStartedAt &&
+                myFinishedAt == that.myFinishedAt &&
                 Objects.equals(myRange, that.myRange) &&
                 Objects.equals(myParticipants, that.myParticipants) &&
                 myStatus == that.myStatus;
@@ -74,6 +82,6 @@ public class RepairEntry
     @Override
     public int hashCode()
     {
-        return Objects.hash(myRange, myStartedAt, myParticipants, myStatus);
+        return Objects.hash(myRange, myStartedAt, myFinishedAt, myParticipants, myStatus);
     }
 }
