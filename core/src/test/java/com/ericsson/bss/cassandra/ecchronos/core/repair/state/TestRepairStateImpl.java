@@ -102,6 +102,7 @@ public class TestRepairStateImpl
 
         verify(mockTableRepairMetrics).repairState(eq(tableReference), eq(1), eq(0));
         verify(mockTableRepairMetrics).lastRepairedAt(eq(tableReference), eq(repairStateSnapshot.lastCompletedAt()));
+        verify(mockTableRepairMetrics).remainingRepairTime(eq(tableReference), eq(0L));
         verify(mockPostUpdateHook, times(1)).postUpdate(repairStateSnapshot);
     }
 
@@ -118,7 +119,7 @@ public class TestRepairStateImpl
         when(mockHostStates.isUp(eq(node))).thenReturn(true);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(node), VnodeRepairState.UNREPAIRED);
-        VnodeRepairState repairedVnodeRepairState = new VnodeRepairState(new LongTokenRange(2, 3), ImmutableSet.of(node), now);
+        VnodeRepairState repairedVnodeRepairState = new VnodeRepairState(new LongTokenRange(2, 3), ImmutableSet.of(node), now, now);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState, repairedVnodeRepairState))
                 .build();
@@ -142,6 +143,7 @@ public class TestRepairStateImpl
 
         verify(mockTableRepairMetrics).repairState(eq(tableReference), eq(1), eq(1));
         verify(mockTableRepairMetrics).lastRepairedAt(eq(tableReference), eq(repairStateSnapshot.lastCompletedAt()));
+        verify(mockTableRepairMetrics).remainingRepairTime(eq(tableReference), eq(0L));
         verify(mockPostUpdateHook, times(1)).postUpdate(repairStateSnapshot);
     }
 
@@ -149,11 +151,12 @@ public class TestRepairStateImpl
     public void testUpdateRepaired()
     {
         long expectedRepairedAt = System.currentTimeMillis();
+        long finishedAt = expectedRepairedAt + TimeUnit.SECONDS.toMillis(5);
         long repairIntervalInMs = TimeUnit.HOURS.toMillis(1);
 
         RepairConfiguration repairConfiguration = repairConfiguration(repairIntervalInMs);
 
-        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(mockNode("DC1")), expectedRepairedAt);
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(mockNode("DC1")), expectedRepairedAt, finishedAt);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Collections.singletonList(vnodeRepairState))
                 .build();
@@ -174,9 +177,11 @@ public class TestRepairStateImpl
 
         verify(mockTableRepairMetrics).repairState(eq(tableReference), eq(1), eq(0));
         verify(mockTableRepairMetrics).lastRepairedAt(eq(tableReference), eq(expectedRepairedAt));
+        verify(mockTableRepairMetrics).remainingRepairTime(eq(tableReference), eq(0L));
         reset(mockTableRepairMetrics);
 
         // Perform update
+        when(mockVnodeRepairStateFactory.calculateNewState(eq(tableReference), eq(repairStateSnapshot))).thenReturn(vnodeRepairStates);
         repairState.update();
 
         RepairStateSnapshot updatedRepairStateSnapshot = repairState.getSnapshot();
@@ -205,6 +210,42 @@ public class TestRepairStateImpl
 
         assertThat(actualVnodeRepairState.lastRepairedAt()).isNotEqualTo(VnodeRepairState.UNREPAIRED);
         assertThat(actualVnodeRepairState.lastRepairedAt()).isLessThanOrEqualTo(repairedBefore);
+    }
+
+    @Test
+    public void testIsRepairNeeded()
+    {
+        long startedAt = 9000L;
+        long finishedAt = 9500L;
+        long repairIntervalInMs = TimeUnit.MILLISECONDS.toMillis(1000);
+
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(mockNode("DC1")), startedAt, finishedAt);
+        RepairConfiguration repairConfiguration = repairConfiguration(repairIntervalInMs);
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Collections.singletonList(vnodeRepairState))
+                .build();
+        when(mockVnodeRepairStateFactory.calculateNewState(eq(tableReference), isNull())).thenReturn(vnodeRepairStates);
+        when(mockReplicaRepairGroupFactory.generateReplicaRepairGroups(repairGroupCaptor.capture())).thenReturn(Lists.emptyList());
+        RepairStateImpl repairState = new RepairStateImpl(tableReference, repairConfiguration,
+                mockVnodeRepairStateFactory, mockHostStates,
+                mockTableRepairMetrics, mockReplicaRepairGroupFactory, mockPostUpdateHook);
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 0L, 9000L)).isFalse();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 0L, 9500L)).isFalse();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 0L, 10000L)).isTrue();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 0L, 999999L)).isTrue();
+
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 500L, 9000L)).isFalse();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 500L, 9499L)).isFalse();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 500L, 9500L)).isTrue();
+
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 1000L, 9000L)).isTrue();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 1000L, 9499L)).isTrue();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 1000L, 9500L)).isTrue();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 1000L, 10000L)).isTrue();
+        //Repair takes longer time than interval
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 5000L, 9000L)).isTrue();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 5000L, 9499L)).isTrue();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 5000L, 9500L)).isTrue();
+        assertThat(repairState.isRepairNeeded(vnodeRepairState.lastRepairedAt(), 5000L, 10000L)).isTrue();
     }
 
     private RepairConfiguration repairConfiguration(long repairIntervalInMs)

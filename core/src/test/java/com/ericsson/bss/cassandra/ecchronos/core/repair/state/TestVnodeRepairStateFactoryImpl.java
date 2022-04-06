@@ -87,12 +87,14 @@ public class TestVnodeRepairStateFactoryImpl
         withRange(range(2, 3), node1, node2);
 
         RepairStateSnapshot previousSnapshot = snapshot(1234L,
-                newState(range(1, 2), 1234L),
-                newState(range(2, 3), 2345L));
+                newState(range(1, 2), 1234L, 1235L),
+                newState(range(2, 3), 2345L, 2346L));
 
-        assertSameForVnodeAndSubrange(previousSnapshot,
-                newState(range(1, 2), 1234L),
-                newState(range(2, 3), 2345L));
+        assertVnodeStates(previousSnapshot,
+                newState(range(1, 2), 1234L, 1235L),
+                newState(range(2, 3), 2345L, 2346L));
+        assertSubRangeStates(previousSnapshot, newState(range(1, 2), 1234L, -1L),
+                newState(range(2, 3), 2345L, 2346L));
     }
 
     @Test
@@ -104,11 +106,11 @@ public class TestVnodeRepairStateFactoryImpl
         withRange(range(1, 2), node1, node2);
         withRange(range(2, 3), node1, node2);
 
-        withSuccessfulRepairHistory(range(1, 2), 1234L);
-        withSuccessfulRepairHistory(range(2, 3), 2345L);
+        withSuccessfulRepairHistory(range(1, 2), 1234L, 1235L);
+        withSuccessfulRepairHistory(range(2, 3), 2345L, 2346L);
 
-        assertSameForVnodeAndSubrange(newState(range(1, 2), 1234L),
-                newState(range(2, 3), 2345L));
+        assertSameForVnodeAndSubrange(newState(range(1, 2), 1234L, 1235L),
+                newState(range(2, 3), 2345L, 2346L));
     }
 
     @Test
@@ -120,19 +122,21 @@ public class TestVnodeRepairStateFactoryImpl
         withRange(range(1, 5), node1, node2);
         withRange(range(5, 10), node1, node2);
 
-        long range1RepairedAt = TimeUnit.DAYS.toMillis(10);
-        long range2RepairedAt = TimeUnit.DAYS.toMillis(11);
+        long range1StartedAt = TimeUnit.DAYS.toMillis(10);
+        long range1FinishedAt = TimeUnit.DAYS.toMillis(11);
+        long range2StartedAt = TimeUnit.DAYS.toMillis(11);
+        long range2FinishedAt = TimeUnit.DAYS.toMillis(12);
 
-        withSubRangeSuccessfulRepairHistory(range(1, 3), range1RepairedAt);
-        withSubRangeSuccessfulRepairHistory(range(3, 5), range1RepairedAt);
+        withSubRangeSuccessfulRepairHistory(range(1, 3), range1StartedAt, range1FinishedAt);
+        withSubRangeSuccessfulRepairHistory(range(3, 5), range1StartedAt, range1FinishedAt);
 
-        withSubRangeSuccessfulRepairHistory(range(5, 8), range2RepairedAt);
-        withSubRangeSuccessfulRepairHistory(range(8, 10), range2RepairedAt);
+        withSubRangeSuccessfulRepairHistory(range(5, 8), range2StartedAt, range2FinishedAt);
+        withSubRangeSuccessfulRepairHistory(range(8, 10), range2StartedAt, range2FinishedAt);
 
         assertVnodeStates(newUnrepairedState(range(1, 5)),
                 newUnrepairedState(range(5, 10)));
-        assertSubRangeStates(newState(range(1, 5), range1RepairedAt),
-                newState(range(5, 10), range2RepairedAt));
+        assertSubRangeStates(newState(range(1, 5), range1StartedAt, range1FinishedAt),
+                newState(range(5, 10), range2StartedAt, range2FinishedAt));
     }
 
     @Test
@@ -144,19 +148,21 @@ public class TestVnodeRepairStateFactoryImpl
         withRange(range(1, 5), node1, node2);
         withRange(range(5, 10), node1, node2);
 
-        long range1RepairedAt = TimeUnit.DAYS.toMillis(10);
-        long range2RepairedAt = TimeUnit.DAYS.toMillis(11);
+        long range1StartedAt = TimeUnit.DAYS.toMillis(10);
+        long range1FinishedAt = TimeUnit.DAYS.toMillis(10);
+        long range2StartedAt = TimeUnit.DAYS.toMillis(11);
+        long range2FinishedAt = TimeUnit.DAYS.toMillis(11);
 
-        withSubRangeSuccessfulRepairHistory(range(1, 3), range1RepairedAt);
+        withSubRangeSuccessfulRepairHistory(range(1, 3), range1StartedAt, range1FinishedAt);
 
-        withSubRangeSuccessfulRepairHistory(range(5, 8), range2RepairedAt);
-        withSubRangeSuccessfulRepairHistory(range(8, 10), range2RepairedAt);
+        withSubRangeSuccessfulRepairHistory(range(5, 8), range2StartedAt, range2FinishedAt);
+        withSubRangeSuccessfulRepairHistory(range(8, 10), range2StartedAt, range2FinishedAt);
 
         assertVnodeStates(newUnrepairedState(range(1, 5)),
                 newUnrepairedState(range(5, 10)));
-        assertSubRangeStates(newSubRangeState(range(1, 3), range1RepairedAt),
+        assertSubRangeStates(newSubRangeState(range(1, 3), range1StartedAt, range1FinishedAt),
                 newSubRangeUnrepairedState(range(3, 5)),
-                newState(range(5, 10), range2RepairedAt));
+                newState(range(5, 10), range2StartedAt, range2FinishedAt));
     }
 
     @Test
@@ -165,29 +171,33 @@ public class TestVnodeRepairStateFactoryImpl
         Node node1 = withNode("127.0.0.1");
         Node node2 = withNode("127.0.0.2");
 
-        long firstRepairedAt = TimeUnit.DAYS.toMillis(8);
-        long range1RepairedAt = TimeUnit.DAYS.toMillis(10);
-        long range2RepairedAt = TimeUnit.DAYS.toMillis(11);
+        long firstStartedAt = TimeUnit.DAYS.toMillis(8);
+        long firstFinishedAt = TimeUnit.DAYS.toMillis(8);
+        long range1StartedAt = TimeUnit.DAYS.toMillis(10);
+        long range1FinishedAt = TimeUnit.DAYS.toMillis(10);
+        long range2StartedAt = TimeUnit.DAYS.toMillis(11);
+        long range2FinishedAt = TimeUnit.DAYS.toMillis(11);
 
         withRange(range(1, 5), node1, node2);
         withRange(range(5, 10), node1, node2);
 
-        withSubRangeSuccessfulRepairHistory(range(1, 3), range1RepairedAt);
-        withSubRangeSuccessfulRepairHistory(range(5, 8), range2RepairedAt);
-        withSubRangeSuccessfulRepairHistory(range(8, 10), range2RepairedAt);
+        withSubRangeSuccessfulRepairHistory(range(1, 3), range1StartedAt, range1FinishedAt);
 
-        RepairStateSnapshot previousSnapshot = snapshot(firstRepairedAt,
-                newState(range(1, 5), firstRepairedAt),
-                newState(range(5, 10), firstRepairedAt));
+        withSubRangeSuccessfulRepairHistory(range(5, 8), range2StartedAt, range2FinishedAt);
+        withSubRangeSuccessfulRepairHistory(range(8, 10), range2StartedAt, range2FinishedAt);
+
+        RepairStateSnapshot previousSnapshot = snapshot(firstStartedAt,
+                newState(range(1, 5), firstStartedAt, firstFinishedAt),
+                newState(range(5, 10), firstStartedAt, firstFinishedAt));
 
         assertVnodeStates(previousSnapshot,
-                newState(range(1, 5), firstRepairedAt),
-                newState(range(5, 10), firstRepairedAt));
+                newState(range(1, 5), firstStartedAt, firstFinishedAt),
+                newState(range(5, 10), firstStartedAt, firstFinishedAt));
 
         assertSubRangeStates(previousSnapshot,
-                newSubRangeState(range(1, 3), range1RepairedAt),
-                newSubRangeState(range(3, 5), firstRepairedAt),
-                newSubRangeState(range(5, 10), range2RepairedAt));
+                newSubRangeState(range(1, 3), range1StartedAt, range1FinishedAt),
+                newSubRangeState(range(3, 5), firstStartedAt, VnodeRepairState.UNREPAIRED),
+                newSubRangeState(range(5, 10), range2StartedAt, range2FinishedAt));
     }
 
     @Test
@@ -199,13 +209,14 @@ public class TestVnodeRepairStateFactoryImpl
         withRange(range(1, 2), node1, node2);
         withRange(range(2, 3), node1, node2);
 
-        long range1RepairedAt = 1;
-        long range2RepairedAt = 2;
+        long range1StartedAt = 1;
+        long range1FinishedAt = 2;
+        long range2StartedAt = 3;
 
-        withSuccessfulRepairHistory(range(1, 2), range1RepairedAt);
-        withFailedRepairHistory(range(2, 3), range2RepairedAt);
+        withSuccessfulRepairHistory(range(1, 2), range1StartedAt, range1FinishedAt);
+        withFailedRepairHistory(range(2, 3), range2StartedAt);
 
-        assertSameForVnodeAndSubrange(newState(range(1, 2), range1RepairedAt),
+        assertSameForVnodeAndSubrange(newState(range(1, 2), range1StartedAt, range1FinishedAt),
                 newUnrepairedState(range(2, 3)));
     }
 
@@ -216,18 +227,20 @@ public class TestVnodeRepairStateFactoryImpl
         Node node2 = withNode("127.0.0.2");
         Node node3 = withNode("127.0.0.3");
 
-        long range1RepairedAt = 1;
-        long range2RepairedAt = 2;
+        long range1StartedAt = 1;
+        long range1FinishedAt = 2;
+        long range2StartedAt = 3;
+        long range2FinishedAt = 4;
 
         withRange(range(1, 2), node1, node2);
         withRange(range(2, 3), node1, node3);
-        withSuccessfulRepairHistory(range(2, 3), range2RepairedAt); // Previous replication
+        withSuccessfulRepairHistory(range(2, 3), range2StartedAt, range2FinishedAt); // Previous replication
 
         replaceRange(range(2, 3), range(2, 3), node1, node2);
 
-        withSuccessfulRepairHistory(range(1, 2), range1RepairedAt);
+        withSuccessfulRepairHistory(range(1, 2), range1StartedAt, range1FinishedAt);
 
-        assertSameForVnodeAndSubrange(newState(range(1, 2), range1RepairedAt),
+        assertSameForVnodeAndSubrange(newState(range(1, 2), range1StartedAt, range1FinishedAt),
                 newUnrepairedState(range(2, 3)));
     }
 
@@ -244,12 +257,12 @@ public class TestVnodeRepairStateFactoryImpl
         replaceRange(range(1, 4), range(1, 2), node1, node3);
 
         RepairStateSnapshot previousSnapshot = snapshot(1234L,
-                newState(range(1, 4), 1234L),
-                newState(range(5, 0), 1234L));
+                newState(range(1, 4), 1234L, 1235L),
+                newState(range(5, 0), 1236L, 1237L));
 
         assertSameForVnodeAndSubrange(previousSnapshot,
-                newState(range(1, 2), 1234L),
-                newState(range(5, 0), 1234L));
+                newState(range(1, 2), 1234L, VnodeRepairState.UNREPAIRED),
+                newState(range(5, 0), 1236L, 1237L));
     }
 
     private RepairStateSnapshot snapshot(long repairedAt, VnodeRepairState... states)
@@ -266,48 +279,48 @@ public class TestVnodeRepairStateFactoryImpl
         return VnodeRepairStatesImpl.newBuilder(Arrays.asList(states)).build();
     }
 
-    private void withSubRangeSuccessfulRepairHistory(LongTokenRange range, long repairedAt)
+    private void withSubRangeSuccessfulRepairHistory(LongTokenRange range, long startedAt, long finishedAt)
     {
         ImmutableSet<Node> replicas = getKnownReplicasForSubRange(range);
-        withRepairHistory(range, repairedAt, replicas, "SUCCESS");
+        withRepairHistory(range, startedAt, finishedAt, replicas, "SUCCESS");
     }
 
-    private void withSuccessfulRepairHistory(LongTokenRange range, long repairedAt)
+    private void withSuccessfulRepairHistory(LongTokenRange range, long startedAt, long finishedAt)
     {
         ImmutableSet<Node> replicas = getKnownReplicas(range);
-        withRepairHistory(range, repairedAt, replicas, "SUCCESS");
+        withRepairHistory(range, startedAt, finishedAt, replicas, "SUCCESS");
     }
 
-    private void withFailedRepairHistory(LongTokenRange range, long repairedAt)
+    private void withFailedRepairHistory(LongTokenRange range, long startedAt)
     {
         ImmutableSet<Node> replicas = getKnownReplicas(range);
-        withRepairHistory(range, repairedAt, replicas, "FAILED");
+        withRepairHistory(range, startedAt, VnodeRepairState.UNREPAIRED, replicas, "FAILED");
     }
 
-    private void withRepairHistory(LongTokenRange range, long repairedAt, ImmutableSet<Node> replicas, String status)
+    private void withRepairHistory(LongTokenRange range, long startedAt, long finishedAt, ImmutableSet<Node> replicas, String status)
     {
-        RepairEntry repairEntry = new RepairEntry(range, repairedAt, replicas, status);
+        RepairEntry repairEntry = new RepairEntry(range, startedAt, finishedAt, replicas, status);
         repairHistory.add(repairEntry);
     }
 
     private VnodeRepairState newUnrepairedState(LongTokenRange range)
     {
-        return newState(range, VnodeRepairState.UNREPAIRED);
+        return newState(range, VnodeRepairState.UNREPAIRED, VnodeRepairState.UNREPAIRED);
     }
 
-    private VnodeRepairState newState(LongTokenRange range, long repairedAt)
+    private VnodeRepairState newState(LongTokenRange range, long startedAt, long finishedAt)
     {
-        return new VnodeRepairState(range, getKnownReplicas(range), repairedAt);
+        return new VnodeRepairState(range, getKnownReplicas(range), startedAt, finishedAt);
     }
 
     private VnodeRepairState newSubRangeUnrepairedState(LongTokenRange range)
     {
-        return newSubRangeState(range, VnodeRepairState.UNREPAIRED);
+        return newSubRangeState(range, VnodeRepairState.UNREPAIRED, VnodeRepairState.UNREPAIRED);
     }
 
-    private VnodeRepairState newSubRangeState(LongTokenRange range, long repairedAt)
+    private VnodeRepairState newSubRangeState(LongTokenRange range, long startedAt, long finishedAt)
     {
-        return new VnodeRepairState(range, getKnownReplicasForSubRange(range), repairedAt);
+        return new VnodeRepairState(range, getKnownReplicasForSubRange(range), startedAt, finishedAt);
     }
 
     private ImmutableSet<Node> getKnownReplicasForSubRange(LongTokenRange range)

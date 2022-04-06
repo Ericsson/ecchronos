@@ -130,7 +130,7 @@ public class TestFullyRepairedRepairEntryPredicate
 
     private boolean applyWith(LongTokenRange repairedTokenRange, Map<LongTokenRange, Collection<Node>> tokenToNodeMap, Set<Node> repairedNodes, String status)
     {
-        RepairEntry repairEntry = new RepairEntry(repairedTokenRange, 5, repairedNodes, status);
+        RepairEntry repairEntry = new RepairEntry(repairedTokenRange, 5, 5, repairedNodes, status);
         FullyRepairedRepairEntryPredicate fullyRepairedRepairEntryPredicate = new FullyRepairedRepairEntryPredicate(tokenToNodeMap);
 
         return fullyRepairedRepairEntryPredicate.apply(repairEntry);

@@ -194,6 +194,12 @@ public class ECChronosInternals implements Closeable
         }
 
         @Override
+        public void remainingRepairTime(TableReference tableReference, long remainingRepairTime)
+        {
+            LOG.debug("Table {} remaining repair time {}", tableReference, remainingRepairTime);
+        }
+
+        @Override
         public void repairTiming(TableReference tableReference, long timeTaken, TimeUnit timeUnit, boolean successful)
         {
             if (LOG.isTraceEnabled())

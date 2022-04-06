@@ -80,7 +80,7 @@ public class NormalizedBaseRange
 
         BigInteger normalizedEnd = normalizedStart.add(subRange.getTokenRange().rangeSize());
 
-        return new NormalizedRange(this, normalizedStart, normalizedEnd, subRange.lastRepairedAt());
+        return new NormalizedRange(this, normalizedStart, normalizedEnd, subRange.getStartedAt(), subRange.getFinishedAt());
     }
 
     /**
@@ -111,7 +111,7 @@ public class NormalizedBaseRange
             realEnd = realEnd.subtract(LongTokenRange.FULL_RANGE);
         }
 
-        return new VnodeRepairState(new LongTokenRange(realStart.longValueExact(), realEnd.longValueExact()), baseVnode.getReplicas(), range.repairedAt());
+        return new VnodeRepairState(new LongTokenRange(realStart.longValueExact(), realEnd.longValueExact()), baseVnode.getReplicas(), range.getStartedAt(), range.getFinishedAt());
     }
 
     @Override

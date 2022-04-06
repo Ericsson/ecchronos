@@ -175,7 +175,7 @@ public final class VnodeRepairStateSummarizer
 
     private void splitCoveringRange(NormalizedRange covering, NormalizedRange covered)
     {
-        if (covering.repairedAt() >= covered.repairedAt())
+        if (covering.getStartedAt() >= covered.getStartedAt())
         {
             // We already cover the sub range with a later repaired at, remove it
             mySummarizedRanges.remove(covered);
@@ -213,7 +213,7 @@ public final class VnodeRepairStateSummarizer
 
     private static boolean isCloseInTime(NormalizedRange v1, NormalizedRange v2)
     {
-        return Math.abs(v1.repairedAt() - v2.repairedAt()) < ONE_HOUR_IN_MS;
+        return Math.abs(v1.getStartedAt() - v2.getStartedAt()) < ONE_HOUR_IN_MS;
     }
 
     /**

@@ -35,14 +35,48 @@ public class RepairStateSnapshot
     private final long myLastCompletedAt;
     private final ImmutableList<ReplicaRepairGroup> myReplicaRepairGroup;
     private final VnodeRepairStates myVnodeRepairStates;
+    private final long myEstimatedRepairTime;
 
     private RepairStateSnapshot(Builder builder)
     {
         myLastCompletedAt = builder.myLastCompletedAt;
         myReplicaRepairGroup = builder.myReplicaRepairGroup;
         myVnodeRepairStates = builder.myVnodeRepairStates;
-
+        myEstimatedRepairTime = calculateRepairTime();
         canRepair = !myReplicaRepairGroup.isEmpty();
+    }
+
+    private long calculateRepairTime()
+    {
+        long sum = 0;
+        for (VnodeRepairState vnodeRepairState : myVnodeRepairStates.getVnodeRepairStates())
+        {
+            sum += getRepairTimeForVnode(vnodeRepairState);
+        }
+        return sum;
+    }
+
+    public long getRemainingRepairTime(long now, long repairIntervalMs)
+    {
+        long sum = 0;
+        for (VnodeRepairState vnodeRepairState : myVnodeRepairStates.getVnodeRepairStates())
+        {
+            if(vnodeRepairState.lastRepairedAt() + (repairIntervalMs - myEstimatedRepairTime) <= now)
+            {
+                sum += getRepairTimeForVnode(vnodeRepairState);
+            }
+        }
+        return sum;
+    }
+
+    private long getRepairTimeForVnode(VnodeRepairState vnodeRepairState)
+    {
+        long finishedAt = vnodeRepairState.getFinishedAt();
+        if (finishedAt != VnodeRepairState.UNREPAIRED)
+        {
+            return finishedAt - vnodeRepairState.getStartedAt();
+        }
+        return 0L;
     }
 
     /**
@@ -65,6 +99,11 @@ public class RepairStateSnapshot
         return myLastCompletedAt;
     }
 
+    public long getEstimatedRepairTime()
+    {
+        return myEstimatedRepairTime;
+    }
+
     /**
      * Information needed to run the next repair(s).
      *
@@ -83,7 +122,12 @@ public class RepairStateSnapshot
     @Override
     public String toString()
     {
-        return String.format("(canRepair=%b,lastRepaired=%d,replicaRepairGroup=%s)", canRepair, myLastCompletedAt, myReplicaRepairGroup);
+        return "RepairStateSnapshot{" +
+                "canRepair=" + canRepair +
+                ", myLastCompletedAt=" + myLastCompletedAt +
+                ", myReplicaRepairGroup=" + myReplicaRepairGroup +
+                ", myEstimatedRepairTime=" + myEstimatedRepairTime +
+                '}';
     }
 
     public static Builder newBuilder()

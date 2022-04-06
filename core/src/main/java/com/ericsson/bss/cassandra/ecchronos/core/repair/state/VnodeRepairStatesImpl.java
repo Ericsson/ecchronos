@@ -128,7 +128,8 @@ public class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
                 return false;
             }
 
-            return oldVnode.lastRepairedAt() < newVnode.lastRepairedAt();
+            return oldVnode.lastRepairedAt() < newVnode.lastRepairedAt() || oldVnode.getFinishedAt() <
+                    newVnode.getFinishedAt();
         }
     }
 }

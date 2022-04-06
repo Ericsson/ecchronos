@@ -83,6 +83,12 @@ public final class TableRepairMetricsService implements TableRepairMetrics, Tabl
     }
 
     @Override
+    public void remainingRepairTime(TableReference tableReference, long remainingRepairTime)
+    {
+        myDelegateTableRepairMetrics.remainingRepairTime(tableReference, remainingRepairTime);
+    }
+
+    @Override
     public void repairTiming(TableReference tableReference, long timeTaken, TimeUnit timeUnit, boolean successful)
     {
         myDelegateTableRepairMetrics.repairTiming(tableReference, timeTaken, timeUnit, successful);

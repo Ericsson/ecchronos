@@ -154,7 +154,7 @@ public class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
         {
             VnodeRepairState oldVnode = myActualVnodeRepairStates.getOrDefault(baseVnode.getTokenRange(), baseVnode);
 
-            return oldVnode.lastRepairedAt() < newVnode.lastRepairedAt();
+            return oldVnode.lastRepairedAt() < newVnode.lastRepairedAt() || oldVnode.getFinishedAt() < newVnode.getFinishedAt();
         }
     }
 }

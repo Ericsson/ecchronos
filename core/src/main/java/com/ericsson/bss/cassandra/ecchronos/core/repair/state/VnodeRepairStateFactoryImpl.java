@@ -99,7 +99,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
             LongTokenRange longTokenRange = repairEntry.getRange();
             ImmutableSet<Node> replicas = getReplicasForRange(longTokenRange, tokenRangeToReplicaMap);
 
-            VnodeRepairState vnodeRepairState = new VnodeRepairState(longTokenRange, replicas, repairEntry.getStartedAt());
+            VnodeRepairState vnodeRepairState = new VnodeRepairState(longTokenRange, replicas, repairEntry.getStartedAt(), repairEntry.getFinishedAt());
 
             vnodeRepairStatusesBuilder.updateVnodeRepairState(vnodeRepairState);
         }
