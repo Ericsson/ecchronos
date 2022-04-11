@@ -65,8 +65,6 @@ public class ScheduledRepairJob
         this.recurring = repairJobView.isRecurring();
     }
 
-
-
     @Override
     public boolean equals(Object o)
     {
