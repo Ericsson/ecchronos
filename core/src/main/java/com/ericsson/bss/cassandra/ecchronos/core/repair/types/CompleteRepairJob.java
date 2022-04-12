@@ -29,7 +29,12 @@ import java.util.stream.Collectors;
  */
 public class CompleteRepairJob extends ScheduledRepairJob
 {
-    public final List<VirtualNodeState> virtualNodeStates;
+    public List<VirtualNodeState> virtualNodeStates;
+
+    public CompleteRepairJob()
+    {
+        super();
+    }
 
     public CompleteRepairJob(RepairJobView repairJobView)
     {

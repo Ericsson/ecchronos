@@ -27,14 +27,18 @@ import com.google.common.annotations.VisibleForTesting;
  */
 public class ScheduledRepairJob
 {
-    public final String keyspace;
-    public final String table;
-    public final long lastRepairedAtInMs;
-    public final double repairedRatio;
-    public final RepairJobView.Status status;
-    public final long nextRepairInMs;
-    public final UUID id;
-    public final boolean recurring;
+    public String keyspace;
+    public String table;
+    public long lastRepairedAtInMs;
+    public double repairedRatio;
+    public RepairJobView.Status status;
+    public long nextRepairInMs;
+    public UUID id;
+    public boolean recurring;
+
+    public ScheduledRepairJob()
+    {
+    }
 
     @VisibleForTesting
     public ScheduledRepairJob(UUID id, String keyspace, String table, RepairJobView.Status status, double repairedRatio, long lastRepairedAtInMs, long nextRepairInMs, boolean recurring)

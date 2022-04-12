@@ -154,7 +154,7 @@ public class TestCompleteRepairJob
     @Test
     public void testEqualsContract()
     {
-        EqualsVerifier.forClass(CompleteRepairJob.class).usingGetClass()
+        EqualsVerifier.simple().forClass(CompleteRepairJob.class).usingGetClass()
                 .withNonnullFields("id", "keyspace", "table", "virtualNodeStates")
                 .verify();
     }

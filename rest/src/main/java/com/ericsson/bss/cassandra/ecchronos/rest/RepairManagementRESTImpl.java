@@ -14,22 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
-
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
@@ -39,7 +23,19 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
-import com.google.gson.Gson;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * When updating the path it should also be updated in the OSGi component.
@@ -49,8 +45,6 @@ public class RepairManagementRESTImpl implements RepairManagementREST
 {
     private static final String PROTOCOL_VERSION = "v1";
     private static final String ENDPOINT_PREFIX = "/repair-management/" + PROTOCOL_VERSION;
-
-    private static final Gson GSON = new Gson();
 
     @Autowired
     private final RepairScheduler myRepairScheduler;
@@ -71,107 +65,114 @@ public class RepairManagementRESTImpl implements RepairManagementREST
 
     @Override
     @GetMapping(ENDPOINT_PREFIX + "/status")
-    public String status()
+    public ResponseEntity<List<ScheduledRepairJob>> status()
     {
         List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(job -> true);
-
-        return GSON.toJson(repairJobs);
+        return ResponseEntity.ok(repairJobs);
     }
 
     @Override
     @GetMapping(ENDPOINT_PREFIX + "/status/keyspaces/{keyspace}")
-    public String keyspaceStatus(@PathVariable String keyspace)
+    public ResponseEntity<List<ScheduledRepairJob>> keyspaceStatus(@PathVariable String keyspace)
     {
         List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(
                 job -> keyspace.equals(job.getTableReference().getKeyspace()));
-
-        return GSON.toJson(repairJobs);
+        return ResponseEntity.ok(repairJobs);
     }
 
     @Override
     @GetMapping(ENDPOINT_PREFIX + "/status/keyspaces/{keyspace}/tables/{table}")
-    public String tableStatus(@PathVariable String keyspace, @PathVariable String table)
+    public ResponseEntity<List<ScheduledRepairJob>> tableStatus(@PathVariable String keyspace,
+            @PathVariable String table)
     {
         List<ScheduledRepairJob> repairJobs = getScheduledRepairJobs(forTable(keyspace, table));
-
-        return GSON.toJson(repairJobs);
+        return ResponseEntity.ok(repairJobs);
     }
 
     @Override
     @GetMapping(ENDPOINT_PREFIX + "/status/ids/{id}")
-    public String jobStatus(@PathVariable String id)
+    public ResponseEntity<CompleteRepairJob> jobStatus(@PathVariable String id)
     {
+        UUID uuid;
         try
         {
-            Optional<RepairJobView> repairJobView = getCompleteRepairJob(UUID.fromString(id));
-            return repairJobView
-                    .map(CompleteRepairJob::new)
-                    .map(GSON::toJson)
-                    .orElse("{}");
-        } catch (IllegalArgumentException e)
-        {
-            return "{}";
+            uuid = UUID.fromString(id);
         }
+        catch (IllegalArgumentException e)
+        {
+            //BAD REQUEST makes most sense here (UUID cannot be parsed)
+            return ResponseEntity.badRequest().build();
+        }
+        Optional<RepairJobView> repairJobView = getCompleteRepairJob(uuid);
+        if (!repairJobView.isPresent())
+        {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(new CompleteRepairJob(repairJobView.get()));
     }
 
     @Override
     @GetMapping(ENDPOINT_PREFIX + "/config")
-    public String config()
+    public ResponseEntity<List<TableRepairConfig>> config()
     {
         List<TableRepairConfig> configurations = getTableRepairConfigs(job -> true);
-
-        return GSON.toJson(configurations);
+        return ResponseEntity.ok(configurations);
     }
 
     @Override
     @GetMapping(ENDPOINT_PREFIX + "/config/keyspaces/{keyspace}")
-    public String keyspaceConfig(@PathVariable String keyspace)
+    public ResponseEntity<List<TableRepairConfig>> keyspaceConfig(@PathVariable String keyspace)
     {
         List<TableRepairConfig> configurations = getTableRepairConfigs(
                 job -> job.getTableReference().getKeyspace().equals(keyspace));
-
-        return GSON.toJson(configurations);
+        return ResponseEntity.ok(configurations);
     }
 
     @Override
     @GetMapping(ENDPOINT_PREFIX + "/config/keyspaces/{keyspace}/tables/{table}")
-    public String tableConfig(@PathVariable String keyspace, @PathVariable String table)
+    public ResponseEntity<List<TableRepairConfig>> tableConfig(@PathVariable String keyspace,
+            @PathVariable String table)
     {
         List<TableRepairConfig> configurations = getTableRepairConfigs(forTable(keyspace, table));
-
-        return GSON.toJson(configurations);
+        return ResponseEntity.ok(configurations);
     }
 
     @Override
     @GetMapping(ENDPOINT_PREFIX + "/config/ids/{id}")
-    public String jobConfig(@PathVariable String id)
+    public ResponseEntity<TableRepairConfig> jobConfig(@PathVariable String id)
     {
+        UUID uuid;
         try
         {
-            Optional<RepairJobView> repairJobView = getCompleteRepairJob(UUID.fromString(id));
-            return repairJobView
-                    .map(TableRepairConfig::new)
-                    .map(GSON::toJson)
-                    .orElse("{}");
-        } catch (IllegalArgumentException e)
-        {
-            return "{}";
+            uuid = UUID.fromString(id);
         }
+        catch (IllegalArgumentException e)
+        {
+            //BAD REQUEST makes most sense here (UUID cannot be parsed)
+            return ResponseEntity.badRequest().build();
+        }
+        Optional<RepairJobView> repairJobView = getCompleteRepairJob(uuid);
+        if (!repairJobView.isPresent())
+        {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(new TableRepairConfig(repairJobView.get()));
     }
 
     @Override
     @PostMapping(ENDPOINT_PREFIX + "/schedule/keyspaces/{keyspace}/tables/{table}")
-    public String scheduleJob(@PathVariable String keyspace, @PathVariable String table)
+    public ResponseEntity<ScheduledRepairJob> scheduleJob(@PathVariable String keyspace, @PathVariable String table)
     {
-        RepairJobView repairJobView;
         try
         {
-            repairJobView = myOnDemandRepairScheduler.scheduleJob(myTableReferenceFactory.forTable(keyspace, table));
-        } catch (EcChronosException e)
-        {
-            throw new ResponseStatusException(NOT_FOUND, "Not Found", e);
+            RepairJobView repairJobView = myOnDemandRepairScheduler.scheduleJob(
+                    myTableReferenceFactory.forTable(keyspace, table));
+            return ResponseEntity.ok(new ScheduledRepairJob(repairJobView));
         }
-        return GSON.toJson(new ScheduledRepairJob(repairJobView));
+        catch (EcChronosException e)
+        {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     private List<ScheduledRepairJob> getScheduledRepairJobs(Predicate<RepairJobView> filter)

@@ -141,7 +141,7 @@ public class TestScheduledRepairJob
     @Test
     public void testEqualsContract()
     {
-        EqualsVerifier.forClass(ScheduledRepairJob.class).usingGetClass()
+        EqualsVerifier.simple().forClass(ScheduledRepairJob.class).usingGetClass()
                 .withNonnullFields("id", "keyspace", "table")
                 .verify();
     }
