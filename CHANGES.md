@@ -2,9 +2,6 @@
 
 ## Version 1.1.3
 
-
-### Merged from 1.0
-
 * Step karaf to 4.2.8
 * Improve Alarm logging - Issue #191
 * Locks get stuck when unexpected exception occurs - Issue #177
