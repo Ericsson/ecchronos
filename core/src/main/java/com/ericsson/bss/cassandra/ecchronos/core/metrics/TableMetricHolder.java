@@ -36,6 +36,7 @@ public class TableMetricHolder implements Closeable
     static final String LAST_REPAIRED_AT = "LastRepairedAt";
     static final String REPAIR_STATE = "RepairState";
     static final String REMAINING_REPAIR_TIME = "RemainingRepairTime";
+    static final String FAILED_ATTEMPTS = "RepairFailedAttempts";
 
     private final MetricRegistry myMetricRegistry;
     private final NodeMetricHolder myNodeMetricHolder;
@@ -44,7 +45,8 @@ public class TableMetricHolder implements Closeable
 
     private final AtomicReference<RangeRepairState> myRepairState = new AtomicReference<>();
     private final AtomicReference<Long> myLastRepairedAt = new AtomicReference<>(0L);
-    private final AtomicReference<Long> myRemainingRepairTime = new AtomicReference<>(0L);;
+    private final AtomicReference<Long> myRemainingRepairTime = new AtomicReference<>(0L);
+    private final AtomicReference<Long> myRepairFailedAttempts = new AtomicReference<>(0L);
 
     public TableMetricHolder(TableReference tableReference, MetricRegistry metricRegistry, NodeMetricHolder nodeMetricHolder)
     {
@@ -72,6 +74,7 @@ public class TableMetricHolder implements Closeable
         });
         myMetricRegistry.register(metricName(LAST_REPAIRED_AT), lastRepairedAtGauge());
         myMetricRegistry.register(metricName(REMAINING_REPAIR_TIME), remainingRepairTimeGauge());
+        myMetricRegistry.register(metricName(FAILED_ATTEMPTS), repairFailedAttemptsGauge());
         timer(REPAIR_TIMING_SUCCESS);
         timer(REPAIR_TIMING_FAILED);
     }
@@ -108,6 +111,17 @@ public class TableMetricHolder implements Closeable
         myRemainingRepairTime.set(remainingRepairTime);
     }
 
+    public void incRepairFailedAttempts()
+    {
+        long failedAttempts = myRepairFailedAttempts.get();
+        myRepairFailedAttempts.set(failedAttempts + 1);
+    }
+
+    public void resetRepairFailedAttempts()
+    {
+        myRepairFailedAttempts.set(0L);
+    }
+
     public void repairTiming(long timeTaken, TimeUnit timeUnit, boolean successful)
     {
         if (successful)
@@ -130,6 +144,7 @@ public class TableMetricHolder implements Closeable
         myMetricRegistry.remove(metricName(LAST_REPAIRED_AT));
         myMetricRegistry.remove(metricName(REPAIR_STATE));
         myMetricRegistry.remove(metricName(REMAINING_REPAIR_TIME));
+        myMetricRegistry.remove(metricName(FAILED_ATTEMPTS));
     }
 
     private String metricName(String name)
@@ -151,6 +166,11 @@ public class TableMetricHolder implements Closeable
     private Gauge<Long> remainingRepairTimeGauge()
     {
         return myRemainingRepairTime::get;
+    }
+
+    private Gauge<Long> repairFailedAttemptsGauge()
+    {
+        return myRepairFailedAttempts::get;
     }
 
     private static class RangeRepairState

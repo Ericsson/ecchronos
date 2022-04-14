@@ -91,7 +91,7 @@ public class RepairGroup extends ScheduledTask
             {
                 LOG.warn("Encountered issue when running repair task {}", repairTask, e);
                 successful = false;
-
+                myTableRepairMetrics.repairFailedAttempts(myTableReference);
                 if (e.getCause() instanceof InterruptedException)
                 {
                     LOG.info("{} thread was interrupted", this);

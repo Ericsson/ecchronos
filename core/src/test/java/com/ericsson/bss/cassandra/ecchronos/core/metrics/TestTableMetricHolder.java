@@ -84,11 +84,13 @@ public class TestTableMetricHolder
                 metricName(TableMetricHolder.LAST_REPAIRED_AT),
                 metricName(TableMetricHolder.REPAIR_STATE),
                 metricName(TableMetricHolder.REPAIR_TIMING_FAILED),
-                metricName(TableMetricHolder.REPAIR_TIMING_SUCCESS));
+                metricName(TableMetricHolder.REPAIR_TIMING_SUCCESS),
+                metricName(TableMetricHolder.FAILED_ATTEMPTS));
 
         assertThat(getGague(TableMetricHolder.REPAIR_STATE).getValue()).isEqualTo(Double.NaN);
         assertThat(getGague(TableMetricHolder.LAST_REPAIRED_AT).getValue()).isEqualTo(0L);
         assertThat(getGague(TableMetricHolder.REMAINING_REPAIR_TIME).getValue()).isEqualTo(0L);
+        assertThat(getGague(TableMetricHolder.FAILED_ATTEMPTS).getValue()).isEqualTo(0L);
     }
 
     @Test
@@ -96,6 +98,17 @@ public class TestTableMetricHolder
     {
         myTableMetricHolder.close();
         assertThat(myMetricRegistry.getMetrics()).isEmpty();
+    }
+
+    @Test
+    public void testIncRepairFailedAttempts()
+    {
+        long failedAttempts = 5L;
+        for (int i = 0; i < failedAttempts; i++)
+        {
+            myTableMetricHolder.incRepairFailedAttempts();
+        }
+        assertThat(getGague(TableMetricHolder.FAILED_ATTEMPTS).getValue()).isEqualTo(failedAttempts);
     }
 
     @Test

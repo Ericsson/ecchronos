@@ -110,7 +110,7 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         {
             finish(RepairStatus.FAILED);
             successful = false;
-            String msg = "Unable to repair " + this;
+            String msg = "Unable to repair '" + this + "', affected ranges: " + myTokenRanges;
             LOG.warn(msg);
             throw new ScheduledJobException(msg, e);
         }

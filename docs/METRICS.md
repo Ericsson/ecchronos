@@ -150,6 +150,10 @@ Usually the RepairFailedTime should be all zeros but if it's not the reason can 
 
     The effective remaining repair time (in milliseconds) for the table to be fully repaired (time ecChronos waits for cassandra to perform repair).
 
+* RepairFailedAttempts
+
+    The amount of repair sessions that have failed for the repair job. The metric is reset each time repair job runs.
+
 #### Examples
 
 | t          | value  |
@@ -184,3 +188,14 @@ The value represents the effective remaining repair time for the table to be ful
 This is the time ecChronos will have to wait for Cassandra to perform repair,
 this is an estimation based on the last repair of the table.
 The value should be `0` if there is no repair ongoing for this table.
+
+| t          | value |
+|------------|-------|
+| 1650350323 | 26    |
+
+\<keyspace\>.\<table\>-\<table-id\>-RepairFailedAttempts
+
+The value represents the amount of failed repair sessions for the repair job.
+The value is reset each time the repair job runs.
+To find out which token ranges have failed check the logs.
+The value should always be `0` in "problem free" clusters.

@@ -57,4 +57,18 @@ public interface TableRepairMetrics
      * @param successful If the repair was successful or not.
      */
     void repairTiming(TableReference tableReference, long timeTaken, TimeUnit timeUnit, boolean successful);
+
+    /**
+     * Report how many failed repair attempts (sessions) were performed.
+     *
+     * @param tableReference The table the repair was performed on.
+     */
+    void repairFailedAttempts(TableReference tableReference);
+
+    /**
+     * Reset the metric to 0
+     *
+     * @param tableReference The table the repair was performed on.
+     */
+    void resetRepairFailedAttempts(TableReference tableReference);
 }

@@ -319,6 +319,7 @@ public class TestTableRepairJob
         when(myRepairState.getSnapshot()).thenReturn(repairStateSnapshot);
 
         Iterator<ScheduledTask> iterator = myRepairJob.iterator();
+        verify(myTableRepairMetrics).resetRepairFailedAttempts(myTableReference);
 
         ScheduledTask task = iterator.next();
         assertThat(task).isInstanceOf(RepairGroup.class);
@@ -374,6 +375,7 @@ public class TestTableRepairJob
         assertThat(repairTasks).hasSize(expectedTokenRanges.size());
 
         Iterator<RepairTask> repairTaskIterator = repairTasks.iterator();
+        verify(myTableRepairMetrics).resetRepairFailedAttempts(myTableReference);
         for (LongTokenRange expectedRange : expectedTokenRanges)
         {
             assertThat(repairTaskIterator.hasNext()).isTrue();

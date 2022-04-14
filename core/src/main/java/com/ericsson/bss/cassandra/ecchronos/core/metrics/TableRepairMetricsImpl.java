@@ -100,6 +100,18 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         tableMetricHolder(tableReference).repairTiming(timeTaken, timeUnit, successful);
     }
 
+    @Override
+    public void repairFailedAttempts(TableReference tableReference)
+    {
+        tableMetricHolder(tableReference).incRepairFailedAttempts();
+    }
+
+    @Override
+    public void resetRepairFailedAttempts(TableReference tableReference)
+    {
+        tableMetricHolder(tableReference).resetRepairFailedAttempts();
+    }
+
     @VisibleForTesting
     void report()
     {

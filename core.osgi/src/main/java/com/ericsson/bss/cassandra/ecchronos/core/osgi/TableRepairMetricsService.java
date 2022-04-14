@@ -94,6 +94,18 @@ public final class TableRepairMetricsService implements TableRepairMetrics, Tabl
         myDelegateTableRepairMetrics.repairTiming(tableReference, timeTaken, timeUnit, successful);
     }
 
+    @Override
+    public void repairFailedAttempts(TableReference tableReference)
+    {
+        myDelegateTableRepairMetrics.repairFailedAttempts(tableReference);
+    }
+
+    @Override
+    public void resetRepairFailedAttempts(TableReference tableReference)
+    {
+        myDelegateTableRepairMetrics.resetRepairFailedAttempts(tableReference);
+    }
+
     @ObjectClassDefinition
     public @interface Configuration
     {

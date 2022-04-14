@@ -150,6 +150,7 @@ public class TableRepairJob extends ScheduledJob
     @Override
     public Iterator<ScheduledTask> iterator()
     {
+        myTableRepairMetrics.resetRepairFailedAttempts(myTableReference);
         RepairStateSnapshot repairStateSnapshot = myRepairState.getSnapshot();
         if (repairStateSnapshot.canRepair())
         {
