@@ -18,7 +18,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.google.common.collect.ImmutableList;
 
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -88,7 +88,7 @@ public class VnodeRepairStates
 
     public static class Builder
     {
-        private final Map<LongTokenRange, VnodeRepairState> myVnodeRepairStates = new HashMap<>();
+        private final Map<LongTokenRange, VnodeRepairState> myVnodeRepairStates = new LinkedHashMap<>();
 
         public Builder(Collection<VnodeRepairState> vnodeRepairStates)
         {
