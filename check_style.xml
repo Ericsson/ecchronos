@@ -88,11 +88,19 @@
     <!-- Checks for Javadoc comments.                     -->
     <!-- See https://checkstyle.org/config_javadoc.html -->
     <module name="InvalidJavadocPosition"/>
-    <module name="JavadocMethod"/>
-    <module name="JavadocType"/>
-    <module name="JavadocVariable"/>
+    <module name="JavadocMethod">
+      <property name="severity" value="ignore"/>
+    </module>
+    <module name="JavadocType">
+      <property name="severity" value="ignore"/>
+    </module>
+    <module name="JavadocVariable">
+      <property name="severity" value="ignore"/>
+    </module>
     <module name="JavadocStyle"/>
-    <module name="MissingJavadocMethod"/>
+    <module name="MissingJavadocMethod">
+      <property name="severity" value="ignore"/>
+    </module>
 
     <!-- Checks for Naming Conventions.                  -->
     <!-- See https://checkstyle.org/config_naming.html -->
