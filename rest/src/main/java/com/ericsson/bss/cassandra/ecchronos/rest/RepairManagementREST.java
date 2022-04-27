@@ -69,9 +69,10 @@ public interface RepairManagementREST
      *
      * @param keyspace The keyspace of the table
      * @param table The table
+     * @param isLocal if repair should be only run for the local node
      * @return A JSON representation of {@link OnDemandRepair}
      */
-    ResponseEntity<OnDemandRepair> triggerRepair(String keyspace, String table);
+    ResponseEntity<OnDemandRepair> triggerRepair(String keyspace, String table, boolean isLocal);
 
     /**
      * Get a list of the status of all scheduled repair jobs.

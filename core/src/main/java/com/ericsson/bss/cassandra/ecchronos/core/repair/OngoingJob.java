@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -101,8 +102,43 @@ public class OngoingJob
 
     public boolean hasTopologyChanged()
     {
-    	return !myTokens.equals(myReplicationState.getTokenRangeToReplicas(myTableReference))
+        return !myTokens.equals(myReplicationState.getTokenRangeToReplicas(myTableReference))
                 || (myTokenHash != null && (myTokenHash != myTokens.keySet().hashCode() && myTokenHash != myTokens.hashCode()));
+    }
+
+    public void startClusterWideJob()
+    {
+        Map<LongTokenRange, ImmutableSet<Node>> allTokenRanges = myReplicationState.getTokenRanges(myTableReference);
+        Map<Node, Set<LongTokenRange>> repairedRangesPerNode = new HashMap<>();
+        Map<Node, Set<LongTokenRange>> remainingRangesPerNode = new HashMap<>();
+        for (Map.Entry<LongTokenRange, ImmutableSet<Node>> range : allTokenRanges.entrySet())
+        {
+            LongTokenRange rangeForNodes = range.getKey();
+            Set<Node> nodes = range.getValue();
+            boolean rangeRepaired = myTokens.containsKey(rangeForNodes);
+            for (Node node: nodes)
+            {
+                if (rangeRepaired)
+                {
+                    repairedRangesPerNode.computeIfAbsent(node, (k) -> new HashSet<>()).add(rangeForNodes);
+                }
+                else
+                {
+                    remainingRangesPerNode.computeIfAbsent(node, (k) -> new HashSet<>()).add(rangeForNodes);
+                    rangeRepaired = true; //We only want one node to repair the range
+                }
+            }
+        }
+        for (Map.Entry<Node, Set<LongTokenRange>> replicaWithRanges: remainingRangesPerNode.entrySet())
+        {
+            Node node = replicaWithRanges.getKey();
+            Set<LongTokenRange> remainingRanges = replicaWithRanges.getValue();
+            Set<LongTokenRange> repairedRanges = repairedRangesPerNode.get(node);
+            Set<LongTokenRange> allTokensForNode = new HashSet<>();
+            allTokensForNode.addAll(remainingRanges);
+            allTokensForNode.addAll(repairedRanges);
+            myOnDemandStatus.addNewJob(node.getId(), myJobId, myTableReference, allTokensForNode.hashCode(), repairedRanges);
+        }
     }
 
     public void finishJob()

@@ -170,11 +170,18 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
     @Override
     @PostMapping(ENDPOINT_PREFIX_V2 + "/repairs")
     public ResponseEntity<OnDemandRepair> triggerRepair(@RequestParam String keyspace,
-                                                        @RequestParam String table)
+                                                        @RequestParam String table,
+                                                        @RequestParam(required = false) boolean isLocal)
     {
         try
         {
-            RepairJobView repairJobView = myOnDemandRepairScheduler.scheduleJob(
+            if (isLocal)
+            {
+                RepairJobView repairJobView = myOnDemandRepairScheduler.scheduleJob(
+                        myTableReferenceFactory.forTable(keyspace, table));
+                return ResponseEntity.ok(new OnDemandRepair(repairJobView));
+            }
+            RepairJobView repairJobView = myOnDemandRepairScheduler.scheduleClusterWideJob(
                     myTableReferenceFactory.forTable(keyspace, table));
             return ResponseEntity.ok(new OnDemandRepair(repairJobView));
         }

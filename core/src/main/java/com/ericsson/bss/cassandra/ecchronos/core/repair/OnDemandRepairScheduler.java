@@ -36,6 +36,16 @@ public interface OnDemandRepairScheduler
     RepairJobView scheduleJob(TableReference tableReference) throws EcChronosException;
 
     /**
+     * Create a repair that is slated to run once for a specified table for all replicas.
+     *
+     * @param tableReference
+     *            The table to schedule a job on.
+     * @return A view of the scheduled job.
+     * @throws EcChronosException Thrown when the keyspace/table doesn't exist.
+     */
+    RepairJobView scheduleClusterWideJob(TableReference tableReference) throws EcChronosException;
+
+    /**
      * @return the list of all repair jobs.
      */
     List<RepairJobView> getAllRepairJobs();

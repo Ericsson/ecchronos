@@ -36,8 +36,6 @@ import java.util.stream.Collectors;
 
 import org.assertj.core.util.Lists;
 import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -186,7 +184,7 @@ public class ITOnDemandRepairJob extends TestBase
         reset(mockTableRepairMetrics);
     }
 
-    @AfterClass
+    @Parameterized.AfterParam
     public static void closeConnections()
     {
         myHostStates.close();

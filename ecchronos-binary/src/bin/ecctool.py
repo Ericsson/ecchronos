@@ -135,6 +135,8 @@ def add_run_repair_subcommand(sub_parsers):
     parser_trigger_repair.add_argument("-u", "--url", type=str,
                                        help="The host to connect to with the format (http://<host>:port)",
                                        default=None)
+    parser_trigger_repair.add_argument("--local", action='store_true',
+                                       help='repair will run for the local node, default is False', default=False)
     required_args = parser_trigger_repair.add_argument_group("required arguments")
     required_args.add_argument("-k", "--keyspace", type=str,
                                help="Keyspace where the repair should be triggered", required=True)
@@ -269,7 +271,7 @@ def repair_config(arguments):
 def run_repair(arguments):
     request = rest.V2RepairSchedulerRequest(base_url=arguments.url)
     printer = table_printer_v2
-    result = request.post(keyspace=arguments.keyspace, table=arguments.table)
+    result = request.post(keyspace=arguments.keyspace, table=arguments.table, local=arguments.local)
     if result.is_successful():
         printer.print_repair(result.data)
     else:

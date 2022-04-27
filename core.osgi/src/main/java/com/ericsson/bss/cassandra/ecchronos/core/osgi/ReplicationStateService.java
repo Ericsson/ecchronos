@@ -60,4 +60,10 @@ public class ReplicationStateService implements ReplicationState
     {
         return delegateReplicationState.getTokenRangeToReplicas(tableReference);
     }
+
+    @Override
+    public Map<LongTokenRange, ImmutableSet<Node>> getTokenRanges(TableReference tableReference)
+    {
+        return delegateReplicationState.getTokenRanges(tableReference);
+    }
 }

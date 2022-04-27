@@ -81,8 +81,20 @@ public class ReplicationStateImpl implements ReplicationState
     public Map<LongTokenRange, ImmutableSet<Node>> getTokenRangeToReplicas(TableReference tableReference)
     {
         String keyspace = tableReference.getKeyspace();
-
         return maybeRenew(keyspace);
+    }
+
+    @Override
+    public Map<LongTokenRange, ImmutableSet<Node>> getTokenRanges(TableReference tableReference)
+    {
+        Map<LongTokenRange, ImmutableSet<Node>> tokenRanges = new HashMap<>();
+        String keyspace = tableReference.getKeyspace();
+        for (TokenRange tokenRange : myMetadata.getTokenRanges())
+        {
+            Set<Host> hosts = myMetadata.getReplicas(keyspace, tokenRange);
+            tokenRanges.put(convert(tokenRange), convert(hosts));
+        }
+        return tokenRanges;
     }
 
     private ImmutableMap<LongTokenRange, ImmutableSet<Node>> maybeRenew(String keyspace)

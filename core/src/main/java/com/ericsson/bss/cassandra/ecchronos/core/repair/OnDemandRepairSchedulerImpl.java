@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -43,6 +45,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(OnDemandRepairSchedulerImpl.class);
+    private static final int ONGOING_JOBS_PERIOD_SECONDS = 10;
 
     private final Map<UUID, OnDemandRepairJob> myScheduledJobs = new HashMap<>();
     private final Object myLock = new Object();
@@ -56,6 +59,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     private final RepairConfiguration myRepairConfiguration;
     private final RepairHistory myRepairHistory;
     private final OnDemandStatus myOnDemandStatus;
+    private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor();
 
     private OnDemandRepairSchedulerImpl(Builder builder)
     {
@@ -68,33 +72,20 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         myRepairConfiguration = builder.repairConfiguration;
         myRepairHistory = builder.repairHistory;
         myOnDemandStatus = builder.onDemandStatus;
-        new Thread(this::getOngoingJobs).start();
+        myExecutor.scheduleAtFixedRate(() -> getOngoingJobs(), 0, ONGOING_JOBS_PERIOD_SECONDS, TimeUnit.SECONDS);
     }
 
     private void getOngoingJobs()
     {
-        boolean done = false;
-        Set<OngoingJob> ongoingJobs;
-        while (!done)
+        try
         {
-            try
-            {
-                ongoingJobs = myOnDemandStatus.getOngoingJobs(myReplicationState);
-                ongoingJobs.forEach(j -> scheduleOngoingJob(j));
-                done = true;
-            }
-            catch (Exception e)
-            {
-                try
-                {
-                    LOG.info("Failed to get ongoing ondemand jobs during startup: {}, automatic retry in 10s", e.getMessage());
-                    Thread.sleep(TimeUnit.SECONDS.toMillis(10));
-                }
-                catch (InterruptedException e1)
-                {
-                    Thread.currentThread().interrupt();
-                }
-            }
+            Set<OngoingJob> ongoingJobs = myOnDemandStatus.getOngoingJobs(myReplicationState);
+            ongoingJobs.forEach(j -> scheduleOngoingJob(j));
+        }
+        catch (Exception e)
+        {
+            LOG.info("Failed to get ongoing ondemand jobs: {}, automatic retry in {}s", e.getMessage(),
+                    ONGOING_JOBS_PERIOD_SECONDS);
         }
     }
 
@@ -107,13 +98,24 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
             {
                 descheduleTable(job);
             }
-
             myScheduledJobs.clear();
+            myExecutor.shutdown();
         }
     }
 
     @Override
+    public RepairJobView scheduleClusterWideJob(TableReference tableReference) throws EcChronosException
+    {
+        return scheduleJob(tableReference, true);
+    }
+
+    @Override
     public RepairJobView scheduleJob(TableReference tableReference) throws EcChronosException
+    {
+        return scheduleJob(tableReference, false);
+    }
+
+    private RepairJobView scheduleJob(TableReference tableReference, boolean isClusterWide) throws EcChronosException
     {
         synchronized (myLock)
         {
@@ -122,7 +124,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
                 KeyspaceMetadata ks = myMetadata.getKeyspace(tableReference.getKeyspace());
                 if (ks != null && ks.getTable(tableReference.getTable()) != null)
                 {
-                    OnDemandRepairJob job = getRepairJob(tableReference);
+                    OnDemandRepairJob job = getRepairJob(tableReference, isClusterWide);
                     myScheduledJobs.put(job.getId(), job);
                     myScheduleManager.schedule(job);
                     return job.getView();
@@ -139,6 +141,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
             OnDemandRepairJob job = getOngoingRepairJob(ongoingJob);
             if(myScheduledJobs.putIfAbsent(job.getId(), job) == null)
             {
+                LOG.info("Scheduling ongoing job: {}", job.getId());
                 myScheduleManager.schedule(job);
             }
         }
@@ -180,13 +183,17 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         }
     }
 
-    private OnDemandRepairJob getRepairJob(TableReference tableReference)
+    private OnDemandRepairJob getRepairJob(TableReference tableReference, boolean isClusterWide)
     {
         OngoingJob ongoingJob = new OngoingJob.Builder()
                 .withOnDemandStatus(myOnDemandStatus)
                 .withTableReference(tableReference)
                 .withReplicationState(myReplicationState)
                 .build();
+        if (isClusterWide)
+        {
+            ongoingJob.startClusterWideJob();
+        }
         OnDemandRepairJob job = new OnDemandRepairJob.Builder()
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withTableRepairMetrics(myTableRepairMetrics)
