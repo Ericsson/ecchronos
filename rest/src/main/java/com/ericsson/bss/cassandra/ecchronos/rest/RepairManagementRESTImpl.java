@@ -105,7 +105,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         catch (IllegalArgumentException e)
         {
             //BAD REQUEST makes most sense here (UUID cannot be parsed)
-            throw new ResponseStatusException(BAD_REQUEST);
+            throw new ResponseStatusException(BAD_REQUEST, BAD_REQUEST.getReasonPhrase(), e);
         }
         Optional<RepairJobView> repairJobView = getCompleteRepairJob(uuid);
         if (!repairJobView.isPresent())
@@ -153,7 +153,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         catch (IllegalArgumentException e)
         {
             //BAD REQUEST makes most sense here (UUID cannot be parsed)
-            throw new ResponseStatusException(BAD_REQUEST);
+            throw new ResponseStatusException(BAD_REQUEST, BAD_REQUEST.getReasonPhrase(), e);
         }
         Optional<RepairJobView> repairJobView = getCompleteRepairJob(uuid);
         if (!repairJobView.isPresent())
@@ -175,7 +175,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         }
         catch (EcChronosException e)
         {
-            throw new ResponseStatusException(NOT_FOUND);
+            throw new ResponseStatusException(NOT_FOUND, NOT_FOUND.getReasonPhrase(), e);
         }
     }
 
