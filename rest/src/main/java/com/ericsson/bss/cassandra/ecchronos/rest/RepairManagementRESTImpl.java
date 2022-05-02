@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +37,9 @@ import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 /**
  * When updating the path it should also be updated in the OSGi component.
@@ -101,12 +105,12 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         catch (IllegalArgumentException e)
         {
             //BAD REQUEST makes most sense here (UUID cannot be parsed)
-            return ResponseEntity.badRequest().build();
+            throw new ResponseStatusException(BAD_REQUEST);
         }
         Optional<RepairJobView> repairJobView = getCompleteRepairJob(uuid);
         if (!repairJobView.isPresent())
         {
-            return ResponseEntity.notFound().build();
+            throw new ResponseStatusException(NOT_FOUND);
         }
         return ResponseEntity.ok(new CompleteRepairJob(repairJobView.get()));
     }
@@ -149,12 +153,12 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         catch (IllegalArgumentException e)
         {
             //BAD REQUEST makes most sense here (UUID cannot be parsed)
-            return ResponseEntity.badRequest().build();
+            throw new ResponseStatusException(BAD_REQUEST);
         }
         Optional<RepairJobView> repairJobView = getCompleteRepairJob(uuid);
         if (!repairJobView.isPresent())
         {
-            return ResponseEntity.notFound().build();
+            throw new ResponseStatusException(NOT_FOUND);
         }
         return ResponseEntity.ok(new TableRepairConfig(repairJobView.get()));
     }
@@ -171,7 +175,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         }
         catch (EcChronosException e)
         {
-            return ResponseEntity.notFound().build();
+            throw new ResponseStatusException(NOT_FOUND);
         }
     }
 

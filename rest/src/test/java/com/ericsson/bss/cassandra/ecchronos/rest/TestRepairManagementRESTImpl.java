@@ -39,6 +39,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -53,6 +54,8 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class TestRepairManagementRESTImpl
@@ -396,32 +399,51 @@ public class TestRepairManagementRESTImpl
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(repairJobViews);
 
-        ResponseEntity<CompleteRepairJob> response = repairManagementREST.jobStatus(UUID.randomUUID().toString());
-
-        assertThat(response.getBody()).isNull();
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        ResponseEntity<CompleteRepairJob> response = null;
+        String uuid = UUID.randomUUID().toString();
+        try
+        {
+            response =  repairManagementREST.jobStatus(uuid);
+        }
+        catch(ResponseStatusException e)
+        {
+            assertThat(e.getRawStatusCode()).isEqualTo(NOT_FOUND.value());
+        }
+        assertThat(response).isNull();
     }
 
     @Test
     public void testIdEntryEmpty()
     {
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.emptyList());
-
-        ResponseEntity<CompleteRepairJob> response = repairManagementREST.jobStatus(UUID.randomUUID().toString());
-
-        assertThat(response.getBody()).isNull();
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        ResponseEntity<CompleteRepairJob> response = null;
+        String uuid = UUID.randomUUID().toString();
+        try
+        {
+            response = repairManagementREST.jobStatus(uuid);
+        }
+        catch(ResponseStatusException e)
+        {
+            assertThat(e.getRawStatusCode()).isEqualTo(NOT_FOUND.value());
+        }
+        assertThat(response).isNull();
     }
 
     @Test
     public void testIdInvalidUUID()
     {
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.emptyList());
-
-        ResponseEntity<CompleteRepairJob> response = repairManagementREST.jobStatus("123");
-
-        assertThat(response.getBody()).isNull();
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        String uuid = "123";
+        ResponseEntity<CompleteRepairJob> response = null;
+        try
+        {
+            response = repairManagementREST.jobStatus(uuid);
+        }
+        catch(ResponseStatusException e)
+        {
+            assertThat(e.getRawStatusCode()).isEqualTo(BAD_REQUEST.value());
+        }
+        assertThat(response).isNull();
     }
 
     @Test
@@ -671,10 +693,17 @@ public class TestRepairManagementRESTImpl
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(repairJobViews);
 
-        ResponseEntity<TableRepairConfig> response = repairManagementREST.jobConfig(UUID.randomUUID().toString());
-
-        assertThat(response.getBody()).isNull();
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        String uuid = UUID.randomUUID().toString();
+        ResponseEntity<TableRepairConfig> response = null;
+        try
+        {
+            response = repairManagementREST.jobConfig(uuid);
+        }
+        catch(ResponseStatusException e)
+        {
+            assertThat(e.getRawStatusCode()).isEqualTo(NOT_FOUND.value());
+        }
+        assertThat(response).isNull();
     }
 
     @Test
@@ -682,10 +711,17 @@ public class TestRepairManagementRESTImpl
     {
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.emptyList());
 
-        ResponseEntity<TableRepairConfig> response = repairManagementREST.jobConfig(UUID.randomUUID().toString());
-
-        assertThat(response.getBody()).isNull();
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        String uuid = UUID.randomUUID().toString();
+        ResponseEntity<TableRepairConfig> response = null;
+        try
+        {
+            response = repairManagementREST.jobConfig(uuid);
+        }
+        catch(ResponseStatusException e)
+        {
+            assertThat(e.getRawStatusCode()).isEqualTo(NOT_FOUND.value());
+        }
+        assertThat(response).isNull();
     }
 
     @Test
@@ -693,10 +729,17 @@ public class TestRepairManagementRESTImpl
     {
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(Collections.emptyList());
 
-        ResponseEntity<TableRepairConfig> response = repairManagementREST.jobConfig("123");
-
-        assertThat(response.getBody()).isNull();
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        String uuid = "123";
+        ResponseEntity<TableRepairConfig> response = null;
+        try
+        {
+            response = repairManagementREST.jobConfig(uuid);
+        }
+        catch(ResponseStatusException e)
+        {
+            assertThat(e.getRawStatusCode()).isEqualTo(BAD_REQUEST.value());
+        }
+        assertThat(response).isNull();
     }
 
     @Test
