@@ -28,11 +28,23 @@ management:
 # Security Config
 #server:
 #  ssl:
+# SSL configuration using certificate stores
 #    enabled: false
 #    key-store: <path to keystore>
 #    key-store-password: <password>
 #    key-store-type: <keystore type>
 #    key-alias: <key alias>
 #    key-password: <key password>
-# Rate at which certificate are reloaded automatically
+#    client-auth: false
+#    protocol: <protocol>
+#    ciphers: <ciphers>
+# SSL configuration using certificates in PEM format
+#    enabled-certificate: false
+#    certificate: <path to certificate>
+#    certificate-key: <path to certificate private key>
+#    certificate-authorities: <path to certificate bundle>
+#    certificate-client-auth: false
+#    certificate-protocol: <protocol>
+#    certificate-ciphers: <ciphers>
+# Rate at which certificates are reloaded automatically
 #    refresh-rate-in-ms: 60000

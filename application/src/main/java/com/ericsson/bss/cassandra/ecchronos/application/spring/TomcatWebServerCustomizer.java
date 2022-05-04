@@ -16,12 +16,22 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
 
 import org.apache.coyote.http11.Http11NioProtocol;
+import org.apache.tomcat.util.net.SSLHostConfig;
+import org.apache.tomcat.util.net.SSLHostConfigCertificate;
+import org.apache.tomcat.util.net.jsse.PEMFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.cert.X509Certificate;
 
 @Component
 @EnableScheduling
@@ -32,26 +42,95 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
     @Value("${server.ssl.enabled:false}")
     private Boolean sslIsEnabled;
 
+    @Value("${server.ssl.enabled-certificate:false}")
+    private Boolean sslIsEnabledForCertificate;
+
+    @Value("${server.ssl.certificate:#{null}}")
+    private String certificate;
+
+    @Value("${server.ssl.certificate-key:#{null}}")
+    private String certificateKey;
+
+    @Value("${server.ssl.certificate-authorities:#{null}}")
+    private String certificateAuthorities;
+
+    @Value("${server.ssl.certificate-client-auth:#{null}}")
+    private String clientAuth;
+
+    @Value("${server.ssl.certificate-protocol:#{null}}")
+    private String protocol;
+
+    @Value("${server.ssl.certificate-ciphers:#{null}}")
+    private String ciphers;
+
+    private static final Logger LOG = LoggerFactory.getLogger(TomcatWebServerCustomizer.class);
+
     @Override
     public void customize(TomcatServletWebServerFactory factory)
     {
-        if (sslIsEnabled)
+        if (sslIsEnabled || sslIsEnabledForCertificate)
         {
             factory.addConnectorCustomizers(connector ->
             {
                 http11NioProtocol = (Http11NioProtocol) connector.getProtocolHandler();
+                if (sslIsEnabledForCertificate)
+                {
+                    http11NioProtocol.addSslHostConfig(getSslHostConfiguration());
+                    http11NioProtocol.setSSLEnabled(true);
+                }
             });
         }
     }
 
+    private SSLHostConfig getSslHostConfiguration()
+    {
+        SSLHostConfig sslHostConfig = new SSLHostConfig();
+        SSLHostConfigCertificate certificateConfig = new SSLHostConfigCertificate(sslHostConfig, SSLHostConfigCertificate.DEFAULT_TYPE);
+        certificateConfig.setCertificateFile(certificate);
+        certificateConfig.setCertificateKeyFile(certificateKey);
+        sslHostConfig.addCertificate(certificateConfig);
+        sslHostConfig.setCertificateVerification(clientAuth);
+        sslHostConfig.setTrustStore(getTrustStore());
+        if (this.protocol != null)
+        {
+            sslHostConfig.setProtocols(protocol);
+        }
+        if (this.ciphers != null)
+        {
+            sslHostConfig.setCiphers(ciphers);
+        }
+        return sslHostConfig;
+    }
+
+    private KeyStore getTrustStore()
+    {
+        KeyStore trustStore = null;
+        try
+        {
+            trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+            trustStore.load(null);
+
+            PEMFile certificateBundle = new PEMFile(certificateAuthorities);
+            for (X509Certificate certificate : certificateBundle.getCertificates())
+            {
+                trustStore.setCertificateEntry(certificate.getSerialNumber().toString(), certificate);
+            }
+        }
+        catch(GeneralSecurityException | IOException exception)
+        {
+            LOG.warn("Unable to load certificate authorities", exception);
+        }
+        return trustStore;
+    }
+
     /**
-     * Reload the {@code SSLHostConfig} if SSL is enabled. Doing so should update ssl settings and fetch certificates from Keystores
+     * Reload the {@code SSLHostConfig} if SSL is enabled. Doing so should update ssl settings and reload certificates
      * It reloads them every 60 seconds by default
      */
     @Scheduled (initialDelayString = "${server.ssl.refresh-rate-in-ms:60000}", fixedRateString = "${server.ssl.refresh-rate-in-ms:60000}")
     public void reloadSslContext()
     {
-        if (sslIsEnabled && http11NioProtocol != null)
+        if ((sslIsEnabled || sslIsEnabledForCertificate) && http11NioProtocol != null)
         {
             http11NioProtocol.reloadSslHostConfigs();
         }
