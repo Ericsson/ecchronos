@@ -42,6 +42,9 @@ public class TestSecurity
         cqlTlsConfig.setKeystore_password("ecchronos");
         cqlTlsConfig.setTruststore("/path/to/truststore");
         cqlTlsConfig.setTruststore_password("ecchronos");
+        cqlTlsConfig.setCertificate(null);
+        cqlTlsConfig.setCertificate_key(null);
+        cqlTlsConfig.setCertificate_authorities(null);
         cqlTlsConfig.setProtocol("TLSv1.2");
         cqlTlsConfig.setAlgorithm(null);
         cqlTlsConfig.setStore_type("JKS");
@@ -101,5 +104,30 @@ public class TestSecurity
         assertThat(config.getJmx().getCredentials()).isEqualTo(expectedJmxCredentials);
         assertThat(config.getCql().getTls()).isEqualTo(cqlTlsConfig);
         assertThat(config.getJmx().getTls()).isEqualTo(jmxTlsConfig);
+    }
+
+    @Test
+    public void testEnabledWithCertificate() throws Exception
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("enabled_certificate_security.yml").getFile());
+
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
+        Security config = objectMapper.readValue(file, Security.class);
+
+        Credentials expectedCqlCredentials = new Credentials(true, "cqluser", "cqlpassword");
+
+        TLSConfig cqlTlsConfig = new TLSConfig();
+        cqlTlsConfig.setEnabled(true);
+        cqlTlsConfig.setCertificate("/path/to/cql/certificate");
+        cqlTlsConfig.setCertificate_key("/path/to/cql/certificate_key");
+        cqlTlsConfig.setCertificate_authorities("/path/to/cql/certificate_authorities");
+        cqlTlsConfig.setProtocol("TLSv1.2");
+        cqlTlsConfig.setCipher_suites("VALID_CIPHER_SUITE,VALID_CIPHER_SUITE2");
+        cqlTlsConfig.setRequire_endpoint_verification(true);
+
+        assertThat(config.getCql().getCredentials()).isEqualTo(expectedCqlCredentials);
+        assertThat(config.getCql().getTls()).isEqualTo(cqlTlsConfig);
     }
 }
