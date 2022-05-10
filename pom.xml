@@ -255,6 +255,12 @@
                 <scope>import</scope>
             </dependency>
 
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-thymeleaf</artifactId>
+                <version>${org.springframework.boot.version}</version>
+            </dependency>
+
             <!-- Log4j dependency -->
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
