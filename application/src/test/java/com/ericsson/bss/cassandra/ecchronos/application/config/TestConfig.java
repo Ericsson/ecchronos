@@ -18,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.net.InetSocketAddress;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -27,6 +28,8 @@ import javax.net.ssl.SSLEngine;
 
 import com.datastax.driver.core.EndPoint;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
+import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
+import com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.ssl.SslHandler;
 import org.junit.Test;
@@ -93,6 +96,7 @@ public class TestConfig
         assertThat(repairConfig.getHistoryLookback().getInterval(TimeUnit.DAYS)).isEqualTo(13);
         assertThat(repairConfig.getHistory().getProvider()).isEqualTo(Config.RepairHistory.Provider.CASSANDRA);
         assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("customkeyspace");
+        assertThat(repairConfig.getAlarm().getFaultReporter()).isEqualTo(TestFaultReporter.class);
 
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isFalse();
@@ -157,6 +161,7 @@ public class TestConfig
         assertThat(repairConfig.getHistoryLookback().getInterval(TimeUnit.DAYS)).isEqualTo(30);
         assertThat(repairConfig.getHistory().getProvider()).isEqualTo(Config.RepairHistory.Provider.ECC);
         assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("ecchronos");
+        assertThat(repairConfig.getAlarm().getFaultReporter()).isEqualTo(LoggingFaultReporter.class);
 
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isTrue();
@@ -221,6 +226,7 @@ public class TestConfig
         assertThat(repairConfig.getHistoryLookback().getInterval(TimeUnit.DAYS)).isEqualTo(30);
         assertThat(repairConfig.getHistory().getProvider()).isEqualTo(Config.RepairHistory.Provider.ECC);
         assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("ecchronos");
+        assertThat(repairConfig.getAlarm().getFaultReporter()).isEqualTo(LoggingFaultReporter.class);
 
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isTrue();
@@ -336,6 +342,22 @@ public class TestConfig
         public Optional<RepairConfiguration> forTable(TableReference tableReference)
         {
             return Optional.empty();
+        }
+    }
+
+    public static class TestFaultReporter implements RepairFaultReporter
+    {
+
+        @Override
+        public void raise(FaultCode faultCode, Map<String, Object> data)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void cease(FaultCode faultCode, Map<String, Object> data)
+        {
+            throw new UnsupportedOperationException();
         }
     }
 }

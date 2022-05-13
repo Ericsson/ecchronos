@@ -48,7 +48,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationStateIm
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
-import com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter;
 
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
@@ -119,9 +118,9 @@ public class BeanConfigurator
     }
 
     @Bean
-    public RepairFaultReporter repairFaultReporter()
+    public RepairFaultReporter repairFaultReporter(Config config) throws ConfigurationException
     {
-        return new LoggingFaultReporter();
+        return ReflectionUtils.construct(config.getRepair().getAlarm().getFaultReporter());
     }
 
     @Bean

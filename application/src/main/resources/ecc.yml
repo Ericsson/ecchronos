@@ -104,6 +104,11 @@ repair:
   ##
   alarm:
     ##
+    ## The class used for fault reporting
+    ## The default LoggingFaultReporter will log when alarm is raised/ceased
+    ##
+    faultReporter: com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter
+    ##
     ## If a table has not been repaired for the following duration an warning alarm will be raised.
     ##
     warn:
