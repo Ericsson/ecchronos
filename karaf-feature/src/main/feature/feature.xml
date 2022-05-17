@@ -19,5 +19,6 @@
         <bundle>mvn:com.fasterxml.jackson.core/jackson-core/${com.fasterxml.jackson.version}</bundle>
         <bundle>mvn:com.fasterxml.jackson.core/jackson-annotations/${com.fasterxml.jackson.version}</bundle>
         <bundle>mvn:com.fasterxml.jackson.core/jackson-databind/${com.fasterxml.jackson.version}</bundle>
+        <bundle>mvn:jakarta.validation/jakarta.validation-api/${jakarta.validation-api.version}</bundle>
     </feature>
 </features>

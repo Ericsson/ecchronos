@@ -1,0 +1,343 @@
+openapi: 3.0.1
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+paths:
+  /repair-management/v1/schedule/keyspaces/{keyspace}/tables/{table}:
+    post:
+      tags:
+      - repair-management-rest-impl
+      operationId: scheduleJob
+      parameters:
+      - name: keyspace
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: table
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ScheduledRepairJob'
+  /repair-management/v1/status:
+    get:
+      tags:
+      - repair-management-rest-impl
+      operationId: status
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduledRepairJob'
+  /repair-management/v1/status/keyspaces/{keyspace}:
+    get:
+      tags:
+      - repair-management-rest-impl
+      operationId: keyspaceStatus
+      parameters:
+      - name: keyspace
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduledRepairJob'
+  /repair-management/v1/status/keyspaces/{keyspace}/tables/{table}:
+    get:
+      tags:
+      - repair-management-rest-impl
+      operationId: tableStatus
+      parameters:
+      - name: keyspace
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: table
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduledRepairJob'
+  /repair-management/v1/status/ids/{id}:
+    get:
+      tags:
+      - repair-management-rest-impl
+      operationId: jobStatus
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/CompleteRepairJob'
+  /repair-management/v1/config:
+    get:
+      tags:
+      - repair-management-rest-impl
+      operationId: config
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TableRepairConfig'
+  /repair-management/v1/config/keyspaces/{keyspace}:
+    get:
+      tags:
+      - repair-management-rest-impl
+      operationId: keyspaceConfig
+      parameters:
+      - name: keyspace
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TableRepairConfig'
+  /repair-management/v1/config/keyspaces/{keyspace}/tables/{table}:
+    get:
+      tags:
+      - repair-management-rest-impl
+      operationId: tableConfig
+      parameters:
+      - name: keyspace
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: table
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TableRepairConfig'
+  /repair-management/v1/config/ids/{id}:
+    get:
+      tags:
+      - repair-management-rest-impl
+      operationId: jobConfig
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/TableRepairConfig'
+components:
+  schemas:
+    ScheduledRepairJob:
+      required:
+      - id
+      - keyspace
+      - lastRepairedAtInMs
+      - nextRepairInMs
+      - recurring
+      - repairedRatio
+      - status
+      - table
+      type: object
+      properties:
+        keyspace:
+          type: string
+        table:
+          type: string
+        lastRepairedAtInMs:
+          minimum: -1
+          type: integer
+          format: int64
+        repairedRatio:
+          maximum: 1
+          minimum: 0
+          type: number
+          format: double
+        status:
+          type: string
+          enum:
+          - COMPLETED
+          - IN_QUEUE
+          - WARNING
+          - ERROR
+          - BLOCKED
+        nextRepairInMs:
+          minimum: -1
+          type: integer
+          format: int64
+        id:
+          type: string
+          format: uuid
+        recurring:
+          type: boolean
+    CompleteRepairJob:
+      required:
+      - id
+      - keyspace
+      - lastRepairedAtInMs
+      - nextRepairInMs
+      - recurring
+      - repairedRatio
+      - status
+      - table
+      - virtualNodeStates
+      type: object
+      properties:
+        keyspace:
+          type: string
+        table:
+          type: string
+        lastRepairedAtInMs:
+          minimum: -1
+          type: integer
+          format: int64
+        repairedRatio:
+          maximum: 1
+          minimum: 0
+          type: number
+          format: double
+        status:
+          type: string
+          enum:
+          - COMPLETED
+          - IN_QUEUE
+          - WARNING
+          - ERROR
+          - BLOCKED
+        nextRepairInMs:
+          minimum: -1
+          type: integer
+          format: int64
+        id:
+          type: string
+          format: uuid
+        recurring:
+          type: boolean
+        virtualNodeStates:
+          type: array
+          items:
+            $ref: '#/components/schemas/VirtualNodeState'
+    VirtualNodeState:
+      required:
+      - endToken
+      - lastRepairedAtInMs
+      - repaired
+      - replicas
+      - startToken
+      type: object
+      properties:
+        startToken:
+          minimum: -9223372036854775808
+          type: integer
+          format: int64
+        endToken:
+          maximum: 9223372036854775807
+          type: integer
+          format: int64
+        replicas:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+        lastRepairedAtInMs:
+          minimum: 0
+          type: integer
+          format: int64
+        repaired:
+          type: boolean
+    TableRepairConfig:
+      required:
+      - id
+      - keyspace
+      - repairErrorTimeInMs
+      - repairIntervalInMs
+      - repairParallelism
+      - repairUnwindRatio
+      - repairWarningTimeInMs
+      - table
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        keyspace:
+          type: string
+        table:
+          type: string
+        repairIntervalInMs:
+          minimum: 0
+          type: integer
+          format: int64
+        repairParallelism:
+          type: string
+          enum:
+          - PARALLEL
+        repairUnwindRatio:
+          minimum: 0
+          type: number
+          format: double
+        repairWarningTimeInMs:
+          minimum: 0
+          type: integer
+          format: int64
+        repairErrorTimeInMs:
+          minimum: 0
+          type: integer
+          format: int64

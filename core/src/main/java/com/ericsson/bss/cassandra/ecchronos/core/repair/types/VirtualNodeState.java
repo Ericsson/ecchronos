@@ -17,6 +17,9 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import java.net.InetAddress;
 import java.util.Objects;
 import java.util.Set;
@@ -29,17 +32,25 @@ import java.util.stream.Collectors;
  */
 public class VirtualNodeState
 {
+    @NotBlank
+    @Min(Long.MIN_VALUE)
     public long startToken;
+    @NotBlank
+    @Max(Long.MAX_VALUE)
     public long endToken;
-    public Set<InetAddress> replicas;
+    @NotBlank
+    public Set<String> replicas;
+    @NotBlank
+    @Min(0)
     public long lastRepairedAtInMs;
+    @NotBlank
     public boolean repaired;
 
     public VirtualNodeState()
     {
     }
 
-    public VirtualNodeState(long startToken, long endToken, Set<InetAddress> replicas, long lastRepairedAtInMs, boolean repaired)
+    public VirtualNodeState(long startToken, long endToken, Set<String> replicas, long lastRepairedAtInMs, boolean repaired)
     {
         this.startToken = startToken;
         this.endToken = endToken;
@@ -52,7 +63,7 @@ public class VirtualNodeState
     {
         long startToken = vnodeRepairState.getTokenRange().start;
         long endToken = vnodeRepairState.getTokenRange().end;
-        Set<InetAddress> replicas = vnodeRepairState.getReplicas().stream().map(Node::getPublicAddress).collect(Collectors.toSet());
+        Set<String> replicas = vnodeRepairState.getReplicas().stream().map(Node::getPublicAddress).map(InetAddress::getHostAddress).collect(Collectors.toSet());
         long lastRepairedAt = vnodeRepairState.lastRepairedAt();
         boolean repaired = lastRepairedAt > repairedAfter;
 

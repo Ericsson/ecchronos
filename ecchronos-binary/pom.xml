@@ -105,6 +105,12 @@
                                 <includedLicense>GPL2 w/ CPE</includedLicense>
                                 <includedLicense>Public Domain, per Creative Commons CC0</includedLicense>
                                 <includedLicense>BSD-2-Clause</includedLicense>
+                                <includedLicense>The MIT License (MIT)</includedLicense>
+                                <includedLicense>The Apache License, Version 2.0</includedLicense>
+                                <includedLicense>MIT</includedLicense>
+                                <includedLicense>EDL 1.0</includedLicense>
+                                <includedLicense>Eclipse Distribution License - v 1.0</includedLicense>
+                                <includedLicense>Apache License, version 2.0</includedLicense>
                             </includedLicenses>
                             <failOnBlacklist>true</failOnBlacklist>
                         </configuration>
