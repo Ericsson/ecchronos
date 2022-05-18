@@ -1,11 +1,63 @@
 openapi: 3.0.1
 info:
-  title: OpenAPI definition
-  version: v0
+  title: ecChronos REST API
+  description: ecChronos REST API can be used to view repair status of tables and
+    run repairs
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+  version: 1.0.0
 servers:
 - url: http://localhost:8080
   description: Generated server url
 paths:
+  /repair-management/v2/repairs:
+    get:
+      tags:
+      - repair-management-rest-impl
+      operationId: getRepairs
+      parameters:
+      - name: keyspace
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: table
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OnDemandRepair'
+    post:
+      tags:
+      - repair-management-rest-impl
+      operationId: triggerRepair
+      parameters:
+      - name: keyspace
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: table
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/OnDemandRepair'
   /repair-management/v1/schedule/keyspaces/{keyspace}/tables/{table}:
     post:
       tags:
@@ -29,6 +81,75 @@ paths:
             '*/*':
               schema:
                 $ref: '#/components/schemas/ScheduledRepairJob'
+      deprecated: true
+  /repair-management/v2/schedules:
+    get:
+      tags:
+      - repair-management-rest-impl
+      operationId: getSchedules
+      parameters:
+      - name: keyspace
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: table
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Schedule'
+  /repair-management/v2/schedules/{id}:
+    get:
+      tags:
+      - repair-management-rest-impl
+      operationId: getSchedules_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: full
+        in: query
+        required: false
+        schema:
+          type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Schedule'
+  /repair-management/v2/repairs/{id}:
+    get:
+      tags:
+      - repair-management-rest-impl
+      operationId: getRepairs_1
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OnDemandRepair'
   /repair-management/v1/status:
     get:
       tags:
@@ -43,6 +164,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ScheduledRepairJob'
+      deprecated: true
   /repair-management/v1/status/keyspaces/{keyspace}:
     get:
       tags:
@@ -63,6 +185,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ScheduledRepairJob'
+      deprecated: true
   /repair-management/v1/status/keyspaces/{keyspace}/tables/{table}:
     get:
       tags:
@@ -88,6 +211,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ScheduledRepairJob'
+      deprecated: true
   /repair-management/v1/status/ids/{id}:
     get:
       tags:
@@ -106,6 +230,7 @@ paths:
             '*/*':
               schema:
                 $ref: '#/components/schemas/CompleteRepairJob'
+      deprecated: true
   /repair-management/v1/config:
     get:
       tags:
@@ -120,6 +245,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TableRepairConfig'
+      deprecated: true
   /repair-management/v1/config/keyspaces/{keyspace}:
     get:
       tags:
@@ -140,6 +266,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TableRepairConfig'
+      deprecated: true
   /repair-management/v1/config/keyspaces/{keyspace}/tables/{table}:
     get:
       tags:
@@ -165,6 +292,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TableRepairConfig'
+      deprecated: true
   /repair-management/v1/config/ids/{id}:
     get:
       tags:
@@ -183,8 +311,33 @@ paths:
             '*/*':
               schema:
                 $ref: '#/components/schemas/TableRepairConfig'
+      deprecated: true
 components:
   schemas:
+    OnDemandRepair:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        keyspace:
+          type: string
+        table:
+          type: string
+        status:
+          type: string
+          enum:
+          - COMPLETED
+          - IN_QUEUE
+          - WARNING
+          - ERROR
+          - BLOCKED
+        repairedRatio:
+          type: number
+          format: double
+        completedAt:
+          type: integer
+          format: int64
     ScheduledRepairJob:
       required:
       - id
@@ -226,6 +379,86 @@ components:
           type: string
           format: uuid
         recurring:
+          type: boolean
+    Schedule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        keyspace:
+          type: string
+        table:
+          type: string
+        status:
+          type: string
+          enum:
+          - COMPLETED
+          - ON_TIME
+          - LATE
+          - OVERDUE
+          - BLOCKED
+        repairedRatio:
+          type: number
+          format: double
+        lastRepairedAtInMs:
+          type: integer
+          format: int64
+        nextRepairInMs:
+          type: integer
+          format: int64
+        config:
+          $ref: '#/components/schemas/ScheduleConfig'
+        virtualNodeStates:
+          type: array
+          items:
+            $ref: '#/components/schemas/VirtualNodeState'
+    ScheduleConfig:
+      type: object
+      properties:
+        intervalInMs:
+          type: integer
+          format: int64
+        unwindRatio:
+          type: number
+          format: double
+        warningTimeInMs:
+          type: integer
+          format: int64
+        errorTimeInMs:
+          type: integer
+          format: int64
+        parallelism:
+          type: string
+          enum:
+          - PARALLEL
+    VirtualNodeState:
+      required:
+      - endToken
+      - lastRepairedAtInMs
+      - repaired
+      - replicas
+      - startToken
+      type: object
+      properties:
+        startToken:
+          minimum: -9223372036854775808
+          type: integer
+          format: int64
+        endToken:
+          maximum: 9223372036854775807
+          type: integer
+          format: int64
+        replicas:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+        lastRepairedAtInMs:
+          minimum: 0
+          type: integer
+          format: int64
+        repaired:
           type: boolean
     CompleteRepairJob:
       required:
@@ -274,34 +507,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VirtualNodeState'
-    VirtualNodeState:
-      required:
-      - endToken
-      - lastRepairedAtInMs
-      - repaired
-      - replicas
-      - startToken
-      type: object
-      properties:
-        startToken:
-          minimum: -9223372036854775808
-          type: integer
-          format: int64
-        endToken:
-          maximum: 9223372036854775807
-          type: integer
-          format: int64
-        replicas:
-          uniqueItems: true
-          type: array
-          items:
-            type: string
-        lastRepairedAtInMs:
-          minimum: 0
-          type: integer
-          format: int64
-        repaired:
-          type: boolean
     TableRepairConfig:
       required:
       - id

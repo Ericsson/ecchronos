@@ -25,6 +25,9 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.info.License;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -49,6 +52,13 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
  * When updating the path it should also be updated in the OSGi component.
  */
 @RestController
+@OpenAPIDefinition(info = @Info(
+        title = "ecChronos REST API",
+        description = "ecChronos REST API can be used to view repair status of tables and run repairs",
+        version = "1.0.0",
+        license = @License(
+                name = "Apache 2.0",
+                url = "https://www.apache.org/licenses/LICENSE-2.0")))
 public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Possible god class, will be much smaller once v1 is removed
 {
     private static final String ROOT = "/repair-management/";

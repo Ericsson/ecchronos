@@ -45,6 +45,7 @@
             <artifactId>metrics-core</artifactId>
         </dependency>
 
+        <!-- OpenAPI annotations -->
         <dependency>
             <groupId>jakarta.validation</groupId>
             <artifactId>jakarta.validation-api</artifactId>
