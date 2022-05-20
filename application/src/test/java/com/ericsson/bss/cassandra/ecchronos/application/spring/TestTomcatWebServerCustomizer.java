@@ -90,6 +90,9 @@ public class TestTomcatWebServerCustomizer
     @MockBean
     private RepairHistoryBean repairHistoryBean;
 
+    @MockBean
+    private CassandraHealthIndicator cassandraHealthIndicator;
+
     @SpyBean
     private TomcatWebServerCustomizer tomcatWebServerCustomizer;
 

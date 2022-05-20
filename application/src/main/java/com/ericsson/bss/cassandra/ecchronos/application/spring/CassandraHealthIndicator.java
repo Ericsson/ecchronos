@@ -39,16 +39,14 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.select;
 public class CassandraHealthIndicator implements HealthIndicator
 {
     private static final Logger LOG = LoggerFactory.getLogger(CassandraHealthIndicator.class);
-    private final Session mySession;
-    private final JmxProxyFactory myJmxProxyFactory;
+    private final NativeConnectionProvider myNativeConnectionProvider;
+    private final JmxConnectionProvider myJmxConnectionProvider;
 
     public CassandraHealthIndicator(NativeConnectionProvider nativeConnectionProvider,
             JmxConnectionProvider jmxConnectionProvider)
     {
-        myJmxProxyFactory = JmxProxyFactoryImpl.builder()
-                .withJmxConnectionProvider(jmxConnectionProvider)
-                .build();
-        mySession = nativeConnectionProvider.getSession();
+        myNativeConnectionProvider = nativeConnectionProvider;
+        myJmxConnectionProvider = jmxConnectionProvider;
     }
 
     @Override
@@ -68,11 +66,14 @@ public class CassandraHealthIndicator implements HealthIndicator
     {
         try
         {
-            JmxProxy jmxProxy = myJmxProxyFactory.connect();
+            JmxProxyFactory jmxProxyFactory = JmxProxyFactoryImpl.builder()
+                    .withJmxConnectionProvider(myJmxConnectionProvider)
+                    .build();
+            JmxProxy jmxProxy = jmxProxyFactory.connect();
             jmxProxy.close();
             return true;
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             LOG.debug("JMX readiness failed", e);
             LOG.error("JMX readiness failed {}", e.getMessage());
@@ -86,7 +87,8 @@ public class CassandraHealthIndicator implements HealthIndicator
         try
         {
             BuiltStatement selectFromLocal = select().from("system", "local");
-            ResultSet result = mySession.execute(selectFromLocal);
+            Session session = myNativeConnectionProvider.getSession();
+            ResultSet result = session.execute(selectFromLocal);
             if (!result.all().isEmpty())
             {
                 return true;
