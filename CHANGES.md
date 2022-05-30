@@ -6,6 +6,7 @@
 * Offset next runtime with repair time taken - Issue #121
 * Remove deprecated scripts (ecc-schedule, ecc-status, ecc-config)
 * Add blocked status - Issue #284
+* Reworked rest interface
 
 ## Version 2.0.6
 

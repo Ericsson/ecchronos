@@ -14,13 +14,11 @@
 #
 
 from __future__ import print_function
+from datetime import datetime
 from ecchronoslib import table_formatter
 
-# Disable duplicate code in deprecated class
-# Class will be removed
-# pylint: skip-file
 
-def print_verbose_repair_job(repair_job, max_lines):
+def print_verbose_repair_job(repair_job, max_lines, full=False):
     if not repair_job.is_valid():
         print('Repair job not found')
         return
@@ -34,19 +32,21 @@ def print_verbose_repair_job(repair_job, max_lines):
     print(verbose_print_format.format("Repaired(%)", repair_job.get_repair_percentage()))
     print(verbose_print_format.format("Completed at", repair_job.get_last_repaired_at()))
     print(verbose_print_format.format("Next repair", repair_job.get_next_repair()))
-    print(verbose_print_format.format("Recurring", repair_job.recurring))
+    print(verbose_print_format.format("Config", repair_job.get_config()))
 
-    vnode_state_table = [["Start token", "End token", "Replicas", "Repaired at", "Repaired"]]
+    if full:
+        vnode_state_table = [["Start token", "End token", "Replicas", "Repaired at", "Repaired"]]
 
-    sorted_vnode_states = sorted(repair_job.vnode_states, key=lambda vnode: vnode.last_repaired_at_in_ms, reverse=True)
+        sorted_vnode_states = sorted(repair_job.vnode_states, key=lambda vnode: vnode.last_repaired_at_in_ms,
+                                     reverse=True)
 
-    if max_lines > -1:
-        sorted_vnode_states = sorted_vnode_states[:max_lines]
+        if max_lines > -1:
+            sorted_vnode_states = sorted_vnode_states[:max_lines]
 
-    for vnode_state in sorted_vnode_states:
-        _add_vnode_state_to_table(vnode_state, vnode_state_table)
+        for vnode_state in sorted_vnode_states:
+            _add_vnode_state_to_table(vnode_state, vnode_state_table)
 
-    table_formatter.format_table(vnode_state_table)
+        table_formatter.format_table(vnode_state_table)
 
 def _add_vnode_state_to_table(vnode_state, table):
     entry = [vnode_state.start_token, vnode_state.end_token, ', '.join(vnode_state.replicas),
@@ -56,6 +56,15 @@ def _add_vnode_state_to_table(vnode_state, table):
 
 def print_summary(repair_jobs):
     status_list = [job.status for job in repair_jobs]
+    summary_format = "Summary: {0} completed, {1} on time, {2} blocked, {3} late, {4} overdue"
+    print(summary_format.format(status_list.count('COMPLETED'),
+                                status_list.count('ON_TIME'),
+                                status_list.count('BLOCKED'),
+                                status_list.count('LATE'),
+                                status_list.count('OVERDUE')))
+
+def print_repair_summary(repair_jobs):
+    status_list = [job.status for job in repair_jobs]
     summary_format = "Summary: {0} completed, {1} in queue, {2} blocked, {3} warning, {4} error"
     print(summary_format.format(status_list.count('COMPLETED'),
                                 status_list.count('IN_QUEUE'),
@@ -63,11 +72,34 @@ def print_summary(repair_jobs):
                                 status_list.count('WARNING'),
                                 status_list.count('ERROR')))
 
-def print_repair_jobs(repair_jobs, max_lines):
-    repair_jobs_table = [["Id", "Keyspace", "Table", "Status", "Repaired(%)",
-                          "Completed at", "Next repair", "Recurring"]]
-    sorted_repair_jobs = sorted(repair_jobs, key=lambda job: job.last_repaired_at_in_ms, reverse=True)
 
+def print_schedules(repair_jobs, max_lines):
+
+    repair_jobs_table = [["Id", "Keyspace", "Table", "Status", "Repaired(%)",
+                          "Completed at", "Next repair"]]
+    print("Snapshot as of", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    print_schedule_table(repair_jobs_table, repair_jobs, max_lines)
+    print_summary(repair_jobs)
+
+def print_repairs(repair_jobs, max_lines):
+    repair_jobs_table = [["Id", "Keyspace", "Table", "Status", "Repaired(%)",
+                          "Completed at"]]
+    print_repair_table(repair_jobs_table, repair_jobs, max_lines)
+    print_repair_summary(repair_jobs)
+
+def print_schedule_table(repair_jobs_table, repair_jobs, max_lines):
+
+    sorted_repair_jobs = sorted(repair_jobs, key=lambda job: job.last_repaired_at_in_ms, reverse=True)
+    if max_lines > -1:
+        sorted_repair_jobs = sorted_repair_jobs[:max_lines]
+
+    for repair_job in sorted_repair_jobs:
+        repair_jobs_table.append(_convert_schedule_job(repair_job))
+    table_formatter.format_table(repair_jobs_table)
+
+def print_repair_table(repair_jobs_table, repair_jobs, max_lines):
+
+    sorted_repair_jobs = sorted(repair_jobs, key=lambda job: job.completed_at, reverse=True)
     if max_lines > -1:
         sorted_repair_jobs = sorted_repair_jobs[:max_lines]
 
@@ -75,36 +107,20 @@ def print_repair_jobs(repair_jobs, max_lines):
         repair_jobs_table.append(_convert_repair_job(repair_job))
     table_formatter.format_table(repair_jobs_table)
 
-    print_summary(repair_jobs)
-
 def print_repair_job(repair_job):
     repair_jobs_table = [["Id", "Keyspace", "Table", "Status", "Repaired(%)",
-                          "Completed at", "Next repair", "Recurring"]]
+                          "Completed at"]]
     repair_jobs_table.append(_convert_repair_job(repair_job))
     table_formatter.format_table(repair_jobs_table)
 
+
 def _convert_repair_job(repair_job):
     entry = [repair_job.job_id, repair_job.keyspace, repair_job.table, repair_job.status,
-             repair_job.get_repair_percentage(), repair_job.get_last_repaired_at(), repair_job.get_next_repair(),
-             repair_job.recurring]
-
+             repair_job.get_repair_percentage(), repair_job.get_completed_at()]
     return entry
 
-def print_table_config(config_data):
-    config_table = [["Id", "Keyspace", "Table", "Interval",
-                     "Parallelism", "Unwind ratio", "Warning time", "Error time"]]
-    if isinstance(config_data, list):
-        sorted_config_data = sorted(config_data, key=lambda config: (config.keyspace, config.table))
-        for config in sorted_config_data:
-            if config.is_valid():
-                config_table.append(_convert_config(config))
-    elif config_data.is_valid():
-        config_table.append(_convert_config(config_data))
-
-    table_formatter.format_table(config_table)
-
-def _convert_config(config):
-    entry = [config.job_id, config.keyspace, config.table, config.get_repair_interval(), config.repair_parallelism,
-             config.repair_unwind_ratio, config.get_repair_warning_time(), config.get_repair_error_time()]
+def _convert_schedule_job(repair_job):
+    entry = [repair_job.job_id, repair_job.keyspace, repair_job.table, repair_job.status,
+             repair_job.get_repair_percentage(), repair_job.get_last_repaired_at(), repair_job.get_next_repair()]
 
     return entry

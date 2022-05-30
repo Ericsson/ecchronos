@@ -19,7 +19,7 @@ try:
 except ImportError:
     from urllib2 import urlopen, Request, HTTPError, URLError
 import json
-from ecchronoslib.types import RepairJob, VerboseRepairJob, TableConfig
+from ecchronoslib.types import RepairJob, VerboseScheduleJob, Repair, Schedule, TableConfig
 
 
 class RequestResult(object):
@@ -107,7 +107,7 @@ class RepairSchedulerRequest(RestRequest):
 
         result = self.request(request_url)
         if result.is_successful():
-            result = result.transform_with_data(new_data=VerboseRepairJob(result.data))
+            result = result.transform_with_data(new_data=VerboseScheduleJob(result.data))
         return result
 
     def list(self, keyspace=None, table=None):
@@ -129,6 +129,83 @@ class RepairSchedulerRequest(RestRequest):
         result = self.request(request_url, 'POST')
         if result.is_successful():
             result = result.transform_with_data(RepairJob(result.data))
+        return result
+
+
+class V2RepairSchedulerRequest(RestRequest):
+    ROOT = 'repair-management/'
+    PROTOCOL = ROOT + 'v2/'
+    REPAIRS = PROTOCOL + 'repairs'
+    SCHEDULES = PROTOCOL + 'schedules'
+
+    v2_schedule_status_url = SCHEDULES
+    v2_schedule_id_status_url = SCHEDULES + '/{0}'
+    v2_schedule_id_full_status_url = SCHEDULES + '/{0}?full=true'
+
+    v2_repair_status_url = REPAIRS
+    v2_repair_id_status_url = REPAIRS + '/{0}'
+
+    v2_repair_trigger_url = REPAIRS + '?keyspace={0}&table={1}'
+
+    def __init__(self, base_url=None):
+        RestRequest.__init__(self, base_url)
+
+    def get_schedule(self, job_id, full=False):
+        if full:
+            request_url = V2RepairSchedulerRequest.v2_schedule_id_full_status_url.format(job_id)
+        else:
+            request_url = V2RepairSchedulerRequest.v2_schedule_id_status_url.format(job_id)
+
+        result = self.request(request_url)
+        if result.is_successful():
+            result = result.transform_with_data(new_data=VerboseScheduleJob(result.data))
+
+        return result
+
+    def get_repair(self, job_id):
+        request_url = V2RepairSchedulerRequest.v2_repair_id_status_url.format(job_id)
+
+        result = self.request(request_url)
+        if result.is_successful():
+            result = result.transform_with_data(new_data=[Repair(x) for x in result.data])
+
+        return result
+
+    def list_schedules(self, keyspace=None, table=None):
+        request_url = V2RepairSchedulerRequest.v2_schedule_status_url
+
+        if keyspace and table:
+            request_url = "{0}?keyspace={1}&table={2}".format(request_url, keyspace, table)
+        elif keyspace:
+            request_url = "{0}?keyspace={1}".format(request_url, keyspace)
+
+        result = self.request(request_url)
+
+        if result.is_successful():
+            result = result.transform_with_data(new_data=[Schedule(x) for x in result.data])
+
+        return result
+
+    def list_repairs(self, keyspace=None, table=None):
+        request_url = V2RepairSchedulerRequest.v2_repair_status_url
+
+        if keyspace and table:
+            request_url = "{0}?keyspace={1}&table={2}".format(request_url, keyspace, table)
+        elif keyspace:
+            request_url = "{0}?keyspace={1}".format(request_url, keyspace)
+
+        result = self.request(request_url)
+
+        if result.is_successful():
+            result = result.transform_with_data(new_data=[Repair(x) for x in result.data])
+
+        return result
+
+    def post(self, keyspace=None, table=None):
+        request_url = V2RepairSchedulerRequest.v2_repair_trigger_url.format(keyspace, table)
+        result = self.request(request_url, 'POST')
+        if result.is_successful():
+            result = result.transform_with_data(Repair(result.data))
         return result
 
 

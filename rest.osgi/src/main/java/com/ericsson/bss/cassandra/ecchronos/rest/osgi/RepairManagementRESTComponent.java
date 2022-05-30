@@ -17,12 +17,18 @@ package com.ericsson.bss.cassandra.ecchronos.rest.osgi;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.CompleteRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.Schedule;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementREST;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementRESTImpl;
-import org.osgi.service.component.annotations.*;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -49,6 +55,36 @@ public class RepairManagementRESTComponent implements RepairManagementREST
     {
         myDelegateRESTImpl = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler,
                 myTableReferenceFactory);
+    }
+
+    @Override
+    public ResponseEntity<List<OnDemandRepair>> getRepairs(String keyspace, String table)
+    {
+        return myDelegateRESTImpl.getRepairs(keyspace, table);
+    }
+
+    @Override
+    public ResponseEntity<List<OnDemandRepair>> getRepairs(String id)
+    {
+        return myDelegateRESTImpl.getRepairs(id);
+    }
+
+    @Override
+    public ResponseEntity<List<Schedule>> getSchedules(String keyspace, String table)
+    {
+        return myDelegateRESTImpl.getSchedules(keyspace, table);
+    }
+
+    @Override
+    public ResponseEntity<Schedule> getSchedules(String id, boolean full)
+    {
+        return myDelegateRESTImpl.getSchedules(id, full);
+    }
+
+    @Override
+    public ResponseEntity<OnDemandRepair> triggerRepair(String keyspace, String table)
+    {
+        return myDelegateRESTImpl.triggerRepair(keyspace, table);
     }
 
     @Override

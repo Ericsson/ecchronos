@@ -27,12 +27,12 @@ from argparse import ArgumentParser
 from io import open
 
 try:
-    from ecchronoslib import rest, table_printer
+    from ecchronoslib import rest, table_printer, table_printer_v2
 except ImportError:
     SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
     LIB_DIR = os.path.join(SCRIPT_DIR, "..", "pylib")
     sys.path.append(LIB_DIR)
-    from ecchronoslib import rest, table_printer
+    from ecchronoslib import rest, table_printer, table_printer_v2
 
 DEFAULT_PID_FILE = "ecc.pid"
 SPRINGBOOT_MAIN_CLASS = "com.ericsson.bss.cassandra.ecchronos.application.spring.SpringBooter"
@@ -41,8 +41,11 @@ def parse_arguments():
     parser = ArgumentParser(description="ecChronos utility command")
     sub_parsers = parser.add_subparsers(dest="subcommand")
     add_repair_status_subcommand(sub_parsers)
+    add_repairs_subcommand(sub_parsers)
+    add_schedules_subcommand(sub_parsers)
     add_repair_config_subcommand(sub_parsers)
     add_trigger_repair_subcommand(sub_parsers)
+    add_run_repair_subcommand(sub_parsers)
     add_start_subcommand(sub_parsers)
     add_stop_subcommand(sub_parsers)
     add_status_subcommand(sub_parsers)
@@ -51,7 +54,7 @@ def parse_arguments():
 
 def add_repair_status_subcommand(sub_parsers):
     parser_repair_status = sub_parsers.add_parser("repair-status",
-                                                  description="Show status of scheduled repairs")
+                                                  description="Show status of all repairs and schedules")
     parser_repair_status.add_argument("-k", "--keyspace", type=str,
                                       help="Print status(es) for a specific keyspace")
     parser_repair_status.add_argument("-t", "--table", type=str,
@@ -64,6 +67,41 @@ def add_repair_status_subcommand(sub_parsers):
     parser_repair_status.add_argument("-l", "--limit", type=int,
                                       help="Limit the number of tables or virtual nodes printed (-1 to disable)",
                                       default=-1)
+    parser_repair_status.set_defaults(func=repair_status)
+
+def add_repairs_subcommand(sub_parsers):
+    parser_repairs = sub_parsers.add_parser("repairs",
+                                            description="Show status of triggered repairs")
+    parser_repairs.add_argument("-k", "--keyspace", type=str,
+                                help="Print status(es) for a specific keyspace")
+    parser_repairs.add_argument("-t", "--table", type=str,
+                                help="Print status(es) for a specific table (Must be specified with keyspace)")
+    parser_repairs.add_argument("-u", "--url", type=str,
+                                help="The host to connect to with the format (http://<host>:port)",
+                                default=None)
+    parser_repairs.add_argument("-i", "--id", type=str,
+                                help="Print verbose status for a specific job")
+    parser_repairs.add_argument("-l", "--limit", type=int,
+                                help="Limit the number of tables or virtual nodes printed (-1 to disable)",
+                                default=-1)
+
+def add_schedules_subcommand(sub_parsers):
+    parser_schedules = sub_parsers.add_parser("schedules",
+                                              description="Show status of schedules")
+    parser_schedules.add_argument("-k", "--keyspace", type=str,
+                                  help="Print status(es) for a specific keyspace")
+    parser_schedules.add_argument("-t", "--table", type=str,
+                                  help="Print status(es) for a specific table (Must be specified with keyspace)")
+    parser_schedules.add_argument("-u", "--url", type=str,
+                                  help="The host to connect to with the format (http://<host>:port)",
+                                  default=None)
+    parser_schedules.add_argument("-i", "--id", type=str,
+                                  help="Print verbose status for a specific job")
+    parser_schedules.add_argument("-f", "--full", action="store_true",
+                                  help="Print all information for a specific job", default=False)
+    parser_schedules.add_argument("-l", "--limit", type=int,
+                                  help="Limit the number of tables or virtual nodes printed (-1 to disable)",
+                                  default=-1)
 
 def add_repair_config_subcommand(sub_parsers):
     parser_repair_config = sub_parsers.add_parser("repair-config",
@@ -81,6 +119,18 @@ def add_repair_config_subcommand(sub_parsers):
 def add_trigger_repair_subcommand(sub_parsers):
     parser_trigger_repair = sub_parsers.add_parser("trigger-repair",
                                                    description="Trigger a single repair")
+    parser_trigger_repair.add_argument("-u", "--url", type=str,
+                                       help="The host to connect to with the format (http://<host>:port)",
+                                       default=None)
+    required_args = parser_trigger_repair.add_argument_group("required arguments")
+    required_args.add_argument("-k", "--keyspace", type=str,
+                               help="Keyspace where the repair should be triggered", required=True)
+    required_args.add_argument("-t", "--table", type=str,
+                               help="Table where the repair should be triggered", required=True)
+
+def add_run_repair_subcommand(sub_parsers):
+    parser_trigger_repair = sub_parsers.add_parser("run-repair",
+                                                   description="Run a single repair on a table")
     parser_trigger_repair.add_argument("-u", "--url", type=str,
                                        help="The host to connect to with the format (http://<host>:port)",
                                        default=None)
@@ -136,6 +186,65 @@ def repair_status(arguments):
         else:
             print(result.format_exception())
 
+
+def schedules(arguments):
+    request = rest.V2RepairSchedulerRequest(base_url=arguments.url)
+    printer = table_printer_v2
+    full = False
+    if arguments.id:
+        if arguments.full:
+            result = request.get_schedule(job_id=arguments.id, full=True)
+            full = True
+        else:
+            result = request.get_schedule(job_id=arguments.id)
+
+        if result.is_successful():
+            printer.print_verbose_repair_job(result.data, arguments.limit, full)
+        else:
+            print(result.format_exception())
+    elif arguments.table:
+        if not arguments.keyspace:
+            print("Must specify keyspace")
+            sys.exit(1)
+        result = request.list_schedules(keyspace=arguments.keyspace, table=arguments.table)
+        if result.is_successful():
+            printer.print_schedules(result.data, arguments.limit)
+        else:
+            print(result.format_exception())
+    else:
+        result = request.list_schedules(keyspace=arguments.keyspace)
+        if result.is_successful():
+            printer.print_schedules(result.data, arguments.limit)
+        else:
+            print(result.format_exception())
+
+
+def repairs(arguments):
+    request = rest.V2RepairSchedulerRequest(base_url=arguments.url)
+    printer = table_printer_v2
+    if arguments.id:
+        result = request.get_repair(job_id=arguments.id)
+        if result.is_successful():
+            printer.print_repairs(result.data, arguments.limit)
+        else:
+            print(result.format_exception())
+    elif arguments.table:
+        if not arguments.keyspace:
+            print("Must specify keyspace")
+            sys.exit(1)
+        result = request.list_repairs(keyspace=arguments.keyspace, table=arguments.table)
+        if result.is_successful():
+            printer.print_repairs(result.data, arguments.limit)
+        else:
+            print(result.format_exception())
+    else:
+        result = request.list_repairs(keyspace=arguments.keyspace)
+        if result.is_successful():
+            printer.print_repairs(result.data, arguments.limit)
+        else:
+            print(result.format_exception())
+
+
 def repair_config(arguments):
     request = rest.RepairConfigRequest(base_url=arguments.url)
 
@@ -149,6 +258,15 @@ def repair_config(arguments):
 
     if result.is_successful():
         table_printer.print_table_config(result.data)
+    else:
+        print(result.format_exception())
+
+def run_repair(arguments):
+    request = rest.V2RepairSchedulerRequest(base_url=arguments.url)
+    printer = table_printer_v2
+    result = request.post(keyspace=arguments.keyspace, table=arguments.table)
+    if result.is_successful():
+        printer.print_repair_job(result.data)
     else:
         print(result.format_exception())
 
@@ -219,6 +337,17 @@ def stop(arguments):
 def status(arguments, print_running=False):
     request = rest.RepairSchedulerRequest(base_url=arguments.url)
     result = request.list()
+    print("Deprecated protocol, use 'repairs', 'schedules' or 'run-repair'")
+    if result.is_successful():
+        if print_running:
+            print("ecChronos is running")
+    else:
+        print("ecChronos is not running")
+        sys.exit(1)
+
+def status_v2(arguments, print_running=False):
+    request = rest.V2RepairSchedulerRequest(base_url=arguments.url)
+    result = request.list_repairs()
     if result.is_successful():
         if print_running:
             print("ecChronos is running")
@@ -230,12 +359,21 @@ def run_subcommand(arguments):
     if arguments.subcommand == "repair-status":
         status(arguments)
         repair_status(arguments)
+    elif arguments.subcommand == "repairs":
+        status_v2(arguments)
+        repairs(arguments)
+    elif arguments.subcommand == "schedules":
+        status_v2(arguments)
+        schedules(arguments)
     elif arguments.subcommand == "repair-config":
         status(arguments)
         repair_config(arguments)
     elif arguments.subcommand == "trigger-repair":
         status(arguments)
         trigger_repair(arguments)
+    elif arguments.subcommand == "run-repair":
+        status_v2(arguments)
+        run_repair(arguments)
     elif arguments.subcommand == "start":
         start(arguments)
     elif arguments.subcommand == "stop":
