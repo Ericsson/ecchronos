@@ -193,7 +193,7 @@ public class OnDemandRepairJob extends ScheduledJob
 
         if (failed)
         {
-            myOnFinishedHook.accept(getId());
+            myOnFinishedHook.accept(id);
             myOngoingJob.failJob();
             LOG.error("Failed On Demand Repair: {}", id);
         }

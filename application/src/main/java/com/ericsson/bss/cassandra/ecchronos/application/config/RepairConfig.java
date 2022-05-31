@@ -27,6 +27,11 @@ public class RepairConfig
     private double unwind_ratio = 0.0d;
     private long size_target = RepairConfiguration.FULL_REPAIR_SIZE;
 
+    public Config.Alarm getAlarm()
+    {
+        return alarm;
+    }
+
     public void setInterval(Config.Interval interval)
     {
         this.interval = interval;
