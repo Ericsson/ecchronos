@@ -23,15 +23,15 @@ import java.util.Objects;
 /**
  * A representation of a table repair configuration.
  *
- * Primarily used to to have a type to convert to JSON.
+ * Primarily used to have a type to convert to JSON.
  */
 public class ScheduleConfig
 {
     public long intervalInMs;
-    public RepairParallelism parallelism;
     public double unwindRatio;
     public long warningTimeInMs;
     public long errorTimeInMs;
+    public RepairParallelism parallelism;
 
     public ScheduleConfig()
     {
@@ -42,10 +42,10 @@ public class ScheduleConfig
         RepairConfiguration config = repairJobView.getRepairConfiguration();
 
         this.intervalInMs = config.getRepairIntervalInMs();
-        this.parallelism = config.getRepairParallelism();
         this.unwindRatio = config.getRepairUnwindRatio();
         this.warningTimeInMs = config.getRepairWarningTimeInMs();
         this.errorTimeInMs = config.getRepairErrorTimeInMs();
+        this.parallelism = config.getRepairParallelism();
     }
 
     @Override
@@ -67,7 +67,6 @@ public class ScheduleConfig
     public int hashCode()
     {
         return Objects
-                .hash(intervalInMs, parallelism, unwindRatio, warningTimeInMs,
-                        errorTimeInMs);
+                .hash(intervalInMs, unwindRatio, warningTimeInMs, errorTimeInMs, parallelism);
     }
 }

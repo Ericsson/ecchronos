@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "List of repair jobs",
-  "description": "A list of repair jobs",
+  "title": "List of schedules",
+  "description": "A list of schedules without virtual node state information",
   "type": "array",
   "items": {
     "type": "object",
@@ -20,9 +20,13 @@
         "type": "number",
         "description": "Ratio of how much of the table that has been repaired"
       },
-      "completedAt": {
+      "lastRepairedAtInMs": {
         "type": "integer",
         "description": "When the table was last repaired in millis since epoch"
+      },
+      "nextRepairInMs": {
+        "type": "integer",
+        "description": "When the table is scheduled for the next repair in millis since epoch"
       }
     },
     "required": [
@@ -30,7 +34,8 @@
       "table",
       "status",
       "repairedRatio",
-      "completedAt"
+      "lastRepairedAtInMs",
+      "nextRepairInMs"
     ]
   }
 }

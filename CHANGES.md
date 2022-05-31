@@ -2,11 +2,11 @@
 
 ## Version 3.0.0
 
+* Reworked rest interface - Issue #257
 * Bump springboot from 2.6.4 to 2.6.6
 * Offset next runtime with repair time taken - Issue #121
 * Remove deprecated scripts (ecc-schedule, ecc-status, ecc-config)
 * Add blocked status - Issue #284
-* Reworked rest interface
 
 ## Version 2.0.6
 

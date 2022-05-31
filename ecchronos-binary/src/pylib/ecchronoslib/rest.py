@@ -19,7 +19,7 @@ try:
 except ImportError:
     from urllib2 import urlopen, Request, HTTPError, URLError
 import json
-from ecchronoslib.types import RepairJob, VerboseScheduleJob, Repair, Schedule, TableConfig
+from ecchronoslib.types import RepairJob, VerboseRepairJob, FullSchedule, Repair, Schedule, TableConfig
 
 
 class RequestResult(object):
@@ -107,7 +107,7 @@ class RepairSchedulerRequest(RestRequest):
 
         result = self.request(request_url)
         if result.is_successful():
-            result = result.transform_with_data(new_data=VerboseScheduleJob(result.data))
+            result = result.transform_with_data(new_data=VerboseRepairJob(result.data))
         return result
 
     def list(self, keyspace=None, table=None):
@@ -158,7 +158,7 @@ class V2RepairSchedulerRequest(RestRequest):
 
         result = self.request(request_url)
         if result.is_successful():
-            result = result.transform_with_data(new_data=VerboseScheduleJob(result.data))
+            result = result.transform_with_data(new_data=FullSchedule(result.data))
 
         return result
 

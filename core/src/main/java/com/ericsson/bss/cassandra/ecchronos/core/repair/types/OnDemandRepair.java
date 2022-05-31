@@ -22,18 +22,18 @@ import java.util.UUID;
 
 
 /**
- * A representation of an on demand repair job.
+ * A representation of an on demand repair.
  *
  * Primarily used to to have a type to convert to JSON.
  */
 public class OnDemandRepair
 {
+    public UUID id;
     public String keyspace;
     public String table;
-    public long completedAt;
-    public double repairedRatio;
     public RepairJobView.Status status;
-    public UUID id;
+    public double repairedRatio;
+    public long completedAt;
 
     public OnDemandRepair()
     {

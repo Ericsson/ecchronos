@@ -83,12 +83,9 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                 List<Schedule> repairJobs = getScheduledRepairJobs(forTable(keyspace, table));
                 return ResponseEntity.ok(repairJobs);
             }
-            else
-            {
-                List<Schedule> repairJobs = getScheduledRepairJobs(
-                        job -> keyspace.equals(job.getTableReference().getKeyspace()));
-                return ResponseEntity.ok(repairJobs);
-            }
+            List<Schedule> repairJobs = getScheduledRepairJobs(
+                    job -> keyspace.equals(job.getTableReference().getKeyspace()));
+            return ResponseEntity.ok(repairJobs);
         }
         else if (table == null)
         {
@@ -134,11 +131,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                 List<OnDemandRepair> repairJobs = getOnDemandJobs(forTable(keyspace, table));
                 return ResponseEntity.ok(repairJobs);
             }
-            else
-            {
-                List<OnDemandRepair> repairJobs = getOnDemandJobs(job -> keyspace.equals(job.getTableReference().getKeyspace()));
-                return ResponseEntity.ok(repairJobs);
-            }
+            List<OnDemandRepair> repairJobs = getOnDemandJobs(job -> keyspace.equals(job.getTableReference().getKeyspace()));
+            return ResponseEntity.ok(repairJobs);
         }
         else if (table == null)
         {
@@ -173,8 +167,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
 
     @Override
     @PostMapping(ENDPOINT_PREFIX_V2 + "/repairs")
-    public ResponseEntity<OnDemandRepair> triggerRepair(@RequestParam() String keyspace,
-                                                        @RequestParam() String table)
+    public ResponseEntity<OnDemandRepair> triggerRepair(@RequestParam String keyspace,
+                                                        @RequestParam String table)
     {
         try
         {

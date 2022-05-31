@@ -102,9 +102,6 @@ repair:
   ## With the defaults where repairs triggers once every 7 days for each table a warning alarm would be raised
   ## if the table has not been properly repaired within one full day.
   ##
-  ## A schedule will be marked as late when the warn time is exceeded and they will be marked as overdue when
-  ## the error time has been exceeded.
-  ##
   alarm:
     ##
     ## If a table has not been repaired for the following duration an warning alarm will be raised.

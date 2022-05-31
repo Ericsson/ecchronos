@@ -213,7 +213,6 @@ public class TestSchedule
         for (int i = 0; i < vnodeRepairStates.length; i++)
         {
             VirtualNodeState vnodeState = VirtualNodeState.convert(vnodeRepairStates[i], repairedAfter);
-
             assertThat(schedule.virtualNodeStates.get(i)).isEqualToComparingFieldByField(vnodeState);
         }
     }

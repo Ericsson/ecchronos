@@ -8,7 +8,7 @@ The following subcommands are available:
 
 | Command                                                             | Description                           |
 |---------------------------------------------------------------------|---------------------------------------|
-| `ecctool repairs`                                                   | Repair status overview           |
+| `ecctool repairs`                                                   | Repair status overview                |
 | `ecctool schedules`                                                 | Status of schedules                   |
 | `ecctool run-repair`                                                | Trigger a single repair               |
 | `ecctool start`                                                     | Start ecChronos service               |

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Demand Repair job",
-  "description": "An on demand repair job",
+  "title": "Demand Repair",
+  "description": "An on demand repair",
   "type": "object",
   "properties": {
     "keyspace": {

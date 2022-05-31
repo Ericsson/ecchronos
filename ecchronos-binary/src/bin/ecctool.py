@@ -80,7 +80,7 @@ def add_repairs_subcommand(sub_parsers):
                                 help="The host to connect to with the format (http://<host>:port)",
                                 default=None)
     parser_repairs.add_argument("-i", "--id", type=str,
-                                help="Print verbose status for a specific job")
+                                help="Print status for a specific repair")
     parser_repairs.add_argument("-l", "--limit", type=int,
                                 help="Limit the number of tables or virtual nodes printed (-1 to disable)",
                                 default=-1)
@@ -96,9 +96,10 @@ def add_schedules_subcommand(sub_parsers):
                                   help="The host to connect to with the format (http://<host>:port)",
                                   default=None)
     parser_schedules.add_argument("-i", "--id", type=str,
-                                  help="Print verbose status for a specific job")
+                                  help="Print status for a specific schedule")
     parser_schedules.add_argument("-f", "--full", action="store_true",
-                                  help="Print all information for a specific job", default=False)
+                                  help="Print all information for a specific job (Can only be used with id)",
+                                  default=False)
     parser_schedules.add_argument("-l", "--limit", type=int,
                                   help="Limit the number of tables or virtual nodes printed (-1 to disable)",
                                   default=-1)
@@ -188,6 +189,7 @@ def repair_status(arguments):
 
 
 def schedules(arguments):
+    #pylint: disable=too-many-branches
     request = rest.V2RepairSchedulerRequest(base_url=arguments.url)
     printer = table_printer_v2
     full = False
@@ -199,9 +201,12 @@ def schedules(arguments):
             result = request.get_schedule(job_id=arguments.id)
 
         if result.is_successful():
-            printer.print_verbose_repair_job(result.data, arguments.limit, full)
+            printer.print_schedule(result.data, arguments.limit, full)
         else:
             print(result.format_exception())
+    elif arguments.full:
+        print("Must specify id with full")
+        sys.exit(1)
     elif arguments.table:
         if not arguments.keyspace:
             print("Must specify keyspace")
@@ -266,7 +271,7 @@ def run_repair(arguments):
     printer = table_printer_v2
     result = request.post(keyspace=arguments.keyspace, table=arguments.table)
     if result.is_successful():
-        printer.print_repair_job(result.data)
+        printer.print_repair(result.data)
     else:
         print(result.format_exception())
 

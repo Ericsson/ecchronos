@@ -25,19 +25,19 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * A representation of a scheduled repair job.
+ * A representation of a schedule.
  *
- * Primarily used to to have a type to convert to JSON.
+ * Primarily used to have a type to convert to JSON.
  */
 public class Schedule
 {
+    public UUID id;
     public String keyspace;
     public String table;
-    public long lastRepairedAtInMs;
-    public double repairedRatio;
     public RepairJobView.ScheduleStatus status;
+    public double repairedRatio;
+    public long lastRepairedAtInMs;
     public long nextRepairInMs;
-    public UUID id;
     public ScheduleConfig config;
     public List<VirtualNodeState> virtualNodeStates;
 
@@ -56,6 +56,7 @@ public class Schedule
         this.lastRepairedAtInMs = lastRepairedAtInMs;
         this.nextRepairInMs = nextRepairInMs;
         this.config = config;
+        this.virtualNodeStates = Collections.emptyList();
     }
 
     public Schedule(RepairJobView repairJobView)

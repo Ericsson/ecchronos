@@ -76,21 +76,16 @@ class RepairJob(object):
         return datetime.datetime.fromtimestamp(self.next_repair_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
 
 class Job(object):
-    # pylint: disable=too-many-instance-attributes
 
     def __init__(self, data):
         self.keyspace = data["keyspace"] if "keyspace" in data else "<UNKNOWN>"
         self.table = data["table"] if "table" in data else "<UNKNOWN>"
         self.repaired_ratio = float(data["repairedRatio"] if "repairedRatio" in data else 0)
         self.status = data["status"] if "status" in data else "<UNKNOWN>"
-        self.next_repair_in_ms = int(data["nextRepairInMs"] if "nextRepairInMs" in data else -1)
-        self.recurring = data["recurring"] if "recurring" in data else "<UNKNOWN>"
         self.job_id = data["id"] if "id" in data else "<UNKNOWN>"
-        self.config = data["config"] if "config" in data else "<UNKNOWN>"
 
     def is_valid(self):
         return self.keyspace != "<UNKNOWN>"
-
 
     def get_repair_percentage(self):
         return "{0:.2f}".format(self.repaired_ratio * 100.0)
@@ -130,9 +125,17 @@ class Schedule(Job):
         return datetime.datetime.fromtimestamp(self.last_repaired_at_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
 
 
-class VerboseScheduleJob(Schedule):
+class FullSchedule(Schedule):
     def __init__(self, data):
         Schedule.__init__(self, data)
+        self.vnode_states = []
+        if "virtualNodeStates" in data:
+            for vnode_data in data["virtualNodeStates"]:
+                self.vnode_states.append(VnodeState(vnode_data))
+
+class VerboseRepairJob(RepairJob):
+    def __init__(self, data):
+        RepairJob.__init__(self, data)
         self.vnode_states = []
         if "virtualNodeStates" in data:
             for vnode_data in data["virtualNodeStates"]:

@@ -39,8 +39,6 @@ def handle_schedule_output(context):
     context.rows = output_data[4:-1]
     context.summary = output_data[-1:]
 
-
-
 @when(u'we list all schedules')
 def step_list_schedules(context):
     run_ecc_schedule_status(context, [])
@@ -74,12 +72,10 @@ def step_show_schedule(context, keyspace, table):
     run_ecc_schedule_status(context, ['--keyspace', keyspace, '--table', table])
     handle_schedule_output(context)
 
-
 @then(u'the output should contain a schedule row for {keyspace}.{table}')
 def step_validate_list_tables_row(context, keyspace, table):
     expected_row = table_row(keyspace, table)
     match_and_remove_row(context.rows, expected_row)
-
 
 @when(u'we fetch schedule {keyspace}.{table} by id')
 def step_show_schedule_with_id(context, keyspace, table):
@@ -94,7 +90,7 @@ def step_show_schedule_with_id(context, keyspace, table):
 
 @when(u'we show schedule {keyspace}.{table} with a limit of {limit}')
 def step_show_schedule_with_limit(context, keyspace, table, limit):
-    run_ecc_schedule_status(context, ['--keyspace', keyspace, '--table', table, '--full'])
+    run_ecc_schedule_status(context, ['--keyspace', keyspace, '--table', table])
 
     job_id = re.search(ID_PATTERN, context.out.decode('ascii')).group(0)
     assert job_id
@@ -126,7 +122,6 @@ def step_validate_list_snapshot_header(context):
 @then(u'the output should contain a valid schedule header')
 def step_validate_list_schedule_header(context):
     validate_header(context.header, TABLE_SCHEDULE_HEADER)
-
 
 @then(u'the expected schedule header should be for {keyspace}.{table}')
 def step_validate_expected_show_table_header(context, keyspace, table):
