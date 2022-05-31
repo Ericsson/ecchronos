@@ -52,8 +52,9 @@ def step_list_configs(context):
     run_ecc_repair_config(context, [])
 
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
-    context.header = output_data[0:3]
-    context.rows = output_data[3:]
+    context.deprecated = output_data[0:1]
+    context.header = output_data[1:4]
+    context.rows = output_data[4:]
 
 
 @when(u'we list config for keyspace {keyspace} and table {table}')
@@ -61,8 +62,9 @@ def step_list_config_for_table(context, keyspace, table):
     run_ecc_repair_config(context, ['--keyspace', keyspace, '--table', table])
 
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
-    context.header = output_data[0:3]
-    context.rows = output_data[3:]
+    context.deprecated = output_data[0:1]
+    context.header = output_data[1:4]
+    context.rows = output_data[4:]
 
 
 @when(u'we list config for keyspace {keyspace}')
@@ -70,8 +72,9 @@ def step_list_configs_for_keyspace(context, keyspace):
     run_ecc_repair_config(context, ['--keyspace', keyspace])
 
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
-    context.header = output_data[0:3]
-    context.rows = output_data[3:]
+    context.deprecated = output_data[0:1]
+    context.header = output_data[1:4]
+    context.rows = output_data[4:]
 
 @when(u'we list a specific config for keyspace {keyspace} and table {table}')
 def step_list_specific_config(context, keyspace, table):
@@ -80,8 +83,9 @@ def step_list_specific_config(context, keyspace, table):
     run_ecc_repair_config(context, ['--id', job_id])
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
 
-    context.header = output_data[0:3]
-    context.rows = output_data[3:]
+    context.deprecated = output_data[0:1]
+    context.header = output_data[1:4]
+    context.rows = output_data[4:]
 
 
 @then(u'the config output should contain a valid header')
