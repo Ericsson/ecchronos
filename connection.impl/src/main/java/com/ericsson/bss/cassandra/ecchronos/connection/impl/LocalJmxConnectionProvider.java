@@ -87,7 +87,7 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
         String host = myLocalhost;
         if (host.contains(":"))
         {
-            // Use square brackets to surround IPv6 addresses to fix
+            // Use square brackets to surround IPv6 addresses
             host = "[" + host + "]";
         }
         JMXServiceURL jmxUrl = new JMXServiceURL(String.format(JMX_FORMAT_URL, host, myPort));
