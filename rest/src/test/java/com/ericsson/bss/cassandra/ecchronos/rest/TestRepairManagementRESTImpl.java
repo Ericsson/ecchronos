@@ -27,6 +27,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TestUtils;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.CompleteRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.Schedule;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
@@ -73,6 +75,306 @@ public class TestRepairManagementRESTImpl
     {
         repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler,
                 myTableReferenceFactory);
+    }
+
+    @Test
+    public void testGetNoRepairs()
+    {
+        when(myOnDemandRepairScheduler.getAllRepairJobs()).thenReturn(new ArrayList<>());
+
+        ResponseEntity<List<OnDemandRepair>> response;
+
+        response = repairManagementREST.getRepairs(null ,null);
+
+        assertThat(response.getBody()).isEmpty();
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+
+        response = repairManagementREST.getRepairs("ks" ,null);
+
+        assertThat(response.getBody()).isEmpty();
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+
+        response = repairManagementREST.getRepairs("ks" ,"tb");
+
+        assertThat(response.getBody()).isEmpty();
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+    }
+
+    @Test
+    public void testGetRepairs()
+    {
+        UUID expectedId = UUID.randomUUID();
+        RepairJobView job1 = new TestUtils.OnDemandRepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb")
+                .withId(expectedId)
+                .withCompletedAt(1234L)
+                .build();
+        RepairJobView job2 = new TestUtils.OnDemandRepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb2")
+                .withId(UUID.randomUUID())
+                .withCompletedAt(2345L)
+                .build();
+        RepairJobView job3 = new TestUtils.OnDemandRepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb2")
+                .withId(UUID.randomUUID())
+                .withCompletedAt(3456L)
+                .build();
+        List<RepairJobView> repairJobViews = Arrays.asList(
+                job1,
+                job2,
+                job3
+        );
+
+        List<OnDemandRepair> expectedResponse = repairJobViews.stream()
+                .map(OnDemandRepair::new)
+                .collect(Collectors.toList());
+
+        when(myOnDemandRepairScheduler.getAllRepairJobs()).thenReturn(repairJobViews);
+
+        ResponseEntity<List<OnDemandRepair>> response;
+
+        response = repairManagementREST.getRepairs(null, null);
+
+        assertThat(response.getBody()).containsAll(expectedResponse);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+
+        response = repairManagementREST.getRepairs("ks", null);
+
+        assertThat(response.getBody()).containsAll(expectedResponse);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        response = repairManagementREST.getRepairs("ks", "tb");
+
+        assertThat(response.getBody()).containsExactly(expectedResponse.get(0));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        response = repairManagementREST.getRepairs("wrong", "tb");
+
+        assertThat(response.getBody()).isEmpty();
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        response = repairManagementREST.getRepairs("ks", "wrong");
+
+        assertThat(response.getBody()).isEmpty();
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        response = repairManagementREST.getRepairs("wrong", "wrong");
+
+        assertThat(response.getBody()).isEmpty();
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    public void testGetRepairWithId()
+    {
+        UUID expectedId = UUID.randomUUID();
+        RepairJobView job1 = new TestUtils.OnDemandRepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb")
+                .withId(expectedId)
+                .withCompletedAt(1234L)
+                .build();
+        RepairJobView job2 = new TestUtils.OnDemandRepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb2")
+                .withId(UUID.randomUUID())
+                .withCompletedAt(2345L)
+                .build();
+        RepairJobView job3 = new TestUtils.OnDemandRepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb2")
+                .withId(UUID.randomUUID())
+                .withCompletedAt(3456L)
+                .build();
+        List<RepairJobView> repairJobViews = Arrays.asList(
+                job1,
+                job2,
+                job3
+        );
+
+        List<OnDemandRepair> expectedResponse = repairJobViews.stream()
+                .map(OnDemandRepair::new)
+                .collect(Collectors.toList());
+
+        when(myOnDemandRepairScheduler.getAllRepairJobs()).thenReturn(repairJobViews);
+        ResponseEntity<List<OnDemandRepair>> response;
+
+        response = repairManagementREST.getRepairs(UUID.randomUUID().toString());
+
+        assertThat(response.getBody()).isNull();
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        response = repairManagementREST.getRepairs(expectedId.toString());
+
+        assertThat(response.getBody()).containsExactly(expectedResponse.get(0));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+
+    @Test
+    public void testGetNoSchedules()
+    {
+        when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(new ArrayList<>());
+
+        ResponseEntity<List<Schedule>> response;
+
+        response = repairManagementREST.getSchedules(null ,null);
+
+        assertThat(response.getBody()).isEmpty();
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+
+        response = repairManagementREST.getSchedules("ks" ,null);
+
+        assertThat(response.getBody()).isEmpty();
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+
+        response = repairManagementREST.getSchedules("ks" ,"tb");
+
+        assertThat(response.getBody()).isEmpty();
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+    }
+
+    @Test
+    public void testGetSchedules()
+    {
+        RepairJobView job1 = new TestUtils.ScheduledRepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb")
+                .withLastRepairedAt(1234L)
+                .withRepairInterval(11)
+                .build();
+        RepairJobView job2 = new TestUtils.ScheduledRepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb2")
+                .withLastRepairedAt(2345L)
+                .withRepairInterval(12)
+                .build();
+        RepairJobView job3 = new TestUtils.ScheduledRepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb2")
+                .withLastRepairedAt(3333L)
+                .withRepairInterval(15)
+                .build();
+        List<RepairJobView> repairJobViews = Arrays.asList(
+                job1,
+                job2,
+                job3
+        );
+
+        List<Schedule> expectedResponse = repairJobViews.stream()
+                .map(Schedule::new)
+                .collect(Collectors.toList());
+
+        when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(repairJobViews);
+
+        ResponseEntity<List<Schedule>> response;
+
+        response = repairManagementREST.getSchedules(null, null);
+
+        assertThat(response.getBody()).isEqualTo(expectedResponse);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+
+        response = repairManagementREST.getSchedules("ks", null);
+
+        assertThat(response.getBody()).containsAll(expectedResponse);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        response = repairManagementREST.getSchedules("ks", "tb");
+
+        assertThat(response.getBody()).containsExactly(expectedResponse.get(0));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        response = repairManagementREST.getSchedules("wrong", "tb");
+
+        assertThat(response.getBody()).isEmpty();
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        response = repairManagementREST.getSchedules("ks", "wrong");
+
+        assertThat(response.getBody()).isEmpty();
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        response = repairManagementREST.getSchedules("wrong", "wrong");
+
+        assertThat(response.getBody()).isEmpty();
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    public void testGetScheduleWithId() throws UnknownHostException
+    {
+        UUID expectedId = UUID.randomUUID();
+        long expectedLastRepairedAt = 234;
+        Node replica = mock(Node.class);
+        when(replica.getPublicAddress()).thenReturn(InetAddress.getLocalHost());
+        VnodeRepairState expectedVnodeRepairState = TestUtils
+                .createVnodeRepairState(2, 3, ImmutableSet.of(replica), expectedLastRepairedAt);
+        RepairJobView job1 = new TestUtils.ScheduledRepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb")
+                .withId(expectedId)
+                .withLastRepairedAt(1234L)
+                .withVnodeRepairStateSet(ImmutableSet.of(expectedVnodeRepairState))
+                .withRepairInterval(11)
+                .build();
+        RepairJobView job2 = new TestUtils.ScheduledRepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb2")
+                .withId(UUID.randomUUID())
+                .withLastRepairedAt(2345L)
+                .withVnodeRepairStateSet(ImmutableSet.of(expectedVnodeRepairState))
+                .withRepairInterval(12)
+                .build();
+        RepairJobView job3 = new TestUtils.ScheduledRepairJobBuilder()
+                .withKeyspace("ks")
+                .withTable("tb2")
+                .withId(UUID.randomUUID())
+                .withLastRepairedAt(2365L)
+                .withVnodeRepairStateSet(ImmutableSet.of(expectedVnodeRepairState))
+                .withRepairInterval(12)
+                .build();
+        List<RepairJobView> repairJobViews = Arrays.asList(
+                job1,
+                job2,
+                job3
+        );
+
+        List<Schedule> expectedResponse = repairJobViews.stream()
+                .map(view -> new Schedule(view, false))
+                .collect(Collectors.toList());
+
+        when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(repairJobViews);
+        ResponseEntity<Schedule> response;
+
+        response = repairManagementREST.getSchedules(UUID.randomUUID().toString(), false);
+
+        assertThat(response.getBody()).isNull();
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        response = repairManagementREST.getSchedules(expectedId.toString(), false);
+
+        assertThat(response.getBody()).isEqualTo(expectedResponse.get(0));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        List<Schedule> expectedResponseFull = repairJobViews.stream()
+                .map(view -> new Schedule(view, true))
+                .collect(Collectors.toList());
+
+        response = repairManagementREST.getSchedules(UUID.randomUUID().toString(), true);
+
+        assertThat(response.getBody()).isNull();
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        response = repairManagementREST.getSchedules(expectedId.toString(), true);
+
+        assertThat(response.getBody()).isEqualTo(expectedResponseFull.get(0));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().virtualNodeStates).isNotEmpty();
     }
 
     @Test

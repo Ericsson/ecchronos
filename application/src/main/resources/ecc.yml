@@ -105,12 +105,14 @@ repair:
   alarm:
     ##
     ## If a table has not been repaired for the following duration an warning alarm will be raised.
+    ## The schedule will be marked as late if the table has not been repaired within this interval.
     ##
     warn:
       time: 8
       unit: days
     ##
     ## If a table has not been repaired for the following duration an error alarm will be raised.
+    ## The schedule will be marked as overdue if the table has not been repaired within this interval.
     ##
     error:
       time: 10
