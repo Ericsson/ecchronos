@@ -68,6 +68,7 @@ public class TestUtils
         private ImmutableSet<Node> replicas = ImmutableSet.of();
         private LongTokenRange longTokenRange = new LongTokenRange(1, 2);
         private Collection<VnodeRepairState> vnodeRepairStateSet;
+        private RepairConfiguration repairConfiguration;
 
         private double progress = 0;
         private RepairJobView.Status status = RepairJobView.Status.IN_QUEUE;
@@ -120,6 +121,13 @@ public class TestUtils
             return this;
         }
 
+        public ScheduledRepairJobBuilder withRepairConfiguration(RepairConfiguration repairConfiguration)
+        {
+            this.repairConfiguration = repairConfiguration;
+            return this;
+        }
+
+
         public RepairJobView build()
         {
             Preconditions.checkNotNull(keyspace, "Keyspace cannot be null");
@@ -137,8 +145,11 @@ public class TestUtils
                 vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Sets.newSet(vnodeRepairState)).build();
             }
 
-            return new ScheduledRepairJobView(id, tableReference(keyspace, table),
-                    generateRepairConfiguration(repairInterval),
+            if (repairConfiguration == null)
+            {
+                this.repairConfiguration = generateRepairConfiguration(repairInterval);
+            }
+            return new ScheduledRepairJobView(id, tableReference(keyspace, table), repairConfiguration,
                     generateRepairStateSnapshot(lastRepairedAt, vnodeRepairStates), status,progress, lastRepairedAt + repairInterval);
         }
     }

@@ -3,6 +3,8 @@
 ## Version 3.0.0
 
 * Make fault reporter pluggable
+* Fix JMX URI validation with new Java versions - Issue #306
+* Reworked rest interface - Issue #257
 * Bump springboot from 2.6.4 to 2.6.6
 * Offset next runtime with repair time taken - Issue #121
 * Remove deprecated scripts (ecc-schedule, ecc-status, ecc-config)
