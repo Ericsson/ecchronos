@@ -15,7 +15,7 @@
 
 from subprocess import Popen, PIPE
 from behave import when, then  # pylint: disable=no-name-in-module
-from ecc_step_library.common_steps import match_and_remove_row, validate_header, validate_last_table_row  # pylint: disable=line-too-long
+from ecc_step_library.common_steps import match_and_remove_row, validate_header  # pylint: disable=line-too-long
 
 
 TABLE_ROW_FORMAT_PATTERN = r'\| .* \| {0} \| {1} \| (COMPLETED|IN_QUEUE|WARNING|ERROR) \| \d+[.]\d+ \| .* \| .* \|'
@@ -37,9 +37,9 @@ def step_schedule_repair(context, keyspace, table):
     run_ecc_trigger_repair(context, ['--keyspace', keyspace, '--table', table])
 
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
-    context.header = output_data[0:3]
-    context.rows = output_data[3:]
-
+    context.deprecated = output_data[0:1]
+    context.header = output_data[1:4]
+    context.rows = output_data[4:]
 
 @then(u'the trigger repair output should contain a valid header')
 def step_validate_list_tables_header(context):
@@ -50,8 +50,3 @@ def step_validate_list_tables_header(context):
 def step_validate_list_tables_row(context, keyspace, table):
     expected_row = table_row(keyspace, table)
     match_and_remove_row(context.rows, expected_row)
-
-
-@then(u'the trigger repair output should not contain more rows')
-def step_validate_list_rows_clear(context):
-    validate_last_table_row(context.rows)

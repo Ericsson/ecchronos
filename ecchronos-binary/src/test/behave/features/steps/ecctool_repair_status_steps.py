@@ -26,6 +26,9 @@ SUMMARY_PATTERN = r'Summary: \d+ completed, \d+ in queue, \d+ blocked, \d+ warni
 
 TABLE_HEADER = r'| Id | Keyspace | Table | Status | Repaired(%) | Completed at | Next repair | Recurring |'
 
+# Disable duplicate code in deprecated class
+# Class will be removed
+# pylint: skip-file
 
 def run_ecc_repair_status(context, params):
     cmd = [context.config.userdata.get("ecctool")] + ["repair-status"] + params
@@ -40,45 +43,34 @@ def table_row(keyspace, table):
 def token_row():
     return "\\| [-]?\\d+ \\| [-]?\\d+ \\| .* \\| .* \\| (True|False) \\|"
 
+def handle_repair_output(context):
+    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
+    context.deprecated = output_data[0:1]
+    context.header = output_data[1:4]
+    context.rows = output_data[4:-1]
+    context.summary = output_data[-1:]
 
 @when(u'we list all tables')
 def step_list_tables(context):
     run_ecc_repair_status(context, [])
-
-    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
-    context.header = output_data[0:3]
-    context.rows = output_data[3:-1]
-    context.summary = output_data[-1:]
-
+    handle_repair_output(context)
 
 @when(u'we list all tables with a limit of {limit}')
 def step_list_tables_with_limit(context, limit):
     run_ecc_repair_status(context, ['--limit', limit])
-
-    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
-    context.header = output_data[0:3]
-    context.rows = output_data[3:-1]
-    context.summary = output_data[-1:]
+    handle_repair_output(context)
 
 
 @when(u'we list all tables for keyspace {keyspace} with a limit of {limit}')
 def step_list_tables_for_keyspace_with_limit(context, keyspace, limit):
     run_ecc_repair_status(context, ['--keyspace', keyspace, '--limit', limit])
-
-    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
-    context.header = output_data[0:3]
-    context.rows = output_data[3:-1]
-    context.summary = output_data[-1:]
+    handle_repair_output(context)
 
 
 @when(u'we list all tables for keyspace {keyspace}')
 def step_list_tables_for_keyspace(context, keyspace):
     run_ecc_repair_status(context, ['--keyspace', keyspace])
-
-    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
-    context.header = output_data[0:3]
-    context.rows = output_data[3:-1]
-    context.summary = output_data[-1:]
+    handle_repair_output(context)
 
 
 @when(u'we show job {keyspace}.{table} with a limit of {limit}')
@@ -89,20 +81,16 @@ def step_show_table_with_limit(context, keyspace, table, limit):
     assert job_id
     run_ecc_repair_status(context, ['--id', job_id, '--limit', limit])
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
-
-    context.table_info = output_data[0:7]
-    context.header = output_data[8:9]
-    context.rows = output_data[11:]
+    context.deprecated = output_data[0:1]
+    context.table_info = output_data[1:8]
+    context.header = output_data[9:10]
+    context.rows = output_data[12:]
 
 
 @when(u'we list jobs for table {keyspace}.{table}')
 def step_show_table(context, keyspace, table):
     run_ecc_repair_status(context, ['--keyspace', keyspace, '--table', table])
-
-    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
-    context.header = output_data[0:3]
-    context.rows = output_data[3:-1]
-    context.summary = output_data[-1:]
+    handle_repair_output(context)
 
 
 @then(u'the output should contain a valid header')
