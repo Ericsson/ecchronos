@@ -36,6 +36,7 @@ repair:
     unit: days
   lock_type: datacenter
   alarm:
+    faultReporter: com.ericsson.bss.cassandra.ecchronos.application.config.TestConfig$TestFaultReporter
     warn:
       time: 2
       unit: days

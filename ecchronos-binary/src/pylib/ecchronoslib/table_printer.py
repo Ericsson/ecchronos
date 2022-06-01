@@ -16,6 +16,9 @@
 from __future__ import print_function
 from ecchronoslib import table_formatter
 
+# Disable duplicate code in deprecated class
+# Class will be removed
+# pylint: skip-file
 
 def print_verbose_repair_job(repair_job, max_lines):
     if not repair_job.is_valid():
