@@ -26,7 +26,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -49,7 +48,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
  * When updating the path it should also be updated in the OSGi component.
  */
 @RestController
-public class RepairManagementRESTImpl implements RepairManagementREST
+public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Possible god class, will be much smaller once v1 is removed
 {
     private static final String ROOT = "/repair-management/";
     private static final String DEPRECATED_PROTOCOL_VERSION = "v1";
@@ -95,7 +94,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
             List<Schedule> repairJobs = getScheduledRepairJobs(job -> true);
             return ResponseEntity.ok(repairJobs);
         }
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        throw new ResponseStatusException(BAD_REQUEST);
     }
 
     @Override
@@ -110,12 +109,12 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         }
         catch (IllegalArgumentException e)
         {
-            return ResponseEntity.badRequest().build();
+            throw new ResponseStatusException(BAD_REQUEST, BAD_REQUEST.getReasonPhrase(), e);
         }
         Optional<RepairJobView> repairJobView = getScheduleView(uuid);
         if (!repairJobView.isPresent())
         {
-            return ResponseEntity.notFound().build();
+            throw new ResponseStatusException(NOT_FOUND);
         }
         return ResponseEntity.ok(new Schedule(repairJobView.get(), full));
 
@@ -142,7 +141,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
             List<OnDemandRepair> repairJobs = getOnDemandJobs(job -> true);
             return ResponseEntity.ok(repairJobs);
         }
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        throw new ResponseStatusException(BAD_REQUEST);
     }
 
     @Override
@@ -156,13 +155,13 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         }
         catch (IllegalArgumentException e)
         {
-            return ResponseEntity.badRequest().build();
+            throw new ResponseStatusException(BAD_REQUEST, BAD_REQUEST.getReasonPhrase(), e);
         }
 
         List<OnDemandRepair> repairJobs = getOnDemandJobs(job -> uuid.equals(job.getId()));
         if (repairJobs.isEmpty())
         {
-            return ResponseEntity.notFound().build();
+            throw new ResponseStatusException(NOT_FOUND);
         }
         return ResponseEntity.ok(repairJobs);
     }
@@ -181,7 +180,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         }
         catch (EcChronosException e)
         {
-            return ResponseEntity.notFound().build();
+            throw new ResponseStatusException(NOT_FOUND, NOT_FOUND.getReasonPhrase(), e);
         }
     }
 
@@ -278,7 +277,6 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         }
         catch (IllegalArgumentException e)
         {
-            //BAD REQUEST makes most sense here (UUID cannot be parsed)
             throw new ResponseStatusException(BAD_REQUEST, BAD_REQUEST.getReasonPhrase(), e);
         }
         Optional<RepairJobView> repairJobView = getCompleteRepairJob(uuid);

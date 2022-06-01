@@ -204,12 +204,18 @@ public class TestRepairManagementRESTImpl
                 .collect(Collectors.toList());
 
         when(myOnDemandRepairScheduler.getAllRepairJobs()).thenReturn(repairJobViews);
-        ResponseEntity<List<OnDemandRepair>> response;
+        ResponseEntity<List<OnDemandRepair>> response = null;
 
-        response = repairManagementREST.getRepairs(UUID.randomUUID().toString());
+        try
+        {
+            response = repairManagementREST.getRepairs(UUID.randomUUID().toString());
+        }
+        catch (ResponseStatusException e)
+        {
+            assertThat(e.getRawStatusCode()).isEqualTo(NOT_FOUND.value());
+        }
 
-        assertThat(response.getBody()).isNull();
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response).isNull();
 
         response = repairManagementREST.getRepairs(expectedId.toString());
 
@@ -352,12 +358,18 @@ public class TestRepairManagementRESTImpl
                 .collect(Collectors.toList());
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(repairJobViews);
-        ResponseEntity<Schedule> response;
+        ResponseEntity<Schedule> response = null;
 
-        response = repairManagementREST.getSchedules(UUID.randomUUID().toString(), false);
+        try
+        {
+            response = repairManagementREST.getSchedules(UUID.randomUUID().toString(), false);
+        }
+        catch(ResponseStatusException e)
+        {
+            assertThat(e.getRawStatusCode()).isEqualTo(NOT_FOUND.value());
+        }
 
-        assertThat(response.getBody()).isNull();
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response).isNull();
 
         response = repairManagementREST.getSchedules(expectedId.toString(), false);
 
@@ -368,10 +380,16 @@ public class TestRepairManagementRESTImpl
                 .map(view -> new Schedule(view, true))
                 .collect(Collectors.toList());
 
-        response = repairManagementREST.getSchedules(UUID.randomUUID().toString(), true);
-
-        assertThat(response.getBody()).isNull();
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        response = null;
+        try
+        {
+            response = repairManagementREST.getSchedules(UUID.randomUUID().toString(), true);
+        }
+        catch(ResponseStatusException e)
+        {
+            assertThat(e.getRawStatusCode()).isEqualTo(NOT_FOUND.value());
+        }
+        assertThat(response).isNull();
 
         response = repairManagementREST.getSchedules(expectedId.toString(), true);
 
