@@ -45,6 +45,8 @@ public interface OnDemandRepairScheduler
      */
     RepairJobView scheduleClusterWideJob(TableReference tableReference) throws EcChronosException;
 
+    List<RepairJobView> getAllClusterWideRepairJobs();
+
     /**
      * @return the list of all repair jobs.
      */

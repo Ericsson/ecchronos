@@ -47,4 +47,10 @@ public class ScheduledRepairJobView extends RepairJobView
     {
         return true;
     }
+
+    @Override
+    public UUID getHostId()
+    {
+        return null;
+    }
 }

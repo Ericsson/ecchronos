@@ -58,15 +58,15 @@ public class RepairManagementRESTComponent implements RepairManagementREST
     }
 
     @Override
-    public ResponseEntity<List<OnDemandRepair>> getRepairs(String keyspace, String table)
+    public ResponseEntity<List<OnDemandRepair>> getRepairs(String keyspace, String table, boolean isLocal)
     {
-        return myDelegateRESTImpl.getRepairs(keyspace, table);
+        return myDelegateRESTImpl.getRepairs(keyspace, table, isLocal);
     }
 
     @Override
-    public ResponseEntity<List<OnDemandRepair>> getRepairs(String id)
+    public ResponseEntity<List<OnDemandRepair>> getRepairs(String id, boolean isLocal)
     {
-        return myDelegateRESTImpl.getRepairs(id);
+        return myDelegateRESTImpl.getRepairs(id, isLocal);
     }
 
     @Override

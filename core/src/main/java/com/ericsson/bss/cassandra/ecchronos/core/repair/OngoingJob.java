@@ -35,6 +35,7 @@ public class OngoingJob
     }
 
     private final UUID myJobId;
+    private final UUID myHostId;
     private final TableReference myTableReference;
     private final Map<LongTokenRange, ImmutableSet<Node>> myTokens;
     private final Set<UDTValue> myRepairedTokens;
@@ -48,6 +49,7 @@ public class OngoingJob
     {
         myOnDemandStatus = builder.onDemandStatus;
         myJobId = builder.jobId == null ? UUID.randomUUID() : builder.jobId;
+        myHostId = builder.hostId;
         myTableReference = builder.tableReference;
         myReplicationState = builder.replicationState;
         myTokens = myReplicationState.getTokenRangeToReplicas(myTableReference);
@@ -65,6 +67,11 @@ public class OngoingJob
     public UUID getJobId()
     {
         return myJobId;
+    }
+
+    public UUID getHostId()
+    {
+        return myHostId;
     }
 
     public Status getStatus()
@@ -154,6 +161,7 @@ public class OngoingJob
     public static class Builder
     {
         private UUID jobId = null;
+        private UUID hostId;
         private TableReference tableReference;
         private Set<UDTValue> repairedTokens = new HashSet<>();
         private OnDemandStatus onDemandStatus;
@@ -190,6 +198,12 @@ public class OngoingJob
         public Builder withReplicationState(ReplicationState replicationState)
         {
             this.replicationState = replicationState;
+            return this;
+        }
+
+        public Builder withHostId(UUID hostId)
+        {
+            this.hostId = hostId;
             return this;
         }
 

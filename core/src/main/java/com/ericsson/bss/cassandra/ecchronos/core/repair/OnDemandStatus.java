@@ -19,7 +19,12 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+import com.datastax.driver.core.Host;
+import com.datastax.driver.core.Metadata;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,16 +125,35 @@ public class OnDemandStatus
 
             if(status.equals(Status.started))
             {
-                createOngoingJob(replicationState, ongoingJobs, row, status);
+                createOngoingJob(replicationState, ongoingJobs, row, status, myHostId);
             }
         }
 
         return ongoingJobs;
     }
 
+    public Set<OngoingJob> getAllClusterWideJobs()
+    {
+        Metadata metadata = mySession.getCluster().getMetadata();
+        NodeResolver nodeResolver = new NodeResolverImpl(metadata);
+        Set<Host> hosts = metadata.getAllHosts();
+        Set<OngoingJob> ongoingJobs = new HashSet<>();
+        for (Host host : hosts)
+        {
+            ReplicationState replState = new ReplicationStateImpl(nodeResolver, metadata, host);
+            ongoingJobs.addAll(getAllJobsForHost(replState, host.getHostId()));
+        }
+        return ongoingJobs;
+    }
+
     public Set<OngoingJob> getAllJobs(ReplicationState replicationState)
     {
-        ResultSet result = mySession.execute(myGetStatusStatement.bind(myHostId));
+        return getAllJobsForHost(replicationState, myHostId);
+    }
+
+    private Set<OngoingJob> getAllJobsForHost(ReplicationState replicationState, UUID hostId)
+    {
+        ResultSet result = mySession.execute(myGetStatusStatement.bind(hostId));
 
         Set<OngoingJob> ongoingJobs = new HashSet<>();
         for(Row row: result.all())
@@ -141,17 +165,17 @@ public class OnDemandStatus
             }
             catch (IllegalArgumentException e)
             {
-                LOG.warn("Ignoring table repair job with id {}, unable to parse status", row.getUUID(JOB_ID_COLUMN_NAME));
+                LOG.warn("Ignoring table repair job with id {} and hostId {}, unable to parse status", row.getUUID(JOB_ID_COLUMN_NAME), hostId);
                 continue;
             }
 
-            createOngoingJob(replicationState, ongoingJobs, row, status);
+            createOngoingJob(replicationState, ongoingJobs, row, status, hostId);
         }
 
         return ongoingJobs;
     }
 
-    private void createOngoingJob(ReplicationState replicationState, Set<OngoingJob> ongoingJobs, Row row, Status status)
+    private void createOngoingJob(ReplicationState replicationState, Set<OngoingJob> ongoingJobs, Row row, Status status, UUID hostId)
     {
         UUID jobId = row.getUUID(JOB_ID_COLUMN_NAME);
         int tokenMapHash = row.getInt(TOKEN_MAP_HASH_COLUMN_NAME);
@@ -169,6 +193,7 @@ public class OnDemandStatus
                     .withTableReference(tableReference)
                     .withReplicationState(replicationState)
                     .withOngoingJobInfo(jobId, tokenMapHash, repairedTokens, status, completedTime)
+                    .withHostId(hostId)
                     .build();
             ongoingJobs.add(ongoingJob);
         }

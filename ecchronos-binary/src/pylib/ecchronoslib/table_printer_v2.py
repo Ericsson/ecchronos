@@ -82,7 +82,7 @@ def print_schedules(schedules, max_lines):
     print_summary(schedules)
 
 def print_repairs(repairs, max_lines):
-    repair_table = [["Id", "Keyspace", "Table", "Status", "Repaired(%)",
+    repair_table = [["Id", "Host Id", "Keyspace", "Table", "Status", "Repaired(%)",
                      "Completed at"]]
     print_repair_table(repair_table, repairs, max_lines)
     print_repair_summary(repairs)
@@ -109,14 +109,14 @@ def print_repair_table(repair_table, repairs, max_lines):
     table_formatter.format_table(repair_table)
 
 def print_repair(repair):
-    repair_table = [["Id", "Keyspace", "Table", "Status", "Repaired(%)",
+    repair_table = [["Id", "Host Id", "Keyspace", "Table", "Status", "Repaired(%)",
                      "Completed at"]]
     repair_table.append(_convert_repair(repair))
     table_formatter.format_table(repair_table)
 
 
 def _convert_repair(repair):
-    entry = [repair.job_id, repair.keyspace, repair.table, repair.status,
+    entry = [repair.job_id, repair.host_id, repair.keyspace, repair.table, repair.status,
              repair.get_repair_percentage(), repair.get_completed_at()]
     return entry
 

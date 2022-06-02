@@ -24,11 +24,12 @@ import java.util.UUID;
 /**
  * A representation of an on demand repair.
  *
- * Primarily used to to have a type to convert to JSON.
+ * Primarily used to have a type to convert to JSON.
  */
 public class OnDemandRepair
 {
     public UUID id;
+    public UUID hostId;
     public String keyspace;
     public String table;
     public RepairJobView.Status status;
@@ -40,9 +41,10 @@ public class OnDemandRepair
     }
 
     @VisibleForTesting
-    public OnDemandRepair(UUID id, String keyspace, String table, RepairJobView.Status status, double repairedRatio, long completedAt)
+    public OnDemandRepair(UUID id, UUID hostId, String keyspace, String table, RepairJobView.Status status, double repairedRatio, long completedAt)
     {
         this.id = id;
+        this.hostId = hostId;
         this.keyspace = keyspace;
         this.table = table;
         this.status = status;
@@ -53,6 +55,7 @@ public class OnDemandRepair
     public OnDemandRepair(RepairJobView repairJobView)
     {
         this.id = repairJobView.getId();
+        this.hostId = repairJobView.getHostId();
         this.keyspace = repairJobView.getTableReference().getKeyspace();
         this.table = repairJobView.getTableReference().getTable();
         this.status = repairJobView.getStatus();
@@ -73,12 +76,13 @@ public class OnDemandRepair
                 table.equals(that.table) &&
                 status == that.status &&
                 id.equals(that.id) &&
+                hostId.equals(that.hostId) &&
                 completedAt == that.completedAt;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(id, keyspace, table, repairedRatio, status, completedAt);
+        return Objects.hash(id, hostId, keyspace, table, repairedRatio, status, completedAt);
     }
 }

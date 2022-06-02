@@ -84,6 +84,8 @@ def add_repairs_subcommand(sub_parsers):
     parser_repairs.add_argument("-l", "--limit", type=int,
                                 help="Limit the number of tables or virtual nodes printed (-1 to disable)",
                                 default=-1)
+    parser_repairs.add_argument("--local", action='store_true',
+                                help='Show only repairs for local node, default is False', default=False)
 
 def add_schedules_subcommand(sub_parsers):
     parser_schedules = sub_parsers.add_parser("schedules",
@@ -230,7 +232,7 @@ def repairs(arguments):
     request = rest.V2RepairSchedulerRequest(base_url=arguments.url)
     printer = table_printer_v2
     if arguments.id:
-        result = request.get_repair(job_id=arguments.id)
+        result = request.get_repair(job_id=arguments.id, local=arguments.local)
         if result.is_successful():
             printer.print_repairs(result.data, arguments.limit)
         else:
@@ -239,13 +241,13 @@ def repairs(arguments):
         if not arguments.keyspace:
             print("Must specify keyspace")
             sys.exit(1)
-        result = request.list_repairs(keyspace=arguments.keyspace, table=arguments.table)
+        result = request.list_repairs(keyspace=arguments.keyspace, table=arguments.table, local=arguments.local)
         if result.is_successful():
             printer.print_repairs(result.data, arguments.limit)
         else:
             print(result.format_exception())
     else:
-        result = request.list_repairs(keyspace=arguments.keyspace)
+        result = request.list_repairs(keyspace=arguments.keyspace, local=arguments.local)
         if result.is_successful():
             printer.print_repairs(result.data, arguments.limit)
         else:

@@ -158,6 +158,15 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     }
 
     @Override
+    public List<RepairJobView> getAllClusterWideRepairJobs()
+    {
+        return myOnDemandStatus.getAllClusterWideJobs().stream()
+                .map(job -> getOngoingRepairJob(job))
+                .map(OnDemandRepairJob::getView)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<RepairJobView> getAllRepairJobs()
     {
         return myOnDemandStatus.getAllJobs(myReplicationState).stream()

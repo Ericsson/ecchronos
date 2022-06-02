@@ -124,21 +124,39 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
     @Override
     @GetMapping(ENDPOINT_PREFIX_V2 + "/repairs")
     public ResponseEntity<List<OnDemandRepair>> getRepairs(@RequestParam(required = false) String keyspace,
-                                                           @RequestParam(required = false) String table)
+                                                           @RequestParam(required = false) String table,
+                                                           @RequestParam(required = false) boolean isLocal)
     {
         if (keyspace != null)
         {
             if (table != null)
             {
-                List<OnDemandRepair> repairJobs = getOnDemandJobs(forTable(keyspace, table));
+                if (isLocal)
+                {
+                    List<OnDemandRepair> repairJobs = getOnDemandJobs(forTable(keyspace, table));
+                    return ResponseEntity.ok(repairJobs);
+                }
+                List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(forTable(keyspace, table));
                 return ResponseEntity.ok(repairJobs);
             }
-            List<OnDemandRepair> repairJobs = getOnDemandJobs(job -> keyspace.equals(job.getTableReference().getKeyspace()));
+            if (isLocal)
+            {
+                List<OnDemandRepair> repairJobs = getOnDemandJobs(
+                        job -> keyspace.equals(job.getTableReference().getKeyspace()));
+                return ResponseEntity.ok(repairJobs);
+            }
+            List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(
+                    job -> keyspace.equals(job.getTableReference().getKeyspace()));
             return ResponseEntity.ok(repairJobs);
         }
         else if (table == null)
         {
-            List<OnDemandRepair> repairJobs = getOnDemandJobs(job -> true);
+            if (isLocal)
+            {
+                List<OnDemandRepair> repairJobs = getOnDemandJobs(job -> true);
+                return ResponseEntity.ok(repairJobs);
+            }
+            List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> true);
             return ResponseEntity.ok(repairJobs);
         }
         throw new ResponseStatusException(BAD_REQUEST);
@@ -146,7 +164,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @GetMapping(ENDPOINT_PREFIX_V2 + "/repairs/{id}")
-    public ResponseEntity<List<OnDemandRepair>> getRepairs(@PathVariable String id)
+    public ResponseEntity<List<OnDemandRepair>> getRepairs(@PathVariable String id,
+                                                           @RequestParam(required = false) boolean isLocal)
     {
         UUID uuid;
         try
@@ -158,7 +177,16 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
             throw new ResponseStatusException(BAD_REQUEST, BAD_REQUEST.getReasonPhrase(), e);
         }
 
-        List<OnDemandRepair> repairJobs = getOnDemandJobs(job -> uuid.equals(job.getId()));
+        if (isLocal)
+        {
+            List<OnDemandRepair> repairJobs = getOnDemandJobs(job -> uuid.equals(job.getId()));
+            if (repairJobs.isEmpty())
+            {
+                throw new ResponseStatusException(NOT_FOUND);
+            }
+            return ResponseEntity.ok(repairJobs);
+        }
+        List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> uuid.equals(job.getId()));
         if (repairJobs.isEmpty())
         {
             throw new ResponseStatusException(NOT_FOUND);
@@ -340,6 +368,14 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
     private List<OnDemandRepair> getOnDemandJobs(Predicate<RepairJobView> filter)
     {
         return myOnDemandRepairScheduler.getAllRepairJobs().stream()
+                .filter(filter)
+                .map(OnDemandRepair::new)
+                .collect(Collectors.toList());
+    }
+
+    private List<OnDemandRepair> getClusterWideOnDemandJobs(Predicate<RepairJobView> filter)
+    {
+        return myOnDemandRepairScheduler.getAllClusterWideRepairJobs().stream()
                 .filter(filter)
                 .map(OnDemandRepair::new)
                 .collect(Collectors.toList());
