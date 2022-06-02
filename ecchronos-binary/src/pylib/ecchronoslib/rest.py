@@ -120,8 +120,6 @@ class RepairSchedulerRequest(RestRequest):
         result = self.request(request_url)
 
         if result.is_successful():
-            print "Get repairs for ks {0}, table {1}. Result:{2}".format(keyspace, table,
-                                                                         json.dumps(result.data))
             result = result.transform_with_data(new_data=[RepairJob(x) for x in result.data])
 
         return result
