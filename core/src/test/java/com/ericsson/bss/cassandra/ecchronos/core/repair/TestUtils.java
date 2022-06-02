@@ -157,6 +157,7 @@ public class TestUtils
     public static class OnDemandRepairJobBuilder
     {
         private UUID id = UUID.randomUUID();
+        private UUID hostId = UUID.randomUUID();
         private String keyspace;
         private String table;
         private long completedAt = 0;
@@ -168,6 +169,12 @@ public class TestUtils
         public OnDemandRepairJobBuilder withId(UUID id)
         {
             this.id = id;
+            return this;
+        }
+
+        public OnDemandRepairJobBuilder withHostId(UUID hostId)
+        {
+            this.hostId = hostId;
             return this;
         }
 
@@ -213,7 +220,7 @@ public class TestUtils
             Preconditions.checkNotNull(table, "Table cannot be null");
             Preconditions.checkArgument(completedAt > 0 || completedAt == -1, "Last repaired not set");
 
-            return new OnDemandRepairJobView(id, tableReference(keyspace, table), repairConfiguration,
+            return new OnDemandRepairJobView(id, hostId, tableReference(keyspace, table), repairConfiguration,
                     status, progress, completedAt);
         }
     }

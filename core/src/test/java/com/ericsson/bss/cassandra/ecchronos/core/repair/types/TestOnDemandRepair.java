@@ -31,10 +31,12 @@ public class TestOnDemandRepair
     public void testCompleted()
     {
         long completedAt = System.currentTimeMillis();
-
         UUID id = UUID.randomUUID();
+        UUID hostId = UUID.randomUUID();
+
         RepairJobView repairJobView = new TestUtils.OnDemandRepairJobBuilder()
                 .withId(id)
+                .withHostId(hostId)
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withCompletedAt(completedAt)
@@ -45,6 +47,7 @@ public class TestOnDemandRepair
         OnDemandRepair onDemandRepair = new OnDemandRepair(repairJobView);
 
         assertThat(onDemandRepair.id).isEqualTo(id);
+        assertThat(onDemandRepair.hostId).isEqualTo(hostId);
         assertThat(onDemandRepair.keyspace).isEqualTo("ks");
         assertThat(onDemandRepair.table).isEqualTo("tb");
         assertThat(onDemandRepair.repairedRatio).isEqualTo(1.0d);
@@ -57,9 +60,11 @@ public class TestOnDemandRepair
     {
         long completedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(11);
         UUID id = UUID.randomUUID();
+        UUID hostId = UUID.randomUUID();
 
         RepairJobView repairJobView = new TestUtils.OnDemandRepairJobBuilder()
                 .withId(id)
+                .withHostId(hostId)
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withCompletedAt(completedAt)
@@ -69,6 +74,7 @@ public class TestOnDemandRepair
         OnDemandRepair onDemandRepair = new OnDemandRepair(repairJobView);
 
         assertThat(onDemandRepair.id).isEqualTo(id);
+        assertThat(onDemandRepair.hostId).isEqualTo(hostId);
         assertThat(onDemandRepair.keyspace).isEqualTo("ks");
         assertThat(onDemandRepair.table).isEqualTo("tb");
         assertThat(onDemandRepair.repairedRatio).isEqualTo(0.5d);
@@ -96,7 +102,7 @@ public class TestOnDemandRepair
     public void testEqualsContract()
     {
         EqualsVerifier.simple().forClass(OnDemandRepair.class).usingGetClass()
-                .withNonnullFields("id", "keyspace", "table")
+                .withNonnullFields("id", "hostId", "keyspace", "table")
                 .verify();
     }
 }
