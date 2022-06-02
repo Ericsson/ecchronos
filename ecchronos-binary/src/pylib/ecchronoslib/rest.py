@@ -204,7 +204,7 @@ class V2RepairSchedulerRequest(RestRequest):
     def post(self, keyspace=None, table=None, local=False):
         request_url = V2RepairSchedulerRequest.v2_repair_trigger_url.format(keyspace, table)
         if local:
-            request_url += "&local=true"
+            request_url += "&isLocal=true"
         result = self.request(request_url, 'POST')
         if result.is_successful():
             result = result.transform_with_data(Repair(result.data))
