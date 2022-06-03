@@ -105,6 +105,11 @@ public class OnDemandStatus
         myUpdateJobToFailedStatement = mySession.prepare(updateJobToFailedStatement).setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
     }
 
+    public UUID getHostId()
+    {
+        return myHostId;
+    }
+
     public Set<OngoingJob> getOngoingJobs(ReplicationState replicationState)
     {
         ResultSet result = mySession.execute(myGetStatusStatement.bind(myHostId));

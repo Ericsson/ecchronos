@@ -214,7 +214,7 @@ class V2RepairSchedulerRequest(RestRequest):
             request_url += "&isLocal=true"
         result = self.request(request_url, 'POST')
         if result.is_successful():
-            result = result.transform_with_data(Repair(result.data))
+            result = result.transform_with_data(new_data=[Repair(x) for x in result.data])
         return result
 
 

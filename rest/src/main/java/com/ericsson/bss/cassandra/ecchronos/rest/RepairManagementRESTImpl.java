@@ -34,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -197,9 +198,9 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @PostMapping(ENDPOINT_PREFIX_V2 + "/repairs")
-    public ResponseEntity<OnDemandRepair> triggerRepair(@RequestParam String keyspace,
-                                                        @RequestParam String table,
-                                                        @RequestParam(required = false) boolean isLocal)
+    public ResponseEntity<List<OnDemandRepair>> triggerRepair(@RequestParam String keyspace,
+                                                              @RequestParam String table,
+                                                              @RequestParam(required = false) boolean isLocal)
     {
         try
         {
@@ -207,11 +208,11 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
             {
                 RepairJobView repairJobView = myOnDemandRepairScheduler.scheduleJob(
                         myTableReferenceFactory.forTable(keyspace, table));
-                return ResponseEntity.ok(new OnDemandRepair(repairJobView));
+                return ResponseEntity.ok(Collections.singletonList(new OnDemandRepair(repairJobView)));
             }
-            RepairJobView repairJobView = myOnDemandRepairScheduler.scheduleClusterWideJob(
+            List<RepairJobView> repairJobView = myOnDemandRepairScheduler.scheduleClusterWideJob(
                     myTableReferenceFactory.forTable(keyspace, table));
-            return ResponseEntity.ok(new OnDemandRepair(repairJobView));
+            return ResponseEntity.ok(repairJobView.stream().map(OnDemandRepair::new).collect(Collectors.toList()));
         }
         catch (EcChronosException e)
         {

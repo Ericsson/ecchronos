@@ -241,11 +241,11 @@ public class TestRepairManagementRESTImpl
                 .withTable("tb")
                 .withCompletedAt(completedAt)
                 .build();
-        OnDemandRepair localExpectedResponse = new OnDemandRepair(localRepairJobView);
+        List<OnDemandRepair> localExpectedResponse = Collections.singletonList(new OnDemandRepair(localRepairJobView));
 
         when(myOnDemandRepairScheduler.scheduleJob(myTableReferenceFactory.forTable("ks", "tb"))).thenReturn(
                 localRepairJobView);
-        ResponseEntity<OnDemandRepair> response = repairManagementREST.triggerRepair("ks", "tb", true);
+        ResponseEntity<List<OnDemandRepair>> response = repairManagementREST.triggerRepair("ks", "tb", true);
 
         assertThat(response.getBody()).isEqualTo(localExpectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -257,10 +257,10 @@ public class TestRepairManagementRESTImpl
                 .withTable("tb")
                 .withCompletedAt(completedAt)
                 .build();
-        OnDemandRepair expectedResponse = new OnDemandRepair(repairJobView);
+        List<OnDemandRepair> expectedResponse = Collections.singletonList(new OnDemandRepair(repairJobView));
 
         when(myOnDemandRepairScheduler.scheduleClusterWideJob(myTableReferenceFactory.forTable("ks", "tb"))).thenReturn(
-                repairJobView);
+                Collections.singletonList(repairJobView));
         response = repairManagementREST.triggerRepair("ks", "tb", false);
 
         assertThat(response.getBody()).isEqualTo(expectedResponse);

@@ -81,7 +81,7 @@ def print_schedules(schedules, max_lines):
     print_schedule_table(schedule_table, schedules, max_lines)
     print_summary(schedules)
 
-def print_repairs(repairs, max_lines):
+def print_repairs(repairs, max_lines=-1):
     repair_table = [["Id", "Host Id", "Keyspace", "Table", "Status", "Repaired(%)",
                      "Completed at"]]
     print_repair_table(repair_table, repairs, max_lines)

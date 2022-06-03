@@ -275,7 +275,7 @@ def run_repair(arguments):
     printer = table_printer_v2
     result = request.post(keyspace=arguments.keyspace, table=arguments.table, local=arguments.local)
     if result.is_successful():
-        printer.print_repair(result.data)
+        printer.print_repairs(result.data)
     else:
         print(result.format_exception())
 

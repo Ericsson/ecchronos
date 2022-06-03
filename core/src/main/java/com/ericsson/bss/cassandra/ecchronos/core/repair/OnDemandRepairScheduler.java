@@ -40,10 +40,10 @@ public interface OnDemandRepairScheduler
      *
      * @param tableReference
      *            The table to schedule a job on.
-     * @return A view of the scheduled job.
+     * @return Views of the scheduled job.
      * @throws EcChronosException Thrown when the keyspace/table doesn't exist.
      */
-    RepairJobView scheduleClusterWideJob(TableReference tableReference) throws EcChronosException;
+    List<RepairJobView> scheduleClusterWideJob(TableReference tableReference) throws EcChronosException;
 
     List<RepairJobView> getAllClusterWideRepairJobs();
 

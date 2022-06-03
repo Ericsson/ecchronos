@@ -104,9 +104,12 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     }
 
     @Override
-    public RepairJobView scheduleClusterWideJob(TableReference tableReference) throws EcChronosException
+    public List<RepairJobView> scheduleClusterWideJob(TableReference tableReference) throws EcChronosException
     {
-        return scheduleJob(tableReference, true);
+        RepairJobView currentJob = scheduleJob(tableReference, true);
+        return getAllClusterWideRepairJobs().stream()
+                .filter(j -> j.getId().equals(currentJob.getId()))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -198,6 +201,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
                 .withOnDemandStatus(myOnDemandStatus)
                 .withTableReference(tableReference)
                 .withReplicationState(myReplicationState)
+                .withHostId(myOnDemandStatus.getHostId())
                 .build();
         if (isClusterWide)
         {
