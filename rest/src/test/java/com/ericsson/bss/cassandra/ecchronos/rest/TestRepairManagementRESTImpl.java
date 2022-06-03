@@ -82,21 +82,26 @@ public class TestRepairManagementRESTImpl
     @Test
     public void testGetNoRepairs()
     {
-        when(myOnDemandRepairScheduler.getAllRepairJobs()).thenReturn(new ArrayList<>());
+        when(myOnDemandRepairScheduler.getAllClusterWideRepairJobs()).thenReturn(new ArrayList<>());
 
         ResponseEntity<List<OnDemandRepair>> response;
 
-        response = repairManagementREST.getRepairs(null ,null, false);
+        response = repairManagementREST.getRepairs(null ,null, null);
 
         assertThat(response.getBody()).isEmpty();
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
 
-        response = repairManagementREST.getRepairs("ks" ,null, false);
+        response = repairManagementREST.getRepairs("ks" ,null, null);
 
         assertThat(response.getBody()).isEmpty();
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
 
-        response = repairManagementREST.getRepairs("ks" ,"tb", false);
+        response = repairManagementREST.getRepairs("ks" ,"tb", null);
+
+        assertThat(response.getBody()).isEmpty();
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+
+        response = repairManagementREST.getRepairs("ks" ,"tb", UUID.randomUUID().toString());
 
         assertThat(response.getBody()).isEmpty();
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
@@ -106,9 +111,11 @@ public class TestRepairManagementRESTImpl
     public void testGetRepairs()
     {
         UUID expectedId = UUID.randomUUID();
+        UUID expectedHostId = UUID.randomUUID();
         RepairJobView job1 = new TestUtils.OnDemandRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
+                .withHostId(expectedHostId)
                 .withId(expectedId)
                 .withCompletedAt(1234L)
                 .build();
@@ -116,12 +123,14 @@ public class TestRepairManagementRESTImpl
                 .withKeyspace("ks")
                 .withTable("tb2")
                 .withId(UUID.randomUUID())
+                .withHostId(expectedHostId)
                 .withCompletedAt(2345L)
                 .build();
         RepairJobView job3 = new TestUtils.OnDemandRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb2")
                 .withId(UUID.randomUUID())
+                .withHostId(expectedHostId)
                 .withCompletedAt(3456L)
                 .build();
         List<RepairJobView> repairJobViews = Arrays.asList(
@@ -135,35 +144,44 @@ public class TestRepairManagementRESTImpl
                 .collect(Collectors.toList());
 
         when(myOnDemandRepairScheduler.getAllClusterWideRepairJobs()).thenReturn(repairJobViews);
-        assertGetRepairs(false, expectedResponse);
 
-        when(myOnDemandRepairScheduler.getAllRepairJobs()).thenReturn(repairJobViews);
-        assertGetRepairs(true, expectedResponse);
-    }
-
-    private void assertGetRepairs(boolean isLocal, List<OnDemandRepair> expectedResponse)
-    {
-        ResponseEntity<List<OnDemandRepair>> response = repairManagementREST.getRepairs(null, null, isLocal);
+        ResponseEntity<List<OnDemandRepair>> response = repairManagementREST.getRepairs(null, null, null);
         assertThat(response.getBody()).containsAll(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        response = repairManagementREST.getRepairs("ks", null, isLocal);
+        response = repairManagementREST.getRepairs(null, null, expectedHostId.toString());
         assertThat(response.getBody()).containsAll(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        response = repairManagementREST.getRepairs("ks", "tb", isLocal);
+        response = repairManagementREST.getRepairs("ks", null, null);
+        assertThat(response.getBody()).containsAll(expectedResponse);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        response = repairManagementREST.getRepairs("ks", null, expectedHostId.toString());
+        assertThat(response.getBody()).containsAll(expectedResponse);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        response = repairManagementREST.getRepairs("ks", "tb", null);
         assertThat(response.getBody()).containsExactly(expectedResponse.get(0));
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        response = repairManagementREST.getRepairs("wrong", "tb", isLocal);
+        response = repairManagementREST.getRepairs("ks", "tb", expectedHostId.toString());
+        assertThat(response.getBody()).containsExactly(expectedResponse.get(0));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        response = repairManagementREST.getRepairs("ks", "tb", UUID.randomUUID().toString());
         assertThat(response.getBody()).isEmpty();
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        response = repairManagementREST.getRepairs("ks", "wrong", isLocal);
+        response = repairManagementREST.getRepairs("wrong", "tb", null);
         assertThat(response.getBody()).isEmpty();
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        response = repairManagementREST.getRepairs("wrong", "wrong", isLocal);
+        response = repairManagementREST.getRepairs("ks", "wrong", null);
+        assertThat(response.getBody()).isEmpty();
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        response = repairManagementREST.getRepairs("wrong", "wrong", null);
         assertThat(response.getBody()).isEmpty();
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
@@ -172,22 +190,26 @@ public class TestRepairManagementRESTImpl
     public void testGetRepairWithId()
     {
         UUID expectedId = UUID.randomUUID();
+        UUID expectedHostId = UUID.randomUUID();
         RepairJobView job1 = new TestUtils.OnDemandRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withId(expectedId)
+                .withHostId(expectedHostId)
                 .withCompletedAt(1234L)
                 .build();
         RepairJobView job2 = new TestUtils.OnDemandRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb2")
                 .withId(UUID.randomUUID())
+                .withHostId(expectedHostId)
                 .withCompletedAt(2345L)
                 .build();
         RepairJobView job3 = new TestUtils.OnDemandRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb2")
                 .withId(UUID.randomUUID())
+                .withHostId(expectedHostId)
                 .withCompletedAt(3456L)
                 .build();
         List<RepairJobView> repairJobViews = Arrays.asList(
@@ -201,29 +223,31 @@ public class TestRepairManagementRESTImpl
                 .collect(Collectors.toList());
 
         when(myOnDemandRepairScheduler.getAllClusterWideRepairJobs()).thenReturn(repairJobViews);
-        assertGetRepairsWithId(false, expectedId, expectedResponse);
-
-        when(myOnDemandRepairScheduler.getAllRepairJobs()).thenReturn(repairJobViews);
-        assertGetRepairsWithId(true, expectedId, expectedResponse);
-    }
-
-    private void assertGetRepairsWithId(boolean isLocal, UUID expectedId, List<OnDemandRepair> expectedResponse)
-    {
         ResponseEntity<List<OnDemandRepair>> response = null;
-
         try
         {
-            response = repairManagementREST.getRepairs(UUID.randomUUID().toString(), isLocal);
+            response = repairManagementREST.getRepairs(UUID.randomUUID().toString(), expectedHostId.toString());
         }
         catch (ResponseStatusException e)
         {
             assertThat(e.getRawStatusCode()).isEqualTo(NOT_FOUND.value());
         }
-
         assertThat(response).isNull();
+        response = repairManagementREST.getRepairs(expectedId.toString(), expectedHostId.toString());
+        assertThat(response.getBody()).containsExactly(expectedResponse.get(0));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        response = repairManagementREST.getRepairs(expectedId.toString(), isLocal);
-
+        response = null;
+        try
+        {
+            response = repairManagementREST.getRepairs(UUID.randomUUID().toString(), null);
+        }
+        catch (ResponseStatusException e)
+        {
+            assertThat(e.getRawStatusCode()).isEqualTo(NOT_FOUND.value());
+        }
+        assertThat(response).isNull();
+        response = repairManagementREST.getRepairs(expectedId.toString(), null);
         assertThat(response.getBody()).containsExactly(expectedResponse.get(0));
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }

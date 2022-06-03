@@ -35,18 +35,18 @@ public interface RepairManagementREST
      *
      * @param keyspace The keyspace of the table (optional)
      * @param table The table to get status of (optional)
-     * @param isLocal If only local repairs should be returned (optional)
+     * @param hostId The hostId of the on demand repair (optional)
      * @return A list of JSON representations of {@link OnDemandRepair}
      */
-    ResponseEntity<List<OnDemandRepair>> getRepairs(String keyspace, String table, boolean isLocal);
+    ResponseEntity<List<OnDemandRepair>> getRepairs(String keyspace, String table, String hostId);
     /**
      * Get a list of on demand repairs associate with a specific id.
      *
      * @param id The id of the on demand repair
-     * @param isLocal If only local repairs should be returned (optional)
+     * @param hostId The hostId of the on demand repair (optional)
      * @return A list of JSON representations of {@link OnDemandRepair}
      */
-    ResponseEntity<List<OnDemandRepair>> getRepairs(String id, boolean isLocal);
+    ResponseEntity<List<OnDemandRepair>> getRepairs(String id, String hostId);
 
     /**
      * Get a list of schedules. Will fetch all if no keyspace or table is specified.

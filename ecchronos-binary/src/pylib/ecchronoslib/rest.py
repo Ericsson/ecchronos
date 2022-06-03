@@ -162,10 +162,10 @@ class V2RepairSchedulerRequest(RestRequest):
 
         return result
 
-    def get_repair(self, job_id, local=False):
+    def get_repair(self, job_id, host_id=None):
         request_url = V2RepairSchedulerRequest.v2_repair_id_status_url.format(job_id)
-        if local:
-            request_url += "?isLocal=true"
+        if host_id:
+            request_url += "?hostId={0}".format(host_id)
         result = self.request(request_url)
         if result.is_successful():
             result = result.transform_with_data(new_data=[Repair(x) for x in result.data])
@@ -187,19 +187,19 @@ class V2RepairSchedulerRequest(RestRequest):
 
         return result
 
-    def list_repairs(self, keyspace=None, table=None, local=False):
+    def list_repairs(self, keyspace=None, table=None, host_id=None):
         request_url = V2RepairSchedulerRequest.v2_repair_status_url
         if keyspace and table:
             request_url = "{0}?keyspace={1}&table={2}".format(request_url, keyspace, table)
-            if local:
-                request_url += "&isLocal=true"
+            if host_id:
+                request_url += "&hostId={0}".format(host_id)
         elif keyspace:
             request_url = "{0}?keyspace={1}".format(request_url, keyspace)
-            if local:
-                request_url += "&isLocal=true"
+            if host_id:
+                request_url += "&hostId={0}".format(host_id)
         else:
-            if local:
-                request_url += "?isLocal=true"
+            if host_id:
+                request_url += "?hostId={0}".format(host_id)
 
         result = self.request(request_url)
 

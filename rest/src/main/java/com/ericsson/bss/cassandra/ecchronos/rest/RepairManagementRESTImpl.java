@@ -126,38 +126,44 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
     @GetMapping(ENDPOINT_PREFIX_V2 + "/repairs")
     public ResponseEntity<List<OnDemandRepair>> getRepairs(@RequestParam(required = false) String keyspace,
                                                            @RequestParam(required = false) String table,
-                                                           @RequestParam(required = false) boolean isLocal)
+                                                           @RequestParam(required = false) String hostId)
     {
         if (keyspace != null)
         {
             if (table != null)
             {
-                if (isLocal)
+                if (hostId == null)
                 {
-                    List<OnDemandRepair> repairJobs = getOnDemandJobs(forTable(keyspace, table));
+                    List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(forTable(keyspace, table));
                     return ResponseEntity.ok(repairJobs);
                 }
-                List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(forTable(keyspace, table));
+                UUID host = parseIdOrThrow(hostId);
+                List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> keyspace.equals(job.getTableReference().getKeyspace()) &&
+                                                                                    table.equals(job.getTableReference().getTable()) &&
+                                                                                    host.equals(job.getHostId()));
                 return ResponseEntity.ok(repairJobs);
             }
-            if (isLocal)
+            if (hostId == null)
             {
-                List<OnDemandRepair> repairJobs = getOnDemandJobs(
+                List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(
                         job -> keyspace.equals(job.getTableReference().getKeyspace()));
                 return ResponseEntity.ok(repairJobs);
             }
+            UUID host = parseIdOrThrow(hostId);
             List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(
-                    job -> keyspace.equals(job.getTableReference().getKeyspace()));
+                    job -> keyspace.equals(job.getTableReference().getKeyspace()) &&
+                           host.equals(job.getHostId()));
             return ResponseEntity.ok(repairJobs);
         }
         else if (table == null)
         {
-            if (isLocal)
+            if (hostId == null)
             {
-                List<OnDemandRepair> repairJobs = getOnDemandJobs(job -> true);
+                List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> true);
                 return ResponseEntity.ok(repairJobs);
             }
-            List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> true);
+            UUID host = parseIdOrThrow(hostId);
+            List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> host.equals(job.getHostId()));
             return ResponseEntity.ok(repairJobs);
         }
         throw new ResponseStatusException(BAD_REQUEST);
@@ -166,33 +172,38 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
     @Override
     @GetMapping(ENDPOINT_PREFIX_V2 + "/repairs/{id}")
     public ResponseEntity<List<OnDemandRepair>> getRepairs(@PathVariable String id,
-                                                           @RequestParam(required = false) boolean isLocal)
+                                                           @RequestParam(required = false) String hostId)
     {
-        UUID uuid;
-        try
+        UUID uuid = parseIdOrThrow(id);
+        if (hostId == null)
         {
-            uuid = UUID.fromString(id);
-        }
-        catch (IllegalArgumentException e)
-        {
-            throw new ResponseStatusException(BAD_REQUEST, BAD_REQUEST.getReasonPhrase(), e);
-        }
-
-        if (isLocal)
-        {
-            List<OnDemandRepair> repairJobs = getOnDemandJobs(job -> uuid.equals(job.getId()));
+            List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> uuid.equals(job.getId()));
             if (repairJobs.isEmpty())
             {
                 throw new ResponseStatusException(NOT_FOUND);
             }
             return ResponseEntity.ok(repairJobs);
         }
-        List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> uuid.equals(job.getId()));
+        UUID host = parseIdOrThrow(hostId);
+        List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> uuid.equals(job.getId()) && host.equals(job.getHostId()));
         if (repairJobs.isEmpty())
         {
             throw new ResponseStatusException(NOT_FOUND);
         }
         return ResponseEntity.ok(repairJobs);
+    }
+
+    private UUID parseIdOrThrow(String id)
+    {
+        try
+        {
+            UUID uuid = UUID.fromString(id);
+            return uuid;
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new ResponseStatusException(BAD_REQUEST, BAD_REQUEST.getReasonPhrase(), e);
+        }
     }
 
 
@@ -366,14 +377,6 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
                 .filter(job -> job.getId().equals(id)).findFirst();
     }
 
-    private List<OnDemandRepair> getOnDemandJobs(Predicate<RepairJobView> filter)
-    {
-        return myOnDemandRepairScheduler.getAllRepairJobs().stream()
-                .filter(filter)
-                .map(OnDemandRepair::new)
-                .collect(Collectors.toList());
-    }
-
     private List<OnDemandRepair> getClusterWideOnDemandJobs(Predicate<RepairJobView> filter)
     {
         return myOnDemandRepairScheduler.getAllClusterWideRepairJobs().stream()
@@ -381,7 +384,6 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
                 .map(OnDemandRepair::new)
                 .collect(Collectors.toList());
     }
-
 
     private Optional<RepairJobView> getScheduleView(UUID id)
     {
