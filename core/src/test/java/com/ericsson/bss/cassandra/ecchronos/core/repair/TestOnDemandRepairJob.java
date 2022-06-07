@@ -105,6 +105,7 @@ public class TestOnDemandRepairJob
         assertThat(repairJob.getView().getRepairStateSnapshot()).isNull();
         assertThat(repairJob.getView().getTableReference()).isEqualTo(expectedView.getTableReference());
         assertThat(repairJob.getView().getStatus()).isEqualTo(expectedView.getStatus());
+        assertThat(repairJob.getView().getHostId()).isEqualTo(expectedView.getHostId());
     }
 
     @Test
@@ -121,6 +122,7 @@ public class TestOnDemandRepairJob
         assertThat(repairJob.getView().getRepairStateSnapshot()).isNull();
         assertThat(repairJob.getView().getTableReference()).isEqualTo(expectedView.getTableReference());
         assertThat(repairJob.getView().getStatus()).isEqualTo(expectedView.getStatus());
+        assertThat(repairJob.getView().getHostId()).isEqualTo(expectedView.getHostId());
     }
 
     @Test
