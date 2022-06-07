@@ -30,6 +30,7 @@ echo "Installing behave"
 pip install behave
 pip install requests
 pip install jsonschema
+pip install cassandra-driver
 
 BASE_DIR="$TEST_DIR"/ecchronos-binary-${project.version}
 CONF_DIR="$BASE_DIR"/conf
@@ -124,7 +125,7 @@ echo "Starting behave"
 
 cd "$TEST_DIR"
 
-behave --define ecctool="$BASE_DIR"/bin/ecctool
+behave --define ecctool="$BASE_DIR"/bin/ecctool --define cassandra_address="$CASSANDRA_IP" --define cql_user="eccuser" --define cql_password="eccpassword"
 RETURN=$?
 
 if [ -f $PIDFILE ]; then
