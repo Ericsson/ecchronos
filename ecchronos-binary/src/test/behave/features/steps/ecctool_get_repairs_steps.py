@@ -22,8 +22,8 @@ from ecc_step_library.common_steps import match_and_remove_row, validate_header
 ID_PATTERN = r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
 SUMMARY_PATTERN = r'Summary: \d+ completed, \d+ in queue, \d+ blocked, \d+ warning, \d+ error'
 
-TABLE_REPAIR_HEADER = r'| Id | Keyspace | Table | Status | Repaired(%) | Completed at |'
-TABLE_REPAIR_ROW_FORMAT_PATTERN = r'\| .* \| {0} \| {1} \| (COMPLETED|IN_QUEUE|WARNING|ERROR) \| \d+[.]\d+ \|'
+TABLE_REPAIR_HEADER = r'| Id | Host Id | Keyspace | Table | Status | Repaired(%) | Completed at |'
+TABLE_REPAIR_ROW_FORMAT_PATTERN = r'\| .* \| .* \| {0} \| {1} \| (COMPLETED|IN_QUEUE|WARNING|ERROR) \| \d+[.]\d+ \|'
 
 
 
