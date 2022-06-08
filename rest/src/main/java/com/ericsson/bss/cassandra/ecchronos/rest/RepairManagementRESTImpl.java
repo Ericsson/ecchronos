@@ -29,6 +29,7 @@ import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.info.License;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -85,7 +86,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
     }
 
     @Override
-    @GetMapping(ENDPOINT_PREFIX_V2 + "/schedules")
+    @GetMapping(value = ENDPOINT_PREFIX_V2 + "/schedules",
+                produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<Schedule>> getSchedules(@RequestParam(required = false) String keyspace,
                                                        @RequestParam(required = false) String table)
     {
@@ -109,7 +111,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
     }
 
     @Override
-    @GetMapping(ENDPOINT_PREFIX_V2 + "/schedules/{id}")
+    @GetMapping(value = ENDPOINT_PREFIX_V2 + "/schedules/{id}",
+                produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Schedule> getSchedules(@PathVariable String id, @RequestParam(required = false) boolean full)
     {
 
@@ -133,7 +136,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
 
     @Override
-    @GetMapping(ENDPOINT_PREFIX_V2 + "/repairs")
+    @GetMapping(value = ENDPOINT_PREFIX_V2 + "/repairs",
+                produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<OnDemandRepair>> getRepairs(@RequestParam(required = false) String keyspace,
                                                            @RequestParam(required = false) String table,
                                                            @RequestParam(required = false) String hostId)
@@ -180,7 +184,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
     }
 
     @Override
-    @GetMapping(ENDPOINT_PREFIX_V2 + "/repairs/{id}")
+    @GetMapping(value = ENDPOINT_PREFIX_V2 + "/repairs/{id}",
+                produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<OnDemandRepair>> getRepairs(@PathVariable String id,
                                                            @RequestParam(required = false) String hostId)
     {
@@ -218,7 +223,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
 
     @Override
-    @PostMapping(ENDPOINT_PREFIX_V2 + "/repairs")
+    @PostMapping(value = ENDPOINT_PREFIX_V2 + "/repairs",
+                 produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<OnDemandRepair>> triggerRepair(@RequestParam String keyspace,
                                                               @RequestParam String table,
                                                               @RequestParam(required = false) boolean isLocal)
@@ -243,7 +249,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @Deprecated
-    @GetMapping(ENDPOINT_PREFIX + "/status")
+    @GetMapping(value = ENDPOINT_PREFIX + "/status",
+                produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<ScheduledRepairJob>> status()
     {
         List<ScheduledRepairJob> repairJobs = getAllRepairJobs(job -> true);
@@ -252,7 +259,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @Deprecated
-    @GetMapping(ENDPOINT_PREFIX + "/status/keyspaces/{keyspace}")
+    @GetMapping(value = ENDPOINT_PREFIX + "/status/keyspaces/{keyspace}",
+                produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<ScheduledRepairJob>> keyspaceStatus(@PathVariable String keyspace)
     {
         List<ScheduledRepairJob> repairJobs = getAllRepairJobs(
@@ -262,7 +270,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @Deprecated
-    @GetMapping(ENDPOINT_PREFIX + "/status/keyspaces/{keyspace}/tables/{table}")
+    @GetMapping(value = ENDPOINT_PREFIX + "/status/keyspaces/{keyspace}/tables/{table}",
+                produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<ScheduledRepairJob>> tableStatus(@PathVariable String keyspace,
             @PathVariable String table)
     {
@@ -272,7 +281,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @Deprecated
-    @GetMapping(ENDPOINT_PREFIX + "/status/ids/{id}")
+    @GetMapping(value = ENDPOINT_PREFIX + "/status/ids/{id}",
+                produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CompleteRepairJob> jobStatus(@PathVariable String id)
     {
         UUID uuid;
@@ -295,7 +305,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @Deprecated
-    @GetMapping(ENDPOINT_PREFIX + "/config")
+    @GetMapping(value = ENDPOINT_PREFIX + "/config",
+                produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<TableRepairConfig>> config()
     {
         List<TableRepairConfig> configurations = getTableRepairConfigs(job -> true);
@@ -304,7 +315,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @Deprecated
-    @GetMapping(ENDPOINT_PREFIX + "/config/keyspaces/{keyspace}")
+    @GetMapping(value = ENDPOINT_PREFIX + "/config/keyspaces/{keyspace}",
+                produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<TableRepairConfig>> keyspaceConfig(@PathVariable String keyspace)
     {
         List<TableRepairConfig> configurations = getTableRepairConfigs(
@@ -314,7 +326,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @Deprecated
-    @GetMapping(ENDPOINT_PREFIX + "/config/keyspaces/{keyspace}/tables/{table}")
+    @GetMapping(value = ENDPOINT_PREFIX + "/config/keyspaces/{keyspace}/tables/{table}",
+                produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<TableRepairConfig>> tableConfig(@PathVariable String keyspace,
             @PathVariable String table)
     {
@@ -324,7 +337,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @Deprecated
-    @GetMapping(ENDPOINT_PREFIX + "/config/ids/{id}")
+    @GetMapping(value = ENDPOINT_PREFIX + "/config/ids/{id}",
+                produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<TableRepairConfig> jobConfig(@PathVariable String id)
     {
         UUID uuid;
@@ -346,7 +360,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @Deprecated
-    @PostMapping(ENDPOINT_PREFIX + "/schedule/keyspaces/{keyspace}/tables/{table}")
+    @PostMapping(value = ENDPOINT_PREFIX + "/schedule/keyspaces/{keyspace}/tables/{table}",
+                 produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ScheduledRepairJob> scheduleJob(@PathVariable String keyspace, @PathVariable String table)
     {
         try
