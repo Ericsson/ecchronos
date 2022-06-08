@@ -10,12 +10,14 @@ info:
 servers:
 - url: http://localhost:8080
   description: Generated server url
+tags:
+- name: repair-management
 paths:
   /repair-management/v2/repairs:
     get:
       tags:
-      - repair-management-rest-impl
-      operationId: getRepairs
+      - repair-management
+      operationId: get-repairs
       parameters:
       - name: keyspace
         in: query
@@ -38,8 +40,8 @@ paths:
                   $ref: '#/components/schemas/OnDemandRepair'
     post:
       tags:
-      - repair-management-rest-impl
-      operationId: triggerRepair
+      - repair-management
+      operationId: trigger-repair
       parameters:
       - name: keyspace
         in: query
@@ -61,8 +63,8 @@ paths:
   /repair-management/v1/schedule/keyspaces/{keyspace}/tables/{table}:
     post:
       tags:
-      - repair-management-rest-impl
-      operationId: scheduleJob
+      - repair-management
+      operationId: schedule-job
       parameters:
       - name: keyspace
         in: path
@@ -85,8 +87,8 @@ paths:
   /repair-management/v2/schedules:
     get:
       tags:
-      - repair-management-rest-impl
-      operationId: getSchedules
+      - repair-management
+      operationId: get-schedules
       parameters:
       - name: keyspace
         in: query
@@ -110,8 +112,8 @@ paths:
   /repair-management/v2/schedules/{id}:
     get:
       tags:
-      - repair-management-rest-impl
-      operationId: getSchedules_1
+      - repair-management
+      operationId: get-schedules-by-id
       parameters:
       - name: id
         in: path
@@ -133,8 +135,8 @@ paths:
   /repair-management/v2/repairs/{id}:
     get:
       tags:
-      - repair-management-rest-impl
-      operationId: getRepairs_1
+      - repair-management
+      operationId: get-repairs-by-id
       parameters:
       - name: id
         in: path
@@ -153,7 +155,7 @@ paths:
   /repair-management/v1/status:
     get:
       tags:
-      - repair-management-rest-impl
+      - repair-management
       operationId: status
       responses:
         "200":
@@ -168,8 +170,8 @@ paths:
   /repair-management/v1/status/keyspaces/{keyspace}:
     get:
       tags:
-      - repair-management-rest-impl
-      operationId: keyspaceStatus
+      - repair-management
+      operationId: keyspace-status
       parameters:
       - name: keyspace
         in: path
@@ -189,8 +191,8 @@ paths:
   /repair-management/v1/status/keyspaces/{keyspace}/tables/{table}:
     get:
       tags:
-      - repair-management-rest-impl
-      operationId: tableStatus
+      - repair-management
+      operationId: table-status
       parameters:
       - name: keyspace
         in: path
@@ -215,8 +217,8 @@ paths:
   /repair-management/v1/status/ids/{id}:
     get:
       tags:
-      - repair-management-rest-impl
-      operationId: jobStatus
+      - repair-management
+      operationId: job-status
       parameters:
       - name: id
         in: path
@@ -234,7 +236,7 @@ paths:
   /repair-management/v1/config:
     get:
       tags:
-      - repair-management-rest-impl
+      - repair-management
       operationId: config
       responses:
         "200":
@@ -249,8 +251,8 @@ paths:
   /repair-management/v1/config/keyspaces/{keyspace}:
     get:
       tags:
-      - repair-management-rest-impl
-      operationId: keyspaceConfig
+      - repair-management
+      operationId: keyspace-config
       parameters:
       - name: keyspace
         in: path
@@ -270,8 +272,8 @@ paths:
   /repair-management/v1/config/keyspaces/{keyspace}/tables/{table}:
     get:
       tags:
-      - repair-management-rest-impl
-      operationId: tableConfig
+      - repair-management
+      operationId: table-config
       parameters:
       - name: keyspace
         in: path
@@ -296,8 +298,8 @@ paths:
   /repair-management/v1/config/ids/{id}:
     get:
       tags:
-      - repair-management-rest-impl
-      operationId: jobConfig
+      - repair-management
+      operationId: job-config
       parameters:
       - name: id
         in: path
