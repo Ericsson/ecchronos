@@ -78,7 +78,7 @@ def step_show_repair(context, keyspace, table):
 @when(u'we list repairs for hostid and table {keyspace}.{table}')
 def step_show_repair_with_nodeid(context, keyspace, table):
     run_ecc_repair_status(context, ['--keyspace', keyspace, '--table', table,
-                                    '--hostid', '{0}'.format(context.host_id)])
+                                    '--hostid', '{0}'.format(context.environment.host_id)])
     handle_repair_output(context)
 
 @then(u'the output should contain a valid repair header')

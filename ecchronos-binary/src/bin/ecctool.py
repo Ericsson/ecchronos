@@ -85,7 +85,7 @@ def add_repairs_subcommand(sub_parsers):
                                 help="Limit the number of tables or virtual nodes printed (-1 to disable)",
                                 default=-1)
     parser_repairs.add_argument("--hostid", type=str,
-                                help='Show repairs for the speficied host id')
+                                help='Show repairs for the specified host id')
 
 def add_schedules_subcommand(sub_parsers):
     parser_schedules = sub_parsers.add_parser("schedules",
@@ -138,7 +138,7 @@ def add_run_repair_subcommand(sub_parsers):
                                        help="The host to connect to with the format (http://<host>:port)",
                                        default=None)
     parser_trigger_repair.add_argument("--local", action='store_true',
-                                       help='repair will run for the local node, default is False', default=False)
+                                       help='repair will run for the local node, disabled by default', default=False)
     required_args = parser_trigger_repair.add_argument_group("required arguments")
     required_args.add_argument("-k", "--keyspace", type=str,
                                help="Keyspace where the repair should be triggered", required=True)

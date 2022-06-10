@@ -18,6 +18,16 @@ from cassandra.cluster import Cluster  # pylint: disable=no-name-in-module
 from cassandra.auth import PlainTextAuthProvider
 
 
+class Environment:
+
+    cluster = None
+    session = None
+    host_id = None
+
+    def __init__(self):
+        pass
+
+
 def before_all(context):
     cassandra_address = context.config.userdata.get("cassandra_address")
     assert cassandra_address
@@ -34,8 +44,9 @@ def before_all(context):
     else:
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
         cluster = Cluster([cassandra_address], ssl_context=ssl_context, auth_provider=auth_provider)
-    context.cluster = cluster
+    context.environment = Environment()
+    context.environment.cluster = cluster
     session = cluster.connect()
-    context.session = session
+    context.environment.session = session
     host = cluster.metadata.get_host(cassandra_address)
-    context.host_id = host.host_id
+    context.environment.host_id = host.host_id

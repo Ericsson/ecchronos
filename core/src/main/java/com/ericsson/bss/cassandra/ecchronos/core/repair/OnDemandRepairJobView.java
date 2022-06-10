@@ -26,8 +26,14 @@ public class OnDemandRepairJobView extends RepairJobView
     public OnDemandRepairJobView(UUID id, UUID hostId, TableReference tableReference, RepairConfiguration repairConfiguration, Status status, double progress, long completionTime)
     {
         super(id, tableReference, repairConfiguration, null, status, progress);
-        this.completionTime = completionTime;
         this.hostId = hostId;
+        this.completionTime = completionTime;
+    }
+
+    @Override
+    public UUID getHostId()
+    {
+        return this.hostId;
     }
 
     @Override
@@ -46,11 +52,5 @@ public class OnDemandRepairJobView extends RepairJobView
     public Boolean isRecurring()
     {
         return false;
-    }
-
-    @Override
-    public UUID getHostId()
-    {
-        return this.hostId;
     }
 }

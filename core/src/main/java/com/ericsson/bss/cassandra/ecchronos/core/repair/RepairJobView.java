@@ -133,7 +133,10 @@ public abstract class RepairJobView
     /**
      * @return The host this job has been running on
      */
-    public abstract UUID getHostId();
+    public UUID getHostId()
+    {
+        return null;
+    }
 
 
     @Override

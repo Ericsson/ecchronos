@@ -270,7 +270,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         int hashValue = 1;
         TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
         Map<LongTokenRange, ImmutableSet<Node>> tokenMap = new HashMap<>();
-        when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap );
+        when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap);
 
         onDemandStatus.addNewJob(jobId, tableReference, hashValue);
 

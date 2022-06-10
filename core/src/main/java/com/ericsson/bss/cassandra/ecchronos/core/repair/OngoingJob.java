@@ -132,7 +132,7 @@ public class OngoingJob
                 else
                 {
                     remainingRangesPerNode.computeIfAbsent(node, (k) -> new HashSet<>()).add(rangeForNodes);
-                    rangeRepaired = true; //We only want one node to repair the range
+                    rangeRepaired = true; // We only want one node to repair the range
                 }
             }
         }
