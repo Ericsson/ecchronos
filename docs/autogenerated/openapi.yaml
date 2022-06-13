@@ -29,6 +29,11 @@ paths:
         required: false
         schema:
           type: string
+      - name: hostId
+        in: query
+        required: false
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -53,13 +58,20 @@ paths:
         required: true
         schema:
           type: string
+      - name: isLocal
+        in: query
+        required: false
+        schema:
+          type: boolean
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OnDemandRepair'
+                type: array
+                items:
+                  $ref: '#/components/schemas/OnDemandRepair'
   /repair-management/v1/schedule/keyspaces/{keyspace}/tables/{table}:
     post:
       tags:
@@ -141,6 +153,11 @@ paths:
       - name: id
         in: path
         required: true
+        schema:
+          type: string
+      - name: hostId
+        in: query
+        required: false
         schema:
           type: string
       responses:
@@ -317,9 +334,20 @@ paths:
 components:
   schemas:
     OnDemandRepair:
+      required:
+      - completedAt
+      - hostId
+      - id
+      - keyspace
+      - repairedRatio
+      - status
+      - table
       type: object
       properties:
         id:
+          type: string
+          format: uuid
+        hostId:
           type: string
           format: uuid
         keyspace:
@@ -335,9 +363,12 @@ components:
           - ERROR
           - BLOCKED
         repairedRatio:
+          maximum: 1
+          minimum: 0
           type: number
           format: double
         completedAt:
+          minimum: -1
           type: integer
           format: int64
     ScheduledRepairJob:
@@ -383,6 +414,15 @@ components:
         recurring:
           type: boolean
     Schedule:
+      required:
+      - config
+      - id
+      - keyspace
+      - lastRepairedAtInMs
+      - nextRepairInMs
+      - repairedRatio
+      - status
+      - table
       type: object
       properties:
         id:
@@ -401,6 +441,8 @@ components:
           - OVERDUE
           - BLOCKED
         repairedRatio:
+          maximum: 1
+          minimum: 0
           type: number
           format: double
         lastRepairedAtInMs:
@@ -416,18 +458,28 @@ components:
           items:
             $ref: '#/components/schemas/VirtualNodeState'
     ScheduleConfig:
+      required:
+      - errorTimeInMs
+      - intervalInMs
+      - parallelism
+      - unwindRatio
+      - warningTimeInMs
       type: object
       properties:
         intervalInMs:
+          minimum: 0
           type: integer
           format: int64
         unwindRatio:
+          minimum: 0
           type: number
           format: double
         warningTimeInMs:
+          minimum: 0
           type: integer
           format: int64
         errorTimeInMs:
+          minimum: 0
           type: integer
           format: int64
         parallelism:

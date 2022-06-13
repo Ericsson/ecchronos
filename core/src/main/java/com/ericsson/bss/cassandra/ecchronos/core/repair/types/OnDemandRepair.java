@@ -17,6 +17,9 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.google.common.annotations.VisibleForTesting;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -28,12 +31,22 @@ import java.util.UUID;
  */
 public class OnDemandRepair
 {
+    @NotBlank
     public UUID id;
+    @NotBlank
     public UUID hostId;
+    @NotBlank
     public String keyspace;
+    @NotBlank
     public String table;
+    @NotBlank
     public RepairJobView.Status status;
+    @NotBlank
+    @Min(0)
+    @Max(1)
     public double repairedRatio;
+    @NotBlank
+    @Min(-1)
     public long completedAt;
 
     public OnDemandRepair()
