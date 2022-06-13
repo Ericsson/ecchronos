@@ -2,6 +2,9 @@ Feature: ecctool repair-status
 
   Scenario: List tables
     Given we have access to ecctool
+    And we schedule an on demand repair on test.table1
+    And we schedule an on demand repair on test.table2
+    And we schedule an on demand repair on test2.table1
     And we schedule an on demand repair on test2.table2
     When we list all tables
     Then the output should contain a valid header
@@ -9,10 +12,10 @@ Feature: ecctool repair-status
     And the output should contain a row for test.table2
     And the output should contain a row for test2.table1
     And the output should contain a row for test2.table2
-    And the output should contain a row for test2.table2
-    And the output should contain a row for test2.table2
+    And the output should contain a row for test.table1
+    And the output should contain a row for test.table2
     And the output should contain a row for test2.table1
-    And the output should contain a row for test2.table1
+    And the output should contain a row for test2.table2
     And the output should not contain more rows
     And the output should contain summary
 
@@ -27,6 +30,8 @@ Feature: ecctool repair-status
     Given we have access to ecctool
     When we list all tables for keyspace test
     Then the output should contain a valid header
+    And the output should contain a row for test.table1
+    And the output should contain a row for test.table2
     And the output should contain a row for test.table1
     And the output should contain a row for test.table2
     And the output should not contain more rows
@@ -44,6 +49,7 @@ Feature: ecctool repair-status
     Given we have access to ecctool
     When we list jobs for table test.table1
     Then the output should contain a valid header
+    And the output should contain a row for test.table1
     And the output should contain a row for test.table1
     And the output should not contain more rows
     And the output should contain summary

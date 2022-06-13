@@ -50,6 +50,9 @@ sed "/jmx:/{n;s/host: .*/host: $CASSANDRA_IP/}" -i "$CONF_DIR"/ecc.yml
 sed "s/port: 9042/port: $CASSANDRA_NATIVE_PORT/g" -i "$CONF_DIR"/ecc.yml
 sed "s/port: 7199/port: $CASSANDRA_JMX_PORT/g" -i "$CONF_DIR"/ecc.yml
 
+# Lower scheduler frequency so we don't need to wait that long in tests
+sed '/scheduler:/{n;/frequency/{n;s/time: .*/time: 1/}}' -i "$CONF_DIR"/ecc.yml
+
 ## Security
 sed '/cql:/{n;/credentials/{n;s/enabled: .*/enabled: true/}}' -i "$CONF_DIR"/security.yml
 sed '/cql:/{n;/credentials/{n;/enabled: .*/{n;s/username: .*/username: eccuser/}}}' -i "$CONF_DIR"/security.yml
@@ -68,11 +71,6 @@ sed 's;^\(\s*\)\(<appender-ref ref="STDOUT" />\)\s*$;\1<!-- \2 -->;g' -i "$CONF_
 # springdoc
 
 sed '/springdoc:/{n;/api-docs/{n;s/enabled: .*/enabled: true/}}' -i "$CONF_DIR"/application.yml
-
-## Scheduler
-
-sed "s/#\?scheduler.run.interval.time=[0-9]\+/scheduler.run.interval.time=1/g" -i "$CONF_DIR"/ecc.cfg
-sed "s/#\?scheduler.run.interval.time.unit=seconds\+/scheduler.run.interval.time.unit=seconds/g" -i "$CONF_DIR"/ecc.cfg
 
 ## Special config for test.table1
 
@@ -123,6 +121,14 @@ until $(curl --silent --fail --head --output /dev/null http://localhost:8080/rep
     CHECKS=$(($CHECKS+1))
     sleep 2
 done
+
+PAUSE_FILE="/tmp/pauseEccTests"
+if [ -f $PAUSE_FILE ]; then
+    echo "$PAUSE_FILE file found, pausing before executing tests. To resume, remove $PAUSE_FILE file."
+    while [ -f $PAUSE_FILE ]; do
+        sleep 1
+    done
+fi
 
 echo "Starting behave"
 
