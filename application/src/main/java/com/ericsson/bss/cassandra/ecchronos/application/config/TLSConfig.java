@@ -103,7 +103,7 @@ public class TLSConfig
         this.certificate = certificate;
     }
 
-    public Optional<String> getCertificate_key()
+    public Optional<String> getCertificateKey()
     {
         if (this.certificate_key == null)
         {
@@ -117,7 +117,7 @@ public class TLSConfig
         this.certificate_key = certificate_key;
     }
 
-    public Optional<String> getCertificate_authorities()
+    public Optional<String> getCertificateAuthorities()
     {
         if (this.certificate_authorities == null) 
         {

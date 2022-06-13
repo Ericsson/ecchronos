@@ -58,13 +58,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@RunWith (SpringRunner.class)
-@SpringBootTest (webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextConfiguration(initializers = TestTomcatWebServerCustomizer.PropertyOverrideContextInitializer.class)
-public class TestTomcatWebServerCustomizer
+public abstract class TestTomcatWebServerCustomizer
 {
-    private static final String SERVER_KEYSTORE = "src/test/resources/server/ks.p12";
-    private static final String SERVER_TRUSTSTORE = "src/test/resources/server/ts.p12";
     private static final String CLIENT_VALID_PATH = "valid/";
     private static final String CLIENT_EXPIRED_PATH = "expired/";
     private static final int REFRESH_RATE = 100;
@@ -153,14 +148,6 @@ public class TestTomcatWebServerCustomizer
         {
             addInlinedPropertiesToEnvironment(configurableApplicationContext,
                     "server.ssl.enabled=true",
-                    "server.ssl.key-store=" + SERVER_KEYSTORE,
-                    "server.ssl.key-store-password=",
-                    "server.ssl.key-store-type=PKCS12",
-                    "server.ssl.key-alias=cert",
-                    "server.ssl.key-password=",
-                    "server.ssl.trust-store=" + SERVER_TRUSTSTORE,
-                    "server.ssl.trust-store-password=",
-                    "server.ssl.trust-store-type=PKCS12",
                     "server.ssl.client-auth=need",
                     "server.ssl.refresh-rate-in-ms=" + REFRESH_RATE);
         }

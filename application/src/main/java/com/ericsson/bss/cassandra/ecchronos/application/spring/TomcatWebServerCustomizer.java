@@ -42,9 +42,6 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
     @Value("${server.ssl.enabled:false}")
     private Boolean sslIsEnabled;
 
-    @Value("${server.ssl.enabled-certificate:false}")
-    private Boolean sslIsEnabledForCertificate;
-
     @Value("${server.ssl.certificate:#{null}}")
     private String certificate;
 
@@ -54,27 +51,25 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
     @Value("${server.ssl.certificate-authorities:#{null}}")
     private String certificateAuthorities;
 
-    @Value("${server.ssl.certificate-client-auth:#{null}}")
+    @Value("${server.ssl.client-auth:none}")
     private String clientAuth;
-
-    @Value("${server.ssl.certificate-protocol:#{null}}")
-    private String protocol;
-
-    @Value("${server.ssl.certificate-ciphers:#{null}}")
-    private String ciphers;
 
     private static final Logger LOG = LoggerFactory.getLogger(TomcatWebServerCustomizer.class);
 
     @Override
     public void customize(TomcatServletWebServerFactory factory)
     {
-        if (sslIsEnabled || sslIsEnabledForCertificate)
+        if (sslIsEnabled)
         {
+            if (certificate != null)
+            {
+                factory.getSsl().setEnabled(false);
+            }
+
             factory.addConnectorCustomizers(connector ->
             {
                 http11NioProtocol = (Http11NioProtocol) connector.getProtocolHandler();
-                if (sslIsEnabledForCertificate)
-                {
+                if (certificate != null) {
                     http11NioProtocol.addSslHostConfig(getSslHostConfiguration());
                     http11NioProtocol.setSSLEnabled(true);
                 }
@@ -89,16 +84,8 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
         certificateConfig.setCertificateFile(certificate);
         certificateConfig.setCertificateKeyFile(certificateKey);
         sslHostConfig.addCertificate(certificateConfig);
-        sslHostConfig.setCertificateVerification(clientAuth);
         sslHostConfig.setTrustStore(getTrustStore());
-        if (this.protocol != null)
-        {
-            sslHostConfig.setProtocols(protocol);
-        }
-        if (this.ciphers != null)
-        {
-            sslHostConfig.setCiphers(ciphers);
-        }
+        sslHostConfig.setCertificateVerification(clientAuth.equals("need") ? "true" : "false");
         return sslHostConfig;
     }
 
@@ -130,7 +117,7 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
     @Scheduled (initialDelayString = "${server.ssl.refresh-rate-in-ms:60000}", fixedRateString = "${server.ssl.refresh-rate-in-ms:60000}")
     public void reloadSslContext()
     {
-        if ((sslIsEnabled || sslIsEnabledForCertificate) && http11NioProtocol != null)
+        if (sslIsEnabled && http11NioProtocol != null)
         {
             http11NioProtocol.reloadSslHostConfigs();
         }

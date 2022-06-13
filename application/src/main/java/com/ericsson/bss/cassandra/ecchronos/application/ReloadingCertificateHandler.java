@@ -39,9 +39,6 @@ import org.slf4j.LoggerFactory;
 import com.datastax.driver.core.EndPoint;
 import com.ericsson.bss.cassandra.ecchronos.application.config.TLSConfig;
 
-import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.ssl.SslHandler;
-
 public class ReloadingCertificateHandler implements CertificateHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ReloadingCertificateHandler.class);
@@ -72,7 +69,8 @@ public class ReloadingCertificateHandler implements CertificateHandler
         if (remoteEndpoint != null)
         {
             InetSocketAddress socketAddress = remoteEndpoint.resolve();
-            sslEngine = sslContext.newEngine(ByteBufAllocator.DEFAULT, socketAddress.getHostName(), socketAddress.getPort());
+            sslEngine = sslContext.newEngine(ByteBufAllocator.DEFAULT, socketAddress.getHostName(),
+                    socketAddress.getPort());
         }
         else
         {
@@ -167,12 +165,12 @@ public class ReloadingCertificateHandler implements CertificateHandler
         SslContextBuilder builder = SslContextBuilder.forClient();
 
         if (tlsConfig.getCertificate().isPresent() &&
-                tlsConfig.getCertificate_key().isPresent() &&
-                tlsConfig.getCertificate_authorities().isPresent())
+                tlsConfig.getCertificateKey().isPresent() &&
+                tlsConfig.getCertificateAuthorities().isPresent())
         {
             File certificateFile = new File(tlsConfig.getCertificate().get());
-            File certificateKeyFile = new File(tlsConfig.getCertificate_key().get());
-            File certificateAuthorityFile = new File(tlsConfig.getCertificate_authorities().get());
+            File certificateKeyFile = new File(tlsConfig.getCertificateKey().get());
+            File certificateAuthorityFile = new File(tlsConfig.getCertificateAuthorities().get());
 
             builder.keyManager(certificateFile, certificateKeyFile);
             builder.trustManager(certificateAuthorityFile);
