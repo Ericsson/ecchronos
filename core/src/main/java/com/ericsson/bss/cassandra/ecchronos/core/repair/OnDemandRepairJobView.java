@@ -20,12 +20,20 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
 public class OnDemandRepairJobView extends RepairJobView
 {
+    UUID hostId;
     long completionTime;
 
-    public OnDemandRepairJobView(UUID id, TableReference tableReference, RepairConfiguration repairConfiguration, Status status, double progress, long completionTime)
+    public OnDemandRepairJobView(UUID id, UUID hostId, TableReference tableReference, RepairConfiguration repairConfiguration, Status status, double progress, long completionTime)
     {
         super(id, tableReference, repairConfiguration, null, status, progress);
+        this.hostId = hostId;
         this.completionTime = completionTime;
+    }
+
+    @Override
+    public UUID getHostId()
+    {
+        return this.hostId;
     }
 
     @Override

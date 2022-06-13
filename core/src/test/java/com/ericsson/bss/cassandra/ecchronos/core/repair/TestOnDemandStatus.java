@@ -252,6 +252,42 @@ public class TestOnDemandStatus extends AbstractCassandraTest
     }
 
     @Test
+    public void testGetAllClusterWideJobsNoJobs()
+    {
+        OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());
+
+        Set<OngoingJob> clusterWideJobs = onDemandStatus.getAllClusterWideJobs();
+
+        assertThat(clusterWideJobs).isEmpty();
+    }
+
+    @Test
+    public void testGetAllClusterWideJobs()
+    {
+        OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());
+
+        UUID jobId = UUID.randomUUID();
+        int hashValue = 1;
+        TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
+        Map<LongTokenRange, ImmutableSet<Node>> tokenMap = new HashMap<>();
+        when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap);
+
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+
+        Set<OngoingJob> ongoingJobs = onDemandStatus.getAllClusterWideJobs();
+
+        assertThat(ongoingJobs.size()).isEqualTo(1);
+
+        OngoingJob ongoingJob = ongoingJobs.iterator().next();
+        assertThat(ongoingJob.getJobId()).isEqualTo(jobId);
+        assertThat(ongoingJob.getTableReference().getKeyspace()).isEqualTo(KEYSPACE_NAME);
+        assertThat(ongoingJob.getTableReference().getTable()).isEqualTo(TEST_TABLE_NAME);
+        assertThat(ongoingJob.getRepairedTokens()).isEmpty();
+        assertThat(ongoingJob.getStatus()).isEqualTo(Status.started);
+        assertThat(ongoingJob.getCompletedTime()).isEqualTo(-1L);
+    }
+
+    @Test
     public void testGetOngoingJobsNoJobs()
     {
         OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());

@@ -137,6 +137,7 @@ public class OnDemandRepairJob extends ScheduledJob
     {
         return new OnDemandRepairJobView(
                 getId(),
+                myOngoingJob.getHostId(),
                 myOngoingJob.getTableReference(),
                 myRepairConfiguration,
                 getStatus(),

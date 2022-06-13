@@ -14,10 +14,17 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+import com.datastax.driver.core.Host;
+import com.datastax.driver.core.Metadata;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationStateImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +87,13 @@ public class OnDemandStatus
         myUDTTableReferenceType = mySession.getCluster().getMetadata().getKeyspace(KEYSPACE_NAME).getUserType(UDT_TABLE_REFERENCE_NAME);
 
         BuiltStatement getStatusStatement = select().from(KEYSPACE_NAME, TABLE_NAME).where(eq(HOST_ID_COLUMN_NAME, bindMarker()));
-        BuiltStatement insertNewJobStatement = insertInto(KEYSPACE_NAME, TABLE_NAME).value(HOST_ID_COLUMN_NAME, bindMarker()).value(JOB_ID_COLUMN_NAME, bindMarker()).value(TABLE_REFERENCE_COLUMN_NAME, bindMarker()).value(TOKEN_MAP_HASH_COLUMN_NAME, bindMarker()).value(STATUS_COLUMN_NAME, "started");
+        BuiltStatement insertNewJobStatement = insertInto(KEYSPACE_NAME, TABLE_NAME)
+                .value(HOST_ID_COLUMN_NAME, bindMarker())
+                .value(JOB_ID_COLUMN_NAME, bindMarker())
+                .value(TABLE_REFERENCE_COLUMN_NAME, bindMarker())
+                .value(TOKEN_MAP_HASH_COLUMN_NAME, bindMarker())
+                .value(REPAIRED_TOKENS_COLUMN_NAME, bindMarker())
+                .value(STATUS_COLUMN_NAME, "started");
         BuiltStatement updateRepairedTokenForJobStatement = update(KEYSPACE_NAME, TABLE_NAME).with(set(REPAIRED_TOKENS_COLUMN_NAME, bindMarker())).where(eq(HOST_ID_COLUMN_NAME, bindMarker())).and(eq(JOB_ID_COLUMN_NAME, bindMarker()));
         BuiltStatement updateJobToFinishedStatement = update(KEYSPACE_NAME, TABLE_NAME).with(set(STATUS_COLUMN_NAME, "finished")).and(set(COMPLEDED_TIME_COLUMN_NAME, bindMarker())).where(eq(HOST_ID_COLUMN_NAME, bindMarker())).and(eq(JOB_ID_COLUMN_NAME, bindMarker()));
         BuiltStatement updateJobToFailedStatement = update(KEYSPACE_NAME, TABLE_NAME).with(set(STATUS_COLUMN_NAME, "failed")).and(set(COMPLEDED_TIME_COLUMN_NAME, bindMarker())).where(eq(HOST_ID_COLUMN_NAME, bindMarker())).and(eq(JOB_ID_COLUMN_NAME, bindMarker()));
@@ -90,6 +103,11 @@ public class OnDemandStatus
         myUpdateRepairedTokenForJobStatement = mySession.prepare(updateRepairedTokenForJobStatement).setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
         myUpdateJobToFinishedStatement = mySession.prepare(updateJobToFinishedStatement).setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
         myUpdateJobToFailedStatement = mySession.prepare(updateJobToFailedStatement).setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+    }
+
+    public UUID getHostId()
+    {
+        return myHostId;
     }
 
     public Set<OngoingJob> getOngoingJobs(ReplicationState replicationState)
@@ -112,16 +130,35 @@ public class OnDemandStatus
 
             if(status.equals(Status.started))
             {
-                createOngoingJob(replicationState, ongoingJobs, row, status);
+                createOngoingJob(replicationState, ongoingJobs, row, status, myHostId);
             }
         }
 
         return ongoingJobs;
     }
 
+    public Set<OngoingJob> getAllClusterWideJobs()
+    {
+        Metadata metadata = mySession.getCluster().getMetadata();
+        NodeResolver nodeResolver = new NodeResolverImpl(metadata);
+        Set<Host> hosts = metadata.getAllHosts();
+        Set<OngoingJob> ongoingJobs = new HashSet<>();
+        for (Host host : hosts)
+        {
+            ReplicationState replState = new ReplicationStateImpl(nodeResolver, metadata, host);
+            ongoingJobs.addAll(getAllJobsForHost(replState, host.getHostId()));
+        }
+        return ongoingJobs;
+    }
+
     public Set<OngoingJob> getAllJobs(ReplicationState replicationState)
     {
-        ResultSet result = mySession.execute(myGetStatusStatement.bind(myHostId));
+        return getAllJobsForHost(replicationState, myHostId);
+    }
+
+    private Set<OngoingJob> getAllJobsForHost(ReplicationState replicationState, UUID hostId)
+    {
+        ResultSet result = mySession.execute(myGetStatusStatement.bind(hostId));
 
         Set<OngoingJob> ongoingJobs = new HashSet<>();
         for(Row row: result.all())
@@ -133,17 +170,17 @@ public class OnDemandStatus
             }
             catch (IllegalArgumentException e)
             {
-                LOG.warn("Ignoring table repair job with id {}, unable to parse status", row.getUUID(JOB_ID_COLUMN_NAME));
+                LOG.warn("Ignoring table repair job with id {} and hostId {}, unable to parse status", row.getUUID(JOB_ID_COLUMN_NAME), hostId);
                 continue;
             }
 
-            createOngoingJob(replicationState, ongoingJobs, row, status);
+            createOngoingJob(replicationState, ongoingJobs, row, status, hostId);
         }
 
         return ongoingJobs;
     }
 
-    private void createOngoingJob(ReplicationState replicationState, Set<OngoingJob> ongoingJobs, Row row, Status status)
+    private void createOngoingJob(ReplicationState replicationState, Set<OngoingJob> ongoingJobs, Row row, Status status, UUID hostId)
     {
         UUID jobId = row.getUUID(JOB_ID_COLUMN_NAME);
         int tokenMapHash = row.getInt(TOKEN_MAP_HASH_COLUMN_NAME);
@@ -161,6 +198,7 @@ public class OnDemandStatus
                     .withTableReference(tableReference)
                     .withReplicationState(replicationState)
                     .withOngoingJobInfo(jobId, tokenMapHash, repairedTokens, status, completedTime)
+                    .withHostId(hostId)
                     .build();
             ongoingJobs.add(ongoingJob);
         }
@@ -172,8 +210,17 @@ public class OnDemandStatus
 
     public void addNewJob(UUID jobId, TableReference tableReference, int tokenMapHash)
     {
-        UDTValue uDTTableReference = myUDTTableReferenceType.newValue().setUUID(UDT_ID_NAME, tableReference.getId()).setString(UDT_KEYSPACE_NAME, tableReference.getKeyspace()).setString(UDT_TABLE_NAME, tableReference.getTable());
-        BoundStatement statement = myInsertNewJobStatement.bind(myHostId, jobId, uDTTableReference, tokenMapHash);
+        addNewJob(myHostId, jobId, tableReference, tokenMapHash, Collections.EMPTY_SET);
+    }
+
+    public void addNewJob(UUID host, UUID jobId, TableReference tableReference, int tokenMapHash, Set<LongTokenRange> repairedRanges)
+    {
+        Set<UDTValue> repairedRangesUDT = new HashSet<>();
+        repairedRanges.forEach(t -> repairedRangesUDT.add(createUDTTokenRangeValue(t.start, t.end)));
+        UDTValue uDTTableReference = myUDTTableReferenceType.newValue().setUUID(UDT_ID_NAME, tableReference.getId())
+                .setString(UDT_KEYSPACE_NAME, tableReference.getKeyspace())
+                .setString(UDT_TABLE_NAME, tableReference.getTable());
+        BoundStatement statement = myInsertNewJobStatement.bind(host, jobId, uDTTableReference, tokenMapHash, repairedRangesUDT);
         mySession.execute(statement);
     }
 

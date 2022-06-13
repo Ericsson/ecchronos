@@ -130,6 +130,14 @@ public abstract class RepairJobView
      */
     public abstract Boolean isRecurring();
 
+    /**
+     * @return The host this job has been running on
+     */
+    public UUID getHostId()
+    {
+        return null;
+    }
+
 
     @Override
     public boolean equals(Object o) {

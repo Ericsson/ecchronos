@@ -95,6 +95,7 @@ class Repair(Job):
     def __init__(self, data):
         Job.__init__(self, data)
         self.completed_at = int(data["completedAt"] if "completedAt" in data else -1)
+        self.host_id = data["hostId"] if "hostId" in data else "<UNKNOWN>"
 
     def get_completed_at(self):
         if self.completed_at == -1:

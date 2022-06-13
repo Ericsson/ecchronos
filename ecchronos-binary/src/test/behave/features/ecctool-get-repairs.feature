@@ -51,3 +51,11 @@ Feature: ecctool repairs
     Then the output should contain a repair row for test2.table2
     And the output should not contain more rows
     And the output should contain summary
+
+  Scenario: List the repair test2.table2 with hostid
+    Given we have access to ecctool
+    When we list repairs for hostid and table test2.table2
+    Then the output should contain a valid repair header
+    And the output should contain a repair row for test2.table2
+    And the output should not contain more rows
+    And the output should contain summary
