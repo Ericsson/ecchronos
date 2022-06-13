@@ -14,7 +14,5 @@ Feature: ecctool run-repair
     Then the repair output should contain a valid header
     And the repair output should contain a valid repair row for test2.table2
     And the repair output should contain a valid repair row for test2.table2
-    And the repair output should contain a valid repair row for test2.table2
-    And the repair output should contain a valid repair row for test2.table2
     And the repair output should not contain more rows
     And the output should contain summary

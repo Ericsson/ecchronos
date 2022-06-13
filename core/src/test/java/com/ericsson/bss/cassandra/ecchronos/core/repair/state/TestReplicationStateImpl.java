@@ -272,4 +272,25 @@ public class TestReplicationStateImpl
         assertThat(tokenRanges.get(range3)).containsExactlyInAnyOrder(mockNode2, mockNode3, mockNode4);
         assertThat(tokenRanges.get(range4)).containsExactlyInAnyOrder(mockNode2, mockNode3, mockNode4);
     }
+
+    @Test
+    public void testGetTokenRangesReuse() throws Exception
+    {
+        LongTokenRange range1 = new LongTokenRange(1, 2);
+        TableReference tableReference = tableReference("ks", "tb");
+
+        TokenRange tokenRange = TokenUtil.getRange(1, 2);
+
+        doReturn(Sets.newHashSet(tokenRange)).when(mockMetadata).getTokenRanges();
+        doReturn(Sets.newHashSet(mockReplica1, mockReplica2, mockReplica3)).when(mockMetadata).getReplicas(eq("ks"), eq(tokenRange));
+
+        ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockMetadata, mockReplica1);
+
+        Map<LongTokenRange, ImmutableSet<Node>> tokenRanges = replicationState.getTokenRanges(tableReference);
+
+        assertThat(tokenRanges.keySet()).containsExactlyInAnyOrder(range1);
+        assertThat(tokenRanges.get(range1)).containsExactlyInAnyOrder(mockNode1, mockNode2, mockNode3);
+
+        assertThat(replicationState.getTokenRanges(tableReference)).isSameAs(tokenRanges);
+    }
 }

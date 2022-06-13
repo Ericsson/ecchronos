@@ -189,17 +189,14 @@ class V2RepairSchedulerRequest(RestRequest):
 
     def list_repairs(self, keyspace=None, table=None, host_id=None):
         request_url = V2RepairSchedulerRequest.v2_repair_status_url
-        if keyspace and table:
-            request_url = "{0}?keyspace={1}&table={2}".format(request_url, keyspace, table)
-            if host_id:
-                request_url += "&hostId={0}".format(host_id)
-        elif keyspace:
+        if keyspace:
             request_url = "{0}?keyspace={1}".format(request_url, keyspace)
+            if table:
+                request_url += "&table={0}".format(table)
             if host_id:
                 request_url += "&hostId={0}".format(host_id)
-        else:
-            if host_id:
-                request_url += "?hostId={0}".format(host_id)
+        elif host_id:
+            request_url += "?hostId={0}".format(host_id)
 
         result = self.request(request_url)
 

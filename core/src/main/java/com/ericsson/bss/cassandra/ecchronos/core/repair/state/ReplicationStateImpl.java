@@ -41,6 +41,7 @@ public class ReplicationStateImpl implements ReplicationState
     private static final Logger LOG = LoggerFactory.getLogger(ReplicationStateImpl.class);
 
     private static final Map<String, ImmutableMap<LongTokenRange, ImmutableSet<Node>>> keyspaceReplicationCache = new ConcurrentHashMap<>();
+    private static final Map<String, ImmutableMap<LongTokenRange, ImmutableSet<Node>>> clusterWideKeyspaceReplicationCache = new ConcurrentHashMap<>();
 
     private final NodeResolver myNodeResolver;
     private final Metadata myMetadata;
@@ -84,19 +85,6 @@ public class ReplicationStateImpl implements ReplicationState
         return maybeRenew(keyspace);
     }
 
-    @Override
-    public Map<LongTokenRange, ImmutableSet<Node>> getTokenRanges(TableReference tableReference)
-    {
-        Map<LongTokenRange, ImmutableSet<Node>> tokenRanges = new HashMap<>();
-        String keyspace = tableReference.getKeyspace();
-        for (TokenRange tokenRange : myMetadata.getTokenRanges())
-        {
-            Set<Host> hosts = myMetadata.getReplicas(keyspace, tokenRange);
-            tokenRanges.put(convert(tokenRange), convert(hosts));
-        }
-        return tokenRanges;
-    }
-
     private ImmutableMap<LongTokenRange, ImmutableSet<Node>> maybeRenew(String keyspace)
     {
         ImmutableMap<LongTokenRange, ImmutableSet<Node>> replication = buildTokenMap(keyspace);
@@ -111,6 +99,37 @@ public class ReplicationStateImpl implements ReplicationState
         Map<Set<Host>, ImmutableSet<Node>> replicaCache = new HashMap<>();
 
         for (TokenRange tokenRange : myMetadata.getTokenRanges(keyspace, myLocalHost))
+        {
+            LongTokenRange longTokenRange = convert(tokenRange);
+            ImmutableSet<Node> replicas = replicaCache.computeIfAbsent(myMetadata.getReplicas(keyspace, tokenRange),
+                    this::convert);
+
+            replicationBuilder.put(longTokenRange, replicas);
+        }
+
+        return replicationBuilder.build();
+    }
+
+    @Override
+    public Map<LongTokenRange, ImmutableSet<Node>> getTokenRanges(TableReference tableReference)
+    {
+        String keyspace = tableReference.getKeyspace();
+        return maybeRenewClusterWide(keyspace);
+    }
+
+    private ImmutableMap<LongTokenRange, ImmutableSet<Node>> maybeRenewClusterWide(String keyspace)
+    {
+        ImmutableMap<LongTokenRange, ImmutableSet<Node>> replication = buildClusterWideTokenMap(keyspace);
+
+        return clusterWideKeyspaceReplicationCache.compute(keyspace, (k, v) -> !replication.equals(v) ? replication : v);
+    }
+
+    private ImmutableMap<LongTokenRange, ImmutableSet<Node>> buildClusterWideTokenMap(String keyspace)
+    {
+        ImmutableMap.Builder<LongTokenRange, ImmutableSet<Node>> replicationBuilder = ImmutableMap.builder();
+        Map<Set<Host>, ImmutableSet<Node>> replicaCache = new HashMap<>();
+
+        for (TokenRange tokenRange : myMetadata.getTokenRanges())
         {
             LongTokenRange longTokenRange = convert(tokenRange);
             ImmutableSet<Node> replicas = replicaCache.computeIfAbsent(myMetadata.getReplicas(keyspace, tokenRange),

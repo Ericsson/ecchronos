@@ -71,12 +71,12 @@ public class OnDemandRepair
         if (o == null || getClass() != o.getClass())
             return false;
         OnDemandRepair that = (OnDemandRepair) o;
-        return  Double.compare(that.repairedRatio, repairedRatio) == 0 &&
+        return  id.equals(that.id) &&
+                hostId.equals(that.hostId) &&
                 keyspace.equals(that.keyspace) &&
                 table.equals(that.table) &&
                 status == that.status &&
-                id.equals(that.id) &&
-                hostId.equals(that.hostId) &&
+                Double.compare(that.repairedRatio, repairedRatio) == 0 &&
                 completedAt == that.completedAt;
     }
 
