@@ -96,6 +96,7 @@
         <org.apache.maven.plugins.maven-surefire-plugin.version>2.22.1</org.apache.maven.plugins.maven-surefire-plugin.version>
         <org.apache.maven.plugins.maven-failsafe-plugin.version>2.22.1</org.apache.maven.plugins.maven-failsafe-plugin.version>
         <org.apache.maven.plugins.maven-assembly-plugin.version>3.1.0</org.apache.maven.plugins.maven-assembly-plugin.version>
+        <org.apache.maven.plugins-maven-checkstyle-plugin.version>3.1.2</org.apache.maven.plugins-maven-checkstyle-plugin.version>
         <org.apache.maven.plugins-maven-pmd-plugin.version>3.14.0</org.apache.maven.plugins-maven-pmd-plugin.version>
         <org.apache.maven.plugin.maven-jxr-plugin.version>3.0.0</org.apache.maven.plugin.maven-jxr-plugin.version>
         <org.apache.maven.plugins-maven-resources-plugin.version>3.1.0</org.apache.maven.plugins-maven-resources-plugin.version>
@@ -578,6 +579,7 @@ limitations under the License.
                             <exclude>**/*.feature</exclude>
                             <exclude>**/*.pyc</exclude>
                             <exclude>code_style.xml</exclude>
+                            <exclude>check_style.xml</exclude>
                             <exclude>**/Dockerfile</exclude>
                             <exclude>**/__init__.py</exclude>
                             <exclude>**/.pylintrc</exclude>
@@ -648,7 +650,24 @@ limitations under the License.
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
             </plugin>
-
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${org.apache.maven.plugins-maven-checkstyle-plugin.version}</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                    <consoleOutput>true</consoleOutput>
+                    <configLocation>check_style.xml</configLocation>
+                    <failOnViolation>false</failOnViolation> <!-- ignore violations for now, uncomment when all the code follows checkstyle -->
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
