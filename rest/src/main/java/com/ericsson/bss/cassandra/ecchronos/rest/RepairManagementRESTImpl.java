@@ -25,7 +25,13 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.info.License;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,6 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,7 +54,15 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 /**
  * When updating the path it should also be updated in the OSGi component.
  */
+@Tag(name = "repair-management")
 @RestController
+@OpenAPIDefinition(info = @Info(
+        title = "ecChronos REST API",
+        description = "ecChronos REST API can be used to view the status of schedules and repairs as well as run manual repairs",
+        license = @License(
+                name = "Apache 2.0",
+                url = "https://www.apache.org/licenses/LICENSE-2.0"),
+        version = "1.0.0"))
 public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Possible god class, will be much smaller once v1 is removed
 {
     private static final String ROOT = "/repair-management/";
@@ -74,7 +89,9 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
     }
 
     @Override
-    @GetMapping(ENDPOINT_PREFIX_V2 + "/schedules")
+    @GetMapping(value = ENDPOINT_PREFIX_V2 + "/schedules",
+                produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "get-schedules")
     public ResponseEntity<List<Schedule>> getSchedules(@RequestParam(required = false) String keyspace,
                                                        @RequestParam(required = false) String table)
     {
@@ -98,7 +115,9 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
     }
 
     @Override
-    @GetMapping(ENDPOINT_PREFIX_V2 + "/schedules/{id}")
+    @GetMapping(value = ENDPOINT_PREFIX_V2 + "/schedules/{id}",
+                produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "get-schedules-by-id")
     public ResponseEntity<Schedule> getSchedules(@PathVariable String id, @RequestParam(required = false) boolean full)
     {
 
@@ -122,43 +141,73 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
 
     @Override
-    @GetMapping(ENDPOINT_PREFIX_V2 + "/repairs")
+    @GetMapping(value = ENDPOINT_PREFIX_V2 + "/repairs",
+                produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "get-repairs")
     public ResponseEntity<List<OnDemandRepair>> getRepairs(@RequestParam(required = false) String keyspace,
-                                                           @RequestParam(required = false) String table)
+                                                           @RequestParam(required = false) String table,
+                                                           @RequestParam(required = false) String hostId)
     {
         if (keyspace != null)
         {
             if (table != null)
             {
-                List<OnDemandRepair> repairJobs = getOnDemandJobs(forTable(keyspace, table));
+                if (hostId == null)
+                {
+                    List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(forTable(keyspace, table));
+                    return ResponseEntity.ok(repairJobs);
+                }
+                UUID host = parseIdOrThrow(hostId);
+                List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> keyspace.equals(job.getTableReference().getKeyspace()) &&
+                                                                                    table.equals(job.getTableReference().getTable()) &&
+                                                                                    host.equals(job.getHostId()));
                 return ResponseEntity.ok(repairJobs);
             }
-            List<OnDemandRepair> repairJobs = getOnDemandJobs(job -> keyspace.equals(job.getTableReference().getKeyspace()));
+            if (hostId == null)
+            {
+                List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(
+                        job -> keyspace.equals(job.getTableReference().getKeyspace()));
+                return ResponseEntity.ok(repairJobs);
+            }
+            UUID host = parseIdOrThrow(hostId);
+            List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(
+                    job -> keyspace.equals(job.getTableReference().getKeyspace()) &&
+                           host.equals(job.getHostId()));
             return ResponseEntity.ok(repairJobs);
         }
         else if (table == null)
         {
-            List<OnDemandRepair> repairJobs = getOnDemandJobs(job -> true);
+            if (hostId == null)
+            {
+                List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> true);
+                return ResponseEntity.ok(repairJobs);
+            }
+            UUID host = parseIdOrThrow(hostId);
+            List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> host.equals(job.getHostId()));
             return ResponseEntity.ok(repairJobs);
         }
         throw new ResponseStatusException(BAD_REQUEST);
     }
 
     @Override
-    @GetMapping(ENDPOINT_PREFIX_V2 + "/repairs/{id}")
-    public ResponseEntity<List<OnDemandRepair>> getRepairs(@PathVariable String id)
+    @GetMapping(value = ENDPOINT_PREFIX_V2 + "/repairs/{id}",
+                produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "get-repairs-by-id")
+    public ResponseEntity<List<OnDemandRepair>> getRepairs(@PathVariable String id,
+                                                           @RequestParam(required = false) String hostId)
     {
-        UUID uuid;
-        try
+        UUID uuid = parseIdOrThrow(id);
+        if (hostId == null)
         {
-            uuid = UUID.fromString(id);
+            List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> uuid.equals(job.getId()));
+            if (repairJobs.isEmpty())
+            {
+                throw new ResponseStatusException(NOT_FOUND);
+            }
+            return ResponseEntity.ok(repairJobs);
         }
-        catch (IllegalArgumentException e)
-        {
-            throw new ResponseStatusException(BAD_REQUEST, BAD_REQUEST.getReasonPhrase(), e);
-        }
-
-        List<OnDemandRepair> repairJobs = getOnDemandJobs(job -> uuid.equals(job.getId()));
+        UUID host = parseIdOrThrow(hostId);
+        List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> uuid.equals(job.getId()) && host.equals(job.getHostId()));
         if (repairJobs.isEmpty())
         {
             throw new ResponseStatusException(NOT_FOUND);
@@ -166,17 +215,39 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
         return ResponseEntity.ok(repairJobs);
     }
 
-
-    @Override
-    @PostMapping(ENDPOINT_PREFIX_V2 + "/repairs")
-    public ResponseEntity<OnDemandRepair> triggerRepair(@RequestParam String keyspace,
-                                                        @RequestParam String table)
+    private UUID parseIdOrThrow(String id)
     {
         try
         {
-            RepairJobView repairJobView = myOnDemandRepairScheduler.scheduleJob(
+            UUID uuid = UUID.fromString(id);
+            return uuid;
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new ResponseStatusException(BAD_REQUEST, BAD_REQUEST.getReasonPhrase(), e);
+        }
+    }
+
+
+    @Override
+    @PostMapping(value = ENDPOINT_PREFIX_V2 + "/repairs",
+                 produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "trigger-repair")
+    public ResponseEntity<List<OnDemandRepair>> triggerRepair(@RequestParam String keyspace,
+                                                              @RequestParam String table,
+                                                              @RequestParam(required = false) boolean isLocal)
+    {
+        try
+        {
+            if (isLocal)
+            {
+                RepairJobView repairJobView = myOnDemandRepairScheduler.scheduleJob(
+                        myTableReferenceFactory.forTable(keyspace, table));
+                return ResponseEntity.ok(Collections.singletonList(new OnDemandRepair(repairJobView)));
+            }
+            List<RepairJobView> repairJobView = myOnDemandRepairScheduler.scheduleClusterWideJob(
                     myTableReferenceFactory.forTable(keyspace, table));
-            return ResponseEntity.ok(new OnDemandRepair(repairJobView));
+            return ResponseEntity.ok(repairJobView.stream().map(OnDemandRepair::new).collect(Collectors.toList()));
         }
         catch (EcChronosException e)
         {
@@ -186,7 +257,9 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @Deprecated
-    @GetMapping(ENDPOINT_PREFIX + "/status")
+    @GetMapping(value = ENDPOINT_PREFIX + "/status",
+                produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "status")
     public ResponseEntity<List<ScheduledRepairJob>> status()
     {
         List<ScheduledRepairJob> repairJobs = getAllRepairJobs(job -> true);
@@ -195,7 +268,9 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @Deprecated
-    @GetMapping(ENDPOINT_PREFIX + "/status/keyspaces/{keyspace}")
+    @GetMapping(value = ENDPOINT_PREFIX + "/status/keyspaces/{keyspace}",
+                produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "keyspace-status")
     public ResponseEntity<List<ScheduledRepairJob>> keyspaceStatus(@PathVariable String keyspace)
     {
         List<ScheduledRepairJob> repairJobs = getAllRepairJobs(
@@ -205,7 +280,9 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @Deprecated
-    @GetMapping(ENDPOINT_PREFIX + "/status/keyspaces/{keyspace}/tables/{table}")
+    @GetMapping(value = ENDPOINT_PREFIX + "/status/keyspaces/{keyspace}/tables/{table}",
+                produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "table-status")
     public ResponseEntity<List<ScheduledRepairJob>> tableStatus(@PathVariable String keyspace,
             @PathVariable String table)
     {
@@ -215,7 +292,9 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @Deprecated
-    @GetMapping(ENDPOINT_PREFIX + "/status/ids/{id}")
+    @GetMapping(value = ENDPOINT_PREFIX + "/status/ids/{id}",
+                produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "job-status")
     public ResponseEntity<CompleteRepairJob> jobStatus(@PathVariable String id)
     {
         UUID uuid;
@@ -238,7 +317,9 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @Deprecated
-    @GetMapping(ENDPOINT_PREFIX + "/config")
+    @GetMapping(value = ENDPOINT_PREFIX + "/config",
+                produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "config")
     public ResponseEntity<List<TableRepairConfig>> config()
     {
         List<TableRepairConfig> configurations = getTableRepairConfigs(job -> true);
@@ -247,7 +328,9 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @Deprecated
-    @GetMapping(ENDPOINT_PREFIX + "/config/keyspaces/{keyspace}")
+    @GetMapping(value = ENDPOINT_PREFIX + "/config/keyspaces/{keyspace}",
+                produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "keyspace-config")
     public ResponseEntity<List<TableRepairConfig>> keyspaceConfig(@PathVariable String keyspace)
     {
         List<TableRepairConfig> configurations = getTableRepairConfigs(
@@ -257,7 +340,9 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @Deprecated
-    @GetMapping(ENDPOINT_PREFIX + "/config/keyspaces/{keyspace}/tables/{table}")
+    @GetMapping(value = ENDPOINT_PREFIX + "/config/keyspaces/{keyspace}/tables/{table}",
+                produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "table-config")
     public ResponseEntity<List<TableRepairConfig>> tableConfig(@PathVariable String keyspace,
             @PathVariable String table)
     {
@@ -267,7 +352,9 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @Deprecated
-    @GetMapping(ENDPOINT_PREFIX + "/config/ids/{id}")
+    @GetMapping(value = ENDPOINT_PREFIX + "/config/ids/{id}",
+                produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "job-config")
     public ResponseEntity<TableRepairConfig> jobConfig(@PathVariable String id)
     {
         UUID uuid;
@@ -289,7 +376,9 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
 
     @Override
     @Deprecated
-    @PostMapping(ENDPOINT_PREFIX + "/schedule/keyspaces/{keyspace}/tables/{table}")
+    @PostMapping(value = ENDPOINT_PREFIX + "/schedule/keyspaces/{keyspace}/tables/{table}",
+                 produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "schedule-job")
     public ResponseEntity<ScheduledRepairJob> scheduleJob(@PathVariable String keyspace, @PathVariable String table)
     {
         try
@@ -330,14 +419,13 @@ public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Po
                 .filter(job -> job.getId().equals(id)).findFirst();
     }
 
-    private List<OnDemandRepair> getOnDemandJobs(Predicate<RepairJobView> filter)
+    private List<OnDemandRepair> getClusterWideOnDemandJobs(Predicate<RepairJobView> filter)
     {
-        return myOnDemandRepairScheduler.getAllRepairJobs().stream()
+        return myOnDemandRepairScheduler.getAllClusterWideRepairJobs().stream()
                 .filter(filter)
                 .map(OnDemandRepair::new)
                 .collect(Collectors.toList());
     }
-
 
     private Optional<RepairJobView> getScheduleView(UUID id)
     {

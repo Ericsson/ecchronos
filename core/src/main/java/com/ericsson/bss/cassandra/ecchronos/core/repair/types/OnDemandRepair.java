@@ -17,6 +17,9 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.google.common.annotations.VisibleForTesting;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -24,15 +27,26 @@ import java.util.UUID;
 /**
  * A representation of an on demand repair.
  *
- * Primarily used to to have a type to convert to JSON.
+ * Primarily used to have a type to convert to JSON.
  */
 public class OnDemandRepair
 {
+    @NotBlank
     public UUID id;
+    @NotBlank
+    public UUID hostId;
+    @NotBlank
     public String keyspace;
+    @NotBlank
     public String table;
+    @NotBlank
     public RepairJobView.Status status;
+    @NotBlank
+    @Min(0)
+    @Max(1)
     public double repairedRatio;
+    @NotBlank
+    @Min(-1)
     public long completedAt;
 
     public OnDemandRepair()
@@ -40,9 +54,10 @@ public class OnDemandRepair
     }
 
     @VisibleForTesting
-    public OnDemandRepair(UUID id, String keyspace, String table, RepairJobView.Status status, double repairedRatio, long completedAt)
+    public OnDemandRepair(UUID id, UUID hostId, String keyspace, String table, RepairJobView.Status status, double repairedRatio, long completedAt)
     {
         this.id = id;
+        this.hostId = hostId;
         this.keyspace = keyspace;
         this.table = table;
         this.status = status;
@@ -53,6 +68,7 @@ public class OnDemandRepair
     public OnDemandRepair(RepairJobView repairJobView)
     {
         this.id = repairJobView.getId();
+        this.hostId = repairJobView.getHostId();
         this.keyspace = repairJobView.getTableReference().getKeyspace();
         this.table = repairJobView.getTableReference().getTable();
         this.status = repairJobView.getStatus();
@@ -68,17 +84,18 @@ public class OnDemandRepair
         if (o == null || getClass() != o.getClass())
             return false;
         OnDemandRepair that = (OnDemandRepair) o;
-        return  Double.compare(that.repairedRatio, repairedRatio) == 0 &&
+        return  id.equals(that.id) &&
+                hostId.equals(that.hostId) &&
                 keyspace.equals(that.keyspace) &&
                 table.equals(that.table) &&
                 status == that.status &&
-                id.equals(that.id) &&
+                Double.compare(that.repairedRatio, repairedRatio) == 0 &&
                 completedAt == that.completedAt;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(id, keyspace, table, repairedRatio, status, completedAt);
+        return Objects.hash(id, hostId, keyspace, table, repairedRatio, status, completedAt);
     }
 }

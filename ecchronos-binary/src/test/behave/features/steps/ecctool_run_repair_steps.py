@@ -17,8 +17,8 @@ from subprocess import Popen, PIPE
 from behave import when, then  # pylint: disable=no-name-in-module
 from ecc_step_library.common_steps import match_and_remove_row, validate_header, validate_last_table_row  # pylint: disable=line-too-long
 
-TABLE_ROW_FORMAT_PATTERN = r'\| .* \| {0} \| {1} \| (COMPLETED|IN_QUEUE|WARNING|ERROR) \| \d+[.]\d+ \| .* \|'
-TABLE_HEADER = r'| Id | Keyspace | Table | Status | Repaired(%) | Completed at |'
+TABLE_ROW_FORMAT_PATTERN = r'\| .* \| .* \| {0} \| {1} \| (COMPLETED|IN_QUEUE|WARNING|ERROR) \| \d+[.]\d+ \| .* \|'
+TABLE_HEADER = r'| Id | Host Id | Keyspace | Table | Status | Repaired(%) | Completed at |'
 
 def run_ecc_run_repair(context, params):
     cmd = [context.config.userdata.get("ecctool")] + ["run-repair"] + params
@@ -34,7 +34,16 @@ def step_run_repair(context, keyspace, table):
 
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
-    context.rows = output_data[3:]
+    context.rows = output_data[3:-1]
+    context.summary = output_data[-1:]
+
+@when(u'we run local repair for keyspace {keyspace} and table {table}')
+def step_run_local_repair(context, keyspace, table):
+    run_ecc_run_repair(context, ['--keyspace', keyspace, '--table', table, '--local'])
+    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
+    context.header = output_data[0:3]
+    context.rows = output_data[3:-1]
+    context.summary = output_data[-1:]
 
 @then(u'the repair output should contain a valid header')
 def step_validate_tables_header(context):

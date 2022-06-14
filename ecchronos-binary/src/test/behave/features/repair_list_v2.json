@@ -23,9 +23,19 @@
       "completedAt": {
         "type": "integer",
         "description": "When the table was last repaired in millis since epoch"
+      },
+      "id": {
+        "type": "string",
+        "description": "A unique identifier for the job"
+      },
+      "hostId": {
+        "type": "string",
+        "description": "A unique identifier for the host the job was run on"
       }
     },
     "required": [
+      "id",
+      "hostId",
       "keyspace",
       "table",
       "status",

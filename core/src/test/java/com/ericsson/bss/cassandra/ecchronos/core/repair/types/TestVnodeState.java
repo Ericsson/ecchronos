@@ -66,7 +66,7 @@ public class TestVnodeState
         assertThat(vnodeState.startToken).isEqualTo(1);
         assertThat(vnodeState.endToken).isEqualTo(2);
         assertThat(vnodeState.lastRepairedAtInMs).isEqualTo(repairedAt);
-        assertThat(vnodeState.replicas).containsExactlyInAnyOrder(myLocalNodeAddress, myRemoteNodeAddress);
+        assertThat(vnodeState.replicas).containsExactlyInAnyOrder(myLocalNodeAddress.getHostAddress(), myRemoteNodeAddress.getHostAddress());
         assertThat(vnodeState.repaired).isTrue();
     }
 
@@ -84,7 +84,7 @@ public class TestVnodeState
         assertThat(vnodeState.startToken).isEqualTo(1);
         assertThat(vnodeState.endToken).isEqualTo(2);
         assertThat(vnodeState.lastRepairedAtInMs).isEqualTo(repairedAt);
-        assertThat(vnodeState.replicas).containsExactlyInAnyOrder(myLocalNodeAddress, myRemoteNodeAddress);
+        assertThat(vnodeState.replicas).containsExactlyInAnyOrder(myLocalNodeAddress.getHostAddress(), myRemoteNodeAddress.getHostAddress());
         assertThat(vnodeState.repaired).isFalse();
     }
 

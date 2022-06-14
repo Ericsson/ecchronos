@@ -3,6 +3,7 @@
 ## Version 3.0.0
 
 * Add Cassandra health indicator and enable probes - Issue #192
+* Add support for clusterwide repairs - Issue #299
 * Add custom HTML error page
 * Make fault reporter pluggable
 * Fix JMX URI validation with new Java versions - Issue #306

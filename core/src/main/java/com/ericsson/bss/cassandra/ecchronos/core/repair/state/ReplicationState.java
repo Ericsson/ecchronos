@@ -46,4 +46,6 @@ public interface ReplicationState
      * @return The map consisting of token -&gt; responsible nodes.
      */
     Map<LongTokenRange, ImmutableSet<Node>> getTokenRangeToReplicas(TableReference tableReference);
+
+    Map<LongTokenRange, ImmutableSet<Node>> getTokenRanges(TableReference tableReference);
 }

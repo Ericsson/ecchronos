@@ -74,6 +74,7 @@ public class TestOnDemandRepairJob
     private OngoingJob myOngoingJob;
 
     private final TableReference myTableReference = tableReference(keyspaceName, tableName);
+    private final UUID myHostId = UUID.randomUUID();
 
     @Before
     public void setup()
@@ -81,6 +82,7 @@ public class TestOnDemandRepairJob
         when(myOngoingJob.getTableReference()).thenReturn(myTableReference);
         UUID uuid = UUID.randomUUID();
         when(myOngoingJob.getJobId()).thenReturn(uuid );
+        when(myOngoingJob.getHostId()).thenReturn(myHostId);
     }
 
     @After
@@ -94,7 +96,7 @@ public class TestOnDemandRepairJob
     public void testJobCorrectlyReturned()
     {
         OnDemandRepairJob repairJob = createOnDemandRepairJob();
-        RepairJobView expectedView = new OnDemandRepairJobView(repairJob.getId(), myTableReference, RepairConfiguration.DEFAULT, RepairJobView.Status.IN_QUEUE, 0, System.currentTimeMillis());
+        RepairJobView expectedView = new OnDemandRepairJobView(repairJob.getId(), myHostId, myTableReference, RepairConfiguration.DEFAULT, RepairJobView.Status.IN_QUEUE, 0, System.currentTimeMillis());
         assertThat(repairJob.getId()).isEqualTo(repairJob.getId());
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
         assertThat(repairJob.getRepairConfiguration()).isEqualTo(RepairConfiguration.DEFAULT);
@@ -103,6 +105,7 @@ public class TestOnDemandRepairJob
         assertThat(repairJob.getView().getRepairStateSnapshot()).isNull();
         assertThat(repairJob.getView().getTableReference()).isEqualTo(expectedView.getTableReference());
         assertThat(repairJob.getView().getStatus()).isEqualTo(expectedView.getStatus());
+        assertThat(repairJob.getView().getHostId()).isEqualTo(expectedView.getHostId());
     }
 
     @Test
@@ -111,7 +114,7 @@ public class TestOnDemandRepairJob
         OnDemandRepairJob repairJob = createOnDemandRepairJob();
         Iterator<ScheduledTask> it = repairJob.iterator();
         repairJob.postExecute(false, it.next());
-        RepairJobView expectedView = new OnDemandRepairJobView(repairJob.getId(), myTableReference, RepairConfiguration.DEFAULT, RepairJobView.Status.ERROR, 0, System.currentTimeMillis());
+        RepairJobView expectedView = new OnDemandRepairJobView(repairJob.getId(), myHostId, myTableReference, RepairConfiguration.DEFAULT, RepairJobView.Status.ERROR, 0, System.currentTimeMillis());
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
         assertThat(repairJob.getRepairConfiguration()).isEqualTo(RepairConfiguration.DEFAULT);
         assertThat(repairJob.getTableReference()).isEqualTo(myTableReference);
@@ -119,6 +122,7 @@ public class TestOnDemandRepairJob
         assertThat(repairJob.getView().getRepairStateSnapshot()).isNull();
         assertThat(repairJob.getView().getTableReference()).isEqualTo(expectedView.getTableReference());
         assertThat(repairJob.getView().getStatus()).isEqualTo(expectedView.getStatus());
+        assertThat(repairJob.getView().getHostId()).isEqualTo(expectedView.getHostId());
     }
 
     @Test

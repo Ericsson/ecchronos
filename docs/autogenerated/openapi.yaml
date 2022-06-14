@@ -1,0 +1,602 @@
+openapi: 3.0.1
+info:
+  title: ecChronos REST API
+  description: ecChronos REST API can be used to view the status of schedules and
+    repairs as well as run manual repairs
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+  version: 1.0.0
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+tags:
+- name: repair-management
+paths:
+  /repair-management/v2/repairs:
+    get:
+      tags:
+      - repair-management
+      operationId: get-repairs
+      parameters:
+      - name: keyspace
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: table
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: hostId
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OnDemandRepair'
+    post:
+      tags:
+      - repair-management
+      operationId: trigger-repair
+      parameters:
+      - name: keyspace
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: table
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: isLocal
+        in: query
+        required: false
+        schema:
+          type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OnDemandRepair'
+  /repair-management/v1/schedule/keyspaces/{keyspace}/tables/{table}:
+    post:
+      tags:
+      - repair-management
+      operationId: schedule-job
+      parameters:
+      - name: keyspace
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: table
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduledRepairJob'
+      deprecated: true
+  /repair-management/v2/schedules:
+    get:
+      tags:
+      - repair-management
+      operationId: get-schedules
+      parameters:
+      - name: keyspace
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: table
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Schedule'
+  /repair-management/v2/schedules/{id}:
+    get:
+      tags:
+      - repair-management
+      operationId: get-schedules-by-id
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: full
+        in: query
+        required: false
+        schema:
+          type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+  /repair-management/v2/repairs/{id}:
+    get:
+      tags:
+      - repair-management
+      operationId: get-repairs-by-id
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: hostId
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OnDemandRepair'
+  /repair-management/v1/status:
+    get:
+      tags:
+      - repair-management
+      operationId: status
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduledRepairJob'
+      deprecated: true
+  /repair-management/v1/status/keyspaces/{keyspace}:
+    get:
+      tags:
+      - repair-management
+      operationId: keyspace-status
+      parameters:
+      - name: keyspace
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduledRepairJob'
+      deprecated: true
+  /repair-management/v1/status/keyspaces/{keyspace}/tables/{table}:
+    get:
+      tags:
+      - repair-management
+      operationId: table-status
+      parameters:
+      - name: keyspace
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: table
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduledRepairJob'
+      deprecated: true
+  /repair-management/v1/status/ids/{id}:
+    get:
+      tags:
+      - repair-management
+      operationId: job-status
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteRepairJob'
+      deprecated: true
+  /repair-management/v1/config:
+    get:
+      tags:
+      - repair-management
+      operationId: config
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TableRepairConfig'
+      deprecated: true
+  /repair-management/v1/config/keyspaces/{keyspace}:
+    get:
+      tags:
+      - repair-management
+      operationId: keyspace-config
+      parameters:
+      - name: keyspace
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TableRepairConfig'
+      deprecated: true
+  /repair-management/v1/config/keyspaces/{keyspace}/tables/{table}:
+    get:
+      tags:
+      - repair-management
+      operationId: table-config
+      parameters:
+      - name: keyspace
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: table
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TableRepairConfig'
+      deprecated: true
+  /repair-management/v1/config/ids/{id}:
+    get:
+      tags:
+      - repair-management
+      operationId: job-config
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableRepairConfig'
+      deprecated: true
+components:
+  schemas:
+    OnDemandRepair:
+      required:
+      - completedAt
+      - hostId
+      - id
+      - keyspace
+      - repairedRatio
+      - status
+      - table
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        hostId:
+          type: string
+          format: uuid
+        keyspace:
+          type: string
+        table:
+          type: string
+        status:
+          type: string
+          enum:
+          - COMPLETED
+          - IN_QUEUE
+          - WARNING
+          - ERROR
+          - BLOCKED
+        repairedRatio:
+          maximum: 1
+          minimum: 0
+          type: number
+          format: double
+        completedAt:
+          minimum: -1
+          type: integer
+          format: int64
+    ScheduledRepairJob:
+      required:
+      - id
+      - keyspace
+      - lastRepairedAtInMs
+      - nextRepairInMs
+      - recurring
+      - repairedRatio
+      - status
+      - table
+      type: object
+      properties:
+        keyspace:
+          type: string
+        table:
+          type: string
+        lastRepairedAtInMs:
+          minimum: -1
+          type: integer
+          format: int64
+        repairedRatio:
+          maximum: 1
+          minimum: 0
+          type: number
+          format: double
+        status:
+          type: string
+          enum:
+          - COMPLETED
+          - IN_QUEUE
+          - WARNING
+          - ERROR
+          - BLOCKED
+        nextRepairInMs:
+          minimum: -1
+          type: integer
+          format: int64
+        id:
+          type: string
+          format: uuid
+        recurring:
+          type: boolean
+    Schedule:
+      required:
+      - config
+      - id
+      - keyspace
+      - lastRepairedAtInMs
+      - nextRepairInMs
+      - repairedRatio
+      - status
+      - table
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        keyspace:
+          type: string
+        table:
+          type: string
+        status:
+          type: string
+          enum:
+          - COMPLETED
+          - ON_TIME
+          - LATE
+          - OVERDUE
+          - BLOCKED
+        repairedRatio:
+          maximum: 1
+          minimum: 0
+          type: number
+          format: double
+        lastRepairedAtInMs:
+          type: integer
+          format: int64
+        nextRepairInMs:
+          type: integer
+          format: int64
+        config:
+          $ref: '#/components/schemas/ScheduleConfig'
+        virtualNodeStates:
+          type: array
+          items:
+            $ref: '#/components/schemas/VirtualNodeState'
+    ScheduleConfig:
+      required:
+      - errorTimeInMs
+      - intervalInMs
+      - parallelism
+      - unwindRatio
+      - warningTimeInMs
+      type: object
+      properties:
+        intervalInMs:
+          minimum: 0
+          type: integer
+          format: int64
+        unwindRatio:
+          minimum: 0
+          type: number
+          format: double
+        warningTimeInMs:
+          minimum: 0
+          type: integer
+          format: int64
+        errorTimeInMs:
+          minimum: 0
+          type: integer
+          format: int64
+        parallelism:
+          type: string
+          enum:
+          - PARALLEL
+    VirtualNodeState:
+      required:
+      - endToken
+      - lastRepairedAtInMs
+      - repaired
+      - replicas
+      - startToken
+      type: object
+      properties:
+        startToken:
+          minimum: -9223372036854775808
+          type: integer
+          format: int64
+        endToken:
+          maximum: 9223372036854775807
+          type: integer
+          format: int64
+        replicas:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+        lastRepairedAtInMs:
+          minimum: 0
+          type: integer
+          format: int64
+        repaired:
+          type: boolean
+    CompleteRepairJob:
+      required:
+      - id
+      - keyspace
+      - lastRepairedAtInMs
+      - nextRepairInMs
+      - recurring
+      - repairedRatio
+      - status
+      - table
+      - virtualNodeStates
+      type: object
+      properties:
+        keyspace:
+          type: string
+        table:
+          type: string
+        lastRepairedAtInMs:
+          minimum: -1
+          type: integer
+          format: int64
+        repairedRatio:
+          maximum: 1
+          minimum: 0
+          type: number
+          format: double
+        status:
+          type: string
+          enum:
+          - COMPLETED
+          - IN_QUEUE
+          - WARNING
+          - ERROR
+          - BLOCKED
+        nextRepairInMs:
+          minimum: -1
+          type: integer
+          format: int64
+        id:
+          type: string
+          format: uuid
+        recurring:
+          type: boolean
+        virtualNodeStates:
+          type: array
+          items:
+            $ref: '#/components/schemas/VirtualNodeState'
+    TableRepairConfig:
+      required:
+      - id
+      - keyspace
+      - repairErrorTimeInMs
+      - repairIntervalInMs
+      - repairParallelism
+      - repairUnwindRatio
+      - repairWarningTimeInMs
+      - table
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        keyspace:
+          type: string
+        table:
+          type: string
+        repairIntervalInMs:
+          minimum: 0
+          type: integer
+          format: int64
+        repairParallelism:
+          type: string
+          enum:
+          - PARALLEL
+        repairUnwindRatio:
+          minimum: 0
+          type: number
+          format: double
+        repairWarningTimeInMs:
+          minimum: 0
+          type: integer
+          format: int64
+        repairErrorTimeInMs:
+          minimum: 0
+          type: integer
+          format: int64

@@ -113,6 +113,11 @@
         </dependency>
 
         <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-ui</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>io.prometheus</groupId>
             <artifactId>simpleclient</artifactId>
         </dependency>
