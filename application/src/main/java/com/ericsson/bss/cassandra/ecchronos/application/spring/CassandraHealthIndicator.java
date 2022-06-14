@@ -74,8 +74,7 @@ public class CassandraHealthIndicator implements HealthIndicator
         }
         catch (Exception e)
         {
-            LOG.debug("JMX readiness failed", e);
-            LOG.error("JMX readiness failed {}", e.getMessage());
+            LOG.debug("Unable to connect over JMX", e);
             details.put("JMX connection error:", e.getMessage());
         }
         return false;
@@ -95,8 +94,7 @@ public class CassandraHealthIndicator implements HealthIndicator
         }
         catch (Exception e)
         {
-            LOG.debug("CQL readiness failed", e);
-            LOG.error("CQL readiness failed {}", e.getMessage());
+            LOG.debug("Unable to connect over CQL", e);
             details.put("CQL connection error:", e.getMessage());
         }
         return false;
