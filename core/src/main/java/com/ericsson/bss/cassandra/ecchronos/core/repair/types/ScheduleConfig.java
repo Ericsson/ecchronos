@@ -18,6 +18,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions.RepairParallelism;
 
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import java.util.Objects;
 
 /**
@@ -27,10 +29,19 @@ import java.util.Objects;
  */
 public class ScheduleConfig
 {
+    @NotBlank
+    @Min(0)
     public long intervalInMs;
+    @NotBlank
+    @Min(0)
     public double unwindRatio;
+    @NotBlank
+    @Min(0)
     public long warningTimeInMs;
+    @NotBlank
+    @Min(0)
     public long errorTimeInMs;
+    @NotBlank
     public RepairParallelism parallelism;
 
     public ScheduleConfig()

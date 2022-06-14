@@ -20,6 +20,10 @@ import java.util.UUID;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.google.common.annotations.VisibleForTesting;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+
 /**
  * A representation of a scheduled repair job.
  *
@@ -27,13 +31,25 @@ import com.google.common.annotations.VisibleForTesting;
  */
 public class ScheduledRepairJob
 {
+    @NotBlank
     public String keyspace;
+    @NotBlank
     public String table;
+    @NotBlank
+    @Min(-1)
     public long lastRepairedAtInMs;
+    @NotBlank
+    @Min(0)
+    @Max(1)
     public double repairedRatio;
+    @NotBlank
     public RepairJobView.Status status;
+    @NotBlank
+    @Min(-1)
     public long nextRepairInMs;
+    @NotBlank
     public UUID id;
+    @NotBlank
     public boolean recurring;
 
     public ScheduledRepairJob()

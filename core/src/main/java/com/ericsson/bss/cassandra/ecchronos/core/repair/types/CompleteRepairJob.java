@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 
+import javax.validation.constraints.NotBlank;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
  */
 public class CompleteRepairJob extends ScheduledRepairJob
 {
+    @NotBlank
     public List<VirtualNodeState> virtualNodeStates;
 
     public CompleteRepairJob()

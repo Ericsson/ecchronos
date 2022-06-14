@@ -45,6 +45,12 @@
             <artifactId>metrics-core</artifactId>
         </dependency>
 
+        <!-- OpenAPI annotations -->
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+        </dependency>
+
         <!-- Cassandra driver -->
         <dependency>
             <groupId>com.datastax.cassandra</groupId>

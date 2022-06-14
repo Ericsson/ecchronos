@@ -18,6 +18,9 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 import com.google.common.annotations.VisibleForTesting;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -31,13 +34,23 @@ import java.util.stream.Collectors;
  */
 public class Schedule
 {
+    @NotBlank
     public UUID id;
+    @NotBlank
     public String keyspace;
+    @NotBlank
     public String table;
+    @NotBlank
     public RepairJobView.ScheduleStatus status;
+    @NotBlank
+    @Min(0)
+    @Max(1)
     public double repairedRatio;
+    @NotBlank
     public long lastRepairedAtInMs;
+    @NotBlank
     public long nextRepairInMs;
+    @NotBlank
     public ScheduleConfig config;
     public List<VirtualNodeState> virtualNodeStates;
 
