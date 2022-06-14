@@ -119,6 +119,11 @@
 
     <profiles>
         <profile>
+            <activation>
+                <property>
+                    <name>precommit.tests</name>
+                </property>
+            </activation>
             <id>osgi-integration-tests</id>
             <build>
                 <plugins>

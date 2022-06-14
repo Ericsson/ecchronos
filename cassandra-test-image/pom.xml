@@ -46,6 +46,11 @@
     <profiles>
         <profile>
             <id>docker-integration-test</id>
+            <activation>
+                <property>
+                    <name>precommit.tests</name>
+                </property>
+            </activation>
             <build>
                 <plugins>
                     <plugin>
