@@ -182,6 +182,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
+                            <skip>${skipTests}</skip>
                             <executable>bash</executable>
                             <arguments>
                                 <argument>codestyle.sh</argument>
