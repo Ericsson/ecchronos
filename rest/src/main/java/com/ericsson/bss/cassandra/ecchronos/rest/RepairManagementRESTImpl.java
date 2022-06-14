@@ -58,11 +58,11 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @RestController
 @OpenAPIDefinition(info = @Info(
         title = "ecChronos REST API",
-        description = "ecChronos REST API can be used to view repair status of tables and run repairs",
-        version = "1.0.0",
+        description = "ecChronos REST API can be used to view the status of schedules and repairs as well as run manual repairs",
         license = @License(
                 name = "Apache 2.0",
-                url = "https://www.apache.org/licenses/LICENSE-2.0")))
+                url = "https://www.apache.org/licenses/LICENSE-2.0"),
+        version = "1.0.0"))
 public class RepairManagementRESTImpl implements RepairManagementREST //NOPMD Possible god class, will be much smaller once v1 is removed
 {
     private static final String ROOT = "/repair-management/";

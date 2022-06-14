@@ -1,8 +1,8 @@
 openapi: 3.0.1
 info:
   title: ecChronos REST API
-  description: ecChronos REST API can be used to view repair status of tables and
-    run repairs
+  description: ecChronos REST API can be used to view the status of schedules and
+    repairs as well as run manual repairs
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
