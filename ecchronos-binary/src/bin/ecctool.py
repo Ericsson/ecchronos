@@ -356,7 +356,7 @@ def status(arguments, print_running=False):
 
 def status_v2(arguments, print_running=False):
     request = rest.V2RepairSchedulerRequest(base_url=arguments.url)
-    result = request.list_repairs()
+    result = request.list_schedules()
     if result.is_successful():
         if print_running:
             print("ecChronos is running")
