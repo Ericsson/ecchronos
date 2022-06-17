@@ -142,8 +142,14 @@ public class OngoingJob
             Set<LongTokenRange> remainingRanges = replicaWithRanges.getValue();
             Set<LongTokenRange> repairedRanges = repairedRangesPerNode.get(node);
             Set<LongTokenRange> allTokensForNode = new HashSet<>();
-            allTokensForNode.addAll(remainingRanges);
-            allTokensForNode.addAll(repairedRanges);
+            if (remainingRanges != null)
+            {
+                allTokensForNode.addAll(remainingRanges);
+            }
+            if (repairedRanges != null)
+            {
+                allTokensForNode.addAll(repairedRanges);
+            }
             myOnDemandStatus.addNewJob(node.getId(), myJobId, myTableReference, allTokensForNode.hashCode(), repairedRanges);
         }
     }

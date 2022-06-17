@@ -216,7 +216,10 @@ public class OnDemandStatus
     public void addNewJob(UUID host, UUID jobId, TableReference tableReference, int tokenMapHash, Set<LongTokenRange> repairedRanges)
     {
         Set<UDTValue> repairedRangesUDT = new HashSet<>();
-        repairedRanges.forEach(t -> repairedRangesUDT.add(createUDTTokenRangeValue(t.start, t.end)));
+        if (repairedRanges != null)
+        {
+            repairedRanges.forEach(t -> repairedRangesUDT.add(createUDTTokenRangeValue(t.start, t.end)));
+        }
         UDTValue uDTTableReference = myUDTTableReferenceType.newValue().setUUID(UDT_ID_NAME, tableReference.getId())
                 .setString(UDT_KEYSPACE_NAME, tableReference.getKeyspace())
                 .setString(UDT_TABLE_NAME, tableReference.getTable());

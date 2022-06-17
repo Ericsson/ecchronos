@@ -21,6 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.Schedule;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementREST;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementRESTImpl;
@@ -48,13 +49,16 @@ public class RepairManagementRESTComponent implements RepairManagementREST
     @Reference(service = TableReferenceFactory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile TableReferenceFactory myTableReferenceFactory;
 
+    @Reference(service = ReplicatedTableProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    private volatile ReplicatedTableProvider myReplicatedTableProvider;
+
     private volatile RepairManagementRESTImpl myDelegateRESTImpl;
 
     @Activate
     public synchronized void activate()
     {
         myDelegateRESTImpl = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler,
-                myTableReferenceFactory);
+                myTableReferenceFactory, myReplicatedTableProvider);
     }
 
     @Override

@@ -32,6 +32,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.types.Schedule;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Before;
@@ -68,6 +69,9 @@ public class TestRepairManagementRESTImpl
     @Mock
     private OnDemandRepairScheduler myOnDemandRepairScheduler;
 
+    @Mock
+    private ReplicatedTableProvider myReplicatedTableProvider;
+
     private TableReferenceFactory myTableReferenceFactory = new MockTableReferenceFactory();
 
     private RepairManagementREST repairManagementREST;
@@ -76,7 +80,7 @@ public class TestRepairManagementRESTImpl
     public void setupMocks()
     {
         repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler,
-                myTableReferenceFactory);
+                myTableReferenceFactory, myReplicatedTableProvider);
     }
 
     @Test
@@ -269,6 +273,7 @@ public class TestRepairManagementRESTImpl
 
         when(myOnDemandRepairScheduler.scheduleJob(myTableReferenceFactory.forTable("ks", "tb"))).thenReturn(
                 localRepairJobView);
+        when(myReplicatedTableProvider.accept("ks")).thenReturn(true);
         ResponseEntity<List<OnDemandRepair>> response = repairManagementREST.triggerRepair("ks", "tb", true);
 
         assertThat(response.getBody()).isEqualTo(localExpectedResponse);
@@ -289,6 +294,18 @@ public class TestRepairManagementRESTImpl
 
         assertThat(response.getBody()).isEqualTo(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    public void testTriggerRepairOnlyKeyspace() throws EcChronosException
+    {
+        //TODO
+    }
+
+    @Test
+    public void testTriggerRepairNoKeyspaceNoTable() throws EcChronosException
+    {
+        //TODO
     }
 
     @Test

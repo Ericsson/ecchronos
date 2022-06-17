@@ -17,10 +17,13 @@ package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactoryImpl;
 import org.osgi.service.component.annotations.*;
+
+import java.util.Set;
 
 @Component(service = TableReferenceFactory.class)
 public class TableReferenceFactoryService implements TableReferenceFactory
@@ -48,5 +51,17 @@ public class TableReferenceFactoryService implements TableReferenceFactory
     public TableReference forTable(TableMetadata table)
     {
         return delegateTableReferenceFactory.forTable(table);
+    }
+
+    @Override
+    public Set<TableReference> forKeyspace(String keyspace) throws EcChronosException
+    {
+        return delegateTableReferenceFactory.forKeyspace(keyspace);
+    }
+
+    @Override
+    public Set<TableReference> forCluster()
+    {
+        return delegateTableReferenceFactory.forCluster();
     }
 }

@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
 import java.io.Closeable;
 import java.util.Collections;
 
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -131,6 +132,12 @@ public class ECChronos implements Closeable
     public RepairScheduler repairScheduler()
     {
         return myRepairSchedulerImpl;
+    }
+
+    @Bean
+    public ReplicatedTableProvider replicatedTableProvider()
+    {
+        return myECChronosInternals.getReplicatedTableProvider();
     }
 
     @Override
