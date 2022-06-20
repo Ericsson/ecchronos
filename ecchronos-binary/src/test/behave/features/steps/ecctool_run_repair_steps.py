@@ -53,12 +53,12 @@ def step_run_repair_cluster(context):
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
     context.rows = output_data[3:-1]
-    print context.out.decode('ascii')
     context.summary = output_data[-1:]
 
 @when(u'we run local repair for keyspace {keyspace} and table {table}')
 def step_run_local_repair(context, keyspace, table):
     run_ecc_run_repair(context, ['--keyspace', keyspace, '--table', table, '--local'])
+
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
     context.rows = output_data[3:-1]
@@ -67,6 +67,7 @@ def step_run_local_repair(context, keyspace, table):
 @when(u'we run local repair for keyspace {keyspace}')
 def step_run_local_repair_for_keyspace(context, keyspace):
     run_ecc_run_repair(context, ['--keyspace', keyspace, '--local'])
+
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
     context.rows = output_data[3:-1]
@@ -75,6 +76,7 @@ def step_run_local_repair_for_keyspace(context, keyspace):
 @when(u'we run local repair')
 def step_run_local_repair_cluster(context):
     run_ecc_run_repair(context, ['--local'])
+
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.header = output_data[0:3]
     context.rows = output_data[3:-1]
