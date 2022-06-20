@@ -17,15 +17,20 @@ package com.ericsson.bss.cassandra.ecchronos.core.utils;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.TableMetadata;
+import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.eq;
@@ -107,6 +112,79 @@ public class TestTableReferenceFactory
 
         assertThat(tableReference1).isNotEqualTo(tableReference2);
         assertThat(tableReference1.hashCode()).isNotEqualTo(tableReference2.hashCode());
+    }
+
+    @Test
+    public void testForKeyspace() throws EcChronosException
+    {
+        Set<String> tables = new HashSet<>();
+        tables.add("table1");
+        tables.add("table2");
+        mockKeyspace("keyspace111", tables);
+        mockKeyspace("keyspace222", Collections.singleton("table1"));
+        Set<TableReference> tableReferences = tableReferenceFactory.forKeyspace("keyspace111");
+        assertThat(tableReferences).hasSize(2);
+        assertThat(tableReferences.stream()
+                .filter(t -> t.getKeyspace().equals("keyspace111"))
+                .collect(Collectors.toList())).isNotEmpty();
+    }
+
+    @Test
+    public void testForKeyspaceNoTables() throws EcChronosException
+    {
+        mockEmptyKeyspace("keyspaceEmpty");
+        Set<TableReference> tableReferences = tableReferenceFactory.forKeyspace("keyspaceEmpty");
+        assertThat(tableReferences).hasSize(0);
+    }
+
+    @Test (expected = EcChronosException.class)
+    public void testForKeyspaceDoesNotExist() throws EcChronosException
+    {
+        tableReferenceFactory.forKeyspace("keyspaceEmpty");
+    }
+
+    @Test
+    public void testForCluster()
+    {
+        Set<String> firstKsTables = new HashSet<>();
+        firstKsTables.add("table1");
+        firstKsTables.add("table2");
+        mockKeyspace("firstks", firstKsTables);
+        mockKeyspace("secondks", Collections.singleton("table1"));
+        mockKeyspace("thirdks", Collections.singleton("table1"));
+        when(mockMetadata.getKeyspaces()).thenReturn(mockedKeyspaces.values().stream().collect(Collectors.toList()));
+        Set<TableReference> tableReferences = tableReferenceFactory.forCluster();
+        assertThat(tableReferences).isNotEmpty();
+        assertThat(tableReferences.stream()
+                .filter(t -> t.getKeyspace().equals("firstks"))
+                .collect(Collectors.toList())).hasSize(2);
+        assertThat(tableReferences.stream()
+                .filter(t -> t.getKeyspace().equals("secondks"))
+                .collect(Collectors.toList())).hasSize(1);
+        assertThat(tableReferences.stream()
+                .filter(t -> t.getKeyspace().equals("thirdks"))
+                .collect(Collectors.toList())).hasSize(1);
+    }
+
+    private void mockKeyspace(String keyspace, Set<String> tables)
+    {
+        KeyspaceMetadata keyspaceMetadata = mockedKeyspaces.computeIfAbsent(keyspace, k -> {
+            KeyspaceMetadata mockedKeyspace = mock(KeyspaceMetadata.class);
+            when(mockedKeyspace.getName()).thenReturn(keyspace);
+            Set<TableMetadata> tableMetadatas = new HashSet<>();
+            for (String table : tables)
+            {
+                TableMetadata tableMetadata = mock(TableMetadata.class);
+                when(tableMetadata.getId()).thenReturn(UUID.randomUUID());
+                when(tableMetadata.getName()).thenReturn(table);
+                when(tableMetadata.getKeyspace()).thenReturn(mockedKeyspace);
+                tableMetadatas.add(tableMetadata);
+                when(mockedKeyspace.getTable(eq(table))).thenReturn(tableMetadata);
+            }
+            when(mockedKeyspace.getTables()).thenReturn(tableMetadatas);
+            return mockedKeyspace;
+        });
+        when(mockMetadata.getKeyspace(eq(keyspace))).thenReturn(keyspaceMetadata);
     }
 
     @Test
