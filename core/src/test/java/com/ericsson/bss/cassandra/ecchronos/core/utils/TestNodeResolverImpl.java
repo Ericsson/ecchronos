@@ -19,20 +19,20 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestNodeResolverImpl
@@ -40,58 +40,61 @@ public class TestNodeResolverImpl
     @Mock
     private Metadata mockMetadata;
 
-    private Set<Host> mockedHosts = new HashSet<>();
+    @Mock
+    private CqlSession mockCqlSession;
+
+    private Map<UUID, com.datastax.oss.driver.api.core.metadata.Node> mockedNodes = new HashMap<>();
 
     private NodeResolver nodeResolver;
 
     @Before
     public void setup() throws Exception
     {
-        when(mockMetadata.getAllHosts()).thenReturn(mockedHosts);
+        when(mockMetadata.getNodes()).thenReturn(mockedNodes);
 
         // Add two dummy hosts so that we know we find the correct host
-        addHost(address("127.0.0.2"), "dc1");
-        addHost(address("127.0.0.3"), "dc1");
+        addNode(new InetSocketAddress(address("127.0.0.2"), 9042), "dc1");
+        addNode(new InetSocketAddress(address("127.0.0.3"), 9042), "dc1");
 
-        nodeResolver = new NodeResolverImpl(mockMetadata);
+        when(mockCqlSession.getMetadata()).thenReturn(mockMetadata);
+
+        nodeResolver = new NodeResolverImpl(mockCqlSession);
     }
 
     @Test
     public void testGetHost() throws Exception
     {
-        Host host = addHost(address("127.0.0.1"), "dc1");
+        com.datastax.oss.driver.api.core.metadata.Node node = addNode(new InetSocketAddress(address("127.0.0.1"), 9042), "dc1");
 
         Optional<Node> maybeNode = nodeResolver.fromIp(address("127.0.0.1"));
         assertThat(maybeNode).isPresent();
-        Node node = maybeNode.get();
-        assertThat(node.getId()).isEqualTo(host.getHostId());
-        assertThat(node.getPublicAddress()).isEqualTo(address("127.0.0.1"));
-        assertThat(node.getDatacenter()).isEqualTo("dc1");
+        assertThat(maybeNode.get().getId()).isEqualTo(node.getHostId());
+        assertThat(maybeNode.get().getPublicAddress()).isEqualTo(address("127.0.0.1"));
+        assertThat(maybeNode.get().getDatacenter()).isEqualTo("dc1");
 
-        assertThat(nodeResolver.fromIp(address("127.0.0.1"))).containsSame(node);
-        assertThat(nodeResolver.fromUUID(host.getHostId())).containsSame(node);
+        assertThat(nodeResolver.fromIp(address("127.0.0.1"))).containsSame(maybeNode.get());
+        assertThat(nodeResolver.fromUUID(node.getHostId())).containsSame(maybeNode.get());
     }
 
     @Test
     public void testChangeIpAddress() throws Exception
     {
-        Host host = addHost(address("127.0.0.1"), "dc1");
+        com.datastax.oss.driver.api.core.metadata.Node node = addNode(new InetSocketAddress(address("127.0.0.1"), 9042), "dc1");
 
         Optional<Node> maybeNode = nodeResolver.fromIp(address("127.0.0.1"));
         assertThat(maybeNode).isPresent();
-        Node node = maybeNode.get();
 
-        assertThat(node.getPublicAddress()).isEqualTo(address("127.0.0.1"));
+        assertThat(maybeNode.get().getPublicAddress()).isEqualTo(address("127.0.0.1"));
 
-        when(host.getBroadcastAddress()).thenReturn(address("127.0.0.5"));
+        when(node.getBroadcastAddress()).thenReturn(Optional.of(new InetSocketAddress(address("127.0.0.5"), 9042)));
 
-        assertThat(node.getId()).isEqualTo(host.getHostId());
-        assertThat(node.getPublicAddress()).isEqualTo(address("127.0.0.5"));
-        assertThat(node.getDatacenter()).isEqualTo("dc1");
+        assertThat(maybeNode.get().getId()).isEqualTo(node.getHostId());
+        assertThat(maybeNode.get().getPublicAddress()).isEqualTo(address("127.0.0.5"));
+        assertThat(maybeNode.get().getDatacenter()).isEqualTo("dc1");
 
         // New mapping for the node
-        assertThat(nodeResolver.fromIp(address("127.0.0.5"))).containsSame(node);
-        assertThat(nodeResolver.fromUUID(host.getHostId())).containsSame(node);
+        assertThat(nodeResolver.fromIp(address("127.0.0.5"))).containsSame(maybeNode.get());
+        assertThat(nodeResolver.fromUUID(node.getHostId())).containsSame(maybeNode.get());
 
         // Make sure the old mapping is removed
         assertThat(nodeResolver.fromIp(address("127.0.0.1"))).isEmpty();
@@ -100,37 +103,35 @@ public class TestNodeResolverImpl
     @Test
     public void testChangeIpAddressAndAddNewReplica() throws Exception
     {
-        Host host = addHost(address("127.0.0.1"), "dc1");
+        com.datastax.oss.driver.api.core.metadata.Node node = addNode(new InetSocketAddress(address("127.0.0.1"), 9042), "dc1");
 
         Optional<Node> maybeNode = nodeResolver.fromIp(address("127.0.0.1"));
         assertThat(maybeNode).isPresent();
-        Node node = maybeNode.get();
 
-        assertThat(node.getPublicAddress()).isEqualTo(address("127.0.0.1"));
+        assertThat(maybeNode.get().getPublicAddress()).isEqualTo(address("127.0.0.1"));
 
-        when(host.getBroadcastAddress()).thenReturn(address("127.0.0.5"));
+        when(node.getBroadcastAddress()).thenReturn(Optional.of(new InetSocketAddress(address("127.0.0.5"), 9042)));
 
-        assertThat(node.getId()).isEqualTo(host.getHostId());
-        assertThat(node.getPublicAddress()).isEqualTo(address("127.0.0.5"));
-        assertThat(node.getDatacenter()).isEqualTo("dc1");
+        assertThat(maybeNode.get().getId()).isEqualTo(node.getHostId());
+        assertThat(maybeNode.get().getPublicAddress()).isEqualTo(address("127.0.0.5"));
+        assertThat(maybeNode.get().getDatacenter()).isEqualTo("dc1");
 
         // New mapping for the node
-        assertThat(nodeResolver.fromIp(address("127.0.0.5"))).containsSame(node);
-        assertThat(nodeResolver.fromUUID(host.getHostId())).containsSame(node);
+        assertThat(nodeResolver.fromIp(address("127.0.0.5"))).containsSame(maybeNode.get());
+        assertThat(nodeResolver.fromUUID(node.getHostId())).containsSame(maybeNode.get());
 
         // If a new node is using the old ip we should return it
-        Host newHost = addHost(address("127.0.0.1"), "dc2");
+        com.datastax.oss.driver.api.core.metadata.Node newNode = addNode(new InetSocketAddress(address("127.0.0.1"), 9042), "dc2");
 
         Optional<Node> maybeNewNode = nodeResolver.fromIp(address("127.0.0.1"));
         assertThat(maybeNewNode).isPresent();
-        Node newNode = maybeNewNode.get();
 
-        assertThat(newNode.getId()).isEqualTo(newHost.getHostId());
-        assertThat(newNode.getPublicAddress()).isEqualTo(address("127.0.0.1"));
-        assertThat(newNode.getDatacenter()).isEqualTo("dc2");
-        assertThat(nodeResolver.fromUUID(newHost.getHostId())).containsSame(newNode);
+        assertThat(maybeNewNode.get().getId()).isEqualTo(newNode.getHostId());
+        assertThat(maybeNewNode.get().getPublicAddress()).isEqualTo(address("127.0.0.1"));
+        assertThat(maybeNewNode.get().getDatacenter()).isEqualTo("dc2");
+        assertThat(nodeResolver.fromUUID(newNode.getHostId())).containsSame(maybeNewNode.get());
 
-        assertThat(newNode).isNotSameAs(node);
+        assertThat(maybeNewNode.get()).isNotSameAs(maybeNode.get());
     }
 
     @Test
@@ -148,16 +149,17 @@ public class TestNodeResolverImpl
         return InetAddress.getByName(address);
     }
 
-    private Host addHost(InetAddress broadcastAddress, String dataCenter)
+    private com.datastax.oss.driver.api.core.metadata.Node addNode(InetSocketAddress broadcastAddress, String dataCenter)
     {
-        Host host = mock(Host.class);
+        com.datastax.oss.driver.api.core.metadata.Node node = mock(com.datastax.oss.driver.api.core.metadata.Node.class);
 
-        when(host.getHostId()).thenReturn(UUID.randomUUID());
-        when(host.getBroadcastAddress()).thenReturn(broadcastAddress);
-        when(host.getDatacenter()).thenReturn(dataCenter);
+        UUID id = UUID.randomUUID();
+        when(node.getHostId()).thenReturn(id);
+        when(node.getBroadcastAddress()).thenReturn(Optional.of(broadcastAddress));
+        when(node.getDatacenter()).thenReturn(dataCenter);
 
-        mockedHosts.add(host);
-        when(mockMetadata.getAllHosts()).thenReturn(mockedHosts);
-        return host;
+        mockedNodes.put(id, node);
+        when(mockMetadata.getNodes()).thenReturn(mockedNodes);
+        return node;
     }
 }

@@ -18,6 +18,7 @@ import java.io.Closeable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -25,12 +26,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.driver.core.KeyspaceMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
-import com.datastax.driver.core.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
@@ -55,7 +56,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     private final ScheduleManager myScheduleManager;
     private final ReplicationState myReplicationState;
     private final RepairLockType myRepairLockType;
-    private final Metadata myMetadata;
+    private final CqlSession mySession;
     private final RepairConfiguration myRepairConfiguration;
     private final RepairHistory myRepairHistory;
     private final OnDemandStatus myOnDemandStatus;
@@ -68,7 +69,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         myScheduleManager = builder.myScheduleManager;
         myReplicationState = builder.myReplicationState;
         myRepairLockType = builder.repairLockType;
-        myMetadata = builder.metadata;
+        mySession = builder.session;
         myRepairConfiguration = builder.repairConfiguration;
         myRepairHistory = builder.repairHistory;
         myOnDemandStatus = builder.onDemandStatus;
@@ -124,8 +125,8 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         {
             if (tableReference != null)
             {
-                KeyspaceMetadata ks = myMetadata.getKeyspace(tableReference.getKeyspace());
-                if (ks != null && ks.getTable(tableReference.getTable()) != null)
+                Optional<KeyspaceMetadata> ks = mySession.getMetadata().getKeyspace(tableReference.getKeyspace());
+                if (ks.isPresent() && ks.get().getTable(tableReference.getTable()).isPresent())
                 {
                     OnDemandRepairJob job = getRepairJob(tableReference, isClusterWide);
                     myScheduledJobs.put(job.getId(), job);
@@ -245,7 +246,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         private ScheduleManager myScheduleManager;
         private ReplicationState myReplicationState;
         private RepairLockType repairLockType;
-        private Metadata metadata;
+        private CqlSession session;
         private RepairConfiguration repairConfiguration;
         private RepairHistory repairHistory;
         private OnDemandStatus onDemandStatus;
@@ -280,9 +281,9 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
             return this;
         }
 
-        public Builder withMetadata(Metadata metadata)
+        public Builder withSession(CqlSession session)
         {
-            this.metadata = metadata;
+            this.session = session;
             return this;
         }
 

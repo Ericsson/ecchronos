@@ -24,8 +24,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.driver.core.Host;
-
 /**
  * Implementation of the {@link HostStates} interface using JMX to retrieve node statuses and then caches the retrieved statuses for some time.
  */
@@ -59,9 +57,9 @@ public class HostStatesImpl implements HostStates, Closeable
     }
 
     @Override
-    public boolean isUp(Host host)
+    public boolean isUp(com.datastax.oss.driver.api.core.metadata.Node node)
     {
-        return isUp(host.getBroadcastAddress());
+        return isUp(node.getBroadcastAddress().get().getAddress());
     }
 
     @Override

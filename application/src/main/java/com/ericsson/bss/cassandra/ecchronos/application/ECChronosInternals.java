@@ -15,19 +15,29 @@
 package com.ericsson.bss.cassandra.ecchronos.application;
 
 import com.codahale.metrics.MetricRegistry;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
-import com.ericsson.bss.cassandra.ecchronos.core.*;
+import com.ericsson.bss.cassandra.ecchronos.core.CASLockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
+import com.ericsson.bss.cassandra.ecchronos.core.HostStatesImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetricsImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManagerImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.*;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProviderImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactoryImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,8 +64,8 @@ public class ECChronosInternals implements Closeable
     private final CASLockFactory myLockFactory;
 
     public ECChronosInternals(Config configuration, NativeConnectionProvider nativeConnectionProvider,
-                              JmxConnectionProvider jmxConnectionProvider, StatementDecorator statementDecorator,
-                              MetricRegistry metricRegistry)
+            JmxConnectionProvider jmxConnectionProvider, StatementDecorator statementDecorator,
+            MetricRegistry metricRegistry)
     {
         myJmxProxyFactory = JmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(jmxConnectionProvider)
@@ -72,12 +82,12 @@ public class ECChronosInternals implements Closeable
                 .withKeyspaceName(configuration.getLockFactory().getCas().getKeyspace())
                 .build();
 
-        Host host = nativeConnectionProvider.getLocalHost();
-        Metadata metadata = nativeConnectionProvider.getSession().getCluster().getMetadata();
+        Node node = nativeConnectionProvider.getLocalNode();
+        CqlSession session = nativeConnectionProvider.getSession();
 
-        myTableReferenceFactory = new TableReferenceFactoryImpl(metadata);
+        myTableReferenceFactory = new TableReferenceFactoryImpl(session);
 
-        myReplicatedTableProvider = new ReplicatedTableProviderImpl(host, metadata, myTableReferenceFactory);
+        myReplicatedTableProvider = new ReplicatedTableProviderImpl(node, session, myTableReferenceFactory);
 
         if (configuration.getStatistics().isEnabled())
         {
@@ -184,7 +194,8 @@ public class ECChronosInternals implements Closeable
         @Override
         public void repairState(TableReference tableReference, int repairedRanges, int notRepairedRanges)
         {
-            LOG.trace("Updated repair state of {}, {}/{} repaired ranges", tableReference, repairedRanges, notRepairedRanges);
+            LOG.trace("Updated repair state of {}, {}/{} repaired ranges", tableReference, repairedRanges,
+                    notRepairedRanges);
         }
 
         @Override

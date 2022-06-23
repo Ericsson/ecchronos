@@ -15,11 +15,11 @@
 
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.exceptions.NoHostAvailableException;
-import com.datastax.driver.core.querybuilder.BuiltStatement;
+import com.datastax.oss.driver.api.core.AllNodesFailedException;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import org.junit.Test;
@@ -34,7 +34,6 @@ import javax.management.remote.JMXConnector;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,7 +55,7 @@ public class TestCassandraHealthIndicator
     private JMXConnector myJMXConnector;
 
     @Mock
-    private Session mySession;
+    private CqlSession mySession;
 
     @Mock
     private ResultSet myResultSet;
@@ -67,7 +66,7 @@ public class TestCassandraHealthIndicator
         doReturn(myJMXConnector).when(myJmxConnectionProvider).getJmxConnector();
         doReturn(mock(MBeanServerConnection.class)).when(myJMXConnector).getMBeanServerConnection();
         doReturn(mySession).when(myNativeConnectionProvider).getSession();
-        doReturn(myResultSet).when(mySession).execute(any(BuiltStatement.class));
+        doReturn(myResultSet).when(mySession).execute(any(SimpleStatement.class));
         List<Row> rows = new ArrayList<>();
         rows.add(mock(Row.class));
         doReturn(rows).when(myResultSet).all();
@@ -83,7 +82,8 @@ public class TestCassandraHealthIndicator
         doReturn(myJMXConnector).when(myJmxConnectionProvider).getJmxConnector();
         doReturn(mock(MBeanServerConnection.class)).when(myJMXConnector).getMBeanServerConnection();
         doReturn(mySession).when(myNativeConnectionProvider).getSession();
-        doThrow(new NoHostAvailableException(new HashMap<>())).when(mySession).execute(any(BuiltStatement.class));
+        doThrow(AllNodesFailedException.fromErrors(new ArrayList<>())).when(mySession)
+                .execute(any(SimpleStatement.class));
         CassandraHealthIndicator cassandraHealthIndicator = new CassandraHealthIndicator(myNativeConnectionProvider,
                 myJmxConnectionProvider);
         Health health = cassandraHealthIndicator.health();
@@ -96,7 +96,7 @@ public class TestCassandraHealthIndicator
         doReturn(myJMXConnector).when(myJmxConnectionProvider).getJmxConnector();
         doReturn(mock(MBeanServerConnection.class)).when(myJMXConnector).getMBeanServerConnection();
         doReturn(mySession).when(myNativeConnectionProvider).getSession();
-        doReturn(myResultSet).when(mySession).execute(any(BuiltStatement.class));
+        doReturn(myResultSet).when(mySession).execute(any(SimpleStatement.class));
         doReturn(Collections.emptyList()).when(myResultSet).all();
         CassandraHealthIndicator cassandraHealthIndicator = new CassandraHealthIndicator(myNativeConnectionProvider,
                 myJmxConnectionProvider);
@@ -110,7 +110,7 @@ public class TestCassandraHealthIndicator
         doReturn(myJMXConnector).when(myJmxConnectionProvider).getJmxConnector();
         doThrow(new IOException("JMX is down")).when(myJMXConnector).getMBeanServerConnection();
         doReturn(mySession).when(myNativeConnectionProvider).getSession();
-        doReturn(myResultSet).when(mySession).execute(any(BuiltStatement.class));
+        doReturn(myResultSet).when(mySession).execute(any(SimpleStatement.class));
         List<Row> rows = new ArrayList<>();
         rows.add(mock(Row.class));
         doReturn(rows).when(myResultSet).all();

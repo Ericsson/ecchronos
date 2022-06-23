@@ -14,33 +14,41 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import static com.datastax.driver.core.querybuilder.QueryBuilder.bindMarker;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.ericsson.bss.cassandra.ecchronos.core.AbstractCassandraTest;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactoryImpl;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+import net.jcip.annotations.NotThreadSafe;
 import org.assertj.core.util.Lists;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.utils.UUIDs;
-import com.ericsson.bss.cassandra.ecchronos.core.AbstractCassandraTest;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.*;
-import com.google.common.base.Predicates;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
-import net.jcip.annotations.NotThreadSafe;
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @NotThreadSafe
 @RunWith(Parameterized.class)
@@ -100,10 +108,10 @@ public class TestEccRepairHistory extends AbstractCassandraTest
                 + ") WITH CLUSTERING ORDER BY (repair_id DESC)", keyspaceName));
 
         mockReplicationState = mock(ReplicationState.class);
-        localId = myCluster.getMetadata().getAllHosts().iterator().next().getHostId();
+        localId = mySession.getMetadata().getNodes().values().iterator().next().getHostId();
         mockLocalNode = mockNode(localId);
 
-        TableReferenceFactory tableReferenceFactory = new TableReferenceFactoryImpl(myCluster.getMetadata());
+        TableReferenceFactory tableReferenceFactory = new TableReferenceFactoryImpl(mySession);
 
         EccRepairHistory eccRepairHistory = EccRepairHistory.newBuilder()
                 .withLocalNode(mockLocalNode)
@@ -118,13 +126,14 @@ public class TestEccRepairHistory extends AbstractCassandraTest
         repairHistoryProvider = eccRepairHistory;
 
         tableReference = tableReferenceFactory.forTable(keyspaceName, "repair_history");
-        tableId = myCluster.getMetadata().getKeyspace(keyspaceName).getTable("repair_history").getId();
+        tableId = mySession.getMetadata().getKeyspace(keyspaceName).get().getTable("repair_history").get().getId()
+                .get();
 
-        iterateStatement = mySession.prepare(QueryBuilder.select()
-                .from(keyspaceName, "repair_history")
-                .where(eq(COLUMN_TABLE_ID, tableId))
-                .and(eq(COLUMN_NODE_ID, bindMarker()))
-                .and(eq(COLUMN_REPAIR_ID, bindMarker())));
+        iterateStatement = mySession.prepare(QueryBuilder.selectFrom(keyspaceName, "repair_history")
+                .all()
+                .whereColumn(COLUMN_TABLE_ID).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_NODE_ID).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_REPAIR_ID).isEqualTo(bindMarker()).build());
     }
 
     @After
@@ -193,7 +202,9 @@ public class TestEccRepairHistory extends AbstractCassandraTest
         long from = System.currentTimeMillis();
 
         // Assert that history is empty
-        assertThat(repairHistoryProvider.iterate(tableReference, from + 5000, from, Predicates.alwaysTrue())).toIterable().isEmpty();
+        assertThat(
+                repairHistoryProvider.iterate(tableReference, from + 5000, from, Predicates.alwaysTrue())).toIterable()
+                .isEmpty();
 
         UUID jobId = UUID.randomUUID();
         LongTokenRange range = new LongTokenRange(1, 2);
@@ -239,7 +250,9 @@ public class TestEccRepairHistory extends AbstractCassandraTest
         long from = System.currentTimeMillis();
 
         // Assert that history is empty
-        assertThat(repairHistoryProvider.iterate(tableReference, from + 5000, from, Predicates.alwaysTrue())).toIterable().isEmpty();
+        assertThat(
+                repairHistoryProvider.iterate(tableReference, from + 5000, from, Predicates.alwaysTrue())).toIterable()
+                .isEmpty();
 
         UUID jobId = UUID.randomUUID();
         LongTokenRange range = new LongTokenRange(1, 2);
@@ -345,7 +358,7 @@ public class TestEccRepairHistory extends AbstractCassandraTest
     private void assertCorrectStartEntry(EccEntry actual, EccEntry expected)
     {
         assertThat(actual).isEqualTo(expected);
-        assertThat(actual.startedAt).isEqualTo(UUIDs.unixTimestamp(actual.repairId));
+        assertThat(actual.startedAt).isEqualTo(Uuids.unixTimestamp(actual.repairId));
     }
 
     private void assertCorrectEndEntry(EccEntry actual, EccEntry expected)
@@ -373,7 +386,7 @@ public class TestEccRepairHistory extends AbstractCassandraTest
 
     private EccEntry startedSession(UUID nodeId, UUID repairId, UUID jobId, LongTokenRange range)
     {
-        long startedAt = UUIDs.unixTimestamp(repairId);
+        long startedAt = Uuids.unixTimestamp(repairId);
 
         return new EccEntry(tableId, nodeId, repairId, jobId, localId, Long.toString(range.start),
                 Long.toString(range.end), "STARTED", startedAt, null);
@@ -381,7 +394,8 @@ public class TestEccRepairHistory extends AbstractCassandraTest
 
     private EccEntry fromDb(UUID nodeId, RepairHistory.RepairSession repairSession)
     {
-        return fromRow(mySession.execute(iterateStatement.bind(nodeId, internalSession(repairSession).getId())).one());
+        return fromRow(mySession.execute(iterateStatement.bind(tableId, nodeId, internalSession(repairSession).getId()))
+                .one());
     }
 
     private EccEntry fromRow(Row row)
@@ -390,13 +404,13 @@ public class TestEccRepairHistory extends AbstractCassandraTest
         Long finishedAt = null;
         if (!row.isNull(COLUMN_FINISHED_AT))
         {
-            finishedAt = row.getTimestamp(COLUMN_FINISHED_AT).getTime();
+            finishedAt = row.getInstant(COLUMN_FINISHED_AT).toEpochMilli();
         }
 
-        return new EccEntry(row.getUUID(COLUMN_TABLE_ID), row.getUUID(COLUMN_NODE_ID), row.getUUID(COLUMN_REPAIR_ID),
-                row.getUUID(COLUMN_JOB_ID), row.getUUID(COLUMN_COORDINATOR_ID), row.getString(COLUMN_RANGE_BEGIN),
+        return new EccEntry(row.getUuid(COLUMN_TABLE_ID), row.getUuid(COLUMN_NODE_ID), row.getUuid(COLUMN_REPAIR_ID),
+                row.getUuid(COLUMN_JOB_ID), row.getUuid(COLUMN_COORDINATOR_ID), row.getString(COLUMN_RANGE_BEGIN),
                 row.getString(COLUMN_RANGE_END), row.getString(COLUMN_STATUS),
-                row.getTimestamp(COLUMN_STARTED_AT).getTime(), finishedAt);
+                row.getInstant(COLUMN_STARTED_AT).toEpochMilli(), finishedAt);
     }
 
     class EccEntry

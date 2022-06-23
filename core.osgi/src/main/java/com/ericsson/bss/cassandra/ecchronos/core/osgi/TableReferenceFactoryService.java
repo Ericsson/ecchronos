@@ -14,21 +14,26 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.TableMetadata;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactoryImpl;
-import org.osgi.service.component.annotations.*;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 
 import java.util.Set;
 
 @Component(service = TableReferenceFactory.class)
 public class TableReferenceFactoryService implements TableReferenceFactory
 {
-    @Reference(service = NativeConnectionProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = NativeConnectionProvider.class, cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile NativeConnectionProvider nativeConnectionProvider;
 
     private volatile TableReferenceFactory delegateTableReferenceFactory;
@@ -36,9 +41,9 @@ public class TableReferenceFactoryService implements TableReferenceFactory
     @Activate
     public void activate()
     {
-        Metadata metadata = nativeConnectionProvider.getSession().getCluster().getMetadata();
+        CqlSession session = nativeConnectionProvider.getSession();
 
-        delegateTableReferenceFactory = new TableReferenceFactoryImpl(metadata);
+        delegateTableReferenceFactory = new TableReferenceFactoryImpl(session);
     }
 
     @Override

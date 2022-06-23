@@ -15,9 +15,9 @@
 
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.BuiltStatement;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxy;
@@ -31,8 +31,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import static com.datastax.driver.core.querybuilder.QueryBuilder.select;
 
 @Component
 public class CassandraHealthIndicator implements HealthIndicator
@@ -84,9 +82,9 @@ public class CassandraHealthIndicator implements HealthIndicator
     {
         try
         {
-            BuiltStatement selectFromLocal = select().from("system", "local");
-            Session session = myNativeConnectionProvider.getSession();
-            ResultSet result = session.execute(selectFromLocal);
+            SimpleStatement simpleStatement = SimpleStatement.newInstance("SELECT * FROM system.local");
+            CqlSession session = myNativeConnectionProvider.getSession();
+            ResultSet result = session.execute(simpleStatement);
             if (!result.all().isEmpty())
             {
                 return true;

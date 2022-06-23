@@ -14,10 +14,10 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
-import com.datastax.driver.core.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 
 import java.util.Set;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 
 /**
  * A factory that generates table references

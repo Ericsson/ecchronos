@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import com.datastax.oss.driver.api.core.data.UdtValue;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,7 +31,6 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.datastax.driver.core.UDTValue;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OngoingJob.Status;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
@@ -56,10 +56,10 @@ public class TestOngoingJob
     private ReplicationState myReplicationState;
 
     @Mock
-    private UDTValue myUdtValue;
+    private UdtValue myUdtValue;
 
     @Captor
-    private ArgumentCaptor<Set<UDTValue>> myUdtSetCaptor;
+    private ArgumentCaptor<Set<UdtValue>> myUdtSetCaptor;
 
     private final TableReference myTableReference = tableReference(keyspaceName, tableName);
 
@@ -92,7 +92,7 @@ public class TestOngoingJob
         UUID jobId = UUID.randomUUID();
         Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
         expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
-        Set<UDTValue> repiaredTokens = new HashSet<>();
+        Set<UdtValue> repiaredTokens = new HashSet<>();
         repiaredTokens.add(myUdtValue);
 
         when(myOnDemandStatus.getStartTokenFrom(myUdtValue)).thenReturn(-50L);
@@ -119,7 +119,7 @@ public class TestOngoingJob
         UUID jobId = UUID.randomUUID();
         Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
         expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
-        Set<UDTValue> repiaredTokens = new HashSet<>();
+        Set<UdtValue> repiaredTokens = new HashSet<>();
         repiaredTokens.add(myUdtValue);
 
         when(myOnDemandStatus.getStartTokenFrom(myUdtValue)).thenReturn(-50L);
@@ -155,7 +155,7 @@ public class TestOngoingJob
         ongoingJob.finishRanges(finishedRanges);
 
         verify(myOnDemandStatus).updateJob(any(UUID.class), myUdtSetCaptor.capture());
-        Set<UDTValue> rangeSet = myUdtSetCaptor.getValue();
+        Set<UdtValue> rangeSet = myUdtSetCaptor.getValue();
         assertThat(rangeSet).containsOnly(myUdtValue);
     }
 
@@ -223,7 +223,7 @@ public class TestOngoingJob
         UUID jobId = UUID.randomUUID();
         Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
         expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
-        Set<UDTValue> repiaredTokens = new HashSet<>();
+        Set<UdtValue> repiaredTokens = new HashSet<>();
         repiaredTokens.add(myUdtValue);
 
         OngoingJob ongoingJob = new OngoingJob.Builder()
@@ -244,7 +244,7 @@ public class TestOngoingJob
         UUID jobId = UUID.randomUUID();
         Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
         expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
-        Set<UDTValue> repiaredTokens = new HashSet<>();
+        Set<UdtValue> repiaredTokens = new HashSet<>();
         repiaredTokens.add(myUdtValue);
 
         OngoingJob ongoingJob = new OngoingJob.Builder()

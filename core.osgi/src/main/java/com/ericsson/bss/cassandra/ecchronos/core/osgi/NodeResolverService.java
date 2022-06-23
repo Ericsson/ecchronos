@@ -15,12 +15,13 @@
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import org.osgi.service.component.annotations.*;
 
-import com.datastax.driver.core.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
@@ -37,9 +38,9 @@ public class NodeResolverService implements NodeResolver
     @Activate
     public void activate()
     {
-        Metadata metadata = myNativeConnectionProvider.getSession().getCluster().getMetadata();
+        CqlSession session = myNativeConnectionProvider.getSession();
 
-        delegateNodeResolver = new NodeResolverImpl(metadata);
+        delegateNodeResolver = new NodeResolverImpl(session);
     }
 
     @Override

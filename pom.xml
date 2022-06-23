@@ -60,7 +60,7 @@
         <!-- Dependency versions -->
         <io.netty.version>4.1.69.Final</io.netty.version>
         <io.dropwizard.metrics.version>3.2.2</io.dropwizard.metrics.version>
-        <cassandra.driver.core.version>3.10.2</cassandra.driver.core.version>
+        <cassandra.driver.core.version>4.14.1</cassandra.driver.core.version>
         <guava.version>18.0</guava.version>
         <slf4j.version>1.7.30</slf4j.version>
         <logback.version>1.2.10</logback.version>
@@ -202,14 +202,13 @@
 
             <!-- Cassandra Driver -->
             <dependency>
-                <groupId>com.datastax.cassandra</groupId>
-                <artifactId>cassandra-driver-core</artifactId>
+                <groupId>com.datastax.oss</groupId>
+                <artifactId>java-driver-core</artifactId>
                 <version>${cassandra.driver.core.version}</version>
             </dependency>
-
             <dependency>
-                <groupId>com.datastax.cassandra</groupId>
-                <artifactId>cassandra-driver-extras</artifactId>
+                <groupId>com.datastax.oss</groupId>
+                <artifactId>java-driver-query-builder</artifactId>
                 <version>${cassandra.driver.core.version}</version>
             </dependency>
 

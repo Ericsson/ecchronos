@@ -14,17 +14,19 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
-import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
-import com.datastax.driver.core.Authenticator;
-import com.datastax.driver.core.EndPoint;
-import com.datastax.driver.core.ExtendedAuthProvider;
-import com.datastax.driver.core.exceptions.AuthenticationException;
+import com.datastax.oss.driver.api.core.auth.AuthProvider;
+import com.datastax.oss.driver.api.core.auth.AuthenticationException;
+import com.datastax.oss.driver.api.core.auth.Authenticator;
+import com.datastax.oss.driver.api.core.metadata.EndPoint;
+import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Credentials;
 
-public class ReloadingAuthProvider implements ExtendedAuthProvider
+public class ReloadingAuthProvider implements AuthProvider
 {
     private static final Charset UTF8 = Charset.forName("UTF-8");
 
@@ -36,15 +38,20 @@ public class ReloadingAuthProvider implements ExtendedAuthProvider
     }
 
     @Override
-    public Authenticator newAuthenticator(EndPoint endPoint, String authenticator) throws AuthenticationException
+    public void onMissingChallenge(EndPoint endPoint) throws AuthenticationException
+    {
+
+    }
+
+    @Override
+    public Authenticator newAuthenticator(EndPoint endPoint, String serverAuthenticator) throws AuthenticationException
     {
         return new DefaultAuthenticator(credentialSupplier);
     }
 
-    @Override
-    public Authenticator newAuthenticator(InetSocketAddress host, String authenticator) throws AuthenticationException
+    @Override public void close() throws Exception
     {
-        throw new UnsupportedOperationException();
+
     }
 
     static class DefaultAuthenticator implements Authenticator
@@ -57,12 +64,17 @@ public class ReloadingAuthProvider implements ExtendedAuthProvider
         }
 
         @Override
-        public byte[] initialResponse()
+        public CompletionStage<ByteBuffer> initialResponse()
+        {
+            return CompletableFutures.wrap(this::initialResponseAsync);
+        }
+
+        private ByteBuffer initialResponseAsync()
         {
             Credentials credentials = credentialsSupplier.get();
             if (!credentials.isEnabled())
             {
-                return new byte[0];
+                return ByteBuffer.wrap(new byte[]{});
             }
             else
             {
@@ -75,21 +87,20 @@ public class ReloadingAuthProvider implements ExtendedAuthProvider
                 System.arraycopy(username, 0, response, 1, username.length);
                 response[username.length + 1] = 0;
                 System.arraycopy(password, 0, response, username.length + 2, password.length);
-
-                return response;
+                return ByteBuffer.wrap(response);
             }
         }
 
         @Override
-        public byte[] evaluateChallenge(byte[] challenge)
+        public CompletionStage<ByteBuffer> evaluateChallenge(ByteBuffer challenge)
         {
-            return new byte[0];
+            return null;
         }
 
         @Override
-        public void onAuthenticationSuccess(byte[] token)
+        public CompletionStage<Void> onAuthenticationSuccess(ByteBuffer token)
         {
-
+            return null;
         }
     }
 }

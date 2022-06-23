@@ -14,18 +14,21 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
+import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.TokenMap;
+import com.datastax.oss.driver.api.core.metadata.token.TokenRange;
+import com.datastax.oss.driver.internal.core.metadata.token.Murmur3Token;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.TokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
@@ -44,14 +47,14 @@ public class ReplicationStateImpl implements ReplicationState
     private static final Map<String, ImmutableMap<LongTokenRange, ImmutableSet<Node>>> clusterWideKeyspaceReplicationCache = new ConcurrentHashMap<>();
 
     private final NodeResolver myNodeResolver;
-    private final Metadata myMetadata;
-    private final Host myLocalHost;
+    private final CqlSession mySession;
+    private final com.datastax.oss.driver.api.core.metadata.Node myLocalNode;
 
-    public ReplicationStateImpl(NodeResolver nodeResolver, Metadata metadata, Host localhost)
+    public ReplicationStateImpl(NodeResolver nodeResolver, CqlSession session, com.datastax.oss.driver.api.core.metadata.Node localNode)
     {
         myNodeResolver = nodeResolver;
-        myMetadata = metadata;
-        myLocalHost = localhost;
+        mySession = session;
+        myLocalNode = localNode;
     }
 
     @Override
@@ -96,12 +99,18 @@ public class ReplicationStateImpl implements ReplicationState
     {
         ImmutableMap.Builder<LongTokenRange, ImmutableSet<Node>> replicationBuilder = ImmutableMap.builder();
 
-        Map<Set<Host>, ImmutableSet<Node>> replicaCache = new HashMap<>();
+        Map<Set<com.datastax.oss.driver.api.core.metadata.Node>, ImmutableSet<Node>> replicaCache = new HashMap<>();
 
-        for (TokenRange tokenRange : myMetadata.getTokenRanges(keyspace, myLocalHost))
+        Metadata metadata = mySession.getMetadata();
+        Optional<TokenMap> tokenMap = metadata.getTokenMap();
+        if (!tokenMap.isPresent())
+        {
+            throw new IllegalStateException("Cannot determine ranges, is metadata/tokenMap disabled?");
+        }
+        for (TokenRange tokenRange : tokenMap.get().getTokenRanges(keyspace, myLocalNode))
         {
             LongTokenRange longTokenRange = convert(tokenRange);
-            ImmutableSet<Node> replicas = replicaCache.computeIfAbsent(myMetadata.getReplicas(keyspace, tokenRange),
+            ImmutableSet<Node> replicas = replicaCache.computeIfAbsent(tokenMap.get().getReplicas(keyspace, tokenRange),
                     this::convert);
 
             replicationBuilder.put(longTokenRange, replicas);
@@ -127,12 +136,17 @@ public class ReplicationStateImpl implements ReplicationState
     private ImmutableMap<LongTokenRange, ImmutableSet<Node>> buildClusterWideTokenMap(String keyspace)
     {
         ImmutableMap.Builder<LongTokenRange, ImmutableSet<Node>> replicationBuilder = ImmutableMap.builder();
-        Map<Set<Host>, ImmutableSet<Node>> replicaCache = new HashMap<>();
-
-        for (TokenRange tokenRange : myMetadata.getTokenRanges())
+        Map<Set<com.datastax.oss.driver.api.core.metadata.Node>, ImmutableSet<Node>> replicaCache = new HashMap<>();
+        Metadata metadata = mySession.getMetadata();
+        Optional<TokenMap> tokenMap = metadata.getTokenMap();
+        if (!tokenMap.isPresent())
+        {
+            throw new IllegalStateException("Cannot determine ranges, is metadata/tokenMap disabled?");
+        }
+        for (TokenRange tokenRange : tokenMap.get().getTokenRanges())
         {
             LongTokenRange longTokenRange = convert(tokenRange);
-            ImmutableSet<Node> replicas = replicaCache.computeIfAbsent(myMetadata.getReplicas(keyspace, tokenRange),
+            ImmutableSet<Node> replicas = replicaCache.computeIfAbsent(tokenMap.get().getReplicas(keyspace, tokenRange),
                     this::convert);
 
             replicationBuilder.put(longTokenRange, replicas);
@@ -141,19 +155,27 @@ public class ReplicationStateImpl implements ReplicationState
         return replicationBuilder.build();
     }
 
-    private ImmutableSet<Node> convert(Set<Host> hosts)
+    private ImmutableSet<Node> convert(Set<com.datastax.oss.driver.api.core.metadata.Node> nodes)
     {
         ImmutableSet.Builder<Node> builder = new ImmutableSet.Builder<>();
-        for (Host host : hosts)
+        for (com.datastax.oss.driver.api.core.metadata.Node node : nodes)
         {
-            Optional<Node> node = myNodeResolver.fromIp(host.getBroadcastAddress());
-            if (node.isPresent())
+            Optional<InetSocketAddress> broadcastAddress = node.getBroadcastAddress();
+            if (broadcastAddress.isPresent())
             {
-                builder.add(node.get());
+                Optional<Node> resolvedNode = myNodeResolver.fromIp(broadcastAddress.get().getAddress());
+                if (resolvedNode.isPresent())
+                {
+                    builder.add(resolvedNode.get());
+                }
+                else
+                {
+                    LOG.warn("Node {} - {} not found in node resolver", node.getHostId(), broadcastAddress.get());
+                }
             }
             else
             {
-                LOG.warn("Node {} - {} not found in node resolver", host.getHostId(), host.getBroadcastAddress());
+                LOG.warn("Could not determine broadcast address for node {}", node.getHostId());
             }
         }
         return builder.build();
@@ -162,8 +184,8 @@ public class ReplicationStateImpl implements ReplicationState
     private LongTokenRange convert(TokenRange range)
     {
         // Assuming murmur3 partitioner
-        long start = (long) range.getStart().getValue();
-        long end = (long) range.getEnd().getValue();
+        long start = ((Murmur3Token) range.getStart()).getValue();
+        long end = ((Murmur3Token) range.getEnd()).getValue();
         return new LongTokenRange(start, end);
     }
 }

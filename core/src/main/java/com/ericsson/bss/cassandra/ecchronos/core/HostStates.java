@@ -16,7 +16,6 @@ package com.ericsson.bss.cassandra.ecchronos.core;
 
 import java.net.InetAddress;
 
-import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
 
 /**
@@ -36,11 +35,10 @@ public interface HostStates
     /**
      * Check if a host is up.
      *
-     * @param host
-     *            The host.
+     * @param node The node.
      * @return True if the host is up. False will be returned if the state is unknown or if the host is down.
      */
-    boolean isUp(Host host);
+    boolean isUp(com.datastax.oss.driver.api.core.metadata.Node node);
 
     /**
      * Check if a node is up.

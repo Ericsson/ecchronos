@@ -21,6 +21,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.application.ReloadingCertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import org.slf4j.Logger;
@@ -32,8 +34,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.codahale.metrics.MetricRegistry;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.application.ConfigurationException;
 import com.ericsson.bss.cassandra.ecchronos.application.ReflectionUtils;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
@@ -222,18 +222,18 @@ public class BeanConfigurator
     @Bean
     public NodeResolver nodeResolver(NativeConnectionProvider nativeConnectionProvider)
     {
-        Metadata metadata = nativeConnectionProvider.getSession().getCluster().getMetadata();
+        CqlSession session = nativeConnectionProvider.getSession();
 
-        return new NodeResolverImpl(metadata);
+        return new NodeResolverImpl(session);
     }
 
     @Bean
     public ReplicationState replicationState(NativeConnectionProvider nativeConnectionProvider,
             NodeResolver nodeResolver)
     {
-        Host host = nativeConnectionProvider.getLocalHost();
-        Metadata metadata = nativeConnectionProvider.getSession().getCluster().getMetadata();
+        Node node = nativeConnectionProvider.getLocalNode();
+        CqlSession session = nativeConnectionProvider.getSession();
 
-        return new ReplicationStateImpl(nodeResolver, metadata, host);
+        return new ReplicationStateImpl(nodeResolver, session, node);
     }
 }

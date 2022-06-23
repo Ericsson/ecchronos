@@ -53,8 +53,13 @@
 
         <!-- Cassandra driver -->
         <dependency>
-            <groupId>com.datastax.cassandra</groupId>
-            <artifactId>cassandra-driver-core</artifactId>
+            <groupId>com.datastax.oss</groupId>
+            <artifactId>java-driver-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.datastax.oss</groupId>
+            <artifactId>java-driver-query-builder</artifactId>
         </dependency>
 
         <dependency>
@@ -120,12 +125,6 @@
         <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-thrift</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.datastax.cassandra</groupId>
-            <artifactId>cassandra-driver-extras</artifactId>
             <scope>test</scope>
         </dependency>
 

@@ -14,11 +14,13 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import com.datastax.driver.core.EndPoint;
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.TableMetadata;
-import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import com.datastax.oss.driver.api.core.AllNodesFailedException;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.EndPoint;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
@@ -28,15 +30,18 @@ import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
@@ -69,10 +74,10 @@ public class TestOnDemandRepairSchedulerImpl
     private Metadata metadata;
 
     @Mock
-    private OnDemandStatus myOnDemandStatus;
+    private CqlSession session;
 
     @Mock
-    private Metadata myMetadata;
+    private OnDemandStatus myOnDemandStatus;
 
     @Mock
     private KeyspaceMetadata myKeyspaceMetadata;
@@ -83,12 +88,18 @@ public class TestOnDemandRepairSchedulerImpl
     @Mock
     private OngoingJob myOngingJob;
 
+    @Before
+    public void setup()
+    {
+        when(session.getMetadata()).thenReturn(metadata);
+    }
+
     @Test
     public void testScheduleRepairOnTable() throws EcChronosException
     {
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
-        when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(myKeyspaceMetadata);
-        when(myKeyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(myTableMetadata);
+        when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(Optional.of(myKeyspaceMetadata));
+        when(myKeyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(Optional.of(myTableMetadata));
 
         verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
         RepairJobView repairJobView = repairScheduler.scheduleJob(TABLE_REFERENCE);
@@ -107,8 +118,8 @@ public class TestOnDemandRepairSchedulerImpl
     public void testScheduleTwoRepairOnTable() throws EcChronosException
     {
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
-        when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(myKeyspaceMetadata);
-        when(myKeyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(myTableMetadata);
+        when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(Optional.of(myKeyspaceMetadata));
+        when(myKeyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(Optional.of(myTableMetadata));
 
         verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
         RepairJobView repairJobView = repairScheduler.scheduleJob(TABLE_REFERENCE);
@@ -147,8 +158,8 @@ public class TestOnDemandRepairSchedulerImpl
     {
         Set<OngoingJob> ongoingJobs = new HashSet<>();
         ongoingJobs.add(myOngingJob);
-        Map<EndPoint, Throwable> errors = new HashMap<>();
-        when(myOnDemandStatus.getOngoingJobs(replicationState)).thenThrow(new NoHostAvailableException(errors )).thenReturn(ongoingJobs);
+        List<Map.Entry<Node, Throwable>> errors = new ArrayList<>();
+        when(myOnDemandStatus.getOngoingJobs(replicationState)).thenThrow(AllNodesFailedException.fromErrors(errors)).thenReturn(ongoingJobs); //TODO check exceptiom
 
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
 
@@ -174,7 +185,7 @@ public class TestOnDemandRepairSchedulerImpl
     public void testScheduleRepairOnNonExistentTable() throws EcChronosException
     {
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
-        when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(myKeyspaceMetadata);
+        when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(Optional.of(myKeyspaceMetadata));
         verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
         repairScheduler.scheduleJob(TABLE_REFERENCE);
     }
@@ -200,7 +211,7 @@ public class TestOnDemandRepairSchedulerImpl
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withScheduleManager(scheduleManager)
                 .withReplicationState(replicationState)
-                .withMetadata(metadata)
+                .withSession(session)
                 .withRepairLockType(RepairLockType.VNODE)
                 .withRepairConfiguration(RepairConfiguration.DEFAULT)
                 .withRepairHistory(repairHistory)

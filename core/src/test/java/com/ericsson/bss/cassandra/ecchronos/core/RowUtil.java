@@ -21,8 +21,8 @@ import static org.mockito.Mockito.when;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.google.common.collect.Sets;
 
 public class RowUtil
@@ -36,7 +36,7 @@ public class RowUtil
         when(row.getString(eq("status"))).thenReturn(status);
         when(row.getString(eq("range_begin"))).thenReturn(Long.toString(range_begin));
         when(row.getString(eq("range_end"))).thenReturn(Long.toString(range_end));
-        when(row.getUUID(eq("id"))).thenReturn(UUIDs.startOf(started_at));
+        when(row.getUuid(eq("id"))).thenReturn(Uuids.startOf(started_at));
 
         return row;
     }

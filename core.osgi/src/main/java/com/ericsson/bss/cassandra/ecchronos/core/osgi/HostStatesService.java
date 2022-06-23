@@ -14,7 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
-import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
@@ -55,9 +54,9 @@ public class HostStatesService implements HostStates
     }
 
     @Override
-    public boolean isUp(Host host)
+    public boolean isUp(com.datastax.oss.driver.api.core.metadata.Node node)
     {
-        return myDelegateHostStates.isUp(host);
+        return myDelegateHostStates.isUp(node);
     }
 
     @Override

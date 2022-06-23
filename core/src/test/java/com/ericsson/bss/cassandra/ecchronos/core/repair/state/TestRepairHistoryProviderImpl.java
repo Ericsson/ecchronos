@@ -14,12 +14,15 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.utils.UUIDs;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.ericsson.bss.cassandra.ecchronos.core.AbstractCassandraTest;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.*;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Sets;
@@ -30,9 +33,18 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.time.Clock;
-import java.util.*;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
@@ -61,13 +73,14 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     @BeforeClass
     public static void startup()
     {
-        myInsertRecordStatement = mySession.prepare("INSERT INTO system_distributed.repair_history (keyspace_name, columnfamily_name, coordinator, participants, id, started_at, finished_at, range_begin, range_end, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        myInsertRecordStatement = mySession.prepare(
+                "INSERT INTO system_distributed.repair_history (keyspace_name, columnfamily_name, coordinator, participants, id, started_at, finished_at, range_begin, range_end, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-        NodeResolver nodeResolver = new NodeResolverImpl(myCluster.getMetadata());
+        NodeResolver nodeResolver = new NodeResolverImpl(mySession);
 
-        Set<Host> hosts = myCluster.getMetadata().getAllHosts();
-        Host host = hosts.iterator().next();
-        myLocalNode = nodeResolver.fromIp(host.getBroadcastAddress()).get();
+        Collection<com.datastax.oss.driver.api.core.metadata.Node> nodes = mySession.getMetadata().getNodes().values();
+        com.datastax.oss.driver.api.core.metadata.Node node = nodes.iterator().next();
+        myLocalNode = nodeResolver.fromIp(node.getBroadcastAddress().get().getAddress()).get();
 
         repairHistoryProvider = new RepairHistoryProviderImpl(nodeResolver, mySession, s -> s, LOOKBACK_TIME,
                 mockClock(CLOCK_TIME));
@@ -76,13 +89,16 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     @After
     public void testCleanup()
     {
-        mySession.execute(String.format("DELETE FROM system_distributed.repair_history WHERE keyspace_name = '%s' AND columnfamily_name = '%s'", KEYSPACE, TABLE));
+        mySession.execute(String.format(
+                "DELETE FROM system_distributed.repair_history WHERE keyspace_name = '%s' AND columnfamily_name = '%s'",
+                KEYSPACE, TABLE));
     }
 
     @Test
     public void testIterateEmptyRepairHistory()
     {
-        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME, Predicates.<RepairEntry> alwaysTrue());
+        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME,
+                Predicates.<RepairEntry>alwaysTrue());
 
         assertThat(repairEntryIterator.hasNext()).isFalse();
     }
@@ -92,7 +108,8 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     {
         insertRecord(KEYSPACE, TABLE, new LongTokenRange(0, 1));
 
-        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME, Predicates.alwaysFalse());
+        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME,
+                Predicates.alwaysFalse());
 
         assertThat(repairEntryIterator.hasNext()).isFalse();
     }
@@ -104,7 +121,8 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
                 CLOCK_TIME, Sets.newHashSet(myLocalNode), "SUCCESS");
         insertRecord(KEYSPACE, TABLE, expectedRepairEntry);
 
-        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME, Predicates.alwaysTrue());
+        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME,
+                Predicates.alwaysTrue());
 
         assertThat(repairEntryIterator.hasNext()).isTrue();
         assertThat(repairEntryIterator.next()).isEqualTo(expectedRepairEntry);
@@ -118,7 +136,8 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
                 timeOutsideLookback, Sets.newHashSet(myLocalNode), "SUCCESS");
         insertRecord(KEYSPACE, TABLE, expectedRepairEntry);
 
-        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME, Predicates.alwaysTrue());
+        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(myTableReference, CLOCK_TIME,
+                Predicates.alwaysTrue());
 
         assertThat(repairEntryIterator.hasNext()).isFalse();
     }
@@ -126,7 +145,7 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
     @Test
     public void testIterateSuccessfulRepairHistory()
     {
-        RepairEntry expectedRepairEntry = new RepairEntry(new LongTokenRange(0, 1),  STARTED_AT,
+        RepairEntry expectedRepairEntry = new RepairEntry(new LongTokenRange(0, 1), STARTED_AT,
                 CLOCK_TIME, Sets.newHashSet(myLocalNode), "SUCCESS");
         insertRecord(KEYSPACE, TABLE, expectedRepairEntry);
 
@@ -232,32 +251,32 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
         long iterateEnd = finishedAt + 10;
 
         Map<LongTokenRange, Collection<Node>> tokenToNodeMap = new HashMap<>();
-        Metadata metadata = mySession.getCluster().getMetadata();
+        Metadata metadata = mySession.getMetadata();
 
-        Set<Host> hosts = metadata.getAllHosts();
-        Host host = hosts.iterator().next();
+        Collection<com.datastax.oss.driver.api.core.metadata.Node> nodes = metadata.getNodes().values();
+        com.datastax.oss.driver.api.core.metadata.Node node = nodes.iterator().next();
 
-        NodeResolver nodeResolver = new NodeResolverImpl(metadata);
-        Node node = nodeResolver.fromIp(host.getBroadcastAddress()).get();
+        NodeResolver nodeResolver = new NodeResolverImpl(mySession);
+        Node resolvedNode = nodeResolver.fromIp(node.getBroadcastAddress().get().getAddress()).get();
 
         List<RepairEntry> expectedRepairEntries = new ArrayList<>();
 
         expectedRepairEntries
-                .add(new RepairEntry(new LongTokenRange(0, 1), startedAt, finishedAt, Sets.newHashSet(node),
+                .add(new RepairEntry(new LongTokenRange(0, 1), startedAt, finishedAt, Sets.newHashSet(resolvedNode),
                         "SUCCESS"));
         expectedRepairEntries.add(new RepairEntry(new LongTokenRange(2, 3), startedAt + 1,
-                finishedAt +1, Sets.newHashSet(node), "SUCCESS"));
+                finishedAt + 1, Sets.newHashSet(resolvedNode), "SUCCESS"));
         expectedRepairEntries.add(new RepairEntry(new LongTokenRange(4, 5), startedAt + 2,
-                finishedAt +2, Sets.newHashSet(node), "SUCCESS"));
+                finishedAt + 2, Sets.newHashSet(resolvedNode), "SUCCESS"));
 
         for (RepairEntry repairEntry : expectedRepairEntries)
         {
             insertRecord(KEYSPACE, TABLE, repairEntry);
         }
 
-        tokenToNodeMap.put(new LongTokenRange(0, 1), Sets.newHashSet(node));
-        tokenToNodeMap.put(new LongTokenRange(2, 3), Sets.newHashSet(node));
-        tokenToNodeMap.put(new LongTokenRange(4, 5), Sets.newHashSet(node));
+        tokenToNodeMap.put(new LongTokenRange(0, 1), Sets.newHashSet(resolvedNode));
+        tokenToNodeMap.put(new LongTokenRange(2, 3), Sets.newHashSet(resolvedNode));
+        tokenToNodeMap.put(new LongTokenRange(4, 5), Sets.newHashSet(resolvedNode));
 
         Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider
                 .iterate(myTableReference, iterateEnd, iterateStart,
@@ -285,20 +304,22 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
                 new LongTokenRange(4, 5), startedAt, finishedAt, RepairStatus.SUCCESS);
 
         Map<LongTokenRange, Collection<Node>> tokenToNodeMap = new HashMap<>();
-        Metadata metadata = mySession.getCluster().getMetadata();
-        Set<Host> hosts = metadata.getAllHosts();
+        Metadata metadata = mySession.getMetadata();
+        Collection<com.datastax.oss.driver.api.core.metadata.Node> nodes = metadata.getNodes().values();
 
-        NodeResolver nodeResolver = new NodeResolverImpl(metadata);
-        Set<Node> nodes = hosts.stream()
-                .map(Host::getBroadcastAddress)
+        NodeResolver nodeResolver = new NodeResolverImpl(mySession);
+        Set<Node> resolvedNodes = nodes.stream()
+                .map(com.datastax.oss.driver.api.core.metadata.Node::getBroadcastAddress)
+                .map(Optional::get)
+                .map(InetSocketAddress::getAddress)
                 .map(nodeResolver::fromIp)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toSet());
 
-        tokenToNodeMap.put(new LongTokenRange(0, 1), nodes);
-        tokenToNodeMap.put(new LongTokenRange(2, 3), nodes);
-        tokenToNodeMap.put(new LongTokenRange(4, 5), nodes);
+        tokenToNodeMap.put(new LongTokenRange(0, 1), resolvedNodes);
+        tokenToNodeMap.put(new LongTokenRange(2, 3), resolvedNodes);
+        tokenToNodeMap.put(new LongTokenRange(4, 5), resolvedNodes);
 
         Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider
                 .iterate(myTableReference, iterateEnd, iterateStart,
@@ -343,9 +364,9 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
                 table,
                 nodes.stream().findFirst().get(),
                 nodes,
-                UUIDs.startOf(started),
-                new Date(started),
-                new Date(finished),
+                Uuids.startOf(started),
+                Instant.ofEpochMilli(started),
+                Instant.ofEpochMilli(finished),
                 Long.toString(range.start),
                 Long.toString(range.end),
                 repairStatus.toString()
@@ -365,9 +386,9 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
                 table,
                 nodeAddresses.stream().findFirst().get(),
                 nodeAddresses,
-                UUIDs.startOf(repairEntry.getStartedAt()),
-                new Date(repairEntry.getStartedAt()),
-                new Date(finishedAt),
+                Uuids.startOf(repairEntry.getStartedAt()),
+                Instant.ofEpochMilli(repairEntry.getStartedAt()),
+                Instant.ofEpochMilli(finishedAt),
                 Long.toString(repairEntry.getRange().start),
                 Long.toString(repairEntry.getRange().end),
                 repairEntry.getStatus().toString()

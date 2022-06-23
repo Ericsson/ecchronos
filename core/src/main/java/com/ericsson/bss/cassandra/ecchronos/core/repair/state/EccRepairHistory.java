@@ -14,9 +14,36 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import static com.datastax.driver.core.querybuilder.QueryBuilder.*;
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.Statement;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.ImmutableSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.time.Instant;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -24,21 +51,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.datastax.driver.core.*;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.utils.UUIDs;
-import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.ImmutableSet;
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 
 public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
 {
@@ -57,7 +70,7 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
 
     private final long lookbackTimeInMs;
 
-    private final Session session;
+    private final CqlSession session;
     private final Node localNode;
     private final StatementDecorator statementDecorator;
     private final ReplicationState replicationState;
@@ -79,33 +92,31 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
         lookbackTimeInMs = builder.lookbackTimeInMs;
 
         initiateStatement = session.prepare(QueryBuilder.insertInto(builder.keyspaceName, "repair_history")
-                .value(COLUMN_TABLE_ID, bindMarker())
-                .value(COLUMN_NODE_ID, bindMarker())
-                .value(COLUMN_REPAIR_ID, bindMarker())
-                .value(COLUMN_JOB_ID, bindMarker())
-                .value(COLUMN_COORDINATOR_ID, bindMarker())
-                .value(COLUMN_RANGE_BEGIN, bindMarker())
-                .value(COLUMN_RANGE_END, bindMarker())
-                .value(COLUMN_STATUS, bindMarker())
-                .value(COLUMN_STARTED_AT, bindMarker()))
-                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+                        .value(COLUMN_TABLE_ID, bindMarker())
+                        .value(COLUMN_NODE_ID, bindMarker())
+                        .value(COLUMN_REPAIR_ID, bindMarker())
+                        .value(COLUMN_JOB_ID, bindMarker())
+                        .value(COLUMN_COORDINATOR_ID, bindMarker())
+                        .value(COLUMN_RANGE_BEGIN, bindMarker())
+                        .value(COLUMN_RANGE_END, bindMarker())
+                        .value(COLUMN_STATUS, bindMarker())
+                        .value(COLUMN_STARTED_AT, bindMarker()).build().setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
 
         finishStatement = session.prepare(QueryBuilder.update(builder.keyspaceName, "repair_history")
-                .with(set(COLUMN_STATUS, bindMarker()))
-                .and(set(COLUMN_FINISHED_AT, bindMarker()))
-                .where(eq(COLUMN_TABLE_ID, bindMarker()))
-                .and(eq(COLUMN_NODE_ID, bindMarker()))
-                .and(eq(COLUMN_REPAIR_ID, bindMarker())))
-                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+                        .setColumn(COLUMN_STATUS, bindMarker())
+                        .setColumn(COLUMN_FINISHED_AT, bindMarker())
+                        .whereColumn(COLUMN_TABLE_ID).isEqualTo(bindMarker())
+                        .whereColumn(COLUMN_NODE_ID).isEqualTo(bindMarker())
+                        .whereColumn(COLUMN_REPAIR_ID).isEqualTo(bindMarker())
+                        .build().setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
 
-        iterateStatement = session.prepare(
-                QueryBuilder.select(COLUMN_STARTED_AT, COLUMN_FINISHED_AT, COLUMN_STATUS, COLUMN_RANGE_BEGIN, COLUMN_RANGE_END)
-                        .from(builder.keyspaceName, "repair_history")
-                        .where(eq(COLUMN_TABLE_ID, bindMarker()))
-                        .and(eq(COLUMN_NODE_ID, bindMarker()))
-                        .and(gte(COLUMN_REPAIR_ID, bindMarker()))
-                        .and(lte(COLUMN_REPAIR_ID, bindMarker())))
-                .setConsistencyLevel(ConsistencyLevel.LOCAL_ONE);
+        iterateStatement = session.prepare(QueryBuilder.selectFrom(builder.keyspaceName, "repair_history")
+                .columns(COLUMN_STARTED_AT, COLUMN_FINISHED_AT, COLUMN_STATUS, COLUMN_RANGE_BEGIN, COLUMN_RANGE_END)
+                .whereColumn(COLUMN_TABLE_ID).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_NODE_ID).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_REPAIR_ID).isGreaterThanOrEqualTo(bindMarker())
+                .whereColumn(COLUMN_REPAIR_ID).isLessThanOrEqualTo(bindMarker()).build()
+                .setConsistencyLevel(ConsistencyLevel.LOCAL_ONE));
     }
 
     @Override
@@ -134,8 +145,8 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
     public Iterator<RepairEntry> iterate(TableReference tableReference, long to, long from,
             Predicate<RepairEntry> predicate)
     {
-        UUID start = UUIDs.startOf(from);
-        UUID finish = UUIDs.endOf(to);
+        UUID start = Uuids.startOf(from);
+        UUID finish = Uuids.endOf(to);
 
         Statement statement = iterateStatement.bind(tableReference.getId(), localNode.getId(), start, finish);
         ResultSet resultSet = execute(statement);
@@ -148,7 +159,7 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
         return session.execute(statementDecorator.apply(statement));
     }
 
-    private ResultSetFuture executeAsync(Statement statement)
+    private CompletionStage<AsyncResultSet> executeAsync(Statement statement)
     {
         return session.executeAsync(statementDecorator.apply(statement));
     }
@@ -192,12 +203,12 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
             long rangeEnd = Long.parseLong(row.getString(COLUMN_RANGE_END));
 
             LongTokenRange tokenRange = new LongTokenRange(rangeBegin, rangeEnd);
-            long startedAt = row.getTimestamp(COLUMN_STARTED_AT).getTime();
-            Date finished = row.getTimestamp(COLUMN_FINISHED_AT);
+            long startedAt = row.getInstant(COLUMN_STARTED_AT).toEpochMilli();
+            Instant finished = row.getInstant(COLUMN_FINISHED_AT);
             long finishedAt = -1L;
-            if(finished != null)
+            if (finished != null)
             {
-                finishedAt = finished.getTime();
+                finishedAt = finished.toEpochMilli();
             }
             Set<Node> nodes = replicationState.getNodes(tableReference, tokenRange);
             if (nodes == null)
@@ -266,11 +277,11 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
         @Override
         public void start()
         {
-            repairId.compareAndSet(null, UUIDs.timeBased());
+            repairId.compareAndSet(null, Uuids.timeBased());
             transitionTo(SessionState.STARTED);
             String range_begin = Long.toString(range.start);
             String range_end = Long.toString(range.end);
-            Date started_at = new Date(UUIDs.unixTimestamp(repairId.get()));
+            Date started_at = new Date(Uuids.unixTimestamp(repairId.get()));
 
             insertWithRetry(participant -> insertStart(range_begin, range_end, started_at, participant));
         }
@@ -286,21 +297,21 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
             insertWithRetry(participant -> insertFinish(repairStatus, finished_at, participant));
         }
 
-        private void insertWithRetry(Function<UUID, ResultSetFuture> insertFunction)
+        private void insertWithRetry(Function<UUID, CompletionStage<AsyncResultSet>> insertFunction)
         {
-            Map<UUID, ResultSetFuture> futures = new HashMap<>();
+            Map<UUID, CompletableFuture> futures = new HashMap<>();
 
             for (UUID participant : participants)
             {
-                ResultSetFuture future = insertFunction.apply(participant);
+                CompletableFuture future = insertFunction.apply(participant).toCompletableFuture();
                 futures.put(participant, future);
             }
 
             boolean loggedException = false;
 
-            for (Map.Entry<UUID, ResultSetFuture> entry : futures.entrySet())
+            for (Map.Entry<UUID, CompletableFuture> entry : futures.entrySet())
             {
-                ResultSetFuture future = entry.getValue();
+                CompletableFuture future = entry.getValue();
 
                 try
                 {
@@ -327,16 +338,17 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
             }
         }
 
-        private ResultSetFuture insertStart(String range_begin, String range_end, Date started_at, UUID participant)
+        private CompletionStage<AsyncResultSet> insertStart(String range_begin, String range_end, Date started_at, UUID participant)
         {
-            Statement statement = initiateStatement.bind(tableId, participant, repairId.get(), jobId, nodeId, range_begin,
-                    range_end, RepairStatus.STARTED.toString(), started_at);
+            Statement statement = initiateStatement.bind(tableId, participant, repairId.get(), jobId, nodeId,
+                    range_begin,
+                    range_end, RepairStatus.STARTED.toString(), started_at.toInstant());
             return executeAsync(statement);
         }
 
-        private ResultSetFuture insertFinish(RepairStatus repairStatus, Date finished_at, UUID participant)
+        private CompletionStage<AsyncResultSet> insertFinish(RepairStatus repairStatus, Date finished_at, UUID participant)
         {
-            Statement statement = finishStatement.bind(repairStatus.toString(), finished_at, tableId, participant,
+            Statement statement = finishStatement.bind(repairStatus.toString(), finished_at.toInstant(), tableId, participant,
                     repairId.get());
             return executeAsync(statement);
         }
@@ -368,14 +380,14 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
 
     public static class Builder
     {
-        private Session session;
+        private CqlSession session;
         private Node localNode;
         private StatementDecorator statementDecorator;
         private ReplicationState replicationState;
         private long lookbackTimeInMs;
         private String keyspaceName = "ecchronos";
 
-        public Builder withSession(Session session)
+        public Builder withSession(CqlSession session)
         {
             this.session = session;
             return this;

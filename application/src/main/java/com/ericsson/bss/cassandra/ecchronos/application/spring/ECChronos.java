@@ -18,13 +18,12 @@ import java.io.Closeable;
 import java.util.Collections;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
+import com.datastax.oss.driver.api.core.CqlSession;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.codahale.metrics.MetricRegistry;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.Session;
 import com.ericsson.bss.cassandra.ecchronos.application.AbstractRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.ConfigurationException;
 import com.ericsson.bss.cassandra.ecchronos.application.ECChronosInternals;
@@ -61,8 +60,7 @@ public class ECChronos implements Closeable
         myECChronosInternals = new ECChronosInternals(configuration, nativeConnectionProvider, jmxConnectionProvider,
                 statementDecorator, metricRegistry);
 
-        Session session = nativeConnectionProvider.getSession();
-        Metadata metadata = session.getCluster().getMetadata();
+        CqlSession session = nativeConnectionProvider.getSession();
 
         Config.GlobalRepairConfig repairConfig = configuration.getRepair();
 
@@ -96,7 +94,7 @@ public class ECChronos implements Closeable
 
         myDefaultRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()
                 .withRepairScheduler(myRepairSchedulerImpl)
-                .withCluster(session.getCluster())
+                .withSession(session)
                 .withReplicatedTableProvider(myECChronosInternals.getReplicatedTableProvider())
                 .withRepairConfiguration(repairConfigurationProvider::get)
                 .withTableReferenceFactory(myECChronosInternals.getTableReferenceFactory())
@@ -108,7 +106,7 @@ public class ECChronos implements Closeable
                 .withJmxProxyFactory(myECChronosInternals.getJmxProxyFactory())
                 .withReplicationState(replicationState)
                 .withRepairLockType(repairConfig.getLockType())
-                .withMetadata(metadata)
+                .withSession(session)
                 .withRepairConfiguration(repairConfig.asRepairConfiguration())
                 .withRepairHistory(repairHistory)
                 .withOnDemandStatus(new OnDemandStatus(nativeConnectionProvider))

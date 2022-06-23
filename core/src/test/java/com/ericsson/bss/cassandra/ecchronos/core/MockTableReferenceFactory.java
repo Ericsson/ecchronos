@@ -21,8 +21,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import com.datastax.driver.core.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 
@@ -97,9 +97,9 @@ public class MockTableReferenceFactory implements TableReferenceFactory
 
         MockTableReference(TableMetadata tableMetadata)
         {
-            this.id = tableMetadata.getId();
-            this.keyspace = tableMetadata.getKeyspace().getName();
-            this.table = tableMetadata.getName();
+            this.id = tableMetadata.getId().get();
+            this.keyspace = tableMetadata.getKeyspace().asInternal();
+            this.table = tableMetadata.getName().asInternal();
         }
 
         @Override

@@ -22,11 +22,14 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import com.datastax.oss.driver.api.core.metadata.Node;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,8 +38,6 @@ import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
-
-import com.datastax.driver.core.Host;
 
 @RunWith (MockitoJUnitRunner.class)
 public class TestHostStatesImpl
@@ -91,8 +92,8 @@ public class TestHostStatesImpl
     @Test
     public void testIsHostUp() throws UnknownHostException
     {
-        InetAddress expectedAddress = InetAddress.getLocalHost();
-        Host expectedHost = mock(Host.class);
+        InetSocketAddress expectedAddress = new InetSocketAddress(InetAddress.getLocalHost(), 9042);
+        Node expectedHost = mock(Node.class);
 
         List<String> expectedLiveNodes = Collections.singletonList(expectedAddress.getHostName());
         List<String> expectedUnreachableNodes = Collections.emptyList();
@@ -100,7 +101,7 @@ public class TestHostStatesImpl
         when(myJmxProxy.getLiveNodes()).thenReturn(expectedLiveNodes);
         when(myJmxProxy.getUnreachableNodes()).thenReturn(expectedUnreachableNodes);
 
-        when(expectedHost.getBroadcastAddress()).thenReturn(expectedAddress);
+        when(expectedHost.getBroadcastAddress()).thenReturn(Optional.of(expectedAddress));
 
         assertThat(myHostStates.isUp(expectedHost)).isTrue();
     }
