@@ -32,6 +32,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.types.Schedule;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Before;
@@ -68,6 +69,9 @@ public class TestRepairManagementRESTImpl
     @Mock
     private OnDemandRepairScheduler myOnDemandRepairScheduler;
 
+    @Mock
+    private ReplicatedTableProvider myReplicatedTableProvider;
+
     private TableReferenceFactory myTableReferenceFactory = new MockTableReferenceFactory();
 
     private RepairManagementREST repairManagementREST;
@@ -76,7 +80,7 @@ public class TestRepairManagementRESTImpl
     public void setupMocks()
     {
         repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler,
-                myTableReferenceFactory);
+                myTableReferenceFactory, myReplicatedTableProvider);
     }
 
     @Test
@@ -269,6 +273,7 @@ public class TestRepairManagementRESTImpl
 
         when(myOnDemandRepairScheduler.scheduleJob(myTableReferenceFactory.forTable("ks", "tb"))).thenReturn(
                 localRepairJobView);
+        when(myReplicatedTableProvider.accept("ks")).thenReturn(true);
         ResponseEntity<List<OnDemandRepair>> response = repairManagementREST.triggerRepair("ks", "tb", true);
 
         assertThat(response.getBody()).isEqualTo(localExpectedResponse);
@@ -289,6 +294,135 @@ public class TestRepairManagementRESTImpl
 
         assertThat(response.getBody()).isEqualTo(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    public void testTriggerRepairOnlyKeyspace() throws EcChronosException
+    {
+        UUID id = UUID.randomUUID();
+        UUID hostId = UUID.randomUUID();
+        long completedAt = 1234L;
+        RepairJobView repairJobView1 = new TestUtils.OnDemandRepairJobBuilder()
+                .withId(id)
+                .withHostId(hostId)
+                .withKeyspace("ks")
+                .withTable("table1")
+                .withCompletedAt(completedAt)
+                .build();
+        RepairJobView repairJobView2 = new TestUtils.OnDemandRepairJobBuilder()
+                .withId(id)
+                .withHostId(hostId)
+                .withKeyspace("ks")
+                .withTable("table2")
+                .withCompletedAt(completedAt)
+                .build();
+        RepairJobView repairJobView3 = new TestUtils.OnDemandRepairJobBuilder()
+                .withId(id)
+                .withHostId(hostId)
+                .withKeyspace("ks")
+                .withTable("table3")
+                .withCompletedAt(completedAt)
+                .build();
+
+        List<OnDemandRepair> expectedResponse = new ArrayList<>();
+        expectedResponse.add(new OnDemandRepair(repairJobView1));
+        expectedResponse.add(new OnDemandRepair(repairJobView2));
+        expectedResponse.add(new OnDemandRepair(repairJobView3));
+
+        when(myOnDemandRepairScheduler.scheduleJob(myTableReferenceFactory.forTable("ks", "table1"))).thenReturn(
+                repairJobView1);
+        when(myOnDemandRepairScheduler.scheduleJob(myTableReferenceFactory.forTable("ks", "table2"))).thenReturn(
+                repairJobView2);
+        when(myOnDemandRepairScheduler.scheduleJob(myTableReferenceFactory.forTable("ks", "table3"))).thenReturn(
+                repairJobView3);
+        when(myReplicatedTableProvider.accept("ks")).thenReturn(true);
+        ResponseEntity<List<OnDemandRepair>> response = repairManagementREST.triggerRepair("ks", null, true);
+
+        assertThat(response.getBody()).containsAll(expectedResponse);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    public void testTriggerRepairNoKeyspaceNoTable() throws EcChronosException
+    {
+        UUID id = UUID.randomUUID();
+        UUID hostId = UUID.randomUUID();
+        long completedAt = 1234L;
+        RepairJobView repairJobView1 = new TestUtils.OnDemandRepairJobBuilder()
+                .withId(id)
+                .withHostId(hostId)
+                .withKeyspace("keyspace1")
+                .withTable("table1")
+                .withCompletedAt(completedAt)
+                .build();
+        RepairJobView repairJobView2 = new TestUtils.OnDemandRepairJobBuilder()
+                .withId(id)
+                .withHostId(hostId)
+                .withKeyspace("keyspace1")
+                .withTable("table2")
+                .withCompletedAt(completedAt)
+                .build();
+        RepairJobView repairJobView3 = new TestUtils.OnDemandRepairJobBuilder()
+                .withId(id)
+                .withHostId(hostId)
+                .withKeyspace("keyspace1")
+                .withTable("table3")
+                .withCompletedAt(completedAt)
+                .build();
+        RepairJobView repairJobView4 = new TestUtils.OnDemandRepairJobBuilder()
+                .withId(id)
+                .withHostId(hostId)
+                .withKeyspace("keyspace2")
+                .withTable("table4")
+                .withCompletedAt(completedAt)
+                .build();
+        RepairJobView repairJobView5 = new TestUtils.OnDemandRepairJobBuilder()
+                .withId(id)
+                .withHostId(hostId)
+                .withKeyspace("keyspace3")
+                .withTable("table5")
+                .withCompletedAt(completedAt)
+                .build();
+
+        List<OnDemandRepair> expectedResponse = new ArrayList<>();
+        expectedResponse.add(new OnDemandRepair(repairJobView1));
+        expectedResponse.add(new OnDemandRepair(repairJobView2));
+        expectedResponse.add(new OnDemandRepair(repairJobView3));
+        expectedResponse.add(new OnDemandRepair(repairJobView4));
+        expectedResponse.add(new OnDemandRepair(repairJobView5));
+
+        when(myOnDemandRepairScheduler.scheduleJob(myTableReferenceFactory.forTable("keyspace1", "table1"))).thenReturn(
+                repairJobView1);
+        when(myOnDemandRepairScheduler.scheduleJob(myTableReferenceFactory.forTable("keyspace1", "table2"))).thenReturn(
+                repairJobView2);
+        when(myOnDemandRepairScheduler.scheduleJob(myTableReferenceFactory.forTable("keyspace1", "table3"))).thenReturn(
+                repairJobView3);
+        when(myOnDemandRepairScheduler.scheduleJob(myTableReferenceFactory.forTable("keyspace2", "table4"))).thenReturn(
+                repairJobView4);
+        when(myOnDemandRepairScheduler.scheduleJob(myTableReferenceFactory.forTable("keyspace3", "table5"))).thenReturn(
+                repairJobView5);
+        when(myReplicatedTableProvider.accept("keyspace1")).thenReturn(true);
+        when(myReplicatedTableProvider.accept("keyspace2")).thenReturn(true);
+        when(myReplicatedTableProvider.accept("keyspace3")).thenReturn(true);
+        ResponseEntity<List<OnDemandRepair>> response = repairManagementREST.triggerRepair(null, null, true);
+
+        assertThat(response.getBody()).containsAll(expectedResponse);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    public void testTriggerRepairNoKeyspaceWithTable()
+    {
+        ResponseEntity<List<OnDemandRepair>> response = null;
+        try
+        {
+            response = repairManagementREST.triggerRepair(null, "table1", true);
+        }
+        catch(ResponseStatusException e)
+        {
+            assertThat(e.getRawStatusCode()).isEqualTo(BAD_REQUEST.value());
+        }
+        assertThat(response).isNull();
     }
 
     @Test

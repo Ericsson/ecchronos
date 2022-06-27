@@ -2,6 +2,7 @@
 
 ## Version 3.0.0
 
+* Add support for repairs without keyspace/table - Issue #158
 * Add Cassandra health indicator and enable probes - Issue #192
 * Add support for clusterwide repairs - Issue #299
 * Add custom HTML error page
