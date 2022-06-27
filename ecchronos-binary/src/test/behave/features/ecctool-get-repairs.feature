@@ -2,12 +2,16 @@ Feature: ecctool repairs
 
   Scenario: List repairs
     Given we have access to ecctool
+    And we schedule an on demand repair on test.table1
+    And we schedule an on demand repair on test.table2
     And we schedule an on demand repair on test2.table1
+    And we schedule an on demand repair on test2.table2
     When we list all repairs
     Then the output should contain a valid repair header
+    And the output should contain a repair row for test.table1
+    And the output should contain a repair row for test.table2
+    And the output should contain a repair row for test2.table1
     And the output should contain a repair row for test2.table2
-    And the output should contain a repair row for test2.table1
-    And the output should contain a repair row for test2.table1
     And the output should not contain more rows
     And the output should contain summary
 
@@ -23,9 +27,8 @@ Feature: ecctool repairs
     Given we have access to ecctool
     When we list all repairs for keyspace test2
     Then the output should contain a valid repair header
+    And the output should contain a repair row for test2.table1
     And the output should contain a repair row for test2.table2
-    And the output should contain a repair row for test2.table1
-    And the output should contain a repair row for test2.table1
     And the output should not contain more rows
     And the output should contain summary
 
