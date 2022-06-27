@@ -50,12 +50,12 @@ paths:
       parameters:
       - name: keyspace
         in: query
-        required: true
+        required: false
         schema:
           type: string
       - name: table
         in: query
-        required: true
+        required: false
         schema:
           type: string
       - name: isLocal

@@ -17,9 +17,12 @@ package com.ericsson.bss.cassandra.ecchronos.core.utils;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.TableMetadata;
+import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.google.common.base.Preconditions;
 
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -56,6 +59,36 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
     public TableReference forTable(TableMetadata table)
     {
         return new UuidTableReference(table);
+    }
+
+    @Override
+    public Set<TableReference> forKeyspace(String keyspace) throws EcChronosException
+    {
+        Set<TableReference> tableReferences = new HashSet<>();
+        KeyspaceMetadata keyspaceMetadata = metadata.getKeyspace(keyspace);
+        if (keyspaceMetadata == null)
+        {
+            throw new EcChronosException("Keyspace " + keyspace + " does not exist");
+        }
+        for (TableMetadata table : keyspaceMetadata.getTables())
+        {
+            tableReferences.add(new UuidTableReference(table));
+        }
+        return tableReferences;
+    }
+
+    @Override
+    public Set<TableReference> forCluster()
+    {
+        Set<TableReference> tableReferences = new HashSet<>();
+        for (KeyspaceMetadata keyspace : metadata.getKeyspaces())
+        {
+            for (TableMetadata table : keyspace.getTables())
+            {
+                tableReferences.add(new UuidTableReference(table));
+            }
+        }
+        return tableReferences;
     }
 
     class UuidTableReference implements TableReference

@@ -145,7 +145,7 @@ class V2RepairSchedulerRequest(RestRequest):
     v2_repair_status_url = REPAIRS
     v2_repair_id_status_url = REPAIRS + '/{0}'
 
-    v2_repair_trigger_url = REPAIRS + '?keyspace={0}&table={1}'
+    v2_repair_trigger_url = REPAIRS
 
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
@@ -206,9 +206,16 @@ class V2RepairSchedulerRequest(RestRequest):
         return result
 
     def post(self, keyspace=None, table=None, local=False):
-        request_url = V2RepairSchedulerRequest.v2_repair_trigger_url.format(keyspace, table)
+        request_url = V2RepairSchedulerRequest.v2_repair_trigger_url
+        if keyspace:
+            request_url += "?keyspace=" + keyspace
+            if table:
+                request_url += "&table=" + table
         if local:
-            request_url += "&isLocal=true"
+            if keyspace:
+                request_url += "&isLocal=true"
+            else:
+                request_url += "?isLocal=true"
         result = self.request(request_url, 'POST')
         if result.is_successful():
             result = result.transform_with_data(new_data=[Repair(x) for x in result.data])

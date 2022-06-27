@@ -141,9 +141,9 @@ def add_run_repair_subcommand(sub_parsers):
                                        help='repair will run for the local node, disabled by default', default=False)
     required_args = parser_trigger_repair.add_argument_group("required arguments")
     required_args.add_argument("-k", "--keyspace", type=str,
-                               help="Keyspace where the repair should be triggered", required=True)
+                               help="Keyspace where the repair should be triggered", required=False)
     required_args.add_argument("-t", "--table", type=str,
-                               help="Table where the repair should be triggered", required=True)
+                               help="Table where the repair should be triggered", required=False)
 
 def add_start_subcommand(sub_parsers):
     parser_config = sub_parsers.add_parser("start",
@@ -273,6 +273,9 @@ def repair_config(arguments):
 def run_repair(arguments):
     request = rest.V2RepairSchedulerRequest(base_url=arguments.url)
     printer = table_printer_v2
+    if not arguments.keyspace and arguments.table:
+        print("--keyspace must be specified if table is specified")
+        sys.exit(1)
     result = request.post(keyspace=arguments.keyspace, table=arguments.table, local=arguments.local)
     if result.is_successful():
         printer.print_repairs(result.data)

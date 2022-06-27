@@ -14,12 +14,15 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core;
 
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import com.datastax.driver.core.TableMetadata;
+import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 
@@ -37,6 +40,28 @@ public class MockTableReferenceFactory implements TableReferenceFactory
     public TableReference forTable(TableMetadata table)
     {
         return tableReference(table);
+    }
+
+    @Override
+    public Set<TableReference> forKeyspace(String keyspace) throws EcChronosException
+    {
+        Set<TableReference> tableReferences = new HashSet<>();
+        tableReferences.add(tableReference(keyspace, "table1"));
+        tableReferences.add(tableReference(keyspace, "table2"));
+        tableReferences.add(tableReference(keyspace, "table3"));
+        return tableReferences;
+    }
+
+    @Override
+    public Set<TableReference> forCluster()
+    {
+        Set<TableReference> tableReferences = new HashSet<>();
+        tableReferences.add(tableReference("keyspace1", "table1"));
+        tableReferences.add(tableReference("keyspace1", "table2"));
+        tableReferences.add(tableReference("keyspace1", "table3"));
+        tableReferences.add(tableReference("keyspace2", "table4"));
+        tableReferences.add(tableReference("keyspace3", "table5"));
+        return tableReferences;
     }
 
     public static TableReference tableReference(String keyspace, String table)
