@@ -89,8 +89,8 @@ def print_repairs(repairs, max_lines=-1):
 
 def print_schedule_table(schedule_table, schedules, max_lines):
 
-    sorted_schedules = sorted(schedules, key=lambda sorted_schedule: sorted_schedule.last_repaired_at_in_ms,
-                              reverse=True)
+    sorted_schedules = sorted(schedules, key=lambda x: (x.last_repaired_at_in_ms, x.repaired_ratio),
+                              reverse=False)
     if max_lines > -1:
         sorted_schedules = sorted_schedules[:max_lines]
 
@@ -100,7 +100,7 @@ def print_schedule_table(schedule_table, schedules, max_lines):
 
 def print_repair_table(repair_table, repairs, max_lines):
 
-    sorted_repairs = sorted(repairs, key=lambda sorted_repair: sorted_repair.completed_at, reverse=True)
+    sorted_repairs = sorted(repairs, key=lambda x: (x.completed_at, x.repaired_ratio), reverse=False)
     if max_lines > -1:
         sorted_repairs = sorted_repairs[:max_lines]
 
