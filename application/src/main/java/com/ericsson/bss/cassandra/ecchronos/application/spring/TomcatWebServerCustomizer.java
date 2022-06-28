@@ -85,7 +85,7 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
         certificateConfig.setCertificateKeyFile(certificateKey);
         sslHostConfig.addCertificate(certificateConfig);
         sslHostConfig.setTrustStore(getTrustStore());
-        sslHostConfig.setCertificateVerification(clientAuth.equals("need") ? "true" : "false");
+        sslHostConfig.setCertificateVerification("need".equals(clientAuth) ? "true" : "false");
         return sslHostConfig;
     }
 
