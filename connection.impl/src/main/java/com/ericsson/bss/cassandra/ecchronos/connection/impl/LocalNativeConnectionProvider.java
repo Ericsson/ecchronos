@@ -21,6 +21,7 @@ import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.metadata.EndPoint;
 import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import com.datastax.oss.driver.api.core.session.Session;
 import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 import com.datastax.oss.driver.internal.core.loadbalancing.DcInferringLoadBalancingPolicy;
@@ -84,6 +85,7 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
         private boolean myRemoteRouting = true;
         private AuthProvider authProvider = null;
         private SslEngineFactory sslEngineFactory = null;
+        private SchemaChangeListener schemaChangeListener = null;
 
         public Builder withLocalhost(String localhost)
         {
@@ -112,6 +114,12 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
         public Builder withSslEngineFactory(SslEngineFactory sslEngineFactory)
         {
             this.sslEngineFactory = sslEngineFactory;
+            return this;
+        }
+
+        public Builder withSchemaChangeListener(SchemaChangeListener schemaChangeListener)
+        {
+            this.schemaChangeListener = schemaChangeListener;
             return this;
         }
 
@@ -193,7 +201,8 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
             return CqlSession.builder()
                     .addContactEndPoint(builder.localEndPoint())
                     .withAuthProvider(builder.authProvider)
-                    .withSslEngineFactory(builder.sslEngineFactory);
+                    .withSslEngineFactory(builder.sslEngineFactory)
+                    .withSchemaChangeListener(builder.schemaChangeListener);
         }
 
         private static Node resolveLocalhost(Session session, EndPoint localEndpoint)

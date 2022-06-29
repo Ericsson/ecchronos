@@ -47,7 +47,6 @@ public class ECChronos implements Closeable
     private final ECChronosInternals myECChronosInternals;
 
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
-    private final DefaultRepairConfigurationProvider myDefaultRepairConfigurationProvider;
     private final RepairSchedulerImpl myRepairSchedulerImpl;
     private final OnDemandRepairSchedulerImpl myOnDemandRepairSchedulerImpl;
 
@@ -55,7 +54,7 @@ public class ECChronos implements Closeable
             RepairFaultReporter repairFaultReporter, NativeConnectionProvider nativeConnectionProvider,
             JmxConnectionProvider jmxConnectionProvider, StatementDecorator statementDecorator,
             ReplicationState replicationState, RepairHistory repairHistory, RepairHistoryProvider repairHistoryProvider,
-            MetricRegistry metricRegistry) throws ConfigurationException
+            MetricRegistry metricRegistry, DefaultRepairConfigurationProvider defaultRepairConfigurationProvider) throws ConfigurationException
     {
         myECChronosInternals = new ECChronosInternals(configuration, nativeConnectionProvider, jmxConnectionProvider,
                 statementDecorator, metricRegistry);
@@ -92,13 +91,12 @@ public class ECChronos implements Closeable
         AbstractRepairConfigurationProvider repairConfigurationProvider = ReflectionUtils
                 .construct(repairConfig.getProvider(), new Class[] { ApplicationContext.class }, applicationContext);
 
-        myDefaultRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()
+        defaultRepairConfigurationProvider.fromBuilder(DefaultRepairConfigurationProvider.newBuilder()
                 .withRepairScheduler(myRepairSchedulerImpl)
                 .withSession(session)
                 .withReplicatedTableProvider(myECChronosInternals.getReplicatedTableProvider())
                 .withRepairConfiguration(repairConfigurationProvider::get)
-                .withTableReferenceFactory(myECChronosInternals.getTableReferenceFactory())
-                .build();
+                .withTableReferenceFactory(myECChronosInternals.getTableReferenceFactory()));
 
         myOnDemandRepairSchedulerImpl = OnDemandRepairSchedulerImpl.builder()
                 .withScheduleManager(myECChronosInternals.getScheduleManager())
@@ -144,7 +142,6 @@ public class ECChronos implements Closeable
         myECChronosInternals.removeRunPolicy(myTimeBasedRunPolicy);
 
         myTimeBasedRunPolicy.close();
-        myDefaultRepairConfigurationProvider.close();
         myRepairSchedulerImpl.close();
         myOnDemandRepairSchedulerImpl.close();
 

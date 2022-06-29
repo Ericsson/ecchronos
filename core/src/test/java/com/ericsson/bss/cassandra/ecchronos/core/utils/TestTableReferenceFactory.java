@@ -52,7 +52,7 @@ public class TestTableReferenceFactory
 
     private TableReferenceFactory tableReferenceFactory;
 
-    private Map<String, KeyspaceMetadata> mockedKeyspaces = new HashMap<>();
+    private Map<CqlIdentifier, KeyspaceMetadata> mockedKeyspaces = new HashMap<>();
 
     @Before
     public void setup()
@@ -160,7 +160,8 @@ public class TestTableReferenceFactory
         mockKeyspace("firstks", firstKsTables);
         mockKeyspace("secondks", Collections.singleton("table1"));
         mockKeyspace("thirdks", Collections.singleton("table1"));
-        when(mockMetadata.getKeyspaces()).thenReturn(mockedKeyspaces.values().stream().collect(Collectors.toList()));
+
+        when(mockMetadata.getKeyspaces()).thenReturn(mockedKeyspaces);
         Set<TableReference> tableReferences = tableReferenceFactory.forCluster();
         assertThat(tableReferences).isNotEmpty();
         assertThat(tableReferences.stream()
@@ -176,23 +177,24 @@ public class TestTableReferenceFactory
 
     private void mockKeyspace(String keyspace, Set<String> tables)
     {
-        KeyspaceMetadata keyspaceMetadata = mockedKeyspaces.computeIfAbsent(keyspace, k -> {
+        CqlIdentifier keySpaceIdentifier = CqlIdentifier.fromInternal(keyspace);
+        KeyspaceMetadata keyspaceMetadata = mockedKeyspaces.computeIfAbsent(keySpaceIdentifier, k -> {
             KeyspaceMetadata mockedKeyspace = mock(KeyspaceMetadata.class);
-            when(mockedKeyspace.getName()).thenReturn(keyspace);
-            Set<TableMetadata> tableMetadatas = new HashSet<>();
+            when(mockedKeyspace.getName()).thenReturn(keySpaceIdentifier);
+            Map<CqlIdentifier, TableMetadata> tableMetadatas = new HashMap<>();
             for (String table : tables)
             {
                 TableMetadata tableMetadata = mock(TableMetadata.class);
-                when(tableMetadata.getId()).thenReturn(UUID.randomUUID());
-                when(tableMetadata.getName()).thenReturn(table);
-                when(tableMetadata.getKeyspace()).thenReturn(mockedKeyspace);
-                tableMetadatas.add(tableMetadata);
-                when(mockedKeyspace.getTable(eq(table))).thenReturn(tableMetadata);
+                when(tableMetadata.getId()).thenReturn(Optional.of(UUID.randomUUID()));
+                when(tableMetadata.getName()).thenReturn(CqlIdentifier.fromInternal(table));
+                when(tableMetadata.getKeyspace()).thenReturn(keySpaceIdentifier);
+                tableMetadatas.put(CqlIdentifier.fromInternal(table), tableMetadata);
+                when(mockedKeyspace.getTable(eq(table))).thenReturn(Optional.of(tableMetadata));
             }
             when(mockedKeyspace.getTables()).thenReturn(tableMetadatas);
             return mockedKeyspace;
         });
-        when(mockMetadata.getKeyspace(eq(keyspace))).thenReturn(keyspaceMetadata);
+        when(mockMetadata.getKeyspace(eq(keyspace))).thenReturn(Optional.of(keyspaceMetadata));
     }
 
     @Test
@@ -214,7 +216,8 @@ public class TestTableReferenceFactory
         KeyspaceMetadata keyspaceMetadata = mock(KeyspaceMetadata.class);
         when(keyspaceMetadata.getName()).thenReturn(CqlIdentifier.fromInternal(keyspace));
 
-        mockedKeyspaces.put(keyspace, keyspaceMetadata);
+        CqlIdentifier keySpaceIdentifier = CqlIdentifier.fromInternal(keyspace);
+        mockedKeyspaces.put(keySpaceIdentifier, keyspaceMetadata);
 
         when(mockMetadata.getKeyspace(eq(keyspace))).thenReturn(Optional.of(keyspaceMetadata));
     }
@@ -234,9 +237,10 @@ public class TestTableReferenceFactory
 
     private TableMetadata mockRemovedTable(String keyspace, String table)
     {
-        KeyspaceMetadata keyspaceMetadata = mockedKeyspaces.computeIfAbsent(keyspace, k -> {
+        CqlIdentifier keySpaceIdentifier = CqlIdentifier.fromInternal(keyspace);
+        KeyspaceMetadata keyspaceMetadata = mockedKeyspaces.computeIfAbsent(keySpaceIdentifier, k -> {
             KeyspaceMetadata mockedKeyspace = mock(KeyspaceMetadata.class);
-            when(mockedKeyspace.getName()).thenReturn(CqlIdentifier.fromInternal(keyspace));
+            when(mockedKeyspace.getName()).thenReturn(keySpaceIdentifier);
             return mockedKeyspace;
         });
 
@@ -252,9 +256,10 @@ public class TestTableReferenceFactory
 
     private void mockTable(String keyspace, String table)
     {
-        KeyspaceMetadata keyspaceMetadata = mockedKeyspaces.computeIfAbsent(keyspace, k -> {
+        CqlIdentifier keySpaceIdentifier = CqlIdentifier.fromInternal(keyspace);
+        KeyspaceMetadata keyspaceMetadata = mockedKeyspaces.computeIfAbsent(keySpaceIdentifier, k -> {
             KeyspaceMetadata mockedKeyspace = mock(KeyspaceMetadata.class);
-            when(mockedKeyspace.getName()).thenReturn(CqlIdentifier.fromInternal(keyspace));
+            when(mockedKeyspace.getName()).thenReturn(keySpaceIdentifier);
             return mockedKeyspace;
         });
 

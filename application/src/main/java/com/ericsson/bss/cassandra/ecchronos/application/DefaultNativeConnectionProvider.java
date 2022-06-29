@@ -23,6 +23,7 @@ import com.datastax.oss.driver.api.core.auth.AuthProvider;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,8 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
 
     private final LocalNativeConnectionProvider myLocalNativeConnectionProvider;
 
-    public DefaultNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecuritySupplier, CertificateHandler certificateHandler)
+    public DefaultNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecuritySupplier,
+            CertificateHandler certificateHandler, DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
     {
         Config.NativeConnection nativeConfig = config.getConnectionConfig().getCql();
         String host = nativeConfig.getHost();
@@ -62,15 +64,18 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
                 .withPort(port)
                 .withRemoteRouting(remoteRouting)
                 .withAuthProvider(authProvider)
-                .withSslEngineFactory(sslEngineFactory);
+                .withSslEngineFactory(sslEngineFactory)
+                .withSchemaChangeListener(defaultRepairConfigurationProvider);
 
         myLocalNativeConnectionProvider = establishConnection(nativeConnectionBuilder,
                 host, port, nativeConfig.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS));
     }
 
-    public DefaultNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecuritySupplier)
+    public DefaultNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecuritySupplier,
+            DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
     {
-        this(config, cqlSecuritySupplier, new ReloadingCertificateHandler(() -> cqlSecuritySupplier.get().getTls()));
+        this(config, cqlSecuritySupplier, new ReloadingCertificateHandler(() -> cqlSecuritySupplier.get().getTls()),
+                defaultRepairConfigurationProvider);
     }
 
     private static LocalNativeConnectionProvider establishConnection(LocalNativeConnectionProvider.Builder builder,

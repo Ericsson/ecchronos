@@ -28,6 +28,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
@@ -248,7 +249,8 @@ public class TestConfig
 
     public static class TestNativeConnectionProvider implements NativeConnectionProvider
     {
-        public TestNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecurity)
+        public TestNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecurity,
+                DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
         {
             // Empty constructor
         }

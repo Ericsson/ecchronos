@@ -14,7 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import java.io.Closeable;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -35,14 +34,37 @@ import com.google.common.base.Preconditions;
  * A repair configuration provider that adds configuration to {@link RepairScheduler} based on whether or not the table
  * is replicated locally using the default repair configuration provided during construction of this object.
  */
-//TODO TEST
-public class DefaultRepairConfigurationProvider implements SchemaChangeListener, Closeable
+public class DefaultRepairConfigurationProvider implements SchemaChangeListener
 {
-    private final CqlSession mySession;
-    private final ReplicatedTableProvider myReplicatedTableProvider;
-    private final RepairScheduler myRepairScheduler;
-    private final Function<TableReference, RepairConfiguration> myRepairConfigurationFunction;
-    private final TableReferenceFactory myTableReferenceFactory;
+    private CqlSession mySession;
+    private ReplicatedTableProvider myReplicatedTableProvider;
+    private RepairScheduler myRepairScheduler;
+    private Function<TableReference, RepairConfiguration> myRepairConfigurationFunction;
+    private TableReferenceFactory myTableReferenceFactory;
+
+    public DefaultRepairConfigurationProvider()
+    {
+        //NOOP
+    }
+
+    public void fromBuilder(Builder builder)
+    {
+        mySession = builder.mySession;
+        myReplicatedTableProvider = builder.myReplicatedTableProvider;
+        myRepairScheduler = builder.myRepairScheduler;
+        myRepairConfigurationFunction = builder.myRepairConfigurationFunction;
+        myTableReferenceFactory = Preconditions.checkNotNull(builder.myTableReferenceFactory,
+                "Table reference factory must be set");
+
+        for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
+        {
+            String keyspaceName = keyspaceMetadata.getName().asInternal();
+            if (myReplicatedTableProvider.accept(keyspaceName))
+            {
+                allTableOperation(keyspaceName, this::updateConfiguration);
+            }
+        }
+    }
 
     private DefaultRepairConfigurationProvider(Builder builder)
     {
