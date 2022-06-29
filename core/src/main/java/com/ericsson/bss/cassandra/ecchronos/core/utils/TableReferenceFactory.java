@@ -14,10 +14,10 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 
 import java.util.Set;
-import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 
 /**
  * A factory that generates table references
@@ -28,7 +28,7 @@ public interface TableReferenceFactory
      * Get a table reference for the provided keyspace/table pair.
      *
      * @param keyspace The keyspace name.
-     * @param table The table name.
+     * @param table    The table name.
      * @return A table reference for the provided keyspace/table pair or null if table does not exist.
      */
     TableReference forTable(String keyspace, String table);
@@ -45,8 +45,8 @@ public interface TableReferenceFactory
      * Get all table references in keyspace
      *
      * @param keyspace The keyspace name
-     * @throws com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException if keyspace does not exist.
      * @return A unique set of all table references for a specific keyspace.
+     * @throws com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException if keyspace does not exist.
      */
     Set<TableReference> forKeyspace(String keyspace) throws EcChronosException;
 

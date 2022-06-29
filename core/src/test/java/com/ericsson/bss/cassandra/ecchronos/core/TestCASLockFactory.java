@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core;
 
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Matchers.any;
@@ -45,6 +46,7 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.session.Session;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import org.apache.cassandra.db.Keyspace;
 import org.apache.cassandra.metrics.TableMetrics;
@@ -99,7 +101,14 @@ public class TestCASLockFactory extends AbstractCassandraTest
                 .withKeyspaceName(myKeyspaceName)
                 .build();
 
-        myLockStatement = mySession.prepare(String.format("INSERT INTO %s.%s (resource, node, metadata) VALUES (?, ?, ?) IF NOT EXISTS", myKeyspaceName, TABLE_LOCK)); //TODO do we need constistenctLevel and serial consistency?
+        myLockStatement = mySession.prepare(QueryBuilder.insertInto(myKeyspaceName, TABLE_LOCK)
+                .value("resource", bindMarker())
+                .value("node", bindMarker())
+                .value("metadata", bindMarker())
+                .ifNotExists()
+                .build()
+                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
+                .setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL));
         myRemoveLockStatement = mySession.prepare(String.format("DELETE FROM %s.%s WHERE resource=? IF EXISTS", myKeyspaceName, TABLE_LOCK));
         myCompeteStatement = mySession.prepare(String.format("INSERT INTO %s.%s (resource, node, priority) VALUES (?, ?, ?)", myKeyspaceName, TABLE_LOCK_PRIORITY));
         myGetPrioritiesStatement = mySession.prepare(String.format("SELECT * FROM %s.%s WHERE resource=?", myKeyspaceName, TABLE_LOCK_PRIORITY));

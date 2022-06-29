@@ -75,9 +75,10 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
         this(nodeResolver, session, statementDecorator, lookbackTime, Clock.systemDefaultZone());
     }
 
-    @VisibleForTesting RepairHistoryProviderImpl(NodeResolver nodeResolver, CqlSession session,
-            StatementDecorator statementDecorator,
-            long lookbackTime, Clock clock)
+    @VisibleForTesting
+    RepairHistoryProviderImpl(NodeResolver nodeResolver, CqlSession session,
+                              StatementDecorator statementDecorator,
+                              long lookbackTime, Clock clock)
     {
         myNodeResolver = nodeResolver;
         mySession = session;

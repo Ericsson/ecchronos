@@ -118,10 +118,7 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
         public LocalNativeConnectionProvider build()
         {
             CqlSession session = createSession(this);
-            //TODO
-            //cluster.getConfiguration().getCodecRegistry().register(SimpleTimestampCodec.instance);
             Node node = resolveLocalhost(session, localEndPoint());
-
             return new LocalNativeConnectionProvider(session, node, myRemoteRouting);
         }
 

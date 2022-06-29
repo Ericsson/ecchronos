@@ -73,13 +73,13 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
 
             switch (replicationClass)
             {
-            case SIMPLE_STRATEGY:
-                return validateSimpleStrategy(replication);
-            case NETWORK_TOPOLOGY_STRATEGY:
-                return validateNetworkTopologyStrategy(keyspace, replication);
-            default:
-                LOG.warn("Replication strategy of type {} is not supported", replicationClass);
-                break;
+                case SIMPLE_STRATEGY:
+                    return validateSimpleStrategy(replication);
+                case NETWORK_TOPOLOGY_STRATEGY:
+                    return validateNetworkTopologyStrategy(keyspace, replication);
+                default:
+                    LOG.warn("Replication strategy of type {} is not supported", replicationClass);
+                    break;
             }
         }
 

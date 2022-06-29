@@ -15,14 +15,11 @@
 package com.ericsson.bss.cassandra.ecchronos.standalone;
 
 import com.datastax.oss.driver.api.core.auth.ProgrammaticPlainTextAuthProvider;
-import com.datastax.oss.driver.internal.core.auth.PlainTextAuthProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactoryImpl;
-import org.junit.AfterClass;
-
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalNativeConnectionProvider;
-
+import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactoryImpl;
 import net.jcip.annotations.NotThreadSafe;
+import org.junit.AfterClass;
 
 import java.io.IOException;
 

@@ -35,6 +35,7 @@ import com.google.common.base.Preconditions;
  * A repair configuration provider that adds configuration to {@link RepairScheduler} based on whether or not the table
  * is replicated locally using the default repair configuration provided during construction of this object.
  */
+//TODO TEST
 public class DefaultRepairConfigurationProvider implements SchemaChangeListener, Closeable
 {
     private final CqlSession mySession;
@@ -100,9 +101,6 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
     @Override
     public void close()
     {
-        //TODO
-        //myCluster.unregister(this);
-
         for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
         {
             allTableOperation(keyspaceMetadata.getName().asInternal(), myRepairScheduler::removeConfiguration);
@@ -139,12 +137,14 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
         return new Builder();
     }
 
-    @Override public void onKeyspaceCreated(KeyspaceMetadata keyspace)
+    @Override
+    public void onKeyspaceCreated(KeyspaceMetadata keyspace)
     {
         // NOOP
     }
 
-    @Override public void onKeyspaceDropped(KeyspaceMetadata keyspace)
+    @Override
+    public void onKeyspaceDropped(KeyspaceMetadata keyspace)
     {
         // NOOP
     }
@@ -274,9 +274,6 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
         public DefaultRepairConfigurationProvider build()
         {
             DefaultRepairConfigurationProvider configurationProvider = new DefaultRepairConfigurationProvider(this);
-            //TODO
-            //myCluster.register(configurationProvider);
-
             return configurationProvider;
         }
     }

@@ -49,7 +49,8 @@ public class ReloadingAuthProvider implements AuthProvider
         return new DefaultAuthenticator(credentialSupplier);
     }
 
-    @Override public void close() throws Exception
+    @Override
+    public void close() throws Exception
     {
 
     }

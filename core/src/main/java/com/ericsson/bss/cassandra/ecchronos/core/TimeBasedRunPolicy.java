@@ -14,13 +14,13 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core;
 
-import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairPolicy;
@@ -44,6 +44,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 
 /**
  * Time based run policy
@@ -82,7 +84,8 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         myStatementDecorator = builder.myStatementDecorator;
         myClock = builder.myClock;
 
-        myGetRejectionsStatement = mySession.prepare(selectFrom(builder.myKeyspaceName, TABLE_REJECT_CONFIGURATION)
+        myGetRejectionsStatement = mySession.prepare(
+                QueryBuilder.selectFrom(builder.myKeyspaceName, TABLE_REJECT_CONFIGURATION)
                 .all()
                 .whereColumn("keyspace_name")
                 .isEqualTo(bindMarker())
