@@ -154,12 +154,12 @@ public class TestOnDemandRepairSchedulerImpl
     }
 
     @Test
-    public void testRestartRepairOnTableWithException() throws EcChronosException
+    public void testRestartRepairOnTableWithException()
     {
         Set<OngoingJob> ongoingJobs = new HashSet<>();
         ongoingJobs.add(myOngingJob);
         List<Map.Entry<Node, Throwable>> errors = new ArrayList<>();
-        when(myOnDemandStatus.getOngoingJobs(replicationState)).thenThrow(AllNodesFailedException.fromErrors(errors)).thenReturn(ongoingJobs); //TODO check exceptiom
+        when(myOnDemandStatus.getOngoingJobs(replicationState)).thenThrow(AllNodesFailedException.fromErrors(errors)).thenReturn(ongoingJobs);
 
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
 
