@@ -559,8 +559,8 @@ public class ITTableRepairJob extends TestBase
             }
             else
             {
-                String start = tokenRange.getStart().toString();
-                String end = tokenRange.getEnd().toString();
+                String start = Long.toString(((Murmur3Token) tokenRange.getStart()).getValue());
+                String end = Long.toString(((Murmur3Token) tokenRange.getEnd()).getValue());
                 injectRepairHistory(tableReference, timestamp, participants, start, end);
             }
 
