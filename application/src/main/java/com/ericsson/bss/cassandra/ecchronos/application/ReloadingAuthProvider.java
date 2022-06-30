@@ -14,94 +14,26 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.util.concurrent.CompletionStage;
+import com.datastax.oss.driver.api.core.auth.ProgrammaticPlainTextAuthProvider;
+import com.datastax.oss.driver.api.core.metadata.EndPoint;
+
 import java.util.function.Supplier;
 
-import com.datastax.oss.driver.api.core.auth.AuthProvider;
-import com.datastax.oss.driver.api.core.auth.AuthenticationException;
-import com.datastax.oss.driver.api.core.auth.Authenticator;
-import com.datastax.oss.driver.api.core.metadata.EndPoint;
-import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
-import com.ericsson.bss.cassandra.ecchronos.application.config.Credentials;
-
-public class ReloadingAuthProvider implements AuthProvider
+public class ReloadingAuthProvider extends ProgrammaticPlainTextAuthProvider
 {
-    private static final Charset UTF8 = Charset.forName("UTF-8");
+    private final Supplier<com.ericsson.bss.cassandra.ecchronos.application.config.Credentials> credentialSupplier;
 
-    private final Supplier<Credentials> credentialSupplier;
-
-    public ReloadingAuthProvider(Supplier<Credentials> credentialSupplier)
+    public ReloadingAuthProvider(
+            Supplier<com.ericsson.bss.cassandra.ecchronos.application.config.Credentials> credentialSupplier)
     {
+        super(credentialSupplier.get().getUsername(), credentialSupplier.get().getPassword());
         this.credentialSupplier = credentialSupplier;
     }
 
     @Override
-    public void onMissingChallenge(EndPoint endPoint) throws AuthenticationException
+    protected Credentials getCredentials(EndPoint endPoint, String serverAuthenticator)
     {
-
-    }
-
-    @Override
-    public Authenticator newAuthenticator(EndPoint endPoint, String serverAuthenticator) throws AuthenticationException
-    {
-        return new DefaultAuthenticator(credentialSupplier);
-    }
-
-    @Override
-    public void close() throws Exception
-    {
-
-    }
-
-    static class DefaultAuthenticator implements Authenticator
-    {
-        private final Supplier<Credentials> credentialsSupplier;
-
-        DefaultAuthenticator(Supplier<Credentials> credentialsSupplier)
-        {
-            this.credentialsSupplier = credentialsSupplier;
-        }
-
-        @Override
-        public CompletionStage<ByteBuffer> initialResponse()
-        {
-            return CompletableFutures.wrap(this::initialResponseAsync);
-        }
-
-        private ByteBuffer initialResponseAsync()
-        {
-            Credentials credentials = credentialsSupplier.get();
-            if (!credentials.isEnabled())
-            {
-                return ByteBuffer.wrap(new byte[]{});
-            }
-            else
-            {
-                byte[] username = credentials.getUsername().getBytes(UTF8);
-                byte[] password = credentials.getPassword().getBytes(UTF8);
-
-                // '0' username '0' password
-                byte[] response = new byte[1 + username.length + password.length + 1];
-                response[0] = 0;
-                System.arraycopy(username, 0, response, 1, username.length);
-                response[username.length + 1] = 0;
-                System.arraycopy(password, 0, response, username.length + 2, password.length);
-                return ByteBuffer.wrap(response);
-            }
-        }
-
-        @Override
-        public CompletionStage<ByteBuffer> evaluateChallenge(ByteBuffer challenge)
-        {
-            return null;
-        }
-
-        @Override
-        public CompletionStage<Void> onAuthenticationSuccess(ByteBuffer token)
-        {
-            return null;
-        }
+        com.ericsson.bss.cassandra.ecchronos.application.config.Credentials credentials = credentialSupplier.get();
+        return new Credentials(credentials.getUsername().toCharArray(), credentials.getPassword().toCharArray());
     }
 }

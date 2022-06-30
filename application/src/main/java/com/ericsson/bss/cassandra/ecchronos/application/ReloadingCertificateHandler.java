@@ -91,7 +91,6 @@ public class ReloadingCertificateHandler implements CertificateHandler
                 Context newContext = new Context(tlsConfig);
                 if (currentContext.compareAndSet(context, newContext))
                 {
-                    LOG.info("CONTEXT CHANGED!!");
                     context = newContext;
                 }
                 else
