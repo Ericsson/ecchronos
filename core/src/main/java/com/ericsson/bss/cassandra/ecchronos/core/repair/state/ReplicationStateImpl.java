@@ -90,33 +90,9 @@ public class ReplicationStateImpl implements ReplicationState
 
     private ImmutableMap<LongTokenRange, ImmutableSet<Node>> maybeRenew(String keyspace)
     {
-        ImmutableMap<LongTokenRange, ImmutableSet<Node>> replication = buildTokenMap(keyspace);
+        ImmutableMap<LongTokenRange, ImmutableSet<Node>> replication = buildTokenMap(keyspace, false);
 
         return keyspaceReplicationCache.compute(keyspace, (k, v) -> !replication.equals(v) ? replication : v);
-    }
-
-    private ImmutableMap<LongTokenRange, ImmutableSet<Node>> buildTokenMap(String keyspace)
-    {
-        ImmutableMap.Builder<LongTokenRange, ImmutableSet<Node>> replicationBuilder = ImmutableMap.builder();
-
-        Map<Set<com.datastax.oss.driver.api.core.metadata.Node>, ImmutableSet<Node>> replicaCache = new HashMap<>();
-
-        Metadata metadata = mySession.getMetadata();
-        Optional<TokenMap> tokenMap = metadata.getTokenMap();
-        if (!tokenMap.isPresent())
-        {
-            throw new IllegalStateException("Cannot determine ranges, is metadata/tokenMap disabled?");
-        }
-        for (TokenRange tokenRange : tokenMap.get().getTokenRanges(keyspace, myLocalNode))
-        {
-            LongTokenRange longTokenRange = convert(tokenRange);
-            ImmutableSet<Node> replicas = replicaCache.computeIfAbsent(tokenMap.get().getReplicas(keyspace, tokenRange),
-                    this::convert);
-
-            replicationBuilder.put(longTokenRange, replicas);
-        }
-
-        return replicationBuilder.build();
     }
 
     @Override
@@ -128,12 +104,12 @@ public class ReplicationStateImpl implements ReplicationState
 
     private ImmutableMap<LongTokenRange, ImmutableSet<Node>> maybeRenewClusterWide(String keyspace)
     {
-        ImmutableMap<LongTokenRange, ImmutableSet<Node>> replication = buildClusterWideTokenMap(keyspace);
+        ImmutableMap<LongTokenRange, ImmutableSet<Node>> replication = buildTokenMap(keyspace, true);
 
         return clusterWideKeyspaceReplicationCache.compute(keyspace, (k, v) -> !replication.equals(v) ? replication : v);
     }
 
-    private ImmutableMap<LongTokenRange, ImmutableSet<Node>> buildClusterWideTokenMap(String keyspace)
+    private ImmutableMap<LongTokenRange, ImmutableSet<Node>> buildTokenMap(String keyspace, boolean clusterWide)
     {
         ImmutableMap.Builder<LongTokenRange, ImmutableSet<Node>> replicationBuilder = ImmutableMap.builder();
         Map<Set<com.datastax.oss.driver.api.core.metadata.Node>, ImmutableSet<Node>> replicaCache = new HashMap<>();
@@ -143,7 +119,16 @@ public class ReplicationStateImpl implements ReplicationState
         {
             throw new IllegalStateException("Cannot determine ranges, is metadata/tokenMap disabled?");
         }
-        for (TokenRange tokenRange : tokenMap.get().getTokenRanges())
+        Set<TokenRange> tokenRanges;
+        if (clusterWide)
+        {
+            tokenRanges = tokenMap.get().getTokenRanges();
+        }
+        else
+        {
+            tokenRanges = tokenMap.get().getTokenRanges(keyspace, myLocalNode);
+        }
+        for (TokenRange tokenRange : tokenRanges)
         {
             LongTokenRange longTokenRange = convert(tokenRange);
             ImmutableSet<Node> replicas = replicaCache.computeIfAbsent(tokenMap.get().getReplicas(keyspace, tokenRange),

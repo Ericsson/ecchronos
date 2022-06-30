@@ -15,7 +15,6 @@
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.util.Optional;
 import java.util.UUID;
 
