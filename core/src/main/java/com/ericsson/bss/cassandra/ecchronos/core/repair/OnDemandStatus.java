@@ -47,6 +47,7 @@ import java.util.UUID;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.insertInto;
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.update;
 
@@ -106,22 +107,21 @@ public class OnDemandStatus
                 .value(TABLE_REFERENCE_COLUMN_NAME, bindMarker())
                 .value(TOKEN_MAP_HASH_COLUMN_NAME, bindMarker())
                 .value(REPAIRED_TOKENS_COLUMN_NAME, bindMarker())
-                .value(STATUS_COLUMN_NAME, bindMarker())
+                .value(STATUS_COLUMN_NAME, literal("started"))
                 .build().setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
         SimpleStatement updateRepairedTokenForJobStatement = update(KEYSPACE_NAME, TABLE_NAME)
                 .setColumn(REPAIRED_TOKENS_COLUMN_NAME, bindMarker())
                 .whereColumn(HOST_ID_COLUMN_NAME).isEqualTo(bindMarker())
                 .whereColumn(JOB_ID_COLUMN_NAME).isEqualTo(bindMarker())
                 .build().setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-        //TODO 2 BELOW ARE EXACTLY THE SAME
         SimpleStatement updateJobToFinishedStatement = update(KEYSPACE_NAME, TABLE_NAME)
-                .setColumn(STATUS_COLUMN_NAME, bindMarker())
+                .setColumn(STATUS_COLUMN_NAME, literal("finished"))
                 .setColumn(COMPLETED_TIME_COLUMN_NAME, bindMarker())
                 .whereColumn(HOST_ID_COLUMN_NAME).isEqualTo(bindMarker())
                 .whereColumn(JOB_ID_COLUMN_NAME).isEqualTo(bindMarker())
                 .build().setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
         SimpleStatement updateJobToFailedStatement = update(KEYSPACE_NAME, TABLE_NAME)
-                .setColumn(STATUS_COLUMN_NAME, bindMarker())
+                .setColumn(STATUS_COLUMN_NAME, literal("failed"))
                 .setColumn(COMPLETED_TIME_COLUMN_NAME, bindMarker())
                 .whereColumn(HOST_ID_COLUMN_NAME).isEqualTo(bindMarker())
                 .whereColumn(JOB_ID_COLUMN_NAME).isEqualTo(bindMarker())
@@ -263,7 +263,7 @@ public class OnDemandStatus
                 .setString(UDT_KEYSPACE_NAME, tableReference.getKeyspace())
                 .setString(UDT_TABLE_NAME, tableReference.getTable());
         BoundStatement statement = myInsertNewJobStatement.bind(host, jobId, uDTTableReference, tokenMapHash,
-                repairedRangesUDT, "started");
+                repairedRangesUDT);
         mySession.execute(statement);
     }
 
@@ -274,12 +274,12 @@ public class OnDemandStatus
 
     public void finishJob(UUID jobId)
     {
-        mySession.execute(myUpdateJobToFinishedStatement.bind("finished", Instant.ofEpochMilli(System.currentTimeMillis()), myHostId, jobId));
+        mySession.execute(myUpdateJobToFinishedStatement.bind(Instant.ofEpochMilli(System.currentTimeMillis()), myHostId, jobId));
     }
 
     public void failJob(UUID jobId)
     {
-        mySession.execute(myUpdateJobToFailedStatement.bind("failed", Instant.ofEpochMilli(System.currentTimeMillis()), myHostId, jobId));
+        mySession.execute(myUpdateJobToFailedStatement.bind(Instant.ofEpochMilli(System.currentTimeMillis()), myHostId, jobId));
     }
 
     public UdtValue createUDTTokenRangeValue(Long start, Long end)
