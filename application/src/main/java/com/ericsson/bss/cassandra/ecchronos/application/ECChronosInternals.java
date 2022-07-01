@@ -101,6 +101,7 @@ public class ECChronosInternals implements Closeable
                     .withStatisticsDirectory(configuration.getStatistics().getDirectory().toString())
                     .withMetricRegistry(metricRegistry)
                     .build();
+            //TODO JMXMETRICS for driver
         }
         else
         {
