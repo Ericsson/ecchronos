@@ -19,12 +19,14 @@ import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.auth.AuthProvider;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import com.datastax.oss.driver.api.core.config.ProgrammaticDriverConfigLoaderBuilder;
 import com.datastax.oss.driver.api.core.metadata.EndPoint;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import com.datastax.oss.driver.api.core.session.Session;
 import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 import com.datastax.oss.driver.internal.core.loadbalancing.DcInferringLoadBalancingPolicy;
+import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -153,21 +155,6 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
 
             InitialContact initialContact = resolveInitialContact(contactEndPoint, builder);
 
-            //TODO DO WE EVEN NEED THIS? WHY NOT RUN ALL REQUEST LOCALLY?
-            //DEFAULT LOADBALANCING POLICY IS TOKEN-AWARE, LOCAL
-            /*
-            LoadBalancingPolicy loadBalancingPolicy = new TokenAwarePolicy(DCAwareRoundRobinPolicy.builder()
-                    .withLocalDc(initialContact.getDataCenter())
-                    .build());
-
-            if (builder.myRemoteRouting)
-            {
-                loadBalancingPolicy = DataCenterAwarePolicy.builder()
-                        .withLocalDc(initialContact.getDataCenter())
-                        .withChildPolicy(loadBalancingPolicy)
-                        .build();
-            }*/
-
             LOG.debug("Connecting to {}({}), local data center: {}", contactEndPoint, initialContact.getHostId(),
                     initialContact.getDataCenter());
 
@@ -179,10 +166,18 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
 
             CqlSessionBuilder sessionBuilder = fromBuilder(builder);
             sessionBuilder = sessionBuilder.withLocalDatacenter(initialContact.dataCenter);
-            DriverConfigLoader loader = DriverConfigLoader.programmaticBuilder()
+            ProgrammaticDriverConfigLoaderBuilder loaderBuilder = DriverConfigLoader.programmaticBuilder()
                     .withStringList(DefaultDriverOption.METRICS_NODE_ENABLED, NODE_METRICS)
-                    .withStringList(DefaultDriverOption.METRICS_SESSION_ENABLED, SESSION_METRICS).build();
-            sessionBuilder.withConfigLoader(loader);
+                    .withStringList(DefaultDriverOption.METRICS_SESSION_ENABLED, SESSION_METRICS);
+            //TODO DO WE EVEN NEED THIS? WHY NOT RUN ALL REQUEST LOCALLY?
+            //ACCORDING TO DATASTAX DRIVER DOC, CROSSDATACENTER LOADBALANCING IS NOT RECOMMENDED OR SUPPORTED?
+            //SO DO WE REALLY WANT THIS??
+            if (builder.myRemoteRouting)
+            {
+                loaderBuilder.withString(DefaultDriverOption.LOAD_BALANCING_POLICY_CLASS, DataCenterAwarePolicy.class.getCanonicalName());
+                loaderBuilder.withInt(DefaultDriverOption.LOAD_BALANCING_DC_FAILOVER_MAX_NODES_PER_REMOTE_DC, 999);
+            }
+            sessionBuilder.withConfigLoader(loaderBuilder.build());
             return sessionBuilder.build();
         }
 

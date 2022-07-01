@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
@@ -26,6 +27,7 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.TokenMap;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwareStatement;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
@@ -77,7 +79,6 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
  * WITH default_time_to_live = 600 AND gc_grace_seconds = 0;
  * </pre>
  */
-//TODO REMOVE NOPMD
 public class CASLockFactory implements LockFactory, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CASLockFactory.class);
@@ -101,7 +102,7 @@ public class CASLockFactory implements LockFactory, Closeable
 
     private final StatementDecorator myStatementDecorator;
     private final HostStates myHostStates;
-    private final boolean myRemoteRouting; // NOPMD
+    private final boolean myRemoteRouting;
 
     private final CqlSession mySession;
     private final String myKeyspaceName;
@@ -408,10 +409,9 @@ public class CASLockFactory implements LockFactory, Closeable
         return live;
     }
 
-    private ResultSet execute(String dataCenter, Statement statement) // NOPMD
+    private ResultSet execute(String dataCenter, BoundStatement statement)
     {
-        //TODO
-        /*Statement executeStatement;
+        Statement executeStatement;
 
         if (dataCenter != null && myRemoteRouting)
         {
@@ -422,8 +422,7 @@ public class CASLockFactory implements LockFactory, Closeable
             executeStatement = statement;
         }
 
-        return mySession.execute(myStatementDecorator.apply(executeStatement));*/
-        return mySession.execute(statement);
+        return mySession.execute(myStatementDecorator.apply(executeStatement));
     }
 
     private void verifySchemasExists()
