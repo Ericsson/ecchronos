@@ -59,7 +59,7 @@
 
         <!-- Dependency versions -->
         <io.netty.version>4.1.69.Final</io.netty.version>
-        <io.dropwizard.metrics.version>3.2.2</io.dropwizard.metrics.version>
+        <io.dropwizard.metrics.version>4.2.10</io.dropwizard.metrics.version>
         <cassandra.driver.core.version>4.14.1</cassandra.driver.core.version>
         <guava.version>18.0</guava.version>
         <slf4j.version>1.7.30</slf4j.version>
@@ -197,6 +197,11 @@
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-core</artifactId>
+                <version>${io.dropwizard.metrics.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-jmx</artifactId>
                 <version>${io.dropwizard.metrics.version}</version>
             </dependency>
 
