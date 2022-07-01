@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection.impl;
 
+import com.codahale.metrics.MetricRegistry;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.auth.AuthProvider;
@@ -29,11 +30,23 @@ import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 public class LocalNativeConnectionProvider implements NativeConnectionProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(LocalNativeConnectionProvider.class);
+    private static final List<String> NODE_METRICS = Arrays.asList("pool.open-connections", "pool.available-streams",
+            "pool.in-flight", "pool.orphaned-streams", "bytes-sent", "bytes-received", "cql-messages",
+            "errors.request.unsent", "errors.request.aborted", "errors.request.write-timeouts",
+            "errors.request.read-timeouts", "errors.request.unavailables", "errors.request.others", "retries.total",
+            "retries.aborted", "retries.read-timeout", "retries.write-timeout", "retries.unavailable", "retries.other",
+            "ignores.total", "ignores.aborted", "ignores.read-timeout", "ignores.write-timeout", "ignores.unavailable",
+            "ignores.other", "speculative-executions", "errors.connection.init", "errors.connection.auth");
+    private static final List<String> SESSION_METRICS = Arrays.asList("bytes-received", "bytes-sent", "connected-nodes",
+            "cql-requests", "cql-client-timeouts", "cql-prepared-cache-size", "throttling.delay", "throttling.queue-size",
+            "throttling.errors");
 
     public static final int DEFAULT_NATIVE_PORT = 9042;
     public static final String DEFAULT_LOCAL_HOST = "localhost";
@@ -167,12 +180,10 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
 
             CqlSessionBuilder sessionBuilder = fromBuilder(builder);
             sessionBuilder = sessionBuilder.withLocalDatacenter(initialContact.dataCenter);
-            /*Cluster cluster = fromBuilder(builder)
-                    .withEndPointFactory(eccEndPointFactory)
-                    .withLoadBalancingPolicy(loadBalancingPolicy)
-                    .build();
-            cluster.register(eccEndPointFactory);
-            return cluster;*/
+            DriverConfigLoader loader = DriverConfigLoader.programmaticBuilder()
+                    .withStringList(DefaultDriverOption.METRICS_NODE_ENABLED, NODE_METRICS)
+                    .withStringList(DefaultDriverOption.METRICS_SESSION_ENABLED, SESSION_METRICS).build();
+            sessionBuilder.withConfigLoader(loader);
             return sessionBuilder.build();
         }
 
