@@ -91,11 +91,7 @@ public class TLSConfig
 
     public Optional<String> getCertificate()
     {
-        if (this.certificate == null)
-        {
-            return Optional.empty();
-        }
-        return Optional.of(certificate);
+        return Optional.ofNullable(certificate);
     }
 
     public void setCertificate(String certificate)
@@ -105,11 +101,7 @@ public class TLSConfig
 
     public Optional<String> getCertificateKey()
     {
-        if (this.certificate_key == null)
-        {
-            return Optional.empty();
-        }
-        return Optional.of(certificate_key);
+        return Optional.ofNullable(certificate_key);
     }
 
     public void setCertificate_key(String certificate_key)
@@ -119,16 +111,12 @@ public class TLSConfig
 
     public Optional<String> getCertificateAuthorities()
     {
-        if (this.certificate_authorities == null) 
-        {
-            return Optional.empty();
-        }
-        return Optional.of(certificate_authorities);
+        return Optional.ofNullable(certificate_authorities);
     }
 
     public void setCertificate_authorities(String certificate_authorities)
-    { 
-        this.certificate_authorities = certificate_authorities; 
+    {
+        this.certificate_authorities = certificate_authorities;
     }
 
     public String getProtocol()
