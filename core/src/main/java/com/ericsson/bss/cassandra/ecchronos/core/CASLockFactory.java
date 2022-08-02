@@ -373,7 +373,7 @@ public class CASLockFactory implements LockFactory, Closeable
 
         Metadata metadata = mySession.getMetadata();
         TokenMap tokenMap = metadata.getTokenMap()
-                .orElseThrow(() -> new RuntimeException("Couldn't get tokenmap, is it disabled?")); //TODO
+                .orElseThrow(() -> new IllegalStateException("Couldn't get token map, is it disabled?"));
         Set<Node> nodes = tokenMap.getReplicas(myKeyspaceName, ByteBuffer.wrap(resource.getBytes("UTF-8")));
 
         if (dataCenter != null)

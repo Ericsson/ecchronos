@@ -94,7 +94,6 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
         }
 
         myIndex.set(new SecureRandom().nextInt(Math.max(nodes.size(), 1)));
-        LOG.info("INIT DONE NODES:{}", myPerDcLiveNodes); //TODO REMOVE
     }
 
     /**
@@ -121,34 +120,24 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
         }
         else
         {
-            LOG.info("NOT DC AWARE {}", request); //TODO REMOVE
-            return logAndReturn(super.newQueryPlan(request, session), request, "");
+            return super.newQueryPlan(request, session);
         }
 
         ByteBuffer partitionKey = request.getRoutingKey();
         CqlIdentifier keyspace = request.getKeyspace();
         if (partitionKey == null || keyspace == null)
         {
-            LOG.info("Keyspace {} or partitionkey {} null", keyspace, partitionKey); //TODO REMOVE
-            return logAndReturn(getFallbackQueryPlan(dataCenter), request, dataCenter);
+            return getFallbackQueryPlan(dataCenter);
         }
         final Set<Node> replicas = session.getMetadata().getTokenMap()
                 .orElseThrow(IllegalStateException::new)
                 .getReplicas(keyspace, partitionKey);
         if (replicas.isEmpty())
         {
-            LOG.info("Replicas empty"); //TODO REMOVE
-            return logAndReturn(getFallbackQueryPlan(dataCenter), request, dataCenter);
+            return getFallbackQueryPlan(dataCenter);
         }
 
-        LOG.info("Replicas not empty {}", replicas); //TODO REMOVE
-        return logAndReturn(getQueryPlan(dataCenter, replicas), request, dataCenter);
-    }
-
-    private Queue<Node> logAndReturn(Queue<Node> queue, Request request, String dc)
-    {
-        LOG.info("Queue {} for request {}, DC {}", queue, request, dc);
-        return queue;
+        return getQueryPlan(dataCenter, replicas);
     }
 
     private Queue<Node> getQueryPlan(String datacenter, Set<Node> replicas)
