@@ -158,12 +158,6 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
             LOG.debug("Connecting to {}({}), local data center: {}", contactEndPoint, initialContact.getHostId(),
                     initialContact.getDataCenter());
 
-            //TODO THIS DOES NOT EXIST IN NEW DRIVER
-            //TODO CHECK IF NEEDED
-            //EndPointFactory endPointFactory = new DefaultEndPointFactory();
-            //EccEndPointFactory eccEndPointFactory = new EccEndPointFactory(contactEndPoint, initialContact.getHostId(),
-            //        endPointFactory);
-
             CqlSessionBuilder sessionBuilder = fromBuilder(builder);
             sessionBuilder = sessionBuilder.withLocalDatacenter(initialContact.dataCenter);
             ProgrammaticDriverConfigLoaderBuilder loaderBuilder = DriverConfigLoader.programmaticBuilder()
