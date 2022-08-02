@@ -124,7 +124,7 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
         }
 
         ByteBuffer partitionKey = request.getRoutingKey();
-        CqlIdentifier keyspace = request.getKeyspace();
+        CqlIdentifier keyspace = request.getRoutingKeyspace();
         if (partitionKey == null || keyspace == null)
         {
             return getFallbackQueryPlan(dataCenter);
@@ -150,7 +150,9 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
                 queue.add(node);
             }
         }
-        queue.addAll(getFallbackQueryPlan(datacenter));
+        // Skip if it was already a local replica
+        Queue<Node> fallbackQueue = getFallbackQueryPlan(datacenter);
+        fallbackQueue.stream().filter(n -> !queue.contains(n)).forEachOrdered(n -> queue.add(n));
         return queue;
     }
 
@@ -264,5 +266,11 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
     {
         super.onRemove(node);
         markAsDown(node);
+    }
+
+    // Only for test
+    ConcurrentMap<String, CopyOnWriteArrayList<Node>> getPerDcLiveNodes()
+    {
+        return myPerDcLiveNodes;
     }
 }
