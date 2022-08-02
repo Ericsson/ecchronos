@@ -118,7 +118,7 @@ public class ITTableRepairJob extends TestBase
         myAdminSession = CqlSession.builder()
                 .addContactPoint(new InetSocketAddress(CASSANDRA_HOST, Integer.parseInt(CASSANDRA_NATIVE_PORT)))
                 .withAuthCredentials("cassandra", "cassandra")
-                .withLocalDatacenter("DC1")
+                .withLocalDatacenter("datacenter1")
                 .build();
     }
 

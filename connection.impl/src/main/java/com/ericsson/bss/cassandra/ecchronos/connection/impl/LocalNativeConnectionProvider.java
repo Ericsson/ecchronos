@@ -169,9 +169,6 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
             ProgrammaticDriverConfigLoaderBuilder loaderBuilder = DriverConfigLoader.programmaticBuilder()
                     .withStringList(DefaultDriverOption.METRICS_NODE_ENABLED, NODE_METRICS)
                     .withStringList(DefaultDriverOption.METRICS_SESSION_ENABLED, SESSION_METRICS);
-            //TODO DO WE EVEN NEED THIS? WHY NOT RUN ALL REQUEST LOCALLY?
-            //ACCORDING TO DATASTAX DRIVER DOC, CROSSDATACENTER LOADBALANCING IS NOT RECOMMENDED OR SUPPORTED?
-            //SO DO WE REALLY WANT THIS??
             if (builder.myRemoteRouting)
             {
                 loaderBuilder.withString(DefaultDriverOption.LOAD_BALANCING_POLICY_CLASS, DataCenterAwarePolicy.class.getCanonicalName());
