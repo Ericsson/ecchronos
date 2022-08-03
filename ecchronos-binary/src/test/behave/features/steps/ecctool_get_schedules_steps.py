@@ -16,7 +16,7 @@
 import re
 from subprocess import Popen, PIPE
 from behave import when, then  # pylint: disable=no-name-in-module
-from ecc_step_library.common_steps import match_and_remove_row, strip_and_collapse, validate_header  # pylint: disable=line-too-long
+from ecc_step_library.common_steps import match_and_remove_row, strip_and_collapse, validate_header, step_validate_list_rows_clear  # pylint: disable=line-too-long
 
 
 ID_PATTERN = r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
@@ -123,6 +123,17 @@ def step_validate_list_snapshot_header(context):
 def step_validate_list_schedule_header(context):
     validate_header(context.header, TABLE_SCHEDULE_HEADER)
 
+@then(u'the output should contain {limit:d} row')
+def step_validate_list_schedules_contains_rows_with_limit(context, limit):
+    rows = context.rows
+
+    assert len(rows) == limit + 1, "Expecting only {0} schedule element from {1}".format(limit, rows)
+
+    for _ in range(limit):
+        step_validate_list_tables_row(context, ".*", ".*")
+
+    step_validate_list_rows_clear(context)
+
 @then(u'the expected schedule header should be for {keyspace}.{table}')
 def step_validate_expected_show_table_header(context, keyspace, table):
     table_info = context.table_info
@@ -140,5 +151,33 @@ def step_validate_expected_show_table_header(context, keyspace, table):
     assert re.match(
         "Next repair : .*", strip_and_collapse(table_info[6])), "Faulty next repair '{0}'".format(table_info[6])
 
+
+@then(u'the token list should contain {limit:d} rows')
+def step_validate_token_list(context, limit):
+    for _ in range(limit):
+        remove_token_row(context)
+
+    step_validate_list_rows_clear(context)
+
+
+def remove_token_row(context):
+    expected_row = token_row()
+
+    found_row = -1
+
+    for idx, row in enumerate(context.rows):
+        row = strip_and_collapse(row)
+        if re.match(expected_row, row):
+            found_row = int(idx)
+            break
+
+    assert found_row != -1, "{0} not found in {1}".format(expected_row, context.rows)
+    del context.rows[found_row]
+
+
 def table_row(keyspace, table):
     return TABLE_SCHEDULE_ROW_FORMAT_PATTERN.format(keyspace, table)
+
+
+def token_row():
+    return "\\| [-]?\\d+ \\| [-]?\\d+ \\| .* \\| .* \\| (True|False) \\|"

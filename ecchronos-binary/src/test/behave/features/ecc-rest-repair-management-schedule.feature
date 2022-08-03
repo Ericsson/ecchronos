@@ -6,4 +6,3 @@ Feature: API to schedule repairs
     When I send a POST request
     Then the response is successful
     And the response matches the json demand_repair_job
-    And the job for test2.table2 change status to completed
