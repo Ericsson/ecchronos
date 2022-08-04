@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -35,6 +36,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Metric;
 import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -44,7 +47,10 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metrics.DefaultNodeMetric;
+import com.datastax.oss.driver.api.core.metrics.Metrics;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.internal.core.context.InternalDriverContext;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import org.apache.cassandra.db.Keyspace;
 import org.apache.cassandra.metrics.TableMetrics;
@@ -153,10 +159,16 @@ public class TestCASLockFactory extends AbstractCassandraTest
     }
 
     @Test(timeout = 1000)
-    public void testGlobalLockTakenIsCachedOnSecondTry()
+    public void testGlobalLockTakenIsCachedOnSecondTry() throws InterruptedException
     {
         execute(myLockStatement.bind("lock", UUID.randomUUID(), new HashMap<>()));
-
+        InternalDriverContext driverContext = (InternalDriverContext) mySession.getContext();
+        //Check that no in-flight queries exist, we want all previous queries to complete before we proceed
+        Optional<Node> connectedNode = driverContext.getPoolManager().getPools().keySet().stream().findFirst();
+        while (getInFlightQueries(connectedNode.get()) != 0)
+        {
+            Thread.sleep(100);
+        }
         long expectedLockReadCount = getReadCount(TABLE_LOCK) + 1; // We do a read due to CAS
         long expectedLockWriteCount = getWriteCount(TABLE_LOCK); // No writes as the lock is already held
         long expectedLockPriorityReadCount = getReadCount(TABLE_LOCK_PRIORITY) + 1; // We read the priorities
@@ -173,6 +185,21 @@ public class TestCASLockFactory extends AbstractCassandraTest
 
         assertPrioritiesInList("lock", 2);
         assertThat(myLockFactory.getCachedFailure(null, "lock")).isNotEmpty();
+    }
+
+    private int getInFlightQueries(Node node)
+    {
+        int inFlightQueries = 0;
+        Optional<Metrics> metrics = mySession.getMetrics();
+        if (metrics.isPresent())
+        {
+            Optional<Metric> inFlight = metrics.get().getNodeMetric(node, DefaultNodeMetric.IN_FLIGHT);
+            if (inFlight.isPresent())
+            {
+                inFlightQueries = (int) ((Gauge) inFlight.get()).getValue();
+            }
+        }
+        return inFlightQueries;
     }
 
     @Test

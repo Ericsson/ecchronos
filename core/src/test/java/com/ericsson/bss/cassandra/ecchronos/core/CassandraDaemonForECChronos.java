@@ -34,6 +34,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,6 +48,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import com.datastax.oss.driver.api.core.metrics.DefaultNodeMetric;
 import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 import com.datastax.oss.driver.internal.core.connection.ConstantReconnectionPolicy;
 import com.datastax.oss.driver.internal.core.loadbalancing.DcInferringLoadBalancingPolicy;
@@ -275,6 +277,7 @@ public class CassandraDaemonForECChronos implements Runnable
     {
         DriverConfigLoader loader = DriverConfigLoader.programmaticBuilder()
                 .withString(DefaultDriverOption.RECONNECTION_POLICY_CLASS, ConstantReconnectionPolicy.class.getName())
+                .withStringList(DefaultDriverOption.METRICS_NODE_ENABLED, Collections.singletonList(DefaultNodeMetric.IN_FLIGHT.getPath()))
                 .withDuration(DefaultDriverOption.RECONNECTION_BASE_DELAY, Duration.of(200, ChronoUnit.MILLIS))
                 .build();
         CqlSessionBuilder cqlSessionBuilder = CqlSession.builder()
