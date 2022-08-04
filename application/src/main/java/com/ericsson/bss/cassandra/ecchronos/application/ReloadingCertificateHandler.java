@@ -161,7 +161,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
         String algorithm = tlsConfig.getAlgorithm().orElse(KeyManagerFactory.getDefaultAlgorithm());
         char[] keystorePassword = tlsConfig.getKeystorePassword().toCharArray();
 
-        try(InputStream keystoreFile = new FileInputStream(tlsConfig.getKeystore()))
+        try (InputStream keystoreFile = new FileInputStream(tlsConfig.getKeystore()))
         {
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(algorithm);
             KeyStore keyStore = KeyStore.getInstance(tlsConfig.getStoreType());
@@ -177,7 +177,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
         String algorithm = tlsConfig.getAlgorithm().orElse(TrustManagerFactory.getDefaultAlgorithm());
         char[] truststorePassword = tlsConfig.getTruststorePassword().toCharArray();
 
-        try(InputStream truststoreFile = new FileInputStream(tlsConfig.getTruststore()))
+        try (InputStream truststoreFile = new FileInputStream(tlsConfig.getTruststore()))
         {
             TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(algorithm);
             KeyStore keyStore = KeyStore.getInstance(tlsConfig.getStoreType());

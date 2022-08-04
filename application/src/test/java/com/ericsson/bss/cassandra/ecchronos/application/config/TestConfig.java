@@ -290,7 +290,7 @@ public class TestConfig
         @Override
         public void close() throws Exception
         {
-
+            // Empty, nothing to close
         }
     }
 

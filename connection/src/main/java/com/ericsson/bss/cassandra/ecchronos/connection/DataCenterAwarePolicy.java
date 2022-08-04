@@ -42,7 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A custom load balancing policy based on com.datastax.driver.core.policies.DCAwareRoundRobinPolicy
+ * A custom load balancing policy inspired by com.datastax.driver.core.policies.DCAwareRoundRobinPolicy
  * and com.datastax.driver.core.policies.TokenAwarePolicy but extended to allow the local data center
  * to be replaced with a specified data center when creating a new plan.
  */

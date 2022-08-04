@@ -50,8 +50,7 @@ public class VirtualNodeState
     {
     }
 
-    public VirtualNodeState(long startToken, long endToken, Set<String> replicas, long lastRepairedAtInMs,
-            boolean repaired)
+    public VirtualNodeState(long startToken, long endToken, Set<String> replicas, long lastRepairedAtInMs, boolean repaired)
     {
         this.startToken = startToken;
         this.endToken = endToken;
@@ -64,8 +63,7 @@ public class VirtualNodeState
     {
         long startToken = vnodeRepairState.getTokenRange().start;
         long endToken = vnodeRepairState.getTokenRange().end;
-        Set<String> replicas = vnodeRepairState.getReplicas().stream().map(Node::getPublicAddress)
-                .map(InetAddress::getHostAddress).collect(Collectors.toSet());
+        Set<String> replicas = vnodeRepairState.getReplicas().stream().map(Node::getPublicAddress).map(InetAddress::getHostAddress).collect(Collectors.toSet());
         long lastRepairedAt = vnodeRepairState.lastRepairedAt();
         boolean repaired = lastRepairedAt > repairedAfter;
 
