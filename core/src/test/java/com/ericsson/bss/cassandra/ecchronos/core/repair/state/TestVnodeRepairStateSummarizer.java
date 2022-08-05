@@ -15,7 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestVnodeRepairStateSummarizer
 {
     @Mock
-    Node mockNode;
+    DriverNode mockNode;
 
     @Test
     public void summarizeSingleTokenNoPartial()

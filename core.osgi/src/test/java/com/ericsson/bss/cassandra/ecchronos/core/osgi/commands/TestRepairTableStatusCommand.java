@@ -33,7 +33,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 
@@ -153,18 +153,18 @@ public class TestRepairTableStatusCommand
         assertThat(os.toString()).isEqualTo(expected);
     }
 
-    private static ImmutableSet<Node> mockNode(String... hosts)
+    private static ImmutableSet<DriverNode> mockNode(String... hosts)
     {
-        ImmutableSet.Builder<Node> builder = ImmutableSet.builder();
+        ImmutableSet.Builder<DriverNode> builder = ImmutableSet.builder();
         Stream.of(hosts)
                 .map(TestRepairTableStatusCommand::mockNode)
                 .forEach(builder::add);
         return builder.build();
     }
 
-    private static Node mockNode(String hostName)
+    private static DriverNode mockNode(String hostName)
     {
-        Node host = mock(Node.class);
+        DriverNode host = mock(DriverNode.class);
         try
         {
             when(host.getPublicAddress()).thenReturn(InetAddress.getByName(hostName));

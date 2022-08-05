@@ -18,14 +18,14 @@ import java.util.Collection;
 import java.util.Map;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.google.common.base.Predicate;
 
 public class FullyRepairedRepairEntryPredicate implements Predicate<RepairEntry>
 {
-    private final Map<LongTokenRange, Collection<Node>> myTokenToNodeMap;
+    private final Map<LongTokenRange, Collection<DriverNode>> myTokenToNodeMap;
 
-    public FullyRepairedRepairEntryPredicate(Map<LongTokenRange, Collection<Node>> tokenToNodeMap)
+    public FullyRepairedRepairEntryPredicate(Map<LongTokenRange, Collection<DriverNode>> tokenToNodeMap)
     {
         myTokenToNodeMap = tokenToNodeMap;
     }
@@ -35,7 +35,7 @@ public class FullyRepairedRepairEntryPredicate implements Predicate<RepairEntry>
     {
         if (repairEntry.getStatus() == RepairStatus.SUCCESS)
         {
-            Collection<Node> replicas = myTokenToNodeMap.get(repairEntry.getRange());
+            Collection<DriverNode> replicas = myTokenToNodeMap.get(repairEntry.getRange());
             if (replicas != null)
             {
                 return repairEntry.getParticipants().containsAll(replicas);

@@ -23,7 +23,7 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -71,7 +71,7 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
     private final long lookbackTimeInMs;
 
     private final CqlSession session;
-    private final Node localNode;
+    private final DriverNode localNode;
     private final StatementDecorator statementDecorator;
     private final ReplicationState replicationState;
 
@@ -121,11 +121,11 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
 
     @Override
     public RepairSession newSession(TableReference tableReference, UUID jobId, LongTokenRange range,
-            Set<Node> participants)
+            Set<DriverNode> participants)
     {
         Preconditions.checkArgument(participants.contains(localNode),
                 "Local node must be part of repair");
-        ImmutableSet<Node> nodes = replicationState.getNodes(tableReference, range);
+        ImmutableSet<DriverNode> nodes = replicationState.getNodes(tableReference, range);
         if (nodes == null || !nodes.equals(participants))
         {
             return new NoOpRepairSession();
@@ -210,7 +210,7 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
             {
                 finishedAt = finished.toEpochMilli();
             }
-            Set<Node> nodes = replicationState.getNodes(tableReference, tokenRange);
+            Set<DriverNode> nodes = replicationState.getNodes(tableReference, tokenRange);
             if (nodes == null)
             {
                 LOG.debug("Token range {} was not found in metadata", tokenRange);
@@ -257,14 +257,14 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
         private final AtomicReference<SessionState> sessionState = new AtomicReference<>(SessionState.NO_STATE);
         private final AtomicReference<UUID> repairId = new AtomicReference<>(null);
 
-        RepairSessionImpl(UUID tableId, UUID nodeId, UUID jobId, LongTokenRange range, Set<Node> participants)
+        RepairSessionImpl(UUID tableId, UUID nodeId, UUID jobId, LongTokenRange range, Set<DriverNode> participants)
         {
             this.tableId = tableId;
             this.nodeId = nodeId;
             this.jobId = jobId;
             this.range = range;
             this.participants = participants.stream()
-                    .map(Node::getId)
+                    .map(DriverNode::getId)
                     .collect(Collectors.toSet());
         }
 
@@ -381,7 +381,7 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
     public static class Builder
     {
         private CqlSession session;
-        private Node localNode;
+        private DriverNode localNode;
         private StatementDecorator statementDecorator;
         private ReplicationState replicationState;
         private long lookbackTimeInMs;
@@ -393,7 +393,7 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
             return this;
         }
 
-        public Builder withLocalNode(Node localNode)
+        public Builder withLocalNode(DriverNode localNode)
         {
             this.localNode = localNode;
             return this;

@@ -28,6 +28,7 @@ import java.util.UUID;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,7 +44,7 @@ public class TestNodeResolverImpl
     @Mock
     private CqlSession mockCqlSession;
 
-    private Map<UUID, com.datastax.oss.driver.api.core.metadata.Node> mockedNodes = new HashMap<>();
+    private Map<UUID, Node> mockedNodes = new HashMap<>();
 
     private NodeResolver nodeResolver;
 
@@ -64,9 +65,9 @@ public class TestNodeResolverImpl
     @Test
     public void testGetHost() throws Exception
     {
-        com.datastax.oss.driver.api.core.metadata.Node node = addNode(new InetSocketAddress(address("127.0.0.1"), 9042), "dc1");
+        Node node = addNode(new InetSocketAddress(address("127.0.0.1"), 9042), "dc1");
 
-        Optional<Node> maybeNode = nodeResolver.fromIp(address("127.0.0.1"));
+        Optional<DriverNode> maybeNode = nodeResolver.fromIp(address("127.0.0.1"));
         assertThat(maybeNode).isPresent();
         assertThat(maybeNode.get().getId()).isEqualTo(node.getHostId());
         assertThat(maybeNode.get().getPublicAddress()).isEqualTo(address("127.0.0.1"));
@@ -79,9 +80,9 @@ public class TestNodeResolverImpl
     @Test
     public void testChangeIpAddress() throws Exception
     {
-        com.datastax.oss.driver.api.core.metadata.Node node = addNode(new InetSocketAddress(address("127.0.0.1"), 9042), "dc1");
+        Node node = addNode(new InetSocketAddress(address("127.0.0.1"), 9042), "dc1");
 
-        Optional<Node> maybeNode = nodeResolver.fromIp(address("127.0.0.1"));
+        Optional<DriverNode> maybeNode = nodeResolver.fromIp(address("127.0.0.1"));
         assertThat(maybeNode).isPresent();
 
         assertThat(maybeNode.get().getPublicAddress()).isEqualTo(address("127.0.0.1"));
@@ -103,9 +104,9 @@ public class TestNodeResolverImpl
     @Test
     public void testChangeIpAddressAndAddNewReplica() throws Exception
     {
-        com.datastax.oss.driver.api.core.metadata.Node node = addNode(new InetSocketAddress(address("127.0.0.1"), 9042), "dc1");
+        Node node = addNode(new InetSocketAddress(address("127.0.0.1"), 9042), "dc1");
 
-        Optional<Node> maybeNode = nodeResolver.fromIp(address("127.0.0.1"));
+        Optional<DriverNode> maybeNode = nodeResolver.fromIp(address("127.0.0.1"));
         assertThat(maybeNode).isPresent();
 
         assertThat(maybeNode.get().getPublicAddress()).isEqualTo(address("127.0.0.1"));
@@ -121,9 +122,9 @@ public class TestNodeResolverImpl
         assertThat(nodeResolver.fromUUID(node.getHostId())).containsSame(maybeNode.get());
 
         // If a new node is using the old ip we should return it
-        com.datastax.oss.driver.api.core.metadata.Node newNode = addNode(new InetSocketAddress(address("127.0.0.1"), 9042), "dc2");
+        Node newNode = addNode(new InetSocketAddress(address("127.0.0.1"), 9042), "dc2");
 
-        Optional<Node> maybeNewNode = nodeResolver.fromIp(address("127.0.0.1"));
+        Optional<DriverNode> maybeNewNode = nodeResolver.fromIp(address("127.0.0.1"));
         assertThat(maybeNewNode).isPresent();
 
         assertThat(maybeNewNode.get().getId()).isEqualTo(newNode.getHostId());
@@ -137,7 +138,7 @@ public class TestNodeResolverImpl
     @Test
     public void testGetNonExistingHost() throws Exception
     {
-        Optional<Node> maybeNode = nodeResolver.fromIp(address("127.0.0.1"));
+        Optional<DriverNode> maybeNode = nodeResolver.fromIp(address("127.0.0.1"));
         assertThat(maybeNode).isEmpty();
 
         maybeNode = nodeResolver.fromUUID(UUID.randomUUID());
@@ -149,9 +150,9 @@ public class TestNodeResolverImpl
         return InetAddress.getByName(address);
     }
 
-    private com.datastax.oss.driver.api.core.metadata.Node addNode(InetSocketAddress broadcastAddress, String dataCenter)
+    private Node addNode(InetSocketAddress broadcastAddress, String dataCenter)
     {
-        com.datastax.oss.driver.api.core.metadata.Node node = mock(com.datastax.oss.driver.api.core.metadata.Node.class);
+        Node node = mock(Node.class);
 
         UUID id = UUID.randomUUID();
         when(node.getHostId()).thenReturn(id);

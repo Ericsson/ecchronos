@@ -61,7 +61,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairTask.ProgressEvent
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.Sets;
 
@@ -88,7 +88,7 @@ public class TestRepairTask
 
     private final TableReference myTableReference = tableReference(KEYSPACE_NAME, TABLE_NAME);
 
-    private Set<Node> participants = Sets.newHashSet(mockNode(), mockNode());
+    private Set<DriverNode> participants = Sets.newHashSet(mockNode(), mockNode());
 
     private ConcurrentMap<LongTokenRange, RepairHistory.RepairSession> repairSessions = new ConcurrentHashMap<>();
 
@@ -406,9 +406,9 @@ public class TestRepairTask
         return data;
     }
 
-    private Node mockNode()
+    private DriverNode mockNode()
     {
-        Node node = mock(Node.class);
+        DriverNode node = mock(DriverNode.class);
         when(node.getId()).thenReturn(UUID.randomUUID());
         when(node.getPublicAddress()).thenReturn(InetAddress.getLoopbackAddress());
         return node;

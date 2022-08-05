@@ -20,7 +20,8 @@ import java.net.InetAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,13 +58,13 @@ public class HostStatesImpl implements HostStates, Closeable
     }
 
     @Override
-    public boolean isUp(com.datastax.oss.driver.api.core.metadata.Node node)
+    public boolean isUp(Node node)
     {
         return isUp(node.getBroadcastAddress().get().getAddress());
     }
 
     @Override
-    public boolean isUp(Node node)
+    public boolean isUp(DriverNode node)
     {
         return isUp(node.getPublicAddress());
     }

@@ -20,7 +20,7 @@ import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.ericsson.bss.cassandra.ecchronos.core.AbstractCassandraTest;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactoryImpl;
@@ -30,7 +30,6 @@ import com.google.common.collect.Sets;
 import net.jcip.annotations.NotThreadSafe;
 import org.assertj.core.util.Lists;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -77,7 +76,7 @@ public class TestEccRepairHistory extends AbstractCassandraTest
     private static UUID tableId;
 
     private static UUID localId;
-    private static Node mockLocalNode;
+    private static DriverNode mockLocalNode;
     private static ReplicationState mockReplicationState;
 
     private static EccRepairHistory repairHistory;
@@ -148,7 +147,7 @@ public class TestEccRepairHistory extends AbstractCassandraTest
         UUID jobId = UUID.randomUUID();
         LongTokenRange range = new LongTokenRange(1, 2);
 
-        Set<Node> participants = Sets.newHashSet(mockLocalNode, mockNode());
+        Set<DriverNode> participants = Sets.newHashSet(mockLocalNode, mockNode());
         withKnownRange(range, participants);
 
         RepairHistory.RepairSession repairSession = repairHistory.newSession(tableReference, jobId, range,
@@ -167,7 +166,7 @@ public class TestEccRepairHistory extends AbstractCassandraTest
         UUID jobId = UUID.randomUUID();
         LongTokenRange range = new LongTokenRange(1, 2);
 
-        Set<Node> participants = Sets.newHashSet(mockLocalNode, mockNode());
+        Set<DriverNode> participants = Sets.newHashSet(mockLocalNode, mockNode());
 
         RepairHistory.RepairSession repairSession = repairHistory
                 .newSession(tableReference, jobId, range, participants);
@@ -182,7 +181,7 @@ public class TestEccRepairHistory extends AbstractCassandraTest
         UUID jobId = UUID.randomUUID();
         LongTokenRange range = new LongTokenRange(1, 2);
 
-        Set<Node> participants = Sets.newHashSet(mockLocalNode, mockNode());
+        Set<DriverNode> participants = Sets.newHashSet(mockLocalNode, mockNode());
         withKnownRange(range, participants);
 
         RepairHistory.RepairSession repairSession = repairHistory
@@ -209,7 +208,7 @@ public class TestEccRepairHistory extends AbstractCassandraTest
         UUID jobId = UUID.randomUUID();
         LongTokenRange range = new LongTokenRange(1, 2);
 
-        Set<Node> participants = Sets.newHashSet(mockLocalNode, mockNode());
+        Set<DriverNode> participants = Sets.newHashSet(mockLocalNode, mockNode());
         withKnownRange(range, participants);
 
         RepairHistory.RepairSession repairSession = repairHistory
@@ -258,7 +257,7 @@ public class TestEccRepairHistory extends AbstractCassandraTest
         LongTokenRange range = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(2, 3);
 
-        Set<Node> participants = Sets.newHashSet(mockLocalNode, mockNode());
+        Set<DriverNode> participants = Sets.newHashSet(mockLocalNode, mockNode());
         withKnownRange(range, participants);
         withKnownRange(range2, participants);
 
@@ -292,7 +291,7 @@ public class TestEccRepairHistory extends AbstractCassandraTest
         UUID jobId = UUID.randomUUID();
         LongTokenRange range = new LongTokenRange(1, 2);
 
-        Set<Node> participants = Sets.newHashSet(mockLocalNode, mockNode());
+        Set<DriverNode> participants = Sets.newHashSet(mockLocalNode, mockNode());
         withKnownRange(range, participants);
 
         RepairHistory.RepairSession repairSession = repairHistory.newSession(tableReference, jobId, range,
@@ -318,9 +317,9 @@ public class TestEccRepairHistory extends AbstractCassandraTest
     }
 
     private void assertCorrectStart(RepairHistory.RepairSession repairSession, UUID jobId, LongTokenRange range,
-            Set<Node> participants)
+            Set<DriverNode> participants)
     {
-        for (Node node : participants)
+        for (DriverNode node : participants)
         {
             UUID nodeId = node.getId();
             EccEntry expectedEntry = startedSession(nodeId, internalSession(repairSession).getId(), jobId, range);
@@ -330,9 +329,9 @@ public class TestEccRepairHistory extends AbstractCassandraTest
     }
 
     private void assertFailedFinish(RepairHistory.RepairSession repairSession, UUID jobId, LongTokenRange range,
-            Set<Node> participants)
+            Set<DriverNode> participants)
     {
-        for (Node node : participants)
+        for (DriverNode node : participants)
         {
             UUID nodeId = node.getId();
             EccEntry base = startedSession(nodeId, internalSession(repairSession).getId(), jobId, range);
@@ -343,9 +342,9 @@ public class TestEccRepairHistory extends AbstractCassandraTest
     }
 
     private void assertCorrectFinish(RepairHistory.RepairSession repairSession, UUID jobId, LongTokenRange range,
-            Set<Node> participants)
+            Set<DriverNode> participants)
     {
-        for (Node node : participants)
+        for (DriverNode node : participants)
         {
             UUID nodeId = node.getId();
             EccEntry base = startedSession(nodeId, internalSession(repairSession).getId(), jobId, range);
@@ -367,19 +366,19 @@ public class TestEccRepairHistory extends AbstractCassandraTest
         assertThat(actual.finishedAt).isBetween(actual.startedAt, expected.finishedAt);
     }
 
-    private void withKnownRange(LongTokenRange range, Set<Node> participants)
+    private void withKnownRange(LongTokenRange range, Set<DriverNode> participants)
     {
         when(mockReplicationState.getNodes(tableReference, range)).thenReturn(ImmutableSet.copyOf(participants));
     }
 
-    private static Node mockNode()
+    private static DriverNode mockNode()
     {
         return mockNode(UUID.randomUUID());
     }
 
-    private static Node mockNode(UUID nodeId)
+    private static DriverNode mockNode(UUID nodeId)
     {
-        Node node = mock(Node.class);
+        DriverNode node = mock(DriverNode.class);
         when(node.getId()).thenReturn(nodeId);
         return node;
     }

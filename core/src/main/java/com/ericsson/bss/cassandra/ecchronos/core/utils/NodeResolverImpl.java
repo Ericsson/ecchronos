@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.Node;
 
 public class NodeResolverImpl implements NodeResolver
 {
@@ -37,7 +38,7 @@ public class NodeResolverImpl implements NodeResolver
     }
 
     @Override
-    public Optional<Node> fromIp(InetAddress inetAddress)
+    public Optional<DriverNode> fromIp(InetAddress inetAddress)
     {
         DriverNode node = addressToNodeMap.get(inetAddress);
 
@@ -56,7 +57,7 @@ public class NodeResolverImpl implements NodeResolver
     }
 
     @Override
-    public Optional<Node> fromUUID(UUID nodeId)
+    public Optional<DriverNode> fromUUID(UUID nodeId)
     {
         return Optional.ofNullable(resolve(nodeId));
     }
@@ -75,7 +76,7 @@ public class NodeResolverImpl implements NodeResolver
     private DriverNode lookup(UUID nodeId)
     {
         Metadata metadata = session.getMetadata();
-        for (com.datastax.oss.driver.api.core.metadata.Node node : metadata.getNodes().values())
+        for (Node node : metadata.getNodes().values())
         {
             if (node.getHostId().equals(nodeId))
             {
@@ -88,7 +89,7 @@ public class NodeResolverImpl implements NodeResolver
     private DriverNode lookup(InetAddress inetAddress)
     {
         Metadata metadata = session.getMetadata();
-        for (com.datastax.oss.driver.api.core.metadata.Node node : metadata.getNodes().values())
+        for (Node node : metadata.getNodes().values())
         {
             if (node.getBroadcastAddress().get().getAddress().equals(inetAddress))
             {
@@ -96,56 +97,5 @@ public class NodeResolverImpl implements NodeResolver
             }
         }
         return null;
-    }
-
-    private class DriverNode implements Node
-    {
-        private final com.datastax.oss.driver.api.core.metadata.Node node;
-
-        public DriverNode(com.datastax.oss.driver.api.core.metadata.Node node)
-        {
-            this.node = node;
-        }
-
-        @Override
-        public UUID getId()
-        {
-            return node.getHostId();
-        }
-
-        @Override
-        public InetAddress getPublicAddress()
-        {
-            return node.getBroadcastAddress().get().getAddress();
-        }
-
-        @Override
-        public String getDatacenter()
-        {
-            return node.getDatacenter();
-        }
-
-        @Override
-        public boolean equals(Object o)
-        {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-            DriverNode that = (DriverNode) o;
-            return node.equals(that.node);
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash(node);
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("Node(%s:%s:%s)", getId(), getDatacenter(), getPublicAddress());
-        }
     }
 }

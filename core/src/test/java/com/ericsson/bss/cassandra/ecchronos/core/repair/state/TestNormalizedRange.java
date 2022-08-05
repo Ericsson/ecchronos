@@ -15,7 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.google.common.collect.ImmutableSet;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
@@ -34,7 +34,7 @@ public class TestNormalizedRange
     private static final BigInteger START = BigInteger.ZERO;
     
     @Mock
-    Node mockNode;
+    DriverNode mockNode;
 
     @Test
     public void testMutateStart()

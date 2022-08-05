@@ -30,7 +30,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -303,7 +303,7 @@ public class TestTableRepairJob
     public void testIterator()
     {
         LongTokenRange tokenRange = new LongTokenRange(0, 10);
-        ImmutableSet<Node> replicas = ImmutableSet.of(mock(Node.class), mock(Node.class));
+        ImmutableSet<DriverNode> replicas = ImmutableSet.of(mock(DriverNode.class), mock(DriverNode.class));
         ImmutableList<LongTokenRange> vnodes = ImmutableList.of(tokenRange);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl
@@ -349,7 +349,7 @@ public class TestTableRepairJob
         );
 
         LongTokenRange tokenRange = new LongTokenRange(0, 10);
-        ImmutableSet<Node> replicas = ImmutableSet.of(mock(Node.class), mock(Node.class));
+        ImmutableSet<DriverNode> replicas = ImmutableSet.of(mock(DriverNode.class), mock(DriverNode.class));
         ImmutableList<LongTokenRange> vnodes = ImmutableList.of(tokenRange);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(

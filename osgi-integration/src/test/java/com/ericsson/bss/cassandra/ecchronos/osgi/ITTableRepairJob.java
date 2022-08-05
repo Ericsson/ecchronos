@@ -18,6 +18,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.token.TokenRange;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
@@ -30,7 +31,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairEntry;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
@@ -61,9 +62,7 @@ import java.util.List;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -99,8 +98,8 @@ public class ITTableRepairJob extends TestBase
     private static CqlSession myAdminSession;
 
     private Metadata myMetadata;
-    private com.datastax.oss.driver.api.core.metadata.Node myLocalHost;
-    private Node myLocalNode;
+    private Node myLocalHost;
+    private DriverNode myLocalNode;
 
     private Set<TableReference> myRepairs = new HashSet<>();
 
@@ -149,7 +148,7 @@ public class ITTableRepairJob extends TestBase
                             .whereColumn("keyspace_name").isEqualTo(literal(tableReference.getKeyspace()))
                             .whereColumn("columnfamily_name").isEqualTo(literal(tableReference.getTable()))
                             .build()));
-            for (com.datastax.oss.driver.api.core.metadata.Node node : myMetadata.getNodes().values())
+            for (Node node : myMetadata.getNodes().values())
             {
                 stages.add(myAdminSession.executeAsync(QueryBuilder.deleteFrom("ecchronos", "repair_history")
                         .whereColumn("table_id").isEqualTo(literal(tableReference.getId()))
@@ -347,7 +346,7 @@ public class ITTableRepairJob extends TestBase
 
         Set<UUID> participants = myMetadata.getTokenMap().get().getReplicas(tableReference.getKeyspace(), tokenRange)
                 .stream()
-                .map(com.datastax.oss.driver.api.core.metadata.Node::getHostId)
+                .map(Node::getHostId)
                 .collect(Collectors.toSet());
 
         SimpleStatement statement = QueryBuilder.insertInto("ecchronos", "repair_history")

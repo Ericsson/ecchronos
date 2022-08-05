@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.EccRepairHistory;
@@ -24,7 +25,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvi
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.base.Predicate;
@@ -85,8 +86,8 @@ public class RepairHistoryService implements RepairHistory, RepairHistoryProvide
     @Activate
     public void activate(Configuration configuration)
     {
-        com.datastax.oss.driver.api.core.metadata.Node node = nativeConnectionProvider.getLocalNode();
-        Optional<Node> localNode = nodeResolver.fromUUID(node.getHostId());
+        Node node = nativeConnectionProvider.getLocalNode();
+        Optional<DriverNode> localNode = nodeResolver.fromUUID(node.getHostId());
         if (!localNode.isPresent())
         {
             LOG.error("Local node ({}) not found in resolver", node.getHostId());
@@ -130,7 +131,7 @@ public class RepairHistoryService implements RepairHistory, RepairHistoryProvide
 
     @Override
     public RepairSession newSession(TableReference tableReference, UUID jobId, LongTokenRange range,
-            Set<Node> participants)
+            Set<DriverNode> participants)
     {
         return delegateRepairHistory.newSession(tableReference, jobId, range, participants);
     }

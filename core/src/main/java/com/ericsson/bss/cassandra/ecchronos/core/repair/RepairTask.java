@@ -21,7 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -58,7 +58,7 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
     private final CountDownLatch myLatch = new CountDownLatch(1);
 
     private final Set<LongTokenRange> myTokenRanges;
-    private final Set<Node> myReplicas;
+    private final Set<DriverNode> myReplicas;
     private final JmxProxyFactory myJmxProxyFactory;
     private final TableReference myTableReference;
     private final TableRepairMetrics myTableRepairMetrics;
@@ -388,7 +388,7 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         private JmxProxyFactory jmxProxyFactory;
         private TableReference tableReference;
         private Set<LongTokenRange> tokenRanges;
-        private Set<Node> replicas;
+        private Set<DriverNode> replicas;
         private TableRepairMetrics tableRepairMetrics;
         private RepairConfiguration repairConfiguration = RepairConfiguration.DEFAULT;
 
@@ -422,7 +422,7 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
             return this;
         }
 
-        public Builder withReplicas(Collection<Node> replicas)
+        public Builder withReplicas(Collection<DriverNode> replicas)
         {
             this.replicas = new HashSet<>(replicas);
             return this;
@@ -522,7 +522,7 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
     }
 
     @VisibleForTesting
-    Set<Node> getReplicas()
+    Set<DriverNode> getReplicas()
     {
         return Sets.newHashSet(myReplicas);
     }

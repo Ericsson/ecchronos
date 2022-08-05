@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairJobView;
@@ -30,7 +31,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.Schedule;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.google.common.collect.ImmutableSet;
@@ -521,7 +522,7 @@ public class TestRepairManagementRESTImpl
     {
         UUID expectedId = UUID.randomUUID();
         long expectedLastRepairedAt = 234;
-        Node replica = mock(Node.class);
+        DriverNode replica = mock(DriverNode.class);
         when(replica.getPublicAddress()).thenReturn(InetAddress.getLocalHost());
         VnodeRepairState expectedVnodeRepairState = TestUtils
                 .createVnodeRepairState(2, 3, ImmutableSet.of(replica), expectedLastRepairedAt);
@@ -778,7 +779,7 @@ public class TestRepairManagementRESTImpl
     {
         long expectedLastRepairedAt = 234;
         long repairInterval = 123;
-        Node replica = mock(Node.class);
+        DriverNode replica = mock(DriverNode.class);
         when(replica.getPublicAddress()).thenReturn(InetAddress.getLocalHost());
 
         VnodeRepairState vnodeRepairState = TestUtils
@@ -805,7 +806,7 @@ public class TestRepairManagementRESTImpl
     @Test
     public void testTableMultipleEntries() throws UnknownHostException
     {
-        com.datastax.oss.driver.api.core.metadata.Node node = mock(com.datastax.oss.driver.api.core.metadata.Node.class);
+        Node node = mock(Node.class);
         when(node.getBroadcastAddress()).thenReturn(
                 Optional.of(new InetSocketAddress(InetAddress.getLocalHost(), 9042)));
         RepairJobView job1 = new TestUtils.ScheduledRepairJobBuilder()
@@ -847,7 +848,7 @@ public class TestRepairManagementRESTImpl
     @Test
     public void testIdEntry() throws UnknownHostException
     {
-        com.datastax.oss.driver.api.core.metadata.Node node = mock(com.datastax.oss.driver.api.core.metadata.Node.class);
+        Node node = mock(Node.class);
         when(node.getBroadcastAddress()).thenReturn(
                 Optional.of(new InetSocketAddress(InetAddress.getLocalHost(), 9042)));
         UUID expectedId = UUID.randomUUID();
@@ -896,7 +897,7 @@ public class TestRepairManagementRESTImpl
     @Test
     public void testIdEntryNotFound() throws UnknownHostException
     {
-        com.datastax.oss.driver.api.core.metadata.Node node = mock(com.datastax.oss.driver.api.core.metadata.Node.class);
+        Node node = mock(Node.class);
         when(node.getBroadcastAddress()).thenReturn(
                 Optional.of(new InetSocketAddress(InetAddress.getLocalHost(), 9042)));
         RepairJobView job1 = new TestUtils.ScheduledRepairJobBuilder()
@@ -1143,7 +1144,7 @@ public class TestRepairManagementRESTImpl
     @Test
     public void testConfigIdEntry() throws UnknownHostException
     {
-        com.datastax.oss.driver.api.core.metadata.Node node = mock(com.datastax.oss.driver.api.core.metadata.Node.class);
+        Node node = mock(Node.class);
         when(node.getBroadcastAddress()).thenReturn(
                 Optional.of(new InetSocketAddress(InetAddress.getLocalHost(), 9042)));
         UUID expectedId = UUID.randomUUID();
@@ -1192,7 +1193,7 @@ public class TestRepairManagementRESTImpl
     @Test
     public void testConfigIdEntryNotFound() throws UnknownHostException
     {
-        com.datastax.oss.driver.api.core.metadata.Node node = mock(com.datastax.oss.driver.api.core.metadata.Node.class);
+        Node node = mock(Node.class);
         when(node.getBroadcastAddress()).thenReturn(
                 Optional.of(new InetSocketAddress(InetAddress.getLocalHost(), 9042)));
         RepairJobView job1 = new TestUtils.ScheduledRepairJobBuilder()

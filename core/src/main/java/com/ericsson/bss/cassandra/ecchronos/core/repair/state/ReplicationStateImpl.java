@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.TokenMap;
 import com.datastax.oss.driver.api.core.metadata.token.TokenRange;
 import com.datastax.oss.driver.internal.core.metadata.token.Murmur3Token;
@@ -30,7 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableMap;
@@ -43,14 +44,14 @@ public class ReplicationStateImpl implements ReplicationState
 {
     private static final Logger LOG = LoggerFactory.getLogger(ReplicationStateImpl.class);
 
-    private static final Map<String, ImmutableMap<LongTokenRange, ImmutableSet<Node>>> keyspaceReplicationCache = new ConcurrentHashMap<>();
-    private static final Map<String, ImmutableMap<LongTokenRange, ImmutableSet<Node>>> clusterWideKeyspaceReplicationCache = new ConcurrentHashMap<>();
+    private static final Map<String, ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>>> keyspaceReplicationCache = new ConcurrentHashMap<>();
+    private static final Map<String, ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>>> clusterWideKeyspaceReplicationCache = new ConcurrentHashMap<>();
 
     private final NodeResolver myNodeResolver;
     private final CqlSession mySession;
-    private final com.datastax.oss.driver.api.core.metadata.Node myLocalNode;
+    private final Node myLocalNode;
 
-    public ReplicationStateImpl(NodeResolver nodeResolver, CqlSession session, com.datastax.oss.driver.api.core.metadata.Node localNode)
+    public ReplicationStateImpl(NodeResolver nodeResolver, CqlSession session, Node localNode)
     {
         myNodeResolver = nodeResolver;
         mySession = session;
@@ -58,17 +59,17 @@ public class ReplicationStateImpl implements ReplicationState
     }
 
     @Override
-    public ImmutableSet<Node> getNodes(TableReference tableReference, LongTokenRange tokenRange)
+    public ImmutableSet<DriverNode> getNodes(TableReference tableReference, LongTokenRange tokenRange)
     {
         String keyspace = tableReference.getKeyspace();
 
-        ImmutableMap<LongTokenRange, ImmutableSet<Node>> replication = maybeRenew(keyspace);
+        ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> replication = maybeRenew(keyspace);
 
-        ImmutableSet<Node> nodes = replication.get(tokenRange);
+        ImmutableSet<DriverNode> nodes = replication.get(tokenRange);
 
         if (nodes == null)
         {
-            for (Map.Entry<LongTokenRange, ImmutableSet<Node>> entry : replication.entrySet())
+            for (Map.Entry<LongTokenRange, ImmutableSet<DriverNode>> entry : replication.entrySet())
             {
                 if (entry.getKey().isCovering(tokenRange))
                 {
@@ -82,37 +83,37 @@ public class ReplicationStateImpl implements ReplicationState
     }
 
     @Override
-    public Map<LongTokenRange, ImmutableSet<Node>> getTokenRangeToReplicas(TableReference tableReference)
+    public Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRangeToReplicas(TableReference tableReference)
     {
         String keyspace = tableReference.getKeyspace();
         return maybeRenew(keyspace);
     }
 
-    private ImmutableMap<LongTokenRange, ImmutableSet<Node>> maybeRenew(String keyspace)
+    private ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> maybeRenew(String keyspace)
     {
-        ImmutableMap<LongTokenRange, ImmutableSet<Node>> replication = buildTokenMap(keyspace, false);
+        ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> replication = buildTokenMap(keyspace, false);
 
         return keyspaceReplicationCache.compute(keyspace, (k, v) -> !replication.equals(v) ? replication : v);
     }
 
     @Override
-    public Map<LongTokenRange, ImmutableSet<Node>> getTokenRanges(TableReference tableReference)
+    public Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRanges(TableReference tableReference)
     {
         String keyspace = tableReference.getKeyspace();
         return maybeRenewClusterWide(keyspace);
     }
 
-    private ImmutableMap<LongTokenRange, ImmutableSet<Node>> maybeRenewClusterWide(String keyspace)
+    private ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> maybeRenewClusterWide(String keyspace)
     {
-        ImmutableMap<LongTokenRange, ImmutableSet<Node>> replication = buildTokenMap(keyspace, true);
+        ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> replication = buildTokenMap(keyspace, true);
 
         return clusterWideKeyspaceReplicationCache.compute(keyspace, (k, v) -> !replication.equals(v) ? replication : v);
     }
 
-    private ImmutableMap<LongTokenRange, ImmutableSet<Node>> buildTokenMap(String keyspace, boolean clusterWide)
+    private ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> buildTokenMap(String keyspace, boolean clusterWide)
     {
-        ImmutableMap.Builder<LongTokenRange, ImmutableSet<Node>> replicationBuilder = ImmutableMap.builder();
-        Map<Set<com.datastax.oss.driver.api.core.metadata.Node>, ImmutableSet<Node>> replicaCache = new HashMap<>();
+        ImmutableMap.Builder<LongTokenRange, ImmutableSet<DriverNode>> replicationBuilder = ImmutableMap.builder();
+        Map<Set<Node>, ImmutableSet<DriverNode>> replicaCache = new HashMap<>();
         Metadata metadata = mySession.getMetadata();
         Optional<TokenMap> tokenMap = metadata.getTokenMap();
         if (!tokenMap.isPresent())
@@ -131,7 +132,7 @@ public class ReplicationStateImpl implements ReplicationState
         for (TokenRange tokenRange : tokenRanges)
         {
             LongTokenRange longTokenRange = convert(tokenRange);
-            ImmutableSet<Node> replicas = replicaCache.computeIfAbsent(tokenMap.get().getReplicas(keyspace, tokenRange),
+            ImmutableSet<DriverNode> replicas = replicaCache.computeIfAbsent(tokenMap.get().getReplicas(keyspace, tokenRange),
                     this::convert);
 
             replicationBuilder.put(longTokenRange, replicas);
@@ -140,15 +141,15 @@ public class ReplicationStateImpl implements ReplicationState
         return replicationBuilder.build();
     }
 
-    private ImmutableSet<Node> convert(Set<com.datastax.oss.driver.api.core.metadata.Node> nodes)
+    private ImmutableSet<DriverNode> convert(Set<Node> nodes)
     {
-        ImmutableSet.Builder<Node> builder = new ImmutableSet.Builder<>();
-        for (com.datastax.oss.driver.api.core.metadata.Node node : nodes)
+        ImmutableSet.Builder<DriverNode> builder = new ImmutableSet.Builder<>();
+        for (Node node : nodes)
         {
             Optional<InetSocketAddress> broadcastAddress = node.getBroadcastAddress();
             if (broadcastAddress.isPresent())
             {
-                Optional<Node> resolvedNode = myNodeResolver.fromIp(broadcastAddress.get().getAddress());
+                Optional<DriverNode> resolvedNode = myNodeResolver.fromIp(broadcastAddress.get().getAddress());
                 if (resolvedNode.isPresent())
                 {
                     builder.add(resolvedNode.get());

@@ -19,7 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.google.common.collect.ImmutableSet;
 import org.assertj.core.util.Preconditions;
 import org.mockito.internal.util.collections.Sets;
@@ -65,7 +65,7 @@ public class TestUtils
         private String table;
         private long lastRepairedAt = 0;
         private long repairInterval = 0;
-        private ImmutableSet<Node> replicas = ImmutableSet.of();
+        private ImmutableSet<DriverNode> replicas = ImmutableSet.of();
         private LongTokenRange longTokenRange = new LongTokenRange(1, 2);
         private Collection<VnodeRepairState> vnodeRepairStateSet;
         private RepairConfiguration repairConfiguration;
@@ -225,13 +225,13 @@ public class TestUtils
         }
     }
 
-    public static VnodeRepairState createVnodeRepairState(long startToken, long endToken, ImmutableSet<Node> replicas,
+    public static VnodeRepairState createVnodeRepairState(long startToken, long endToken, ImmutableSet<DriverNode> replicas,
             long lastRepairedAt)
     {
         return createVnodeRepairState(new LongTokenRange(startToken, endToken), replicas, lastRepairedAt);
     }
 
-    public static VnodeRepairState createVnodeRepairState(LongTokenRange longTokenRange, ImmutableSet<Node> replicas,
+    public static VnodeRepairState createVnodeRepairState(LongTokenRange longTokenRange, ImmutableSet<DriverNode> replicas,
             long lastRepairedAt)
     {
         return new VnodeRepairState(longTokenRange, replicas, lastRepairedAt);

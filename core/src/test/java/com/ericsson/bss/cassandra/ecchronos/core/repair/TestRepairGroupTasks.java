@@ -57,7 +57,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.DummyLock;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -211,9 +211,9 @@ public class TestRepairGroupTasks
         return new LongTokenRange(start, end);
     }
 
-    private Node withNode(String ip) throws UnknownHostException
+    private DriverNode withNode(String ip) throws UnknownHostException
     {
-        Node node = mock(Node.class);
+        DriverNode node = mock(DriverNode.class);
 
         when(node.getPublicAddress()).thenReturn(InetAddress.getByName(ip));
 

@@ -16,10 +16,11 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.ericsson.bss.cassandra.ecchronos.core.AbstractCassandraTest;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -66,7 +67,7 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
 
     private static PreparedStatement myInsertRecordStatement;
 
-    private static Node myLocalNode;
+    private static DriverNode myLocalNode;
 
     private final TableReference myTableReference = tableReference(KEYSPACE, TABLE);
 
@@ -78,8 +79,8 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
 
         NodeResolver nodeResolver = new NodeResolverImpl(mySession);
 
-        Collection<com.datastax.oss.driver.api.core.metadata.Node> nodes = mySession.getMetadata().getNodes().values();
-        com.datastax.oss.driver.api.core.metadata.Node node = nodes.iterator().next();
+        Collection<Node> nodes = mySession.getMetadata().getNodes().values();
+        Node node = nodes.iterator().next();
         myLocalNode = nodeResolver.fromIp(node.getBroadcastAddress().get().getAddress()).get();
 
         repairHistoryProvider = new RepairHistoryProviderImpl(nodeResolver, mySession, s -> s, LOOKBACK_TIME,
@@ -233,7 +234,7 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
         insertRecord(KEYSPACE, TABLE, Sets.newHashSet(myLocalNode), new LongTokenRange(0, 1), startedAt, finishedAt,
                 RepairStatus.STARTED);
 
-        Map<LongTokenRange, Collection<Node>> tokenToNodeMap = new HashMap<>();
+        Map<LongTokenRange, Collection<DriverNode>> tokenToNodeMap = new HashMap<>();
         Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider
                 .iterate(myTableReference, iterateEnd, iterateStart,
                         new FullyRepairedRepairEntryPredicate(tokenToNodeMap));
@@ -250,14 +251,14 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
         long iterateStart = startedAt - 5;
         long iterateEnd = finishedAt + 10;
 
-        Map<LongTokenRange, Collection<Node>> tokenToNodeMap = new HashMap<>();
+        Map<LongTokenRange, Collection<DriverNode>> tokenToNodeMap = new HashMap<>();
         Metadata metadata = mySession.getMetadata();
 
-        Collection<com.datastax.oss.driver.api.core.metadata.Node> nodes = metadata.getNodes().values();
-        com.datastax.oss.driver.api.core.metadata.Node node = nodes.iterator().next();
+        Collection<Node> nodes = metadata.getNodes().values();
+        Node node = nodes.iterator().next();
 
         NodeResolver nodeResolver = new NodeResolverImpl(mySession);
-        Node resolvedNode = nodeResolver.fromIp(node.getBroadcastAddress().get().getAddress()).get();
+        DriverNode resolvedNode = nodeResolver.fromIp(node.getBroadcastAddress().get().getAddress()).get();
 
         List<RepairEntry> expectedRepairEntries = new ArrayList<>();
 
@@ -303,13 +304,13 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
         insertRecordWithAddresses(KEYSPACE, TABLE, Sets.newHashSet(InetAddress.getByName("198.162.0.3")),
                 new LongTokenRange(4, 5), startedAt, finishedAt, RepairStatus.SUCCESS);
 
-        Map<LongTokenRange, Collection<Node>> tokenToNodeMap = new HashMap<>();
+        Map<LongTokenRange, Collection<DriverNode>> tokenToNodeMap = new HashMap<>();
         Metadata metadata = mySession.getMetadata();
-        Collection<com.datastax.oss.driver.api.core.metadata.Node> nodes = metadata.getNodes().values();
+        Collection<Node> nodes = metadata.getNodes().values();
 
         NodeResolver nodeResolver = new NodeResolverImpl(mySession);
-        Set<Node> resolvedNodes = nodes.stream()
-                .map(com.datastax.oss.driver.api.core.metadata.Node::getBroadcastAddress)
+        Set<DriverNode> resolvedNodes = nodes.stream()
+                .map(Node::getBroadcastAddress)
                 .map(Optional::get)
                 .map(InetSocketAddress::getAddress)
                 .map(nodeResolver::fromIp)
@@ -346,11 +347,11 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
         insertRecord(keyspace, table, range, RepairStatus.SUCCESS);
     }
 
-    private void insertRecord(String keyspace, String table, Set<Node> nodes, LongTokenRange range, long started,
+    private void insertRecord(String keyspace, String table, Set<DriverNode> nodes, LongTokenRange range, long started,
             long finished, RepairStatus repairStatus)
     {
         Set<InetAddress> nodeAddresses = nodes.stream()
-                .map(Node::getPublicAddress)
+                .map(DriverNode::getPublicAddress)
                 .collect(Collectors.toSet());
 
         insertRecordWithAddresses(keyspace, table, nodeAddresses, range, started, finished, repairStatus);
@@ -378,7 +379,7 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
         long finishedAt = repairEntry.getStartedAt() + 5;
 
         Set<InetAddress> nodeAddresses = repairEntry.getParticipants().stream()
-                .map(Node::getPublicAddress)
+                .map(DriverNode::getPublicAddress)
                 .collect(Collectors.toSet());
 
         mySession.execute(myInsertRecordStatement.bind(
@@ -400,9 +401,9 @@ public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
      */
     public static class SuccessfulRepairEntryPredicate implements Predicate<RepairEntry>
     {
-        private final Node myNode;
+        private final DriverNode myNode;
 
-        public SuccessfulRepairEntryPredicate(Node node)
+        public SuccessfulRepairEntryPredicate(DriverNode node)
         {
             myNode = node;
         }

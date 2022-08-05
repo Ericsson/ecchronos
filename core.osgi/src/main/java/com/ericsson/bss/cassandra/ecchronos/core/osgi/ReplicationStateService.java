@@ -15,11 +15,12 @@
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
@@ -48,25 +49,25 @@ public class ReplicationStateService implements ReplicationState
     public void activate()
     {
         CqlSession session = nativeConnectionProvider.getSession();
-        com.datastax.oss.driver.api.core.metadata.Node localNode = nativeConnectionProvider.getLocalNode();
+        Node localNode = nativeConnectionProvider.getLocalNode();
 
         delegateReplicationState = new ReplicationStateImpl(nodeResolver, session, localNode);
     }
 
     @Override
-    public ImmutableSet<Node> getNodes(TableReference tableReference, LongTokenRange tokenRange)
+    public ImmutableSet<DriverNode> getNodes(TableReference tableReference, LongTokenRange tokenRange)
     {
         return delegateReplicationState.getNodes(tableReference, tokenRange);
     }
 
     @Override
-    public Map<LongTokenRange, ImmutableSet<Node>> getTokenRangeToReplicas(TableReference tableReference)
+    public Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRangeToReplicas(TableReference tableReference)
     {
         return delegateReplicationState.getTokenRangeToReplicas(tableReference);
     }
 
     @Override
-    public Map<LongTokenRange, ImmutableSet<Node>> getTokenRanges(TableReference tableReference)
+    public Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRanges(TableReference tableReference)
     {
         return delegateReplicationState.getTokenRanges(tableReference);
     }

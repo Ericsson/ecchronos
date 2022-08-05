@@ -21,7 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 
@@ -62,13 +62,13 @@ public class TestOnDemandRepairJob
     private RepairHistory myRepairHistory;
 
     @Mock
-    private Node mockReplica1;
+    private DriverNode mockReplica1;
 
     @Mock
-    private Node mockReplica2;
+    private DriverNode mockReplica2;
 
     @Mock
-    private Node mockReplica3;
+    private DriverNode mockReplica3;
 
     @Mock
     private OngoingJob myOngoingJob;
@@ -182,7 +182,7 @@ public class TestOnDemandRepairJob
     {
         LongTokenRange range1 = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(1, 3);
-        Map<LongTokenRange, ImmutableSet<Node>> tokenRangeToReplicas = new HashMap<>();
+        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicas = new HashMap<>();
         tokenRangeToReplicas.put(range1,
                 ImmutableSet.of(mockReplica1, mockReplica2, mockReplica3));
         tokenRangeToReplicas.put(range2,
@@ -202,7 +202,7 @@ public class TestOnDemandRepairJob
     {
         LongTokenRange range1 = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(1, 3);
-        Map<LongTokenRange, ImmutableSet<Node>> tokenRangeToReplicas = new HashMap<>();
+        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicas = new HashMap<>();
         tokenRangeToReplicas.put(range1,
                 ImmutableSet.of(mockReplica1, mockReplica2, mockReplica3));
         tokenRangeToReplicas.put(range2,

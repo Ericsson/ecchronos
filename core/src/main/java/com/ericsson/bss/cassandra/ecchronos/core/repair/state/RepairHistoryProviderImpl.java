@@ -21,7 +21,7 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.annotations.VisibleForTesting;
@@ -143,9 +143,9 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
 
                     LongTokenRange tokenRange = new LongTokenRange(rangeBegin, rangeEnd);
                     Set<InetAddress> participants = row.getSet(PARTICIPANTS_COLUMN, InetAddress.class);
-                    Set<Node> nodes = new HashSet<>();
+                    Set<DriverNode> nodes = new HashSet<>();
                     InetAddress coordinator = row.get(COORDINATOR_COLUMN, InetAddress.class);
-                    Optional<Node> coordinatorNode = myNodeResolver.fromIp(coordinator);
+                    Optional<DriverNode> coordinatorNode = myNodeResolver.fromIp(coordinator);
                     if (!coordinatorNode.isPresent())
                     {
                         LOG.warn("Coordinator node {} not found in metadata", coordinator);
@@ -156,7 +156,7 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
                     }
                     for (InetAddress participant : participants)
                     {
-                        Optional<Node> node = myNodeResolver.fromIp(participant);
+                        Optional<DriverNode> node = myNodeResolver.fromIp(participant);
                         if (!node.isPresent())
                         {
                             LOG.warn("Node {} not found in metadata", participant);

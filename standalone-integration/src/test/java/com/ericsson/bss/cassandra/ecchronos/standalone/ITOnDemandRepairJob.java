@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.token.TokenRange;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.internal.core.metadata.token.Murmur3Token;
@@ -65,7 +66,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManagerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -89,7 +90,7 @@ public class ITOnDemandRepairJob extends TestBase
 
     private static Metadata myMetadata;
 
-    private static com.datastax.oss.driver.api.core.metadata.Node myLocalHost;
+    private static Node myLocalHost;
 
     private static HostStatesImpl myHostStates;
 
@@ -128,7 +129,7 @@ public class ITOnDemandRepairJob extends TestBase
 
         NodeResolver nodeResolver = new NodeResolverImpl(session);
 
-        Node localNode = nodeResolver.fromUUID(myLocalHost.getHostId()).orElseThrow(IllegalStateException::new);
+        DriverNode localNode = nodeResolver.fromUUID(myLocalHost.getHostId()).orElseThrow(IllegalStateException::new);
 
         ReplicationState replicationState = new ReplicationStateImpl(nodeResolver, session, myLocalHost);
 
