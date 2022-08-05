@@ -22,7 +22,7 @@ import java.util.UUID;
 
 /**
  * An internal representation of a node.
- * This class together with {@link com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver} makes it easier to translate node IP -> host ID and other way around.
+ * This class together with {@link com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver} makes it easier to translate node IP to host ID and other way around.
  */
 public class DriverNode
 {

@@ -15,7 +15,6 @@
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
 import java.net.InetAddress;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
