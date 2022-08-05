@@ -56,10 +56,12 @@ def validate_last_table_row(rows):
     assert rows[0] == len(rows[0]) * rows[0][0], rows[0]  # -----
     assert len(rows) == 1, "{0} not empty".format(rows)
 
+
 @given(u'we have access to ecctool')
 def step_init(context):
     assert context.config.userdata.get("ecctool") is not False
     assert os.path.isfile(context.config.userdata.get("ecctool"))
+
 
 @then(u'the output should contain a valid repair summary')
 def step_validate_list_repairs_contains_summary(context):
@@ -67,6 +69,7 @@ def step_validate_list_repairs_contains_summary(context):
 
     summary = context.summary[0]
     assert re.match(SUMMARY_PATTERN, summary), "Faulty summary '{0}'".format(summary)
+
 
 @then(u'the output should not contain more rows')
 def step_validate_list_rows_clear(context):

@@ -48,11 +48,13 @@ def print_schedule(schedule, max_lines, full=False):
 
         table_formatter.format_table(vnode_state_table)
 
+
 def _add_vnode_state_to_table(vnode_state, table):
     entry = [vnode_state.start_token, vnode_state.end_token, ', '.join(vnode_state.replicas),
              vnode_state.get_last_repaired_at(), vnode_state.repaired]
 
     table.append(entry)
+
 
 def print_summary(schedules):
     status_list = [schedule.status for schedule in schedules]
@@ -62,6 +64,7 @@ def print_summary(schedules):
                                 status_list.count('BLOCKED'),
                                 status_list.count('LATE'),
                                 status_list.count('OVERDUE')))
+
 
 def print_repair_summary(repairs):
     status_list = [repair.status for repair in repairs]
@@ -74,12 +77,12 @@ def print_repair_summary(repairs):
 
 
 def print_schedules(schedules, max_lines):
-
     schedule_table = [["Id", "Keyspace", "Table", "Status", "Repaired(%)",
                        "Completed at", "Next repair"]]
     print("Snapshot as of", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     print_schedule_table(schedule_table, schedules, max_lines)
     print_summary(schedules)
+
 
 def print_repairs(repairs, max_lines=-1):
     repair_table = [["Id", "Host Id", "Keyspace", "Table", "Status", "Repaired(%)",
@@ -87,8 +90,8 @@ def print_repairs(repairs, max_lines=-1):
     print_repair_table(repair_table, repairs, max_lines)
     print_repair_summary(repairs)
 
-def print_schedule_table(schedule_table, schedules, max_lines):
 
+def print_schedule_table(schedule_table, schedules, max_lines):
     sorted_schedules = sorted(schedules, key=lambda x: (x.last_repaired_at_in_ms, x.repaired_ratio),
                               reverse=False)
     if max_lines > -1:
@@ -98,8 +101,8 @@ def print_schedule_table(schedule_table, schedules, max_lines):
         schedule_table.append(_convert_schedule(schedule))
     table_formatter.format_table(schedule_table)
 
-def print_repair_table(repair_table, repairs, max_lines):
 
+def print_repair_table(repair_table, repairs, max_lines):
     sorted_repairs = sorted(repairs, key=lambda x: (x.completed_at, x.repaired_ratio), reverse=False)
     if max_lines > -1:
         sorted_repairs = sorted_repairs[:max_lines]
@@ -108,10 +111,10 @@ def print_repair_table(repair_table, repairs, max_lines):
         repair_table.append(_convert_repair(repair))
     table_formatter.format_table(repair_table)
 
+
 def print_repair(repair):
     repair_table = [["Id", "Host Id", "Keyspace", "Table", "Status", "Repaired(%)",
-                     "Completed at"]]
-    repair_table.append(_convert_repair(repair))
+                     "Completed at"], _convert_repair(repair)]
     table_formatter.format_table(repair_table)
 
 
@@ -119,6 +122,7 @@ def _convert_repair(repair):
     entry = [repair.job_id, repair.host_id, repair.keyspace, repair.table, repair.status,
              repair.get_repair_percentage(), repair.get_completed_at()]
     return entry
+
 
 def _convert_schedule(schedule):
     entry = [schedule.job_id, schedule.keyspace, schedule.table, schedule.status,
