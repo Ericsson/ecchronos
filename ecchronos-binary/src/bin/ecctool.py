@@ -34,6 +34,7 @@ except ImportError:
     sys.path.append(LIB_DIR)
     from ecchronoslib import rest, table_printer
 
+
 DEFAULT_PID_FILE = "ecc.pid"
 SPRINGBOOT_MAIN_CLASS = "com.ericsson.bss.cassandra.ecchronos.application.spring.SpringBooter"
 
