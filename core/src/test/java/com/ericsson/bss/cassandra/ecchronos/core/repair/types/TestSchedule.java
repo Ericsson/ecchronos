@@ -201,8 +201,8 @@ public class TestSchedule
     @Test
     public void testEqualsContract()
     {
-        EqualsVerifier.simple().forClass(ScheduledRepairJob.class).usingGetClass()
-                .withNonnullFields("id", "keyspace", "table")
+        EqualsVerifier.simple().forClass(Schedule.class).usingGetClass()
+                .withNonnullFields("id", "keyspace", "table", "config", "virtualNodeStates")
                 .verify();
     }
 
