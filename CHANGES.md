@@ -1,5 +1,7 @@
 # Changes
 
+## Version 4.0.0
+
 ## Version 3.0.0
 
 * Add support for repairs without keyspace/table - Issue #158
