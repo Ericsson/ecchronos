@@ -16,7 +16,7 @@
 import re
 from subprocess import Popen, PIPE
 from behave import when, then  # pylint: disable=no-name-in-module
-from ecc_step_library.common_steps import match_and_remove_row, strip_and_collapse, validate_header  # pylint: disable=line-too-long
+from ecc_step_library.common_steps import match_and_remove_row, strip_and_collapse, validate_header, step_validate_list_rows_clear  # pylint: disable=line-too-long
 
 
 ID_PATTERN = r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
@@ -32,6 +32,7 @@ def run_ecc_schedule_status(context, params):
     context.proc = Popen(cmd, stdout=PIPE, stderr=PIPE) # pylint: disable=consider-using-with
     (context.out, context.err) = context.proc.communicate()
 
+
 def handle_schedule_output(context):
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.snapshot = output_data[0:1]
@@ -39,25 +40,30 @@ def handle_schedule_output(context):
     context.rows = output_data[4:-1]
     context.summary = output_data[-1:]
 
+
 @when(u'we list all schedules')
 def step_list_schedules(context):
     run_ecc_schedule_status(context, [])
     handle_schedule_output(context)
+
 
 @when(u'we list all schedules with a limit of {limit}')
 def step_list_schedules_with_limit(context, limit):
     run_ecc_schedule_status(context, ['--limit', limit])
     handle_schedule_output(context)
 
+
 @when(u'we list all schedules for keyspace {keyspace} with a limit of {limit}')
 def step_list_schedules_for_keyspace_with_limit(context, keyspace, limit):
     run_ecc_schedule_status(context, ['--keyspace', keyspace, '--limit', limit])
     handle_schedule_output(context)
 
+
 @when(u'we list all schedules for keyspace {keyspace}')
 def step_list_schedules_for_keyspace(context, keyspace):
     run_ecc_schedule_status(context, ['--keyspace', keyspace])
     handle_schedule_output(context)
+
 
 @when(u'we list schedules {keyspace}.{table} with a limit of {limit}')
 def step_list_schedule_with_limit(context, keyspace, table, limit):
@@ -67,15 +73,18 @@ def step_list_schedule_with_limit(context, keyspace, table, limit):
     run_ecc_schedule_status(context, ['--id', job_id, '--limit', limit])
     handle_schedule_output(context)
 
+
 @when(u'we list schedules for table {keyspace}.{table}')
 def step_show_schedule(context, keyspace, table):
     run_ecc_schedule_status(context, ['--keyspace', keyspace, '--table', table])
     handle_schedule_output(context)
 
+
 @then(u'the output should contain a schedule row for {keyspace}.{table}')
 def step_validate_list_tables_row(context, keyspace, table):
     expected_row = table_row(keyspace, table)
     match_and_remove_row(context.rows, expected_row)
+
 
 @when(u'we fetch schedule {keyspace}.{table} by id')
 def step_show_schedule_with_id(context, keyspace, table):
@@ -87,6 +96,7 @@ def step_show_schedule_with_id(context, keyspace, table):
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.table_info = output_data[0:7]
     context.conf = output_data[7:8]
+
 
 @when(u'we show schedule {keyspace}.{table} with a limit of {limit}')
 def step_show_schedule_with_limit(context, keyspace, table, limit):
@@ -101,12 +111,14 @@ def step_show_schedule_with_limit(context, keyspace, table, limit):
     context.header = output_data[8:9]
     context.rows = output_data[11:]
 
+
 @then(u'the output should contain a valid schedule summary')
 def step_validate_list_schedule_contains_summary(context):
     assert len(context.summary) == 1, "Expecting only 1 row summary"
 
     summary = context.summary[0]
     assert re.match(SCHEDULE_SUMMARY, summary), "Faulty summary '{0}'".format(summary)
+
 
 @then(u'the output should contain a valid schedule for {keyspace}.{table}')
 def step_validate_list_schedule_contains_rows(context, keyspace, table):
@@ -115,13 +127,28 @@ def step_validate_list_schedule_contains_rows(context, keyspace, table):
 
     step_validate_expected_show_table_header(context, keyspace, table)
 
+
 @then(u'the output should contain a valid snapshot header')
 def step_validate_list_snapshot_header(context):
     match_and_remove_row(context.snapshot, TABLE_SNAPSHOT_HEADER)
 
+
 @then(u'the output should contain a valid schedule header')
 def step_validate_list_schedule_header(context):
     validate_header(context.header, TABLE_SCHEDULE_HEADER)
+
+
+@then(u'the output should contain {limit:d} row')
+def step_validate_list_schedules_contains_rows_with_limit(context, limit):
+    rows = context.rows
+
+    assert len(rows) == limit + 1, "Expecting only {0} schedule element from {1}".format(limit, rows)
+
+    for _ in range(limit):
+        step_validate_list_tables_row(context, ".*", ".*")
+
+    step_validate_list_rows_clear(context)
+
 
 @then(u'the expected schedule header should be for {keyspace}.{table}')
 def step_validate_expected_show_table_header(context, keyspace, table):
@@ -140,5 +167,33 @@ def step_validate_expected_show_table_header(context, keyspace, table):
     assert re.match(
         "Next repair : .*", strip_and_collapse(table_info[6])), "Faulty next repair '{0}'".format(table_info[6])
 
+
+@then(u'the token list should contain {limit:d} rows')
+def step_validate_token_list(context, limit):
+    for _ in range(limit):
+        remove_token_row(context)
+
+    step_validate_list_rows_clear(context)
+
+
+def remove_token_row(context):
+    expected_row = token_row()
+
+    found_row = -1
+
+    for idx, row in enumerate(context.rows):
+        row = strip_and_collapse(row)
+        if re.match(expected_row, row):
+            found_row = int(idx)
+            break
+
+    assert found_row != -1, "{0} not found in {1}".format(expected_row, context.rows)
+    del context.rows[found_row]
+
+
 def table_row(keyspace, table):
     return TABLE_SCHEDULE_ROW_FORMAT_PATTERN.format(keyspace, table)
+
+
+def token_row():
+    return "\\| [-]?\\d+ \\| [-]?\\d+ \\| .* \\| .* \\| (True|False) \\|"

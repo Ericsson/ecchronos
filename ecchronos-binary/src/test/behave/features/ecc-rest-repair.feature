@@ -6,7 +6,6 @@ Feature: API for repairs
     When I send a POST request
     Then the response is successful
     And the response matches the json repair_list_v2
-    And the job for test.table1 change status to completed
 
   Scenario: Get repair status for table test.table1 v2
     Given I have a json schema in repair_list_v2.json

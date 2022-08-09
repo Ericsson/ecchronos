@@ -5,10 +5,10 @@ Feature: ecctool schedules
     When we list all schedules
     Then the output should contain a valid snapshot header
     And the output should contain a valid schedule header
-    And the output should contain a row for test.table1
-    And the output should contain a row for test.table2
-    And the output should contain a row for test2.table1
-    And the output should contain a row for test2.table2
+    And the output should contain a schedule row for test.table1
+    And the output should contain a schedule row for test.table2
+    And the output should contain a schedule row for test2.table1
+    And the output should contain a schedule row for test2.table2
     And the output should not contain more rows
     And the output should contain a valid schedule summary
 
@@ -25,8 +25,8 @@ Feature: ecctool schedules
     When we list all schedules for keyspace test
     Then the output should contain a valid snapshot header
     And the output should contain a valid schedule header
-    And the output should contain a row for test.table1
-    And the output should contain a row for test.table2
+    And the output should contain a schedule row for test.table1
+    And the output should contain a schedule row for test.table2
     And the output should not contain more rows
     And the output should contain a valid schedule summary
 
@@ -35,7 +35,7 @@ Feature: ecctool schedules
     When we list all schedules for keyspace test with a limit of 1
     Then the output should contain a valid snapshot header
     And the output should contain a valid schedule header
-    And the output should contain a row for test..*
+    And the output should contain a schedule row for test..*
     And the output should not contain more rows
     And the output should contain a valid schedule summary
 
@@ -44,7 +44,7 @@ Feature: ecctool schedules
     When we list schedules for table test.table1
     Then the output should contain a valid snapshot header
     And the output should contain a valid schedule header
-    And the output should contain a row for test.table1
+    And the output should contain a schedule row for test.table1
     And the output should not contain more rows
     And the output should contain a valid schedule summary
 

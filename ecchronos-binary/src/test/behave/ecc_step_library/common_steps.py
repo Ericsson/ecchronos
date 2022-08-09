@@ -15,7 +15,9 @@
 
 import re
 import os
-from behave import given  # pylint: disable=no-name-in-module
+from behave import given, then  # pylint: disable=no-name-in-module
+
+SUMMARY_PATTERN = r'Summary: \d+ completed, \d+ in queue, \d+ blocked, \d+ warning, \d+ error'
 
 
 def strip_and_collapse(line):
@@ -54,7 +56,21 @@ def validate_last_table_row(rows):
     assert rows[0] == len(rows[0]) * rows[0][0], rows[0]  # -----
     assert len(rows) == 1, "{0} not empty".format(rows)
 
+
 @given(u'we have access to ecctool')
 def step_init(context):
     assert context.config.userdata.get("ecctool") is not False
     assert os.path.isfile(context.config.userdata.get("ecctool"))
+
+
+@then(u'the output should contain a valid repair summary')
+def step_validate_list_repairs_contains_summary(context):
+    assert len(context.summary) == 1, "Expecting only 1 row summary"
+
+    summary = context.summary[0]
+    assert re.match(SUMMARY_PATTERN, summary), "Faulty summary '{0}'".format(summary)
+
+
+@then(u'the output should not contain more rows')
+def step_validate_list_rows_clear(context):
+    validate_last_table_row(context.rows)
