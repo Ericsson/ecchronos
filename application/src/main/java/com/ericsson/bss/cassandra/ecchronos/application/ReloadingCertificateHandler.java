@@ -14,26 +14,29 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.InetSocketAddress;
-import java.security.*;
-import java.security.cert.CertificateException;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
-
-import javax.net.ssl.*;
-
+import com.datastax.oss.driver.api.core.metadata.EndPoint;
+import com.ericsson.bss.cassandra.ecchronos.application.config.TLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.driver.core.EndPoint;
-import com.ericsson.bss.cassandra.ecchronos.application.config.TLSConfig;
-
-import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.ssl.SslHandler;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.TrustManagerFactory;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.InetSocketAddress;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 public class ReloadingCertificateHandler implements CertificateHandler
 {
@@ -48,14 +51,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
     }
 
     @Override
-    public SslHandler newSSLHandler(SocketChannel channel, EndPoint remoteEndpoint)
-    {
-        SSLEngine sslEngine = newSSLEngine(remoteEndpoint);
-        return new SslHandler(sslEngine);
-    }
-
-    @Override
-    public SSLEngine newSSLEngine(EndPoint remoteEndpoint)
+    public SSLEngine newSslEngine(EndPoint remoteEndpoint)
     {
         Context context = getContext();
         TLSConfig tlsConfig = context.getTlsConfig();
@@ -64,7 +60,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
         SSLEngine sslEngine;
         if (remoteEndpoint != null)
         {
-            InetSocketAddress socketAddress = remoteEndpoint.resolve();
+            InetSocketAddress socketAddress = (InetSocketAddress) remoteEndpoint.resolve();
             sslEngine = sslContext.createSSLEngine(socketAddress.getHostName(), socketAddress.getPort());
         }
         else
@@ -81,18 +77,6 @@ public class ReloadingCertificateHandler implements CertificateHandler
         }
         tlsConfig.getCipherSuites().ifPresent(sslEngine::setEnabledCipherSuites);
         return sslEngine;
-    }
-
-    @Override
-    public SslHandler newSSLHandler(SocketChannel channel, InetSocketAddress remoteEndpoint)
-    {
-        throw new UnsupportedOperationException("Unsupported method");
-    }
-
-    @Override
-    public SslHandler newSSLHandler(SocketChannel channel)
-    {
-        throw new UnsupportedOperationException("Unsupported method");
     }
 
     protected Context getContext()
@@ -123,6 +107,12 @@ public class ReloadingCertificateHandler implements CertificateHandler
         }
 
         return context;
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+
     }
 
     protected static final class Context

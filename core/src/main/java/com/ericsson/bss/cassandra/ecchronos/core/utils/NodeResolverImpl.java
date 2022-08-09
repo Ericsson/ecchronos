@@ -15,40 +15,40 @@
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
 import java.net.InetAddress;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.Node;
 
 public class NodeResolverImpl implements NodeResolver
 {
-    private final ConcurrentMap<InetAddress, DriverNode> addressToHostMap = new ConcurrentHashMap<>();
-    private final ConcurrentMap<UUID, DriverNode> idToHostMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<InetAddress, DriverNode> addressToNodeMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, DriverNode> idToNodeMap = new ConcurrentHashMap<>();
 
-    private final Metadata metadata;
+    private final CqlSession session;
 
-    public NodeResolverImpl(Metadata metadata)
+    public NodeResolverImpl(CqlSession session)
     {
-        this.metadata = metadata;
+        this.session = session;
     }
 
     @Override
-    public Optional<Node> fromIp(InetAddress inetAddress)
+    public Optional<DriverNode> fromIp(InetAddress inetAddress)
     {
-        DriverNode node = addressToHostMap.get(inetAddress);
+        DriverNode node = addressToNodeMap.get(inetAddress);
 
         if (node == null)
         {
-            node = addressToHostMap.computeIfAbsent(inetAddress, address -> lookup(inetAddress));
+            node = addressToNodeMap.computeIfAbsent(inetAddress, address -> lookup(inetAddress));
         }
         else if (!inetAddress.equals(node.getPublicAddress()))
         {
             // IP mapping is wrong, we should remove the old entry and retry
-            addressToHostMap.remove(inetAddress, node);
+            addressToNodeMap.remove(inetAddress, node);
             return fromIp(inetAddress);
         }
 
@@ -56,17 +56,17 @@ public class NodeResolverImpl implements NodeResolver
     }
 
     @Override
-    public Optional<Node> fromUUID(UUID nodeId)
+    public Optional<DriverNode> fromUUID(UUID nodeId)
     {
         return Optional.ofNullable(resolve(nodeId));
     }
 
     private DriverNode resolve(UUID nodeId)
     {
-        DriverNode node = idToHostMap.get(nodeId);
+        DriverNode node = idToNodeMap.get(nodeId);
         if (node == null)
         {
-            node = idToHostMap.computeIfAbsent(nodeId, this::lookup);
+            node = idToNodeMap.computeIfAbsent(nodeId, this::lookup);
         }
 
         return node;
@@ -74,11 +74,12 @@ public class NodeResolverImpl implements NodeResolver
 
     private DriverNode lookup(UUID nodeId)
     {
-        for (Host host : metadata.getAllHosts())
+        Metadata metadata = session.getMetadata();
+        for (Node node : metadata.getNodes().values())
         {
-            if (host.getHostId().equals(nodeId))
+            if (node.getHostId().equals(nodeId))
             {
-                return new DriverNode(host);
+                return new DriverNode(node);
             }
         }
         return null;
@@ -86,64 +87,14 @@ public class NodeResolverImpl implements NodeResolver
 
     private DriverNode lookup(InetAddress inetAddress)
     {
-        for (Host host : metadata.getAllHosts())
+        Metadata metadata = session.getMetadata();
+        for (Node node : metadata.getNodes().values())
         {
-            if (host.getBroadcastAddress().equals(inetAddress))
+            if (node.getBroadcastAddress().get().getAddress().equals(inetAddress))
             {
-                return resolve(host.getHostId());
+                return resolve(node.getHostId());
             }
         }
         return null;
-    }
-
-    private class DriverNode implements Node
-    {
-        private final Host host;
-
-        public DriverNode(Host host)
-        {
-            this.host = host;
-        }
-
-        @Override
-        public UUID getId()
-        {
-            return host.getHostId();
-        }
-
-        @Override
-        public InetAddress getPublicAddress()
-        {
-            return host.getBroadcastAddress();
-        }
-
-        @Override
-        public String getDatacenter()
-        {
-            return host.getDatacenter();
-        }
-
-        @Override
-        public boolean equals(Object o)
-        {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-            DriverNode that = (DriverNode) o;
-            return host.equals(that.host);
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash(host);
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("Node(%s:%s:%s)", getId(), getDatacenter(), getPublicAddress());
-        }
     }
 }

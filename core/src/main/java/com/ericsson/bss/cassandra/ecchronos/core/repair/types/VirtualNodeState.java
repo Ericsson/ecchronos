@@ -15,7 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -63,7 +63,7 @@ public class VirtualNodeState
     {
         long startToken = vnodeRepairState.getTokenRange().start;
         long endToken = vnodeRepairState.getTokenRange().end;
-        Set<String> replicas = vnodeRepairState.getReplicas().stream().map(Node::getPublicAddress).map(InetAddress::getHostAddress).collect(Collectors.toSet());
+        Set<String> replicas = vnodeRepairState.getReplicas().stream().map(DriverNode::getPublicAddress).map(InetAddress::getHostAddress).collect(Collectors.toSet());
         long lastRepairedAt = vnodeRepairState.lastRepairedAt();
         boolean repaired = lastRepairedAt > repairedAfter;
 

@@ -29,7 +29,7 @@ public interface NodeResolver
      * @param inetAddress The public ip address of the node instance.
      * @return The node.
      */
-    Optional<Node> fromIp(InetAddress inetAddress);
+    Optional<DriverNode> fromIp(InetAddress inetAddress);
 
-    Optional<Node> fromUUID(UUID nodeId);
+    Optional<DriverNode> fromUUID(UUID nodeId);
 }

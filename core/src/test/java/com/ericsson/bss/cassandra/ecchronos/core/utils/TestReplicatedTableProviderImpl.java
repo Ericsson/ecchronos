@@ -14,10 +14,12 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.TableMetadata;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,10 +27,9 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,20 +45,24 @@ public class TestReplicatedTableProviderImpl
     @Mock
     private Metadata myMetadata;
 
+    @Mock
+    private CqlSession myCqlSession;
+
     private TableReferenceFactory myTableReferenceFactory = new MockTableReferenceFactory();
 
-    private List<KeyspaceMetadata> myKeyspaces = new ArrayList<>();
+    private Map<CqlIdentifier, KeyspaceMetadata> myKeyspaces = new HashMap<>();
 
     private ReplicatedTableProviderImpl myReplicatedTableProviderImpl;
 
     @Before
     public void init()
     {
-        Host localHost = mockHost(LOCAL_DATACENTER);
+        Node localNode = mockNode(LOCAL_DATACENTER);
 
         when(myMetadata.getKeyspaces()).thenReturn(myKeyspaces);
-
-        myReplicatedTableProviderImpl = new ReplicatedTableProviderImpl(localHost, myMetadata, myTableReferenceFactory);
+        when(myCqlSession.getMetadata()).thenReturn(myMetadata);
+        myReplicatedTableProviderImpl = new ReplicatedTableProviderImpl(localNode, myCqlSession,
+                myTableReferenceFactory);
     }
 
     @Test
@@ -114,7 +119,6 @@ public class TestReplicatedTableProviderImpl
         replication.put("DC2", "1");
         replication.put("DC3", "1");
 
-
         mockKeyspace("user_keyspace", replication, "table1");
 
         assertThat(myReplicatedTableProviderImpl.accept("user_keyspace")).isTrue();
@@ -127,7 +131,6 @@ public class TestReplicatedTableProviderImpl
         replication.put("DC2", "1");
         replication.put("DC3", "1");
 
-
         mockKeyspace("user_keyspace", replication, "table1");
 
         assertThat(myReplicatedTableProviderImpl.accept("user_keyspace")).isFalse();
@@ -136,14 +139,15 @@ public class TestReplicatedTableProviderImpl
     @Test
     public void testAcceptLocalNodeDCIsUnavailableNetworkTopology()
     {
-        Host localHost = mockHost(null);
+        Node localNode = mockNode(null);
 
         Map<String, String> replication = networkTopologyStrategy();
         replication.put("DC1", "3");
 
         mockKeyspace("user_keyspace", replication, "table1");
 
-        ReplicatedTableProviderImpl replicatedTableProviderImpl = new ReplicatedTableProviderImpl(localHost, myMetadata,
+        ReplicatedTableProviderImpl replicatedTableProviderImpl = new ReplicatedTableProviderImpl(localNode,
+                myCqlSession,
                 myTableReferenceFactory);
         assertThat(replicatedTableProviderImpl.accept("user_keyspace")).isFalse();
     }
@@ -151,10 +155,11 @@ public class TestReplicatedTableProviderImpl
     @Test
     public void testAcceptLocalNodeDCIsUnavailableSimple()
     {
-        Host localHost = mockHost(null);
+        Node localNode = mockNode(null);
         mockKeyspace("user_keyspace", simpleStrategy(3), "table1");
 
-        ReplicatedTableProviderImpl replicatedTableProviderImpl = new ReplicatedTableProviderImpl(localHost, myMetadata,
+        ReplicatedTableProviderImpl replicatedTableProviderImpl = new ReplicatedTableProviderImpl(localNode,
+                myCqlSession,
                 myTableReferenceFactory);
         assertThat(replicatedTableProviderImpl.accept("user_keyspace")).isTrue();
     }
@@ -225,37 +230,36 @@ public class TestReplicatedTableProviderImpl
         return replication;
     }
 
-    private Host mockHost(String dataCenter)
+    private Node mockNode(String dataCenter)
     {
-        Host host = mock(Host.class);
+        Node node = mock(Node.class);
 
-        when(host.getDatacenter()).thenReturn(dataCenter);
+        when(node.getDatacenter()).thenReturn(dataCenter);
 
-        return host;
+        return node;
     }
 
     private void mockKeyspace(String keyspace, Map<String, String> replication, String... tables)
     {
         KeyspaceMetadata keyspaceMetadata = mock(KeyspaceMetadata.class);
 
-        when(keyspaceMetadata.getName()).thenReturn(keyspace);
+        when(keyspaceMetadata.getName()).thenReturn(CqlIdentifier.fromCql(keyspace));
 
-        List<TableMetadata> tableMetadatas = new ArrayList<>();
-
+        Map<CqlIdentifier, TableMetadata> tableMetadatas = new HashMap<>();
         for (String table : tables)
         {
             TableMetadata tableMetadata = mock(TableMetadata.class);
 
-            when(tableMetadata.getName()).thenReturn(table);
-            when(tableMetadata.getKeyspace()).thenReturn(keyspaceMetadata);
+            when(tableMetadata.getName()).thenReturn(CqlIdentifier.fromCql(table));
+            when(tableMetadata.getKeyspace()).thenReturn(CqlIdentifier.fromCql(keyspace));
 
-            tableMetadatas.add(tableMetadata);
+            tableMetadatas.put(CqlIdentifier.fromCql(table), tableMetadata);
         }
 
         when(keyspaceMetadata.getTables()).thenReturn(tableMetadatas);
 
-        myKeyspaces.add(keyspaceMetadata);
-        when(myMetadata.getKeyspace(eq(keyspace))).thenReturn(keyspaceMetadata);
+        myKeyspaces.put(CqlIdentifier.fromCql(keyspace), keyspaceMetadata);
+        when(myMetadata.getKeyspace(eq(keyspace))).thenReturn(Optional.of(keyspaceMetadata));
 
         when(keyspaceMetadata.getReplication()).thenReturn(replication);
     }

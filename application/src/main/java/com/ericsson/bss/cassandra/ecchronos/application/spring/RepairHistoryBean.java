@@ -14,19 +14,22 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
-import java.util.concurrent.TimeUnit;
-
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Session;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.EccRepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class RepairHistoryBean
@@ -37,10 +40,10 @@ public class RepairHistoryBean
     public RepairHistoryBean(Config configuration, NativeConnectionProvider nativeConnectionProvider,
             NodeResolver nodeResolver, StatementDecorator statementDecorator, ReplicationState replicationState)
     {
-        Host host = nativeConnectionProvider.getLocalHost();
-        Session session = nativeConnectionProvider.getSession();
+        Node node = nativeConnectionProvider.getLocalNode();
+        CqlSession session = nativeConnectionProvider.getSession();
 
-        Node localNode = nodeResolver.fromUUID(host.getHostId()).orElseThrow(IllegalStateException::new);
+        DriverNode localNode = nodeResolver.fromUUID(node.getHostId()).orElseThrow(IllegalStateException::new);
 
         Config.GlobalRepairConfig repairConfig = configuration.getRepair();
 
@@ -89,7 +92,7 @@ public class RepairHistoryBean
     }
 
     private RepairHistoryProvider createCassandraHistoryProvider(Config.GlobalRepairConfig repairConfig,
-            Session session,
+            CqlSession session,
             NodeResolver nodeResolver, StatementDecorator statementDecorator)
     {
         return new RepairHistoryProviderImpl(nodeResolver, session, statementDecorator,

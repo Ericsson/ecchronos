@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 
 import com.ericsson.bss.cassandra.ecchronos.application.*;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter;
 import org.springframework.context.ApplicationContext;
@@ -303,7 +304,7 @@ public class Config
         @Override
         protected Class<?>[] expectedConstructor()
         {
-            return new Class<?>[] { Config.class, Supplier.class };
+            return new Class<?>[] { Config.class, Supplier.class, DefaultRepairConfigurationProvider.class };
         }
 
         @Override

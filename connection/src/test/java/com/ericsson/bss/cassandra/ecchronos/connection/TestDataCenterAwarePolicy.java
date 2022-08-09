@@ -14,307 +14,309 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfig;
+import com.datastax.oss.driver.api.core.config.DriverExecutionProfile;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.loadbalancing.LoadBalancingPolicy;
+import com.datastax.oss.driver.api.core.loadbalancing.NodeDistance;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metadata.NodeState;
+import com.datastax.oss.driver.api.core.metadata.TokenMap;
+import com.datastax.oss.driver.api.core.session.Session;
+import com.datastax.oss.driver.internal.core.ConsistencyLevelRegistry;
+import com.datastax.oss.driver.internal.core.context.InternalDriverContext;
+import com.datastax.oss.driver.internal.core.metadata.MetadataManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.CodecRegistry;
-import com.datastax.driver.core.Configuration;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.HostDistance;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.ProtocolOptions;
-import com.datastax.driver.core.ProtocolVersion;
-import com.datastax.driver.core.SimpleStatement;
-import com.datastax.driver.core.policies.LoadBalancingPolicy;
-import com.datastax.driver.core.policies.Policies;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Queue;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-@RunWith (MockitoJUnitRunner.Silent.class)
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class TestDataCenterAwarePolicy
 {
     private final String myLocalDc = "DC1";
     private final String myRemoteDc = "DC2";
 
     @Mock
-    private LoadBalancingPolicy myChildPolicy;
-
-    @Mock
-    private Cluster myClusterMock;
+    private Session mySessionMock;
 
     @Mock
     private Metadata myMetadataMock;
 
     @Mock
-    private Configuration myConfigMock;
+    private TokenMap myTokenMapMock;
 
     @Mock
-    private ProtocolOptions myProtocolOptionsMock;
+    private InternalDriverContext myDriverContextMock;
 
     @Mock
-    private Host myHostDC1Mock;
+    private DriverConfig myDriverConfigMock;
 
     @Mock
-    private Host myHostDC2Mock;
+    private DriverExecutionProfile myDriverExecutionProfileMock;
 
     @Mock
-    private Host myHostDC3Mock;
+    private ConsistencyLevelRegistry myConsistencyLevelRegistryMock;
 
     @Mock
-    private Host myHostNoDCMock;
+    private MetadataManager myMetadataManagerMock;
 
     @Mock
-    private Host myHostNotDC3Mock;
+    private LoadBalancingPolicy.DistanceReporter myDistanceReporterMock;
 
-    private List<Host> myHostList;
+    @Mock
+    private Node myNodeDC1Mock;
+
+    @Mock
+    private Node myNodeDC2Mock;
+
+    @Mock
+    private Node myNodeDC3Mock;
+
+    @Mock
+    private Node myNodeNoDCMock;
+
+    @Mock
+    private Node myNodeNotDC3Mock;
+
+    private Map<UUID, Node> myNodes = new HashMap<>();
 
     @Before
     public void setup()
     {
-        when(myClusterMock.getMetadata()).thenReturn(myMetadataMock);
-        when(myClusterMock.getConfiguration()).thenReturn(myConfigMock);
+        when(mySessionMock.getMetadata()).thenReturn(myMetadataMock);
+        when(myMetadataMock.getTokenMap()).thenReturn(Optional.of(myTokenMapMock));
 
-        when(myConfigMock.getProtocolOptions()).thenReturn(myProtocolOptionsMock);
-        when(myConfigMock.getCodecRegistry()).thenReturn(CodecRegistry.DEFAULT_INSTANCE);
+        when(myNodeDC1Mock.getDatacenter()).thenReturn("DC1");
+        when(myNodeDC1Mock.getState()).thenReturn(NodeState.UP);
+        when(myNodeDC2Mock.getDatacenter()).thenReturn("DC2");
+        when(myNodeDC2Mock.getState()).thenReturn(NodeState.UP);
+        when(myNodeDC3Mock.getDatacenter()).thenReturn("DC3");
+        when(myNodeDC3Mock.getState()).thenReturn(NodeState.UP);
+        when(myNodeNoDCMock.getDatacenter()).thenReturn("no DC");
+        when(myNodeNoDCMock.getState()).thenReturn(NodeState.UP);
+        when(myNodeNotDC3Mock.getDatacenter()).thenReturn("DC3");
+        when(myNodeNotDC3Mock.getState()).thenReturn(NodeState.UP);
 
-        when(myProtocolOptionsMock.getProtocolVersion()).thenReturn(ProtocolVersion.V4);
-
-        when(myHostDC1Mock.getDatacenter()).thenReturn("DC1");
-        when(myHostDC1Mock.isUp()).thenReturn(true);
-        when(myHostDC2Mock.getDatacenter()).thenReturn("DC2");
-        when(myHostDC2Mock.isUp()).thenReturn(true);
-        when(myHostDC3Mock.getDatacenter()).thenReturn("DC3");
-        when(myHostDC3Mock.isUp()).thenReturn(true);
-        when(myHostNoDCMock.getDatacenter()).thenReturn("no DC");
-        when(myHostNoDCMock.isUp()).thenReturn(true);
-        when(myHostNotDC3Mock.getDatacenter()).thenReturn("DC3");
-        when(myHostNotDC3Mock.isUp()).thenReturn(true);
-
-        myHostList = Arrays.asList(myHostDC1Mock, myHostDC2Mock, myHostDC3Mock);
-    }
-
-    @Test
-    public void testBuilderWithValidInput()
-    {
-        DataCenterAwarePolicy.builder().withChildPolicy(myChildPolicy).withLocalDc(myLocalDc).build();
-    }
-
-    @Test
-    public void testBuilderWithChildPolicyAsNull()
-    {
-        LoadBalancingPolicy childPolicy = null;
-
-        assertThatExceptionOfType(IllegalArgumentException.class)
-                .isThrownBy(() -> DataCenterAwarePolicy.builder()
-                        .withChildPolicy(childPolicy)
-                        .withLocalDc(myLocalDc)
-                        .build());
-    }
-
-    @Test
-    public void testBuilderWithLocalDcAsNull()
-    {
-        String localDc = null;
-
-        assertThatExceptionOfType(IllegalArgumentException.class)
-                .isThrownBy(() ->
-                        DataCenterAwarePolicy.builder()
-                                .withChildPolicy(myChildPolicy)
-                                .withLocalDc(localDc).build());
-    }
-
-    @Test
-    public void testGetChildPolicy()
-    {
-        LoadBalancingPolicy childPolicy = Policies.defaultLoadBalancingPolicy();
-
-        DataCenterAwarePolicy policy = DataCenterAwarePolicy.builder().withChildPolicy(childPolicy).withLocalDc(myLocalDc).build();
-
-        assertThat(policy.getChildPolicy()).isEqualTo(childPolicy);
+        myNodes.put(UUID.randomUUID(), myNodeDC1Mock);
+        myNodes.put(UUID.randomUUID(), myNodeDC2Mock);
+        myNodes.put(UUID.randomUUID(), myNodeDC3Mock);
+        when(myDriverContextMock.getConfig()).thenReturn(myDriverConfigMock);
+        when(myDriverContextMock.getLocalDatacenter(any())).thenReturn(myLocalDc);
+        when(myDriverContextMock.getMetadataManager()).thenReturn(myMetadataManagerMock);
+        when(myMetadataManagerMock.getMetadata()).thenReturn(myMetadataMock);
+        when(myDriverConfigMock.getProfile(any(String.class))).thenReturn(myDriverExecutionProfileMock);
+        when(myDriverExecutionProfileMock.getName()).thenReturn("unittest");
+        when(myDriverExecutionProfileMock.getInt(DefaultDriverOption.LOAD_BALANCING_DC_FAILOVER_MAX_NODES_PER_REMOTE_DC)).thenReturn(999);
+        when(myDriverExecutionProfileMock.getBoolean(DefaultDriverOption.LOAD_BALANCING_DC_FAILOVER_ALLOW_FOR_LOCAL_CONSISTENCY_LEVELS)).thenReturn(false);
+        when(myDriverExecutionProfileMock.getString(DefaultDriverOption.REQUEST_CONSISTENCY)).thenReturn("LOCAL_QUORUM");
+        when(myDriverContextMock.getConsistencyLevelRegistry()).thenReturn(myConsistencyLevelRegistryMock);
+        when(myConsistencyLevelRegistryMock.nameToLevel(any(String.class))).thenReturn(ConsistencyLevel.LOCAL_QUORUM);
     }
 
     @Test
     public void testDistanceHost()
     {
-        DataCenterAwarePolicy policy = DataCenterAwarePolicy.builder().withChildPolicy(myChildPolicy).withLocalDc(myLocalDc).build();
+        DataCenterAwarePolicy policy = new DataCenterAwarePolicy(myDriverContextMock, "");
+        policy.init(myNodes, myDistanceReporterMock);
 
-        policy.init(myClusterMock, myHostList);
+        NodeDistance distance1 = policy.distance(myNodeDC1Mock, myLocalDc);
+        NodeDistance distance2 = policy.distance(myNodeDC2Mock, myLocalDc);
+        NodeDistance distance3 = policy.distance(myNodeDC3Mock, myLocalDc);
+        NodeDistance distance4 = policy.distance(myNodeNoDCMock, myLocalDc);
+        NodeDistance distance5 = policy.distance(myNodeNotDC3Mock, myLocalDc);
 
-        HostDistance distance1 = policy.distance(myHostDC1Mock);
-        HostDistance distance2 = policy.distance(myHostDC2Mock);
-        HostDistance distance3 = policy.distance(myHostDC3Mock);
-        HostDistance distance4 = policy.distance(myHostNoDCMock);
-        HostDistance distance5 = policy.distance(myHostNotDC3Mock);
-
-        assertThat(distance1).isEqualTo(HostDistance.LOCAL);
-        assertThat(distance2).isEqualTo(HostDistance.REMOTE);
-        assertThat(distance3).isEqualTo(HostDistance.REMOTE);
-        assertThat(distance4).isEqualTo(HostDistance.IGNORED);
-        assertThat(distance5).isEqualTo(HostDistance.IGNORED);
-    }
-
-    @Test
-    public void testDistanceHostString()
-    {
-        DataCenterAwarePolicy policy = DataCenterAwarePolicy.builder().withChildPolicy(myChildPolicy).withLocalDc(myLocalDc).build();
-
-        policy.init(myClusterMock, myHostList);
-
-        HostDistance distance1 = policy.distance(myHostDC1Mock, myRemoteDc);
-        HostDistance distance2 = policy.distance(myHostDC2Mock, myRemoteDc);
-        HostDistance distance3 = policy.distance(myHostDC3Mock, myRemoteDc);
-        HostDistance distance4 = policy.distance(myHostNoDCMock, myRemoteDc);
-        HostDistance distance5 = policy.distance(myHostNotDC3Mock, myRemoteDc);
-
-        assertThat(distance1).isEqualTo(HostDistance.REMOTE);
-        assertThat(distance2).isEqualTo(HostDistance.LOCAL);
-        assertThat(distance3).isEqualTo(HostDistance.REMOTE);
-        assertThat(distance4).isEqualTo(HostDistance.IGNORED);
-        assertThat(distance5).isEqualTo(HostDistance.IGNORED);
+        assertThat(distance1).isEqualTo(NodeDistance.LOCAL);
+        assertThat(distance2).isEqualTo(NodeDistance.REMOTE);
+        assertThat(distance3).isEqualTo(NodeDistance.REMOTE);
+        assertThat(distance4).isEqualTo(NodeDistance.IGNORED);
+        assertThat(distance5).isEqualTo(NodeDistance.IGNORED);
     }
 
     @Test
     public void testNewQueryPlanWithNotPartitionAwareStatement()
     {
-        SimpleStatement simpleStatement = new SimpleStatement("SELECT *");
+        SimpleStatement simpleStatement = SimpleStatement.newInstance("SELECT *");
 
-        DataCenterAwarePolicy policy = DataCenterAwarePolicy.builder().withChildPolicy(myChildPolicy).withLocalDc(myLocalDc).build();
+        DataCenterAwarePolicy policy = new DataCenterAwarePolicy(myDriverContextMock, "");
 
-        policy.init(myClusterMock, myHostList);
+        policy.init(myNodes, myDistanceReporterMock);
 
-        policy.newQueryPlan(null, simpleStatement);
+        Set<Node> nodes = new HashSet<>();
+        nodes.add(myNodeDC1Mock);
+        when(myTokenMapMock.getReplicas(any(CqlIdentifier.class), any(ByteBuffer.class))).thenReturn(nodes);
+        Queue<Node> queue = policy.newQueryPlan(simpleStatement, mySessionMock);
 
-        verify(myChildPolicy, times(1)).newQueryPlan(null, simpleStatement);
+        assertThat(queue.isEmpty()).isFalse();
+        assertThat(queue.poll()).isEqualTo(myNodeDC1Mock);
+        assertThat(queue.isEmpty()).isTrue();
     }
 
     @Test
     public void testNewQueryPlanWithPartitionAwareStatementLocalDc()
     {
-        Set<Host> hostSet = new HashSet<>();
-        hostSet.add(myHostDC1Mock);
-        when(myMetadataMock.getReplicas(anyString(), any(ByteBuffer.class))).thenReturn(hostSet);
+        BoundStatement boundStatement = mock(BoundStatement.class);
+        when(boundStatement.getRoutingKeyspace()).thenReturn(CqlIdentifier.fromInternal("foo"));
+        when(boundStatement.getRoutingKey()).thenReturn(ByteBuffer.wrap("foo".getBytes()));
+        DataCenterAwareStatement partitionAwareStatement = new DataCenterAwareStatement(boundStatement, myLocalDc);
 
-        SimpleStatement simpleStatement = new SimpleStatement("SELECT *");
-        simpleStatement.setKeyspace("foo");
-        simpleStatement.setRoutingKey(ByteBuffer.wrap("foo".getBytes()));
-        DataCenterAwareStatement partitionAwareStatement = new DataCenterAwareStatement(simpleStatement, myLocalDc);
+        DataCenterAwarePolicy policy = new DataCenterAwarePolicy(myDriverContextMock, "");
 
-        DataCenterAwarePolicy policy = DataCenterAwarePolicy.builder().withChildPolicy(myChildPolicy).withLocalDc(myLocalDc).build();
+        policy.init(myNodes, myDistanceReporterMock);
 
-        policy.init(myClusterMock, myHostList);
+        Set<Node> nodes = new HashSet<>();
+        nodes.add(myNodeDC1Mock);
+        when(myTokenMapMock.getReplicas(any(CqlIdentifier.class), any(ByteBuffer.class))).thenReturn(nodes);
 
-        Iterator<Host> iterator = policy.newQueryPlan(null, partitionAwareStatement);
+        Queue<Node> queue = policy.newQueryPlan(partitionAwareStatement, mySessionMock);
 
-        assertThat(iterator.hasNext()).isTrue();
-        assertThat(iterator.next()).isEqualTo(myHostDC1Mock);
-        assertThat(iterator.hasNext()).isFalse();
+        assertThat(queue.isEmpty()).isFalse();
+        assertThat(queue.poll()).isEqualTo(myNodeDC1Mock);
+        assertThat(queue.isEmpty()).isTrue();
     }
 
     @Test
     public void testNewQueryPlanWithPartitionAwareStatementRemoteDc()
     {
-        Set<Host> hostSet = new HashSet<>();
-        hostSet.add(myHostDC1Mock);
-        when(myMetadataMock.getReplicas(anyString(), any(ByteBuffer.class))).thenReturn(hostSet);
+        BoundStatement boundStatement = mock(BoundStatement.class);
+        when(boundStatement.getRoutingKeyspace()).thenReturn(CqlIdentifier.fromInternal("foo"));
+        when(boundStatement.getRoutingKey()).thenReturn(ByteBuffer.wrap("foo".getBytes()));
+        DataCenterAwareStatement partitionAwareStatement = new DataCenterAwareStatement(boundStatement, myRemoteDc);
 
-        SimpleStatement simpleStatement = new SimpleStatement("SELECT *");
-        simpleStatement.setKeyspace("foo");
-        simpleStatement.setRoutingKey(ByteBuffer.wrap("foo".getBytes()));
-        DataCenterAwareStatement partitionAwareStatement = new DataCenterAwareStatement(simpleStatement, myRemoteDc);
+        DataCenterAwarePolicy policy = new DataCenterAwarePolicy(myDriverContextMock, "");
 
-        DataCenterAwarePolicy policy = DataCenterAwarePolicy.builder().withChildPolicy(myChildPolicy).withLocalDc(myLocalDc).build();
+        policy.init(myNodes, myDistanceReporterMock);
 
-        policy.init(myClusterMock, myHostList);
+        Set<Node> nodes = new HashSet<>();
+        nodes.add(myNodeDC1Mock);
+        when(myTokenMapMock.getReplicas(any(CqlIdentifier.class), any(ByteBuffer.class))).thenReturn(nodes);
 
-        Iterator<Host> iterator = policy.newQueryPlan(null, partitionAwareStatement);
+        Queue<Node> queue = policy.newQueryPlan(partitionAwareStatement, mySessionMock);
 
-        assertThat(iterator.hasNext()).isTrue();
-        assertThat(iterator.next()).isEqualTo(myHostDC2Mock);
-        assertThat(iterator.hasNext()).isFalse();
-    }
-
-    @Test
-    public void testInit()
-    {
-        DataCenterAwarePolicy policy = DataCenterAwarePolicy.builder().withChildPolicy(myChildPolicy).withLocalDc(myLocalDc).build();
-
-        policy.init(myClusterMock, myHostList);
-
-        verify(myChildPolicy, times(1)).init(myClusterMock, myHostList);
+        assertThat(queue.isEmpty()).isFalse();
+        assertThat(queue.poll()).isEqualTo(myNodeDC2Mock);
+        assertThat(queue.isEmpty()).isTrue();
     }
 
     @Test
     public void testOnUp()
     {
-        DataCenterAwarePolicy policy = DataCenterAwarePolicy.builder().withChildPolicy(myChildPolicy).withLocalDc(myLocalDc).build();
+        DataCenterAwarePolicy policy = new DataCenterAwarePolicy(myDriverContextMock, "");
+        policy.init(myNodes, myDistanceReporterMock);
 
-        policy.init(myClusterMock, myHostList);
+        CopyOnWriteArrayList<Node> nodesInDC = policy.getPerDcLiveNodes().get("DC3");
+        assertThat(nodesInDC.contains(myNodeDC3Mock));
+        assertThat(nodesInDC.size()).isEqualTo(1);
 
-        policy.onUp(myHostDC1Mock);
+        policy.onUp(myNodeNotDC3Mock);
 
-        verify(myChildPolicy, times(1)).onUp(myHostDC1Mock);
+        nodesInDC = policy.getPerDcLiveNodes().get("DC3");
+        assertThat(nodesInDC.contains(myNodeDC3Mock));
+        assertThat(nodesInDC.contains(myNodeNotDC3Mock));
+        assertThat(nodesInDC.size()).isEqualTo(2);
+    }
+
+    @Test
+    public void testOnUpTwice()
+    {
+        DataCenterAwarePolicy policy = new DataCenterAwarePolicy(myDriverContextMock, "");
+        policy.init(myNodes, myDistanceReporterMock);
+
+        CopyOnWriteArrayList<Node> nodesInDC = policy.getPerDcLiveNodes().get("DC3");
+        assertThat(nodesInDC.contains(myNodeDC3Mock));
+        assertThat(nodesInDC.size()).isEqualTo(1);
+
+        policy.onUp(myNodeNotDC3Mock);
+        policy.onUp(myNodeNotDC3Mock);
+
+        nodesInDC = policy.getPerDcLiveNodes().get("DC3");
+        assertThat(nodesInDC.contains(myNodeDC3Mock));
+        assertThat(nodesInDC.contains(myNodeNotDC3Mock));
+        assertThat(nodesInDC.size()).isEqualTo(2);
     }
 
     @Test
     public void testOnDown()
     {
-        DataCenterAwarePolicy policy = DataCenterAwarePolicy.builder().withChildPolicy(myChildPolicy).withLocalDc(myLocalDc).build();
+        DataCenterAwarePolicy policy = new DataCenterAwarePolicy(myDriverContextMock, "");
+        policy.init(myNodes, myDistanceReporterMock);
+        CopyOnWriteArrayList<Node> nodesInDC = policy.getPerDcLiveNodes().get("DC3");
+        assertThat(nodesInDC.contains(myNodeDC3Mock));
+        assertThat(nodesInDC.size()).isEqualTo(1);
 
-        policy.init(myClusterMock, myHostList);
+        policy.onDown(myNodeDC3Mock);
 
-        policy.onDown(myHostDC1Mock);
+        nodesInDC = policy.getPerDcLiveNodes().get("DC3");
+        assertThat(nodesInDC).isEmpty();
+    }
 
-        verify(myChildPolicy, times(1)).onDown(myHostDC1Mock);
+    @Test
+    public void testOnDownTwice()
+    {
+        DataCenterAwarePolicy policy = new DataCenterAwarePolicy(myDriverContextMock, "");
+        policy.init(myNodes, myDistanceReporterMock);
+        CopyOnWriteArrayList<Node> nodesInDC = policy.getPerDcLiveNodes().get("DC3");
+        assertThat(nodesInDC.contains(myNodeDC3Mock));
+        assertThat(nodesInDC.size()).isEqualTo(1);
+
+        policy.onDown(myNodeDC3Mock);
+        policy.onDown(myNodeDC3Mock);
+
+        nodesInDC = policy.getPerDcLiveNodes().get("DC3");
+        assertThat(nodesInDC).isEmpty();
     }
 
     @Test
     public void testOnAdd()
     {
-        DataCenterAwarePolicy policy = DataCenterAwarePolicy.builder().withChildPolicy(myChildPolicy).withLocalDc(myLocalDc).build();
+        DataCenterAwarePolicy policy = new DataCenterAwarePolicy(myDriverContextMock, "");
+        policy.init(myNodes, myDistanceReporterMock);
 
-        policy.init(myClusterMock, myHostList);
+        CopyOnWriteArrayList<Node> nodesInDC = policy.getPerDcLiveNodes().get("DC3");
+        assertThat(nodesInDC.contains(myNodeDC3Mock));
+        assertThat(nodesInDC.size()).isEqualTo(1);
 
-        policy.onAdd(myHostDC1Mock);
+        policy.onAdd(myNodeNotDC3Mock);
 
-        verify(myChildPolicy, times(1)).onAdd(myHostDC1Mock);
+        nodesInDC = policy.getPerDcLiveNodes().get("DC3");
+        assertThat(nodesInDC.contains(myNodeDC3Mock));
+        assertThat(nodesInDC.contains(myNodeNotDC3Mock));
+        assertThat(nodesInDC.size()).isEqualTo(2);
     }
 
     @Test
     public void testOnRemove()
     {
-        DataCenterAwarePolicy policy = DataCenterAwarePolicy.builder().withChildPolicy(myChildPolicy).withLocalDc(myLocalDc).build();
+        DataCenterAwarePolicy policy = new DataCenterAwarePolicy(myDriverContextMock, "");
+        policy.init(myNodes, myDistanceReporterMock);
+        CopyOnWriteArrayList<Node> nodesInDC = policy.getPerDcLiveNodes().get("DC3");
+        assertThat(nodesInDC.contains(myNodeDC3Mock));
+        assertThat(nodesInDC.size()).isEqualTo(1);
 
-        policy.init(myClusterMock, myHostList);
+        policy.onRemove(myNodeDC3Mock);
 
-        policy.onRemove(myHostDC1Mock);
-
-        verify(myChildPolicy, times(1)).onRemove(myHostDC1Mock);
-    }
-
-    @Test
-    public void testClose()
-    {
-        DataCenterAwarePolicy policy = DataCenterAwarePolicy.builder().withChildPolicy(myChildPolicy).withLocalDc(myLocalDc).build();
-
-        policy.close();
-
-        verify(myChildPolicy, times(1)).close();
+        nodesInDC = policy.getPerDcLiveNodes().get("DC3");
+        assertThat(nodesInDC).isEmpty();
     }
 }

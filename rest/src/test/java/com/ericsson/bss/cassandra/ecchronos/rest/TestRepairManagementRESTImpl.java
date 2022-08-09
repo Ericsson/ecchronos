@@ -14,7 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
-import com.datastax.driver.core.Host;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairJobView;
@@ -31,7 +31,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.Schedule;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.google.common.collect.ImmutableSet;
@@ -45,11 +45,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -520,7 +522,7 @@ public class TestRepairManagementRESTImpl
     {
         UUID expectedId = UUID.randomUUID();
         long expectedLastRepairedAt = 234;
-        Node replica = mock(Node.class);
+        DriverNode replica = mock(DriverNode.class);
         when(replica.getPublicAddress()).thenReturn(InetAddress.getLocalHost());
         VnodeRepairState expectedVnodeRepairState = TestUtils
                 .createVnodeRepairState(2, 3, ImmutableSet.of(replica), expectedLastRepairedAt);
@@ -777,7 +779,7 @@ public class TestRepairManagementRESTImpl
     {
         long expectedLastRepairedAt = 234;
         long repairInterval = 123;
-        Node replica = mock(Node.class);
+        DriverNode replica = mock(DriverNode.class);
         when(replica.getPublicAddress()).thenReturn(InetAddress.getLocalHost());
 
         VnodeRepairState vnodeRepairState = TestUtils
@@ -804,8 +806,9 @@ public class TestRepairManagementRESTImpl
     @Test
     public void testTableMultipleEntries() throws UnknownHostException
     {
-        Host host = mock(Host.class);
-        when(host.getBroadcastAddress()).thenReturn(InetAddress.getLocalHost());
+        Node node = mock(Node.class);
+        when(node.getBroadcastAddress()).thenReturn(
+                Optional.of(new InetSocketAddress(InetAddress.getLocalHost(), 9042)));
         RepairJobView job1 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
@@ -845,8 +848,9 @@ public class TestRepairManagementRESTImpl
     @Test
     public void testIdEntry() throws UnknownHostException
     {
-        Host host = mock(Host.class);
-        when(host.getBroadcastAddress()).thenReturn(InetAddress.getLocalHost());
+        Node node = mock(Node.class);
+        when(node.getBroadcastAddress()).thenReturn(
+                Optional.of(new InetSocketAddress(InetAddress.getLocalHost(), 9042)));
         UUID expectedId = UUID.randomUUID();
         RepairJobView expectedRepairJob = new TestUtils.ScheduledRepairJobBuilder()
                 .withId(expectedId)
@@ -893,8 +897,9 @@ public class TestRepairManagementRESTImpl
     @Test
     public void testIdEntryNotFound() throws UnknownHostException
     {
-        Host host = mock(Host.class);
-        when(host.getBroadcastAddress()).thenReturn(InetAddress.getLocalHost());
+        Node node = mock(Node.class);
+        when(node.getBroadcastAddress()).thenReturn(
+                Optional.of(new InetSocketAddress(InetAddress.getLocalHost(), 9042)));
         RepairJobView job1 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
@@ -1139,8 +1144,9 @@ public class TestRepairManagementRESTImpl
     @Test
     public void testConfigIdEntry() throws UnknownHostException
     {
-        Host host = mock(Host.class);
-        when(host.getBroadcastAddress()).thenReturn(InetAddress.getLocalHost());
+        Node node = mock(Node.class);
+        when(node.getBroadcastAddress()).thenReturn(
+                Optional.of(new InetSocketAddress(InetAddress.getLocalHost(), 9042)));
         UUID expectedId = UUID.randomUUID();
         RepairJobView expectedRepairJob = new TestUtils.ScheduledRepairJobBuilder()
                 .withId(expectedId)
@@ -1187,8 +1193,9 @@ public class TestRepairManagementRESTImpl
     @Test
     public void testConfigIdEntryNotFound() throws UnknownHostException
     {
-        Host host = mock(Host.class);
-        when(host.getBroadcastAddress()).thenReturn(InetAddress.getLocalHost());
+        Node node = mock(Node.class);
+        when(node.getBroadcastAddress()).thenReturn(
+                Optional.of(new InetSocketAddress(InetAddress.getLocalHost(), 9042)));
         RepairJobView job1 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")

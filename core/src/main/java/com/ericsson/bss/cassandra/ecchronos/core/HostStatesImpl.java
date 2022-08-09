@@ -20,11 +20,10 @@ import java.net.InetAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.datastax.driver.core.Host;
 
 /**
  * Implementation of the {@link HostStates} interface using JMX to retrieve node statuses and then caches the retrieved statuses for some time.
@@ -59,13 +58,13 @@ public class HostStatesImpl implements HostStates, Closeable
     }
 
     @Override
-    public boolean isUp(Host host)
+    public boolean isUp(Node node)
     {
-        return isUp(host.getBroadcastAddress());
+        return isUp(node.getBroadcastAddress().get().getAddress());
     }
 
     @Override
-    public boolean isUp(Node node)
+    public boolean isUp(DriverNode node)
     {
         return isUp(node.getPublicAddress());
     }

@@ -14,14 +14,18 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
-import org.osgi.service.component.annotations.*;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 
 import java.util.Set;
 
@@ -30,19 +34,21 @@ public class ReplicatedTableProviderService implements ReplicatedTableProvider
 {
     private volatile ReplicatedTableProvider myDelegateReplicatedTableProvider;
 
-    @Reference(service = NativeConnectionProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = NativeConnectionProvider.class, cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile NativeConnectionProvider myNativeConnectionProvider;
 
-    @Reference(service = TableReferenceFactory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = TableReferenceFactory.class, cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile TableReferenceFactory myTableReferenceFactory;
 
     @Activate
     public void activate()
     {
-        Metadata metadata = myNativeConnectionProvider.getSession().getCluster().getMetadata();
-        Host localhost = myNativeConnectionProvider.getLocalHost();
+        CqlSession session = myNativeConnectionProvider.getSession();
+        Node localhost = myNativeConnectionProvider.getLocalNode();
 
-        myDelegateReplicatedTableProvider = new ReplicatedTableProviderImpl(localhost, metadata,
+        myDelegateReplicatedTableProvider = new ReplicatedTableProviderImpl(localhost, session,
                 myTableReferenceFactory);
     }
 

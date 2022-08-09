@@ -15,23 +15,36 @@
 package com.ericsson.bss.cassandra.ecchronos.application;
 
 import com.codahale.metrics.MetricRegistry;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
+import com.codahale.metrics.jmx.JmxReporter;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metrics.Metrics;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
-import com.ericsson.bss.cassandra.ecchronos.core.*;
+import com.ericsson.bss.cassandra.ecchronos.core.CASLockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
+import com.ericsson.bss.cassandra.ecchronos.core.HostStatesImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetricsImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManagerImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.*;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProviderImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactoryImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 public class ECChronosInternals implements Closeable
@@ -50,12 +63,13 @@ public class ECChronosInternals implements Closeable
 
     private final TableReferenceFactory myTableReferenceFactory;
     private final JmxProxyFactory myJmxProxyFactory;
+    private final JmxReporter myJmxReporter;
 
     private final CASLockFactory myLockFactory;
 
     public ECChronosInternals(Config configuration, NativeConnectionProvider nativeConnectionProvider,
-                              JmxConnectionProvider jmxConnectionProvider, StatementDecorator statementDecorator,
-                              MetricRegistry metricRegistry)
+            JmxConnectionProvider jmxConnectionProvider, StatementDecorator statementDecorator,
+            MetricRegistry metricRegistry)
     {
         myJmxProxyFactory = JmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(jmxConnectionProvider)
@@ -72,12 +86,12 @@ public class ECChronosInternals implements Closeable
                 .withKeyspaceName(configuration.getLockFactory().getCas().getKeyspace())
                 .build();
 
-        Host host = nativeConnectionProvider.getLocalHost();
-        Metadata metadata = nativeConnectionProvider.getSession().getCluster().getMetadata();
+        Node node = nativeConnectionProvider.getLocalNode();
+        CqlSession session = nativeConnectionProvider.getSession();
 
-        myTableReferenceFactory = new TableReferenceFactoryImpl(metadata);
+        myTableReferenceFactory = new TableReferenceFactoryImpl(session);
 
-        myReplicatedTableProvider = new ReplicatedTableProviderImpl(host, metadata, myTableReferenceFactory);
+        myReplicatedTableProvider = new ReplicatedTableProviderImpl(node, session, myTableReferenceFactory);
 
         if (configuration.getStatistics().isEnabled())
         {
@@ -98,6 +112,18 @@ public class ECChronosInternals implements Closeable
             myTableRepairMetricsImpl = null;
         }
 
+        Optional<Metrics> driverMetrics = session.getMetrics();
+        if (driverMetrics.isPresent())
+        {
+            myJmxReporter = JmxReporter.forRegistry(driverMetrics.get().getRegistry())
+                            .inDomain("com.datastax.oss.driver")
+                            .build();
+            myJmxReporter.start();
+        }
+        else
+        {
+            myJmxReporter = null;
+        }
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withLockFactory(myLockFactory)
                 .withRunInterval(configuration.getScheduler().getFrequency().getInterval(TimeUnit.MILLISECONDS),
@@ -172,6 +198,10 @@ public class ECChronosInternals implements Closeable
         {
             myTableStorageStatesImpl.close();
         }
+        if (myJmxReporter != null)
+        {
+            myJmxReporter.close();
+        }
 
         myLockFactory.close();
 
@@ -184,7 +214,8 @@ public class ECChronosInternals implements Closeable
         @Override
         public void repairState(TableReference tableReference, int repairedRanges, int notRepairedRanges)
         {
-            LOG.trace("Updated repair state of {}, {}/{} repaired ranges", tableReference, repairedRanges, notRepairedRanges);
+            LOG.trace("Updated repair state of {}, {}/{} repaired ranges", tableReference, repairedRanges,
+                    notRepairedRanges);
         }
 
         @Override

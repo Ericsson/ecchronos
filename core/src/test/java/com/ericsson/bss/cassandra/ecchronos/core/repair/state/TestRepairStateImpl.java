@@ -42,7 +42,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 
@@ -80,7 +80,7 @@ public class TestRepairStateImpl
 
         RepairConfiguration repairConfiguration = repairConfiguration(repairIntervalInMs);
 
-        Node host = mockNode("DC1");
+        DriverNode host = mockNode("DC1");
         when(mockHostStates.isUp(eq(host))).thenReturn(true);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(host), VnodeRepairState.UNREPAIRED);
@@ -115,7 +115,7 @@ public class TestRepairStateImpl
 
         RepairConfiguration repairConfiguration = repairConfiguration(repairIntervalInMs);
 
-        Node node = mockNode("DC1");
+        DriverNode node = mockNode("DC1");
         when(mockHostStates.isUp(eq(node))).thenReturn(true);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(node), VnodeRepairState.UNREPAIRED);
@@ -255,9 +255,9 @@ public class TestRepairStateImpl
                 .build();
     }
 
-    private Node mockNode(String dataCenter)
+    private DriverNode mockNode(String dataCenter)
     {
-        Node node = mock(Node.class);
+        DriverNode node = mock(DriverNode.class);
         when(node.getDatacenter()).thenReturn(dataCenter);
         return node;
     }

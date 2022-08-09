@@ -14,9 +14,9 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection.impl;
 
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.PlainTextAuthProvider;
-import com.datastax.driver.core.Session;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.auth.ProgrammaticPlainTextAuthProvider;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -64,7 +64,7 @@ public class OSGiLocalNativeConnectionProvider implements NativeConnectionProvid
                 properties.load(inputStream);
                 String username = properties.getProperty(USERNAME_KEY, DEFAULT_USERNAME);
                 String password = properties.getProperty(PASSWORD_KEY, DEFAULT_PASSWORD);
-                builder.withAuthProvider(new PlainTextAuthProvider(username, password));
+                builder.withAuthProvider(new ProgrammaticPlainTextAuthProvider(username, password));
             }
             catch (IOException e)
             {
@@ -82,15 +82,15 @@ public class OSGiLocalNativeConnectionProvider implements NativeConnectionProvid
     }
 
     @Override
-    public Session getSession()
+    public CqlSession getSession()
     {
         return myDelegateNativeConnectionProvider.getSession();
     }
 
     @Override
-    public Host getLocalHost()
+    public Node getLocalNode()
     {
-        return myDelegateNativeConnectionProvider.getLocalHost();
+        return myDelegateNativeConnectionProvider.getLocalNode();
     }
 
     @Override

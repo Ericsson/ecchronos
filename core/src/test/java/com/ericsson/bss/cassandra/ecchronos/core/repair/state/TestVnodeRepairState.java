@@ -15,7 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.google.common.collect.ImmutableSet;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
@@ -29,9 +29,9 @@ public class TestVnodeRepairState
     public void testVnodeRepairState()
     {
         LongTokenRange range = new LongTokenRange(1, 2);
-        Node node1 = mock(Node.class);
-        Node node2 = mock(Node.class);
-        Node node3 = mock(Node.class);
+        DriverNode node1 = mock(DriverNode.class);
+        DriverNode node2 = mock(DriverNode.class);
+        DriverNode node3 = mock(DriverNode.class);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1, node2, node3), VnodeRepairState.UNREPAIRED);
 
@@ -45,9 +45,9 @@ public class TestVnodeRepairState
     public void testVnodeRepairStateRepairedAtIsSet()
     {
         LongTokenRange range = new LongTokenRange(1, 2);
-        Node node1 = mock(Node.class);
-        Node node2 = mock(Node.class);
-        Node node3 = mock(Node.class);
+        DriverNode node1 = mock(DriverNode.class);
+        DriverNode node2 = mock(DriverNode.class);
+        DriverNode node3 = mock(DriverNode.class);
         long repairedAt = 1234L;
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1, node2, node3), repairedAt);
@@ -59,9 +59,9 @@ public class TestVnodeRepairState
     public void testVnodeWithDifferentReplicasIsNotSame()
     {
         LongTokenRange range = new LongTokenRange(1, 2);
-        Node node1 = mock(Node.class);
-        Node node2 = mock(Node.class);
-        Node node3 = mock(Node.class);
+        DriverNode node1 = mock(DriverNode.class);
+        DriverNode node2 = mock(DriverNode.class);
+        DriverNode node3 = mock(DriverNode.class);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1, node2), VnodeRepairState.UNREPAIRED);
         VnodeRepairState otherVnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1, node3), VnodeRepairState.UNREPAIRED);
@@ -74,9 +74,9 @@ public class TestVnodeRepairState
     {
         LongTokenRange range = new LongTokenRange(1, 2);
         LongTokenRange otherRange = new LongTokenRange(2, 3);
-        Node node1 = mock(Node.class);
-        Node node2 = mock(Node.class);
-        Node node3 = mock(Node.class);
+        DriverNode node1 = mock(DriverNode.class);
+        DriverNode node2 = mock(DriverNode.class);
+        DriverNode node3 = mock(DriverNode.class);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1, node2, node3), VnodeRepairState.UNREPAIRED);
         VnodeRepairState otherVnodeRepairState = new VnodeRepairState(otherRange, ImmutableSet.of(node1, node2, node3), VnodeRepairState.UNREPAIRED);

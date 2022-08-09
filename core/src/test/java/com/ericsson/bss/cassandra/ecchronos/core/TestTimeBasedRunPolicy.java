@@ -14,8 +14,11 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core;
 
-import com.datastax.driver.core.*;
-import com.datastax.driver.core.exceptions.NoHostAvailableException;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.NoNodeAvailableException;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Statement;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import net.jcip.annotations.NotThreadSafe;
@@ -303,14 +306,12 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraTest
     public void testActivateWithoutCassandraCausesNoHostAvailableException()
     {
         // mock
-        Session session = mock(Session.class);
-        Cluster cluster = mock(Cluster.class);
+        CqlSession session = mock(CqlSession.class);
 
-        doThrow(NoHostAvailableException.class).when(cluster).getMetadata();
-        doReturn(cluster).when(session).getCluster();
+        doThrow(NoNodeAvailableException.class).when(session).getMetadata();
 
         // test
-        assertThatExceptionOfType(NoHostAvailableException.class)
+        assertThatExceptionOfType(NoNodeAvailableException.class)
                 .isThrownBy(() -> TimeBasedRunPolicy.builder()
                         .withSession(session)
                         .withStatementDecorator(s -> s)

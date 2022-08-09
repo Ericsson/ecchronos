@@ -20,10 +20,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import com.datastax.driver.core.UDTValue;
+import com.datastax.oss.driver.api.core.data.UdtValue;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 
@@ -37,8 +37,8 @@ public class OngoingJob
     private final UUID myJobId;
     private final UUID myHostId;
     private final TableReference myTableReference;
-    private final Map<LongTokenRange, ImmutableSet<Node>> myTokens;
-    private final Set<UDTValue> myRepairedTokens;
+    private final Map<LongTokenRange, ImmutableSet<DriverNode>> myTokens;
+    private final Set<UdtValue> myRepairedTokens;
     private final OnDemandStatus myOnDemandStatus;
 	private final ReplicationState myReplicationState;
     private final Integer myTokenHash;
@@ -102,7 +102,7 @@ public class OngoingJob
         myOnDemandStatus.updateJob(myJobId, myRepairedTokens);
     }
 
-    public Map<LongTokenRange, ImmutableSet<Node>> getTokens()
+    public Map<LongTokenRange, ImmutableSet<DriverNode>> getTokens()
     {
     	return myTokens;
     }
@@ -115,15 +115,15 @@ public class OngoingJob
 
     public void startClusterWideJob()
     {
-        Map<LongTokenRange, ImmutableSet<Node>> allTokenRanges = myReplicationState.getTokenRanges(myTableReference);
-        Map<Node, Set<LongTokenRange>> repairedRangesPerNode = new HashMap<>();
-        Map<Node, Set<LongTokenRange>> remainingRangesPerNode = new HashMap<>();
-        for (Map.Entry<LongTokenRange, ImmutableSet<Node>> range : allTokenRanges.entrySet())
+        Map<LongTokenRange, ImmutableSet<DriverNode>> allTokenRanges = myReplicationState.getTokenRanges(myTableReference);
+        Map<DriverNode, Set<LongTokenRange>> repairedRangesPerNode = new HashMap<>();
+        Map<DriverNode, Set<LongTokenRange>> remainingRangesPerNode = new HashMap<>();
+        for (Map.Entry<LongTokenRange, ImmutableSet<DriverNode>> range : allTokenRanges.entrySet())
         {
             LongTokenRange rangeForNodes = range.getKey();
-            Set<Node> nodes = range.getValue();
+            Set<DriverNode> nodes = range.getValue();
             boolean rangeRepaired = myTokens.containsKey(rangeForNodes);
-            for (Node node: nodes)
+            for (DriverNode node: nodes)
             {
                 if (rangeRepaired)
                 {
@@ -136,9 +136,9 @@ public class OngoingJob
                 }
             }
         }
-        for (Map.Entry<Node, Set<LongTokenRange>> replicaWithRanges: remainingRangesPerNode.entrySet())
+        for (Map.Entry<DriverNode, Set<LongTokenRange>> replicaWithRanges: remainingRangesPerNode.entrySet())
         {
-            Node node = replicaWithRanges.getKey();
+            DriverNode node = replicaWithRanges.getKey();
             Set<LongTokenRange> remainingRanges = replicaWithRanges.getValue();
             Set<LongTokenRange> repairedRanges = repairedRangesPerNode.get(node);
             Set<LongTokenRange> allTokensForNode = new HashSet<>();
@@ -169,14 +169,14 @@ public class OngoingJob
         private UUID jobId = null;
         private UUID hostId;
         private TableReference tableReference;
-        private Set<UDTValue> repairedTokens = new HashSet<>();
+        private Set<UdtValue> repairedTokens = new HashSet<>();
         private OnDemandStatus onDemandStatus;
         private ReplicationState replicationState;
         private Integer tokenMapHash = null;
         private Status status = Status.started;
         private long completedTime = -1;
 
-        public Builder withOngoingJobInfo(UUID jobId, int tokenMapHash, Set<UDTValue> repairedTokens, Status status, Long completedTime)
+        public Builder withOngoingJobInfo(UUID jobId, int tokenMapHash, Set<UdtValue> repairedTokens, Status status, Long completedTime)
         {
             this.jobId = jobId;
             this.tokenMapHash  = tokenMapHash;

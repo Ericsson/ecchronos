@@ -14,17 +14,34 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.osgi;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import javax.inject.Inject;
-
-import org.junit.*;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metadata.token.TokenRange;
+import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.internal.core.metadata.token.Murmur3Token;
+import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
+import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairEntry;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStatus;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.Option;
@@ -34,19 +51,24 @@ import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
 
-import com.datastax.driver.core.*;
-import com.datastax.driver.core.querybuilder.Insert;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.utils.UUIDs;
-import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairEntry;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStatus;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.*;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import javax.inject.Inject;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.OptionalLong;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
@@ -73,12 +95,11 @@ public class ITTableRepairJob extends TestBase
     @Inject
     RepairHistoryProvider myRepairHistoryProvider;
 
-    private static Cluster myAdminCluster;
-    private static Session myAdminSession;
+    private static CqlSession myAdminSession;
 
     private Metadata myMetadata;
-    private Host myLocalHost;
-    private Node myLocalNode;
+    private Node myLocalHost;
+    private DriverNode myLocalNode;
 
     private Set<TableReference> myRepairs = new HashSet<>();
 
@@ -93,19 +114,19 @@ public class ITTableRepairJob extends TestBase
     @BeforeClass
     public static void setupAdminSession()
     {
-        myAdminCluster = Cluster.builder().addContactPoint(CASSANDRA_HOST)
-                .withPort(Integer.valueOf(CASSANDRA_NATIVE_PORT))
-                .withCredentials("cassandra", "cassandra")
+        myAdminSession = CqlSession.builder()
+                .addContactPoint(new InetSocketAddress(CASSANDRA_HOST, Integer.parseInt(CASSANDRA_NATIVE_PORT)))
+                .withAuthCredentials("cassandra", "cassandra")
+                .withLocalDatacenter("datacenter1")
                 .build();
-        myAdminSession = myAdminCluster.connect();
     }
 
     @Before
     public void init()
     {
-        Session session = myNativeConnectionProvider.getSession();
-        myMetadata = session.getCluster().getMetadata();
-        myLocalHost = myNativeConnectionProvider.getLocalHost();
+        CqlSession session = myNativeConnectionProvider.getSession();
+        myMetadata = session.getMetadata();
+        myLocalHost = myNativeConnectionProvider.getLocalNode();
 
         myLocalNode = myNodeResolver.fromUUID(myLocalHost.getHostId()).orElseThrow(IllegalStateException::new);
 
@@ -117,27 +138,28 @@ public class ITTableRepairJob extends TestBase
     @After
     public void clean()
     {
-        List<ResultSetFuture> futures = new ArrayList<>();
+        List<CompletionStage<AsyncResultSet>> stages = new ArrayList<>();
         for (TableReference tableReference : myRepairs)
         {
             myRepairScheduler.removeConfiguration(tableReference);
 
-            futures.add(myAdminSession.executeAsync(QueryBuilder.delete()
-                    .from("system_distributed", "repair_history")
-                    .where(QueryBuilder.eq("keyspace_name", tableReference.getKeyspace()))
-                    .and(QueryBuilder.eq("columnfamily_name", tableReference.getTable()))));
-            for (Host host : myMetadata.getAllHosts())
+            stages.add(myAdminSession.executeAsync(
+                    QueryBuilder.deleteFrom("system_distributed", "repair_history")
+                            .whereColumn("keyspace_name").isEqualTo(literal(tableReference.getKeyspace()))
+                            .whereColumn("columnfamily_name").isEqualTo(literal(tableReference.getTable()))
+                            .build()));
+            for (Node node : myMetadata.getNodes().values())
             {
-                futures.add(myAdminSession.executeAsync(QueryBuilder.delete()
-                        .from("ecchronos", "repair_history")
-                        .where(QueryBuilder.eq("table_id", tableReference.getId()))
-                        .and(QueryBuilder.eq("node_id", host.getHostId()))));
+                stages.add(myAdminSession.executeAsync(QueryBuilder.deleteFrom("ecchronos", "repair_history")
+                        .whereColumn("table_id").isEqualTo(literal(tableReference.getId()))
+                        .whereColumn("node_id").isEqualTo(literal(node.getHostId()))
+                        .build()));
             }
         }
 
-        for (ResultSetFuture future : futures)
+        for (CompletionStage stage : stages)
         {
-            future.getUninterruptibly();
+            CompletableFutures.getUninterruptibly(stage);
         }
     }
 
@@ -145,7 +167,6 @@ public class ITTableRepairJob extends TestBase
     public static void shutdownAdminSession()
     {
         myAdminSession.close();
-        myAdminCluster.close();
     }
 
     /**
@@ -220,7 +241,8 @@ public class ITTableRepairJob extends TestBase
         injectRepairHistory(tableReference, System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(30),
                 expectedRepairedBefore);
 
-        Set<TokenRange> allTokenRanges = myMetadata.getTokenRanges(tableReference.getKeyspace(), myLocalHost);
+        Set<TokenRange> allTokenRanges = myMetadata.getTokenMap().get()
+                .getTokenRanges(tableReference.getKeyspace(), myLocalHost);
         Set<LongTokenRange> expectedRepairedRanges = Sets.difference(convertTokenRanges(allTokenRanges),
                 convertTokenRanges(expectedRepairedBefore));
 
@@ -289,7 +311,7 @@ public class ITTableRepairJob extends TestBase
 
     private Set<LongTokenRange> tokenRangesFor(String keyspace)
     {
-        return myMetadata.getTokenRanges(keyspace, myLocalHost).stream()
+        return myMetadata.getTokenMap().get().getTokenRanges(keyspace, myLocalHost).stream()
                 .map(this::convertTokenRange)
                 .collect(Collectors.toSet());
     }
@@ -302,7 +324,7 @@ public class ITTableRepairJob extends TestBase
     private void injectRepairHistory(TableReference tableReference, long timestampMax)
     {
         injectRepairHistory(tableReference, timestampMax,
-                myMetadata.getTokenRanges(tableReference.getKeyspace(), myLocalHost));
+                myMetadata.getTokenMap().get().getTokenRanges(tableReference.getKeyspace(), myLocalHost));
     }
 
     private void injectRepairHistory(TableReference tableReference, long timestampMax, Set<TokenRange> tokenRanges)
@@ -322,30 +344,32 @@ public class ITTableRepairJob extends TestBase
         long started_at = timestamp;
         long finished_at = timestamp + 5;
 
-        Set<UUID> participants = myMetadata.getReplicas(tableReference.getKeyspace(), tokenRange).stream()
-                .map(Host::getHostId)
+        Set<UUID> participants = myMetadata.getTokenMap().get().getReplicas(tableReference.getKeyspace(), tokenRange)
+                .stream()
+                .map(Node::getHostId)
                 .collect(Collectors.toSet());
 
-        Insert insert = QueryBuilder.insertInto("ecchronos", "repair_history")
-                .value("table_id", tableReference.getId())
-                .value("node_id", myLocalNode.getId())
-                .value("repair_id", UUIDs.startOf(started_at))
-                .value("job_id", tableReference.getId())
-                .value("coordinator_id", myLocalNode.getId())
-                .value("range_begin", tokenRange.getStart().toString())
-                .value("range_end", tokenRange.getEnd().toString())
-                .value("participants", participants)
-                .value("status", "SUCCESS")
-                .value("started_at", new Date(started_at))
-                .value("finished_at", new Date(finished_at));
+        SimpleStatement statement = QueryBuilder.insertInto("ecchronos", "repair_history")
+                .value("table_id", literal(tableReference.getId()))
+                .value("node_id", literal(myLocalNode.getId()))
+                .value("repair_id", literal(Uuids.startOf(started_at)))
+                .value("job_id", literal(tableReference.getId()))
+                .value("coordinator_id", literal(myLocalNode.getId()))
+                .value("range_begin", literal(Long.toString(((Murmur3Token) tokenRange.getStart()).getValue())))
+                .value("range_end", literal(Long.toString(((Murmur3Token) tokenRange.getEnd()).getValue())))
+                .value("participants", literal(participants))
+                .value("status", literal("SUCCESS"))
+                .value("started_at", literal(Instant.ofEpochMilli(started_at)))
+                .value("finished_at", literal(Instant.ofEpochMilli(finished_at))).build();
 
-        myAdminSession.execute(insert);
+        myAdminSession.execute(statement);
     }
 
     private Set<TokenRange> halfOfTokenRanges(TableReference tableReference)
     {
         Set<TokenRange> halfOfRanges = new HashSet<>();
-        Set<TokenRange> allTokenRanges = myMetadata.getTokenRanges(tableReference.getKeyspace(), myLocalHost);
+        Set<TokenRange> allTokenRanges = myMetadata.getTokenMap().get()
+                .getTokenRanges(tableReference.getKeyspace(), myLocalHost);
         Iterator<TokenRange> iterator = allTokenRanges.iterator();
         for (int i = 0; i < allTokenRanges.size() / 2 && iterator.hasNext(); i++)
         {
@@ -363,8 +387,8 @@ public class ITTableRepairJob extends TestBase
     private LongTokenRange convertTokenRange(TokenRange range)
     {
         // Assuming murmur3 partitioner
-        long start = (long) range.getStart().getValue();
-        long end = (long) range.getEnd().getValue();
+        long start = ((Murmur3Token) range.getStart()).getValue();
+        long end = ((Murmur3Token) range.getEnd()).getValue();
         return new LongTokenRange(start, end);
     }
 

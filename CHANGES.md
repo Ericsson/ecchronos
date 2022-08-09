@@ -2,6 +2,8 @@
 
 ## Version 4.0.0
 
+* Migrate to datastax driver-4.14.1 - Issue #269
+
 ## Version 3.0.0
 
 * Add support for repairs without keyspace/table - Issue #158

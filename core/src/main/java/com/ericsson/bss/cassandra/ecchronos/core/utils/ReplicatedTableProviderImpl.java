@@ -14,15 +14,16 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.Metadata;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
 {
@@ -36,43 +37,41 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
 
     private static final String SYSTEM_AUTH_KEYSPACE = "system_auth";
 
-    private final Host myLocalhost;
-    private final Metadata myMetadata;
+    private final Node myLocalNode;
+    private final CqlSession mySession;
     private final TableReferenceFactory myTableReferenceFactory;
 
-    public ReplicatedTableProviderImpl(Host host, Metadata metadata, TableReferenceFactory tableReferenceFactory)
+    public ReplicatedTableProviderImpl(Node node, CqlSession session, TableReferenceFactory tableReferenceFactory)
     {
-        myLocalhost = host;
-        myMetadata = metadata;
+        myLocalNode = node;
+        mySession = session;
         myTableReferenceFactory = tableReferenceFactory;
     }
 
-    @Override
-    public Set<TableReference> getAll()
+    @Override public Set<TableReference> getAll()
     {
-        return myMetadata.getKeyspaces().stream()
-                .filter(k -> accept(k.getName()))
-                .flatMap(k -> k.getTables().stream())
-                .map(tb -> myTableReferenceFactory.forTable(tb.getKeyspace().getName(), tb.getName()))
+        return mySession.getMetadata().getKeyspaces().values().stream()
+                .filter(k -> accept(k.getName().asInternal()))
+                .flatMap(k -> k.getTables().values().stream())
+                .map(tb -> myTableReferenceFactory.forTable(tb.getKeyspace().asInternal(), tb.getName().asInternal()))
                 .collect(Collectors.toSet());
     }
 
-    @Override
-    public boolean accept(String keyspace)
+    @Override public boolean accept(String keyspace)
     {
         if (keyspace.startsWith("system") && !SYSTEM_AUTH_KEYSPACE.equals(keyspace))
         {
             return false;
         }
 
-        KeyspaceMetadata keyspaceMetadata = myMetadata.getKeyspace(keyspace);
+        Optional<KeyspaceMetadata> keyspaceMetadata = mySession.getMetadata().getKeyspace(keyspace);
 
-        if (keyspaceMetadata != null)
+        if (keyspaceMetadata.isPresent())
         {
-            Map<String, String> replication = keyspaceMetadata.getReplication();
+            Map<String, String> replication = keyspaceMetadata.get().getReplication();
             String replicationClass = replication.get(STRATEGY_CLASS);
 
-            switch(replicationClass)
+            switch (replicationClass)
             {
                 case SIMPLE_STRATEGY:
                     return validateSimpleStrategy(replication);
@@ -96,7 +95,7 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
 
     private boolean validateNetworkTopologyStrategy(String keyspace, Map<String, String> replication)
     {
-        String localDc = myLocalhost.getDatacenter();
+        String localDc = myLocalNode.getDatacenter();
 
         if (localDc == null)
         {

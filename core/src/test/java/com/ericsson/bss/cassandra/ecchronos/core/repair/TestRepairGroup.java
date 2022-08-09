@@ -54,7 +54,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.DummyLock;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -160,10 +160,10 @@ public class TestRepairGroup
     public void testGetRepairTask()
     {
         // setup
-        Node node = mockNode("DC1");
+        DriverNode node = mockNode("DC1");
         LongTokenRange range = new LongTokenRange(1, 2);
 
-        ImmutableSet<Node> nodes = ImmutableSet.of(node);
+        ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
 
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range));
 
@@ -194,10 +194,10 @@ public class TestRepairGroup
         BigInteger tokensPerRange = BigInteger.ONE;
 
         // setup
-        Node node = mockNode("DC1");
+        DriverNode node = mockNode("DC1");
         LongTokenRange vnode = new LongTokenRange(0, 5);
 
-        ImmutableSet<Node> nodes = ImmutableSet.of(node);
+        ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
 
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(vnode));
 
@@ -226,8 +226,8 @@ public class TestRepairGroup
     public void testGetPartialRepairTasks()
     {
         // setup
-        Node node = mockNode("DC1");
-        Node node2 = mockNode("DC1");
+        DriverNode node = mockNode("DC1");
+        DriverNode node2 = mockNode("DC1");
 
         ImmutableList<LongTokenRange> vnodes = ImmutableList.of(
                 new LongTokenRange(1, 2),
@@ -272,9 +272,9 @@ public class TestRepairGroup
                 .withJobId(myJobId);
     }
 
-    private Node mockNode(String dataCenter)
+    private DriverNode mockNode(String dataCenter)
     {
-        Node node = mock(Node.class);
+        DriverNode node = mock(DriverNode.class);
         when(node.getDatacenter()).thenReturn(dataCenter);
         return node;
     }

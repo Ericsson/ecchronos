@@ -18,13 +18,12 @@ import java.io.Closeable;
 import java.util.Collections;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
+import com.datastax.oss.driver.api.core.CqlSession;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.codahale.metrics.MetricRegistry;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.Session;
 import com.ericsson.bss.cassandra.ecchronos.application.AbstractRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.ConfigurationException;
 import com.ericsson.bss.cassandra.ecchronos.application.ECChronosInternals;
@@ -48,7 +47,6 @@ public class ECChronos implements Closeable
     private final ECChronosInternals myECChronosInternals;
 
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
-    private final DefaultRepairConfigurationProvider myDefaultRepairConfigurationProvider;
     private final RepairSchedulerImpl myRepairSchedulerImpl;
     private final OnDemandRepairSchedulerImpl myOnDemandRepairSchedulerImpl;
 
@@ -56,13 +54,12 @@ public class ECChronos implements Closeable
             RepairFaultReporter repairFaultReporter, NativeConnectionProvider nativeConnectionProvider,
             JmxConnectionProvider jmxConnectionProvider, StatementDecorator statementDecorator,
             ReplicationState replicationState, RepairHistory repairHistory, RepairHistoryProvider repairHistoryProvider,
-            MetricRegistry metricRegistry) throws ConfigurationException
+            MetricRegistry metricRegistry, DefaultRepairConfigurationProvider defaultRepairConfigurationProvider) throws ConfigurationException
     {
         myECChronosInternals = new ECChronosInternals(configuration, nativeConnectionProvider, jmxConnectionProvider,
                 statementDecorator, metricRegistry);
 
-        Session session = nativeConnectionProvider.getSession();
-        Metadata metadata = session.getCluster().getMetadata();
+        CqlSession session = nativeConnectionProvider.getSession();
 
         Config.GlobalRepairConfig repairConfig = configuration.getRepair();
 
@@ -94,13 +91,12 @@ public class ECChronos implements Closeable
         AbstractRepairConfigurationProvider repairConfigurationProvider = ReflectionUtils
                 .construct(repairConfig.getProvider(), new Class[] { ApplicationContext.class }, applicationContext);
 
-        myDefaultRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()
+        defaultRepairConfigurationProvider.fromBuilder(DefaultRepairConfigurationProvider.newBuilder()
                 .withRepairScheduler(myRepairSchedulerImpl)
-                .withCluster(session.getCluster())
+                .withSession(session)
                 .withReplicatedTableProvider(myECChronosInternals.getReplicatedTableProvider())
                 .withRepairConfiguration(repairConfigurationProvider::get)
-                .withTableReferenceFactory(myECChronosInternals.getTableReferenceFactory())
-                .build();
+                .withTableReferenceFactory(myECChronosInternals.getTableReferenceFactory()));
 
         myOnDemandRepairSchedulerImpl = OnDemandRepairSchedulerImpl.builder()
                 .withScheduleManager(myECChronosInternals.getScheduleManager())
@@ -108,7 +104,7 @@ public class ECChronos implements Closeable
                 .withJmxProxyFactory(myECChronosInternals.getJmxProxyFactory())
                 .withReplicationState(replicationState)
                 .withRepairLockType(repairConfig.getLockType())
-                .withMetadata(metadata)
+                .withSession(session)
                 .withRepairConfiguration(repairConfig.asRepairConfiguration())
                 .withRepairHistory(repairHistory)
                 .withOnDemandStatus(new OnDemandStatus(nativeConnectionProvider))
@@ -146,7 +142,6 @@ public class ECChronos implements Closeable
         myECChronosInternals.removeRunPolicy(myTimeBasedRunPolicy);
 
         myTimeBasedRunPolicy.close();
-        myDefaultRepairConfigurationProvider.close();
         myRepairSchedulerImpl.close();
         myOnDemandRepairSchedulerImpl.close();
 

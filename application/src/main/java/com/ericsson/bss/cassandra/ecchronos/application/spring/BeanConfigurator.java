@@ -21,8 +21,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.application.ReloadingCertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
@@ -32,8 +35,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.codahale.metrics.MetricRegistry;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.application.ConfigurationException;
 import com.ericsson.bss.cassandra.ecchronos.application.ReflectionUtils;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
@@ -124,13 +125,20 @@ public class BeanConfigurator
     }
 
     @Bean
-    public NativeConnectionProvider nativeConnectionProvider(Config config) throws ConfigurationException
+    public DefaultRepairConfigurationProvider defaultRepairConfigurationProvider()
     {
-        return getNativeConnectionProvider(config, cqlSecurity::get);
+        return new DefaultRepairConfigurationProvider();
+    }
+
+    @Bean
+    public NativeConnectionProvider nativeConnectionProvider(Config config,
+            DefaultRepairConfigurationProvider defaultRepairConfigurationProvider) throws ConfigurationException
+    {
+        return getNativeConnectionProvider(config, cqlSecurity::get, defaultRepairConfigurationProvider);
     }
 
     private static NativeConnectionProvider getNativeConnectionProvider(Config configuration,
-            Supplier<Security.CqlSecurity> securitySupplier)
+            Supplier<Security.CqlSecurity> securitySupplier, DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
             throws ConfigurationException
     {
         Supplier tlsSupplier = () -> securitySupplier.get().getTls();
@@ -141,8 +149,9 @@ public class BeanConfigurator
         {
             return ReflectionUtils
                     .construct(configuration.getConnectionConfig().getCql().getProviderClass(),
-                            new Class<?>[] { Config.class, Supplier.class, CertificateHandler.class },
-                            configuration, securitySupplier, certificateHandler);
+                            new Class<?>[] { Config.class, Supplier.class, CertificateHandler.class,
+                                    DefaultRepairConfigurationProvider.class },
+                            configuration, securitySupplier, certificateHandler, defaultRepairConfigurationProvider);
         } catch (ConfigurationException e)
         {
             if (!ReloadingCertificateHandler.class.equals(certificateHandler.getClass()) && e.getCause() instanceof NoSuchMethodException)
@@ -154,8 +163,8 @@ public class BeanConfigurator
         // Check for old versions of DefaultNativeConnectionProvider
         return ReflectionUtils
                 .construct(configuration.getConnectionConfig().getCql().getProviderClass(),
-                        new Class<?>[]{ Config.class, Supplier.class },
-                        configuration, securitySupplier);
+                        new Class<?>[]{ Config.class, Supplier.class, DefaultRepairConfigurationProvider.class },
+                        configuration, securitySupplier, defaultRepairConfigurationProvider);
     }
 
     @Bean
@@ -222,18 +231,18 @@ public class BeanConfigurator
     @Bean
     public NodeResolver nodeResolver(NativeConnectionProvider nativeConnectionProvider)
     {
-        Metadata metadata = nativeConnectionProvider.getSession().getCluster().getMetadata();
+        CqlSession session = nativeConnectionProvider.getSession();
 
-        return new NodeResolverImpl(metadata);
+        return new NodeResolverImpl(session);
     }
 
     @Bean
     public ReplicationState replicationState(NativeConnectionProvider nativeConnectionProvider,
             NodeResolver nodeResolver)
     {
-        Host host = nativeConnectionProvider.getLocalHost();
-        Metadata metadata = nativeConnectionProvider.getSession().getCluster().getMetadata();
+        Node node = nativeConnectionProvider.getLocalNode();
+        CqlSession session = nativeConnectionProvider.getSession();
 
-        return new ReplicationStateImpl(nodeResolver, metadata, host);
+        return new ReplicationStateImpl(nodeResolver, session, node);
     }
 }

@@ -14,14 +14,14 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.Statement;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.annotations.VisibleForTesting;
@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.time.Clock;
-import java.util.Date;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Optional;
@@ -61,22 +61,24 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
                     KEYSPACE_NAME, REPAIR_HISTORY);
 
     private final NodeResolver myNodeResolver;
-    private final Session mySession;
+    private final CqlSession mySession;
     private final StatementDecorator myStatementDecorator;
 
     private final PreparedStatement myRepairHistoryByTimeStatement;
     private final long myLookbackTime;
     private final Clock myClock;
 
-    public RepairHistoryProviderImpl(NodeResolver nodeResolver, Session session, StatementDecorator statementDecorator,
+    public RepairHistoryProviderImpl(NodeResolver nodeResolver, CqlSession session,
+            StatementDecorator statementDecorator,
             long lookbackTime)
     {
         this(nodeResolver, session, statementDecorator, lookbackTime, Clock.systemDefaultZone());
     }
 
     @VisibleForTesting
-    RepairHistoryProviderImpl(NodeResolver nodeResolver, Session session, StatementDecorator statementDecorator,
-            long lookbackTime, Clock clock)
+    RepairHistoryProviderImpl(NodeResolver nodeResolver, CqlSession session,
+                              StatementDecorator statementDecorator,
+                              long lookbackTime, Clock clock)
     {
         myNodeResolver = nodeResolver;
         mySession = session;
@@ -97,9 +99,9 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     public Iterator<RepairEntry> iterate(TableReference tableReference, long to, long from,
             Predicate<RepairEntry> predicate)
     {
-        Date fromDate = new Date(from);
-        Date toDate = new Date(to);
-        if(!fromDate.before(toDate))
+        Instant fromDate = Instant.ofEpochMilli(from);
+        Instant toDate = Instant.ofEpochMilli(to);
+        if (!fromDate.isBefore(toDate))
         {
             throw new IllegalArgumentException(
                     "Invalid range when iterating " + tableReference + ", from (" + fromDate + ") to (" + toDate + ")");
@@ -130,21 +132,21 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
         @Override
         protected RepairEntry computeNext()
         {
-            while(myIterator.hasNext())
+            while (myIterator.hasNext())
             {
                 Row row = myIterator.next();
 
-                if(validateFields(row))
+                if (validateFields(row))
                 {
                     long rangeBegin = Long.parseLong(row.getString(RANGE_BEGIN_COLUMN));
                     long rangeEnd = Long.parseLong(row.getString(RANGE_END_COLUMN));
 
                     LongTokenRange tokenRange = new LongTokenRange(rangeBegin, rangeEnd);
                     Set<InetAddress> participants = row.getSet(PARTICIPANTS_COLUMN, InetAddress.class);
-                    Set<Node> nodes = new HashSet<>();
-                    InetAddress coordinator = row.getInet(COORDINATOR_COLUMN);
-                    Optional<Node> coordinatorNode = myNodeResolver.fromIp(coordinator);
-                    if(!coordinatorNode.isPresent())
+                    Set<DriverNode> nodes = new HashSet<>();
+                    InetAddress coordinator = row.get(COORDINATOR_COLUMN, InetAddress.class);
+                    Optional<DriverNode> coordinatorNode = myNodeResolver.fromIp(coordinator);
+                    if (!coordinatorNode.isPresent())
                     {
                         LOG.warn("Coordinator node {} not found in metadata", coordinator);
                     }
@@ -152,10 +154,10 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
                     {
                         nodes.add(coordinatorNode.get());
                     }
-                    for(InetAddress participant : participants)
+                    for (InetAddress participant : participants)
                     {
-                        Optional<Node> node = myNodeResolver.fromIp(participant);
-                        if(!node.isPresent())
+                        Optional<DriverNode> node = myNodeResolver.fromIp(participant);
+                        if (!node.isPresent())
                         {
                             LOG.warn("Node {} not found in metadata", participant);
                         }
@@ -165,17 +167,17 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
                         }
                     }
                     String status = row.getString(STATUS_COLUMN);
-                    long startedAt = row.getTimestamp(STARTED_AT_COLUMN).getTime();
-                    Date finished = row.getTimestamp(FINISHED_AT_COLUMN);
+                    long startedAt = row.getInstant(STARTED_AT_COLUMN).toEpochMilli();
+                    Instant finished = row.getInstant(FINISHED_AT_COLUMN);
                     long finishedAt = -1L;
                     if (finished != null)
                     {
-                        finishedAt = finished.getTime();
+                        finishedAt = finished.toEpochMilli();
                     }
 
                     RepairEntry repairEntry = new RepairEntry(tokenRange, startedAt, finishedAt, nodes, status);
 
-                    if(myPredicate.apply(repairEntry))
+                    if (myPredicate.apply(repairEntry))
                     {
                         return repairEntry;
                     }

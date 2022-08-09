@@ -18,11 +18,11 @@ import java.net.InetAddress;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import org.osgi.service.component.annotations.*;
 
-import com.datastax.driver.core.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
 
@@ -37,19 +37,19 @@ public class NodeResolverService implements NodeResolver
     @Activate
     public void activate()
     {
-        Metadata metadata = myNativeConnectionProvider.getSession().getCluster().getMetadata();
+        CqlSession session = myNativeConnectionProvider.getSession();
 
-        delegateNodeResolver = new NodeResolverImpl(metadata);
+        delegateNodeResolver = new NodeResolverImpl(session);
     }
 
     @Override
-    public Optional<Node> fromIp(InetAddress inetAddress)
+    public Optional<DriverNode> fromIp(InetAddress inetAddress)
     {
         return delegateNodeResolver.fromIp(inetAddress);
     }
 
     @Override
-    public Optional<Node> fromUUID(UUID nodeId)
+    public Optional<DriverNode> fromUUID(UUID nodeId)
     {
         return delegateNodeResolver.fromUUID(nodeId);
     }

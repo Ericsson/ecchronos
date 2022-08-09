@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -31,6 +32,9 @@ import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,19 +44,23 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import com.datastax.oss.driver.api.core.metrics.DefaultNodeMetric;
+import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
+import com.datastax.oss.driver.internal.core.connection.ConstantReconnectionPolicy;
+import com.datastax.oss.driver.internal.core.loadbalancing.DcInferringLoadBalancingPolicy;
+import com.datastax.oss.driver.internal.core.ssl.DefaultSslEngineFactory;
 import com.google.common.io.Files;
+import org.apache.cassandra.service.CassandraDaemon;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Cluster.Builder;
-import com.datastax.driver.core.RemoteEndpointAwareJdkSSLOptions;
-import com.datastax.driver.core.SSLOptions;
-import com.datastax.driver.core.policies.ConstantReconnectionPolicy;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.config.EncryptionOptions.ClientEncryptionOptions;
-import org.apache.cassandra.service.CassandraDaemon;
 
 import static org.awaitility.Awaitility.await;
 
@@ -265,16 +273,24 @@ public class CassandraDaemonForECChronos implements Runnable
      *
      * @return Cluster object
      */
-    public Cluster getCluster()
+    public CqlSession getSession()
     {
-        Builder builder = Cluster.builder();
-        builder.addContactPoint(DatabaseDescriptor.getListenAddress().getHostAddress()).withPort(myNativePort).withCredentials("cassandra", "cassandra").withReconnectionPolicy(new ConstantReconnectionPolicy(100));
+        DriverConfigLoader loader = DriverConfigLoader.programmaticBuilder()
+                .withString(DefaultDriverOption.RECONNECTION_POLICY_CLASS, ConstantReconnectionPolicy.class.getName())
+                .withStringList(DefaultDriverOption.METRICS_NODE_ENABLED, Collections.singletonList(DefaultNodeMetric.IN_FLIGHT.getPath()))
+                .withDuration(DefaultDriverOption.RECONNECTION_BASE_DELAY, Duration.of(200, ChronoUnit.MILLIS))
+                .build();
+        CqlSessionBuilder cqlSessionBuilder = CqlSession.builder()
+                .addContactPoint(new InetSocketAddress(DatabaseDescriptor.getListenAddress().getHostAddress(), myNativePort))
+                .withLocalDatacenter("DC1")
+                .withAuthCredentials("cassandra", "cassandra")
+                .withConfigLoader(loader);
         if (isSSLEnabled())
         {
-            builder.withSSL(generateSslOptions());
+            cqlSessionBuilder.withSslContext(generateSslContext());
         }
 
-        return builder.build();
+        return cqlSessionBuilder.build();
     }
 
     private void randomizePorts()
@@ -322,7 +338,7 @@ public class CassandraDaemonForECChronos implements Runnable
      */
     @SuppressWarnings (
             { "squid:S2440" })
-    private SSLOptions generateSslOptions()
+    private SSLContext generateSslContext()
     {
         KeyManager[] keyManagers = getKeyManagers();
         if (keyManagers == null)
@@ -332,14 +348,11 @@ public class CassandraDaemonForECChronos implements Runnable
 
         TrustManager[] trustManagers = getDummyTrustManagers(); // get Trustmanager which accepts all keys
 
-        SSLOptions sslOptions = null;
+        SSLContext sslContext = null;
         try
         {
-            SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
+            sslContext = SSLContext.getInstance("TLSv1.2");
             sslContext.init(keyManagers, trustManagers, new SecureRandom());
-
-            String[] cipherSuites = DatabaseDescriptor.getClientEncryptionOptions().cipher_suites;
-            sslOptions = RemoteEndpointAwareJdkSSLOptions.builder().withSSLContext(sslContext).withCipherSuites(cipherSuites).build();
         }
         catch (NoSuchAlgorithmException e)
         {
@@ -350,7 +363,7 @@ public class CassandraDaemonForECChronos implements Runnable
             LOG.error("Failed to initialize SSL/TLS key management - Proceeding without SSL/TLS");
         }
 
-        return sslOptions;
+        return sslContext;
     }
 
     /**

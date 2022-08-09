@@ -15,7 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
@@ -31,7 +31,7 @@ public class TestRepairedAt
     {
         LongTokenRange range = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(2, 3);
-        Node node1 = mock(Node.class);
+        DriverNode node1 = mock(DriverNode.class);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1), 1234L);
         VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, ImmutableSet.of(node1), 1235L);
@@ -52,7 +52,7 @@ public class TestRepairedAt
     {
         LongTokenRange range = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(2, 3);
-        Node node1 = mock(Node.class);
+        DriverNode node1 = mock(DriverNode.class);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1), 1234L);
         VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, ImmutableSet.of(node1), VnodeRepairState.UNREPAIRED);
@@ -73,7 +73,7 @@ public class TestRepairedAt
     {
         LongTokenRange range = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(2, 3);
-        Node node1 = mock(Node.class);
+        DriverNode node1 = mock(DriverNode.class);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1), VnodeRepairState.UNREPAIRED);
         VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, ImmutableSet.of(node1), VnodeRepairState.UNREPAIRED);

@@ -14,57 +14,77 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection.impl;
 
-import java.util.UUID;
-
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.auth.AuthProvider;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import com.datastax.oss.driver.api.core.config.ProgrammaticDriverConfigLoaderBuilder;
+import com.datastax.oss.driver.api.core.metadata.EndPoint;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
+import com.datastax.oss.driver.api.core.metrics.DefaultNodeMetric;
+import com.datastax.oss.driver.api.core.metrics.DefaultSessionMetric;
+import com.datastax.oss.driver.api.core.session.Session;
+import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
+import com.datastax.oss.driver.internal.core.loadbalancing.DcInferringLoadBalancingPolicy;
+import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
+import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.driver.core.AuthProvider;
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.DefaultEndPointFactory;
-import com.datastax.driver.core.EndPoint;
-import com.datastax.driver.core.EndPointFactory;
-import com.datastax.driver.core.ExtendedAuthProvider;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.SSLOptions;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
-import com.datastax.driver.core.policies.LoadBalancingPolicy;
-import com.datastax.driver.core.policies.TokenAwarePolicy;
-import com.datastax.driver.extras.codecs.date.SimpleTimestampCodec;
-import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
-import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
 
 public class LocalNativeConnectionProvider implements NativeConnectionProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(LocalNativeConnectionProvider.class);
+    private static final List<String> NODE_METRICS = Arrays.asList(DefaultNodeMetric.OPEN_CONNECTIONS.getPath(),
+            DefaultNodeMetric.AVAILABLE_STREAMS.getPath(), DefaultNodeMetric.IN_FLIGHT.getPath(),
+            DefaultNodeMetric.ORPHANED_STREAMS.getPath(), DefaultNodeMetric.BYTES_SENT.getPath(),
+            DefaultNodeMetric.BYTES_RECEIVED.getPath(), DefaultNodeMetric.CQL_MESSAGES.getPath(),
+            DefaultNodeMetric.UNSENT_REQUESTS.getPath(), DefaultNodeMetric.ABORTED_REQUESTS.getPath(),
+            DefaultNodeMetric.WRITE_TIMEOUTS.getPath(), DefaultNodeMetric.READ_TIMEOUTS.getPath(),
+            DefaultNodeMetric.UNAVAILABLES.getPath(), DefaultNodeMetric.OTHER_ERRORS.getPath(),
+            DefaultNodeMetric.RETRIES.getPath(), DefaultNodeMetric.RETRIES_ON_ABORTED.getPath(),
+            DefaultNodeMetric.RETRIES_ON_READ_TIMEOUT.getPath(), DefaultNodeMetric.RETRIES_ON_WRITE_TIMEOUT.getPath(),
+            DefaultNodeMetric.RETRIES_ON_UNAVAILABLE.getPath(), DefaultNodeMetric.RETRIES_ON_OTHER_ERROR.getPath(),
+            DefaultNodeMetric.IGNORES.getPath(), DefaultNodeMetric.IGNORES_ON_ABORTED.getPath(),
+            DefaultNodeMetric.IGNORES_ON_READ_TIMEOUT.getPath(), DefaultNodeMetric.IGNORES_ON_WRITE_TIMEOUT.getPath(),
+            DefaultNodeMetric.IGNORES_ON_UNAVAILABLE.getPath(), DefaultNodeMetric.IGNORES_ON_OTHER_ERROR.getPath(),
+            DefaultNodeMetric.SPECULATIVE_EXECUTIONS.getPath(), DefaultNodeMetric.CONNECTION_INIT_ERRORS.getPath(),
+            DefaultNodeMetric.AUTHENTICATION_ERRORS.getPath());
+    private static final List<String> SESSION_METRICS = Arrays.asList(DefaultSessionMetric.BYTES_RECEIVED.getPath(),
+            DefaultSessionMetric.BYTES_SENT.getPath(), DefaultSessionMetric.CONNECTED_NODES.getPath(),
+            DefaultSessionMetric.CQL_REQUESTS.getPath(), DefaultSessionMetric.CQL_CLIENT_TIMEOUTS.getPath(),
+            DefaultSessionMetric.CQL_PREPARED_CACHE_SIZE.getPath(), DefaultSessionMetric.THROTTLING_DELAY.getPath(),
+            DefaultSessionMetric.THROTTLING_QUEUE_SIZE.getPath(), DefaultSessionMetric.THROTTLING_ERRORS.getPath());
 
     public static final int DEFAULT_NATIVE_PORT = 9042;
     public static final String DEFAULT_LOCAL_HOST = "localhost";
 
-    private final Cluster myCluster;
-    private final Session mySession;
-    private final Host myLocalHost;
+    private final CqlSession mySession;
+    private final Node myLocalNode;
     private final boolean myRemoteRouting;
 
-    private LocalNativeConnectionProvider(Cluster cluster, Host host, boolean remoteRouting)
+    private LocalNativeConnectionProvider(CqlSession session, Node node, boolean remoteRouting)
     {
-        myCluster = cluster;
-        mySession = cluster.connect();
-        myLocalHost = host;
+        mySession = session;
+        myLocalNode = node;
         myRemoteRouting = remoteRouting;
     }
 
     @Override
-    public Session getSession()
+    public CqlSession getSession()
     {
         return mySession;
     }
 
     @Override
-    public Host getLocalHost()
+    public Node getLocalNode()
     {
-        return myLocalHost;
+        return myLocalNode;
     }
 
     @Override
@@ -77,7 +97,6 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
     public void close()
     {
         mySession.close();
-        myCluster.close();
     }
 
     public static Builder builder()
@@ -90,8 +109,9 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
         private String myLocalhost = DEFAULT_LOCAL_HOST;
         private int myPort = DEFAULT_NATIVE_PORT;
         private boolean myRemoteRouting = true;
-        private AuthProvider authProvider = AuthProvider.NONE;
-        private SSLOptions sslOptions = null;
+        private AuthProvider authProvider = null;
+        private SslEngineFactory sslEngineFactory = null;
+        private SchemaChangeListener schemaChangeListener = null;
 
         public Builder withLocalhost(String localhost)
         {
@@ -111,25 +131,29 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
             return this;
         }
 
-        public Builder withAuthProvider(ExtendedAuthProvider authProvider)
+        public Builder withAuthProvider(AuthProvider authProvider)
         {
             this.authProvider = authProvider;
             return this;
         }
 
-        public Builder withSslOptions(SSLOptions sslOptions)
+        public Builder withSslEngineFactory(SslEngineFactory sslEngineFactory)
         {
-            this.sslOptions = sslOptions;
+            this.sslEngineFactory = sslEngineFactory;
+            return this;
+        }
+
+        public Builder withSchemaChangeListener(SchemaChangeListener schemaChangeListener)
+        {
+            this.schemaChangeListener = schemaChangeListener;
             return this;
         }
 
         public LocalNativeConnectionProvider build()
         {
-            Cluster cluster = createCluster(this);
-            cluster.getConfiguration().getCodecRegistry().register(SimpleTimestampCodec.instance);
-            Host host = resolveLocalhost(cluster, localEndPoint());
-
-            return new LocalNativeConnectionProvider(cluster, host, myRemoteRouting);
+            CqlSession session = createSession(this);
+            Node node = resolveLocalhost(session, localEndPoint());
+            return new LocalNativeConnectionProvider(session, node, myRemoteRouting);
         }
 
         private EndPoint localEndPoint()
@@ -137,48 +161,42 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
             return new ContactEndPoint(myLocalhost, myPort);
         }
 
-        private static Cluster createCluster(Builder builder)
+        private static CqlSession createSession(Builder builder)
         {
             EndPoint contactEndPoint = builder.localEndPoint();
 
             InitialContact initialContact = resolveInitialContact(contactEndPoint, builder);
 
-            LoadBalancingPolicy loadBalancingPolicy = new TokenAwarePolicy(DCAwareRoundRobinPolicy.builder()
-                    .withLocalDc(initialContact.getDataCenter())
-                    .build());
-
-            if (builder.myRemoteRouting)
-            {
-                loadBalancingPolicy = DataCenterAwarePolicy.builder()
-                        .withLocalDc(initialContact.getDataCenter())
-                        .withChildPolicy(loadBalancingPolicy)
-                        .build();
-            }
-
             LOG.debug("Connecting to {}({}), local data center: {}", contactEndPoint, initialContact.getHostId(),
                     initialContact.getDataCenter());
 
-            EndPointFactory endPointFactory = new DefaultEndPointFactory();
-            EccEndPointFactory eccEndPointFactory = new EccEndPointFactory(contactEndPoint, initialContact.getHostId(),
-                    endPointFactory);
-
-            Cluster cluster = fromBuilder(builder)
-                    .withEndPointFactory(eccEndPointFactory)
-                    .withLoadBalancingPolicy(loadBalancingPolicy)
-                    .build();
-            cluster.register(eccEndPointFactory);
-            return cluster;
+            CqlSessionBuilder sessionBuilder = fromBuilder(builder);
+            sessionBuilder = sessionBuilder.withLocalDatacenter(initialContact.dataCenter);
+            ProgrammaticDriverConfigLoaderBuilder loaderBuilder = DriverConfigLoader.programmaticBuilder()
+                    .withStringList(DefaultDriverOption.METRICS_NODE_ENABLED, NODE_METRICS)
+                    .withStringList(DefaultDriverOption.METRICS_SESSION_ENABLED, SESSION_METRICS);
+            if (builder.myRemoteRouting)
+            {
+                loaderBuilder.withString(DefaultDriverOption.LOAD_BALANCING_POLICY_CLASS, DataCenterAwarePolicy.class.getCanonicalName());
+                loaderBuilder.withInt(DefaultDriverOption.LOAD_BALANCING_DC_FAILOVER_MAX_NODES_PER_REMOTE_DC, 999);
+            }
+            sessionBuilder.withConfigLoader(loaderBuilder.build());
+            return sessionBuilder.build();
         }
 
         private static InitialContact resolveInitialContact(EndPoint contactEndPoint, Builder builder)
         {
-            try (Cluster cluster = fromBuilder(builder).build())
+            DriverConfigLoader loader = DriverConfigLoader.programmaticBuilder()
+                    .withString(DefaultDriverOption.LOAD_BALANCING_POLICY_CLASS, DcInferringLoadBalancingPolicy.class.getName())
+                    .build();
+            CqlSessionBuilder cqlSessionBuilder = fromBuilder(builder).withConfigLoader(loader);
+            try(Session session = cqlSessionBuilder.build())
             {
-                for (Host host : cluster.getMetadata().getAllHosts())
+                for (Node node : session.getMetadata().getNodes().values())
                 {
-                    if (host.getEndPoint().equals(contactEndPoint))
+                    if (node.getEndPoint().equals(contactEndPoint))
                     {
-                        return new InitialContact(host.getDatacenter(), host.getHostId());
+                        return new InitialContact(node.getDatacenter(), node.getHostId());
                     }
                 }
             }
@@ -186,32 +204,33 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
             throw new IllegalStateException("Unable to find local data center");
         }
 
-        private static Cluster.Builder fromBuilder(Builder builder)
+        private static CqlSessionBuilder fromBuilder(Builder builder)
         {
-            return Cluster.builder()
-                    .addContactPoint(builder.localEndPoint())
+            return CqlSession.builder()
+                    .addContactEndPoint(builder.localEndPoint())
                     .withAuthProvider(builder.authProvider)
-                    .withSSL(builder.sslOptions);
+                    .withSslEngineFactory(builder.sslEngineFactory)
+                    .withSchemaChangeListener(builder.schemaChangeListener);
         }
 
-        private static Host resolveLocalhost(Cluster cluster, EndPoint localEndpoint)
+        private static Node resolveLocalhost(Session session, EndPoint localEndpoint)
         {
-            Host tmpHost = null;
+            Node tmpNode = null;
 
-            for (Host host : cluster.getMetadata().getAllHosts())
+            for (Node node : session.getMetadata().getNodes().values())
             {
-                if (host.getEndPoint().equals(localEndpoint))
+                if (node.getEndPoint().equals(localEndpoint))
                 {
-                    tmpHost = host;
+                    tmpNode = node;
                 }
             }
 
-            if (tmpHost == null)
+            if (tmpNode == null)
             {
-                throw new IllegalArgumentException("Host " + localEndpoint + " not found among cassandra hosts");
+                throw new IllegalArgumentException("Node " + localEndpoint + " not found among cassandra hosts");
             }
 
-            return tmpHost;
+            return tmpNode;
         }
     }
 

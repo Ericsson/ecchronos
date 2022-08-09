@@ -15,7 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TokenSubRangeUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -42,7 +42,7 @@ public class TestVnodeRepairStates
     {
         LongTokenRange range = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(2, 3);
-        Node node1 = mock(Node.class);
+        DriverNode node1 = mock(DriverNode.class);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1), VnodeRepairState.UNREPAIRED);
         VnodeRepairState vnodeRepairState2 = new VnodeRepairState(range2, ImmutableSet.of(node1), VnodeRepairState.UNREPAIRED);
@@ -58,7 +58,7 @@ public class TestVnodeRepairStates
     public void testCombineMoreRecentlyRepaired()
     {
         LongTokenRange range = new LongTokenRange(1, 2);
-        Node node1 = mock(Node.class);
+        DriverNode node1 = mock(DriverNode.class);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1), VnodeRepairState.UNREPAIRED);
         VnodeRepairState updatedVnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1), 1234L);
@@ -74,9 +74,9 @@ public class TestVnodeRepairStates
     public void testCombineNotSameNode()
     {
         LongTokenRange range = new LongTokenRange(1, 2);
-        Node node1 = mock(Node.class);
-        Node node2 = mock(Node.class);
-        Node node3 = mock(Node.class);
+        DriverNode node1 = mock(DriverNode.class);
+        DriverNode node2 = mock(DriverNode.class);
+        DriverNode node3 = mock(DriverNode.class);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1, node2), 1234L);
         VnodeRepairState updatedVnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1, node3), VnodeRepairState.UNREPAIRED);
@@ -93,8 +93,8 @@ public class TestVnodeRepairStates
     {
         LongTokenRange range = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(2, 3);
-        Node node1 = mock(Node.class);
-        Node node2 = mock(Node.class);
+        DriverNode node1 = mock(DriverNode.class);
+        DriverNode node2 = mock(DriverNode.class);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1, node2), 1234L);
         VnodeRepairState updatedVnodeRepairState = new VnodeRepairState(range2, ImmutableSet.of(node1, node2), VnodeRepairState.UNREPAIRED);
@@ -114,8 +114,8 @@ public class TestVnodeRepairStates
     {
         LongTokenRange range = new LongTokenRange(1, 3);
         LongTokenRange range2 = new LongTokenRange(2, 4);
-        Node node1 = mock(Node.class);
-        Node node2 = mock(Node.class);
+        DriverNode node1 = mock(DriverNode.class);
+        DriverNode node2 = mock(DriverNode.class);
 
         long baseRepairedAt = 1234L;
         long updatedRepairedAt = baseRepairedAt + TimeUnit.HOURS.toMillis(2);
@@ -146,8 +146,8 @@ public class TestVnodeRepairStates
         LongTokenRange range = new LongTokenRange(1, 5);
         LongTokenRange range2 = new LongTokenRange(2, 4);
         LongTokenRange range3 = new LongTokenRange(3, 5);
-        Node node1 = mock(Node.class);
-        Node node2 = mock(Node.class);
+        DriverNode node1 = mock(DriverNode.class);
+        DriverNode node2 = mock(DriverNode.class);
 
         long baseRepairedAt = 1234L;
         long updatedRepairedAt = baseRepairedAt + TimeUnit.HOURS.toMillis(2);
@@ -173,7 +173,7 @@ public class TestVnodeRepairStates
     public void testCombineSubRanges()
     {
         LongTokenRange range = new LongTokenRange(1, 100);
-        Node node1 = mock(Node.class);
+        DriverNode node1 = mock(DriverNode.class);
 
         VnodeRepairState expectedVnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1), 1234L);
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1), VnodeRepairState.UNREPAIRED);
@@ -189,7 +189,7 @@ public class TestVnodeRepairStates
     public void testCombineSubRangesWrapAround()
     {
         LongTokenRange range = new LongTokenRange(50, -50);
-        Node node1 = mock(Node.class);
+        DriverNode node1 = mock(DriverNode.class);
 
         VnodeRepairState expectedVnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1), 1234L);
         VnodeRepairState vnodeRepairState = new VnodeRepairState(range, ImmutableSet.of(node1), VnodeRepairState.UNREPAIRED);
@@ -205,8 +205,8 @@ public class TestVnodeRepairStates
     public void testCombineSubRangesWithSimilarTime()
     {
         LongTokenRange range = new LongTokenRange(1, 100);
-        Node node1 = mock(Node.class);
-        ImmutableSet<Node> nodeSet = ImmutableSet.of(node1);
+        DriverNode node1 = mock(DriverNode.class);
+        ImmutableSet<DriverNode> nodeSet = ImmutableSet.of(node1);
 
         long totalRangeMs = LocalDateTime.parse("2020-03-12T14:00:00").toEpochSecond(ZoneOffset.UTC) * 1000;
         long subRange1Ms = LocalDateTime.parse("2020-03-13T14:00:05").toEpochSecond(ZoneOffset.UTC) * 1000;
@@ -226,8 +226,8 @@ public class TestVnodeRepairStates
     public void testCombinePartialSubRangesWithSimilarTime()
     {
         LongTokenRange range = new LongTokenRange(1, 100);
-        Node node1 = mock(Node.class);
-        ImmutableSet<Node> nodeSet = ImmutableSet.of(node1);
+        DriverNode node1 = mock(DriverNode.class);
+        ImmutableSet<DriverNode> nodeSet = ImmutableSet.of(node1);
 
         long totalRangeMs = LocalDateTime.parse("2020-03-12T14:00:00").toEpochSecond(ZoneOffset.UTC) * 1000;
         long subRange1Ms = LocalDateTime.parse("2020-03-13T14:00:05").toEpochSecond(ZoneOffset.UTC) * 1000;
@@ -246,7 +246,7 @@ public class TestVnodeRepairStates
         assertSubRangeStatesContainsExactly(Collections.singletonList(vnodeRepairState), subRangeRepairStates, expectedVnodeRepairStates);
     }
 
-    private List<VnodeRepairState> generateSubRanges(LongTokenRange range, int subRangeCount, Node node, long lastRepairedAt)
+    private List<VnodeRepairState> generateSubRanges(LongTokenRange range, int subRangeCount, DriverNode node, long lastRepairedAt)
     {
         BigInteger fullRange = range.rangeSize();
         BigInteger tokensPerSubRange = fullRange.divide(BigInteger.valueOf(subRangeCount));

@@ -14,37 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.ignoreStubs;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
-
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.exceptions.OverloadedException;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.servererrors.OverloadedException;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
@@ -59,12 +30,39 @@ import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 
-@RunWith (MockitoJUnitRunner.Silent.class)
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.ignoreStubs;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class TestTableRepairJob
 {
     private static final String keyspaceName = "keyspace";
@@ -78,9 +76,6 @@ public class TestTableRepairJob
 
     @Mock
     private JmxProxyFactory myJmxProxyFactory;
-
-    @Mock
-    private Metadata myMetadata;
 
     @Mock
     private LockFactory myLockFactory;
@@ -151,7 +146,6 @@ public class TestTableRepairJob
     public void finalVerification()
     {
         verifyNoMoreInteractions(ignoreStubs(myJmxProxyFactory));
-        verifyNoMoreInteractions(ignoreStubs(myMetadata));
         verifyNoMoreInteractions(ignoreStubs(myLockFactory));
         verifyNoMoreInteractions(ignoreStubs(myKeyspaceMetadata));
         verifyNoMoreInteractions(ignoreStubs(myRepairState));
@@ -291,8 +285,10 @@ public class TestTableRepairJob
     @Test
     public void testGetView()
     {
-        VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), System.currentTimeMillis());
-        VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState)).build();
+        VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(),
+                System.currentTimeMillis());
+        VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState))
+                .build();
         when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
         RepairJobView repairJobView = myRepairJob.getView();
 
@@ -307,7 +303,7 @@ public class TestTableRepairJob
     public void testIterator()
     {
         LongTokenRange tokenRange = new LongTokenRange(0, 10);
-        ImmutableSet<Node> replicas = ImmutableSet.of(mock(Node.class), mock(Node.class));
+        ImmutableSet<DriverNode> replicas = ImmutableSet.of(mock(DriverNode.class), mock(DriverNode.class));
         ImmutableList<LongTokenRange> vnodes = ImmutableList.of(tokenRange);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl
@@ -326,7 +322,7 @@ public class TestTableRepairJob
 
         ScheduledTask task = iterator.next();
         assertThat(task).isInstanceOf(RepairGroup.class);
-        Collection<RepairTask> repairTasks = ((RepairGroup)task).getRepairTasks();
+        Collection<RepairTask> repairTasks = ((RepairGroup) task).getRepairTasks();
 
         assertThat(repairTasks).hasSize(1);
         RepairTask repairTask = repairTasks.iterator().next();
@@ -353,10 +349,11 @@ public class TestTableRepairJob
         );
 
         LongTokenRange tokenRange = new LongTokenRange(0, 10);
-        ImmutableSet<Node> replicas = ImmutableSet.of(mock(Node.class), mock(Node.class));
+        ImmutableSet<DriverNode> replicas = ImmutableSet.of(mock(DriverNode.class), mock(DriverNode.class));
         ImmutableList<LongTokenRange> vnodes = ImmutableList.of(tokenRange);
 
-        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(ImmutableList.of(new VnodeRepairState(tokenRange, replicas, 1234L))).build();
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(
+                ImmutableList.of(new VnodeRepairState(tokenRange, replicas, 1234L))).build();
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(replicas, vnodes);
 
         RepairStateSnapshot repairStateSnapshot = RepairStateSnapshot.newBuilder()
@@ -372,7 +369,7 @@ public class TestTableRepairJob
 
         ScheduledTask task = iterator.next();
         assertThat(task).isInstanceOf(RepairGroup.class);
-        Collection<RepairTask> repairTasks = ((RepairGroup)task).getRepairTasks();
+        Collection<RepairTask> repairTasks = ((RepairGroup) task).getRepairTasks();
 
         assertThat(repairTasks).hasSize(expectedTokenRanges.size());
 
@@ -395,7 +392,8 @@ public class TestTableRepairJob
         long repairedAt = System.currentTimeMillis();
         doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), repairedAt);
-        VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState)).build();
+        VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState))
+                .build();
         when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
 
         assertThat(myRepairJob.getView().getStatus()).isEqualTo(RepairJobView.Status.COMPLETED);
@@ -406,7 +404,8 @@ public class TestTableRepairJob
     {
         long repairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(10);
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), repairedAt);
-        VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState)).build();
+        VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState))
+                .build();
         when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
         doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 
@@ -418,7 +417,8 @@ public class TestTableRepairJob
     {
         long repairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1);
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), repairedAt);
-        VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState)).build();
+        VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState))
+                .build();
         when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
         doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 
@@ -430,7 +430,8 @@ public class TestTableRepairJob
     {
         long repairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(7);
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), repairedAt);
-        VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState)).build();
+        VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState))
+                .build();
         when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
         doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 
@@ -442,14 +443,14 @@ public class TestTableRepairJob
     {
         long repairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(7);
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), repairedAt);
-        VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState)).build();
+        VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState))
+                .build();
         when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
         doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
         myRepairJob.setRunnableIn(TimeUnit.HOURS.toMillis(1));
 
         assertThat(myRepairJob.getView().getStatus()).isEqualTo(RepairJobView.Status.BLOCKED);
     }
-
 
     @Test
     public void testHalfCompleteProgress()
@@ -458,10 +459,13 @@ public class TestTableRepairJob
         long lastRepairedAtSecond = System.currentTimeMillis();
         long lastRepairedAtThird = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(9);
 
-        VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), lastRepairedAtThird);
-        VnodeRepairState vnodeRepairState2 = TestUtils.createVnodeRepairState(3, 4, ImmutableSet.of(), lastRepairedAtSecond);
+        VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(),
+                lastRepairedAtThird);
+        VnodeRepairState vnodeRepairState2 = TestUtils.createVnodeRepairState(3, 4, ImmutableSet.of(),
+                lastRepairedAtSecond);
 
-        VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2)).build();
+        VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(
+                Arrays.asList(vnodeRepairState, vnodeRepairState2)).build();
         doReturn(vnodeRepairStates).when(myRepairStateSnapshot).getVnodeRepairStates();
         doReturn(repairedAtFirst).when(myRepairStateSnapshot).lastCompletedAt();
 
@@ -475,7 +479,8 @@ public class TestTableRepairJob
 
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), repairedAt);
 
-        VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState)).build();
+        VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState))
+                .build();
         doReturn(vnodeRepairStates).when(myRepairStateSnapshot).getVnodeRepairStates();
         doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 
@@ -491,7 +496,8 @@ public class TestTableRepairJob
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), repairedAtSecond);
         VnodeRepairState vnodeRepairState2 = TestUtils.createVnodeRepairState(3, 4, ImmutableSet.of(), repairedAt);
 
-        VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState, vnodeRepairState2)).build();
+        VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(
+                Arrays.asList(vnodeRepairState, vnodeRepairState2)).build();
         doReturn(vnodeRepairStates).when(myRepairStateSnapshot).getVnodeRepairStates();
         doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 

@@ -14,8 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection;
 
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Session;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Node;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -25,9 +25,9 @@ import java.io.IOException;
  */
 public interface NativeConnectionProvider extends Closeable
 {
-    Session getSession();
+    CqlSession getSession();
 
-    Host getLocalHost();
+    Node getLocalNode();
 
     boolean getRemoteRouting();
 
