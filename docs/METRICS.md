@@ -150,9 +150,9 @@ Usually the RepairFailedTime should be all zeros but if it's not the reason can 
 
     The effective remaining repair time (in milliseconds) for the table to be fully repaired (time ecChronos waits for cassandra to perform repair).
 
-* RepairFailedAttempts
+* RepairFailedAttempt
 
-    The amount of repair sessions that have failed for the repair job. The metric is reset each time repair job runs.
+    The amount of repair sessions that have failed for the table. THe metric has a total count as well.
 
 #### Examples
 
@@ -189,13 +189,15 @@ This is the time ecChronos will have to wait for Cassandra to perform repair,
 this is an estimation based on the last repair of the table.
 The value should be `0` if there is no repair ongoing for this table.
 
-| t          | value |
-|------------|-------|
-| 1650350323 | 26    |
+| t          | count | mean_rate | m1_rate  | m5_rate  | m15_rate | rate_unit     |
+|------------|-------|-----------|----------|----------|----------|---------------|
+| 1660042648 | 0     | 0.000000  | 0.000000 | 0.000000 | 0.000000 | events/second |
 
 \<keyspace\>.\<table\>-\<table-id\>-RepairFailedAttempts
 
-The value represents the amount of failed repair sessions for the repair job.
-The value is reset each time the repair job runs.
-To find out which token ranges have failed check the logs.
-The value should always be `0` in "problem free" clusters.
+The count represents the total amount of failed repair sessions for the table.
+The mean rate is the rate at which events have occurred since the beginning.
+The `m1_rate`, `m5_rate` and `m_15_rate` are the rates at which events have occured for the past 1 minute, 5 minutes and 15 minutes,
+for example an `m1_rate` of `15` would mean that 15 events have occured in the past minute.
+The `m1_rate`, `m5_rate` and `m15_rate` should always be `0` in "problem free" clusters (assuming repairs are actually running).
+Check the logs to find out which token ranges have failed to repair.

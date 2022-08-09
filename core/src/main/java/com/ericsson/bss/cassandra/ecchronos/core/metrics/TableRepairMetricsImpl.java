@@ -101,15 +101,9 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
     }
 
     @Override
-    public void repairFailedAttempts(TableReference tableReference)
+    public void repairFailedAttempt(TableReference tableReference)
     {
-        tableMetricHolder(tableReference).incRepairFailedAttempts();
-    }
-
-    @Override
-    public void resetRepairFailedAttempts(TableReference tableReference)
-    {
-        tableMetricHolder(tableReference).resetRepairFailedAttempts();
+        tableMetricHolder(tableReference).repairFailedAttempt();
     }
 
     @VisibleForTesting

@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
 import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -90,7 +91,7 @@ public class TestTableMetricHolder
         assertThat(getGague(TableMetricHolder.REPAIR_STATE).getValue()).isEqualTo(Double.NaN);
         assertThat(getGague(TableMetricHolder.LAST_REPAIRED_AT).getValue()).isEqualTo(0L);
         assertThat(getGague(TableMetricHolder.REMAINING_REPAIR_TIME).getValue()).isEqualTo(0L);
-        assertThat(getGague(TableMetricHolder.FAILED_ATTEMPTS).getValue()).isEqualTo(0L);
+        assertThat(getMeter(TableMetricHolder.FAILED_ATTEMPTS).getCount()).isEqualTo(0L);
     }
 
     @Test
@@ -101,14 +102,14 @@ public class TestTableMetricHolder
     }
 
     @Test
-    public void testIncRepairFailedAttempts()
+    public void testRepairFailedAttempt()
     {
         long failedAttempts = 5L;
         for (int i = 0; i < failedAttempts; i++)
         {
-            myTableMetricHolder.incRepairFailedAttempts();
+            myTableMetricHolder.repairFailedAttempt();
         }
-        assertThat(getGague(TableMetricHolder.FAILED_ATTEMPTS).getValue()).isEqualTo(failedAttempts);
+        assertThat(getMeter(TableMetricHolder.FAILED_ATTEMPTS).getCount()).isEqualTo(failedAttempts);
     }
 
     @Test
@@ -207,6 +208,11 @@ public class TestTableMetricHolder
     private Timer getTimer(String name)
     {
         return myMetricRegistry.getTimers().get(metricName(name));
+    }
+
+    private Meter getMeter(String name)
+    {
+        return myMetricRegistry.getMeters().get(metricName(name));
     }
 
     private Gauge getGague(String name)

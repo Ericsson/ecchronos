@@ -19,8 +19,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.RatioGauge;
+import com.codahale.metrics.SlidingTimeWindowMovingAverages;
 import com.codahale.metrics.Timer;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
@@ -46,7 +48,7 @@ public class TableMetricHolder implements Closeable
     private final AtomicReference<RangeRepairState> myRepairState = new AtomicReference<>();
     private final AtomicReference<Long> myLastRepairedAt = new AtomicReference<>(0L);
     private final AtomicReference<Long> myRemainingRepairTime = new AtomicReference<>(0L);
-    private final AtomicReference<Long> myRepairFailedAttempts = new AtomicReference<>(0L);
+    private final AtomicReference<Meter> myRepairFailedAttempts = new AtomicReference<>(null);
 
     public TableMetricHolder(TableReference tableReference, MetricRegistry metricRegistry, NodeMetricHolder nodeMetricHolder)
     {
@@ -72,9 +74,12 @@ public class TableMetricHolder implements Closeable
                 return Ratio.of(0, 0);
             }
         });
+        SlidingTimeWindowMovingAverages averages = new SlidingTimeWindowMovingAverages();
+        Meter failedAttemptsMeter = new Meter(averages);
+        myRepairFailedAttempts.set(failedAttemptsMeter);
         myMetricRegistry.register(metricName(LAST_REPAIRED_AT), lastRepairedAtGauge());
         myMetricRegistry.register(metricName(REMAINING_REPAIR_TIME), remainingRepairTimeGauge());
-        myMetricRegistry.register(metricName(FAILED_ATTEMPTS), repairFailedAttemptsGauge());
+        myMetricRegistry.register(metricName(FAILED_ATTEMPTS), myRepairFailedAttempts.get());
         timer(REPAIR_TIMING_SUCCESS);
         timer(REPAIR_TIMING_FAILED);
     }
@@ -111,15 +116,9 @@ public class TableMetricHolder implements Closeable
         myRemainingRepairTime.set(remainingRepairTime);
     }
 
-    public void incRepairFailedAttempts()
+    public void repairFailedAttempt()
     {
-        long failedAttempts = myRepairFailedAttempts.get();
-        myRepairFailedAttempts.set(failedAttempts + 1);
-    }
-
-    public void resetRepairFailedAttempts()
-    {
-        myRepairFailedAttempts.set(0L);
+        myRepairFailedAttempts.get().mark();
     }
 
     public void repairTiming(long timeTaken, TimeUnit timeUnit, boolean successful)
@@ -166,11 +165,6 @@ public class TableMetricHolder implements Closeable
     private Gauge<Long> remainingRepairTimeGauge()
     {
         return myRemainingRepairTime::get;
-    }
-
-    private Gauge<Long> repairFailedAttemptsGauge()
-    {
-        return myRepairFailedAttempts::get;
     }
 
     private static class RangeRepairState

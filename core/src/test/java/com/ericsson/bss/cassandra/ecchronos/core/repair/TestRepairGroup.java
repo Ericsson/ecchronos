@@ -267,9 +267,9 @@ public class TestRepairGroup
     @Test
     public void testExecuteAllTasksSuccessful() throws ScheduledJobException
     {
-        Node node = mockNode("DC1");
+        DriverNode node = mockNode("DC1");
         LongTokenRange range = new LongTokenRange(1, 2);
-        ImmutableSet<Node> nodes = ImmutableSet.of(node);
+        ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range));
 
         RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).build(priority));
@@ -287,15 +287,15 @@ public class TestRepairGroup
 
         boolean success = repairGroup.execute();
         assertThat(success).isTrue();
-        verify(myTableRepairMetrics, never()).repairFailedAttempts(tableReference);
+        verify(myTableRepairMetrics, never()).repairFailedAttempt(tableReference);
     }
 
     @Test
     public void testExecuteAllTasksFailed() throws ScheduledJobException
     {
-        Node node = mockNode("DC1");
+        DriverNode node = mockNode("DC1");
         LongTokenRange range = new LongTokenRange(1, 2);
-        ImmutableSet<Node> nodes = ImmutableSet.of(node);
+        ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range));
 
         RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).build(priority));
@@ -313,15 +313,15 @@ public class TestRepairGroup
 
         boolean success = repairGroup.execute();
         assertThat(success).isFalse();
-        verify(myTableRepairMetrics, times(3)).repairFailedAttempts(tableReference);
+        verify(myTableRepairMetrics, times(3)).repairFailedAttempt(tableReference);
     }
 
     @Test
     public void testExecuteSomeTasksFailed() throws ScheduledJobException
     {
-        Node node = mockNode("DC1");
+        DriverNode node = mockNode("DC1");
         LongTokenRange range = new LongTokenRange(1, 2);
-        ImmutableSet<Node> nodes = ImmutableSet.of(node);
+        ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range));
 
         RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).build(priority));
@@ -339,7 +339,7 @@ public class TestRepairGroup
 
         boolean success = repairGroup.execute();
         assertThat(success).isFalse();
-        verify(myTableRepairMetrics, times(2)).repairFailedAttempts(tableReference);
+        verify(myTableRepairMetrics, times(2)).repairFailedAttempt(tableReference);
     }
 
     private RepairGroup.Builder builderFor(ReplicaRepairGroup replicaRepairGroup)

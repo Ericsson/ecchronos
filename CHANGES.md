@@ -2,8 +2,8 @@
 
 ## Version 4.0.0
 
-* Migrate to datastax driver-4.14.1 - Issue #269
 * Add metric for failed repair sessions - Issue #295
+* Migrate to datastax driver-4.14.1 - Issue #269
 
 ## Version 3.0.0
 

@@ -241,15 +241,9 @@ public class ECChronosInternals implements Closeable
         }
 
         @Override
-        public void repairFailedAttempts(TableReference tableReference)
+        public void repairFailedAttempt(TableReference tableReference)
         {
             LOG.debug("Table {} repair failed attempts", tableReference);
-        }
-
-        @Override
-        public void resetRepairFailedAttempts(TableReference tableReference)
-        {
-            LOG.debug("Resetting Table {} repair failed attempts", tableReference);
         }
     }
 
