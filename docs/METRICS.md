@@ -150,9 +150,9 @@ Usually the RepairFailedTime should be all zeros but if it's not the reason can 
 
     The effective remaining repair time (in milliseconds) for the table to be fully repaired (time ecChronos waits for cassandra to perform repair).
 
-* RepairFailedAttempt
+* RepairFailedAttempts
 
-    The amount of repair sessions that have failed for the table. THe metric has a total count as well.
+    The meter for the repair sessions that have failed for the table.
 
 #### Examples
 
