@@ -50,6 +50,6 @@ public class TestScheduleConfig
     @Test
     public void testEqualsContract()
     {
-        EqualsVerifier.simple().forClass(TableRepairConfig.class).usingGetClass().verify();
+        EqualsVerifier.simple().forClass(ScheduleConfig.class).usingGetClass().verify();
     }
 }
