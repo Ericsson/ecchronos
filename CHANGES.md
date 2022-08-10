@@ -2,6 +2,7 @@
 
 ## Version 4.0.0
 
+* Add config to skip schedules of tables with TWCS - Issue #151
 * Migrate to datastax driver-4.14.1 - Issue #269
 
 ## Version 3.0.0

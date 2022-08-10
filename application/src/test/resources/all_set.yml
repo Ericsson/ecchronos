@@ -51,6 +51,7 @@ repair:
   history:
     provider: cassandra
     keyspace: customkeyspace
+  ignore_twcs_tables: true
 
 statistics:
   enabled: false

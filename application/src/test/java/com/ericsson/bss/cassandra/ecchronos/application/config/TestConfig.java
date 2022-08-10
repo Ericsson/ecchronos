@@ -85,6 +85,7 @@ public class TestConfig
                 .withRepairWarningTime(48, TimeUnit.HOURS)
                 .withRepairErrorTime(72, TimeUnit.HOURS)
                 .withRepairUnwindRatio(0.5d)
+                .withIgnoreTWCSTables(true)
                 .withTargetRepairSizeInBytes(UnitConverter.toBytes("5m"))
                 .build();
 
@@ -98,6 +99,7 @@ public class TestConfig
         assertThat(repairConfig.getHistory().getProvider()).isEqualTo(Config.RepairHistory.Provider.CASSANDRA);
         assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("customkeyspace");
         assertThat(repairConfig.getAlarm().getFaultReporter()).isEqualTo(TestFaultReporter.class);
+        assertThat(repairConfig.getIgnoreTWCSTables()).isTrue();
 
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isFalse();
@@ -149,6 +151,7 @@ public class TestConfig
                 .withRepairWarningTime(8, TimeUnit.DAYS)
                 .withRepairErrorTime(10, TimeUnit.DAYS)
                 .withRepairUnwindRatio(0.0d)
+                .withIgnoreTWCSTables(false)
                 .withTargetRepairSizeInBytes(RepairConfiguration.FULL_REPAIR_SIZE)
                 .build();
 
@@ -163,6 +166,7 @@ public class TestConfig
         assertThat(repairConfig.getHistory().getProvider()).isEqualTo(Config.RepairHistory.Provider.ECC);
         assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("ecchronos");
         assertThat(repairConfig.getAlarm().getFaultReporter()).isEqualTo(LoggingFaultReporter.class);
+        assertThat(repairConfig.getIgnoreTWCSTables()).isFalse();
 
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isTrue();
@@ -228,6 +232,7 @@ public class TestConfig
         assertThat(repairConfig.getHistory().getProvider()).isEqualTo(Config.RepairHistory.Provider.ECC);
         assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("ecchronos");
         assertThat(repairConfig.getAlarm().getFaultReporter()).isEqualTo(LoggingFaultReporter.class);
+        assertThat(repairConfig.getIgnoreTWCSTables()).isFalse();
 
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isTrue();
