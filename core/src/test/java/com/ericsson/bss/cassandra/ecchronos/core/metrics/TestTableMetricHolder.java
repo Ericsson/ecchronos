@@ -86,14 +86,14 @@ public class TestTableMetricHolder
                 metricName(TableMetricHolder.REPAIR_STATE),
                 metricName(TableMetricHolder.REPAIR_TIMING_FAILED),
                 metricName(TableMetricHolder.REPAIR_TIMING_SUCCESS),
-                metricName(TableMetricHolder.FAILED_ATTEMPTS),
-                metricName(TableMetricHolder.SUCCEEDED_ATTEMPTS));
+                metricName(TableMetricHolder.FAILED_REPAIR_TASKS),
+                metricName(TableMetricHolder.SUCCEEDED_REPAIR_TASKS));
 
         assertThat(getGague(TableMetricHolder.REPAIR_STATE).getValue()).isEqualTo(Double.NaN);
         assertThat(getGague(TableMetricHolder.LAST_REPAIRED_AT).getValue()).isEqualTo(0L);
         assertThat(getGague(TableMetricHolder.REMAINING_REPAIR_TIME).getValue()).isEqualTo(0L);
-        assertThat(getMeter(TableMetricHolder.FAILED_ATTEMPTS).getCount()).isEqualTo(0L);
-        assertThat(getMeter(TableMetricHolder.SUCCEEDED_ATTEMPTS).getCount()).isEqualTo(0L);
+        assertThat(getMeter(TableMetricHolder.FAILED_REPAIR_TASKS).getCount()).isEqualTo(0L);
+        assertThat(getMeter(TableMetricHolder.SUCCEEDED_REPAIR_TASKS).getCount()).isEqualTo(0L);
     }
 
     @Test
@@ -104,25 +104,25 @@ public class TestTableMetricHolder
     }
 
     @Test
-    public void testRepairFailedAttempt()
+    public void testFailedRepairTask()
     {
-        long failedAttempts = 5L;
-        for (int i = 0; i < failedAttempts; i++)
+        long failedRepairTasks = 5L;
+        for (int i = 0; i < failedRepairTasks; i++)
         {
-            myTableMetricHolder.repairFailedAttempt();
+            myTableMetricHolder.failedRepairTask();
         }
-        assertThat(getMeter(TableMetricHolder.FAILED_ATTEMPTS).getCount()).isEqualTo(failedAttempts);
+        assertThat(getMeter(TableMetricHolder.FAILED_REPAIR_TASKS).getCount()).isEqualTo(failedRepairTasks);
     }
 
     @Test
-    public void testRepairSucceededAttempt()
+    public void testSucceededRepairTask()
     {
-        long succeededAttempts = 5L;
-        for (int i = 0; i < succeededAttempts; i++)
+        long succeededRepairTasks = 5L;
+        for (int i = 0; i < succeededRepairTasks; i++)
         {
-            myTableMetricHolder.repairSucceededAttempt();
+            myTableMetricHolder.succeededRepairTask();
         }
-        assertThat(getMeter(TableMetricHolder.SUCCEEDED_ATTEMPTS).getCount()).isEqualTo(succeededAttempts);
+        assertThat(getMeter(TableMetricHolder.SUCCEEDED_REPAIR_TASKS).getCount()).isEqualTo(succeededRepairTasks);
     }
 
     @Test

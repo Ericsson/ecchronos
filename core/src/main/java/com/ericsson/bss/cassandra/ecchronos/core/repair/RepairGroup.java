@@ -86,13 +86,13 @@ public class RepairGroup extends ScheduledTask
             try
             {
                 repairTask.execute();
-                myTableRepairMetrics.repairSucceededAttempt(myTableReference);
+                myTableRepairMetrics.succeededRepairTask(myTableReference);
             }
             catch (ScheduledJobException e)
             {
                 LOG.warn("Encountered issue when running repair task {}", repairTask, e);
                 successful = false;
-                myTableRepairMetrics.repairFailedAttempt(myTableReference);
+                myTableRepairMetrics.failedRepairTask(myTableReference);
                 if (e.getCause() instanceof InterruptedException)
                 {
                     LOG.info("{} thread was interrupted", this);

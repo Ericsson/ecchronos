@@ -63,12 +63,12 @@ public interface TableRepairMetrics
      *
      * @param tableReference The table the repair was performed on.
      */
-    void repairFailedAttempt(TableReference tableReference);
+    void failedRepairTask(TableReference tableReference);
 
     /**
      * Report succeeded repair attempt.
      *
      * @param tableReference The table the repair was performed on.
      */
-    void repairSucceededAttempt(TableReference tableReference);
+    void succeededRepairTask(TableReference tableReference);
 }

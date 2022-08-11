@@ -95,15 +95,15 @@ public final class TableRepairMetricsService implements TableRepairMetrics, Tabl
     }
 
     @Override
-    public void repairFailedAttempt(TableReference tableReference)
+    public void failedRepairTask(TableReference tableReference)
     {
-        myDelegateTableRepairMetrics.repairFailedAttempt(tableReference);
+        myDelegateTableRepairMetrics.failedRepairTask(tableReference);
     }
 
     @Override
-    public void repairSucceededAttempt(TableReference tableReference)
+    public void succeededRepairTask(TableReference tableReference)
     {
-        myDelegateTableRepairMetrics.repairSucceededAttempt(tableReference);
+        myDelegateTableRepairMetrics.succeededRepairTask(tableReference);
     }
 
     @ObjectClassDefinition
