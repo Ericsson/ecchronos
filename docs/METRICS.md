@@ -201,15 +201,6 @@ The value should be `0` if there is no repair ongoing for this table.
 
 \<keyspace\>.\<table\>-\<table-id\>-FailedRepairTasks
 
-The count represents the total amount of failed repair tasks for the table.
-The mean rate is the rate at which events have occurred since the beginning.
-The `m1_rate`, `m5_rate` and `m_15_rate` are the rates at which events have occurred for the past 1 minute, 5 minutes and 15 minutes,
-for example an `m1_rate` of `15` would mean that 15 events have occurred in the past minute.
-The `m1_rate`, `m5_rate` and `m15_rate` should always be `0` in healthy clusters (assuming repairs are actually running).
-If repairs are not running the `m1_rate`, `m5_rate` and `m15_rate` will also show `0`.
-Check the logs to find out which token ranges have failed to repair.
-This metric should be viewed in conjunction with `\<keyspace\>.\<table\>-\<table-id\>-SucceededRepairTasks` to view
-the ratio between failed and succeeded repair tasks.
 
 | t          | count | mean_rate | m1_rate  | m5_rate   | m15_rate  | rate_unit     |
 |------------|-------|-----------|----------|-----------|-----------|---------------|
@@ -217,11 +208,20 @@ the ratio between failed and succeeded repair tasks.
 
 \<keyspace\>.\<table\>-\<table-id\>-SucceededRepairTasks
 
-The count represents the total amount of succeeded repair tasks for the table.
+The count represents the total amount of failed/succeeded repair tasks for the table.
 The mean rate is the rate at which events have occurred since the beginning.
-The `m1_rate`, `m5_rate` and `m_15_rate` are the rates at which events have occurred for the past 1 minute, 5 minutes and 15 minutes,
-for example an `m1_rate` of `15` would mean that 15 events have occurred in the past minute.
-The `m1_rate`, `m5_rate` and `m15_rate` should always be a positive number if
-the repair has been performed in the past 1, 5 or 15 minutes.
-This metric should be viewed in conjunction with `\<keyspace\>.\<table\>-\<table-id\>-FailedRepairTasks` to view
-the ratio between failed and succeeded repair tasks.
+The `m1_rate`, `m5_rate` and `m_15_rate` are the rates at which events have occurred for the past 1 minute,
+5 minutes and 15 minutes.
+For example an `m1_rate` of `15` would mean that 15 events have occurred in the past minute.
+
+For `\<keyspace\>.\<table\>-\<table-id\>-FailedRepairTasks`, `m1_rate`, `m5_rate` and `m15_rate` should always be `0`
+in healthy clusters (assuming repairs are actually running).
+If repairs are not running the `m1_rate`, `m5_rate` and `m15_rate` will also show `0`.
+If the `m1_rate`, `m5_rate` or `m15_rate` report a positive number,
+check the logs to find out which token ranges have failed to repair and why.
+
+For `\<keyspace\>.\<table\>-\<table-id\>-SucceededRepairTasks`, `m1_rate`, `m5_rate` and `m15_rate` should always be
+a positive number.
+If the `m1_rate`, `m5_rate` or `m15_rate` report `0`, that means that no repairs have succeeded or no repairs have run.
+
+These 2 metrics could be viewed together to view the ratio between failed and succeeded repair tasks as well as total repair tasks.
