@@ -16,11 +16,8 @@ package com.ericsson.bss.cassandra.ecchronos.rest.osgi;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.types.CompleteRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.Schedule;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementREST;
@@ -89,59 +86,5 @@ public class RepairManagementRESTComponent implements RepairManagementREST
     public ResponseEntity<List<OnDemandRepair>> triggerRepair(String keyspace, String table, boolean isLocal)
     {
         return myDelegateRESTImpl.triggerRepair(keyspace, table, isLocal);
-    }
-
-    @Override
-    public ResponseEntity<List<ScheduledRepairJob>> status()
-    {
-        return myDelegateRESTImpl.status();
-    }
-
-    @Override
-    public ResponseEntity<List<ScheduledRepairJob>> keyspaceStatus(String keyspace)
-    {
-        return myDelegateRESTImpl.keyspaceStatus(keyspace);
-    }
-
-    @Override
-    public ResponseEntity<List<ScheduledRepairJob>> tableStatus(String keyspace, String table)
-    {
-        return myDelegateRESTImpl.tableStatus(keyspace, table);
-    }
-
-    @Override
-    public ResponseEntity<CompleteRepairJob> jobStatus(String id)
-    {
-        return myDelegateRESTImpl.jobStatus(id);
-    }
-
-    @Override
-    public ResponseEntity<List<TableRepairConfig>> config()
-    {
-        return myDelegateRESTImpl.config();
-    }
-
-    @Override
-    public ResponseEntity<List<TableRepairConfig>> keyspaceConfig(String keyspace)
-    {
-        return myDelegateRESTImpl.keyspaceConfig(keyspace);
-    }
-
-    @Override
-    public ResponseEntity<List<TableRepairConfig>> tableConfig(String keyspace, String table)
-    {
-        return myDelegateRESTImpl.tableConfig(keyspace, table);
-    }
-
-    @Override
-    public ResponseEntity<TableRepairConfig> jobConfig(String id)
-    {
-        return myDelegateRESTImpl.jobConfig(id);
-    }
-
-    @Override
-    public ResponseEntity<ScheduledRepairJob> scheduleJob(String keyspace, String table)
-    {
-        return myDelegateRESTImpl.scheduleJob(keyspace, table);
     }
 }

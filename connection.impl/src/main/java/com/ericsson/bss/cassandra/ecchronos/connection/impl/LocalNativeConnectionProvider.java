@@ -30,6 +30,7 @@ import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 import com.datastax.oss.driver.internal.core.loadbalancing.DcInferringLoadBalancingPolicy;
 import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +40,8 @@ import java.util.UUID;
 
 public class LocalNativeConnectionProvider implements NativeConnectionProvider
 {
+    private static final List<String> SCHEMA_REFRESHED_KEYSPACES = ImmutableList.of("/.*/", "!system",
+            "!system_distributed", "!system_schema", "!system_traces");
     private static final Logger LOG = LoggerFactory.getLogger(LocalNativeConnectionProvider.class);
     private static final List<String> NODE_METRICS = Arrays.asList(DefaultNodeMetric.OPEN_CONNECTIONS.getPath(),
             DefaultNodeMetric.AVAILABLE_STREAMS.getPath(), DefaultNodeMetric.IN_FLIGHT.getPath(),
@@ -174,7 +177,8 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
             sessionBuilder = sessionBuilder.withLocalDatacenter(initialContact.dataCenter);
             ProgrammaticDriverConfigLoaderBuilder loaderBuilder = DriverConfigLoader.programmaticBuilder()
                     .withStringList(DefaultDriverOption.METRICS_NODE_ENABLED, NODE_METRICS)
-                    .withStringList(DefaultDriverOption.METRICS_SESSION_ENABLED, SESSION_METRICS);
+                    .withStringList(DefaultDriverOption.METRICS_SESSION_ENABLED, SESSION_METRICS)
+                    .withStringList(DefaultDriverOption.METADATA_SCHEMA_REFRESHED_KEYSPACES, SCHEMA_REFRESHED_KEYSPACES);
             if (builder.myRemoteRouting)
             {
                 loaderBuilder.withString(DefaultDriverOption.LOAD_BALANCING_POLICY_CLASS, DataCenterAwarePolicy.class.getCanonicalName());

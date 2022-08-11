@@ -3,6 +3,7 @@
 ## Version 4.0.0
 
 * Add metric for failed and succeeded repair tasks - Issue #295
+* Remove deprecated v1 REST interface
 * Migrate to datastax driver-4.14.1 - Issue #269
 
 ## Version 3.0.0

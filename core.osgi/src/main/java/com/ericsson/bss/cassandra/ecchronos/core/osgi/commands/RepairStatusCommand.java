@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.Schedule;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Command;
 import org.apache.karaf.shell.api.action.Option;
@@ -31,7 +31,7 @@ import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.support.ansi.SimpleAnsi;
 import org.apache.karaf.shell.support.table.ShellTable;
 
-import static com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView.Status;
+import static com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView.ScheduleStatus;
 
 @Service
 @Command(scope = "repair", name = "status", description = "Give the current repair status")
@@ -61,28 +61,28 @@ public class RepairStatusCommand implements Action
     @Override
     public Object execute() throws Exception
     {
-        List<ScheduledRepairJob> jobs = getScheduledRepairJobs();
-        printTable(System.out, jobs);
-        printSummary(System.out, jobs);
+        List<Schedule> schedules = getScheduledRepairJobs();
+        printTable(System.out, schedules);
+        printSummary(System.out, schedules);
         return null;
     }
 
-    List<ScheduledRepairJob> getScheduledRepairJobs()
+    List<Schedule> getScheduledRepairJobs()
     {
         return myRepairScheduler.getCurrentRepairJobs()
                     .stream()
-                    .map(ScheduledRepairJob::new)
+                    .map(Schedule::new)
                     .collect(Collectors.toList());
     }
 
-    void printTable(PrintStream out, List<ScheduledRepairJob> jobs)
+    void printTable(PrintStream out, List<Schedule> schedules)
     {
         if (!summaryOnly)
         {
             ShellTable table = createShellTable();
-            jobs.stream()
-                    .filter(this::filterJob)
-                    .sorted(getJobComparator())
+            schedules.stream()
+                    .filter(this::filterSchedule)
+                    .sorted(getScheduleComparator())
                     .limit(limit)
                     .forEach(job -> table.addRow().addContent(toRowContent(job)));
             table.print(out, !noFormat);
@@ -100,14 +100,14 @@ public class RepairStatusCommand implements Action
         return table;
     }
 
-    private boolean filterJob(ScheduledRepairJob job)
+    private boolean filterSchedule(Schedule schedule)
     {
-        return showAll || job.status != Status.COMPLETED;
+        return showAll || schedule.status != ScheduleStatus.COMPLETED;
     }
 
-    Comparator<ScheduledRepairJob> getJobComparator()
+    Comparator<Schedule> getScheduleComparator()
     {
-        Comparator<ScheduledRepairJob> comparator;
+        Comparator<Schedule> comparator;
         switch (sortBy)
         {
             case STATUS:
@@ -138,33 +138,33 @@ public class RepairStatusCommand implements Action
         return keyspace + "." + table;
     }
 
-    List<Object> toRowContent(ScheduledRepairJob job)
+    List<Object> toRowContent(Schedule schedule)
         {
             return Arrays.asList(
-                    getTableReference(job.keyspace, job.table),
-                    job.status.name(),
-                    PrintUtils.toPercentage(job.repairedRatio),
-                    PrintUtils.epochToHumanReadable(job.lastRepairedAtInMs),
-                    PrintUtils.epochToHumanReadable(job.nextRepairInMs));
+                    getTableReference(schedule.keyspace, schedule.table),
+                    schedule.status.name(),
+                    PrintUtils.toPercentage(schedule.repairedRatio),
+                    PrintUtils.epochToHumanReadable(schedule.lastRepairedAtInMs),
+                    PrintUtils.epochToHumanReadable(schedule.nextRepairInMs));
         }
 
-    void printSummary(PrintStream out, List<ScheduledRepairJob> jobs)
+    void printSummary(PrintStream out, List<Schedule> schedules)
     {
-        Map<Status, Long> stats = getStatusCount(jobs);
+        Map<ScheduleStatus, Long> stats = getStatusCount(schedules);
 
         StringBuilder sb = new StringBuilder("Summary: ");
-        sb.append(stats.getOrDefault(Status.COMPLETED, 0L)).append(" completed, ");
-        sb.append(stats.getOrDefault(Status.IN_QUEUE, 0L)).append(" in queue, ");
-        sb.append(maybeCreateDescription(stats.get(Status.WARNING), SimpleAnsi.COLOR_YELLOW, " warning"));
-        sb.append(maybeCreateDescription(stats.get(Status.ERROR), SimpleAnsi.COLOR_RED, " error"));
+        sb.append(stats.getOrDefault(ScheduleStatus.COMPLETED, 0L)).append(" completed, ");
+        sb.append(stats.getOrDefault(ScheduleStatus.ON_TIME, 0L)).append(" on time, ");
+        sb.append(maybeCreateDescription(stats.get(ScheduleStatus.LATE), SimpleAnsi.COLOR_YELLOW, " late"));
+        sb.append(maybeCreateDescription(stats.get(ScheduleStatus.OVERDUE), SimpleAnsi.COLOR_RED, " overdue"));
         sb.setLength(sb.length() - 2);
 
         out.println(sb.toString());
     }
 
-    private Map<Status, Long> getStatusCount(List<ScheduledRepairJob> jobs)
+    private Map<ScheduleStatus, Long> getStatusCount(List<Schedule> schedules)
     {
-        return jobs.stream().collect(Collectors.groupingBy(job -> job.status, Collectors.counting()));
+        return schedules.stream().collect(Collectors.groupingBy(schedule -> schedule.status, Collectors.counting()));
     }
 
     private String maybeCreateDescription(Long number, String color, String description)
