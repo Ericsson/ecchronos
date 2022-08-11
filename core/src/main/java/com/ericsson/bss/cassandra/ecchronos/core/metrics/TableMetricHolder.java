@@ -39,6 +39,7 @@ public class TableMetricHolder implements Closeable
     static final String REPAIR_STATE = "RepairState";
     static final String REMAINING_REPAIR_TIME = "RemainingRepairTime";
     static final String FAILED_ATTEMPTS = "RepairFailedAttempts";
+    static final String SUCCEEDED_ATTEMPTS = "RepairSucceededAttempts";
 
     private final MetricRegistry myMetricRegistry;
     private final NodeMetricHolder myNodeMetricHolder;
@@ -49,6 +50,7 @@ public class TableMetricHolder implements Closeable
     private final AtomicReference<Long> myLastRepairedAt = new AtomicReference<>(0L);
     private final AtomicReference<Long> myRemainingRepairTime = new AtomicReference<>(0L);
     private final AtomicReference<Meter> myRepairFailedAttempts = new AtomicReference<>(null);
+    private final AtomicReference<Meter> myRepairSucceededAttempts = new AtomicReference<>(null);
 
     public TableMetricHolder(TableReference tableReference, MetricRegistry metricRegistry, NodeMetricHolder nodeMetricHolder)
     {
@@ -74,12 +76,16 @@ public class TableMetricHolder implements Closeable
                 return Ratio.of(0, 0);
             }
         });
-        SlidingTimeWindowMovingAverages averages = new SlidingTimeWindowMovingAverages();
-        Meter failedAttemptsMeter = new Meter(averages);
-        myRepairFailedAttempts.set(failedAttemptsMeter);
         myMetricRegistry.register(metricName(LAST_REPAIRED_AT), lastRepairedAtGauge());
         myMetricRegistry.register(metricName(REMAINING_REPAIR_TIME), remainingRepairTimeGauge());
+        SlidingTimeWindowMovingAverages failedAverages = new SlidingTimeWindowMovingAverages();
+        Meter failedAttemptsMeter = new Meter(failedAverages);
+        myRepairFailedAttempts.set(failedAttemptsMeter);
         myMetricRegistry.register(metricName(FAILED_ATTEMPTS), myRepairFailedAttempts.get());
+        SlidingTimeWindowMovingAverages succeededAverages = new SlidingTimeWindowMovingAverages();
+        Meter succeededAttemptsMeter = new Meter(succeededAverages);
+        myRepairSucceededAttempts.set(succeededAttemptsMeter);
+        myMetricRegistry.register(metricName(SUCCEEDED_ATTEMPTS), myRepairSucceededAttempts.get());
         timer(REPAIR_TIMING_SUCCESS);
         timer(REPAIR_TIMING_FAILED);
     }
@@ -121,6 +127,11 @@ public class TableMetricHolder implements Closeable
         myRepairFailedAttempts.get().mark();
     }
 
+    public void repairSucceededAttempt()
+    {
+        myRepairSucceededAttempts.get().mark();
+    }
+
     public void repairTiming(long timeTaken, TimeUnit timeUnit, boolean successful)
     {
         if (successful)
@@ -144,6 +155,7 @@ public class TableMetricHolder implements Closeable
         myMetricRegistry.remove(metricName(REPAIR_STATE));
         myMetricRegistry.remove(metricName(REMAINING_REPAIR_TIME));
         myMetricRegistry.remove(metricName(FAILED_ATTEMPTS));
+        myMetricRegistry.remove(metricName(SUCCEEDED_ATTEMPTS));
     }
 
     private String metricName(String name)

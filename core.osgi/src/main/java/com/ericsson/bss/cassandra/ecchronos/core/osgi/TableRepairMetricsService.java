@@ -100,6 +100,12 @@ public final class TableRepairMetricsService implements TableRepairMetrics, Tabl
         myDelegateTableRepairMetrics.repairFailedAttempt(tableReference);
     }
 
+    @Override
+    public void repairSucceededAttempt(TableReference tableReference)
+    {
+        myDelegateTableRepairMetrics.repairSucceededAttempt(tableReference);
+    }
+
     @ObjectClassDefinition
     public @interface Configuration
     {

@@ -288,6 +288,7 @@ public class TestRepairGroup
         boolean success = repairGroup.execute();
         assertThat(success).isTrue();
         verify(myTableRepairMetrics, never()).repairFailedAttempt(tableReference);
+        verify(myTableRepairMetrics, times(tasks.size())).repairSucceededAttempt(tableReference);
     }
 
     @Test
@@ -313,7 +314,8 @@ public class TestRepairGroup
 
         boolean success = repairGroup.execute();
         assertThat(success).isFalse();
-        verify(myTableRepairMetrics, times(3)).repairFailedAttempt(tableReference);
+        verify(myTableRepairMetrics, times(tasks.size())).repairFailedAttempt(tableReference);
+        verify(myTableRepairMetrics, never()).repairSucceededAttempt(tableReference);
     }
 
     @Test
@@ -340,6 +342,7 @@ public class TestRepairGroup
         boolean success = repairGroup.execute();
         assertThat(success).isFalse();
         verify(myTableRepairMetrics, times(2)).repairFailedAttempt(tableReference);
+        verify(myTableRepairMetrics, times(1)).repairSucceededAttempt(tableReference);
     }
 
     private RepairGroup.Builder builderFor(ReplicaRepairGroup replicaRepairGroup)

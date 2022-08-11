@@ -86,6 +86,7 @@ public class RepairGroup extends ScheduledTask
             try
             {
                 repairTask.execute();
+                myTableRepairMetrics.repairSucceededAttempt(myTableReference);
             }
             catch (ScheduledJobException e)
             {

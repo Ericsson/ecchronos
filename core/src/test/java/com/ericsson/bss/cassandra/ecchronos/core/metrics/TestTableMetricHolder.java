@@ -86,12 +86,14 @@ public class TestTableMetricHolder
                 metricName(TableMetricHolder.REPAIR_STATE),
                 metricName(TableMetricHolder.REPAIR_TIMING_FAILED),
                 metricName(TableMetricHolder.REPAIR_TIMING_SUCCESS),
-                metricName(TableMetricHolder.FAILED_ATTEMPTS));
+                metricName(TableMetricHolder.FAILED_ATTEMPTS),
+                metricName(TableMetricHolder.SUCCEEDED_ATTEMPTS));
 
         assertThat(getGague(TableMetricHolder.REPAIR_STATE).getValue()).isEqualTo(Double.NaN);
         assertThat(getGague(TableMetricHolder.LAST_REPAIRED_AT).getValue()).isEqualTo(0L);
         assertThat(getGague(TableMetricHolder.REMAINING_REPAIR_TIME).getValue()).isEqualTo(0L);
         assertThat(getMeter(TableMetricHolder.FAILED_ATTEMPTS).getCount()).isEqualTo(0L);
+        assertThat(getMeter(TableMetricHolder.SUCCEEDED_ATTEMPTS).getCount()).isEqualTo(0L);
     }
 
     @Test
@@ -110,6 +112,17 @@ public class TestTableMetricHolder
             myTableMetricHolder.repairFailedAttempt();
         }
         assertThat(getMeter(TableMetricHolder.FAILED_ATTEMPTS).getCount()).isEqualTo(failedAttempts);
+    }
+
+    @Test
+    public void testRepairSucceededAttempt()
+    {
+        long succeededAttempts = 5L;
+        for (int i = 0; i < succeededAttempts; i++)
+        {
+            myTableMetricHolder.repairSucceededAttempt();
+        }
+        assertThat(getMeter(TableMetricHolder.SUCCEEDED_ATTEMPTS).getCount()).isEqualTo(succeededAttempts);
     }
 
     @Test
