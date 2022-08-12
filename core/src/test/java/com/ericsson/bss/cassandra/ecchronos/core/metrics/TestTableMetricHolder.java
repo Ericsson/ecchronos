@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
 import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -84,11 +85,15 @@ public class TestTableMetricHolder
                 metricName(TableMetricHolder.LAST_REPAIRED_AT),
                 metricName(TableMetricHolder.REPAIR_STATE),
                 metricName(TableMetricHolder.REPAIR_TIMING_FAILED),
-                metricName(TableMetricHolder.REPAIR_TIMING_SUCCESS));
+                metricName(TableMetricHolder.REPAIR_TIMING_SUCCESS),
+                metricName(TableMetricHolder.FAILED_REPAIR_TASKS),
+                metricName(TableMetricHolder.SUCCEEDED_REPAIR_TASKS));
 
         assertThat(getGague(TableMetricHolder.REPAIR_STATE).getValue()).isEqualTo(Double.NaN);
         assertThat(getGague(TableMetricHolder.LAST_REPAIRED_AT).getValue()).isEqualTo(0L);
         assertThat(getGague(TableMetricHolder.REMAINING_REPAIR_TIME).getValue()).isEqualTo(0L);
+        assertThat(getMeter(TableMetricHolder.FAILED_REPAIR_TASKS).getCount()).isEqualTo(0L);
+        assertThat(getMeter(TableMetricHolder.SUCCEEDED_REPAIR_TASKS).getCount()).isEqualTo(0L);
     }
 
     @Test
@@ -96,6 +101,28 @@ public class TestTableMetricHolder
     {
         myTableMetricHolder.close();
         assertThat(myMetricRegistry.getMetrics()).isEmpty();
+    }
+
+    @Test
+    public void testFailedRepairTask()
+    {
+        long failedRepairTasks = 5L;
+        for (int i = 0; i < failedRepairTasks; i++)
+        {
+            myTableMetricHolder.failedRepairTask();
+        }
+        assertThat(getMeter(TableMetricHolder.FAILED_REPAIR_TASKS).getCount()).isEqualTo(failedRepairTasks);
+    }
+
+    @Test
+    public void testSucceededRepairTask()
+    {
+        long succeededRepairTasks = 5L;
+        for (int i = 0; i < succeededRepairTasks; i++)
+        {
+            myTableMetricHolder.succeededRepairTask();
+        }
+        assertThat(getMeter(TableMetricHolder.SUCCEEDED_REPAIR_TASKS).getCount()).isEqualTo(succeededRepairTasks);
     }
 
     @Test
@@ -194,6 +221,11 @@ public class TestTableMetricHolder
     private Timer getTimer(String name)
     {
         return myMetricRegistry.getTimers().get(metricName(name));
+    }
+
+    private Meter getMeter(String name)
+    {
+        return myMetricRegistry.getMeters().get(metricName(name));
     }
 
     private Gauge getGague(String name)

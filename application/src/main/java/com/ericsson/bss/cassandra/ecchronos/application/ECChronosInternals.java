@@ -239,6 +239,18 @@ public class ECChronosInternals implements Closeable
                         timeUnit.toMillis(timeTaken), successful ? "successful" : "not successful");
             }
         }
+
+        @Override
+        public void failedRepairTask(TableReference tableReference)
+        {
+            LOG.debug("Table {} failed repair task", tableReference);
+        }
+
+        @Override
+        public void succeededRepairTask(TableReference tableReference)
+        {
+            LOG.debug("Table {} succeeded repair task", tableReference);
+        }
     }
 
     private static class NoOpTableStorageState implements TableStorageStates

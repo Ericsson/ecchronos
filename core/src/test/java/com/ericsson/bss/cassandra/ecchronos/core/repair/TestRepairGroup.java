@@ -19,15 +19,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.ignoreStubs;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -39,6 +44,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -256,6 +262,87 @@ public class TestRepairGroup
         }
 
         assertThat(repairTaskRanges).containsExactlyInAnyOrderElementsOf(vnodes);
+    }
+
+    @Test
+    public void testExecuteAllTasksSuccessful() throws ScheduledJobException
+    {
+        DriverNode node = mockNode("DC1");
+        LongTokenRange range = new LongTokenRange(1, 2);
+        ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range));
+
+        RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).build(priority));
+        RepairTask repairTask1 = mock(RepairTask.class);
+        RepairTask repairTask2 = mock(RepairTask.class);
+        RepairTask repairTask3 = mock(RepairTask.class);
+        Collection<RepairTask> tasks = new ArrayList<>();
+        tasks.add(repairTask1);
+        tasks.add(repairTask2);
+        tasks.add(repairTask3);
+        doReturn(tasks).when(repairGroup).getRepairTasks();
+        doNothing().when(repairTask1).execute();
+        doNothing().when(repairTask2).execute();
+        doNothing().when(repairTask3).execute();
+
+        boolean success = repairGroup.execute();
+        assertThat(success).isTrue();
+        verify(myTableRepairMetrics, never()).failedRepairTask(tableReference);
+        verify(myTableRepairMetrics, times(tasks.size())).succeededRepairTask(tableReference);
+    }
+
+    @Test
+    public void testExecuteAllTasksFailed() throws ScheduledJobException
+    {
+        DriverNode node = mockNode("DC1");
+        LongTokenRange range = new LongTokenRange(1, 2);
+        ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range));
+
+        RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).build(priority));
+        RepairTask repairTask1 = mock(RepairTask.class);
+        RepairTask repairTask2 = mock(RepairTask.class);
+        RepairTask repairTask3 = mock(RepairTask.class);
+        Collection<RepairTask> tasks = new ArrayList<>();
+        tasks.add(repairTask1);
+        tasks.add(repairTask2);
+        tasks.add(repairTask3);
+        doReturn(tasks).when(repairGroup).getRepairTasks();
+        doThrow(new ScheduledJobException("foo")).when(repairTask1).execute();
+        doThrow(new ScheduledJobException("foo")).when(repairTask2).execute();
+        doThrow(new ScheduledJobException("foo")).when(repairTask3).execute();
+
+        boolean success = repairGroup.execute();
+        assertThat(success).isFalse();
+        verify(myTableRepairMetrics, times(tasks.size())).failedRepairTask(tableReference);
+        verify(myTableRepairMetrics, never()).succeededRepairTask(tableReference);
+    }
+
+    @Test
+    public void testExecuteSomeTasksFailed() throws ScheduledJobException
+    {
+        DriverNode node = mockNode("DC1");
+        LongTokenRange range = new LongTokenRange(1, 2);
+        ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range));
+
+        RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).build(priority));
+        RepairTask repairTask1 = mock(RepairTask.class);
+        RepairTask repairTask2 = mock(RepairTask.class);
+        RepairTask repairTask3 = mock(RepairTask.class);
+        Collection<RepairTask> tasks = new ArrayList<>();
+        tasks.add(repairTask1);
+        tasks.add(repairTask2);
+        tasks.add(repairTask3);
+        doReturn(tasks).when(repairGroup).getRepairTasks();
+        doThrow(new ScheduledJobException("foo")).when(repairTask1).execute();
+        doNothing().when(repairTask2).execute();
+        doThrow(new ScheduledJobException("foo")).when(repairTask3).execute();
+
+        boolean success = repairGroup.execute();
+        assertThat(success).isFalse();
+        verify(myTableRepairMetrics, times(2)).failedRepairTask(tableReference);
+        verify(myTableRepairMetrics, times(1)).succeededRepairTask(tableReference);
     }
 
     private RepairGroup.Builder builderFor(ReplicaRepairGroup replicaRepairGroup)
