@@ -150,6 +150,16 @@ Usually the RepairFailedTime should be all zeros but if it's not the reason can 
 
     The effective remaining repair time (in milliseconds) for the table to be fully repaired (time ecChronos waits for cassandra to perform repair).
 
+* FailedRepairTasks
+
+    The counter for the repair tasks that have failed for the table.
+    A repair task is the repair of one vnode (or token range).
+
+* SucceededRepairTasks
+
+    The counter for the repair tasks that have succeeded for the table.
+    A repair task is the repair of one vnode (or token range).
+
 #### Examples
 
 | t          | value  |
@@ -184,3 +194,32 @@ The value represents the effective remaining repair time for the table to be ful
 This is the time ecChronos will have to wait for Cassandra to perform repair,
 this is an estimation based on the last repair of the table.
 The value should be `0` if there is no repair ongoing for this table.
+
+| t          | count | mean_rate | m1_rate  | m5_rate  | m15_rate | rate_unit     |
+|------------|-------|-----------|----------|----------|----------|---------------|
+| 1660042648 | 0     | 0.000000  | 0.000000 | 0.000000 | 0.000000 | events/second |
+
+\<keyspace\>.\<table\>-\<table-id\>-FailedRepairTasks
+
+
+| t          | count | mean_rate | m1_rate  | m5_rate   | m15_rate  | rate_unit     |
+|------------|-------|-----------|----------|-----------|-----------|---------------|
+| 1660213991 | 102   | 0.044732  | 3.000000 | 14.000000 | 42.000000 | events/second |
+
+\<keyspace\>.\<table\>-\<table-id\>-SucceededRepairTasks
+
+The count represents the total amount of failed/succeeded repair tasks for the table.
+The mean rate is the rate at which events have occurred since the beginning.
+The `m1_rate`, `m5_rate` and `m_15_rate` are the rates at which events have occurred for the past 1 minute,
+5 minutes and 15 minutes.
+For example an `m1_rate` of `15` would mean that 15 events have occurred in the past minute.
+
+For `\<keyspace\>.\<table\>-\<table-id\>-FailedRepairTasks`, `m1_rate`, `m5_rate` and `m15_rate` should be close to `0`
+in healthy clusters. A positive rate might indicate a problem and warrant a look into the logs.
+If repairs are not running, the `m1_rate`, `m5_rate` and `m15_rate` will show `0`.
+
+For `\<keyspace\>.\<table\>-\<table-id\>-SucceededRepairTasks`, `m1_rate`, `m5_rate` and `m15_rate` should always be
+a positive number.
+If the `m1_rate`, `m5_rate` or `m15_rate` report `0`, that means that no repairs have succeeded or no repairs have run.
+
+These 2 metrics could be viewed together to view the ratio between failed and succeeded repair tasks as well as total repair tasks.

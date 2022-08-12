@@ -2,10 +2,10 @@ Feature: ecctool repairs
 
   Scenario: List repairs
     Given we have access to ecctool
-    And we schedule an on demand repair on test.table1
-    And we schedule an on demand repair on test.table2
-    And we schedule an on demand repair on test2.table1
-    And we schedule an on demand repair on test2.table2
+    When we run local repair for keyspace test and table table1
+    And we run local repair for keyspace test and table table2
+    And we run local repair for keyspace test2 and table table1
+    And we run local repair for keyspace test2 and table table2
     When we list all repairs
     Then the output should contain a valid repair header
     And the output should contain a repair row for test.table1
