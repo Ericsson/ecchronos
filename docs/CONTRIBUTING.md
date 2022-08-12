@@ -99,6 +99,7 @@ Running behave tests manually is roughly 7x faster than running through `python-
 pip install behave
 pip install requests
 pip install jsonschema
+pip install cassandra-driver
 ```
 
 2. Prepare tables and configuration for tests
