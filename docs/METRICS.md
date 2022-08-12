@@ -153,12 +153,12 @@ Usually the RepairFailedTime should be all zeros but if it's not the reason can 
 * FailedRepairTasks
 
     The counter for the repair tasks that have failed for the table.
-    A repair task is the repair of one virtual node (or token range).
+    A repair task is the repair of one vnode (or token range).
 
 * SucceededRepairTasks
 
     The counter for the repair tasks that have succeeded for the table.
-    A repair task is the repair of one virtual node (or token range).
+    A repair task is the repair of one vnode (or token range).
 
 #### Examples
 
@@ -214,11 +214,9 @@ The `m1_rate`, `m5_rate` and `m_15_rate` are the rates at which events have occu
 5 minutes and 15 minutes.
 For example an `m1_rate` of `15` would mean that 15 events have occurred in the past minute.
 
-For `\<keyspace\>.\<table\>-\<table-id\>-FailedRepairTasks`, `m1_rate`, `m5_rate` and `m15_rate` should always be `0`
-in healthy clusters (assuming repairs are actually running).
-If repairs are not running the `m1_rate`, `m5_rate` and `m15_rate` will also show `0`.
-If the `m1_rate`, `m5_rate` or `m15_rate` report a positive number,
-check the logs to find out which token ranges have failed to repair and why.
+For `\<keyspace\>.\<table\>-\<table-id\>-FailedRepairTasks`, `m1_rate`, `m5_rate` and `m15_rate` should be close to `0`
+in healthy clusters. A positive rate might indicate a problem and warrant a look into the logs.
+If repairs are not running, the `m1_rate`, `m5_rate` and `m15_rate` will show `0`.
 
 For `\<keyspace\>.\<table\>-\<table-id\>-SucceededRepairTasks`, `m1_rate`, `m5_rate` and `m15_rate` should always be
 a positive number.
