@@ -14,9 +14,12 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.schema.AggregateMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.FunctionMetadata;
@@ -106,7 +109,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         {
             TableReference tableReference = myTableReferenceFactory.forTable(table.getKeyspace().asInternal(),
                     table.getName().asInternal());
-            updateConfiguration(tableReference);
+            updateConfiguration(tableReference, table);
         }
     }
 
@@ -121,11 +124,28 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     @Override
+    public void onTableUpdated(TableMetadata current, TableMetadata previous)
+    {
+        onTableCreated(current);
+    }
+
+    @Override
     public void close()
     {
         for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
         {
             allTableOperation(keyspaceMetadata.getName().asInternal(), myRepairScheduler::removeConfiguration);
+        }
+    }
+
+    private void allTableOperation(String keyspaceName, BiConsumer<TableReference, TableMetadata> consumer)
+    {
+        for (TableMetadata tableMetadata : mySession.getMetadata().getKeyspace(keyspaceName).get().getTables().values())
+        {
+            String tableName = tableMetadata.getName().asInternal();
+            TableReference tableReference = myTableReferenceFactory.forTable(keyspaceName, tableName);
+
+            consumer.accept(tableReference, tableMetadata);
         }
     }
 
@@ -140,11 +160,11 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         }
     }
 
-    private void updateConfiguration(TableReference tableReference)
+    private void updateConfiguration(TableReference tableReference, TableMetadata table)
     {
         RepairConfiguration repairConfiguration = myRepairConfigurationFunction.apply(tableReference);
 
-        if (RepairConfiguration.DISABLED.equals(repairConfiguration))
+        if (RepairConfiguration.DISABLED.equals(repairConfiguration) || isTableIgnored(table, repairConfiguration.getIgnoreTWCSTables()))
         {
             myRepairScheduler.removeConfiguration(tableReference);
         }
@@ -152,6 +172,21 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         {
             myRepairScheduler.putConfiguration(tableReference, myRepairConfigurationFunction.apply(tableReference));
         }
+    }
+
+    private boolean isTableIgnored(TableMetadata table, boolean ignore)
+    {
+        Map<CqlIdentifier, Object> tableOptions = table.getOptions();
+        if (tableOptions == null)
+        {
+            return false;
+        }
+        Map<String, String> compaction = (Map<String, String>) tableOptions.get(CqlIdentifier.fromInternal("compaction"));
+        if (compaction == null)
+        {
+            return false;
+        }
+        return ignore && "org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy".equals(compaction.get("class"));
     }
 
     public static Builder newBuilder()
@@ -167,12 +202,6 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
 
     @Override
     public void onKeyspaceDropped(KeyspaceMetadata keyspace)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onTableUpdated(TableMetadata current, TableMetadata previous)
     {
         // NOOP
     }

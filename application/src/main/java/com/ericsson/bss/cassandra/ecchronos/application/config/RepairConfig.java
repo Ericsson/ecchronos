@@ -26,6 +26,7 @@ public class RepairConfig
             new Config.Interval(10, TimeUnit.DAYS));
     private double unwind_ratio = 0.0d;
     private long size_target = RepairConfiguration.FULL_REPAIR_SIZE;
+    private boolean ignore_twcs_tables = false;
 
     public Config.Alarm getAlarm()
     {
@@ -59,6 +60,16 @@ public class RepairConfig
         }
     }
 
+    public void setIgnore_twcs_tables(boolean ignore_twcs_tables)
+    {
+        this.ignore_twcs_tables = ignore_twcs_tables;
+    }
+
+    public boolean getIgnoreTWCSTables()
+    {
+        return ignore_twcs_tables;
+    }
+
     public RepairConfiguration asRepairConfiguration()
     {
         return RepairConfiguration.newBuilder()
@@ -68,6 +79,7 @@ public class RepairConfig
                         TimeUnit.MILLISECONDS)
                 .withRepairErrorTime(alarm.getError().getInterval(TimeUnit.MILLISECONDS),
                         TimeUnit.MILLISECONDS)
+                .withIgnoreTWCSTables(ignore_twcs_tables)
                 .withRepairUnwindRatio(unwind_ratio)
                 .withTargetRepairSizeInBytes(size_target)
                 .build();

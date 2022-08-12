@@ -160,6 +160,10 @@ repair:
   history:
     provider: ecc
     keyspace: ecchronos
+  ##
+  ## Specifies if tables with TWCS (TimeWindowCompactionStrategy) should be ignored for repair
+  ##
+  ignore_twcs_tables: false
 
 statistics:
   enabled: true
