@@ -15,14 +15,6 @@ The following subcommands are available:
 | `ecctool stop`                                                      | Stop ecChronos service                |
 | `ecctool status`                                                    | Show status of ecChronos service      |
 
-The following subcommands are deprecated:
-
-| Command                                                             | Description                           |
-|---------------------------------------------------------------------|---------------------------------------|
-| `ecctool repair-status`                                             | Repair status overview                |
-| `ecctool repair-config`                                             | Configuration overview                |
-| `ecctool trigger-repair`                                            | Trigger a single repair               |
-
 ### Flags
 
 Each of the subcommands support flags. For more information provide `-h` flag after subcommand.
