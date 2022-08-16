@@ -88,6 +88,103 @@ This can be done by running either `mvn clean install -P docker-integration-test
 The acceptance test use behave to verify the python scripts as well as the REST server in ecChronos.
 They are activated by using `-P python-integration-tests` in combination with the docker flag.
 
+###### Running acceptance tests towards local ecChronos/Cassandra
+
+For development, it's much faster to run behave tests without needing to do the ecChronos/Cassandra setup each time.
+Running behave tests manually is roughly 7x faster than running through `python-integration-tests`.
+
+1. Install behave and dependencies (this is only needed first time)
+
+```
+pip install behave
+pip install requests
+pip install jsonschema
+pip install cassandra-driver
+```
+
+2. Prepare tables and configuration for tests
+
+Create keyspaces and tables in Cassandra (make sure to replace datacenter name with whatever you have).
+It is important that `ecchronos` keyspace has replication factor of 1 (tests depend on this).
+
+```
+CREATE KEYSPACE IF NOT EXISTS ecchronos WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 1};
+CREATE TYPE IF NOT EXISTS ecchronos.token_range (start text, end text);
+CREATE TYPE IF NOT EXISTS ecchronos.table_reference (id uuid, keyspace_name text, table_name text);
+CREATE TABLE IF NOT EXISTS ecchronos.on_demand_repair_status (host_id uuid, job_id uuid, table_reference frozen<table_reference>, token_map_hash int, repaired_tokens frozen<set<frozen<token_range>>>, status text, completed_time timestamp, PRIMARY KEY(host_id, job_id)) WITH default_time_to_live = 2592000 AND gc_grace_seconds = 0;
+CREATE TABLE IF NOT EXISTS ecchronos.lock (resource text, node uuid, metadata map<text,text>, PRIMARY KEY(resource)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0;
+CREATE TABLE IF NOT EXISTS ecchronos.lock_priority (resource text, node uuid, priority int, PRIMARY KEY(resource, node)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0;
+CREATE TABLE IF NOT EXISTS ecchronos.reject_configuration (keyspace_name text, table_name text, start_hour int, start_minute int, end_hour int, end_minute int, PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute));
+CREATE TABLE IF NOT EXISTS ecchronos.repair_history(table_id uuid, node_id uuid, repair_id timeuuid, job_id uuid, coordinator_id uuid, range_begin text, range_end text, participants set<uuid>, status text, started_at timestamp, finished_at timestamp, PRIMARY KEY((table_id,node_id), repair_id)) WITH compaction = {'class': 'TimeWindowCompactionStrategy'} AND default_time_to_live = 1728000 AND CLUSTERING ORDER BY (repair_id DESC);
+CREATE KEYSPACE IF NOT EXISTS test WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 3};
+CREATE TABLE IF NOT EXISTS test.table1 (key1 text, key2 int, value int, PRIMARY KEY(key1, key2));
+CREATE TABLE IF NOT EXISTS test.table2 (key1 text, key2 int, value int, PRIMARY KEY(key1, key2));
+CREATE KEYSPACE IF NOT EXISTS test2 WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 3};
+CREATE TABLE IF NOT EXISTS test2.table1 (key1 text, key2 int, value int, PRIMARY KEY(key1, key2));
+CREATE TABLE IF NOT EXISTS test2.table2 (key1 text, key2 int, value int, PRIMARY KEY(key1, key2));
+```
+
+To speed up tests it is recommended to change scheduler frequency to 5 seconds in ecc.yml.
+
+```
+scheduler:
+  frequency:
+    time: 5
+    unit: SECONDS
+```
+
+3. Start ecChronos
+
+**ecChronos must be listening on `http://localhost:8080`**
+
+```
+ecctool start
+```
+
+4. Change working directory to `ecchronos-binary/src/test/behave`
+
+```
+cd ecchronos-binary/src/test/behave
+```
+
+5. Run the tests
+
+**Make sure to change define variables before running.**
+
+- ecctool - should point to your local ecctool (Mandatory)
+- cassandra_address - should point to your Cassandra IP (Mandatory)
+- cql_user - should be the CQL user that has permissions for ecchronos keyspace
+  (Mandatory if auth is enabled, otherwise skip defining).
+  This will be used to clean up the ecchronos.on_demand_repair_status table.
+- cql_password - should be the password for CQL user that has permissions for ecchronos keyspace
+  (Mandatory if auth is enabled, otherwise skip defining).
+  This will be used to clean up the ecchronos.on_demand_repair_status table.
+- no_tls - disables secure connection towards Cassandra.
+
+Example (no auth, no tls), run all behave tests
+
+```
+behave --define ecctool=/usr/bin/ecctool --define cassandra_address="127.0.0.1" --define no_tls
+```
+
+Example (no auth, no tls), run specific tests (feature)
+
+```
+behave --define ecctool=/usr/bin/ecctool --define cassandra_address="127.0.0.1" --define no_tls --include features/ecc-spring.feature
+```
+
+Example (auth, tls), run all behave tests
+
+```
+behave --define ecctool=/usr/bin/ecctool --define cassandra_address="127.0.0.1" --define cql_user="cassandra" --define cql_password="cassandra"
+```
+
+Example (auth, tls), run specific tests (feature)
+
+```
+behave --define ecctool=/usr/bin/ecctool --define cassandra_address="127.0.0.1" --define cql_user="cassandra" --define cql_password="cassandra" --include features/ecc-spring.feature
+```
+
 #### Maven configuration properties
 
 | Property                   | Default    | Description                                              |
