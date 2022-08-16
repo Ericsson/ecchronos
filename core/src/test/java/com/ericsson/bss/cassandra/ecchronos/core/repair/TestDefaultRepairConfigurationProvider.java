@@ -177,6 +177,40 @@ public class TestDefaultRepairConfigurationProvider
     }
 
     @Test
+    public void testAddNewNonReplicatedKeyspace()
+    {
+        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
+                .build();
+        KeyspaceMetadata keyspaceMetadata = mockKeyspace(TABLE_REFERENCE.getKeyspace(), false);
+        mockTable(keyspaceMetadata, TABLE_REFERENCE, new HashMap<>());
+
+        defaultRepairConfigurationProvider.onKeyspaceCreated(keyspaceMetadata);
+
+        verify(myRepairScheduler, never()).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairScheduler, times(1)).removeConfiguration(eq(TABLE_REFERENCE));
+
+        verifyNoMoreInteractions(myRepairScheduler);
+        defaultRepairConfigurationProvider.close();
+    }
+
+    @Test
+    public void testAddNewReplicatedKeyspace()
+    {
+        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
+                .build();
+        KeyspaceMetadata keyspaceMetadata = mockKeyspace(TABLE_REFERENCE.getKeyspace(), true);
+        mockTable(keyspaceMetadata, TABLE_REFERENCE, new HashMap<>());
+
+        defaultRepairConfigurationProvider.onKeyspaceCreated(keyspaceMetadata);
+
+        verify(myRepairScheduler, times(1)).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairScheduler, never()).removeConfiguration(eq(TABLE_REFERENCE));
+
+        verifyNoMoreInteractions(myRepairScheduler);
+        defaultRepairConfigurationProvider.close();
+    }
+
+    @Test
     public void testAddNewNonReplicatedTable()
     {
         DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
@@ -395,18 +429,27 @@ public class TestDefaultRepairConfigurationProvider
 
     private TableMetadata mockNonReplicatedTable(TableReference tableReference, Map<CqlIdentifier, Object> options)
     {
-        return mockTable(tableReference, options, false);
+        KeyspaceMetadata keyspaceMetadata = mockKeyspace(tableReference.getKeyspace(), false);
+        return mockTable(keyspaceMetadata, tableReference, options);
     }
 
     private TableMetadata mockReplicatedTable(TableReference tableReference, Map<CqlIdentifier, Object> options)
     {
-        return mockTable(tableReference, options, true);
+        KeyspaceMetadata keyspaceMetadata = mockKeyspace(tableReference.getKeyspace(), true);
+        return mockTable(keyspaceMetadata, tableReference, options);
     }
 
-    private TableMetadata mockTable(TableReference tableReference, Map<CqlIdentifier, Object> options, boolean replicated)
+    private KeyspaceMetadata mockKeyspace(String name, boolean replicated)
     {
         KeyspaceMetadata keyspaceMetadata = mock(KeyspaceMetadata.class);
-        when(keyspaceMetadata.getName()).thenReturn(CqlIdentifier.fromInternal(tableReference.getKeyspace()));
+        when(keyspaceMetadata.getName()).thenReturn(CqlIdentifier.fromInternal(name));
+        when(myReplicatedTableProviderMock.accept(eq(name))).thenReturn(replicated);
+        return keyspaceMetadata;
+    }
+
+    private TableMetadata mockTable(KeyspaceMetadata keyspaceMetadata, TableReference tableReference,
+            Map<CqlIdentifier, Object> options)
+    {
         myKeyspaces.put(tableReference.getKeyspace(), keyspaceMetadata);
 
         TableMetadata tableMetadata = mock(TableMetadata.class);
@@ -416,7 +459,6 @@ public class TestDefaultRepairConfigurationProvider
         doReturn(Collections.singletonMap(tableMetadata.getName(), tableMetadata)).when(keyspaceMetadata).getTables();
         when(tableMetadata.getOptions()).thenReturn(options);
 
-        when(myReplicatedTableProviderMock.accept(eq(tableReference.getKeyspace()))).thenReturn(replicated);
         Map<CqlIdentifier, KeyspaceMetadata> keyspaceMetadatas = new HashMap<>();
         for (Map.Entry<String, KeyspaceMetadata> keyspaceEntry : myKeyspaces.entrySet())
         {
