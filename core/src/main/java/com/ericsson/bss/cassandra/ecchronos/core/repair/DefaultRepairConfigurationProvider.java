@@ -89,9 +89,9 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     @Override
-    public void onKeyspaceUpdated(KeyspaceMetadata current, KeyspaceMetadata previous)
+    public void onKeyspaceCreated(KeyspaceMetadata keyspace)
     {
-        String keyspaceName = current.getName().asInternal();
+        String keyspaceName = keyspace.getName().asInternal();
         if (myReplicatedTableProvider.accept(keyspaceName))
         {
             allTableOperation(keyspaceName, this::updateConfiguration);
@@ -100,6 +100,12 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         {
             allTableOperation(keyspaceName, myRepairScheduler::removeConfiguration);
         }
+    }
+
+    @Override
+    public void onKeyspaceUpdated(KeyspaceMetadata current, KeyspaceMetadata previous)
+    {
+        onKeyspaceCreated(current);
     }
 
     @Override
@@ -192,12 +198,6 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     public static Builder newBuilder()
     {
         return new Builder();
-    }
-
-    @Override
-    public void onKeyspaceCreated(KeyspaceMetadata keyspace)
-    {
-        // NOOP
     }
 
     @Override
