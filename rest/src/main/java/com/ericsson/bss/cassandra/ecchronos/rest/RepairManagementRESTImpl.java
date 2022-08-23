@@ -19,31 +19,39 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.RepairInfo;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.RepairStats;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.Schedule;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.RepairStatsProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.info.License;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -62,6 +70,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
                 name = "Apache 2.0",
                 url = "https://www.apache.org/licenses/LICENSE-2.0"),
         version = "1.0.0"))
+@SuppressWarnings("PMD.GodClass") // We might want to refactor
 public class RepairManagementRESTImpl implements RepairManagementREST
 {
     private static final String ROOT = "/repair-management/";
@@ -80,13 +89,18 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     @Autowired
     private final ReplicatedTableProvider myReplicatedTableProvider;
 
+    @Autowired
+    private final RepairStatsProvider myRepairStatsProvider;
+
     public RepairManagementRESTImpl(RepairScheduler repairScheduler, OnDemandRepairScheduler demandRepairScheduler,
-            TableReferenceFactory tableReferenceFactory, ReplicatedTableProvider replicatedTableProvider)
+            TableReferenceFactory tableReferenceFactory, ReplicatedTableProvider replicatedTableProvider,
+            RepairStatsProvider repairStatsProvider)
     {
         myRepairScheduler = repairScheduler;
         myOnDemandRepairScheduler = demandRepairScheduler;
         myTableReferenceFactory = tableReferenceFactory;
         myReplicatedTableProvider = replicatedTableProvider;
+        myRepairStatsProvider = repairStatsProvider;
     }
 
     @Override
@@ -271,6 +285,92 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         {
             throw new ResponseStatusException(NOT_FOUND, NOT_FOUND.getReasonPhrase(), e);
         }
+    }
+
+    @Override
+    @GetMapping(value = ENDPOINT_PREFIX + "/repairInfo",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "get-repair-info")
+    public ResponseEntity<RepairInfo> getRepairInfo(@RequestParam(required = false) String keyspace,
+            @RequestParam(required = false) String table,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            @Parameter(
+                    description = "Since time, can be specified as ISO8601 date or as milliseconds since epoch",
+                    schema = @Schema(type = "string")) Long since,
+            @RequestParam(required = false) @Parameter(
+                    description = "Duration, can be specified as either a simple duration like '30s' or as ISO8601 duration 'pt30s'",
+                    schema = @Schema(type = "string"))
+                    Duration duration)
+    {
+        try
+        {
+            RepairInfo repairInfo;
+            if (keyspace != null)
+            {
+                if (table != null)
+                {
+                    TableReference tableReference = myTableReferenceFactory.forTable(keyspace, table);
+                    if (tableReference == null)
+                    {
+                        throw new ResponseStatusException(NOT_FOUND,
+                                "Table " + keyspace + "." + table + " does not exist");
+                    }
+                    repairInfo = getRepairInfo(Collections.singleton(tableReference), since, duration);
+                }
+                else
+                {
+                    repairInfo = getRepairInfo(myTableReferenceFactory.forKeyspace(keyspace), since, duration);
+                }
+            }
+            else
+            {
+                if (table != null)
+                {
+                    throw new ResponseStatusException(BAD_REQUEST, "Keyspace must be provided if table is provided");
+                }
+                repairInfo = getRepairInfo(myTableReferenceFactory.forCluster(), since, duration);
+            }
+            return ResponseEntity.ok(repairInfo);
+        }
+        catch (EcChronosException e)
+        {
+            throw new ResponseStatusException(NOT_FOUND, NOT_FOUND.getReasonPhrase(), e);
+        }
+    }
+
+    private RepairInfo getRepairInfo(Set<TableReference> tables, Long since, Duration duration)
+    {
+        long toTime = System.currentTimeMillis();
+        long sinceTime;
+        if (since != null)
+        {
+            sinceTime = since.longValue();
+            if (duration != null)
+            {
+                toTime = sinceTime + TimeUnit.SECONDS.toMillis(duration.getSeconds());
+            }
+        }
+        else if(duration != null)
+        {
+            sinceTime = toTime - TimeUnit.SECONDS.toMillis(duration.getSeconds());
+        }
+        else
+        {
+            throw new ResponseStatusException(BAD_REQUEST, "Since or duration or both must be specified");
+        }
+        if (toTime < sinceTime)
+        {
+            throw new ResponseStatusException(BAD_REQUEST, "'to' (" + toTime + ") is before 'since' (" + sinceTime + ")");
+        }
+        List<RepairStats> repairStats = new ArrayList<>();
+        for (TableReference table : tables)
+        {
+            if (myReplicatedTableProvider.accept(table.getKeyspace()))
+            {
+                repairStats.add(myRepairStatsProvider.getRepairStats(table, sinceTime, toTime));
+            }
+        }
+        return new RepairInfo(sinceTime, toTime, repairStats);
     }
 
     private List<OnDemandRepair> runLocalOrCluster(boolean isLocal, Set<TableReference> tables)

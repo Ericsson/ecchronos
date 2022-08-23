@@ -28,6 +28,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.convert.ApplicationConversionService;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
@@ -53,6 +54,8 @@ import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.MetricsServlet;
+import org.springframework.format.FormatterRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class BeanConfigurator
@@ -244,5 +247,18 @@ public class BeanConfigurator
         CqlSession session = nativeConnectionProvider.getSession();
 
         return new ReplicationStateImpl(nodeResolver, session, node);
+    }
+
+    @Bean
+    public WebMvcConfigurer conversionConfigurer() //Add application converters to web so springboot can convert in REST
+    {
+        return new WebMvcConfigurer()
+        {
+            @Override
+            public void addFormatters(FormatterRegistry registry)
+            {
+                ApplicationConversionService.configure(registry);
+            }
+        };
     }
 }

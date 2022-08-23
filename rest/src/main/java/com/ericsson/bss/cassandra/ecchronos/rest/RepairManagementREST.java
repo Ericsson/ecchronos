@@ -15,9 +15,11 @@
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.RepairInfo;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.Schedule;
 import org.springframework.http.ResponseEntity;
 
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -72,4 +74,6 @@ public interface RepairManagementREST
      * @return A JSON representation of {@link OnDemandRepair}
      */
     ResponseEntity<List<OnDemandRepair>> triggerRepair(String keyspace, String table, boolean isLocal);
+
+    ResponseEntity<RepairInfo> getRepairInfo(String keyspace, String table, Long since, Duration duration);
 }

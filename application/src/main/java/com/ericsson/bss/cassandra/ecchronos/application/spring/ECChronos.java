@@ -17,6 +17,9 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
 import java.io.Closeable;
 import java.util.Collections;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStateFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.RepairStatsProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.RepairStatsProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.datastax.oss.driver.api.core.CqlSession;
 import org.springframework.context.ApplicationContext;
@@ -49,6 +52,7 @@ public class ECChronos implements Closeable
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
     private final RepairSchedulerImpl myRepairSchedulerImpl;
     private final OnDemandRepairSchedulerImpl myOnDemandRepairSchedulerImpl;
+    private final RepairStatsProvider myRepairStatsProvider;
 
     public ECChronos(ApplicationContext applicationContext, Config configuration, // NOPMD
             RepairFaultReporter repairFaultReporter, NativeConnectionProvider nativeConnectionProvider,
@@ -109,6 +113,7 @@ public class ECChronos implements Closeable
                 .withRepairHistory(repairHistory)
                 .withOnDemandStatus(new OnDemandStatus(nativeConnectionProvider))
                 .build();
+        myRepairStatsProvider = new RepairStatsProviderImpl(new VnodeRepairStateFactoryImpl(replicationState, repairHistoryProvider, true));
         myECChronosInternals.addRunPolicy(myTimeBasedRunPolicy);
     }
 
@@ -134,6 +139,12 @@ public class ECChronos implements Closeable
     public ReplicatedTableProvider replicatedTableProvider()
     {
         return myECChronosInternals.getReplicatedTableProvider();
+    }
+
+    @Bean
+    public RepairStatsProvider repairStatsProvider()
+    {
+        return myRepairStatsProvider;
     }
 
     @Override
