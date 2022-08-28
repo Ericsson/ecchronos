@@ -19,7 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.google.common.collect.ImmutableSet;
 import org.assertj.core.util.Preconditions;
 import org.mockito.internal.util.collections.Sets;
@@ -65,9 +65,10 @@ public class TestUtils
         private String table;
         private long lastRepairedAt = 0;
         private long repairInterval = 0;
-        private ImmutableSet<Node> replicas = ImmutableSet.of();
+        private ImmutableSet<DriverNode> replicas = ImmutableSet.of();
         private LongTokenRange longTokenRange = new LongTokenRange(1, 2);
         private Collection<VnodeRepairState> vnodeRepairStateSet;
+        private RepairConfiguration repairConfiguration;
 
         private double progress = 0;
         private RepairJobView.Status status = RepairJobView.Status.IN_QUEUE;
@@ -120,6 +121,13 @@ public class TestUtils
             return this;
         }
 
+        public ScheduledRepairJobBuilder withRepairConfiguration(RepairConfiguration repairConfiguration)
+        {
+            this.repairConfiguration = repairConfiguration;
+            return this;
+        }
+
+
         public RepairJobView build()
         {
             Preconditions.checkNotNull(keyspace, "Keyspace cannot be null");
@@ -137,8 +145,11 @@ public class TestUtils
                 vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Sets.newSet(vnodeRepairState)).build();
             }
 
-            return new ScheduledRepairJobView(id, tableReference(keyspace, table),
-                    generateRepairConfiguration(repairInterval),
+            if (repairConfiguration == null)
+            {
+                this.repairConfiguration = generateRepairConfiguration(repairInterval);
+            }
+            return new ScheduledRepairJobView(id, tableReference(keyspace, table), repairConfiguration,
                     generateRepairStateSnapshot(lastRepairedAt, vnodeRepairStates), status,progress, lastRepairedAt + repairInterval);
         }
     }
@@ -146,6 +157,7 @@ public class TestUtils
     public static class OnDemandRepairJobBuilder
     {
         private UUID id = UUID.randomUUID();
+        private UUID hostId = UUID.randomUUID();
         private String keyspace;
         private String table;
         private long completedAt = 0;
@@ -157,6 +169,12 @@ public class TestUtils
         public OnDemandRepairJobBuilder withId(UUID id)
         {
             this.id = id;
+            return this;
+        }
+
+        public OnDemandRepairJobBuilder withHostId(UUID hostId)
+        {
+            this.hostId = hostId;
             return this;
         }
 
@@ -202,18 +220,18 @@ public class TestUtils
             Preconditions.checkNotNull(table, "Table cannot be null");
             Preconditions.checkArgument(completedAt > 0 || completedAt == -1, "Last repaired not set");
 
-            return new OnDemandRepairJobView(id, tableReference(keyspace, table), repairConfiguration,
+            return new OnDemandRepairJobView(id, hostId, tableReference(keyspace, table), repairConfiguration,
                     status, progress, completedAt);
         }
     }
 
-    public static VnodeRepairState createVnodeRepairState(long startToken, long endToken, ImmutableSet<Node> replicas,
+    public static VnodeRepairState createVnodeRepairState(long startToken, long endToken, ImmutableSet<DriverNode> replicas,
             long lastRepairedAt)
     {
         return createVnodeRepairState(new LongTokenRange(startToken, endToken), replicas, lastRepairedAt);
     }
 
-    public static VnodeRepairState createVnodeRepairState(LongTokenRange longTokenRange, ImmutableSet<Node> replicas,
+    public static VnodeRepairState createVnodeRepairState(LongTokenRange longTokenRange, ImmutableSet<DriverNode> replicas,
             long lastRepairedAt)
     {
         return new VnodeRepairState(longTokenRange, replicas, lastRepairedAt);

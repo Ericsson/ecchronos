@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.standalone;
 
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,22 +35,20 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metadata.token.TokenRange;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.internal.core.metadata.token.Murmur3Token;
 import org.assertj.core.util.Lists;
 import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import net.jcip.annotations.NotThreadSafe;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.TokenRange;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.ericsson.bss.cassandra.ecchronos.core.CASLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
@@ -67,7 +66,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManagerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -91,7 +90,7 @@ public class ITOnDemandRepairJob extends TestBase
 
     private static Metadata myMetadata;
 
-    private static Host myLocalHost;
+    private static Node myLocalHost;
 
     private static HostStatesImpl myHostStates;
 
@@ -117,23 +116,22 @@ public class ITOnDemandRepairJob extends TestBase
 
         mockTableRepairMetrics = mock(TableRepairMetrics.class);
 
-        myLocalHost = getNativeConnectionProvider().getLocalHost();
-        Session session = getNativeConnectionProvider().getSession();
-        Cluster cluster = session.getCluster();
-        myMetadata = cluster.getMetadata();
+        myLocalHost = getNativeConnectionProvider().getLocalNode();
+        CqlSession session = getNativeConnectionProvider().getSession();
+        myMetadata = session.getMetadata();
 
-        myTableReferenceFactory = new TableReferenceFactoryImpl(myMetadata);
+        myTableReferenceFactory = new TableReferenceFactoryImpl(session);
 
         myHostStates = HostStatesImpl.builder()
                 .withRefreshIntervalInMs(1000)
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .build();
 
-        NodeResolver nodeResolver = new NodeResolverImpl(myMetadata);
+        NodeResolver nodeResolver = new NodeResolverImpl(session);
 
-        Node localNode = nodeResolver.fromUUID(myLocalHost.getHostId()).orElseThrow(IllegalStateException::new);
+        DriverNode localNode = nodeResolver.fromUUID(myLocalHost.getHostId()).orElseThrow(IllegalStateException::new);
 
-        ReplicationState replicationState = new ReplicationStateImpl(nodeResolver, myMetadata, myLocalHost);
+        ReplicationState replicationState = new ReplicationStateImpl(nodeResolver, session, myLocalHost);
 
         myEccRepairHistory = EccRepairHistory.newBuilder()
                 .withReplicationState(replicationState)
@@ -163,7 +161,7 @@ public class ITOnDemandRepairJob extends TestBase
                 .withScheduleManager(myScheduleManagerImpl)
                 .withRepairLockType(RepairLockType.VNODE)
                 .withReplicationState(replicationState)
-                .withMetadata(myMetadata)
+                .withSession(session)
                 .withRepairConfiguration(RepairConfiguration.DEFAULT)
                 .withRepairHistory(myEccRepairHistory)
                 .withOnDemandStatus(new OnDemandStatus(getNativeConnectionProvider()))
@@ -173,20 +171,19 @@ public class ITOnDemandRepairJob extends TestBase
     @After
     public void clean()
     {
-        Session adminSession = getAdminNativeConnectionProvider().getSession();
+        CqlSession adminSession = getAdminNativeConnectionProvider().getSession();
 
         for (TableReference tableReference : myRepairs)
         {
-            adminSession.execute(QueryBuilder.delete()
-                    .from("system_distributed", "repair_history")
-                    .where(QueryBuilder.eq("keyspace_name", tableReference.getKeyspace()))
-                    .and(QueryBuilder.eq("columnfamily_name", tableReference.getTable())));
+            adminSession.execute(QueryBuilder.deleteFrom("system_distributed", "repair_history")
+                            .whereColumn("keyspace_name").isEqualTo(literal(tableReference.getKeyspace()))
+                            .whereColumn("columnfamily_name").isEqualTo(literal(tableReference.getTable())).build());
         }
 
         reset(mockTableRepairMetrics);
     }
 
-    @AfterClass
+    @Parameterized.AfterParam
     public static void closeConnections()
     {
         myHostStates.close();
@@ -316,7 +313,7 @@ public class ITOnDemandRepairJob extends TestBase
 
     private Set<LongTokenRange> tokenRangesFor(String keyspace)
     {
-        return myMetadata.getTokenRanges(keyspace, myLocalHost).stream()
+        return myMetadata.getTokenMap().get().getTokenRanges(keyspace, myLocalHost).stream()
                 .map(this::convertTokenRange)
                 .collect(Collectors.toSet());
     }
@@ -329,8 +326,8 @@ public class ITOnDemandRepairJob extends TestBase
     private LongTokenRange convertTokenRange(TokenRange range)
     {
         // Assuming murmur3 partitioner
-        long start = (long) range.getStart().getValue();
-        long end = (long) range.getEnd().getValue();
+        long start = ((Murmur3Token) range.getStart()).getValue();
+        long end = ((Murmur3Token) range.getEnd()).getValue();
         return new LongTokenRange(start, end);
     }
 }

@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -34,7 +34,7 @@ public class TestVnodeRepairResourceFactory
     public void testSingleDataCenterHost()
     {
         UUID nodeId = UUID.fromString("f4678229-61eb-4a06-9db6-49e116c8ece0");
-        Node node = mockNode("DC1", nodeId);
+        DriverNode node = mockNode("DC1", nodeId);
         RepairResource repairResourceVnode = new RepairResource("DC1", nodeId.toString());
         ReplicaRepairGroup replicaRepairGroup = generateReplicaRepairGroup(node);
 
@@ -48,8 +48,8 @@ public class TestVnodeRepairResourceFactory
     {
         UUID nodeId = UUID.fromString("f4678229-61eb-4a06-9db6-49e116c8ece0");
         UUID nodeId2 = UUID.fromString("1dbe1c4f-81a8-426b-b599-cfcc26fca224");
-        Node node = mockNode("DC1", nodeId);
-        Node node2 = mockNode("DC2", nodeId2);
+        DriverNode node = mockNode("DC1", nodeId);
+        DriverNode node2 = mockNode("DC2", nodeId2);
         RepairResource repairResourceVnodeDc1 = new RepairResource("DC1", nodeId.toString());
         RepairResource repairResourceVnodeDc2 = new RepairResource("DC2", nodeId2.toString());
         ReplicaRepairGroup replicaRepairGroup = generateReplicaRepairGroup(node, node2);
@@ -59,15 +59,15 @@ public class TestVnodeRepairResourceFactory
         assertThat(repairResourceFactory.getRepairResources(replicaRepairGroup)).containsExactlyInAnyOrder(repairResourceVnodeDc1, repairResourceVnodeDc2);
     }
 
-    private ReplicaRepairGroup generateReplicaRepairGroup(Node... nodes)
+    private ReplicaRepairGroup generateReplicaRepairGroup(DriverNode... nodes)
     {
         LongTokenRange range = new LongTokenRange(1, 2);
         return new ReplicaRepairGroup(ImmutableSet.copyOf(nodes), ImmutableList.of(range));
     }
 
-    private Node mockNode(String dataCenter, UUID id)
+    private DriverNode mockNode(String dataCenter, UUID id)
     {
-        Node node = mock(Node.class);
+        DriverNode node = mock(DriverNode.class);
         when(node.getDatacenter()).thenReturn(dataCenter);
         when(node.getId()).thenReturn(id);
         return node;

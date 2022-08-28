@@ -31,6 +31,7 @@ public class RepairConfiguration
     private static final RepairOptions.RepairParallelism DEFAULT_REPAIR_PARALLELISM = RepairOptions.RepairParallelism.PARALLEL;
     private static final double DEFAULT_UNWIND_RATIO = NO_UNWIND;
     private static final long DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES = FULL_REPAIR_SIZE;
+    private static final boolean DEFAULT_IGNORE_TWCS_TABLES = false;
 
     public static final RepairConfiguration DEFAULT = newBuilder().build();
     public static final RepairConfiguration DISABLED = newBuilder().withRepairInterval(0, TimeUnit.MILLISECONDS).build();
@@ -41,6 +42,7 @@ public class RepairConfiguration
     private final long myRepairErrorTimeInMs;
     private final double myRepairUnwindRatio;
     private final long myTargetRepairSizeInBytes;
+    private final boolean myIgnoreTWCSTables;
 
     private RepairConfiguration(Builder builder)
     {
@@ -50,6 +52,7 @@ public class RepairConfiguration
         myRepairErrorTimeInMs = builder.myRepairErrorTimeInMs;
         myRepairUnwindRatio = builder.myRepairUnwindRatio;
         myTargetRepairSizeInBytes = builder.myTargetRepairSizeInBytes;
+        myIgnoreTWCSTables = builder.myIgnoreTWCSTables;
     }
 
     public RepairOptions.RepairParallelism getRepairParallelism()
@@ -80,6 +83,11 @@ public class RepairConfiguration
     public long getTargetRepairSizeInBytes()
     {
         return myTargetRepairSizeInBytes;
+    }
+
+    public boolean getIgnoreTWCSTables()
+    {
+        return myIgnoreTWCSTables;
     }
 
     public static Builder newBuilder(RepairConfiguration from)
@@ -114,13 +122,15 @@ public class RepairConfiguration
                 myRepairErrorTimeInMs == that.myRepairErrorTimeInMs &&
                 Double.compare(that.myRepairUnwindRatio, myRepairUnwindRatio) == 0 &&
                 myTargetRepairSizeInBytes == that.myTargetRepairSizeInBytes &&
-                myRepairParallelism == that.myRepairParallelism;
+                myRepairParallelism == that.myRepairParallelism &&
+                myIgnoreTWCSTables == that.myIgnoreTWCSTables;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(myRepairParallelism, myRepairIntervalInMs, myRepairWarningTimeInMs, myRepairErrorTimeInMs, myRepairUnwindRatio, myTargetRepairSizeInBytes);
+        return Objects.hash(myRepairParallelism, myRepairIntervalInMs, myRepairWarningTimeInMs,
+                myRepairErrorTimeInMs, myRepairUnwindRatio, myTargetRepairSizeInBytes, myIgnoreTWCSTables);
     }
 
     public static class Builder
@@ -131,6 +141,7 @@ public class RepairConfiguration
         private long myRepairErrorTimeInMs = DEFAULT_REPAIR_ERROR_TIME_IN_MS;
         private double myRepairUnwindRatio = DEFAULT_UNWIND_RATIO;
         private long myTargetRepairSizeInBytes = DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES;
+        private boolean myIgnoreTWCSTables = DEFAULT_IGNORE_TWCS_TABLES;
 
         public Builder()
         {
@@ -232,6 +243,12 @@ public class RepairConfiguration
         public Builder withTargetRepairSizeInBytes(long targetRepairSizeInBytes)
         {
             myTargetRepairSizeInBytes = targetRepairSizeInBytes;
+            return this;
+        }
+
+        public Builder withIgnoreTWCSTables(boolean ignore)
+        {
+            myIgnoreTWCSTables = ignore;
             return this;
         }
 

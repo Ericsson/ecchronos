@@ -104,13 +104,20 @@ repair:
   ##
   alarm:
     ##
+    ## The class used for fault reporting
+    ## The default LoggingFaultReporter will log when alarm is raised/ceased
+    ##
+    faultReporter: com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter
+    ##
     ## If a table has not been repaired for the following duration an warning alarm will be raised.
+    ## The schedule will be marked as late if the table has not been repaired within this interval.
     ##
     warn:
       time: 8
       unit: days
     ##
     ## If a table has not been repaired for the following duration an error alarm will be raised.
+    ## The schedule will be marked as overdue if the table has not been repaired within this interval.
     ##
     error:
       time: 10
@@ -153,6 +160,10 @@ repair:
   history:
     provider: ecc
     keyspace: ecchronos
+  ##
+  ## Specifies if tables with TWCS (TimeWindowCompactionStrategy) should be ignored for repair
+  ##
+  ignore_twcs_tables: false
 
 statistics:
   enabled: true

@@ -15,7 +15,14 @@
 
 import re
 import os
-from behave import given  # pylint: disable=no-name-in-module
+import json
+import io
+import requests
+from jsonschema import validate
+from behave import given, then, when  # pylint: disable=no-name-in-module
+
+
+REPAIR_SUMMARY_PATTERN = r'Summary: \d+ completed, \d+ in queue, \d+ blocked, \d+ warning, \d+ error'
 
 
 def strip_and_collapse(line):
@@ -54,7 +61,73 @@ def validate_last_table_row(rows):
     assert rows[0] == len(rows[0]) * rows[0][0], rows[0]  # -----
     assert len(rows) == 1, "{0} not empty".format(rows)
 
+
 @given(u'we have access to ecctool')
 def step_init(context):
     assert context.config.userdata.get("ecctool") is not False
     assert os.path.isfile(context.config.userdata.get("ecctool"))
+
+
+@then(u'the output should contain a valid repair summary')
+def step_validate_list_repairs_contains_summary(context):
+    assert len(context.summary) == 1, "Expecting only 1 row summary"
+
+    summary = context.summary[0]
+    assert re.match(REPAIR_SUMMARY_PATTERN, summary), "Faulty summary '{0}'".format(summary)
+
+
+@then(u'the output should not contain more rows')
+def step_validate_list_rows_clear(context):
+    validate_last_table_row(context.rows)
+
+
+def get_behave_dir():
+    current_dir = os.path.dirname(__file__)
+    return os.path.abspath(os.path.join(current_dir, '../features'))
+
+
+@given(u'I have a json schema in {schema_name}.json')
+def step_import_schema(context, schema_name):
+    schema_file = os.path.join(get_behave_dir(), "{0}.json".format(schema_name))
+
+    with io.open(schema_file, "r", encoding="utf-8") as jsonfile:
+        setattr(context, schema_name, json.loads(jsonfile.read()))
+
+
+@given('I use the url {url}')
+def step_set_url(context, url):
+    context.url = url
+
+
+@when('I send a GET request')
+def step_send_get_request(context):
+    assert context.url is not None
+    context.response = requests.get(context.url)
+
+
+@when('I send a POST request')
+def step_send_post_request(context):
+    assert context.url is not None
+    context.response = requests.post(context.url)
+
+
+@then('the response is successful')
+def step_verify_response_is_successful(context):
+    assert context.response is not None
+    assert context.response.status_code == 200
+
+
+@then('the response matches the json {schema_name}')
+def step_verify_schema(context, schema_name):
+    schema = getattr(context, schema_name, None)
+    assert schema is not None
+
+    context.json = context.response.json()
+
+    validate(instance=context.json, schema=schema)
+
+
+@then('the job list contains only keyspace {keyspace}')
+def step_verify_job_list(context, keyspace):
+    for obj in context.json:
+        assert obj["keyspace"] == keyspace

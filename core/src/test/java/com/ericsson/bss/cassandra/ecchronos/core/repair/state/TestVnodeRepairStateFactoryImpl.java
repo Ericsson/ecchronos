@@ -39,7 +39,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.base.Predicate;
 import com.google.common.collect.AbstractIterator;
@@ -53,7 +53,7 @@ public class TestVnodeRepairStateFactoryImpl
     @Mock
     private ReplicationState mockReplicationState;
 
-    private Map<LongTokenRange, ImmutableSet<Node>> tokenToNodeMap = new TreeMap<>((l1, l2) -> Long.compare(l1.start, l2.start));
+    private Map<LongTokenRange, ImmutableSet<DriverNode>> tokenToNodeMap = new TreeMap<>((l1, l2) -> Long.compare(l1.start, l2.start));
 
     private RepairHistoryProvider repairHistoryProvider = new MockedRepairHistoryProvider(TABLE_REFERENCE);
     private List<RepairEntry> repairHistory = new ArrayList<>();
@@ -67,8 +67,8 @@ public class TestVnodeRepairStateFactoryImpl
     @Test
     public void testEmptyHistoryNoPreviousIsUnrepaired() throws UnknownHostException
     {
-        Node node1 = withNode("127.0.0.1");
-        Node node2 = withNode("127.0.0.2");
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
  
         withRange(range(1, 2), node1, node2);
         withRange(range(2, 3), node1, node2);
@@ -80,8 +80,8 @@ public class TestVnodeRepairStateFactoryImpl
     @Test
     public void testEmptyHistoryWithPreviousKeepsRepairedAt() throws UnknownHostException
     {
-        Node node1 = withNode("127.0.0.1");
-        Node node2 = withNode("127.0.0.2");
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
 
         withRange(range(1, 2), node1, node2);
         withRange(range(2, 3), node1, node2);
@@ -100,8 +100,8 @@ public class TestVnodeRepairStateFactoryImpl
     @Test
     public void testWithHistoryNoPreviousIsRepaired() throws UnknownHostException
     {
-        Node node1 = withNode("127.0.0.1");
-        Node node2 = withNode("127.0.0.2");
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
 
         withRange(range(1, 2), node1, node2);
         withRange(range(2, 3), node1, node2);
@@ -116,8 +116,8 @@ public class TestVnodeRepairStateFactoryImpl
     @Test
     public void testWithSubRangeHistoryNoPreviousIsRepaired() throws UnknownHostException
     {
-        Node node1 = withNode("127.0.0.1");
-        Node node2 = withNode("127.0.0.2");
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
 
         withRange(range(1, 5), node1, node2);
         withRange(range(5, 10), node1, node2);
@@ -142,8 +142,8 @@ public class TestVnodeRepairStateFactoryImpl
     @Test
     public void testWithSubRangeHistoryNoPreviousIsPartiallyRepaired() throws UnknownHostException
     {
-        Node node1 = withNode("127.0.0.1");
-        Node node2 = withNode("127.0.0.2");
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
 
         withRange(range(1, 5), node1, node2);
         withRange(range(5, 10), node1, node2);
@@ -168,8 +168,8 @@ public class TestVnodeRepairStateFactoryImpl
     @Test
     public void testWithSubRangeHistoryAndPreviousIsPartiallyRepaired() throws UnknownHostException
     {
-        Node node1 = withNode("127.0.0.1");
-        Node node2 = withNode("127.0.0.2");
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
 
         long firstStartedAt = TimeUnit.DAYS.toMillis(8);
         long firstFinishedAt = TimeUnit.DAYS.toMillis(8);
@@ -203,8 +203,8 @@ public class TestVnodeRepairStateFactoryImpl
     @Test
     public void testWithHistoryNoPreviousIsPartiallyRepaired() throws UnknownHostException
     {
-        Node node1 = withNode("127.0.0.1");
-        Node node2 = withNode("127.0.0.2");
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
 
         withRange(range(1, 2), node1, node2);
         withRange(range(2, 3), node1, node2);
@@ -223,9 +223,9 @@ public class TestVnodeRepairStateFactoryImpl
     @Test
     public void testWithOldHistoryNoPreviousIsPartiallyRepaired() throws UnknownHostException
     {
-        Node node1 = withNode("127.0.0.1");
-        Node node2 = withNode("127.0.0.2");
-        Node node3 = withNode("127.0.0.3");
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
+        DriverNode node3 = withNode("127.0.0.3");
 
         long range1StartedAt = 1;
         long range1FinishedAt = 2;
@@ -247,9 +247,9 @@ public class TestVnodeRepairStateFactoryImpl
     @Test
     public void testWithHistoryAndPreviousAfterScaleOut() throws UnknownHostException
     {
-        Node node1 = withNode("127.0.0.1");
-        Node node2 = withNode("127.0.0.2");
-        Node node3 = withNode("127.0.0.3");
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
+        DriverNode node3 = withNode("127.0.0.3");
 
         withRange(range(1, 4), node1, node2);
         withRange(range(5, 0), node1, node2);
@@ -281,23 +281,23 @@ public class TestVnodeRepairStateFactoryImpl
 
     private void withSubRangeSuccessfulRepairHistory(LongTokenRange range, long startedAt, long finishedAt)
     {
-        ImmutableSet<Node> replicas = getKnownReplicasForSubRange(range);
+        ImmutableSet<DriverNode> replicas = getKnownReplicasForSubRange(range);
         withRepairHistory(range, startedAt, finishedAt, replicas, "SUCCESS");
     }
 
     private void withSuccessfulRepairHistory(LongTokenRange range, long startedAt, long finishedAt)
     {
-        ImmutableSet<Node> replicas = getKnownReplicas(range);
+        ImmutableSet<DriverNode> replicas = getKnownReplicas(range);
         withRepairHistory(range, startedAt, finishedAt, replicas, "SUCCESS");
     }
 
     private void withFailedRepairHistory(LongTokenRange range, long startedAt)
     {
-        ImmutableSet<Node> replicas = getKnownReplicas(range);
+        ImmutableSet<DriverNode> replicas = getKnownReplicas(range);
         withRepairHistory(range, startedAt, VnodeRepairState.UNREPAIRED, replicas, "FAILED");
     }
 
-    private void withRepairHistory(LongTokenRange range, long startedAt, long finishedAt, ImmutableSet<Node> replicas, String status)
+    private void withRepairHistory(LongTokenRange range, long startedAt, long finishedAt, ImmutableSet<DriverNode> replicas, String status)
     {
         RepairEntry repairEntry = new RepairEntry(range, startedAt, finishedAt, replicas, status);
         repairHistory.add(repairEntry);
@@ -323,9 +323,9 @@ public class TestVnodeRepairStateFactoryImpl
         return new VnodeRepairState(range, getKnownReplicasForSubRange(range), startedAt, finishedAt);
     }
 
-    private ImmutableSet<Node> getKnownReplicasForSubRange(LongTokenRange range)
+    private ImmutableSet<DriverNode> getKnownReplicasForSubRange(LongTokenRange range)
     {
-        ImmutableSet<Node> replicas = tokenToNodeMap.get(range);
+        ImmutableSet<DriverNode> replicas = tokenToNodeMap.get(range);
         if (replicas == null)
         {
             for (LongTokenRange vnode : tokenToNodeMap.keySet())
@@ -343,9 +343,9 @@ public class TestVnodeRepairStateFactoryImpl
         return replicas;
     }
 
-    private ImmutableSet<Node> getKnownReplicas(LongTokenRange range)
+    private ImmutableSet<DriverNode> getKnownReplicas(LongTokenRange range)
     {
-        ImmutableSet<Node> replicas = tokenToNodeMap.get(range);
+        ImmutableSet<DriverNode> replicas = tokenToNodeMap.get(range);
         assertThat(replicas).isNotNull();
         return replicas;
     }
@@ -355,20 +355,20 @@ public class TestVnodeRepairStateFactoryImpl
         return new LongTokenRange(start, end);
     }
 
-    private void withRange(LongTokenRange range, Node... replicas)
+    private void withRange(LongTokenRange range, DriverNode... replicas)
     {
         tokenToNodeMap.put(range, ImmutableSet.copyOf(replicas));
     }
 
-    private void replaceRange(LongTokenRange previousRange, LongTokenRange newRange, Node... newReplicas)
+    private void replaceRange(LongTokenRange previousRange, LongTokenRange newRange, DriverNode... newReplicas)
     {
         tokenToNodeMap.remove(previousRange);
         withRange(newRange, newReplicas);
     }
 
-    private Node withNode(String inetAddress) throws UnknownHostException
+    private DriverNode withNode(String inetAddress) throws UnknownHostException
     {
-        Node node = mock(Node.class);
+        DriverNode node = mock(DriverNode.class);
         InetAddress nodeAddress = InetAddress.getByName(inetAddress);
         when(node.getPublicAddress()).thenReturn(nodeAddress);
         return node;

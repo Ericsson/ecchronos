@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Telefonaktiebolaget LM Ericsson
+ * Copyright 2022 Telefonaktiebolaget LM Ericsson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,33 +27,29 @@ import java.util.UUID;
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestTableRepairConfig
+public class TestScheduleConfig
 {
     @Test
-    public void testFullyRepairedJob()
+    public void testFullyRepairedConfig()
     {
-        // Given
         UUID id = UUID.randomUUID();
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
         RepairJobView repairJobView = new ScheduledRepairJobView(id, tableReference("ks", "tbl"), repairConfig,
                 null, RepairJobView.Status.COMPLETED, 0, 0);
 
-        // When
-        TableRepairConfig tableRepairConfig = new TableRepairConfig(repairJobView);
-        // Then
-        assertThat(tableRepairConfig.id).isEqualTo(id);
-        assertThat(tableRepairConfig.keyspace).isEqualTo("ks");
-        assertThat(tableRepairConfig.table).isEqualTo("tbl");
-        assertThat(tableRepairConfig.repairIntervalInMs).isEqualTo(11);
-        assertThat(tableRepairConfig.repairParallelism).isEqualTo(RepairParallelism.PARALLEL);
-        assertThat(tableRepairConfig.repairUnwindRatio).isEqualTo(2.2);
-        assertThat(tableRepairConfig.repairWarningTimeInMs).isEqualTo(33);
-        assertThat(tableRepairConfig.repairErrorTimeInMs).isEqualTo(44);
+        ScheduleConfig config = new ScheduleConfig(repairJobView);
+
+        assertThat(config.intervalInMs).isEqualTo(11);
+        assertThat(config.parallelism).isEqualTo(RepairParallelism.PARALLEL);
+        assertThat(config.unwindRatio).isEqualTo(2.2);
+        assertThat(config.warningTimeInMs).isEqualTo(33);
+        assertThat(config.errorTimeInMs).isEqualTo(44);
+        assertThat(config).isEqualTo(new ScheduleConfig(repairJobView));
     }
 
     @Test
     public void testEqualsContract()
     {
-        EqualsVerifier.simple().forClass(TableRepairConfig.class).usingGetClass().verify();
+        EqualsVerifier.simple().forClass(ScheduleConfig.class).usingGetClass().verify();
     }
 }

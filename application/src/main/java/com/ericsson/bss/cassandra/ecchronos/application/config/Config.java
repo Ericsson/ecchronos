@@ -21,6 +21,9 @@ import java.util.function.Supplier;
 
 import com.ericsson.bss.cassandra.ecchronos.application.*;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
+import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
+import com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter;
 import org.springframework.context.ApplicationContext;
 
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
@@ -301,7 +304,7 @@ public class Config
         @Override
         protected Class<?>[] expectedConstructor()
         {
-            return new Class<?>[] { Config.class, Supplier.class };
+            return new Class<?>[] { Config.class, Supplier.class, DefaultRepairConfigurationProvider.class };
         }
 
         @Override
@@ -412,6 +415,7 @@ public class Config
 
     public static class Alarm
     {
+        private Class<? extends RepairFaultReporter> faultReporter = LoggingFaultReporter.class;
         private Interval warn = new Interval(8, TimeUnit.DAYS);
         private Interval error = new Interval(10, TimeUnit.DAYS);
 
@@ -426,6 +430,11 @@ public class Config
             this.error = error;
         }
 
+        public Class<? extends RepairFaultReporter> getFaultReporter()
+        {
+            return faultReporter;
+        }
+
         public Interval getWarn()
         {
             return warn;
@@ -434,6 +443,11 @@ public class Config
         public Interval getError()
         {
             return error;
+        }
+
+        public void setFaultReporter(Class<? extends RepairFaultReporter> faultReporter)
+        {
+            this.faultReporter = faultReporter;
         }
 
         public void setWarn(Interval warn)

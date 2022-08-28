@@ -1,0 +1,288 @@
+openapi: 3.0.1
+info:
+  title: ecChronos REST API
+  description: ecChronos REST API can be used to view the status of schedules and
+    repairs as well as run manual repairs
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+  version: 1.0.0
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+tags:
+- name: repair-management
+paths:
+  /repair-management/v2/repairs:
+    get:
+      tags:
+      - repair-management
+      operationId: get-repairs
+      parameters:
+      - name: keyspace
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: table
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: hostId
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OnDemandRepair'
+    post:
+      tags:
+      - repair-management
+      operationId: trigger-repair
+      parameters:
+      - name: keyspace
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: table
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: isLocal
+        in: query
+        required: false
+        schema:
+          type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OnDemandRepair'
+  /repair-management/v2/schedules:
+    get:
+      tags:
+      - repair-management
+      operationId: get-schedules
+      parameters:
+      - name: keyspace
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: table
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Schedule'
+  /repair-management/v2/schedules/{id}:
+    get:
+      tags:
+      - repair-management
+      operationId: get-schedules-by-id
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: full
+        in: query
+        required: false
+        schema:
+          type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+  /repair-management/v2/repairs/{id}:
+    get:
+      tags:
+      - repair-management
+      operationId: get-repairs-by-id
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: hostId
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OnDemandRepair'
+components:
+  schemas:
+    OnDemandRepair:
+      required:
+      - completedAt
+      - hostId
+      - id
+      - keyspace
+      - repairedRatio
+      - status
+      - table
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        hostId:
+          type: string
+          format: uuid
+        keyspace:
+          type: string
+        table:
+          type: string
+        status:
+          type: string
+          enum:
+          - COMPLETED
+          - IN_QUEUE
+          - WARNING
+          - ERROR
+          - BLOCKED
+        repairedRatio:
+          maximum: 1
+          minimum: 0
+          type: number
+          format: double
+        completedAt:
+          minimum: -1
+          type: integer
+          format: int64
+    Schedule:
+      required:
+      - config
+      - id
+      - keyspace
+      - lastRepairedAtInMs
+      - nextRepairInMs
+      - repairedRatio
+      - status
+      - table
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        keyspace:
+          type: string
+        table:
+          type: string
+        status:
+          type: string
+          enum:
+          - COMPLETED
+          - ON_TIME
+          - LATE
+          - OVERDUE
+          - BLOCKED
+        repairedRatio:
+          maximum: 1
+          minimum: 0
+          type: number
+          format: double
+        lastRepairedAtInMs:
+          type: integer
+          format: int64
+        nextRepairInMs:
+          type: integer
+          format: int64
+        config:
+          $ref: '#/components/schemas/ScheduleConfig'
+        virtualNodeStates:
+          type: array
+          items:
+            $ref: '#/components/schemas/VirtualNodeState'
+    ScheduleConfig:
+      required:
+      - errorTimeInMs
+      - intervalInMs
+      - parallelism
+      - unwindRatio
+      - warningTimeInMs
+      type: object
+      properties:
+        intervalInMs:
+          minimum: 0
+          type: integer
+          format: int64
+        unwindRatio:
+          minimum: 0
+          type: number
+          format: double
+        warningTimeInMs:
+          minimum: 0
+          type: integer
+          format: int64
+        errorTimeInMs:
+          minimum: 0
+          type: integer
+          format: int64
+        parallelism:
+          type: string
+          enum:
+          - PARALLEL
+    VirtualNodeState:
+      required:
+      - endToken
+      - lastRepairedAtInMs
+      - repaired
+      - replicas
+      - startToken
+      type: object
+      properties:
+        startToken:
+          minimum: -9223372036854775808
+          type: integer
+          format: int64
+        endToken:
+          maximum: 9223372036854775807
+          type: integer
+          format: int64
+        replicas:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+        lastRepairedAtInMs:
+          minimum: 0
+          type: integer
+          format: int64
+        repaired:
+          type: boolean

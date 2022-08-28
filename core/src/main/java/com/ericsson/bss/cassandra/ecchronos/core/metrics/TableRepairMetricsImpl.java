@@ -20,11 +20,11 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import com.codahale.metrics.jmx.JmxReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.codahale.metrics.CsvReporter;
-import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -98,6 +98,18 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
     public void repairTiming(TableReference tableReference, long timeTaken, TimeUnit timeUnit, boolean successful)
     {
         tableMetricHolder(tableReference).repairTiming(timeTaken, timeUnit, successful);
+    }
+
+    @Override
+    public void failedRepairTask(TableReference tableReference)
+    {
+        tableMetricHolder(tableReference).failedRepairTask();
+    }
+
+    @Override
+    public void succeededRepairTask(TableReference tableReference)
+    {
+        tableMetricHolder(tableReference).succeededRepairTask();
     }
 
     @VisibleForTesting

@@ -21,7 +21,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Read only view of a scheduled repair job.
+ * Read only view of a repair job.
  */
 public abstract class RepairJobView
 {
@@ -36,6 +36,18 @@ public abstract class RepairJobView
     {
         COMPLETED, IN_QUEUE, WARNING, ERROR, BLOCKED
     }
+
+    public enum ScheduleStatus
+    {
+        COMPLETED, ON_TIME, LATE, OVERDUE, BLOCKED
+    }
+
+    static ScheduleStatus toScheduleStatus(Status status)
+    {
+        return ScheduleStatus.values()[status.ordinal()];
+    }
+
+
 
     public RepairJobView(UUID id, TableReference tableReference, RepairConfiguration repairConfiguration, RepairStateSnapshot repairStateSnapshot, Status status, double progress)
     {
@@ -88,6 +100,14 @@ public abstract class RepairJobView
     }
 
     /**
+     * @return the schedule status of this job
+     */
+    public ScheduleStatus getScheduleStatus()
+    {
+        return toScheduleStatus(myStatus);
+    }
+
+    /**
      * @return the progress of this job
      */
     public double getProgress()
@@ -106,9 +126,17 @@ public abstract class RepairJobView
     public abstract long getNextRepair();
 
     /**
-     * @return if repair job is on ondemand or recurring
+     * @return if repair job is on demand or schedule
      */
     public abstract Boolean isRecurring();
+
+    /**
+     * @return The host this job has been running on
+     */
+    public UUID getHostId()
+    {
+        return null;
+    }
 
 
     @Override

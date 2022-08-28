@@ -22,7 +22,7 @@ import org.junit.Test;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -31,7 +31,7 @@ public class TestDataCenterRepairResourceFactory
     @Test
     public void testSingleDataCenter()
     {
-        Node node = mockNode("DC1");
+        DriverNode node = mockNode("DC1");
         RepairResource repairResourceDc1 = new RepairResource("DC1", "DC1");
         ReplicaRepairGroup replicaRepairGroup = generateReplicaRepairGroup(node);
 
@@ -43,8 +43,8 @@ public class TestDataCenterRepairResourceFactory
     @Test
     public void testMultipleDataCenters()
     {
-        Node node = mockNode("DC1");
-        Node node2 = mockNode("DC2");
+        DriverNode node = mockNode("DC1");
+        DriverNode node2 = mockNode("DC2");
         RepairResource repairResourceDc1 = new RepairResource("DC1", "DC1");
         RepairResource repairResourceDc2 = new RepairResource("DC2", "DC2");
         ReplicaRepairGroup replicaRepairGroup = generateReplicaRepairGroup(node, node2);
@@ -54,15 +54,15 @@ public class TestDataCenterRepairResourceFactory
         assertThat(repairResourceFactory.getRepairResources(replicaRepairGroup)).containsExactlyInAnyOrder(repairResourceDc1, repairResourceDc2);
     }
 
-    private ReplicaRepairGroup generateReplicaRepairGroup(Node... nodes)
+    private ReplicaRepairGroup generateReplicaRepairGroup(DriverNode... nodes)
     {
         LongTokenRange range = new LongTokenRange(1, 2);
         return new ReplicaRepairGroup(ImmutableSet.copyOf(nodes), ImmutableList.of(range));
     }
 
-    private Node mockNode(String dataCenter)
+    private DriverNode mockNode(String dataCenter)
     {
-        Node node = mock(Node.class);
+        DriverNode node = mock(DriverNode.class);
         when(node.getDatacenter()).thenReturn(dataCenter);
         return node;
     }

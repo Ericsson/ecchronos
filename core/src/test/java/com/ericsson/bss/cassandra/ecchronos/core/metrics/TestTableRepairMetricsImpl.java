@@ -46,6 +46,8 @@ import static org.mockito.Mockito.doReturn;
 @RunWith(MockitoJUnitRunner.class)
 public class TestTableRepairMetricsImpl
 {
+    private static final String METRIC_TIMER_TYPE = "timers";
+    private static final String METRIC_GAUGE_TYPE = "gauges";
     private static MBeanServer PLATFORM_MBEAN_SERVER = ManagementFactory.getPlatformMBeanServer();
 
     @Rule
@@ -92,8 +94,8 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
         myTableRepairMetricsImpl.report();
 
-        double tablesRepaired = getMetricValue("TableRepairState");
-        double dataRepaired = getMetricValue("DataRepairState");
+        double tablesRepaired = getMetricValue("TableRepairState", METRIC_GAUGE_TYPE);
+        double dataRepaired = getMetricValue("DataRepairState", METRIC_GAUGE_TYPE);
 
         assertThat(tablesRepaired).isEqualTo(1.0);
         assertThat(dataRepaired).isEqualTo(1.0);
@@ -110,8 +112,8 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.repairState(tableReference, 1, 1);
         myTableRepairMetricsImpl.report();
 
-        double tablesRepaired = getMetricValue("TableRepairState");
-        double dataRepaired = getMetricValue("DataRepairState");
+        double tablesRepaired = getMetricValue("TableRepairState", METRIC_GAUGE_TYPE);
+        double dataRepaired = getMetricValue("DataRepairState", METRIC_GAUGE_TYPE);
 
         assertThat(tablesRepaired).isEqualTo(0.5);
         assertThat(dataRepaired).isEqualTo(0.5);
@@ -131,8 +133,8 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.repairState(tableReference2, 1, 0);
         myTableRepairMetricsImpl.report();
 
-        double tablesRepaired = getMetricValue("TableRepairState");
-        double dataRepaired = getMetricValue("DataRepairState");
+        double tablesRepaired = getMetricValue("TableRepairState", METRIC_GAUGE_TYPE);
+        double dataRepaired = getMetricValue("DataRepairState", METRIC_GAUGE_TYPE);
 
         assertThat(tablesRepaired).isEqualTo(1.0);
         assertThat(dataRepaired).isEqualTo(1.0);
@@ -152,8 +154,8 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.repairState(tableReference2, 1, 1);
         myTableRepairMetricsImpl.report();
 
-        double tablesRepaired = getMetricValue("TableRepairState");
-        double dataRepaired = getMetricValue("DataRepairState");
+        double tablesRepaired = getMetricValue("TableRepairState", METRIC_GAUGE_TYPE);
+        double dataRepaired = getMetricValue("DataRepairState", METRIC_GAUGE_TYPE);
 
         assertThat(tablesRepaired).isEqualTo(0.5);
         assertThat(dataRepaired).isEqualTo(0.5);
@@ -177,8 +179,8 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.repairState(tableReference2, 0, 1);
         myTableRepairMetricsImpl.report();
 
-        double tablesRepaired = getMetricValue("TableRepairState");
-        double dataRepaired = getMetricValue("DataRepairState");
+        double tablesRepaired = getMetricValue("TableRepairState", METRIC_GAUGE_TYPE);
+        double dataRepaired = getMetricValue("DataRepairState", METRIC_GAUGE_TYPE);
 
         assertThat(tablesRepaired).isEqualTo(0.5);
         assertThat(dataRepaired).isEqualTo(0.75);
@@ -196,8 +198,8 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.lastRepairedAt(tableReference2, expectedLastRepaired2);
         myTableRepairMetricsImpl.report();
 
-        double lastRepaired = getMetricValue(metricName(tableReference, "LastRepairedAt"));
-        double lastRepaired2 = getMetricValue(metricName(tableReference2, "LastRepairedAt"));
+        double lastRepaired = getMetricValue(metricName(tableReference, "LastRepairedAt"), METRIC_GAUGE_TYPE);
+        double lastRepaired2 = getMetricValue(metricName(tableReference2, "LastRepairedAt"), METRIC_GAUGE_TYPE);
 
         assertThat(lastRepaired).isEqualTo(expectedLastRepaired);
         assertThat(lastRepaired2).isEqualTo(expectedLastRepaired2);
@@ -215,8 +217,8 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.remainingRepairTime(tableReference2, expectedRemainingRepairTime2);
         myTableRepairMetricsImpl.report();
 
-        double remainingRepairTime = getMetricValue(metricName(tableReference, "RemainingRepairTime"));
-        double remainingRepairTime2 = getMetricValue(metricName(tableReference2, "RemainingRepairTime"));
+        double remainingRepairTime = getMetricValue(metricName(tableReference, "RemainingRepairTime"), METRIC_GAUGE_TYPE);
+        double remainingRepairTime2 = getMetricValue(metricName(tableReference2, "RemainingRepairTime"), METRIC_GAUGE_TYPE);
 
         assertThat(remainingRepairTime).isEqualTo(expectedRemainingRepairTime);
         assertThat(remainingRepairTime2).isEqualTo(expectedRemainingRepairTime2);
@@ -233,11 +235,11 @@ public class TestTableRepairMetricsImpl
 
         String metric = metricName(tableReference, "RepairSuccessTime");
 
-        assertThat(getMetricValue(metric, 1, "Count")).isEqualTo(1);
-        assertThat(getMetricValue(metric, 2, "Max")).isEqualTo(expectedRepairTime);
-        assertThat(getMetricValue(metric, 3, "Mean")).isEqualTo(expectedRepairTime);
-        assertThat(getMetricValue(metric, 4, "Min")).isEqualTo(expectedRepairTime);
-        assertThat(getMetricValue(metric, 5, "StdDev")).isEqualTo(0);
+        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 1, "Count")).isEqualTo(1);
+        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 2, "Max")).isEqualTo(expectedRepairTime);
+        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 3, "Mean")).isEqualTo(expectedRepairTime);
+        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 4, "Min")).isEqualTo(expectedRepairTime);
+        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 5, "StdDev")).isEqualTo(0);
 
         assertPercentiles(metric, expectedRepairTime);
     }
@@ -253,11 +255,11 @@ public class TestTableRepairMetricsImpl
 
         String metric = metricName(tableReference, "RepairFailedTime");
 
-        assertThat(getMetricValue(metric, 1, "Count")).isEqualTo(1);
-        assertThat(getMetricValue(metric, 2, "Max")).isEqualTo(expectedRepairTime);
-        assertThat(getMetricValue(metric, 3, "Mean")).isEqualTo(expectedRepairTime);
-        assertThat(getMetricValue(metric, 4, "Min")).isEqualTo(expectedRepairTime);
-        assertThat(getMetricValue(metric, 5, "StdDev")).isEqualTo(0);
+        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 1, "Count")).isEqualTo(1);
+        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 2, "Max")).isEqualTo(expectedRepairTime);
+        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 3, "Mean")).isEqualTo(expectedRepairTime);
+        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 4, "Min")).isEqualTo(expectedRepairTime);
+        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 5, "StdDev")).isEqualTo(0);
 
         assertPercentiles(metric, expectedRepairTime);
     }
@@ -282,20 +284,20 @@ public class TestTableRepairMetricsImpl
         for (String percentile : percentiles)
         {
             String percentileAttribute = percentile + "thPercentile";
-            assertThat(getMetricValue(metric, csvPos, percentileAttribute)).isEqualTo(expectedRepairTime);
+            assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, csvPos, percentileAttribute)).isEqualTo(expectedRepairTime);
             csvPos++;
         }
     }
 
-    private double getMetricValue(String metric) throws Exception
+    private double getMetricValue(String metric, String type) throws Exception
     {
-        return getMetricValue(metric, 1, "Value");
+        return getMetricValue(metric, type, 1, "Value");
     }
 
-    private double getMetricValue(String metric, int csvPos, String mBeanAttribute) throws Exception
+    private double getMetricValue(String metric, String type, int csvPos, String mBeanAttribute) throws Exception
     {
         double csvValue = getCsvMetricValue(metric, csvPos);
-        Number mBeanValue = getMBeanValue(metric, mBeanAttribute);
+        Number mBeanValue = getMBeanValue(metric, type, mBeanAttribute);
 
         assertThat(csvValue).isEqualTo(mBeanValue.doubleValue());
 
@@ -307,9 +309,9 @@ public class TestTableRepairMetricsImpl
         return tableReference.getKeyspace() + "." + tableReference.getTable() + "-" + tableReference.getId() + "-" + metric;
     }
 
-    private Number getMBeanValue(String metric, String mBeanAttribute) throws Exception
+    private Number getMBeanValue(String metric, String type, String mBeanAttribute) throws Exception
     {
-        ObjectName mBeanMetricName = new ObjectName("metrics:name=" + metric);
+        ObjectName mBeanMetricName = new ObjectName("metrics:name=" + metric + ",type=" + type);
 
         return (Number) PLATFORM_MBEAN_SERVER.getAttribute(mBeanMetricName, mBeanAttribute);
     }

@@ -14,42 +14,39 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.SchemaChangeListener;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.TableMetadata;
-import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+
+import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class TestDefaultRepairConfigurationProvider
@@ -60,16 +57,13 @@ public class TestDefaultRepairConfigurationProvider
     private static final TableReference TABLE_REFERENCE = tableReference(KEYSPACE_NAME, TABLE_NAME);
 
     @Mock
-    private Session session;
-
-    @Mock
-    private Cluster cluster;
+    private CqlSession session;
 
     @Mock
     private Metadata metadata;
 
     @Mock
-    private Host localhost;
+    private Node localNode;
 
     @Mock
     private ReplicatedTableProvider myReplicatedTableProviderMock;
@@ -89,15 +83,15 @@ public class TestDefaultRepairConfigurationProvider
         myNativeConnectionProvider = new NativeConnectionProvider()
         {
             @Override
-            public Session getSession()
+            public CqlSession getSession()
             {
                 return session;
             }
 
             @Override
-            public Host getLocalHost()
+            public Node getLocalNode()
             {
-                return localhost;
+                return localNode;
             }
 
             @Override
@@ -107,12 +101,8 @@ public class TestDefaultRepairConfigurationProvider
             }
         };
 
-        when(session.getCluster()).thenReturn(cluster);
-        when(cluster.getMetadata()).thenReturn(metadata);
-        when(cluster.register(any(SchemaChangeListener.class))).thenReturn(cluster);
-
-        when(metadata.checkSchemaAgreement()).thenReturn(true);
-        when(metadata.getKeyspaces()).thenReturn(Collections.emptyList());
+        when(session.getMetadata()).thenReturn(metadata);
+        when(metadata.getKeyspaces()).thenReturn(Collections.emptyMap());
 
         when(myReplicatedTableProviderMock.accept(anyString())).thenReturn(false);
     }
@@ -127,7 +117,7 @@ public class TestDefaultRepairConfigurationProvider
 
         verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
 
-        defaultRepairConfigurationProvider.onTableRemoved(tableMetadata);
+        defaultRepairConfigurationProvider.onTableDropped(tableMetadata);
         verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
 
         verifyNoMoreInteractions(myRepairScheduler);
@@ -144,7 +134,7 @@ public class TestDefaultRepairConfigurationProvider
 
         verify(myRepairScheduler, never()).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
 
-        defaultRepairConfigurationProvider.onTableRemoved(tableMetadata);
+        defaultRepairConfigurationProvider.onTableDropped(tableMetadata);
         verify(myRepairScheduler, never()).removeConfiguration(eq(TABLE_REFERENCE));
 
         verifyNoMoreInteractions(myRepairScheduler);
@@ -158,7 +148,7 @@ public class TestDefaultRepairConfigurationProvider
                 .build();
         TableMetadata tableMetadata = mockReplicatedTable(TABLE_REFERENCE);
 
-        defaultRepairConfigurationProvider.onTableAdded(tableMetadata);
+        defaultRepairConfigurationProvider.onTableCreated(tableMetadata);
 
         verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
 
@@ -175,12 +165,46 @@ public class TestDefaultRepairConfigurationProvider
                 .build();
         TableMetadata tableMetadata = mockReplicatedTable(TABLE_REFERENCE);
 
-        defaultRepairConfigurationProvider.onTableAdded(tableMetadata);
+        defaultRepairConfigurationProvider.onTableCreated(tableMetadata);
 
         verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
 
-        defaultRepairConfigurationProvider.onTableRemoved(tableMetadata);
+        defaultRepairConfigurationProvider.onTableDropped(tableMetadata);
         verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
+
+        verifyNoMoreInteractions(myRepairScheduler);
+        defaultRepairConfigurationProvider.close();
+    }
+
+    @Test
+    public void testAddNewNonReplicatedKeyspace()
+    {
+        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
+                .build();
+        KeyspaceMetadata keyspaceMetadata = mockKeyspace(TABLE_REFERENCE.getKeyspace(), false);
+        mockTable(keyspaceMetadata, TABLE_REFERENCE, new HashMap<>());
+
+        defaultRepairConfigurationProvider.onKeyspaceCreated(keyspaceMetadata);
+
+        verify(myRepairScheduler, never()).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairScheduler, times(1)).removeConfiguration(eq(TABLE_REFERENCE));
+
+        verifyNoMoreInteractions(myRepairScheduler);
+        defaultRepairConfigurationProvider.close();
+    }
+
+    @Test
+    public void testAddNewReplicatedKeyspace()
+    {
+        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
+                .build();
+        KeyspaceMetadata keyspaceMetadata = mockKeyspace(TABLE_REFERENCE.getKeyspace(), true);
+        mockTable(keyspaceMetadata, TABLE_REFERENCE, new HashMap<>());
+
+        defaultRepairConfigurationProvider.onKeyspaceCreated(keyspaceMetadata);
+
+        verify(myRepairScheduler, times(1)).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairScheduler, never()).removeConfiguration(eq(TABLE_REFERENCE));
 
         verifyNoMoreInteractions(myRepairScheduler);
         defaultRepairConfigurationProvider.close();
@@ -193,7 +217,7 @@ public class TestDefaultRepairConfigurationProvider
                 .build();
         TableMetadata tableMetadata = mockNonReplicatedTable(TABLE_REFERENCE);
 
-        defaultRepairConfigurationProvider.onTableAdded(tableMetadata);
+        defaultRepairConfigurationProvider.onTableCreated(tableMetadata);
 
         verify(myRepairScheduler, never()).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
         verify(myRepairScheduler, never()).removeConfiguration(eq(TABLE_REFERENCE));
@@ -209,14 +233,14 @@ public class TestDefaultRepairConfigurationProvider
                 .build();
         TableMetadata tableMetadata = mockReplicatedTable(TABLE_REFERENCE);
 
-        defaultRepairConfigurationProvider.onTableAdded(tableMetadata);
+        defaultRepairConfigurationProvider.onTableCreated(tableMetadata);
 
         verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
 
         // Keyspace is no longer replicated
         when(myReplicatedTableProviderMock.accept(eq(TABLE_REFERENCE.getKeyspace()))).thenReturn(false);
         KeyspaceMetadata keyspaceMetadata = myKeyspaces.get(KEYSPACE_NAME);
-        defaultRepairConfigurationProvider.onKeyspaceChanged(keyspaceMetadata, keyspaceMetadata);
+        defaultRepairConfigurationProvider.onKeyspaceUpdated(keyspaceMetadata, keyspaceMetadata);
 
         verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
 
@@ -231,14 +255,14 @@ public class TestDefaultRepairConfigurationProvider
                 .build();
         TableMetadata tableMetadata = mockNonReplicatedTable(TABLE_REFERENCE);
 
-        defaultRepairConfigurationProvider.onTableAdded(tableMetadata);
+        defaultRepairConfigurationProvider.onTableCreated(tableMetadata);
 
         verify(myRepairScheduler, never()).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
 
         // Keyspace is now replicated
         when(myReplicatedTableProviderMock.accept(eq(TABLE_REFERENCE.getKeyspace()))).thenReturn(true);
         KeyspaceMetadata keyspaceMetadata = myKeyspaces.get(KEYSPACE_NAME);
-        defaultRepairConfigurationProvider.onKeyspaceChanged(keyspaceMetadata, keyspaceMetadata);
+        defaultRepairConfigurationProvider.onKeyspaceUpdated(keyspaceMetadata, keyspaceMetadata);
 
         verify(myRepairScheduler, never()).removeConfiguration(eq(TABLE_REFERENCE));
         verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
@@ -261,7 +285,8 @@ public class TestDefaultRepairConfigurationProvider
                 .build();
 
         DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
-                .withRepairConfiguration(tb -> {
+                .withRepairConfiguration(tb ->
+                {
                     if (tb.equals(tableReference2))
                     {
                         return customConfig;
@@ -274,10 +299,10 @@ public class TestDefaultRepairConfigurationProvider
         verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
         verify(myRepairScheduler).putConfiguration(eq(tableReference2), eq(customConfig));
 
-        defaultRepairConfigurationProvider.onTableRemoved(tableMetadata);
+        defaultRepairConfigurationProvider.onTableDropped(tableMetadata);
         verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
 
-        defaultRepairConfigurationProvider.onTableRemoved(tableMetadata2);
+        defaultRepairConfigurationProvider.onTableDropped(tableMetadata2);
         verify(myRepairScheduler).removeConfiguration(eq(tableReference2));
 
         verifyNoMoreInteractions(myRepairScheduler);
@@ -295,8 +320,88 @@ public class TestDefaultRepairConfigurationProvider
 
         verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
 
-        defaultRepairConfigurationProvider.onTableRemoved(tableMetadata);
+        defaultRepairConfigurationProvider.onTableDropped(tableMetadata);
         verify(myRepairScheduler, times(2)).removeConfiguration(eq(TABLE_REFERENCE));
+
+        verifyNoMoreInteractions(myRepairScheduler);
+        defaultRepairConfigurationProvider.close();
+    }
+
+    @Test
+    public void testExistingTablesWithTWCSAreNotScheduled()
+    {
+        // Create the table metadata before creating the repair configuration provider
+        Map<CqlIdentifier, Object> tableOptions = new HashMap<>();
+        Map<String, String> compaction = new HashMap<>();
+        compaction.put("class", "org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy");
+        tableOptions.put(CqlIdentifier.fromInternal("compaction"), compaction);
+        TableMetadata tableMetadata = mockReplicatedTable(TABLE_REFERENCE, tableOptions);
+        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder().withIgnoreTWCSTables(true).build();
+        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
+                .withDefaultRepairConfiguration(repairConfiguration)
+                .build();
+
+        verify(myRepairScheduler, never()).putConfiguration(eq(TABLE_REFERENCE), eq(repairConfiguration));
+
+        defaultRepairConfigurationProvider.onTableDropped(tableMetadata);
+        verify(myRepairScheduler, times(2)).removeConfiguration(eq(TABLE_REFERENCE));
+
+        verifyNoMoreInteractions(myRepairScheduler);
+        defaultRepairConfigurationProvider.close();
+    }
+
+    @Test
+    public void testTableChangesFromTWCS()
+    {
+        Map<CqlIdentifier, Object> tableOptions = new HashMap<>();
+        Map<String, String> compaction = new HashMap<>();
+        compaction.put("class", "org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy");
+        tableOptions.put(CqlIdentifier.fromInternal("compaction"), compaction);
+        TableMetadata tableMetadata = mockReplicatedTable(TABLE_REFERENCE, tableOptions);
+        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder().withIgnoreTWCSTables(true).build();
+        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
+                .withDefaultRepairConfiguration(repairConfiguration)
+                .build();
+
+        defaultRepairConfigurationProvider.onTableCreated(tableMetadata);
+        verify(myRepairScheduler, never()).putConfiguration(eq(TABLE_REFERENCE), eq(repairConfiguration));
+        verify(myRepairScheduler, times(2)).removeConfiguration(eq(TABLE_REFERENCE));
+
+        Map<String, String> updatedCompaction = new HashMap<>();
+        updatedCompaction.put("class", "org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy");
+        tableOptions.put(CqlIdentifier.fromInternal("compaction"), updatedCompaction);
+        TableMetadata updatedTableMetadata = mockReplicatedTable(TABLE_REFERENCE, tableOptions);
+
+        defaultRepairConfigurationProvider.onTableUpdated(updatedTableMetadata, tableMetadata);
+        verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(repairConfiguration));
+
+        verifyNoMoreInteractions(myRepairScheduler);
+        defaultRepairConfigurationProvider.close();
+    }
+
+    @Test
+    public void testTableChangesToTWCS()
+    {
+        Map<CqlIdentifier, Object> tableOptions = new HashMap<>();
+        Map<String, String> compaction = new HashMap<>();
+        compaction.put("class", "org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy");
+        tableOptions.put(CqlIdentifier.fromInternal("compaction"), compaction);
+        TableMetadata tableMetadata = mockReplicatedTable(TABLE_REFERENCE, tableOptions);
+        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder().withIgnoreTWCSTables(true).build();
+        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
+                .withDefaultRepairConfiguration(repairConfiguration)
+                .build();
+
+        defaultRepairConfigurationProvider.onTableCreated(tableMetadata);
+        verify(myRepairScheduler, times(2)).putConfiguration(eq(TABLE_REFERENCE), eq(repairConfiguration));
+
+        Map<String, String> updatedCompaction = new HashMap<>();
+        updatedCompaction.put("class", "org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy");
+        tableOptions.put(CqlIdentifier.fromInternal("compaction"), updatedCompaction);
+        TableMetadata updatedTableMetadata = mockReplicatedTable(TABLE_REFERENCE, tableOptions);
+
+        defaultRepairConfigurationProvider.onTableUpdated(updatedTableMetadata, tableMetadata);
+        verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
 
         verifyNoMoreInteractions(myRepairScheduler);
         defaultRepairConfigurationProvider.close();
@@ -306,7 +411,7 @@ public class TestDefaultRepairConfigurationProvider
     {
         return DefaultRepairConfigurationProvider.newBuilder()
                 .withReplicatedTableProvider(myReplicatedTableProviderMock)
-                .withCluster(myNativeConnectionProvider.getSession().getCluster())
+                .withSession(myNativeConnectionProvider.getSession())
                 .withDefaultRepairConfiguration(RepairConfiguration.DEFAULT)
                 .withRepairScheduler(myRepairScheduler)
                 .withTableReferenceFactory(myTableReferenceFactory);
@@ -314,31 +419,53 @@ public class TestDefaultRepairConfigurationProvider
 
     private TableMetadata mockNonReplicatedTable(TableReference tableReference)
     {
-        return mockTable(tableReference, false);
+        return mockNonReplicatedTable(tableReference, new HashMap<>());
     }
 
     private TableMetadata mockReplicatedTable(TableReference tableReference)
     {
-        return mockTable(tableReference, true);
+        return mockReplicatedTable(tableReference, new HashMap<>());
     }
 
-    private TableMetadata mockTable(TableReference tableReference, boolean replicated)
+    private TableMetadata mockNonReplicatedTable(TableReference tableReference, Map<CqlIdentifier, Object> options)
+    {
+        KeyspaceMetadata keyspaceMetadata = mockKeyspace(tableReference.getKeyspace(), false);
+        return mockTable(keyspaceMetadata, tableReference, options);
+    }
+
+    private TableMetadata mockReplicatedTable(TableReference tableReference, Map<CqlIdentifier, Object> options)
+    {
+        KeyspaceMetadata keyspaceMetadata = mockKeyspace(tableReference.getKeyspace(), true);
+        return mockTable(keyspaceMetadata, tableReference, options);
+    }
+
+    private KeyspaceMetadata mockKeyspace(String name, boolean replicated)
     {
         KeyspaceMetadata keyspaceMetadata = mock(KeyspaceMetadata.class);
+        when(keyspaceMetadata.getName()).thenReturn(CqlIdentifier.fromInternal(name));
+        when(myReplicatedTableProviderMock.accept(eq(name))).thenReturn(replicated);
+        return keyspaceMetadata;
+    }
+
+    private TableMetadata mockTable(KeyspaceMetadata keyspaceMetadata, TableReference tableReference,
+            Map<CqlIdentifier, Object> options)
+    {
         myKeyspaces.put(tableReference.getKeyspace(), keyspaceMetadata);
 
         TableMetadata tableMetadata = mock(TableMetadata.class);
+        when(tableMetadata.getName()).thenReturn(CqlIdentifier.fromInternal(tableReference.getTable()));
+        doReturn(keyspaceMetadata.getName()).when(tableMetadata).getKeyspace();
+        doReturn(Optional.of(tableReference.getId())).when(tableMetadata).getId();
+        doReturn(Collections.singletonMap(tableMetadata.getName(), tableMetadata)).when(keyspaceMetadata).getTables();
+        when(tableMetadata.getOptions()).thenReturn(options);
 
-        when(tableMetadata.getKeyspace()).thenReturn(keyspaceMetadata);
-        when(tableMetadata.getName()).thenReturn(tableReference.getTable());
-        when(tableMetadata.getId()).thenReturn(tableReference.getId());
-
-        when(keyspaceMetadata.getName()).thenReturn(tableReference.getKeyspace());
-        when(keyspaceMetadata.getTables()).thenReturn(Collections.singletonList(tableMetadata));
-
-        when(myReplicatedTableProviderMock.accept(eq(tableReference.getKeyspace()))).thenReturn(replicated);
-        when(metadata.getKeyspaces()).thenReturn(new ArrayList<>(myKeyspaces.values()));
-        when(metadata.getKeyspace(eq(tableReference.getKeyspace()))).thenReturn(keyspaceMetadata);
+        Map<CqlIdentifier, KeyspaceMetadata> keyspaceMetadatas = new HashMap<>();
+        for (Map.Entry<String, KeyspaceMetadata> keyspaceEntry : myKeyspaces.entrySet())
+        {
+            keyspaceMetadatas.put(CqlIdentifier.fromInternal(keyspaceEntry.getKey()), keyspaceEntry.getValue());
+        }
+        when(metadata.getKeyspaces()).thenReturn(keyspaceMetadatas);
+        when(metadata.getKeyspace(eq(tableReference.getKeyspace()))).thenReturn(Optional.of(keyspaceMetadata));
 
         return tableMetadata;
     }

@@ -15,7 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,7 +33,7 @@ public class VnodeRepairResourceFactory implements RepairResourceFactory
                 .collect(Collectors.toSet());
     }
 
-    private RepairResource replicaToRepairResource(Node node)
+    private RepairResource replicaToRepairResource(DriverNode node)
     {
         return new RepairResource(node.getDatacenter(), node.getId().toString());
     }

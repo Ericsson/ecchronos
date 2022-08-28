@@ -15,7 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.google.common.collect.Sets;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestRepairEntry
 {
     @Mock
-    private Node mockNode;
+    private DriverNode mockNode;
     
     @Test
     public void testGetters()
@@ -39,7 +39,7 @@ public class TestRepairEntry
         LongTokenRange expectedLongTokenRange = new LongTokenRange(0, 1);
         long expectedStartedAt = 5;
         long expectedFinishedAt = expectedStartedAt + 5;
-        Set<Node> expectedParticipants = Sets.newHashSet(mockNode);
+        Set<DriverNode> expectedParticipants = Sets.newHashSet(mockNode);
         RepairStatus expectedStatus = RepairStatus.SUCCESS;
 
         RepairEntry repairEntry = new RepairEntry(expectedLongTokenRange, expectedStartedAt, expectedFinishedAt, expectedParticipants, expectedStatus.toString());

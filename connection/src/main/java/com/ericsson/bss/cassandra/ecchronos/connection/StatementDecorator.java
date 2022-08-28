@@ -14,7 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection;
 
-import com.datastax.driver.core.Statement;
+import com.datastax.oss.driver.api.core.cql.Statement;
 
 public interface StatementDecorator
 {

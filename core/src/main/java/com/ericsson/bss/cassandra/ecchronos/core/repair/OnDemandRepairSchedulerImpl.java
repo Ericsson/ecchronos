@@ -18,17 +18,20 @@ import java.io.Closeable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.driver.core.KeyspaceMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
-import com.datastax.driver.core.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
@@ -43,6 +46,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(OnDemandRepairSchedulerImpl.class);
+    private static final int ONGOING_JOBS_PERIOD_SECONDS = 10;
 
     private final Map<UUID, OnDemandRepairJob> myScheduledJobs = new HashMap<>();
     private final Object myLock = new Object();
@@ -52,10 +56,11 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     private final ScheduleManager myScheduleManager;
     private final ReplicationState myReplicationState;
     private final RepairLockType myRepairLockType;
-    private final Metadata myMetadata;
+    private final CqlSession mySession;
     private final RepairConfiguration myRepairConfiguration;
     private final RepairHistory myRepairHistory;
     private final OnDemandStatus myOnDemandStatus;
+    private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor();
 
     private OnDemandRepairSchedulerImpl(Builder builder)
     {
@@ -64,37 +69,24 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         myScheduleManager = builder.myScheduleManager;
         myReplicationState = builder.myReplicationState;
         myRepairLockType = builder.repairLockType;
-        myMetadata = builder.metadata;
+        mySession = builder.session;
         myRepairConfiguration = builder.repairConfiguration;
         myRepairHistory = builder.repairHistory;
         myOnDemandStatus = builder.onDemandStatus;
-        new Thread(this::getOngoingJobs).start();
+        myExecutor.scheduleAtFixedRate(() -> getOngoingJobs(), 0, ONGOING_JOBS_PERIOD_SECONDS, TimeUnit.SECONDS);
     }
 
     private void getOngoingJobs()
     {
-        boolean done = false;
-        Set<OngoingJob> ongoingJobs;
-        while (!done)
+        try
         {
-            try
-            {
-                ongoingJobs = myOnDemandStatus.getOngoingJobs(myReplicationState);
-                ongoingJobs.forEach(j -> scheduleOngoingJob(j));
-                done = true;
-            }
-            catch (Exception e)
-            {
-                try
-                {
-                    LOG.info("Failed to get ongoing ondemand jobs during startup: {}, automatic retry in 10s", e.getMessage());
-                    Thread.sleep(TimeUnit.SECONDS.toMillis(10));
-                }
-                catch (InterruptedException e1)
-                {
-                    Thread.currentThread().interrupt();
-                }
-            }
+            Set<OngoingJob> ongoingJobs = myOnDemandStatus.getOngoingJobs(myReplicationState);
+            ongoingJobs.forEach(j -> scheduleOngoingJob(j));
+        }
+        catch (Exception e)
+        {
+            LOG.info("Failed to get ongoing ondemand jobs: {}, automatic retry in {}s", e.getMessage(),
+                    ONGOING_JOBS_PERIOD_SECONDS);
         }
     }
 
@@ -107,22 +99,36 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
             {
                 descheduleTable(job);
             }
-
             myScheduledJobs.clear();
+            myExecutor.shutdown();
         }
+    }
+
+    @Override
+    public List<RepairJobView> scheduleClusterWideJob(TableReference tableReference) throws EcChronosException
+    {
+        RepairJobView currentJob = scheduleJob(tableReference, true);
+        return getAllClusterWideRepairJobs().stream()
+                .filter(j -> j.getId().equals(currentJob.getId()))
+                .collect(Collectors.toList());
     }
 
     @Override
     public RepairJobView scheduleJob(TableReference tableReference) throws EcChronosException
     {
+        return scheduleJob(tableReference, false);
+    }
+
+    private RepairJobView scheduleJob(TableReference tableReference, boolean isClusterWide) throws EcChronosException
+    {
         synchronized (myLock)
         {
             if (tableReference != null)
             {
-                KeyspaceMetadata ks = myMetadata.getKeyspace(tableReference.getKeyspace());
-                if (ks != null && ks.getTable(tableReference.getTable()) != null)
+                Optional<KeyspaceMetadata> ks = mySession.getMetadata().getKeyspace(tableReference.getKeyspace());
+                if (ks.isPresent() && ks.get().getTable(tableReference.getTable()).isPresent())
                 {
-                    OnDemandRepairJob job = getRepairJob(tableReference);
+                    OnDemandRepairJob job = getRepairJob(tableReference, isClusterWide);
                     myScheduledJobs.put(job.getId(), job);
                     myScheduleManager.schedule(job);
                     return job.getView();
@@ -139,6 +145,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
             OnDemandRepairJob job = getOngoingRepairJob(ongoingJob);
             if(myScheduledJobs.putIfAbsent(job.getId(), job) == null)
             {
+                LOG.info("Scheduling ongoing job: {}", job.getId());
                 myScheduleManager.schedule(job);
             }
         }
@@ -152,6 +159,15 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
                     .map(OnDemandRepairJob::getView)
                     .collect(Collectors.toList());
         }
+    }
+
+    @Override
+    public List<RepairJobView> getAllClusterWideRepairJobs()
+    {
+        return myOnDemandStatus.getAllClusterWideJobs().stream()
+                .map(job -> getOngoingRepairJob(job))
+                .map(OnDemandRepairJob::getView)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -180,13 +196,18 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         }
     }
 
-    private OnDemandRepairJob getRepairJob(TableReference tableReference)
+    private OnDemandRepairJob getRepairJob(TableReference tableReference, boolean isClusterWide)
     {
         OngoingJob ongoingJob = new OngoingJob.Builder()
                 .withOnDemandStatus(myOnDemandStatus)
                 .withTableReference(tableReference)
                 .withReplicationState(myReplicationState)
+                .withHostId(myOnDemandStatus.getHostId())
                 .build();
+        if (isClusterWide)
+        {
+            ongoingJob.startClusterWideJob();
+        }
         OnDemandRepairJob job = new OnDemandRepairJob.Builder()
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withTableRepairMetrics(myTableRepairMetrics)
@@ -225,7 +246,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         private ScheduleManager myScheduleManager;
         private ReplicationState myReplicationState;
         private RepairLockType repairLockType;
-        private Metadata metadata;
+        private CqlSession session;
         private RepairConfiguration repairConfiguration;
         private RepairHistory repairHistory;
         private OnDemandStatus onDemandStatus;
@@ -260,9 +281,9 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
             return this;
         }
 
-        public Builder withMetadata(Metadata metadata)
+        public Builder withSession(CqlSession session)
         {
-            this.metadata = metadata;
+            this.session = session;
             return this;
         }
 

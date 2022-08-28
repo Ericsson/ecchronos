@@ -14,25 +14,22 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-
-import java.io.ByteArrayOutputStream;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.util.function.Supplier;
-
-import org.junit.Before;
+import com.datastax.oss.driver.api.core.auth.AuthProvider;
+import com.datastax.oss.driver.api.core.auth.Authenticator;
+import com.datastax.oss.driver.api.core.metadata.EndPoint;
+import com.ericsson.bss.cassandra.ecchronos.application.config.Credentials;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.datastax.driver.core.Authenticator;
-import com.datastax.driver.core.EndPoint;
-import com.datastax.driver.core.ExtendedAuthProvider;
-import com.ericsson.bss.cassandra.ecchronos.application.config.Credentials;
+import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.util.function.Supplier;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestReloadingAuthProvider
@@ -53,43 +50,41 @@ public class TestReloadingAuthProvider
     @Test
     public void testCorrectResponse()
     {
-        ByteBuffer expectedResponse = responseFor("username", "password");
-
         when(credentialsSupplier.get()).thenReturn(new Credentials(true, "username", "password"));
-        ExtendedAuthProvider authProvider = new ReloadingAuthProvider(credentialsSupplier);
+        AuthProvider authProvider = new ReloadingAuthProvider(credentialsSupplier);
 
         Authenticator authenticator = authProvider.newAuthenticator(endPoint, SERVER_AUTHENTICATOR);
 
-        ByteBuffer response = ByteBuffer.wrap(authenticator.initialResponse());
-        assertThat(response).isEqualTo(expectedResponse);
-        assertThat(getUsername(response)).isEqualTo("username");
-        assertThat(getPassword(response)).isEqualTo("password");
+        authenticator.initialResponse().thenAccept(b ->
+        {
+            assertThat(getUsername(b)).isEqualTo("username");
+            assertThat(getPassword(b)).isEqualTo("password");
+        });
     }
 
     @Test
     public void testChangingResponse()
     {
-        ByteBuffer expectedResponse = responseFor("username", "password");
-        ByteBuffer expectedResponse2 = responseFor("new_user", "new_password");
-
         when(credentialsSupplier.get())
                 .thenReturn(new Credentials(true, "username", "password"))
                 .thenReturn(new Credentials(true, "new_user", "new_password"));
-        ExtendedAuthProvider authProvider = new ReloadingAuthProvider(credentialsSupplier);
+        AuthProvider authProvider = new ReloadingAuthProvider(credentialsSupplier);
 
         Authenticator authenticator = authProvider.newAuthenticator(endPoint, SERVER_AUTHENTICATOR);
 
-        ByteBuffer response = ByteBuffer.wrap(authenticator.initialResponse());
-        assertThat(response).isEqualTo(expectedResponse);
-        assertThat(getUsername(response)).isEqualTo("username");
-        assertThat(getPassword(response)).isEqualTo("password");
+        authenticator.initialResponse().thenAccept(b ->
+        {
+            assertThat(getUsername(b)).isEqualTo("username");
+            assertThat(getPassword(b)).isEqualTo("password");
+        });
 
         authenticator = authProvider.newAuthenticator(endPoint, SERVER_AUTHENTICATOR);
 
-        response = ByteBuffer.wrap(authenticator.initialResponse());
-        assertThat(response).isEqualTo(expectedResponse2);
-        assertThat(getUsername(response)).isEqualTo("new_user");
-        assertThat(getPassword(response)).isEqualTo("new_password");
+        authenticator.initialResponse().thenAccept(b ->
+        {
+            assertThat(getUsername(b)).isEqualTo("new_user");
+            assertThat(getPassword(b)).isEqualTo("new_password");
+        });
     }
 
     private String getUsername(ByteBuffer response)
@@ -136,19 +131,5 @@ public class TestReloadingAuthProvider
         }
 
         return result;
-    }
-
-    private ByteBuffer responseFor(String username, String password)
-    {
-        byte[] user = username.getBytes(UTF8);
-        byte[] pass = password.getBytes(UTF8);
-        ByteBuffer response = ByteBuffer.allocate(user.length + pass.length + 2);
-        response.put((byte) 0);
-        response.put(user);
-        response.put((byte) 0);
-        response.put(pass);
-        response.rewind();
-
-        return response;
     }
 }

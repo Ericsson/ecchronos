@@ -14,72 +14,16 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core;
 
-import java.lang.reflect.Constructor;
-import java.nio.ByteBuffer;
-
-import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.ProtocolVersion;
-import com.datastax.driver.core.Token;
-import com.datastax.driver.core.TokenRange;
+import com.datastax.oss.driver.api.core.metadata.token.TokenRange;
+import com.datastax.oss.driver.internal.core.metadata.token.Murmur3Token;
+import com.datastax.oss.driver.internal.core.metadata.token.Murmur3TokenFactory;
+import com.datastax.oss.driver.internal.core.metadata.token.TokenFactory;
 
 public class TokenUtil
 {
-
     public static TokenRange getRange(long start, long end) throws Exception
     {
-        Class<?> tokenFactoryClass = Class.forName("com.datastax.driver.core.Token$Factory");
-
-        Constructor<TokenRange> tokenRangeConstructor = TokenRange.class.getDeclaredConstructor(Token.class, Token.class, tokenFactoryClass);
-
-        tokenRangeConstructor.setAccessible(true);
-
-        return tokenRangeConstructor.newInstance(new MockedToken(start), new MockedToken(end), null);
-    }
-
-    private static class MockedToken extends Token
-    {
-        private final long myValue;
-
-        public MockedToken(long value)
-        {
-            myValue = value;
-        }
-
-        @Override
-        public int compareTo(Token o)
-        {
-            if (o instanceof MockedToken)
-            {
-                return Long.compare(myValue, ((MockedToken) o).myValue);
-            }
-            else
-            {
-                throw new IllegalArgumentException();
-            }
-        }
-
-        @Override
-        public DataType getType()
-        {
-            return DataType.bigint();
-        }
-
-        @Override
-        public Object getValue()
-        {
-            return myValue;
-        }
-
-        @Override
-        public ByteBuffer serialize(ProtocolVersion protocolVersion)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "Token{" + myValue + "}";
-        }
+        TokenFactory tokenFactory = new Murmur3TokenFactory();
+        return tokenFactory.range(new Murmur3Token(start), new Murmur3Token(end));
     }
 }

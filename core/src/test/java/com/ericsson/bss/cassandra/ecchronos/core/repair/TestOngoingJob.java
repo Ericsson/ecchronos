@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import com.datastax.oss.driver.api.core.data.UdtValue;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,11 +31,10 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.datastax.driver.core.UDTValue;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OngoingJob.Status;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 
@@ -47,7 +47,7 @@ public class TestOngoingJob
     private static final String keyspaceName = "keyspace";
     private static final String tableName = "table";
 
-    private final Map<LongTokenRange, ImmutableSet<Node>> myTokenMap = new HashMap<>();
+    private final Map<LongTokenRange, ImmutableSet<DriverNode>> myTokenMap = new HashMap<>();
 
     @Mock
     private OnDemandStatus myOnDemandStatus;
@@ -56,10 +56,10 @@ public class TestOngoingJob
     private ReplicationState myReplicationState;
 
     @Mock
-    private UDTValue myUdtValue;
+    private UdtValue myUdtValue;
 
     @Captor
-    private ArgumentCaptor<Set<UDTValue>> myUdtSetCaptor;
+    private ArgumentCaptor<Set<UdtValue>> myUdtSetCaptor;
 
     private final TableReference myTableReference = tableReference(keyspaceName, tableName);
 
@@ -92,7 +92,7 @@ public class TestOngoingJob
         UUID jobId = UUID.randomUUID();
         Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
         expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
-        Set<UDTValue> repiaredTokens = new HashSet<>();
+        Set<UdtValue> repiaredTokens = new HashSet<>();
         repiaredTokens.add(myUdtValue);
 
         when(myOnDemandStatus.getStartTokenFrom(myUdtValue)).thenReturn(-50L);
@@ -119,7 +119,7 @@ public class TestOngoingJob
         UUID jobId = UUID.randomUUID();
         Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
         expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
-        Set<UDTValue> repiaredTokens = new HashSet<>();
+        Set<UdtValue> repiaredTokens = new HashSet<>();
         repiaredTokens.add(myUdtValue);
 
         when(myOnDemandStatus.getStartTokenFrom(myUdtValue)).thenReturn(-50L);
@@ -155,7 +155,7 @@ public class TestOngoingJob
         ongoingJob.finishRanges(finishedRanges);
 
         verify(myOnDemandStatus).updateJob(any(UUID.class), myUdtSetCaptor.capture());
-        Set<UDTValue> rangeSet = myUdtSetCaptor.getValue();
+        Set<UdtValue> rangeSet = myUdtSetCaptor.getValue();
         assertThat(rangeSet).containsOnly(myUdtValue);
     }
 
@@ -223,7 +223,7 @@ public class TestOngoingJob
         UUID jobId = UUID.randomUUID();
         Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
         expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
-        Set<UDTValue> repiaredTokens = new HashSet<>();
+        Set<UdtValue> repiaredTokens = new HashSet<>();
         repiaredTokens.add(myUdtValue);
 
         OngoingJob ongoingJob = new OngoingJob.Builder()
@@ -244,7 +244,7 @@ public class TestOngoingJob
         UUID jobId = UUID.randomUUID();
         Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
         expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
-        Set<UDTValue> repiaredTokens = new HashSet<>();
+        Set<UdtValue> repiaredTokens = new HashSet<>();
         repiaredTokens.add(myUdtValue);
 
         OngoingJob ongoingJob = new OngoingJob.Builder()
@@ -257,5 +257,101 @@ public class TestOngoingJob
         boolean result = ongoingJob.hasTopologyChanged();
 
         assertThat(result).isTrue();
+    }
+
+    @Test
+    public void testStartClusterWideJob()
+    {
+        Map<LongTokenRange, ImmutableSet<DriverNode>> thisNodeTokenMap = new HashMap<>();
+        DriverNode node1 = mock(DriverNode.class);
+        DriverNode node2 = mock(DriverNode.class);
+        DriverNode node3 = mock(DriverNode.class);
+        DriverNode node4 = mock(DriverNode.class);
+
+        LongTokenRange range1 = new LongTokenRange(1, 2);
+        ImmutableSet<DriverNode> range1Replicas = ImmutableSet.of(node1, node2, node3);
+        LongTokenRange range2 = new LongTokenRange(2, 3);
+        ImmutableSet<DriverNode> range2Replicas = ImmutableSet.of(node1, node2, node3);
+        LongTokenRange range3 = new LongTokenRange(3, 4);
+        ImmutableSet<DriverNode> range3Replicas = ImmutableSet.of(node2, node1, node3);
+        LongTokenRange range4 = new LongTokenRange(4, 5);
+        ImmutableSet<DriverNode> range4Replicas = ImmutableSet.of(node2, node1, node3);
+        LongTokenRange range5 = new LongTokenRange(5, 6);
+        ImmutableSet<DriverNode> range5Replicas = ImmutableSet.of(node3, node2, node1);
+
+        LongTokenRange range6 = new LongTokenRange(6, 7);
+        ImmutableSet<DriverNode> range6Replicas = ImmutableSet.of(node2, node3, node4);
+        LongTokenRange range7 = new LongTokenRange(7, 8);
+        ImmutableSet<DriverNode> range7Replicas = ImmutableSet.of(node2, node3, node4);
+        LongTokenRange range8 = new LongTokenRange(8, 9);
+        ImmutableSet<DriverNode> range8Replicas = ImmutableSet.of(node3, node2, node4);
+        LongTokenRange range9 = new LongTokenRange(9, 10);
+        ImmutableSet<DriverNode> range9Replicas = ImmutableSet.of(node4, node3, node2);
+
+        thisNodeTokenMap.put(range1, range1Replicas);
+        thisNodeTokenMap.put(range2, range2Replicas);
+        thisNodeTokenMap.put(range3, range3Replicas);
+        thisNodeTokenMap.put(range4, range4Replicas);
+        thisNodeTokenMap.put(range5, range5Replicas);
+
+        Map<LongTokenRange, ImmutableSet<DriverNode>> allTokenMap = new HashMap<>();
+        allTokenMap.put(range1, range1Replicas);
+        allTokenMap.put(range2, range2Replicas);
+        allTokenMap.put(range3, range3Replicas);
+        allTokenMap.put(range4, range4Replicas);
+        allTokenMap.put(range5, range5Replicas);
+        allTokenMap.put(range6, range6Replicas);
+        allTokenMap.put(range7, range7Replicas);
+        allTokenMap.put(range8, range8Replicas);
+        allTokenMap.put(range9, range9Replicas);
+        ReplicationState replicationState = mock(ReplicationState.class);
+        when(replicationState.getTokenRangeToReplicas(myTableReference)).thenReturn(thisNodeTokenMap);
+        when(replicationState.getTokenRanges(myTableReference)).thenReturn(allTokenMap);
+        OngoingJob ongoingJob = new OngoingJob.Builder()
+                .withOnDemandStatus(myOnDemandStatus)
+                .withReplicationState(replicationState)
+                .withTableReference(myTableReference)
+                .build();
+        UUID jobId = ongoingJob.getJobId();
+        verify(myOnDemandStatus).addNewJob(jobId, myTableReference, ongoingJob.getTokens().keySet().hashCode());
+
+        ongoingJob.startClusterWideJob();
+
+        Set<LongTokenRange> repairedRangesNode2 = new HashSet<>();
+        //Node2 will repair range6 and range7
+        repairedRangesNode2.add(range1);
+        repairedRangesNode2.add(range2);
+        repairedRangesNode2.add(range3);
+        repairedRangesNode2.add(range4);
+        repairedRangesNode2.add(range5);
+        repairedRangesNode2.add(range8);
+        repairedRangesNode2.add(range9);
+        verify(myOnDemandStatus).addNewJob(node2.getId(), jobId, myTableReference, allTokenMap.keySet().hashCode(), repairedRangesNode2);
+
+        Set<LongTokenRange> repairedRangesNode3 = new HashSet<>();
+        //Node3 will repair range8
+        repairedRangesNode3.add(range1);
+        repairedRangesNode3.add(range2);
+        repairedRangesNode3.add(range3);
+        repairedRangesNode3.add(range4);
+        repairedRangesNode3.add(range5);
+        repairedRangesNode3.add(range6);
+        repairedRangesNode3.add(range7);
+        repairedRangesNode3.add(range9);
+        verify(myOnDemandStatus).addNewJob(node3.getId(), jobId, myTableReference, allTokenMap.keySet().hashCode(), repairedRangesNode3);
+
+        Set<LongTokenRange> repairedRangesNode4 = new HashSet<>();
+        //Node4 will repair range9, ranges range1-range5 shouldn't be here since node4 is not replica for those
+        repairedRangesNode4.add(range6);
+        repairedRangesNode4.add(range7);
+        repairedRangesNode4.add(range8);
+        //Node4 is replica to node2 and node3
+        Map<LongTokenRange, ImmutableSet<DriverNode>> node4TokenMap = new HashMap<>();
+        node4TokenMap.put(range6, range6Replicas);
+        node4TokenMap.put(range7, range7Replicas);
+        node4TokenMap.put(range8, range8Replicas);
+        node4TokenMap.put(range9, range9Replicas);
+        verify(myOnDemandStatus).addNewJob(node4.getId(), jobId, myTableReference, node4TokenMap.keySet().hashCode(), repairedRangesNode4);
+        verifyNoMoreInteractions(myOnDemandStatus);
     }
 }

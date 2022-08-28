@@ -19,8 +19,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.RatioGauge;
+import com.codahale.metrics.SlidingTimeWindowMovingAverages;
 import com.codahale.metrics.Timer;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
@@ -36,6 +38,8 @@ public class TableMetricHolder implements Closeable
     static final String LAST_REPAIRED_AT = "LastRepairedAt";
     static final String REPAIR_STATE = "RepairState";
     static final String REMAINING_REPAIR_TIME = "RemainingRepairTime";
+    static final String FAILED_REPAIR_TASKS = "FailedRepairTasks";
+    static final String SUCCEEDED_REPAIR_TASKS = "SucceededRepairTasks";
 
     private final MetricRegistry myMetricRegistry;
     private final NodeMetricHolder myNodeMetricHolder;
@@ -44,7 +48,9 @@ public class TableMetricHolder implements Closeable
 
     private final AtomicReference<RangeRepairState> myRepairState = new AtomicReference<>();
     private final AtomicReference<Long> myLastRepairedAt = new AtomicReference<>(0L);
-    private final AtomicReference<Long> myRemainingRepairTime = new AtomicReference<>(0L);;
+    private final AtomicReference<Long> myRemainingRepairTime = new AtomicReference<>(0L);
+    private final AtomicReference<Meter> myRepairFailedAttempts = new AtomicReference<>(null);
+    private final AtomicReference<Meter> myRepairSucceededAttempts = new AtomicReference<>(null);
 
     public TableMetricHolder(TableReference tableReference, MetricRegistry metricRegistry, NodeMetricHolder nodeMetricHolder)
     {
@@ -72,6 +78,14 @@ public class TableMetricHolder implements Closeable
         });
         myMetricRegistry.register(metricName(LAST_REPAIRED_AT), lastRepairedAtGauge());
         myMetricRegistry.register(metricName(REMAINING_REPAIR_TIME), remainingRepairTimeGauge());
+        SlidingTimeWindowMovingAverages failedAverages = new SlidingTimeWindowMovingAverages();
+        Meter failedAttemptsMeter = new Meter(failedAverages);
+        myRepairFailedAttempts.set(failedAttemptsMeter);
+        myMetricRegistry.register(metricName(FAILED_REPAIR_TASKS), myRepairFailedAttempts.get());
+        SlidingTimeWindowMovingAverages succeededAverages = new SlidingTimeWindowMovingAverages();
+        Meter succeededAttemptsMeter = new Meter(succeededAverages);
+        myRepairSucceededAttempts.set(succeededAttemptsMeter);
+        myMetricRegistry.register(metricName(SUCCEEDED_REPAIR_TASKS), myRepairSucceededAttempts.get());
         timer(REPAIR_TIMING_SUCCESS);
         timer(REPAIR_TIMING_FAILED);
     }
@@ -108,6 +122,16 @@ public class TableMetricHolder implements Closeable
         myRemainingRepairTime.set(remainingRepairTime);
     }
 
+    public void failedRepairTask()
+    {
+        myRepairFailedAttempts.get().mark();
+    }
+
+    public void succeededRepairTask()
+    {
+        myRepairSucceededAttempts.get().mark();
+    }
+
     public void repairTiming(long timeTaken, TimeUnit timeUnit, boolean successful)
     {
         if (successful)
@@ -130,6 +154,8 @@ public class TableMetricHolder implements Closeable
         myMetricRegistry.remove(metricName(LAST_REPAIRED_AT));
         myMetricRegistry.remove(metricName(REPAIR_STATE));
         myMetricRegistry.remove(metricName(REMAINING_REPAIR_TIME));
+        myMetricRegistry.remove(metricName(FAILED_REPAIR_TASKS));
+        myMetricRegistry.remove(metricName(SUCCEEDED_REPAIR_TASKS));
     }
 
     private String metricName(String name)

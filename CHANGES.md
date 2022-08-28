@@ -1,7 +1,22 @@
 # Changes
 
+## Version 4.0.0
+
+* Add config to skip schedules of tables with TWCS - Issue #151
+* Add metric for failed and succeeded repair tasks - Issue #295
+* Remove deprecated v1 REST interface
+* Migrate to datastax driver-4.14.1 - Issue #269
+* Add PEM format support - Issue #300
+
 ## Version 3.0.0
 
+* Add support for repairs without keyspace/table - Issue #158
+* Add Cassandra health indicator and enable probes - Issue #192
+* Add support for clusterwide repairs - Issue #299
+* Add custom HTML error page
+* Make fault reporter pluggable
+* Fix JMX URI validation with new Java versions - Issue #306
+* Reworked rest interface - Issue #257
 * Bump springboot from 2.6.4 to 2.6.6
 * Offset next runtime with repair time taken - Issue #121
 * Remove deprecated scripts (ecc-schedule, ecc-status, ecc-config)

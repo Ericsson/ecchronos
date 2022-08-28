@@ -54,6 +54,8 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
     @Value("${server.ssl.client-auth:none}")
     private String clientAuth;
 
+    private SSLHostConfig sslHostConfig;
+
     private static final Logger LOG = LoggerFactory.getLogger(TomcatWebServerCustomizer.class);
 
     @Override
@@ -70,7 +72,8 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
             {
                 http11NioProtocol = (Http11NioProtocol) connector.getProtocolHandler();
                 if (certificate != null) {
-                    http11NioProtocol.addSslHostConfig(getSslHostConfiguration());
+                    sslHostConfig = getSslHostConfiguration();
+                    http11NioProtocol.addSslHostConfig(sslHostConfig);
                     http11NioProtocol.setSSLEnabled(true);
                 }
             });
@@ -119,6 +122,10 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
     {
         if (sslIsEnabled && http11NioProtocol != null)
         {
+            if (sslHostConfig != null)
+            {
+                sslHostConfig.setTrustStore(getTrustStore());
+            }
             http11NioProtocol.reloadSslHostConfigs();
         }
     }

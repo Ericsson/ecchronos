@@ -16,7 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.google.common.collect.ImmutableSet;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
@@ -35,10 +35,10 @@ import static org.mockito.Mockito.when;
 public class TestVnodeState
 {
     @Mock
-    private Node myLocalNode;
+    private DriverNode myLocalNode;
 
     @Mock
-    private Node myRemoteNode;
+    private DriverNode myRemoteNode;
 
     private InetAddress myLocalNodeAddress;
     private InetAddress myRemoteNodeAddress;
@@ -58,7 +58,7 @@ public class TestVnodeState
         long repairedAfter = 1234;
         long repairedAt = 1235;
         LongTokenRange tokenRange = new LongTokenRange(1, 2);
-        ImmutableSet<Node> replicas = ImmutableSet.of(myLocalNode, myRemoteNode);
+        ImmutableSet<DriverNode> replicas = ImmutableSet.of(myLocalNode, myRemoteNode);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(tokenRange, replicas, repairedAt);
         VirtualNodeState vnodeState = VirtualNodeState.convert(vnodeRepairState, repairedAfter);
@@ -66,7 +66,7 @@ public class TestVnodeState
         assertThat(vnodeState.startToken).isEqualTo(1);
         assertThat(vnodeState.endToken).isEqualTo(2);
         assertThat(vnodeState.lastRepairedAtInMs).isEqualTo(repairedAt);
-        assertThat(vnodeState.replicas).containsExactlyInAnyOrder(myLocalNodeAddress, myRemoteNodeAddress);
+        assertThat(vnodeState.replicas).containsExactlyInAnyOrder(myLocalNodeAddress.getHostAddress(), myRemoteNodeAddress.getHostAddress());
         assertThat(vnodeState.repaired).isTrue();
     }
 
@@ -76,7 +76,7 @@ public class TestVnodeState
         long repairedAfter = 1235;
         long repairedAt = 1234;
         LongTokenRange tokenRange = new LongTokenRange(1, 2);
-        ImmutableSet<Node> replicas = ImmutableSet.of(myLocalNode, myRemoteNode);
+        ImmutableSet<DriverNode> replicas = ImmutableSet.of(myLocalNode, myRemoteNode);
 
         VnodeRepairState vnodeRepairState = new VnodeRepairState(tokenRange, replicas, repairedAt);
         VirtualNodeState vnodeState = VirtualNodeState.convert(vnodeRepairState, repairedAfter);
@@ -84,7 +84,7 @@ public class TestVnodeState
         assertThat(vnodeState.startToken).isEqualTo(1);
         assertThat(vnodeState.endToken).isEqualTo(2);
         assertThat(vnodeState.lastRepairedAtInMs).isEqualTo(repairedAt);
-        assertThat(vnodeState.replicas).containsExactlyInAnyOrder(myLocalNodeAddress, myRemoteNodeAddress);
+        assertThat(vnodeState.replicas).containsExactlyInAnyOrder(myLocalNodeAddress.getHostAddress(), myRemoteNodeAddress.getHostAddress());
         assertThat(vnodeState.repaired).isFalse();
     }
 

@@ -14,30 +14,21 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
-import com.datastax.driver.core.Host;
-
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import net.jcip.annotations.NotThreadSafe;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
-
-import net.jcip.annotations.NotThreadSafe;
-
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.extras.codecs.date.SimpleTimestampCodec;
+import java.io.IOException;
+import java.net.InetAddress;
 
 @NotThreadSafe
 public abstract class AbstractCassandraTest
 {
     protected static CassandraDaemonForECChronos myCassandraDaemon;
-
-    protected static Cluster myCluster;
-    protected static Session mySession;
+    protected static CqlSession mySession;
 
     private static NativeConnectionProvider myNativeConnectionProvider;
 
@@ -46,48 +37,39 @@ public abstract class AbstractCassandraTest
     {
         myCassandraDaemon = CassandraDaemonForECChronos.getInstance();
 
-        myCluster = myCassandraDaemon.getCluster();
-        myCluster.getConfiguration().getCodecRegistry().register(SimpleTimestampCodec.instance);
-        mySession = myCluster.connect();
+        mySession = myCassandraDaemon.getSession();
 
-        Host tmpHost = null;
+        Node tmpNode = null;
 
-        try
+        InetAddress localhostAddress = InetAddress.getByName("localhost");
+
+        for (Node node : mySession.getMetadata().getNodes().values())
         {
-            InetAddress localhostAddress = InetAddress.getByName("localhost");
-
-            for (Host host : myCluster.getMetadata().getAllHosts())
+            if (node.getBroadcastAddress().get().getAddress().equals(localhostAddress))
             {
-                if (host.getAddress().equals(localhostAddress))
-                {
-                    tmpHost = host;
-                }
+                tmpNode = node;
             }
         }
-        catch (UnknownHostException e)
-        {
-            throw new IllegalArgumentException(e);
-        }
 
-        if (tmpHost == null)
+        if (tmpNode == null)
         {
             throw new IllegalArgumentException("Local host not found among cassandra hosts");
         }
 
-        final Host finalHost = tmpHost;
+        final Node finalNode = tmpNode;
 
         myNativeConnectionProvider = new NativeConnectionProvider()
         {
             @Override
-            public Session getSession()
+            public CqlSession getSession()
             {
                 return mySession;
             }
 
             @Override
-            public Host getLocalHost()
+            public Node getLocalNode()
             {
-                return finalHost;
+                return finalNode;
             }
 
             @Override
@@ -102,7 +84,6 @@ public abstract class AbstractCassandraTest
     public static void cleanupCassandra()
     {
         mySession.close();
-        myCluster.close();
     }
 
     public static NativeConnectionProvider getNativeConnectionProvider()

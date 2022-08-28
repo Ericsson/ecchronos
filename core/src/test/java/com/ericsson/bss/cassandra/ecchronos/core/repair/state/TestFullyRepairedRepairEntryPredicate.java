@@ -15,7 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.google.common.collect.Sets;
 import org.junit.Test;
 
@@ -69,9 +69,9 @@ public class TestFullyRepairedRepairEntryPredicate
     {
         List<LongTokenRange> expectedRepairedTokenRanges = new ArrayList<>();
         Set<InetAddress> expectedRepairedNodeAddresses = Sets.newHashSet(InetAddress.getLocalHost());
-        Set<Node> expectedRepairedNodes = expectedRepairedNodeAddresses.stream().map(this::mockNode).collect(Collectors.toSet());
+        Set<DriverNode> expectedRepairedNodes = expectedRepairedNodeAddresses.stream().map(this::mockNode).collect(Collectors.toSet());
 
-        Map<LongTokenRange, Collection<Node>> tokenToNodeMap = new HashMap<>();
+        Map<LongTokenRange, Collection<DriverNode>> tokenToNodeMap = new HashMap<>();
 
         for (int i = 0; i < 5; i++)
         {
@@ -90,13 +90,13 @@ public class TestFullyRepairedRepairEntryPredicate
     public void testAcceptPartialSuccess() throws UnknownHostException
     {
         LongTokenRange expectedRepairedTokenRange = new LongTokenRange(0, 1);
-        Node repairedNode = mockNode(InetAddress.getLocalHost());
-        Set<Node> repairedNodes = Sets.newHashSet(repairedNode);
-        Set<Node> allNodes = new HashSet<>();
+        DriverNode repairedNode = mockNode(InetAddress.getLocalHost());
+        Set<DriverNode> repairedNodes = Sets.newHashSet(repairedNode);
+        Set<DriverNode> allNodes = new HashSet<>();
         allNodes.add(repairedNode);
         allNodes.add(mockNode(mock(InetAddress.class)));
 
-        Map<LongTokenRange, Collection<Node>> tokenToNodeMap = new HashMap<>();
+        Map<LongTokenRange, Collection<DriverNode>> tokenToNodeMap = new HashMap<>();
         tokenToNodeMap.put(expectedRepairedTokenRange, allNodes);
 
         assertThat(applyWith(expectedRepairedTokenRange, tokenToNodeMap, repairedNodes, SUCCESS)).isFalse();
@@ -108,9 +108,9 @@ public class TestFullyRepairedRepairEntryPredicate
         LongTokenRange repairedTokenRange = new LongTokenRange(0, 1);
         LongTokenRange actualTokenRange = new LongTokenRange(0, 2);
         Set<InetAddress> expectedRepairedNodeAddresses = Sets.newHashSet(InetAddress.getLocalHost());
-        Set<Node> expectedRepairedNodes = expectedRepairedNodeAddresses.stream().map(this::mockNode).collect(Collectors.toSet());
+        Set<DriverNode> expectedRepairedNodes = expectedRepairedNodeAddresses.stream().map(this::mockNode).collect(Collectors.toSet());
 
-        Map<LongTokenRange, Collection<Node>> tokenToNodeMap = new HashMap<>();
+        Map<LongTokenRange, Collection<DriverNode>> tokenToNodeMap = new HashMap<>();
         tokenToNodeMap.put(actualTokenRange, expectedRepairedNodes);
 
         assertThat(applyWith(repairedTokenRange, tokenToNodeMap, expectedRepairedNodes, SUCCESS)).isFalse();
@@ -120,15 +120,15 @@ public class TestFullyRepairedRepairEntryPredicate
     {
         LongTokenRange expectedRepairedTokenRange = new LongTokenRange(0, 1);
         Set<InetAddress> expectedRepairedNodeAddresses = Sets.newHashSet(InetAddress.getLocalHost());
-        Set<Node> expectedRepairedNodes = expectedRepairedNodeAddresses.stream().map(this::mockNode).collect(Collectors.toSet());
+        Set<DriverNode> expectedRepairedNodes = expectedRepairedNodeAddresses.stream().map(this::mockNode).collect(Collectors.toSet());
 
-        Map<LongTokenRange, Collection<Node>> tokenToNodeMap = new HashMap<>();
+        Map<LongTokenRange, Collection<DriverNode>> tokenToNodeMap = new HashMap<>();
         tokenToNodeMap.put(expectedRepairedTokenRange, expectedRepairedNodes);
 
         return applyWith(expectedRepairedTokenRange, tokenToNodeMap, expectedRepairedNodes, status);
     }
 
-    private boolean applyWith(LongTokenRange repairedTokenRange, Map<LongTokenRange, Collection<Node>> tokenToNodeMap, Set<Node> repairedNodes, String status)
+    private boolean applyWith(LongTokenRange repairedTokenRange, Map<LongTokenRange, Collection<DriverNode>> tokenToNodeMap, Set<DriverNode> repairedNodes, String status)
     {
         RepairEntry repairEntry = new RepairEntry(repairedTokenRange, 5, 5, repairedNodes, status);
         FullyRepairedRepairEntryPredicate fullyRepairedRepairEntryPredicate = new FullyRepairedRepairEntryPredicate(tokenToNodeMap);
@@ -136,9 +136,9 @@ public class TestFullyRepairedRepairEntryPredicate
         return fullyRepairedRepairEntryPredicate.apply(repairEntry);
     }
 
-    private Node mockNode(InetAddress inetAddress)
+    private DriverNode mockNode(InetAddress inetAddress)
     {
-        Node node = mock(Node.class);
+        DriverNode node = mock(DriverNode.class);
 
         when(node.getPublicAddress()).thenReturn(inetAddress);
 

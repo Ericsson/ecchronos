@@ -19,7 +19,7 @@ try:
 except ImportError:
     from urllib2 import urlopen, Request, HTTPError, URLError
 import json
-from ecchronoslib.types import RepairJob, VerboseRepairJob, TableConfig
+from ecchronoslib.types import FullSchedule, Repair, Schedule
 
 
 class RequestResult(object):
@@ -93,70 +93,91 @@ class RestRequest(object):
                                  message="Unable to retrieve resource {0}".format(request_url))
 
 
-class RepairSchedulerRequest(RestRequest):
-    repair_management_status_url = 'repair-management/v1/status'
-    repair_management_table_status_url = 'repair-management/v1/status/keyspaces/{0}/tables/{1}'
-    repair_management_job_status_url = 'repair-management/v1/status/ids/{0}'
-    repair_management_job_schedule_url = 'repair-management/v1/schedule/keyspaces/{0}/tables/{1}'
+class V2RepairSchedulerRequest(RestRequest):
+    ROOT = 'repair-management/'
+    PROTOCOL = ROOT + 'v2/'
+    REPAIRS = PROTOCOL + 'repairs'
+    SCHEDULES = PROTOCOL + 'schedules'
+
+    v2_schedule_status_url = SCHEDULES
+    v2_schedule_id_status_url = SCHEDULES + '/{0}'
+    v2_schedule_id_full_status_url = SCHEDULES + '/{0}?full=true'
+
+    v2_repair_status_url = REPAIRS
+    v2_repair_id_status_url = REPAIRS + '/{0}'
+
+    v2_repair_trigger_url = REPAIRS
 
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
 
-    def get(self, job_id):
-        request_url = RepairSchedulerRequest.repair_management_job_status_url.format(job_id)
+    def get_schedule(self, job_id, full=False):
+        if full:
+            request_url = V2RepairSchedulerRequest.v2_schedule_id_full_status_url.format(job_id)
+        else:
+            request_url = V2RepairSchedulerRequest.v2_schedule_id_status_url.format(job_id)
 
         result = self.request(request_url)
         if result.is_successful():
-            result = result.transform_with_data(new_data=VerboseRepairJob(result.data))
+            result = result.transform_with_data(new_data=FullSchedule(result.data))
+
         return result
 
-    def list(self, keyspace=None, table=None):
-        request_url = RepairSchedulerRequest.repair_management_status_url
+    def get_repair(self, job_id, host_id=None):
+        request_url = V2RepairSchedulerRequest.v2_repair_id_status_url.format(job_id)
+        if host_id:
+            request_url += "?hostId={0}".format(host_id)
+        result = self.request(request_url)
+        if result.is_successful():
+            result = result.transform_with_data(new_data=[Repair(x) for x in result.data])
+
+        return result
+
+    def list_schedules(self, keyspace=None, table=None):
+        request_url = V2RepairSchedulerRequest.v2_schedule_status_url
+
         if keyspace and table:
-            request_url = "{0}/keyspaces/{1}/tables/{2}".format(request_url, keyspace, table)
+            request_url = "{0}?keyspace={1}&table={2}".format(request_url, keyspace, table)
         elif keyspace:
-            request_url = "{0}/keyspaces/{1}".format(request_url, keyspace)
+            request_url = "{0}?keyspace={1}".format(request_url, keyspace)
 
         result = self.request(request_url)
 
         if result.is_successful():
-            result = result.transform_with_data(new_data=[RepairJob(x) for x in result.data])
+            result = result.transform_with_data(new_data=[Schedule(x) for x in result.data])
 
         return result
 
-    def post(self, keyspace=None, table=None):
-        request_url = RepairSchedulerRequest.repair_management_job_schedule_url.format(keyspace, table)
+    def list_repairs(self, keyspace=None, table=None, host_id=None):
+        request_url = V2RepairSchedulerRequest.v2_repair_status_url
+        if keyspace:
+            request_url = "{0}?keyspace={1}".format(request_url, keyspace)
+            if table:
+                request_url += "&table={0}".format(table)
+            if host_id:
+                request_url += "&hostId={0}".format(host_id)
+        elif host_id:
+            request_url += "?hostId={0}".format(host_id)
+
+        result = self.request(request_url)
+
+        if result.is_successful():
+            result = result.transform_with_data(new_data=[Repair(x) for x in result.data])
+
+        return result
+
+    def post(self, keyspace=None, table=None, local=False):
+        request_url = V2RepairSchedulerRequest.v2_repair_trigger_url
+        if keyspace:
+            request_url += "?keyspace=" + keyspace
+            if table:
+                request_url += "&table=" + table
+        if local:
+            if keyspace:
+                request_url += "&isLocal=true"
+            else:
+                request_url += "?isLocal=true"
         result = self.request(request_url, 'POST')
         if result.is_successful():
-            result = result.transform_with_data(RepairJob(result.data))
-        return result
-
-
-class RepairConfigRequest(RestRequest):
-    repair_management_config_url = 'repair-management/v1/config'
-    repair_management_table_config_url = 'repair-management/v1/config/keyspaces/{0}/tables/{1}'
-    repair_management_id_config_url = 'repair-management/v1/config/ids/{0}'
-
-    def __init__(self, base_url=None):
-        RestRequest.__init__(self, base_url)
-
-    def get(self, job_id=None):
-        request_url = RepairConfigRequest.repair_management_id_config_url.format(job_id)
-        result = self.request(request_url)
-        if result.is_successful():
-            result = result.transform_with_data(new_data=TableConfig(result.data))
-        return result
-
-    def list(self, keyspace=None, table=None):
-        request_url = RepairConfigRequest.repair_management_config_url
-        if keyspace is not None:
-            if table is not None:
-                request_url = RepairConfigRequest.repair_management_table_config_url.format(keyspace, table)
-            else:
-                request_url = "{0}/keyspaces/{1}".format(request_url, keyspace)
-
-        result = self.request(request_url)
-        if result.is_successful():
-            result = result.transform_with_data(new_data=[TableConfig(x) for x in result.data])
-
+            result = result.transform_with_data(new_data=[Repair(x) for x in result.data])
         return result

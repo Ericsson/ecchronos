@@ -14,15 +14,16 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import com.datastax.driver.core.UDTValue;
+import com.datastax.oss.driver.api.core.data.UdtValue;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 
@@ -34,9 +35,10 @@ public class OngoingJob
     }
 
     private final UUID myJobId;
+    private final UUID myHostId;
     private final TableReference myTableReference;
-    private final Map<LongTokenRange, ImmutableSet<Node>> myTokens;
-    private final Set<UDTValue> myRepairedTokens;
+    private final Map<LongTokenRange, ImmutableSet<DriverNode>> myTokens;
+    private final Set<UdtValue> myRepairedTokens;
     private final OnDemandStatus myOnDemandStatus;
 	private final ReplicationState myReplicationState;
     private final Integer myTokenHash;
@@ -47,6 +49,7 @@ public class OngoingJob
     {
         myOnDemandStatus = builder.onDemandStatus;
         myJobId = builder.jobId == null ? UUID.randomUUID() : builder.jobId;
+        myHostId = builder.hostId;
         myTableReference = builder.tableReference;
         myReplicationState = builder.replicationState;
         myTokens = myReplicationState.getTokenRangeToReplicas(myTableReference);
@@ -64,6 +67,11 @@ public class OngoingJob
     public UUID getJobId()
     {
         return myJobId;
+    }
+
+    public UUID getHostId()
+    {
+        return myHostId;
     }
 
     public Status getStatus()
@@ -94,15 +102,56 @@ public class OngoingJob
         myOnDemandStatus.updateJob(myJobId, myRepairedTokens);
     }
 
-    public Map<LongTokenRange, ImmutableSet<Node>> getTokens()
+    public Map<LongTokenRange, ImmutableSet<DriverNode>> getTokens()
     {
     	return myTokens;
     }
 
     public boolean hasTopologyChanged()
     {
-    	return !myTokens.equals(myReplicationState.getTokenRangeToReplicas(myTableReference))
+        return !myTokens.equals(myReplicationState.getTokenRangeToReplicas(myTableReference))
                 || (myTokenHash != null && (myTokenHash != myTokens.keySet().hashCode() && myTokenHash != myTokens.hashCode()));
+    }
+
+    public void startClusterWideJob()
+    {
+        Map<LongTokenRange, ImmutableSet<DriverNode>> allTokenRanges = myReplicationState.getTokenRanges(myTableReference);
+        Map<DriverNode, Set<LongTokenRange>> repairedRangesPerNode = new HashMap<>();
+        Map<DriverNode, Set<LongTokenRange>> remainingRangesPerNode = new HashMap<>();
+        for (Map.Entry<LongTokenRange, ImmutableSet<DriverNode>> range : allTokenRanges.entrySet())
+        {
+            LongTokenRange rangeForNodes = range.getKey();
+            Set<DriverNode> nodes = range.getValue();
+            boolean rangeRepaired = myTokens.containsKey(rangeForNodes);
+            for (DriverNode node: nodes)
+            {
+                if (rangeRepaired)
+                {
+                    repairedRangesPerNode.computeIfAbsent(node, (k) -> new HashSet<>()).add(rangeForNodes);
+                }
+                else
+                {
+                    remainingRangesPerNode.computeIfAbsent(node, (k) -> new HashSet<>()).add(rangeForNodes);
+                    rangeRepaired = true; // We only want one node to repair the range
+                }
+            }
+        }
+        for (Map.Entry<DriverNode, Set<LongTokenRange>> replicaWithRanges: remainingRangesPerNode.entrySet())
+        {
+            DriverNode node = replicaWithRanges.getKey();
+            Set<LongTokenRange> remainingRanges = replicaWithRanges.getValue();
+            Set<LongTokenRange> repairedRanges = repairedRangesPerNode.get(node);
+            Set<LongTokenRange> allTokensForNode = new HashSet<>();
+            if (remainingRanges != null)
+            {
+                allTokensForNode.addAll(remainingRanges);
+            }
+            if (repairedRanges != null)
+            {
+                allTokensForNode.addAll(repairedRanges);
+            }
+            myOnDemandStatus.addNewJob(node.getId(), myJobId, myTableReference, allTokensForNode.hashCode(), repairedRanges);
+        }
     }
 
     public void finishJob()
@@ -118,15 +167,16 @@ public class OngoingJob
     public static class Builder
     {
         private UUID jobId = null;
+        private UUID hostId;
         private TableReference tableReference;
-        private Set<UDTValue> repairedTokens = new HashSet<>();
+        private Set<UdtValue> repairedTokens = new HashSet<>();
         private OnDemandStatus onDemandStatus;
         private ReplicationState replicationState;
         private Integer tokenMapHash = null;
         private Status status = Status.started;
         private long completedTime = -1;
 
-        public Builder withOngoingJobInfo(UUID jobId, int tokenMapHash, Set<UDTValue> repairedTokens, Status status, Long completedTime)
+        public Builder withOngoingJobInfo(UUID jobId, int tokenMapHash, Set<UdtValue> repairedTokens, Status status, Long completedTime)
         {
             this.jobId = jobId;
             this.tokenMapHash  = tokenMapHash;
@@ -154,6 +204,12 @@ public class OngoingJob
         public Builder withReplicationState(ReplicationState replicationState)
         {
             this.replicationState = replicationState;
+            return this;
+        }
+
+        public Builder withHostId(UUID hostId)
+        {
+            this.hostId = hostId;
             return this;
         }
 

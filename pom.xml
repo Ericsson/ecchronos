@@ -20,7 +20,7 @@
 
     <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
     <artifactId>parent</artifactId>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>4.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Ericsson Cassandra Chronos</name>
@@ -59,9 +59,13 @@
 
         <!-- Dependency versions -->
         <io.netty.version>4.1.69.Final</io.netty.version>
-        <io.dropwizard.metrics.version>3.2.2</io.dropwizard.metrics.version>
-        <cassandra.driver.core.version>3.10.2</cassandra.driver.core.version>
+        <io.dropwizard.metrics.version>4.2.10</io.dropwizard.metrics.version>
+        <cassandra.driver.core.version>4.14.1</cassandra.driver.core.version>
         <guava.version>18.0</guava.version>
+        <cassandra.driver.protocol.version>1.5.0</cassandra.driver.protocol.version>
+        <cassandra.driver.shaded.guava.version>25.1-jre</cassandra.driver.shaded.guava.version>
+        <com.typesafe.config.version>1.4.2</com.typesafe.config.version>
+        <org.hdrhistogram.version>2.1.12</org.hdrhistogram.version>
         <slf4j.version>1.7.30</slf4j.version>
         <logback.version>1.2.10</logback.version>
         <cassandra.version>3.11.12</cassandra.version>
@@ -85,7 +89,10 @@
         <junitparams.version>1.1.1</junitparams.version>
         <equalsverifier.version>3.5</equalsverifier.version>
         <org.springframework.boot.version>2.6.6</org.springframework.boot.version>
+        <org.springdoc.openapi-ui.version>1.6.8</org.springdoc.openapi-ui.version>
         <io.prometheus.simpleclient>0.10.0</io.prometheus.simpleclient>
+        <jakarta.validation-api.version>2.0.2</jakarta.validation-api.version>
+        <swagger-annotations.version>2.2.0</swagger-annotations.version>
 
         <!-- Plugin versions -->
         <org.apache.maven.plugins.maven-compiler-plugin.version>3.8.0</org.apache.maven.plugins.maven-compiler-plugin.version>
@@ -93,6 +100,7 @@
         <org.apache.maven.plugins.maven-surefire-plugin.version>2.22.1</org.apache.maven.plugins.maven-surefire-plugin.version>
         <org.apache.maven.plugins.maven-failsafe-plugin.version>2.22.1</org.apache.maven.plugins.maven-failsafe-plugin.version>
         <org.apache.maven.plugins.maven-assembly-plugin.version>3.1.0</org.apache.maven.plugins.maven-assembly-plugin.version>
+        <org.apache.maven.plugins-maven-checkstyle-plugin.version>3.1.2</org.apache.maven.plugins-maven-checkstyle-plugin.version>
         <org.apache.maven.plugins-maven-pmd-plugin.version>3.14.0</org.apache.maven.plugins-maven-pmd-plugin.version>
         <org.apache.maven.plugin.maven-jxr-plugin.version>3.0.0</org.apache.maven.plugin.maven-jxr-plugin.version>
         <org.apache.maven.plugins-maven-resources-plugin.version>3.1.0</org.apache.maven.plugins-maven-resources-plugin.version>
@@ -195,24 +203,80 @@
                 <artifactId>metrics-core</artifactId>
                 <version>${io.dropwizard.metrics.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-jmx</artifactId>
+                <version>${io.dropwizard.metrics.version}</version>
+            </dependency>
 
             <!-- Cassandra Driver -->
             <dependency>
-                <groupId>com.datastax.cassandra</groupId>
-                <artifactId>cassandra-driver-core</artifactId>
+                <groupId>com.datastax.oss</groupId>
+                <artifactId>java-driver-core</artifactId>
                 <version>${cassandra.driver.core.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.github.jnr</groupId>
+                        <artifactId>jnr-ffi</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.github.jnr</groupId>
+                        <artifactId>jnr-posix</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.github.stephenc.jcip</groupId>
+                        <artifactId>jcip-annotations</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.github.spotbugs</groupId>
+                        <artifactId>spotbugs-annotations</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
-
             <dependency>
-                <groupId>com.datastax.cassandra</groupId>
-                <artifactId>cassandra-driver-extras</artifactId>
+                <groupId>com.datastax.oss</groupId>
+                <artifactId>java-driver-query-builder</artifactId>
                 <version>${cassandra.driver.core.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.github.stephenc.jcip</groupId>
+                        <artifactId>jcip-annotations</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.github.spotbugs</groupId>
+                        <artifactId>spotbugs-annotations</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>${guava.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.datastax.oss</groupId>
+                <artifactId>native-protocol</artifactId>
+                <version>${cassandra.driver.protocol.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.datastax.oss</groupId>
+                <artifactId>java-driver-shaded-guava</artifactId>
+                <version>${cassandra.driver.shaded.guava.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.typesafe</groupId>
+                <artifactId>config</artifactId>
+                <version>${com.typesafe.config.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.hdrhistogram</groupId>
+                <artifactId>HdrHistogram</artifactId>
+                <version>${org.hdrhistogram.version}</version>
             </dependency>
 
             <dependency>
@@ -253,6 +317,30 @@
                 <version>${org.springframework.boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-thymeleaf</artifactId>
+                <version>${org.springframework.boot.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-ui</artifactId>
+                <version>${org.springdoc.openapi-ui.version}</version>
+            </dependency>
+
+            <!-- OpenAPI annotations -->
+            <dependency>
+                <groupId>jakarta.validation</groupId>
+                <artifactId>jakarta.validation-api</artifactId>
+                <version>${jakarta.validation-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-annotations</artifactId>
+                <version>${swagger-annotations.version}</version>
             </dependency>
 
             <!-- Log4j dependency -->
@@ -553,11 +641,13 @@ limitations under the License.
                             <exclude>**/*.feature</exclude>
                             <exclude>**/*.pyc</exclude>
                             <exclude>code_style.xml</exclude>
+                            <exclude>check_style.xml</exclude>
                             <exclude>**/Dockerfile</exclude>
                             <exclude>**/__init__.py</exclude>
                             <exclude>**/.pylintrc</exclude>
                             <exclude>**/feature.xml</exclude>
                             <exclude>.github/workflows/actions.yml</exclude>
+                            <exclude>docs/autogenerated/openapi.yaml</exclude>
                         </excludes>
                     </configuration>
                 </plugin>
@@ -622,7 +712,24 @@ limitations under the License.
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
             </plugin>
-
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${org.apache.maven.plugins-maven-checkstyle-plugin.version}</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                    <consoleOutput>true</consoleOutput>
+                    <configLocation>check_style.xml</configLocation>
+                    <failOnViolation>false</failOnViolation> <!-- ignore violations for now, uncomment when all the code follows checkstyle -->
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -698,6 +805,11 @@ limitations under the License.
 
         <profile>
             <id>docker-integration-test</id>
+            <activation>
+                <property>
+                    <name>precommit.tests</name>
+                </property>
+            </activation>
             <build>
                 <plugins>
                     <plugin>

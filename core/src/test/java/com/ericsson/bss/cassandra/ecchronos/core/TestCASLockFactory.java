@@ -14,10 +14,10 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core;
 
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -35,7 +36,21 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import com.datastax.driver.core.Row;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Metric;
+import com.datastax.oss.driver.api.core.AllNodesFailedException;
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.cql.Statement;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metrics.DefaultNodeMetric;
+import com.datastax.oss.driver.api.core.metrics.Metrics;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.internal.core.context.InternalDriverContext;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import org.apache.cassandra.db.Keyspace;
 import org.apache.cassandra.metrics.TableMetrics;
@@ -43,15 +58,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.ConsistencyLevel;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.SimpleStatement;
-import com.datastax.driver.core.Statement;
-import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory.DistributedLock;
 
@@ -91,7 +97,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.lock_priority (resource text, node uuid, priority int, PRIMARY KEY(resource, node)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0", myKeyspaceName));
 
         hostStates = mock(HostStates.class);
-        when(hostStates.isUp(any(Host.class))).thenReturn(true);
+        when(hostStates.isUp(any(Node.class))).thenReturn(true);
         myLockFactory = new CASLockFactory.Builder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(hostStates)
@@ -99,9 +105,14 @@ public class TestCASLockFactory extends AbstractCassandraTest
                 .withKeyspaceName(myKeyspaceName)
                 .build();
 
-        myLockStatement = mySession.prepare(String.format("INSERT INTO %s.%s (resource, node, metadata) VALUES (?, ?, ?) IF NOT EXISTS", myKeyspaceName, TABLE_LOCK))
+        myLockStatement = mySession.prepare(QueryBuilder.insertInto(myKeyspaceName, TABLE_LOCK)
+                .value("resource", bindMarker())
+                .value("node", bindMarker())
+                .value("metadata", bindMarker())
+                .ifNotExists()
+                .build()
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                .setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL);
+                .setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL));
         myRemoveLockStatement = mySession.prepare(String.format("DELETE FROM %s.%s WHERE resource=? IF EXISTS", myKeyspaceName, TABLE_LOCK));
         myCompeteStatement = mySession.prepare(String.format("INSERT INTO %s.%s (resource, node, priority) VALUES (?, ?, ?)", myKeyspaceName, TABLE_LOCK_PRIORITY));
         myGetPrioritiesStatement = mySession.prepare(String.format("SELECT * FROM %s.%s WHERE resource=?", myKeyspaceName, TABLE_LOCK_PRIORITY));
@@ -110,7 +121,8 @@ public class TestCASLockFactory extends AbstractCassandraTest
     @After
     public void testCleanup()
     {
-        execute(new SimpleStatement(String.format("DELETE FROM %s.%s WHERE resource='%s'", myKeyspaceName, TABLE_LOCK_PRIORITY, "lock")));
+        execute(SimpleStatement.newInstance(
+                String.format("DELETE FROM %s.%s WHERE resource='%s'", myKeyspaceName, TABLE_LOCK_PRIORITY, "lock")));
         execute(myRemoveLockStatement.bind("lock"));
         myLockFactory.close();
     }
@@ -150,13 +162,13 @@ public class TestCASLockFactory extends AbstractCassandraTest
     public void testGlobalLockTakenIsCachedOnSecondTry() throws InterruptedException
     {
         execute(myLockStatement.bind("lock", UUID.randomUUID(), new HashMap<>()));
-
-        Host host = mySession.getState().getConnectedHosts().iterator().next();
-        while (mySession.getState().getInFlightQueries(host) != 0) // Make sure no requests are still being processed
+        InternalDriverContext driverContext = (InternalDriverContext) mySession.getContext();
+        //Check that no in-flight queries exist, we want all previous queries to complete before we proceed
+        Optional<Node> connectedNode = driverContext.getPoolManager().getPools().keySet().stream().findFirst();
+        while (getInFlightQueries(connectedNode.get()) != 0)
         {
             Thread.sleep(100);
         }
-
         long expectedLockReadCount = getReadCount(TABLE_LOCK) + 1; // We do a read due to CAS
         long expectedLockWriteCount = getWriteCount(TABLE_LOCK); // No writes as the lock is already held
         long expectedLockPriorityReadCount = getReadCount(TABLE_LOCK_PRIORITY) + 1; // We read the priorities
@@ -173,6 +185,21 @@ public class TestCASLockFactory extends AbstractCassandraTest
 
         assertPrioritiesInList("lock", 2);
         assertThat(myLockFactory.getCachedFailure(null, "lock")).isNotEmpty();
+    }
+
+    private int getInFlightQueries(Node node)
+    {
+        int inFlightQueries = 0;
+        Optional<Metrics> metrics = mySession.getMetrics();
+        if (metrics.isPresent())
+        {
+            Optional<Metric> inFlight = metrics.get().getNodeMetric(node, DefaultNodeMetric.IN_FLIGHT);
+            if (inFlight.isPresent())
+            {
+                inFlightQueries = (int) ((Gauge) inFlight.get()).getValue();
+            }
+        }
+        return inFlightQueries;
     }
 
     @Test
@@ -198,7 +225,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
     @Test
     public void testGetLockWithLocallyHigherPriority() throws LockException
     {
-        UUID localHostId = getNativeConnectionProvider().getLocalHost().getHostId();
+        UUID localHostId = getNativeConnectionProvider().getLocalNode().getHostId();
         execute(myCompeteStatement.bind("lock", localHostId, 2));
 
         try (DistributedLock lock = myLockFactory.tryLock(DATA_CENTER, "lock", 1, new HashMap<>()))
@@ -212,7 +239,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
     @Test
     public void testGetLockWithLocallyLowerPriority() throws LockException
     {
-        UUID localHostId = getNativeConnectionProvider().getLocalHost().getHostId();
+        UUID localHostId = getNativeConnectionProvider().getLocalNode().getHostId();
         execute(myCompeteStatement.bind("lock", localHostId, 1));
 
         try (DistributedLock lock = myLockFactory.tryLock(DATA_CENTER, "lock", 2, new HashMap<>()))
@@ -307,25 +334,23 @@ public class TestCASLockFactory extends AbstractCassandraTest
     public void testActivateWithoutCassandraCausesIllegalStateException()
     {
         // mock
-        Session session = mock(Session.class);
-        Cluster cluster = mock(Cluster.class);
+        CqlSession session = mock(CqlSession.class);
 
-        doThrow(NoHostAvailableException.class).when(cluster).getMetadata();
-        doReturn(cluster).when(session).getCluster();
+        doThrow(AllNodesFailedException.class).when(session).getMetadata();
 
         // test
-        assertThatExceptionOfType(NoHostAvailableException.class)
+        assertThatExceptionOfType(AllNodesFailedException.class)
                 .isThrownBy(() -> new CASLockFactory.Builder()
                         .withNativeConnectionProvider(new NativeConnectionProvider()
                         {
                             @Override
-                            public Session getSession()
+                            public CqlSession getSession()
                             {
                                 return session;
                             }
 
                             @Override
-                            public Host getLocalHost()
+                            public Node getLocalNode()
                             {
                                 return null;
                             }

@@ -14,12 +14,16 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.TableMetadata;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.google.common.base.Preconditions;
 
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -28,34 +32,64 @@ import java.util.UUID;
  */
 public class TableReferenceFactoryImpl implements TableReferenceFactory
 {
-    private final Metadata metadata;
+    private final CqlSession session;
 
-    public TableReferenceFactoryImpl(Metadata metadata)
+    public TableReferenceFactoryImpl(CqlSession session)
     {
-        this.metadata = Preconditions.checkNotNull(metadata, "Metadata must be set");
+        this.session = Preconditions.checkNotNull(session, "Session must be set");
     }
 
     @Override
     public TableReference forTable(String keyspace, String table)
     {
-        KeyspaceMetadata keyspaceMetadata = metadata.getKeyspace(keyspace);
-        if (keyspaceMetadata == null)
+        Optional<KeyspaceMetadata> keyspaceMetadata = session.getMetadata().getKeyspace(keyspace);
+        if (!keyspaceMetadata.isPresent())
         {
             return null;
         }
-        TableMetadata tableMetadata = keyspaceMetadata.getTable(table);
-        if (tableMetadata == null)
+        Optional<TableMetadata> tableMetadata = keyspaceMetadata.get().getTable(table);
+        if (!tableMetadata.isPresent())
         {
             return null;
         }
 
-        return new UuidTableReference(tableMetadata);
+        return new UuidTableReference(tableMetadata.get());
     }
 
     @Override
     public TableReference forTable(TableMetadata table)
     {
         return new UuidTableReference(table);
+    }
+
+    @Override
+    public Set<TableReference> forKeyspace(String keyspace) throws EcChronosException
+    {
+        Set<TableReference> tableReferences = new HashSet<>();
+        Optional<KeyspaceMetadata> keyspaceMetadata = session.getMetadata().getKeyspace(keyspace);
+        if (!keyspaceMetadata.isPresent())
+        {
+            throw new EcChronosException("Keyspace " + keyspace + " does not exist");
+        }
+        for (TableMetadata table : keyspaceMetadata.get().getTables().values())
+        {
+            tableReferences.add(new UuidTableReference(table));
+        }
+        return tableReferences;
+    }
+
+    @Override
+    public Set<TableReference> forCluster()
+    {
+        Set<TableReference> tableReferences = new HashSet<>();
+        for (KeyspaceMetadata keyspace : session.getMetadata().getKeyspaces().values())
+        {
+            for (TableMetadata table : keyspace.getTables().values())
+            {
+                tableReferences.add(new UuidTableReference(table));
+            }
+        }
+        return tableReferences;
     }
 
     class UuidTableReference implements TableReference
@@ -66,9 +100,9 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
 
         UuidTableReference(TableMetadata tableMetadata)
         {
-            uuid = tableMetadata.getId();
-            keyspace = tableMetadata.getKeyspace().getName();
-            table = tableMetadata.getName();
+            uuid = tableMetadata.getId().get();
+            keyspace = tableMetadata.getKeyspace().asInternal();
+            table = tableMetadata.getName().asInternal();
         }
 
         @Override
@@ -98,8 +132,10 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
         @Override
         public boolean equals(Object o)
         {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
             UuidTableReference that = (UuidTableReference) o;
             return uuid.equals(that.uuid) && keyspace.equals(that.keyspace) && table.equals(that.table);
         }

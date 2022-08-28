@@ -19,7 +19,7 @@
     <parent>
         <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
         <artifactId>parent</artifactId>
-        <version>3.0.0-SNAPSHOT</version>
+        <version>4.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -99,11 +99,18 @@
                             <includedLicenses>
                                 <includedLicense>The Apache Software License, Version 2.0</includedLicense>
                                 <includedLicense>Apache-2.0</includedLicense>
+                                <includedLicense>Apache License, version 2.0</includedLicense>
+                                <includedLicense>The Apache License, Version 2.0</includedLicense>
                                 <includedLicense>MIT License</includedLicense>
+                                <includedLicense>The MIT License (MIT)</includedLicense>
+                                <includedLicense>MIT</includedLicense>
                                 <includedLicense>Eclipse Public License - v 1.0</includedLicense>
                                 <includedLicense>EPL 2.0</includedLicense>
+                                <includedLicense>EDL 1.0</includedLicense>
+                                <includedLicense>Eclipse Distribution License - v 1.0</includedLicense>
                                 <includedLicense>GPL2 w/ CPE</includedLicense>
                                 <includedLicense>Public Domain, per Creative Commons CC0</includedLicense>
+                                <includedLicense>CC0</includedLicense>
                                 <includedLicense>BSD-2-Clause</includedLicense>
                             </includedLicenses>
                             <failOnBlacklist>true</failOnBlacklist>
@@ -176,6 +183,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
+                            <skip>${skipTests}</skip>
                             <executable>bash</executable>
                             <arguments>
                                 <argument>codestyle.sh</argument>
@@ -194,6 +202,11 @@
 
     <profiles>
         <profile>
+            <activation>
+                <property>
+                    <name>precommit.tests</name>
+                </property>
+            </activation>
             <id>python-integration-tests</id>
             <build>
                 <plugins>

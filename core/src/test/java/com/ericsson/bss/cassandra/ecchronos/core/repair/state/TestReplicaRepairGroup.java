@@ -15,7 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
@@ -28,10 +28,10 @@ public class TestReplicaRepairGroup
     @Test
     public void testMultipleDataCenters()
     {
-        Node node1 = mockNode("DC1");
-        Node node2 = mockNode("DC2");
-        Node node3 = mockNode("DC3");
-        Node node4 = mockNode("DC1");
+        DriverNode node1 = mockNode("DC1");
+        DriverNode node2 = mockNode("DC2");
+        DriverNode node3 = mockNode("DC3");
+        DriverNode node4 = mockNode("DC1");
         LongTokenRange range = new LongTokenRange(1, 2);
 
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(node1, node2, node3, node4), ImmutableList.of(range));
@@ -44,9 +44,9 @@ public class TestReplicaRepairGroup
     @Test
     public void testMultipleRanges()
     {
-        Node node1 = mockNode("DC1");
-        Node node2 = mockNode("DC1");
-        Node node3 = mockNode("DC1");
+        DriverNode node1 = mockNode("DC1");
+        DriverNode node2 = mockNode("DC1");
+        DriverNode node3 = mockNode("DC1");
         LongTokenRange range = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(3, 4);
         LongTokenRange range3 = new LongTokenRange(5, 6);
@@ -58,9 +58,9 @@ public class TestReplicaRepairGroup
         assertThat(replicaRepairGroup.iterator()).toIterable().containsExactly(range, range2, range3);
     }
 
-    private Node mockNode(String dataCenter)
+    private DriverNode mockNode(String dataCenter)
     {
-        Node node = mock(Node.class);
+        DriverNode node = mock(DriverNode.class);
         when(node.getDatacenter()).thenReturn(dataCenter);
         return node;
     }

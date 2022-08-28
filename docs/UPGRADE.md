@@ -1,4 +1,24 @@
-# Upgrade
+# Upgrade to 3.x
+
+## From versions 2.x
+
+The REST interface has been significantly reworked.
+Schedules and repairs are now split into two separate resources.
+Config is now part of full Schedules.
+Query parameters are used for filtering instead of path parameters.
+
+
+| Old                                                                          | New                                                                                     | Description                                                                              |
+|------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| /repair-management/v1/status                                                 | /repair-management/v2/[repairs,schedules]                                               | Status has been split into `repairs` for on demand repairs and `schedules` for schedules |
+| /repair-management/v1/status/ids                                             | /repair-management/v2/[repairs,schedules]/&lt;id&gt;                                    | Id can now be searched for on repairs or schedules specifically                          |
+| /repair-management/v1/status/keyspaces/&lt;keyspace&gt;/tables/&lt;table&gt; | /repair-management/v2/[repairs,schedules]?keyspace=&lt;keyspace&gt;&table=&lt;table&gt; | `keyspace` and `table` are now query parameters                                          |
+| /repair-management/v1/config                                                 | -                                                                                       | Config has been removed and is part of `schedules`                                       |
+| /repair-management/v1/schedule/keyspaces/&lt;keyspace&gt;                    | /repair-management/v2/repairs?keyspace=&lt;keyspace&gt;&table=&lt;table&gt;             | Triggering can be done by using `POST` to `repairs` with query parameters                |
+
+For more information about REST interface, refer to [REST documentation](REST.md).
+
+# Upgrade to 2.x
 
 ## From 2.0.0
 

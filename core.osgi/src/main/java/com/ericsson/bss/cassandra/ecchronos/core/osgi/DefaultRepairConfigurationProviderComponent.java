@@ -85,7 +85,7 @@ public class DefaultRepairConfigurationProviderComponent
             myDelegateRepairConfigurationProvider = DefaultRepairConfigurationProvider.newBuilder()
                     .withReplicatedTableProvider(myReplicatedTableProvider)
                     .withRepairScheduler(myRepairScheduler)
-                    .withCluster(myNativeConnectionProvider.getSession().getCluster())
+                    .withSession(myNativeConnectionProvider.getSession())
                     .withDefaultRepairConfiguration(repairConfiguration)
                     .withTableReferenceFactory(myTableReferenceFactory)
                     .build();

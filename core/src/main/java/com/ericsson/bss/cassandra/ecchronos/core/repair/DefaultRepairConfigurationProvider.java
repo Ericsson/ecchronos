@@ -14,11 +14,20 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import java.io.Closeable;
+import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import com.datastax.driver.core.*;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.schema.AggregateMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.FunctionMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.ViewMetadata;
+import com.datastax.oss.driver.api.core.type.UserDefinedType;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
@@ -28,26 +37,50 @@ import com.google.common.base.Preconditions;
  * A repair configuration provider that adds configuration to {@link RepairScheduler} based on whether or not the table
  * is replicated locally using the default repair configuration provided during construction of this object.
  */
-public class DefaultRepairConfigurationProvider implements SchemaChangeListener, Closeable
+public class DefaultRepairConfigurationProvider implements SchemaChangeListener
 {
-    private final Cluster myCluster;
-    private final ReplicatedTableProvider myReplicatedTableProvider;
-    private final RepairScheduler myRepairScheduler;
-    private final Function<TableReference, RepairConfiguration> myRepairConfigurationFunction;
-    private final TableReferenceFactory myTableReferenceFactory;
+    private CqlSession mySession;
+    private ReplicatedTableProvider myReplicatedTableProvider;
+    private RepairScheduler myRepairScheduler;
+    private Function<TableReference, RepairConfiguration> myRepairConfigurationFunction;
+    private TableReferenceFactory myTableReferenceFactory;
 
-    private DefaultRepairConfigurationProvider(Builder builder)
+    public DefaultRepairConfigurationProvider()
     {
-        myCluster = builder.myCluster;
+        //NOOP
+    }
+
+    public void fromBuilder(Builder builder)
+    {
+        mySession = builder.mySession;
         myReplicatedTableProvider = builder.myReplicatedTableProvider;
         myRepairScheduler = builder.myRepairScheduler;
         myRepairConfigurationFunction = builder.myRepairConfigurationFunction;
         myTableReferenceFactory = Preconditions.checkNotNull(builder.myTableReferenceFactory,
                 "Table reference factory must be set");
 
-        for (KeyspaceMetadata keyspaceMetadata : myCluster.getMetadata().getKeyspaces())
+        for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
         {
-            String keyspaceName = keyspaceMetadata.getName();
+            String keyspaceName = keyspaceMetadata.getName().asInternal();
+            if (myReplicatedTableProvider.accept(keyspaceName))
+            {
+                allTableOperation(keyspaceName, this::updateConfiguration);
+            }
+        }
+    }
+
+    private DefaultRepairConfigurationProvider(Builder builder)
+    {
+        mySession = builder.mySession;
+        myReplicatedTableProvider = builder.myReplicatedTableProvider;
+        myRepairScheduler = builder.myRepairScheduler;
+        myRepairConfigurationFunction = builder.myRepairConfigurationFunction;
+        myTableReferenceFactory = Preconditions.checkNotNull(builder.myTableReferenceFactory,
+                "Table reference factory must be set");
+
+        for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
+        {
+            String keyspaceName = keyspaceMetadata.getName().asInternal();
             if (myReplicatedTableProvider.accept(keyspaceName))
             {
                 allTableOperation(keyspaceName, this::updateConfiguration);
@@ -56,9 +89,9 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
     }
 
     @Override
-    public void onKeyspaceChanged(KeyspaceMetadata current, KeyspaceMetadata previous)
+    public void onKeyspaceCreated(KeyspaceMetadata keyspace)
     {
-        String keyspaceName = current.getName();
+        String keyspaceName = keyspace.getName().asInternal();
         if (myReplicatedTableProvider.accept(keyspaceName))
         {
             allTableOperation(keyspaceName, this::updateConfiguration);
@@ -70,20 +103,26 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
     }
 
     @Override
-    public void onTableAdded(TableMetadata table)
+    public void onKeyspaceUpdated(KeyspaceMetadata current, KeyspaceMetadata previous)
     {
-        if (myReplicatedTableProvider.accept(table.getKeyspace().getName()))
+        onKeyspaceCreated(current);
+    }
+
+    @Override
+    public void onTableCreated(TableMetadata table)
+    {
+        if (myReplicatedTableProvider.accept(table.getKeyspace().asInternal()))
         {
-            TableReference tableReference = myTableReferenceFactory.forTable(table.getKeyspace().getName(),
-                    table.getName());
-            updateConfiguration(tableReference);
+            TableReference tableReference = myTableReferenceFactory.forTable(table.getKeyspace().asInternal(),
+                    table.getName().asInternal());
+            updateConfiguration(tableReference, table);
         }
     }
 
     @Override
-    public void onTableRemoved(TableMetadata table)
+    public void onTableDropped(TableMetadata table)
     {
-        if (myReplicatedTableProvider.accept(table.getKeyspace().getName()))
+        if (myReplicatedTableProvider.accept(table.getKeyspace().asInternal()))
         {
             TableReference tableReference = myTableReferenceFactory.forTable(table);
             myRepairScheduler.removeConfiguration(tableReference);
@@ -91,32 +130,47 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
     }
 
     @Override
+    public void onTableUpdated(TableMetadata current, TableMetadata previous)
+    {
+        onTableCreated(current);
+    }
+
+    @Override
     public void close()
     {
-        myCluster.unregister(this);
-
-        for (KeyspaceMetadata keyspaceMetadata : myCluster.getMetadata().getKeyspaces())
+        for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
         {
-            allTableOperation(keyspaceMetadata.getName(), myRepairScheduler::removeConfiguration);
+            allTableOperation(keyspaceMetadata.getName().asInternal(), myRepairScheduler::removeConfiguration);
+        }
+    }
+
+    private void allTableOperation(String keyspaceName, BiConsumer<TableReference, TableMetadata> consumer)
+    {
+        for (TableMetadata tableMetadata : mySession.getMetadata().getKeyspace(keyspaceName).get().getTables().values())
+        {
+            String tableName = tableMetadata.getName().asInternal();
+            TableReference tableReference = myTableReferenceFactory.forTable(keyspaceName, tableName);
+
+            consumer.accept(tableReference, tableMetadata);
         }
     }
 
     private void allTableOperation(String keyspaceName, Consumer<TableReference> consumer)
     {
-        for (TableMetadata tableMetadata : myCluster.getMetadata().getKeyspace(keyspaceName).getTables())
+        for (TableMetadata tableMetadata : mySession.getMetadata().getKeyspace(keyspaceName).get().getTables().values())
         {
-            String tableName = tableMetadata.getName();
+            String tableName = tableMetadata.getName().asInternal();
             TableReference tableReference = myTableReferenceFactory.forTable(keyspaceName, tableName);
 
             consumer.accept(tableReference);
         }
     }
 
-    private void updateConfiguration(TableReference tableReference)
+    private void updateConfiguration(TableReference tableReference, TableMetadata table)
     {
         RepairConfiguration repairConfiguration = myRepairConfigurationFunction.apply(tableReference);
 
-        if (RepairConfiguration.DISABLED.equals(repairConfiguration))
+        if (RepairConfiguration.DISABLED.equals(repairConfiguration) || isTableIgnored(table, repairConfiguration.getIgnoreTWCSTables()))
         {
             myRepairScheduler.removeConfiguration(tableReference);
         }
@@ -126,22 +180,115 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
         }
     }
 
+    private boolean isTableIgnored(TableMetadata table, boolean ignore)
+    {
+        Map<CqlIdentifier, Object> tableOptions = table.getOptions();
+        if (tableOptions == null)
+        {
+            return false;
+        }
+        Map<String, String> compaction = (Map<String, String>) tableOptions.get(CqlIdentifier.fromInternal("compaction"));
+        if (compaction == null)
+        {
+            return false;
+        }
+        return ignore && "org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy".equals(compaction.get("class"));
+    }
+
     public static Builder newBuilder()
     {
         return new Builder();
     }
 
+    @Override
+    public void onKeyspaceDropped(KeyspaceMetadata keyspace)
+    {
+        // NOOP
+    }
+
+    @Override
+    public void onUserDefinedTypeCreated(UserDefinedType type)
+    {
+        // NOOP
+    }
+
+    @Override
+    public void onUserDefinedTypeDropped(UserDefinedType type)
+    {
+        // NOOP
+    }
+
+    @Override
+    public void onUserDefinedTypeUpdated(UserDefinedType current, UserDefinedType previous)
+    {
+        // NOOP
+    }
+
+    @Override
+    public void onFunctionCreated(FunctionMetadata function)
+    {
+        // NOOP
+    }
+
+    @Override
+    public void onFunctionDropped(FunctionMetadata function)
+    {
+        // NOOP
+    }
+
+    @Override
+    public void onFunctionUpdated(FunctionMetadata current, FunctionMetadata previous)
+    {
+        // NOOP
+    }
+
+    @Override
+    public void onAggregateCreated(AggregateMetadata aggregate)
+    {
+        // NOOP
+    }
+
+    @Override
+    public void onAggregateDropped(AggregateMetadata aggregate)
+    {
+        // NOOP
+    }
+
+    @Override
+    public void onAggregateUpdated(AggregateMetadata current, AggregateMetadata previous)
+    {
+        // NOOP
+    }
+
+    @Override
+    public void onViewCreated(ViewMetadata view)
+    {
+        // NOOP
+    }
+
+    @Override
+    public void onViewDropped(ViewMetadata view)
+    {
+        // NOOP
+    }
+
+    @Override
+    public void onViewUpdated(ViewMetadata current, ViewMetadata previous)
+    {
+        // NOOP
+    }
+
     public static class Builder
     {
-        private Cluster myCluster;
+        private CqlSession mySession;
         private ReplicatedTableProvider myReplicatedTableProvider;
         private RepairScheduler myRepairScheduler;
         private Function<TableReference, RepairConfiguration> myRepairConfigurationFunction;
         private TableReferenceFactory myTableReferenceFactory;
 
-        public Builder withCluster(Cluster cluster)
+        public Builder withSession(CqlSession session)
         {
-            myCluster = cluster;
+            mySession = session;
             return this;
         }
 
@@ -178,111 +325,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
         public DefaultRepairConfigurationProvider build()
         {
             DefaultRepairConfigurationProvider configurationProvider = new DefaultRepairConfigurationProvider(this);
-            myCluster.register(configurationProvider);
-
             return configurationProvider;
         }
-    }
-
-    @Override
-    public void onKeyspaceAdded(KeyspaceMetadata keyspace)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onKeyspaceRemoved(KeyspaceMetadata keyspace)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onTableChanged(TableMetadata current, TableMetadata previous)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onUserTypeAdded(UserType type)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onUserTypeRemoved(UserType type)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onUserTypeChanged(UserType current, UserType previous)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onFunctionAdded(FunctionMetadata function)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onFunctionRemoved(FunctionMetadata function)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onFunctionChanged(FunctionMetadata current, FunctionMetadata previous)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onAggregateAdded(AggregateMetadata aggregate)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onAggregateRemoved(AggregateMetadata aggregate)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onAggregateChanged(AggregateMetadata current, AggregateMetadata previous)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onMaterializedViewAdded(MaterializedViewMetadata view)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onMaterializedViewRemoved(MaterializedViewMetadata view)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onMaterializedViewChanged(MaterializedViewMetadata current, MaterializedViewMetadata previous)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onRegister(Cluster cluster)
-    {
-        // NOOP
-    }
-
-    @Override
-    public void onUnregister(Cluster cluster)
-    {
-        // NOOP
     }
 }

@@ -18,14 +18,14 @@ import java.util.Set;
 import java.util.UUID;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
 public interface RepairHistory
 {
     RepairHistory NO_OP = new NoOpRepairHistory();
 
-    RepairSession newSession(TableReference tableReference, UUID jobId, LongTokenRange range, Set<Node> participants);
+    RepairSession newSession(TableReference tableReference, UUID jobId, LongTokenRange range, Set<DriverNode> participants);
 
     interface RepairSession
     {
@@ -40,7 +40,7 @@ public interface RepairHistory
 
         @Override
         public RepairSession newSession(TableReference tableReference, UUID jobId, LongTokenRange range,
-                Set<Node> participants)
+                Set<DriverNode> participants)
         {
             return NO_OP;
         }

@@ -16,13 +16,17 @@ package com.ericsson.bss.cassandra.ecchronos.rest.osgi;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.types.CompleteRepairJob;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduledRepairJob;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.types.TableRepairConfig;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.Schedule;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementREST;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementRESTImpl;
-import org.osgi.service.component.annotations.*;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -42,66 +46,45 @@ public class RepairManagementRESTComponent implements RepairManagementREST
     @Reference(service = TableReferenceFactory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile TableReferenceFactory myTableReferenceFactory;
 
+    @Reference(service = ReplicatedTableProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    private volatile ReplicatedTableProvider myReplicatedTableProvider;
+
     private volatile RepairManagementRESTImpl myDelegateRESTImpl;
 
     @Activate
     public synchronized void activate()
     {
         myDelegateRESTImpl = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler,
-                myTableReferenceFactory);
+                myTableReferenceFactory, myReplicatedTableProvider);
     }
 
     @Override
-    public ResponseEntity<List<ScheduledRepairJob>> status()
+    public ResponseEntity<List<OnDemandRepair>> getRepairs(String keyspace, String table, String hostId)
     {
-        return myDelegateRESTImpl.status();
+        return myDelegateRESTImpl.getRepairs(keyspace, table, hostId);
     }
 
     @Override
-    public ResponseEntity<List<ScheduledRepairJob>> keyspaceStatus(String keyspace)
+    public ResponseEntity<List<OnDemandRepair>> getRepairs(String id, String hostId)
     {
-        return myDelegateRESTImpl.keyspaceStatus(keyspace);
+        return myDelegateRESTImpl.getRepairs(id, hostId);
     }
 
     @Override
-    public ResponseEntity<List<ScheduledRepairJob>> tableStatus(String keyspace, String table)
+    public ResponseEntity<List<Schedule>> getSchedules(String keyspace, String table)
     {
-        return myDelegateRESTImpl.tableStatus(keyspace, table);
+        return myDelegateRESTImpl.getSchedules(keyspace, table);
     }
 
     @Override
-    public ResponseEntity<CompleteRepairJob> jobStatus(String id)
+    public ResponseEntity<Schedule> getSchedules(String id, boolean full)
     {
-        return myDelegateRESTImpl.jobStatus(id);
+        return myDelegateRESTImpl.getSchedules(id, full);
     }
 
     @Override
-    public ResponseEntity<List<TableRepairConfig>> config()
+    public ResponseEntity<List<OnDemandRepair>> triggerRepair(String keyspace, String table, boolean isLocal)
     {
-        return myDelegateRESTImpl.config();
-    }
-
-    @Override
-    public ResponseEntity<List<TableRepairConfig>> keyspaceConfig(String keyspace)
-    {
-        return myDelegateRESTImpl.keyspaceConfig(keyspace);
-    }
-
-    @Override
-    public ResponseEntity<List<TableRepairConfig>> tableConfig(String keyspace, String table)
-    {
-        return myDelegateRESTImpl.tableConfig(keyspace, table);
-    }
-
-    @Override
-    public ResponseEntity<TableRepairConfig> jobConfig(String id)
-    {
-        return myDelegateRESTImpl.jobConfig(id);
-    }
-
-    @Override
-    public ResponseEntity<ScheduledRepairJob> scheduleJob(String keyspace, String table)
-    {
-        return myDelegateRESTImpl.scheduleJob(keyspace, table);
+        return myDelegateRESTImpl.triggerRepair(keyspace, table, isLocal);
     }
 }

@@ -14,7 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection.impl;
 
-import com.datastax.driver.core.Statement;
+import com.datastax.oss.driver.api.core.cql.Statement;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import org.osgi.service.component.annotations.Component;
 

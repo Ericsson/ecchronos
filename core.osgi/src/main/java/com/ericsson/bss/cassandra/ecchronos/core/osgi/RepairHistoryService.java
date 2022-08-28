@@ -14,29 +14,37 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
-import java.util.Iterator;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-
-import org.osgi.service.component.annotations.*;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.EccRepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairEntry;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProviderImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.google.common.base.Predicate;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Session;
-import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.google.common.base.Predicate;
+import java.util.Iterator;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Component(service = { RepairHistory.class, RepairHistoryProvider.class })
 @Designate(ocd = RepairHistoryService.Configuration.class)
@@ -55,16 +63,20 @@ public class RepairHistoryService implements RepairHistory, RepairHistoryProvide
         ECC
     }
 
-    @Reference(service = StatementDecorator.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = StatementDecorator.class, cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile StatementDecorator statementDecorator;
 
-    @Reference(service = NativeConnectionProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = NativeConnectionProvider.class, cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile NativeConnectionProvider nativeConnectionProvider;
 
-    @Reference(service = NodeResolver.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = NodeResolver.class, cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile NodeResolver nodeResolver;
 
-    @Reference(service = ReplicationState.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = ReplicationState.class, cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile ReplicationState replicationState;
 
     private volatile RepairHistory delegateRepairHistory;
@@ -74,17 +86,17 @@ public class RepairHistoryService implements RepairHistory, RepairHistoryProvide
     @Activate
     public void activate(Configuration configuration)
     {
-        Host localHost = nativeConnectionProvider.getLocalHost();
-        Optional<Node> localNode = nodeResolver.fromUUID(localHost.getHostId());
+        Node node = nativeConnectionProvider.getLocalNode();
+        Optional<DriverNode> localNode = nodeResolver.fromUUID(node.getHostId());
         if (!localNode.isPresent())
         {
-            LOG.error("Local node ({}) not found in resolver", localHost.getHostId());
-            throw new IllegalStateException("Local node (" + localHost.getHostId() + ") not found in resolver");
+            LOG.error("Local node ({}) not found in resolver", node.getHostId());
+            throw new IllegalStateException("Local node (" + node.getHostId() + ") not found in resolver");
         }
 
         long lookbackTimeInMillis = configuration.lookbackTimeSeconds() * 1000;
 
-        Session session = nativeConnectionProvider.getSession();
+        CqlSession session = nativeConnectionProvider.getSession();
 
         if (configuration.provider() == Provider.CASSANDRA)
         {
@@ -119,7 +131,7 @@ public class RepairHistoryService implements RepairHistory, RepairHistoryProvide
 
     @Override
     public RepairSession newSession(TableReference tableReference, UUID jobId, LongTokenRange range,
-            Set<Node> participants)
+            Set<DriverNode> participants)
     {
         return delegateRepairHistory.newSession(tableReference, jobId, range, participants);
     }
@@ -141,13 +153,15 @@ public class RepairHistoryService implements RepairHistory, RepairHistoryProvide
     @ObjectClassDefinition
     public @interface Configuration
     {
-        @AttributeDefinition(name = "The provider to use for repair history", description = "The provider to use for repair history")
+        @AttributeDefinition(name = "The provider to use for repair history",
+                description = "The provider to use for repair history")
         Provider provider() default Provider.ECC;
 
         @AttributeDefinition(name = "Provider keyspace", description = "The keyspace used for ecc history if enabled")
         String providerKeyspace() default DEFAULT_PROVIDER_KEYSPACE;
 
-        @AttributeDefinition(name = "Repair history lookback time", description = "The lookback time in seconds for when the repair_history table is queried to get initial repair state at startup")
+        @AttributeDefinition(name = "Repair history lookback time",
+                description = "The lookback time in seconds for when the repair_history table is queried to get initial repair state at startup")
         long lookbackTimeSeconds() default DEFAULT_REPAIR_HISTORY_LOOKBACK_SECONDS;
     }
 }

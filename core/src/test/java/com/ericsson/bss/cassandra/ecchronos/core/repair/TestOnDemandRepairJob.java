@@ -21,7 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 
@@ -62,18 +62,19 @@ public class TestOnDemandRepairJob
     private RepairHistory myRepairHistory;
 
     @Mock
-    private Node mockReplica1;
+    private DriverNode mockReplica1;
 
     @Mock
-    private Node mockReplica2;
+    private DriverNode mockReplica2;
 
     @Mock
-    private Node mockReplica3;
+    private DriverNode mockReplica3;
 
     @Mock
     private OngoingJob myOngoingJob;
 
     private final TableReference myTableReference = tableReference(keyspaceName, tableName);
+    private final UUID myHostId = UUID.randomUUID();
 
     @Before
     public void setup()
@@ -81,6 +82,7 @@ public class TestOnDemandRepairJob
         when(myOngoingJob.getTableReference()).thenReturn(myTableReference);
         UUID uuid = UUID.randomUUID();
         when(myOngoingJob.getJobId()).thenReturn(uuid );
+        when(myOngoingJob.getHostId()).thenReturn(myHostId);
     }
 
     @After
@@ -94,7 +96,7 @@ public class TestOnDemandRepairJob
     public void testJobCorrectlyReturned()
     {
         OnDemandRepairJob repairJob = createOnDemandRepairJob();
-        RepairJobView expectedView = new OnDemandRepairJobView(repairJob.getId(), myTableReference, RepairConfiguration.DEFAULT, RepairJobView.Status.IN_QUEUE, 0, System.currentTimeMillis());
+        RepairJobView expectedView = new OnDemandRepairJobView(repairJob.getId(), myHostId, myTableReference, RepairConfiguration.DEFAULT, RepairJobView.Status.IN_QUEUE, 0, System.currentTimeMillis());
         assertThat(repairJob.getId()).isEqualTo(repairJob.getId());
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
         assertThat(repairJob.getRepairConfiguration()).isEqualTo(RepairConfiguration.DEFAULT);
@@ -103,6 +105,7 @@ public class TestOnDemandRepairJob
         assertThat(repairJob.getView().getRepairStateSnapshot()).isNull();
         assertThat(repairJob.getView().getTableReference()).isEqualTo(expectedView.getTableReference());
         assertThat(repairJob.getView().getStatus()).isEqualTo(expectedView.getStatus());
+        assertThat(repairJob.getView().getHostId()).isEqualTo(expectedView.getHostId());
     }
 
     @Test
@@ -111,7 +114,7 @@ public class TestOnDemandRepairJob
         OnDemandRepairJob repairJob = createOnDemandRepairJob();
         Iterator<ScheduledTask> it = repairJob.iterator();
         repairJob.postExecute(false, it.next());
-        RepairJobView expectedView = new OnDemandRepairJobView(repairJob.getId(), myTableReference, RepairConfiguration.DEFAULT, RepairJobView.Status.ERROR, 0, System.currentTimeMillis());
+        RepairJobView expectedView = new OnDemandRepairJobView(repairJob.getId(), myHostId, myTableReference, RepairConfiguration.DEFAULT, RepairJobView.Status.ERROR, 0, System.currentTimeMillis());
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
         assertThat(repairJob.getRepairConfiguration()).isEqualTo(RepairConfiguration.DEFAULT);
         assertThat(repairJob.getTableReference()).isEqualTo(myTableReference);
@@ -119,6 +122,7 @@ public class TestOnDemandRepairJob
         assertThat(repairJob.getView().getRepairStateSnapshot()).isNull();
         assertThat(repairJob.getView().getTableReference()).isEqualTo(expectedView.getTableReference());
         assertThat(repairJob.getView().getStatus()).isEqualTo(expectedView.getStatus());
+        assertThat(repairJob.getView().getHostId()).isEqualTo(expectedView.getHostId());
     }
 
     @Test
@@ -178,7 +182,7 @@ public class TestOnDemandRepairJob
     {
         LongTokenRange range1 = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(1, 3);
-        Map<LongTokenRange, ImmutableSet<Node>> tokenRangeToReplicas = new HashMap<>();
+        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicas = new HashMap<>();
         tokenRangeToReplicas.put(range1,
                 ImmutableSet.of(mockReplica1, mockReplica2, mockReplica3));
         tokenRangeToReplicas.put(range2,
@@ -198,7 +202,7 @@ public class TestOnDemandRepairJob
     {
         LongTokenRange range1 = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(1, 3);
-        Map<LongTokenRange, ImmutableSet<Node>> tokenRangeToReplicas = new HashMap<>();
+        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicas = new HashMap<>();
         tokenRangeToReplicas.put(range1,
                 ImmutableSet.of(mockReplica1, mockReplica2, mockReplica3));
         tokenRangeToReplicas.put(range2,

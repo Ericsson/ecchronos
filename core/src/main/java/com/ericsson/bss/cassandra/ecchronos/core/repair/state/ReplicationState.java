@@ -17,7 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 import java.util.Map;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 
@@ -36,7 +36,7 @@ public interface ReplicationState
      * @param tokenRange The token range to get nodes for.
      * @return The responsible nodes or null if either the token range does not exist or is intersecting two ranges.
      */
-    ImmutableSet<Node> getNodes(TableReference tableReference, LongTokenRange tokenRange);
+    ImmutableSet<DriverNode> getNodes(TableReference tableReference, LongTokenRange tokenRange);
 
     /**
      * Get a map of the current replication state for the provided table.
@@ -45,5 +45,7 @@ public interface ReplicationState
      *            The table used to calculate the proper replication.
      * @return The map consisting of token -&gt; responsible nodes.
      */
-    Map<LongTokenRange, ImmutableSet<Node>> getTokenRangeToReplicas(TableReference tableReference);
+    Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRangeToReplicas(TableReference tableReference);
+
+    Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRanges(TableReference tableReference);
 }

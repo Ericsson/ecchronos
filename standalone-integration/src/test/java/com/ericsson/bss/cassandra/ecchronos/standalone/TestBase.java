@@ -14,15 +14,12 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.standalone;
 
-import com.datastax.driver.core.PlainTextAuthProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactoryImpl;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-
+import com.datastax.oss.driver.api.core.auth.ProgrammaticPlainTextAuthProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalNativeConnectionProvider;
-
+import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactoryImpl;
 import net.jcip.annotations.NotThreadSafe;
+import org.junit.AfterClass;
 
 import java.io.IOException;
 
@@ -44,12 +41,12 @@ public class TestBase
         myNativeConnectionProvider = LocalNativeConnectionProvider.builder()
                 .withPort(CASSANDRA_NATIVE_PORT)
                 .withLocalhost(CASSANDRA_HOST)
-                .withAuthProvider(new PlainTextAuthProvider("eccuser", "eccpassword"))
+                .withAuthProvider(new ProgrammaticPlainTextAuthProvider("eccuser", "eccpassword"))
                 .build();
         myAdminNativeConnectionProvider = LocalNativeConnectionProvider.builder()
                 .withPort(CASSANDRA_NATIVE_PORT)
                 .withLocalhost(CASSANDRA_HOST)
-                .withAuthProvider(new PlainTextAuthProvider("cassandra", "cassandra"))
+                .withAuthProvider(new ProgrammaticPlainTextAuthProvider("cassandra", "cassandra"))
                 .withRemoteRouting(myRemoteRouting)
                 .build();
         myJmxConnectionProvider = new LocalJmxConnectionProvider(CASSANDRA_HOST, CASSANDRA_JMX_PORT);

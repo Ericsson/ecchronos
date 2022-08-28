@@ -37,7 +37,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapsho
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.annotations.VisibleForTesting;
 
@@ -153,7 +153,7 @@ public class RepairTableStatusCommand implements Action
         LongTokenRange tokenRange = state.getTokenRange();
         String lastRepairedAt = PrintUtils.epochToHumanReadable(state.lastRepairedAt());
         List<String> replicas = state.getReplicas().stream()
-                .map(Node::getPublicAddress)
+                .map(DriverNode::getPublicAddress)
                 .map(InetAddress::getHostAddress)
                 .sorted()
                 .distinct()

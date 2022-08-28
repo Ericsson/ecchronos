@@ -14,15 +14,16 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection;
 
-import com.datastax.driver.core.EndPoint;
-import com.datastax.driver.core.ExtendedRemoteEndpointAwareSslOptions;
+import com.datastax.oss.driver.api.core.metadata.EndPoint;
+import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 
 import javax.net.ssl.SSLEngine;
 
 /**
  * SSL Context provider
  */
-public interface CertificateHandler extends ExtendedRemoteEndpointAwareSslOptions
+public interface CertificateHandler extends SslEngineFactory
 {
-    SSLEngine newSSLEngine(EndPoint remoteEndpoint);
+    @Override
+    SSLEngine newSslEngine(EndPoint remoteEndpoint);
 }

@@ -14,7 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection.impl;
 
-import com.datastax.driver.core.EndPoint;
+import com.datastax.oss.driver.api.core.metadata.EndPoint;
 
 import java.net.InetSocketAddress;
 import java.util.Objects;
@@ -22,6 +22,7 @@ import java.util.Objects;
 public class ContactEndPoint implements EndPoint
 {
     private final String hostName;
+    private final String metricPrefix;
     private final int port;
     private volatile InetSocketAddress lastResolvedAddress;
 
@@ -29,6 +30,7 @@ public class ContactEndPoint implements EndPoint
     {
         this.hostName = hostName;
         this.port = port;
+        this.metricPrefix = buildMetricPrefix(hostName, port);
     }
 
     @Override
@@ -36,6 +38,12 @@ public class ContactEndPoint implements EndPoint
     {
         lastResolvedAddress = new InetSocketAddress(hostName, port);
         return lastResolvedAddress;
+    }
+
+    @Override
+    public String asMetricPrefix()
+    {
+        return metricPrefix;
     }
 
     @Override
@@ -59,5 +67,9 @@ public class ContactEndPoint implements EndPoint
             return lastResolvedAddress.toString();
         }
         return String.format("%s:%d", hostName, port);
+    }
+
+    private static String buildMetricPrefix(String host, int port) {
+        return host.replace('.', '_') + ':' + port;
     }
 }

@@ -14,8 +14,13 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core;
 
-import com.datastax.driver.core.*;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.Statement;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairPolicy;
@@ -37,10 +42,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import static com.datastax.driver.core.querybuilder.QueryBuilder.bindMarker;
-import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 
 /**
  * Time based run policy
@@ -69,7 +74,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
 
     private final PreparedStatement myGetRejectionsStatement;
     private final StatementDecorator myStatementDecorator;
-    private final Session mySession;
+    private final CqlSession mySession;
     private final Clock myClock;
     private final LoadingCache<TableKey, TimeRejectionCollection> myTimeRejectionCache;
 
@@ -79,10 +84,13 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         myStatementDecorator = builder.myStatementDecorator;
         myClock = builder.myClock;
 
-        myGetRejectionsStatement = mySession.prepare(QueryBuilder.select()
-                .from(builder.myKeyspaceName, TABLE_REJECT_CONFIGURATION)
-                .where(eq("keyspace_name", bindMarker()))
-                .and(eq("table_name", bindMarker())));
+        myGetRejectionsStatement = mySession.prepare(
+                QueryBuilder.selectFrom(builder.myKeyspaceName, TABLE_REJECT_CONFIGURATION)
+                .all()
+                .whereColumn("keyspace_name")
+                .isEqualTo(bindMarker())
+                .whereColumn("table_name").isEqualTo(bindMarker())
+                .build());
 
         myTimeRejectionCache = createConfigCache(builder.myCacheExpireTime);
     }
@@ -140,13 +148,13 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     {
         private static final String DEFAULT_KEYSPACE_NAME = "ecchronos";
 
-        private Session mySession;
+        private CqlSession mySession;
         private StatementDecorator myStatementDecorator;
         private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
         private long myCacheExpireTime = DEFAULT_CACHE_EXPIRE_TIME;
         private Clock myClock = Clock.systemDefaultZone();
 
-        public Builder withSession(Session session)
+        public Builder withSession(CqlSession session)
         {
             mySession = session;
             return this;
@@ -186,14 +194,14 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
 
         private void verifySchemasExists()
         {
-            KeyspaceMetadata keyspaceMetadata = mySession.getCluster().getMetadata().getKeyspace(myKeyspaceName);
-            if (keyspaceMetadata == null)
+            Optional<KeyspaceMetadata> keyspaceMetadata = mySession.getMetadata().getKeyspace(myKeyspaceName);
+            if (!keyspaceMetadata.isPresent())
             {
                 LOG.error("Keyspace {} does not exist, it needs to be created", myKeyspaceName);
                 throw new IllegalStateException("Keyspace " + myKeyspaceName + " does not exist, it needs to be created");
             }
 
-            if (keyspaceMetadata.getTable(TABLE_REJECT_CONFIGURATION) == null)
+            if (!keyspaceMetadata.get().getTable(TABLE_REJECT_CONFIGURATION).isPresent())
             {
                 LOG.error("Table {}.{} does not exist, it needs to be created", myKeyspaceName, TABLE_REJECT_CONFIGURATION);
                 throw new IllegalStateException("Table " + myKeyspaceName + "." + TABLE_REJECT_CONFIGURATION + " does not exist, it needs to be created");

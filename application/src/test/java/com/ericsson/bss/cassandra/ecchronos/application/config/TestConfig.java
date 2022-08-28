@@ -14,38 +14,42 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.File;
-import java.net.InetSocketAddress;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
-
-import javax.management.remote.JMXConnector;
-import javax.net.ssl.SSLEngine;
-
-import com.datastax.driver.core.EndPoint;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.Statement;
+import com.datastax.oss.driver.api.core.metadata.EndPoint;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.ericsson.bss.cassandra.ecchronos.application.AbstractRepairConfigurationProvider;
+import com.ericsson.bss.cassandra.ecchronos.application.DefaultJmxConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.application.DefaultNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.application.FileBasedRepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.application.NoopStatementDecorator;
+import com.ericsson.bss.cassandra.ecchronos.application.ReloadingCertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.ssl.SslHandler;
-import org.junit.Test;
-import org.springframework.context.ApplicationContext;
-
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
-import com.ericsson.bss.cassandra.ecchronos.application.*;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
+import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
+import com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.junit.Test;
+import org.springframework.context.ApplicationContext;
+
+import javax.management.remote.JMXConnector;
+import javax.net.ssl.SSLEngine;
+import java.io.File;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestConfig
 {
@@ -81,6 +85,7 @@ public class TestConfig
                 .withRepairWarningTime(48, TimeUnit.HOURS)
                 .withRepairErrorTime(72, TimeUnit.HOURS)
                 .withRepairUnwindRatio(0.5d)
+                .withIgnoreTWCSTables(true)
                 .withTargetRepairSizeInBytes(UnitConverter.toBytes("5m"))
                 .build();
 
@@ -93,6 +98,8 @@ public class TestConfig
         assertThat(repairConfig.getHistoryLookback().getInterval(TimeUnit.DAYS)).isEqualTo(13);
         assertThat(repairConfig.getHistory().getProvider()).isEqualTo(Config.RepairHistory.Provider.CASSANDRA);
         assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("customkeyspace");
+        assertThat(repairConfig.getAlarm().getFaultReporter()).isEqualTo(TestFaultReporter.class);
+        assertThat(repairConfig.getIgnoreTWCSTables()).isTrue();
 
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isFalse();
@@ -144,6 +151,7 @@ public class TestConfig
                 .withRepairWarningTime(8, TimeUnit.DAYS)
                 .withRepairErrorTime(10, TimeUnit.DAYS)
                 .withRepairUnwindRatio(0.0d)
+                .withIgnoreTWCSTables(false)
                 .withTargetRepairSizeInBytes(RepairConfiguration.FULL_REPAIR_SIZE)
                 .build();
 
@@ -157,6 +165,8 @@ public class TestConfig
         assertThat(repairConfig.getHistoryLookback().getInterval(TimeUnit.DAYS)).isEqualTo(30);
         assertThat(repairConfig.getHistory().getProvider()).isEqualTo(Config.RepairHistory.Provider.ECC);
         assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("ecchronos");
+        assertThat(repairConfig.getAlarm().getFaultReporter()).isEqualTo(LoggingFaultReporter.class);
+        assertThat(repairConfig.getIgnoreTWCSTables()).isFalse();
 
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isTrue();
@@ -221,6 +231,8 @@ public class TestConfig
         assertThat(repairConfig.getHistoryLookback().getInterval(TimeUnit.DAYS)).isEqualTo(30);
         assertThat(repairConfig.getHistory().getProvider()).isEqualTo(Config.RepairHistory.Provider.ECC);
         assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("ecchronos");
+        assertThat(repairConfig.getAlarm().getFaultReporter()).isEqualTo(LoggingFaultReporter.class);
+        assertThat(repairConfig.getIgnoreTWCSTables()).isFalse();
 
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isTrue();
@@ -242,19 +254,20 @@ public class TestConfig
 
     public static class TestNativeConnectionProvider implements NativeConnectionProvider
     {
-        public TestNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecurity)
+        public TestNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecurity,
+                DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
         {
             // Empty constructor
         }
 
         @Override
-        public Session getSession()
+        public CqlSession getSession()
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Host getLocalHost()
+        public Node getLocalNode()
         {
             throw new UnsupportedOperationException();
         }
@@ -272,28 +285,17 @@ public class TestConfig
         {
             // Empty constructor
         }
+
         @Override
-        public SslHandler newSSLHandler(SocketChannel channel, EndPoint remoteEndpoint)
+        public SSLEngine newSslEngine(EndPoint remoteEndpoint)
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public SSLEngine newSSLEngine(EndPoint remoteEndpoint)
+        public void close() throws Exception
         {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public SslHandler newSSLHandler(SocketChannel channel, InetSocketAddress remoteEndpoint)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public SslHandler newSSLHandler(SocketChannel channel)
-        {
-            throw new UnsupportedOperationException();
+            // Empty, nothing to close
         }
     }
 
@@ -336,6 +338,22 @@ public class TestConfig
         public Optional<RepairConfiguration> forTable(TableReference tableReference)
         {
             return Optional.empty();
+        }
+    }
+
+    public static class TestFaultReporter implements RepairFaultReporter
+    {
+
+        @Override
+        public void raise(FaultCode faultCode, Map<String, Object> data)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void cease(FaultCode faultCode, Map<String, Object> data)
+        {
+            throw new UnsupportedOperationException();
         }
     }
 }

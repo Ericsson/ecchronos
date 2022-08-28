@@ -29,7 +29,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
@@ -77,11 +77,11 @@ public class OnDemandRepairJob extends ScheduledJob
         myTotalTasks = myTasks.size();
     }
 
-    private Map<ScheduledTask, Set<LongTokenRange>> createRepairTasks(Map<LongTokenRange, ImmutableSet<Node>> tokenRanges, Set<LongTokenRange> repairedTokens)
+    private Map<ScheduledTask, Set<LongTokenRange>> createRepairTasks(Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRanges, Set<LongTokenRange> repairedTokens)
     {
         Map<ScheduledTask, Set<LongTokenRange>> taskMap = new ConcurrentHashMap<>();
         List<VnodeRepairState> vnodeRepairStates = new ArrayList<>();
-        Map<LongTokenRange, ImmutableSet<Node>> remainingTokenRanges;
+        Map<LongTokenRange, ImmutableSet<DriverNode>> remainingTokenRanges;
 
         if(repairedTokens.isEmpty())
         {
@@ -93,10 +93,10 @@ public class OnDemandRepairJob extends ScheduledJob
             repairedTokens.iterator().forEachRemaining(t -> remainingTokenRanges.remove(t));
         }
 
-        for (Map.Entry<LongTokenRange, ImmutableSet<Node>> entry : remainingTokenRanges.entrySet())
+        for (Map.Entry<LongTokenRange, ImmutableSet<DriverNode>> entry : remainingTokenRanges.entrySet())
         {
             LongTokenRange longTokenRange = entry.getKey();
-            ImmutableSet<Node> replicas = entry.getValue();
+            ImmutableSet<DriverNode> replicas = entry.getValue();
             vnodeRepairStates.add(new VnodeRepairState(longTokenRange, replicas, -1));
         }
 
@@ -137,6 +137,7 @@ public class OnDemandRepairJob extends ScheduledJob
     {
         return new OnDemandRepairJobView(
                 getId(),
+                myOngoingJob.getHostId(),
                 myOngoingJob.getTableReference(),
                 myRepairConfiguration,
                 getStatus(),
@@ -193,7 +194,7 @@ public class OnDemandRepairJob extends ScheduledJob
 
         if (failed)
         {
-            myOnFinishedHook.accept(getId());
+            myOnFinishedHook.accept(id);
             myOngoingJob.failJob();
             LOG.error("Failed On Demand Repair: {}", id);
         }

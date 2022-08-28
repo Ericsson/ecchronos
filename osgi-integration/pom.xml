@@ -20,7 +20,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-        <version>3.0.0-SNAPSHOT</version>
+        <version>4.0.0-SNAPSHOT</version>
     </parent>
     <artifactId>osgi-integration</artifactId>
     <description>Integration tests for an OSGi environment</description>
@@ -119,6 +119,11 @@
 
     <profiles>
         <profile>
+            <activation>
+                <property>
+                    <name>precommit.tests</name>
+                </property>
+            </activation>
             <id>osgi-integration-tests</id>
             <build>
                 <plugins>

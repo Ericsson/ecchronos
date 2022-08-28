@@ -17,15 +17,16 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import com.datastax.oss.driver.api.core.AllNodesFailedException;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.auth.AuthProvider;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.datastax.driver.core.ExtendedAuthProvider;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.SSLOptions;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Security;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
@@ -37,7 +38,8 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
 
     private final LocalNativeConnectionProvider myLocalNativeConnectionProvider;
 
-    public DefaultNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecuritySupplier, CertificateHandler certificateHandler)
+    public DefaultNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecuritySupplier,
+            CertificateHandler certificateHandler, DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
     {
         Config.NativeConnection nativeConfig = config.getConnectionConfig().getCql();
         String host = nativeConfig.getHost();
@@ -49,12 +51,12 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
         LOG.info("Connecting through CQL using {}:{}, authentication: {}, tls: {}", host, port, authEnabled,
                 tlsEnabled);
 
-        ExtendedAuthProvider authProvider = new ReloadingAuthProvider(() -> cqlSecuritySupplier.get().getCredentials());
+        AuthProvider authProvider = new ReloadingAuthProvider(() -> cqlSecuritySupplier.get().getCredentials());
 
-        SSLOptions sslOptions = null;
+        SslEngineFactory sslEngineFactory = null;
         if (tlsEnabled)
         {
-            sslOptions = certificateHandler;
+            sslEngineFactory = certificateHandler;
         }
 
         LocalNativeConnectionProvider.Builder nativeConnectionBuilder = LocalNativeConnectionProvider.builder()
@@ -62,15 +64,18 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
                 .withPort(port)
                 .withRemoteRouting(remoteRouting)
                 .withAuthProvider(authProvider)
-                .withSslOptions(sslOptions);
+                .withSslEngineFactory(sslEngineFactory)
+                .withSchemaChangeListener(defaultRepairConfigurationProvider);
 
         myLocalNativeConnectionProvider = establishConnection(nativeConnectionBuilder,
                 host, port, nativeConfig.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS));
     }
 
-    public DefaultNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecuritySupplier)
+    public DefaultNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecuritySupplier,
+            DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
     {
-        this(config, cqlSecuritySupplier, new ReloadingCertificateHandler(() -> cqlSecuritySupplier.get().getTls()));
+        this(config, cqlSecuritySupplier, new ReloadingCertificateHandler(() -> cqlSecuritySupplier.get().getTls()),
+                defaultRepairConfigurationProvider);
     }
 
     private static LocalNativeConnectionProvider establishConnection(LocalNativeConnectionProvider.Builder builder,
@@ -84,7 +89,7 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
             {
                 return builder.build();
             }
-            catch (NoHostAvailableException | IllegalStateException e)
+            catch (AllNodesFailedException | IllegalStateException e)
             {
                 try
                 {
@@ -106,15 +111,15 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
     }
 
     @Override
-    public Session getSession()
+    public CqlSession getSession()
     {
         return myLocalNativeConnectionProvider.getSession();
     }
 
     @Override
-    public Host getLocalHost()
+    public Node getLocalNode()
     {
-        return myLocalNativeConnectionProvider.getLocalHost();
+        return myLocalNativeConnectionProvider.getLocalNode();
     }
 
     @Override

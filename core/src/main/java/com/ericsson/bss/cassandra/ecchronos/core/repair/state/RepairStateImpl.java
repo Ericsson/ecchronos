@@ -17,7 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
@@ -198,7 +198,7 @@ public class RepairStateImpl implements RepairState
 
     private boolean replicasAreRepairable(VnodeRepairState vnodeRepairState)
     {
-        for (Node node : vnodeRepairState.getReplicas())
+        for (DriverNode node : vnodeRepairState.getReplicas())
         {
             if (!myHostStates.isUp(node))
             {
