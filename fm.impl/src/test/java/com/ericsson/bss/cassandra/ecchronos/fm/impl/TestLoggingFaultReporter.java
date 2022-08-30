@@ -34,10 +34,10 @@ public class TestLoggingFaultReporter
         data.put(RepairFaultReporter.FAULT_TABLE, "table");
 
         loggingFaultReporter.raise(RepairFaultReporter.FaultCode.REPAIR_ERROR, data);
-        assertThat(loggingFaultReporter.alarms.size()).isEqualTo(1);
+        assertThat(loggingFaultReporter.getAlarms().size()).isEqualTo(1);
 
         loggingFaultReporter.cease(RepairFaultReporter.FaultCode.REPAIR_ERROR, data);
-        assertThat(loggingFaultReporter.alarms.size()).isEqualTo(0);
+        assertThat(loggingFaultReporter.getAlarms().size()).isEqualTo(0);
     }
 
     @Test
@@ -51,13 +51,13 @@ public class TestLoggingFaultReporter
         anotherData.put(RepairFaultReporter.FAULT_TABLE, "table2");
 
         loggingFaultReporter.raise(RepairFaultReporter.FaultCode.REPAIR_WARNING, data);
-        assertThat(loggingFaultReporter.alarms.size()).isEqualTo(1);
+        assertThat(loggingFaultReporter.getAlarms().size()).isEqualTo(1);
 
         loggingFaultReporter.cease(RepairFaultReporter.FaultCode.REPAIR_WARNING, anotherData);
-        assertThat(loggingFaultReporter.alarms.size()).isEqualTo(1);
+        assertThat(loggingFaultReporter.getAlarms().size()).isEqualTo(1);
 
         loggingFaultReporter.cease(RepairFaultReporter.FaultCode.REPAIR_ERROR, data);
-        assertThat(loggingFaultReporter.alarms.size()).isEqualTo(0);
+        assertThat(loggingFaultReporter.getAlarms().size()).isEqualTo(0);
     }
 
 
