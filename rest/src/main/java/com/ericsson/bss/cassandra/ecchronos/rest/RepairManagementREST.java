@@ -75,5 +75,14 @@ public interface RepairManagementREST
      */
     ResponseEntity<List<OnDemandRepair>> triggerRepair(String keyspace, String table, boolean isLocal);
 
+    /**
+     * Get repair information for a specific table.
+     *
+     * @param keyspace The keyspace of the table
+     * @param table The table
+     * @param since The since time (where the time window starts)
+     * @param duration The duration of the time window
+     * @return A JSON representation of {@link RepairInfo}
+     */
     ResponseEntity<RepairInfo> getRepairInfo(String keyspace, String table, Long since, Duration duration);
 }
