@@ -37,53 +37,65 @@ import java.util.List;
 @Component
 public class RepairManagementRESTComponent implements RepairManagementREST
 {
-    @Reference (service = RepairScheduler.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference (service = RepairScheduler.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile RepairScheduler myRepairScheduler;
 
-    @Reference (service = OnDemandRepairScheduler.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference (service = OnDemandRepairScheduler.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile OnDemandRepairScheduler myOnDemandRepairScheduler;
 
-    @Reference(service = TableReferenceFactory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = TableReferenceFactory.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile TableReferenceFactory myTableReferenceFactory;
 
-    @Reference(service = ReplicatedTableProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = ReplicatedTableProvider.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile ReplicatedTableProvider myReplicatedTableProvider;
 
     private volatile RepairManagementRESTImpl myDelegateRESTImpl;
 
     @Activate
-    public synchronized void activate()
+    public final synchronized void activate()
     {
         myDelegateRESTImpl = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler,
                 myTableReferenceFactory, myReplicatedTableProvider);
     }
 
     @Override
-    public ResponseEntity<List<OnDemandRepair>> getRepairs(String keyspace, String table, String hostId)
+    public final ResponseEntity<List<OnDemandRepair>> getRepairs(final String keyspace,
+                                                                 final String table,
+                                                                 final String hostId)
     {
         return myDelegateRESTImpl.getRepairs(keyspace, table, hostId);
     }
 
     @Override
-    public ResponseEntity<List<OnDemandRepair>> getRepairs(String id, String hostId)
+    public final ResponseEntity<List<OnDemandRepair>> getRepairs(final String id, final String hostId)
     {
         return myDelegateRESTImpl.getRepairs(id, hostId);
     }
 
     @Override
-    public ResponseEntity<List<Schedule>> getSchedules(String keyspace, String table)
+    public final ResponseEntity<List<Schedule>> getSchedules(final String keyspace, final String table)
     {
         return myDelegateRESTImpl.getSchedules(keyspace, table);
     }
 
     @Override
-    public ResponseEntity<Schedule> getSchedules(String id, boolean full)
+    public final ResponseEntity<Schedule> getSchedules(final String id, final boolean full)
     {
         return myDelegateRESTImpl.getSchedules(id, full);
     }
 
     @Override
-    public ResponseEntity<List<OnDemandRepair>> triggerRepair(String keyspace, String table, boolean isLocal)
+    public final ResponseEntity<List<OnDemandRepair>> triggerRepair(final String keyspace,
+                                                                    final String table,
+                                                                    final boolean isLocal)
     {
         return myDelegateRESTImpl.triggerRepair(keyspace, table, isLocal);
     }
