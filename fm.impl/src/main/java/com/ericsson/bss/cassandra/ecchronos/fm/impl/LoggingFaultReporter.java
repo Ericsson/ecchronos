@@ -27,11 +27,11 @@ import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 public class LoggingFaultReporter implements RepairFaultReporter
 {
     private static final Logger LOG = LoggerFactory.getLogger(LoggingFaultReporter.class);
-    private Map<Integer, FaultCode> alarms = new HashMap<>();
+    private final Map<Integer, FaultCode> alarms = new HashMap<>();
 
     public final Map<Integer, FaultCode> getAlarms()
     {
-        return  alarms;
+        return alarms;
     }
 
     @Override
