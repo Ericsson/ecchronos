@@ -27,22 +27,22 @@ import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 public class LoggingFaultReporter implements RepairFaultReporter
 {
     private static final Logger LOG = LoggerFactory.getLogger(LoggingFaultReporter.class);
-    Map<Integer, FaultCode> alarms = new HashMap<>();
+    private Map<Integer, FaultCode> alarms = new HashMap<>();
 
     @Override
-    public void raise(FaultCode faultCode, Map<String, Object> data)
+    public final void raise(final FaultCode faultCode, final Map<String, Object> data)
     {
         alarms.put(data.hashCode(), faultCode);
         LOG.error("Raising alarm: {} - {}", faultCode, data);
     }
 
     @Override
-    public void cease(FaultCode faultCode, Map<String, Object> data)
+    public final void cease(final FaultCode faultCode, final Map<String, Object> data)
     {
         FaultCode code = alarms.get(data.hashCode());
         if (code != null)
         {
-            LOG.info("Ceasing alarm: {} - {}", code , data);
+            LOG.info("Ceasing alarm: {} - {}", code, data);
             alarms.remove(data.hashCode(), code);
         }
     }
