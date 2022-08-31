@@ -41,7 +41,7 @@ import java.util.UUID;
 public class LocalNativeConnectionProvider implements NativeConnectionProvider
 {
     private static final List<String> SCHEMA_REFRESHED_KEYSPACES = ImmutableList.of("/.*/", "!system",
-            "!system_distributed", "!system_schema", "!system_traces");
+            "!system_distributed", "!system_schema", "!system_traces", "!system_views", "!system_virtual_schema");
     private static final Logger LOG = LoggerFactory.getLogger(LocalNativeConnectionProvider.class);
     private static final List<String> NODE_METRICS = Arrays.asList(DefaultNodeMetric.OPEN_CONNECTIONS.getPath(),
             DefaultNodeMetric.AVAILABLE_STREAMS.getPath(), DefaultNodeMetric.IN_FLIGHT.getPath(),
