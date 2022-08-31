@@ -35,6 +35,21 @@ public interface VnodeRepairStates
      */
     VnodeRepairStates combineWithRepairedAt(long repairedAt);
 
+    /**
+     * Calculate the effective repair time (time for Cassandra to perform repair) for all the repaired vnodes
+     *
+     * @return The repair time in milliseconds
+     */
+    default long getRepairTime()
+    {
+        long sum = 0;
+        for (VnodeRepairState vnodeRepairState : getVnodeRepairStates())
+        {
+            sum += vnodeRepairState.getRepairTime();
+        }
+        return sum;
+    }
+
     interface Builder
     {
         /**

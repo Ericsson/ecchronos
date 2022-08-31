@@ -25,6 +25,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.math.BigInteger;
 
+import static com.ericsson.bss.cassandra.ecchronos.core.repair.state.NormalizedRange.UNKNOWN_REPAIR_TIME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
@@ -47,6 +48,7 @@ public class TestNormalizedRange
         assertThat(withNewStart.end()).isEqualTo(bi(9L));
         assertThat(withNewStart.getStartedAt()).isEqualTo(1234L);
         assertThat(withNewStart.getFinishedAt()).isEqualTo(1235L);
+        assertThat(withNewStart.getRepairTime()).isEqualTo(UNKNOWN_REPAIR_TIME);
     }
 
     @Test
@@ -69,6 +71,7 @@ public class TestNormalizedRange
         assertThat(withNewEnd.end()).isEqualTo(bi(8L));
         assertThat(withNewEnd.getStartedAt()).isEqualTo(1234L);
         assertThat(withNewEnd.getFinishedAt()).isEqualTo(1235L);
+        assertThat(withNewEnd.getRepairTime()).isEqualTo(UNKNOWN_REPAIR_TIME);
     }
 
     @Test
@@ -92,6 +95,7 @@ public class TestNormalizedRange
         assertThat(between.end()).isEqualTo(bi(13L));
         assertThat(between.getStartedAt()).isEqualTo(1236L);
         assertThat(between.getFinishedAt()).isEqualTo(1237L);
+        assertThat(between.getRepairTime()).isEqualTo(UNKNOWN_REPAIR_TIME);
     }
 
     @Test
@@ -132,11 +136,12 @@ public class TestNormalizedRange
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, START, bi(13L), 1234L, 1235L);
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange, bi(9L), bi(15L), 1235L, 1236L);
 
-        NormalizedRange between = firstRange.splitEnd(secondRange);
-        assertThat(between.start()).isEqualTo(bi(9L));
-        assertThat(between.end()).isEqualTo(bi(13L));
-        assertThat(between.getStartedAt()).isEqualTo(1235L);
-        assertThat(between.getFinishedAt()).isEqualTo(1235L);
+        NormalizedRange splitted = firstRange.splitEnd(secondRange);
+        assertThat(splitted.start()).isEqualTo(bi(9L));
+        assertThat(splitted.end()).isEqualTo(bi(13L));
+        assertThat(splitted.getStartedAt()).isEqualTo(1235L);
+        assertThat(splitted.getFinishedAt()).isEqualTo(1235L);
+        assertThat(splitted.getRepairTime()).isEqualTo(UNKNOWN_REPAIR_TIME);
     }
 
     @Test
@@ -177,11 +182,12 @@ public class TestNormalizedRange
         NormalizedRange firstRange = new NormalizedRange(normalizedBaseRange, START, bi(13L), 1234L, 1235L);
         NormalizedRange secondRange = new NormalizedRange(normalizedBaseRange, bi(13L), bi(15L), 1235L, 1236L);
 
-        NormalizedRange between = firstRange.combine(secondRange);
-        assertThat(between.start()).isEqualTo(START);
-        assertThat(between.end()).isEqualTo(bi(15L));
-        assertThat(between.getStartedAt()).isEqualTo(1234L);
-        assertThat(between.getFinishedAt()).isEqualTo(1236L);
+        NormalizedRange combined = firstRange.combine(secondRange);
+        assertThat(combined.start()).isEqualTo(START);
+        assertThat(combined.end()).isEqualTo(bi(15L));
+        assertThat(combined.getStartedAt()).isEqualTo(1234L);
+        assertThat(combined.getFinishedAt()).isEqualTo(1236L);
+        assertThat(combined.getRepairTime()).isEqualTo(2L);
     }
 
     @Test

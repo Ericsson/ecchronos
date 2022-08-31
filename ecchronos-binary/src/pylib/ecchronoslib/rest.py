@@ -16,10 +16,12 @@
 try:
     from urllib.request import urlopen, Request
     from urllib.error import HTTPError, URLError
+    from urllib.parse import quote
 except ImportError:
     from urllib2 import urlopen, Request, HTTPError, URLError
+    from urllib import quote # pylint: disable=ungrouped-imports
 import json
-from ecchronoslib.types import FullSchedule, Repair, Schedule
+from ecchronoslib.types import FullSchedule, Repair, Schedule, RepairInfo
 
 
 class RequestResult(object):
@@ -108,6 +110,8 @@ class V2RepairSchedulerRequest(RestRequest):
 
     v2_repair_trigger_url = REPAIRS
 
+    repair_info_url = PROTOCOL + 'repairInfo'
+
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
 
@@ -180,4 +184,25 @@ class V2RepairSchedulerRequest(RestRequest):
         result = self.request(request_url, 'POST')
         if result.is_successful():
             result = result.transform_with_data(new_data=[Repair(x) for x in result.data])
+        return result
+
+    def get_repair_info(self, keyspace=None, table=None, since=None, duration=None):
+        request_url = V2RepairSchedulerRequest.repair_info_url
+        if keyspace:
+            request_url += "?keyspace=" + quote(keyspace)
+            if table:
+                request_url += "&table=" + quote(table)
+        if since:
+            if keyspace:
+                request_url += "&since=" + quote(since)
+            else:
+                request_url += "?since=" + quote(since)
+        if duration:
+            if keyspace or since:
+                request_url += "&duration=" + quote(duration)
+            else:
+                request_url += "?duration=" + quote(duration)
+        result = self.request(request_url)
+        if result.is_successful():
+            result = result.transform_with_data(new_data=RepairInfo(result.data))
         return result

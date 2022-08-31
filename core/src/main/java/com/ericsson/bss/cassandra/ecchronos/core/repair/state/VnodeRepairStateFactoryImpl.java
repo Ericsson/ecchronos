@@ -67,6 +67,15 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         return generateVnodeRepairStates(lastRepairedAt, previous, repairEntryIterator, tokenRangeToReplicaMap);
     }
 
+    @Override
+    public VnodeRepairStates calculateState(TableReference tableReference, long to, long from)
+    {
+        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicaMap = myReplicationState.getTokenRangeToReplicas(tableReference);
+        Iterator<RepairEntry> repairEntryIterator = myRepairHistoryProvider.iterate(tableReference, to, from,
+                (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
+        return generateVnodeRepairStates(VnodeRepairState.UNREPAIRED, null, repairEntryIterator, tokenRangeToReplicaMap);
+    }
+
     private VnodeRepairStates generateVnodeRepairStates(long lastRepairedAt, RepairStateSnapshot previous, Iterator<RepairEntry> repairEntryIterator, Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicaMap)
     {
         List<VnodeRepairState> vnodeRepairStatesBase = new ArrayList<>();

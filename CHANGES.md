@@ -2,6 +2,7 @@
 
 ## Version 4.0.0
 
+* Add repair-info - Issue #327
 * Add config to skip schedules of tables with TWCS - Issue #151
 * Add metric for failed and succeeded repair tasks - Issue #295
 * Remove deprecated v1 REST interface

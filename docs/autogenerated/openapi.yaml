@@ -145,6 +145,43 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/OnDemandRepair'
+  /repair-management/v2/repairInfo:
+    get:
+      tags:
+      - repair-management
+      operationId: get-repair-info
+      parameters:
+      - name: keyspace
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: table
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: since
+        in: query
+        description: "Since time, can be specified as ISO8601 date or as milliseconds\
+          \ since epoch"
+        required: false
+        schema:
+          type: string
+      - name: duration
+        in: query
+        description: "Duration, can be specified as either a simple duration like\
+          \ '30s' or as ISO8601 duration 'pt30s'"
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepairInfo'
 components:
   schemas:
     OnDemandRepair:
@@ -286,3 +323,43 @@ components:
           format: int64
         repaired:
           type: boolean
+    RepairInfo:
+      required:
+      - repairStats
+      - sinceInMs
+      - toInMs
+      type: object
+      properties:
+        sinceInMs:
+          minimum: 0
+          type: integer
+          format: int64
+        toInMs:
+          minimum: 0
+          type: integer
+          format: int64
+        repairStats:
+          type: array
+          items:
+            $ref: '#/components/schemas/RepairStats'
+    RepairStats:
+      required:
+      - keyspace
+      - repairTimeTakenMs
+      - repairedRatio
+      - table
+      type: object
+      properties:
+        keyspace:
+          type: string
+        table:
+          type: string
+        repairedRatio:
+          maximum: 1
+          minimum: 0
+          type: number
+          format: double
+        repairTimeTakenMs:
+          minimum: 0
+          type: integer
+          format: int64

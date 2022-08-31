@@ -105,3 +105,61 @@ class FullSchedule(Schedule):
         if "virtualNodeStates" in data:
             for vnode_data in data["virtualNodeStates"]:
                 self.vnode_states.append(VnodeState(vnode_data))
+
+
+class RepairInfo(object):
+
+    def __init__(self, data):
+        self.since_in_ms = int(data["sinceInMs"] if "sinceInMs" in data else -1)
+        self.to_in_ms = int(data["toInMs"] if "toInMs" in data else -1)
+        self.repair_stats = (RepairStats(x) for x in data["repairStats"])
+
+    def get_since(self):
+        if self.since_in_ms == -1:
+            return "-"
+        return datetime.datetime.fromtimestamp(self.since_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
+
+    def get_to(self):
+        if self.since_in_ms == -1:
+            return "-"
+        return datetime.datetime.fromtimestamp(self.to_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
+
+
+class RepairStats(object):
+
+    def __init__(self, data):
+        self.keyspace = data["keyspace"] if "keyspace" in data else "<UNKNOWN>"
+        self.table = data["table"] if "table" in data else "<UNKNOWN>"
+        self.repaired_ratio = float(data["repairedRatio"] if "repairedRatio" in data else 0)
+        self.repair_time_taken_ms = int(data["repairTimeTakenMs"] if "repairTimeTakenMs" in data else 0)
+
+    def get_repaired_percentage(self):
+        return "{0:.2f}".format(self.repaired_ratio * 100.0)
+
+    def get_repair_time_taken(self):
+        if self.repair_time_taken_ms == 0:
+            return "-"
+        delta = datetime.timedelta(milliseconds=self.repair_time_taken_ms)
+        human_readable_delta = ""
+        days = delta.days
+        if days == 1:
+            human_readable_delta += "{0} day, ".format(days)
+        elif days > 1:
+            human_readable_delta += "{0} days, ".format(days)
+        hours, remaining_seconds = divmod(delta.seconds, 3600)
+        if hours == 1:
+            human_readable_delta += "{0} hour, ".format(hours)
+        elif hours > 1:
+            human_readable_delta += "{0} hours, ".format(hours)
+        minutes, seconds = divmod(remaining_seconds, 60)
+        if minutes == 1:
+            human_readable_delta += "{0} minute, ".format(minutes)
+        elif minutes > 1:
+            human_readable_delta += "{0} minutes, ".format(minutes)
+        if seconds == 1:
+            human_readable_delta += "{0} second".format(seconds)
+        elif seconds > 1:
+            human_readable_delta += "{0} seconds".format(seconds)
+        elif delta.microseconds > 0:
+            human_readable_delta += "< 1 second"
+        return human_readable_delta

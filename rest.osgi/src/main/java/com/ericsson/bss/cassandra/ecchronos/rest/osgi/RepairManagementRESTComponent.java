@@ -17,7 +17,9 @@ package com.ericsson.bss.cassandra.ecchronos.rest.osgi;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.RepairInfo;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.Schedule;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.RepairStatsProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementREST;
@@ -29,6 +31,7 @@ import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.springframework.http.ResponseEntity;
 
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -57,13 +60,16 @@ public class RepairManagementRESTComponent implements RepairManagementREST
             policy = ReferencePolicy.STATIC)
     private volatile ReplicatedTableProvider myReplicatedTableProvider;
 
+    @Reference(service = RepairStatsProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    private volatile RepairStatsProvider myRepairStatsProvider;
+
     private volatile RepairManagementRESTImpl myDelegateRESTImpl;
 
     @Activate
     public final synchronized void activate()
     {
         myDelegateRESTImpl = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler,
-                myTableReferenceFactory, myReplicatedTableProvider);
+                myTableReferenceFactory, myReplicatedTableProvider, myRepairStatsProvider);
     }
 
     @Override
@@ -98,5 +104,11 @@ public class RepairManagementRESTComponent implements RepairManagementREST
                                                                     final boolean isLocal)
     {
         return myDelegateRESTImpl.triggerRepair(keyspace, table, isLocal);
+    }
+
+    @Override
+    public ResponseEntity<RepairInfo> getRepairInfo(String keyspace, String table, Long since, Duration duration)
+    {
+        return myDelegateRESTImpl.getRepairInfo(keyspace, table, since, duration);
     }
 }

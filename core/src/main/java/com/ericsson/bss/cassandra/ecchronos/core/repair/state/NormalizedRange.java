@@ -28,12 +28,24 @@ import java.util.Objects;
  */
 public class NormalizedRange implements Comparable<NormalizedRange>
 {
+    static final long UNKNOWN_REPAIR_TIME = 0L;
     private final NormalizedBaseRange base;
     private final BigInteger start;
     private final BigInteger end;
 
     private final long startedAt;
     private final long finishedAt;
+    private final long repairTime;
+
+    NormalizedRange(NormalizedBaseRange base, BigInteger start, BigInteger end, long startedAt, long finishedAt, long repairTime)
+    {
+        this.base = base;
+        this.start = start;
+        this.end = end;
+        this.startedAt = startedAt;
+        this.finishedAt = finishedAt;
+        this.repairTime = repairTime;
+    }
 
     NormalizedRange(NormalizedBaseRange base, BigInteger start, BigInteger end, long startedAt, long finishedAt)
     {
@@ -42,6 +54,12 @@ public class NormalizedRange implements Comparable<NormalizedRange>
         this.end = end;
         this.startedAt = startedAt;
         this.finishedAt = finishedAt;
+        long repairTime = UNKNOWN_REPAIR_TIME;
+        if (finishedAt > 0)
+        {
+            repairTime = finishedAt - startedAt;
+        }
+        this.repairTime = repairTime;
     }
 
     /**
@@ -84,6 +102,11 @@ public class NormalizedRange implements Comparable<NormalizedRange>
         return finishedAt;
     }
 
+    public long getRepairTime()
+    {
+        return repairTime;
+    }
+
     /**
      * Create a new normalized range based on this sub range with the provided start
      * and the current sub range end.
@@ -98,7 +121,7 @@ public class NormalizedRange implements Comparable<NormalizedRange>
             throw new IllegalArgumentException("Token " + newStart + " not in range " + base);
         }
 
-        return new NormalizedRange(base, newStart, end, startedAt, finishedAt);
+        return new NormalizedRange(base, newStart, end, startedAt, finishedAt, 0);
     }
 
     /**
@@ -115,7 +138,7 @@ public class NormalizedRange implements Comparable<NormalizedRange>
             throw new IllegalArgumentException("Token " + newEnd + " not in range " + base);
         }
 
-        return new NormalizedRange(base, start, newEnd, startedAt, finishedAt);
+        return new NormalizedRange(base, start, newEnd, startedAt, finishedAt, 0);
     }
 
     /**
@@ -139,7 +162,7 @@ public class NormalizedRange implements Comparable<NormalizedRange>
             throw new IllegalArgumentException("Cannot create range between " + this + " -> " + other);
         }
 
-        return new NormalizedRange(base, end, other.start, startedAt, finishedAt);
+        return new NormalizedRange(base, end, other.start, startedAt, finishedAt, 0);
     }
 
     /**
@@ -161,7 +184,7 @@ public class NormalizedRange implements Comparable<NormalizedRange>
 
         long startedAt = Math.max(this.startedAt, other.startedAt);
         long finishedAt = Math.min(this.finishedAt, other.finishedAt);
-        return new NormalizedRange(base, other.start, end, startedAt, finishedAt);
+        return new NormalizedRange(base, other.start, end, startedAt, finishedAt, 0);
     }
 
     /**
@@ -184,7 +207,7 @@ public class NormalizedRange implements Comparable<NormalizedRange>
 
         long startedAt = Math.min(this.startedAt, other.startedAt);
         long finishedAt = Math.max(this.finishedAt, other.finishedAt);
-        return new NormalizedRange(base, start, other.end, startedAt, finishedAt);
+        return new NormalizedRange(base, start, other.end, startedAt, finishedAt, repairTime + other.repairTime);
     }
 
     /**
@@ -230,6 +253,7 @@ public class NormalizedRange implements Comparable<NormalizedRange>
         NormalizedRange that = (NormalizedRange) o;
         return startedAt == that.startedAt &&
                 finishedAt == that.finishedAt &&
+                repairTime == that.repairTime &&
                 base.equals(that.base) &&
                 start.equals(that.start) &&
                 end.equals(that.end);
@@ -238,13 +262,13 @@ public class NormalizedRange implements Comparable<NormalizedRange>
     @Override
     public int hashCode()
     {
-        return Objects.hash(base, start, end, startedAt, finishedAt);
+        return Objects.hash(base, start, end, startedAt, finishedAt, repairTime);
     }
 
     @Override
     public String toString()
     {
-        return String.format("(%d, %d], %d-%d", start, end, startedAt, finishedAt);
+        return String.format("(%d, %d], %d-%d, repairtime: %d", start, end, startedAt, finishedAt, repairTime);
     }
 
 }
