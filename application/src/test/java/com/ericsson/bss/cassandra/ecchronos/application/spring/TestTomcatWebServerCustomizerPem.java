@@ -22,9 +22,10 @@ import org.springframework.test.context.junit4.SpringRunner;
 @RunWith (SpringRunner.class)
 @SpringBootTest (webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
-                "server.ssl.certificate=./server/cert.crt",
-                "server.ssl.certificate-key=./server/key.pem",
-                "server.ssl.certificate-authorities=./server/ca.crt"
+                "server.ssl.certificate=src/test/resources/server/cert.crt",
+                "server.ssl.certificate-private-key=src/test/resources/server/key.pem",
+                "server.ssl.trust-certificate=src/test/resources/server/ca.crt",
+                "server.ssl.key-store-password=test"
         })
 @ContextConfiguration(initializers = TestTomcatWebServerCustomizer.PropertyOverrideContextInitializer.class)
 public class TestTomcatWebServerCustomizerPem extends TestTomcatWebServerCustomizer {}

@@ -51,7 +51,10 @@ springdoc:
 #    key-password: <key password>
 # SSL configuration using certificates in PEM format
 #    certificate: <path to certificate>
-#    certificate-key: <path to certificate private key>
-#    certificate-authorities: <path to certificate bundle>
+#    certificate-private-key: <path to certificate private key>
+#    key-store-password: <key password>
+# Optional configuration for certificates in PEM format
+#    trust-certificate: <path to certificate>
+#    trust-certificate-private-key: <path to certificate key>
 # Rate at which certificates are reloaded automatically
 #    refresh-rate-in-ms: 60000
