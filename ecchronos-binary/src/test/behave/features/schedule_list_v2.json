@@ -27,6 +27,33 @@
       "nextRepairInMs": {
         "type": "integer",
         "description": "When the table is scheduled for the next repair in millis since epoch"
+      },
+      "config": {
+        "type": "object",
+        "properties": {
+          "intervalInMs": {
+            "type": "integer"
+          },
+          "unwindRatio": {
+            "type": "number"
+          },
+          "warningTimeInMs": {
+            "type": "integer"
+          },
+          "errorTimeInMs": {
+            "type": "integer"
+          },
+          "parallelism": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "intervalInMs",
+          "unwindRatio",
+          "warningTimeInMs",
+          "errorTimeInMs",
+          "parallelism"
+        ]
       }
     },
     "required": [
@@ -35,7 +62,8 @@
       "status",
       "repairedRatio",
       "lastRepairedAtInMs",
-      "nextRepairInMs"
+      "nextRepairInMs",
+      "config"
     ]
   }
 }

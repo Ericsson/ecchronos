@@ -6,7 +6,6 @@ Feature: API for repairs
     When I send a POST request
     Then the response is successful
     And the response matches the json repair_list_v2
-    And the id from response is extracted for test.table1
 
   Scenario: Get repair status for all repairs
     Given I have a json schema in repair_list_v2.json
