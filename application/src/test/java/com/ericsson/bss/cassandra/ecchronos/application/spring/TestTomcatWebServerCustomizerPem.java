@@ -24,8 +24,7 @@ import org.springframework.test.context.junit4.SpringRunner;
         properties = {
                 "server.ssl.certificate=src/test/resources/server/cert.crt",
                 "server.ssl.certificate-private-key=src/test/resources/server/key.pem",
-                "server.ssl.trust-certificate=src/test/resources/server/ca.crt",
-                "server.ssl.key-store-password=test"
+                "server.ssl.trust-certificate=src/test/resources/server/ca.crt"
         })
 @ContextConfiguration(initializers = TestTomcatWebServerCustomizer.PropertyOverrideContextInitializer.class)
 public class TestTomcatWebServerCustomizerPem extends TestTomcatWebServerCustomizer {}

@@ -21,8 +21,8 @@ cql:
   tls:
     enabled: true
     certificate: /path/to/cql/certificate
-    certificate_key: /path/to/cql/certificate_key
-    certificate_authorities: /path/to/cql/certificate_authorities
+    certificate_private_key: /path/to/cql/certificate_key
+    trust_certificate: /path/to/cql/certificate_authorities
     protocol: TLSv1.2
     cipher_suites: VALID_CIPHER_SUITE,VALID_CIPHER_SUITE2
     require_endpoint_verification: true

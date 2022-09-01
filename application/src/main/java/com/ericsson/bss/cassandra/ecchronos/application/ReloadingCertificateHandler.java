@@ -155,15 +155,15 @@ public class ReloadingCertificateHandler implements CertificateHandler
         SslContextBuilder builder = SslContextBuilder.forClient();
 
         if (tlsConfig.getCertificate().isPresent() &&
-                tlsConfig.getCertificateKey().isPresent() &&
-                tlsConfig.getCertificateAuthorities().isPresent())
+                tlsConfig.getCertificatePrivateKey().isPresent() &&
+                tlsConfig.getTrustCertificate().isPresent())
         {
             File certificateFile = new File(tlsConfig.getCertificate().get());
-            File certificateKeyFile = new File(tlsConfig.getCertificateKey().get());
-            File certificateAuthorityFile = new File(tlsConfig.getCertificateAuthorities().get());
+            File certificatePrivateKeyFile = new File(tlsConfig.getCertificatePrivateKey().get());
+            File trustCertificateFile = new File(tlsConfig.getTrustCertificate().get());
 
-            builder.keyManager(certificateFile, certificateKeyFile);
-            builder.trustManager(certificateAuthorityFile);
+            builder.keyManager(certificateFile, certificatePrivateKeyFile);
+            builder.trustManager(trustCertificateFile);
         }
         else
         {

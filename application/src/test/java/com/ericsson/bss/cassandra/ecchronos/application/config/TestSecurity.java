@@ -43,8 +43,8 @@ public class TestSecurity
         cqlTlsConfig.setTruststore("/path/to/truststore");
         cqlTlsConfig.setTruststore_password("ecchronos");
         cqlTlsConfig.setCertificate(null);
-        cqlTlsConfig.setCertificate_key(null);
-        cqlTlsConfig.setCertificate_authorities(null);
+        cqlTlsConfig.setCertificate_private_key(null);
+        cqlTlsConfig.setTrust_certificate(null);
         cqlTlsConfig.setProtocol("TLSv1.2");
         cqlTlsConfig.setAlgorithm(null);
         cqlTlsConfig.setStore_type("JKS");
@@ -121,8 +121,8 @@ public class TestSecurity
         TLSConfig cqlTlsConfig = new TLSConfig();
         cqlTlsConfig.setEnabled(true);
         cqlTlsConfig.setCertificate("/path/to/cql/certificate");
-        cqlTlsConfig.setCertificate_key("/path/to/cql/certificate_key");
-        cqlTlsConfig.setCertificate_authorities("/path/to/cql/certificate_authorities");
+        cqlTlsConfig.setCertificate_private_key("/path/to/cql/certificate_key");
+        cqlTlsConfig.setTrust_certificate("/path/to/cql/certificate_authorities");
         cqlTlsConfig.setProtocol("TLSv1.2");
         cqlTlsConfig.setCipher_suites("VALID_CIPHER_SUITE,VALID_CIPHER_SUITE2");
         cqlTlsConfig.setRequire_endpoint_verification(true);

@@ -25,8 +25,8 @@ cql:
     truststore: /path/to/truststore
     truststore_password: ecchronos
     certificate:
-    certificate_key:
-    certificate_authorities:
+    certificate_private_key:
+    trust_certificate:
     protocol: TLSv1.2
     algorithm:
     store_type: JKS
