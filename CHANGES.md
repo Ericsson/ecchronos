@@ -2,6 +2,7 @@
 
 ## Version 4.0.0
 
+* Example size targets are incorrect in schedule.yml - Issue #337
 * Add repair-info - Issue #327
 * Add config to skip schedules of tables with TWCS - Issue #151
 * Add metric for failed and succeeded repair tasks - Issue #295
