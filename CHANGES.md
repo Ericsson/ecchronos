@@ -2,6 +2,7 @@
 
 ## Version 4.0.0
 
+* Add cluster-wide support for repair-info - Issue #156
 * Example size targets are incorrect in schedule.yml - Issue #337
 * Add repair-info - Issue #327
 * Add config to skip schedules of tables with TWCS - Issue #151
