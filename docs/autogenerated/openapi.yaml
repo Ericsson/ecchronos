@@ -175,6 +175,11 @@ paths:
         required: false
         schema:
           type: string
+      - name: isLocal
+        in: query
+        required: false
+        schema:
+          type: boolean
       responses:
         "200":
           description: OK

@@ -30,6 +30,16 @@ Feature: ecctool repair-info
     And the output should contain a repair-info row for test2.table2
     And the output should not contain more rows
 
+  Scenario: Get local repair-info for all tables with since
+    Given we have access to ecctool
+    When we get local repair-info with since 0
+    Then the output should contain a valid repair-info header
+    And the output should contain a repair-info row for test.table1
+    And the output should contain a repair-info row for test.table2
+    And the output should contain a repair-info row for test2.table1
+    And the output should contain a repair-info row for test2.table2
+    And the output should not contain more rows
+
   Scenario: Get repair-info for all tables with since ISO8601 date
     Given we have access to ecctool
     When we get repair-info with since 2022-08-25T12:00:00.0+02:00

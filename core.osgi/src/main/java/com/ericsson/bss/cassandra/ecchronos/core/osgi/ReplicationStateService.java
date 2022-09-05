@@ -61,6 +61,13 @@ public class ReplicationStateService implements ReplicationState
     }
 
     @Override
+    public ImmutableSet<DriverNode> getNodesClusterWide(TableReference tableReference,
+            LongTokenRange tokenRange)
+    {
+        return delegateReplicationState.getNodesClusterWide(tableReference, tokenRange);
+    }
+
+    @Override
     public Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRangeToReplicas(TableReference tableReference)
     {
         return delegateReplicationState.getTokenRangeToReplicas(tableReference);

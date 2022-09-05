@@ -34,7 +34,6 @@ except ImportError:
     sys.path.append(LIB_DIR)
     from ecchronoslib import rest, table_printer
 
-
 DEFAULT_PID_FILE = "ecc.pid"
 SPRINGBOOT_MAIN_CLASS = "com.ericsson.bss.cassandra.ecchronos.application.spring.SpringBooter"
 
@@ -126,6 +125,9 @@ def add_repair_info_subcommand(sub_parsers):
                                     "'since+duration'. If only '--duration' is provided, " +
                                     "the time-window will be from 'now-duration' to 'now'.",
                                     default=None)
+    parser_repair_info.add_argument("--local", action='store_true',
+                                    help='Show repair info for local node or cluster wide, default is cluster wide',
+                                    default=False)
     parser_repair_info.add_argument("-u", "--url", type=str,
                                     help="The host to connect to with the format (http://<host>:port)",
                                     default=None)
@@ -159,7 +161,7 @@ def add_status_subcommand(sub_parsers):
 
 
 def schedules(arguments):
-    #pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches
     request = rest.V2RepairSchedulerRequest(base_url=arguments.url)
     full = False
     if arguments.id:
@@ -245,7 +247,8 @@ def repair_info(arguments):
             sys.exit(1)
         duration = arguments.duration.upper()
     result = request.get_repair_info(keyspace=arguments.keyspace, table=arguments.table,
-                                     since=arguments.since, duration=duration)
+                                     since=arguments.since, duration=duration,
+                                     local=arguments.local)
     if result.is_successful():
         table_printer.print_repair_info(result.data)
     else:

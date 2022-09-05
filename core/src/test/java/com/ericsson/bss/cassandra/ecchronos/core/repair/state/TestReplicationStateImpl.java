@@ -270,6 +270,63 @@ public class TestReplicationStateImpl
     }
 
     @Test
+    public void testGetNodesClusterWideForSubRange() throws Exception
+    {
+        LongTokenRange subRange = new LongTokenRange(2, 3);
+        TableReference tableReference = tableReference("ks", "tb");
+
+        TokenRange tokenRange = TokenUtil.getRange(1, 5);
+
+        doReturn(Sets.newHashSet(tokenRange)).when(mockTokenMap).getTokenRanges();
+        doReturn(Sets.newHashSet(mockReplica1, mockReplica2, mockReplica3)).when(mockTokenMap)
+                .getReplicas(eq("ks"), eq(tokenRange));
+
+        ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockSession, mockReplica1);
+
+        ImmutableSet<DriverNode> nodes = replicationState.getNodesClusterWide(tableReference, subRange);
+
+        assertThat(nodes).containsExactlyInAnyOrder(mockNode1, mockNode2, mockNode3);
+    }
+
+    @Test
+    public void testGetNodesClusterWideForNonExistingSubRange() throws Exception
+    {
+        LongTokenRange subRange = new LongTokenRange(6, 7);
+        TableReference tableReference = tableReference("ks", "tb");
+
+        TokenRange tokenRange = TokenUtil.getRange(1, 5);
+
+        doReturn(Sets.newHashSet(tokenRange)).when(mockTokenMap).getTokenRanges();
+        doReturn(Sets.newHashSet(mockReplica1, mockReplica2, mockReplica3)).when(mockTokenMap)
+                .getReplicas(eq("ks"), eq(tokenRange));
+
+        ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockSession, mockReplica1);
+
+        assertThat(replicationState.getNodesClusterWide(tableReference, subRange)).isNull();
+    }
+
+    @Test
+    public void testGetNodesClusterWideForIntersectingSubRange() throws Exception
+    {
+        LongTokenRange subRange = new LongTokenRange(4, 7);
+        TableReference tableReference = tableReference("ks", "tb");
+
+        TokenRange existingRange = TokenUtil.getRange(1, 5);
+        TokenRange existingRange2 = TokenUtil.getRange(5, 9);
+
+        doReturn(Sets.newHashSet(existingRange, existingRange2)).when(mockTokenMap)
+                .getTokenRanges();
+        doReturn(Sets.newHashSet(mockReplica1, mockReplica2, mockReplica3)).when(mockTokenMap)
+                .getReplicas(eq("ks"), eq(existingRange));
+        doReturn(Sets.newHashSet(mockReplica1, mockReplica2, mockReplica3)).when(mockTokenMap)
+                .getReplicas(eq("ks"), eq(existingRange2));
+
+        ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockSession, mockReplica1);
+
+        assertThat(replicationState.getNodesClusterWide(tableReference, subRange)).isNull();
+    }
+
+    @Test
     public void testGetTokenRanges() throws Exception
     {
         LongTokenRange range1 = new LongTokenRange(1, 2);

@@ -37,6 +37,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Implementation of the RepairHistoryProvider interface that retrieves the repair history from Cassandra.
@@ -111,6 +112,13 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
                         fromDate, toDate));
 
         return new RepairEntryIterator(resultSet.iterator(), predicate);
+    }
+
+    @Override
+    public Iterator<RepairEntry> iterate(UUID nodeId, TableReference tableReference, long to, long from,
+            Predicate<RepairEntry> predicate)
+    {
+        return iterate(tableReference, to, from, predicate);
     }
 
     private ResultSet execute(Statement statement)

@@ -107,8 +107,9 @@ public class RepairManagementRESTComponent implements RepairManagementREST
     }
 
     @Override
-    public ResponseEntity<RepairInfo> getRepairInfo(String keyspace, String table, Long since, Duration duration)
+    public ResponseEntity<RepairInfo> getRepairInfo(final String keyspace, final String table, final Long since,
+                                                    final Duration duration, final boolean isLocal)
     {
-        return myDelegateRESTImpl.getRepairInfo(keyspace, table, since, duration);
+        return myDelegateRESTImpl.getRepairInfo(keyspace, table, since, duration, isLocal);
     }
 }

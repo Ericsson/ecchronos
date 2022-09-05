@@ -608,19 +608,19 @@ public class TestRepairManagementRESTImpl
         long to = since + durationInMs;
         RepairStats repairStats1 = new RepairStats("keyspace1", "table1", 0.0, 0);
         when(myRepairStatsProvider.getRepairStats(myTableReferenceFactory.forTable("keyspace1", "table1"), since,
-                to)).thenReturn(repairStats1);
+                to, true)).thenReturn(repairStats1);
         RepairStats repairStats2 = new RepairStats("keyspace1", "table2", 0.0, 0);
         when(myRepairStatsProvider.getRepairStats(myTableReferenceFactory.forTable("keyspace1", "table2"), since,
-                to)).thenReturn(repairStats2);
+                to, true)).thenReturn(repairStats2);
         RepairStats repairStats3 = new RepairStats("keyspace1", "table3", 0.0, 0);
         when(myRepairStatsProvider.getRepairStats(myTableReferenceFactory.forTable("keyspace1", "table3"), since,
-                to)).thenReturn(repairStats3);
+                to, true)).thenReturn(repairStats3);
         RepairStats repairStats4 = new RepairStats("keyspace2", "table4", 0.0, 0);
         when(myRepairStatsProvider.getRepairStats(myTableReferenceFactory.forTable("keyspace2", "table4"), since,
-                to)).thenReturn(repairStats4);
+                to, true)).thenReturn(repairStats4);
         RepairStats repairStats5 = new RepairStats("keyspace3", "table5", 0.0, 0);
         when(myRepairStatsProvider.getRepairStats(myTableReferenceFactory.forTable("keyspace3", "table5"), since,
-                to)).thenReturn(repairStats5);
+                to, true)).thenReturn(repairStats5);
         when(myReplicatedTableProvider.accept("keyspace1")).thenReturn(true);
         when(myReplicatedTableProvider.accept("keyspace2")).thenReturn(true);
         when(myReplicatedTableProvider.accept("keyspace3")).thenReturn(true);
@@ -631,7 +631,7 @@ public class TestRepairManagementRESTImpl
         repairStats.add(repairStats4);
         repairStats.add(repairStats5);
         RepairInfo expectedResponse = new RepairInfo(since, to, repairStats);
-        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo(null, null, since, duration);
+        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo(null, null, since, duration, true);
 
         RepairInfo returnedRepairInfo = response.getBody();
         assertThat(returnedRepairInfo).isEqualTo(expectedResponse);
@@ -644,19 +644,19 @@ public class TestRepairManagementRESTImpl
         long since = 1245L;
         RepairStats repairStats1 = new RepairStats("keyspace1", "table1", 0.0, 0);
         when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace1", "table1")), eq(since),
-                any(long.class))).thenReturn(repairStats1);
+                any(long.class), eq(true))).thenReturn(repairStats1);
         RepairStats repairStats2 = new RepairStats("keyspace1", "table2", 0.0, 0);
         when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace1", "table2")), eq(since),
-                any(long.class))).thenReturn(repairStats2);
+                any(long.class), eq(true))).thenReturn(repairStats2);
         RepairStats repairStats3 = new RepairStats("keyspace1", "table3", 0.0, 0);
         when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace1", "table3")), eq(since),
-                any(long.class))).thenReturn(repairStats3);
+                any(long.class), eq(true))).thenReturn(repairStats3);
         RepairStats repairStats4 = new RepairStats("keyspace2", "table4", 0.0, 0);
         when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace2", "table4")), eq(since),
-                any(long.class))).thenReturn(repairStats4);
+                any(long.class), eq(true))).thenReturn(repairStats4);
         RepairStats repairStats5 = new RepairStats("keyspace3", "table5", 0.0, 0);
         when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace3", "table5")), eq(since),
-                any(long.class))).thenReturn(repairStats5);
+                any(long.class), eq(true))).thenReturn(repairStats5);
         when(myReplicatedTableProvider.accept("keyspace1")).thenReturn(true);
         when(myReplicatedTableProvider.accept("keyspace2")).thenReturn(true);
         when(myReplicatedTableProvider.accept("keyspace3")).thenReturn(true);
@@ -667,7 +667,7 @@ public class TestRepairManagementRESTImpl
         repairStats.add(repairStats4);
         repairStats.add(repairStats5);
         RepairInfo expectedResponse = new RepairInfo(since, 0L, repairStats);
-        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo(null, null, since, null);
+        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo(null, null, since, null, true);
 
         RepairInfo returnedRepairInfo = response.getBody();
         assertThat(returnedRepairInfo.repairStats).containsExactlyInAnyOrderElementsOf(expectedResponse.repairStats);
@@ -683,19 +683,19 @@ public class TestRepairManagementRESTImpl
         Duration duration = Duration.ofMillis(durationInMs);
         RepairStats repairStats1 = new RepairStats("keyspace1", "table1", 0.0, 0);
         when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace1", "table1")), any(long.class),
-                any(long.class))).thenReturn(repairStats1);
+                any(long.class), eq(true))).thenReturn(repairStats1);
         RepairStats repairStats2 = new RepairStats("keyspace1", "table2", 0.0, 0);
         when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace1", "table2")), any(long.class),
-                any(long.class))).thenReturn(repairStats2);
+                any(long.class), eq(true))).thenReturn(repairStats2);
         RepairStats repairStats3 = new RepairStats("keyspace1", "table3", 0.0, 0);
         when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace1", "table3")), any(long.class),
-                any(long.class))).thenReturn(repairStats3);
+                any(long.class), eq(true))).thenReturn(repairStats3);
         RepairStats repairStats4 = new RepairStats("keyspace2", "table4", 0.0, 0);
         when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace2", "table4")), any(long.class),
-                any(long.class))).thenReturn(repairStats4);
+                any(long.class), eq(true))).thenReturn(repairStats4);
         RepairStats repairStats5 = new RepairStats("keyspace3", "table5", 0.0, 0);
         when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace3", "table5")), any(long.class),
-                any(long.class))).thenReturn(repairStats5);
+                any(long.class), eq(true))).thenReturn(repairStats5);
         when(myReplicatedTableProvider.accept("keyspace1")).thenReturn(true);
         when(myReplicatedTableProvider.accept("keyspace2")).thenReturn(true);
         when(myReplicatedTableProvider.accept("keyspace3")).thenReturn(true);
@@ -705,7 +705,7 @@ public class TestRepairManagementRESTImpl
         repairStats.add(repairStats3);
         repairStats.add(repairStats4);
         repairStats.add(repairStats5);
-        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo(null, null, null, duration);
+        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo(null, null, null, duration, true);
 
         RepairInfo returnedRepairInfo = response.getBody();
         assertThat(returnedRepairInfo.repairStats).containsExactlyInAnyOrderElementsOf(repairStats);
@@ -723,20 +723,20 @@ public class TestRepairManagementRESTImpl
         long to = since + durationInMs;
         RepairStats repairStats1 = new RepairStats("keyspace1", "table1", 0.0, 0);
         when(myRepairStatsProvider.getRepairStats(myTableReferenceFactory.forTable("keyspace1", "table1"), since,
-                to)).thenReturn(repairStats1);
+                to, true)).thenReturn(repairStats1);
         RepairStats repairStats2 = new RepairStats("keyspace1", "table2", 0.0, 0);
         when(myRepairStatsProvider.getRepairStats(myTableReferenceFactory.forTable("keyspace1", "table2"), since,
-                to)).thenReturn(repairStats2);
+                to, true)).thenReturn(repairStats2);
         RepairStats repairStats3 = new RepairStats("keyspace1", "table3", 0.0, 0);
         when(myRepairStatsProvider.getRepairStats(myTableReferenceFactory.forTable("keyspace1", "table3"), since,
-                to)).thenReturn(repairStats3);
+                to, true)).thenReturn(repairStats3);
         when(myReplicatedTableProvider.accept("keyspace1")).thenReturn(true);
         List<RepairStats> repairStats = new ArrayList<>();
         repairStats.add(repairStats1);
         repairStats.add(repairStats2);
         repairStats.add(repairStats3);
         RepairInfo expectedResponse = new RepairInfo(since, to, repairStats);
-        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo("keyspace1", null, since, duration);
+        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo("keyspace1", null, since, duration, true);
 
         RepairInfo returnedRepairInfo = response.getBody();
         assertThat(returnedRepairInfo).isEqualTo(expectedResponse);
@@ -752,12 +752,12 @@ public class TestRepairManagementRESTImpl
         long to = since + durationInMs;
         RepairStats repairStats1 = new RepairStats("keyspace1", "table1", 0.0, 0);
         when(myRepairStatsProvider.getRepairStats(myTableReferenceFactory.forTable("keyspace1", "table1"), since,
-                to)).thenReturn(repairStats1);
+                to, true)).thenReturn(repairStats1);
         when(myReplicatedTableProvider.accept("keyspace1")).thenReturn(true);
         List<RepairStats> repairStats = new ArrayList<>();
         repairStats.add(repairStats1);
         RepairInfo expectedResponse = new RepairInfo(since, to, repairStats);
-        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo("keyspace1", "table1", since, duration);
+        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo("keyspace1", "table1", since, duration, true);
 
         RepairInfo returnedRepairInfo = response.getBody();
         assertThat(returnedRepairInfo).isEqualTo(expectedResponse);
@@ -773,7 +773,7 @@ public class TestRepairManagementRESTImpl
         ResponseEntity<RepairInfo> response = null;
         try
         {
-            response = repairManagementREST.getRepairInfo(null, "table1", since, duration);
+            response = repairManagementREST.getRepairInfo(null, "table1", since, duration, true);
         }
         catch(ResponseStatusException e)
         {
@@ -788,7 +788,7 @@ public class TestRepairManagementRESTImpl
         ResponseEntity<RepairInfo> response = null;
         try
         {
-            response = repairManagementREST.getRepairInfo("keyspace1", "table1", null, null);
+            response = repairManagementREST.getRepairInfo("keyspace1", "table1", null, null, true);
         }
         catch(ResponseStatusException e)
         {
@@ -803,7 +803,7 @@ public class TestRepairManagementRESTImpl
         ResponseEntity<RepairInfo> response = null;
         try
         {
-            response = repairManagementREST.getRepairInfo("keyspace1", "table1", 0L, Duration.ofMillis(-1000));
+            response = repairManagementREST.getRepairInfo("keyspace1", "table1", 0L, Duration.ofMillis(-1000), true);
         }
         catch(ResponseStatusException e)
         {

@@ -64,7 +64,20 @@ public class ReplicationStateImpl implements ReplicationState
         String keyspace = tableReference.getKeyspace();
 
         ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> replication = maybeRenew(keyspace);
+        return getNodes(replication, tokenRange);
+    }
 
+    @Override
+    public ImmutableSet<DriverNode> getNodesClusterWide(TableReference tableReference, LongTokenRange tokenRange)
+    {
+        String keyspace = tableReference.getKeyspace();
+
+        ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> replication = maybeRenewClusterWide(keyspace);
+        return getNodes(replication, tokenRange);
+    }
+
+    private ImmutableSet<DriverNode> getNodes(ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> replication, LongTokenRange tokenRange)
+    {
         ImmutableSet<DriverNode> nodes = replication.get(tokenRange);
 
         if (nodes == null)

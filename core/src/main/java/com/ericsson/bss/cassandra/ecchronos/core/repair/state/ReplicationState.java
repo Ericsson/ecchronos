@@ -39,6 +39,16 @@ public interface ReplicationState
     ImmutableSet<DriverNode> getNodes(TableReference tableReference, LongTokenRange tokenRange);
 
     /**
+     * Get the nodes that are responsible for the provided token range, check clusterwide.
+     * The provided token range can be a sub range of an existing one.
+     *
+     * @param tableReference The table used to calculate the proper replication.
+     * @param tokenRange The token range to get nodes for.
+     * @return The responsible nodes or null if either the token range does not exist or is intersecting two ranges.
+     */
+    ImmutableSet<DriverNode> getNodesClusterWide(TableReference tableReference, LongTokenRange tokenRange);
+
+    /**
      * Get a map of the current replication state for the provided table.
      *
      * @param tableReference

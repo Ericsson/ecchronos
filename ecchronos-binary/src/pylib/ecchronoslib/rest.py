@@ -186,19 +186,25 @@ class V2RepairSchedulerRequest(RestRequest):
             result = result.transform_with_data(new_data=[Repair(x) for x in result.data])
         return result
 
-    def get_repair_info(self, keyspace=None, table=None, since=None, duration=None):
+    def get_repair_info(self, keyspace=None, table=None, since=None,  # pylint: disable=too-many-arguments
+                        duration=None, local=False):
         request_url = V2RepairSchedulerRequest.repair_info_url
         if keyspace:
             request_url += "?keyspace=" + quote(keyspace)
             if table:
                 request_url += "&table=" + quote(table)
-        if since:
+        if local:
             if keyspace:
+                request_url += "&isLocal=true"
+            else:
+                request_url += "?isLocal=true"
+        if since:
+            if keyspace or local:
                 request_url += "&since=" + quote(since)
             else:
                 request_url += "?since=" + quote(since)
         if duration:
-            if keyspace or since:
+            if keyspace or since or local:
                 request_url += "&duration=" + quote(duration)
             else:
                 request_url += "?duration=" + quote(duration)

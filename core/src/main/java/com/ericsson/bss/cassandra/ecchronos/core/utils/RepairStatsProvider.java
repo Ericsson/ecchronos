@@ -19,5 +19,5 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.types.RepairStats;
 
 public interface RepairStatsProvider
 {
-    RepairStats getRepairStats(TableReference tableReference, long since, long to);
+    RepairStats getRepairStats(TableReference tableReference, long since, long to, boolean isLocal);
 }
