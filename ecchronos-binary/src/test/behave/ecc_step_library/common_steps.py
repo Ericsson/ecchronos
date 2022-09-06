@@ -127,6 +127,17 @@ def step_verify_schema(context, schema_name):
     validate(instance=context.json, schema=schema)
 
 
+@then('the id from response is extracted for {keyspace}.{table}')
+def step_extract_id(context, keyspace, table):
+    assert context.response is not None
+    context.json = context.response.json()
+    for obj in context.json:
+        if obj["keyspace"] == keyspace and obj["table"] == table:
+            context.id = obj["id"]
+            break
+    assert context.id is not None
+
+
 @then('the job list contains only keyspace {keyspace}')
 def step_verify_job_list(context, keyspace):
     for obj in context.json:
