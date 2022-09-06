@@ -38,7 +38,8 @@ public class DefaultJmxConnectionProvider implements JmxConnectionProvider
 
     private final LocalJmxConnectionProvider myLocalJmxConnectionProvider;
 
-    public DefaultJmxConnectionProvider(Config config, Supplier<Security.JmxSecurity> jmxSecurity) throws IOException
+    public DefaultJmxConnectionProvider(final Config config,
+                                        final Supplier<Security.JmxSecurity> jmxSecurity) throws IOException
     {
         Config.Connection<JmxConnectionProvider> jmxConfig = config.getConnectionConfig().getJmx();
         String host = jmxConfig.getHost();
@@ -55,18 +56,18 @@ public class DefaultJmxConnectionProvider implements JmxConnectionProvider
     }
 
     @Override
-    public JMXConnector getJmxConnector() throws IOException
+    public final JMXConnector getJmxConnector() throws IOException
     {
         return myLocalJmxConnectionProvider.getJmxConnector();
     }
 
     @Override
-    public void close() throws IOException
+    public final void close() throws IOException
     {
         myLocalJmxConnectionProvider.close();
     }
 
-    private Map<String, String> convertTls(Supplier<Security.JmxSecurity> jmxSecurity)
+    private Map<String, String> convertTls(final Supplier<Security.JmxSecurity> jmxSecurity)
     {
         TLSConfig tlsConfig = jmxSecurity.get().getTls();
         if (!tlsConfig.isEnabled())
@@ -76,26 +77,28 @@ public class DefaultJmxConnectionProvider implements JmxConnectionProvider
 
         Map<String, String> config = new HashMap<>();
         config.put("com.sun.management.jmxremote.ssl.enabled.protocols", tlsConfig.getProtocol());
-        String ciphers = tlsConfig.getCipherSuites()
+        String ciphers = tlsConfig.getCipher_suites()
                 .map(Joiner.on(',')::join)
                 .orElse("");
         config.put("com.sun.management.jmxremote.ssl.enabled.cipher.suites", ciphers);
 
         config.put("javax.net.ssl.keyStore", tlsConfig.getKeystore());
-        config.put("javax.net.ssl.keyStorePassword", tlsConfig.getKeystorePassword());
+        config.put("javax.net.ssl.keyStorePassword", tlsConfig.getKeystore_password());
         config.put("javax.net.ssl.trustStore", tlsConfig.getTruststore());
-        config.put("javax.net.ssl.trustStorePassword", tlsConfig.getTruststorePassword());
+        config.put("javax.net.ssl.trustStorePassword", tlsConfig.getTruststore_password());
 
         return config;
     }
 
-    private String[] convertCredentials(Supplier<Security.JmxSecurity> jmxSecurity)
+    private String[] convertCredentials(final Supplier<Security.JmxSecurity> jmxSecurity)
     {
         Credentials credentials = jmxSecurity.get().getCredentials();
         if (!credentials.isEnabled())
         {
             return null;
         }
-        return new String[] { credentials.getUsername(), credentials.getPassword() };
+        return new String[] {
+                credentials.getUsername(), credentials.getPassword()
+        };
     }
 }

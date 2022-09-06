@@ -67,9 +67,11 @@ public class ECChronosInternals implements Closeable
 
     private final CASLockFactory myLockFactory;
 
-    public ECChronosInternals(Config configuration, NativeConnectionProvider nativeConnectionProvider,
-            JmxConnectionProvider jmxConnectionProvider, StatementDecorator statementDecorator,
-            MetricRegistry metricRegistry)
+    public ECChronosInternals(final Config configuration,
+                              final NativeConnectionProvider nativeConnectionProvider,
+                              final JmxConnectionProvider jmxConnectionProvider,
+                              final StatementDecorator statementDecorator,
+                              final MetricRegistry metricRegistry)
     {
         myJmxProxyFactory = JmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(jmxConnectionProvider)
@@ -131,22 +133,22 @@ public class ECChronosInternals implements Closeable
                 .build();
     }
 
-    public TableReferenceFactory getTableReferenceFactory()
+    public final TableReferenceFactory getTableReferenceFactory()
     {
         return myTableReferenceFactory;
     }
 
-    public HostStates getHostStates()
+    public final HostStates getHostStates()
     {
         return myHostStatesImpl;
     }
 
-    public ReplicatedTableProvider getReplicatedTableProvider()
+    public final ReplicatedTableProvider getReplicatedTableProvider()
     {
         return myReplicatedTableProvider;
     }
 
-    public TableRepairMetrics getTableRepairMetrics()
+    public final TableRepairMetrics getTableRepairMetrics()
     {
         if (myTableRepairMetricsImpl == null)
         {
@@ -156,17 +158,17 @@ public class ECChronosInternals implements Closeable
         return myTableRepairMetricsImpl;
     }
 
-    public ScheduleManager getScheduleManager()
+    public final ScheduleManager getScheduleManager()
     {
         return myScheduleManagerImpl;
     }
 
-    public JmxProxyFactory getJmxProxyFactory()
+    public final JmxProxyFactory getJmxProxyFactory()
     {
         return myJmxProxyFactory;
     }
 
-    public TableStorageStates getTableStorageStates()
+    public final TableStorageStates getTableStorageStates()
     {
         if (myTableStorageStatesImpl == null)
         {
@@ -175,18 +177,18 @@ public class ECChronosInternals implements Closeable
         return myTableStorageStatesImpl;
     }
 
-    public boolean addRunPolicy(RunPolicy runPolicy)
+    public final boolean addRunPolicy(final RunPolicy runPolicy)
     {
         return myScheduleManagerImpl.addRunPolicy(runPolicy);
     }
 
-    public boolean removeRunPolicy(RunPolicy runPolicy)
+    public final boolean removeRunPolicy(final RunPolicy runPolicy)
     {
         return myScheduleManagerImpl.removeRunPolicy(runPolicy);
     }
 
     @Override
-    public void close()
+    public final void close()
     {
         myScheduleManagerImpl.close();
 
@@ -212,26 +214,31 @@ public class ECChronosInternals implements Closeable
     {
 
         @Override
-        public void repairState(TableReference tableReference, int repairedRanges, int notRepairedRanges)
+        public void repairState(final TableReference tableReference,
+                                final int repairedRanges,
+                                final int notRepairedRanges)
         {
             LOG.trace("Updated repair state of {}, {}/{} repaired ranges", tableReference, repairedRanges,
                     notRepairedRanges);
         }
 
         @Override
-        public void lastRepairedAt(TableReference tableReference, long lastRepairedAt)
+        public void lastRepairedAt(final TableReference tableReference, final long lastRepairedAt)
         {
             LOG.debug("Table {} last repaired at {}", tableReference, lastRepairedAt);
         }
 
         @Override
-        public void remainingRepairTime(TableReference tableReference, long remainingRepairTime)
+        public void remainingRepairTime(final TableReference tableReference, final long remainingRepairTime)
         {
             LOG.debug("Table {} remaining repair time {}", tableReference, remainingRepairTime);
         }
 
         @Override
-        public void repairTiming(TableReference tableReference, long timeTaken, TimeUnit timeUnit, boolean successful)
+        public void repairTiming(final TableReference tableReference,
+                                 final long timeTaken,
+                                 final TimeUnit timeUnit,
+                                 final boolean successful)
         {
             if (LOG.isTraceEnabled())
             {
@@ -241,13 +248,13 @@ public class ECChronosInternals implements Closeable
         }
 
         @Override
-        public void failedRepairTask(TableReference tableReference)
+        public void failedRepairTask(final TableReference tableReference)
         {
             LOG.debug("Table {} failed repair task", tableReference);
         }
 
         @Override
-        public void succeededRepairTask(TableReference tableReference)
+        public void succeededRepairTask(final TableReference tableReference)
         {
             LOG.debug("Table {} succeeded repair task", tableReference);
         }
@@ -256,7 +263,7 @@ public class ECChronosInternals implements Closeable
     private static class NoOpTableStorageState implements TableStorageStates
     {
         @Override
-        public long getDataSize(TableReference tableReference)
+        public long getDataSize(final TableReference tableReference)
         {
             return -1;
         }

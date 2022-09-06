@@ -45,13 +45,13 @@ public class ReloadingCertificateHandler implements CertificateHandler
     private final AtomicReference<Context> currentContext = new AtomicReference<>();
     private final Supplier<TLSConfig> tlsConfigSupplier;
 
-    public ReloadingCertificateHandler(Supplier<TLSConfig> tlsConfigSupplier)
+    public ReloadingCertificateHandler(final Supplier<TLSConfig> aTLSConfigSupplier)
     {
-        this.tlsConfigSupplier = tlsConfigSupplier;
+        this.tlsConfigSupplier = aTLSConfigSupplier;
     }
 
     @Override
-    public SSLEngine newSslEngine(EndPoint remoteEndpoint)
+    public final SSLEngine newSslEngine(final EndPoint remoteEndpoint)
     {
         Context context = getContext();
         TLSConfig tlsConfig = context.getTlsConfig();
@@ -75,11 +75,11 @@ public class ReloadingCertificateHandler implements CertificateHandler
             sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
             sslEngine.setSSLParameters(sslParameters);
         }
-        tlsConfig.getCipherSuites().ifPresent(sslEngine::setEnabledCipherSuites);
+        tlsConfig.getCipher_suites().ifPresent(sslEngine::setEnabledCipherSuites);
         return sslEngine;
     }
 
-    protected Context getContext()
+    protected final Context getContext()
     {
         TLSConfig tlsConfig = tlsConfigSupplier.get();
         Context context = currentContext.get();
@@ -120,10 +120,10 @@ public class ReloadingCertificateHandler implements CertificateHandler
         private final TLSConfig tlsConfig;
         private final SSLContext sslContext;
 
-        Context(TLSConfig tlsConfig) throws NoSuchAlgorithmException, IOException, UnrecoverableKeyException,
+        Context(final TLSConfig aTLSConfig) throws NoSuchAlgorithmException, IOException, UnrecoverableKeyException,
                 CertificateException, KeyStoreException, KeyManagementException
         {
-            this.tlsConfig = tlsConfig;
+            this.tlsConfig = aTLSConfig;
             this.sslContext = createSSLContext(this.tlsConfig);
         }
 
@@ -132,9 +132,9 @@ public class ReloadingCertificateHandler implements CertificateHandler
             return tlsConfig;
         }
 
-        boolean sameConfig(TLSConfig tlsConfig)
+        boolean sameConfig(final TLSConfig aTLSConfig)
         {
-            return this.tlsConfig.equals(tlsConfig);
+            return this.tlsConfig.equals(aTLSConfig);
         }
 
         SSLContext getSSLContext()
@@ -143,8 +143,12 @@ public class ReloadingCertificateHandler implements CertificateHandler
         }
     }
 
-    protected static SSLContext createSSLContext(TLSConfig tlsConfig) throws IOException, NoSuchAlgorithmException,
-            KeyStoreException, CertificateException, UnrecoverableKeyException, KeyManagementException
+    protected static SSLContext createSSLContext(final TLSConfig tlsConfig) throws IOException,
+            NoSuchAlgorithmException,
+            KeyStoreException,
+            CertificateException,
+            UnrecoverableKeyException,
+            KeyManagementException
     {
         SSLContext sslContext = SSLContext.getInstance(tlsConfig.getProtocol());
         KeyManagerFactory keyManagerFactory = getKeyManagerFactory(tlsConfig);
@@ -155,32 +159,32 @@ public class ReloadingCertificateHandler implements CertificateHandler
         return sslContext;
     }
 
-    protected static KeyManagerFactory getKeyManagerFactory(TLSConfig tlsConfig) throws IOException,
+    protected static KeyManagerFactory getKeyManagerFactory(final TLSConfig tlsConfig) throws IOException,
             NoSuchAlgorithmException, KeyStoreException, CertificateException, UnrecoverableKeyException
     {
         String algorithm = tlsConfig.getAlgorithm().orElse(KeyManagerFactory.getDefaultAlgorithm());
-        char[] keystorePassword = tlsConfig.getKeystorePassword().toCharArray();
+        char[] keystorePassword = tlsConfig.getKeystore_password().toCharArray();
 
         try (InputStream keystoreFile = new FileInputStream(tlsConfig.getKeystore()))
         {
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(algorithm);
-            KeyStore keyStore = KeyStore.getInstance(tlsConfig.getStoreType());
+            KeyStore keyStore = KeyStore.getInstance(tlsConfig.getStore_type());
             keyStore.load(keystoreFile, keystorePassword);
             keyManagerFactory.init(keyStore, keystorePassword);
             return keyManagerFactory;
         }
     }
 
-    protected static TrustManagerFactory getTrustManagerFactory(TLSConfig tlsConfig)
+    protected static TrustManagerFactory getTrustManagerFactory(final TLSConfig tlsConfig)
             throws IOException, NoSuchAlgorithmException, KeyStoreException, CertificateException
     {
         String algorithm = tlsConfig.getAlgorithm().orElse(TrustManagerFactory.getDefaultAlgorithm());
-        char[] truststorePassword = tlsConfig.getTruststorePassword().toCharArray();
+        char[] truststorePassword = tlsConfig.getTruststore_password().toCharArray();
 
         try (InputStream truststoreFile = new FileInputStream(tlsConfig.getTruststore()))
         {
             TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(algorithm);
-            KeyStore keyStore = KeyStore.getInstance(tlsConfig.getStoreType());
+            KeyStore keyStore = KeyStore.getInstance(tlsConfig.getStore_type());
             keyStore.load(truststoreFile, truststorePassword);
             trustManagerFactory.init(keyStore);
             return trustManagerFactory;

@@ -133,7 +133,9 @@
     <!-- Checks for Size Violations.                    -->
     <!-- See https://checkstyle.org/config_sizes.html -->
     <module name="MethodLength"/>
-    <module name="ParameterNumber"/>
+    <module name="ParameterNumber">
+      <property name="max" value="12"/>
+    </module>
 
     <!-- Checks for whitespace                               -->
     <!-- See https://checkstyle.org/config_whitespace.html -->
@@ -181,7 +183,9 @@
 
     <!-- Checks for class design                         -->
     <!-- See https://checkstyle.org/config_design.html -->
-    <module name="DesignForExtension"/>
+    <module name="DesignForExtension">
+      <property name="ignoredAnnotations" value="Bean"/>
+    </module>
     <module name="FinalClass"/>
     <module name="HideUtilityClassConstructor"/>
     <module name="InterfaceIsType"/>

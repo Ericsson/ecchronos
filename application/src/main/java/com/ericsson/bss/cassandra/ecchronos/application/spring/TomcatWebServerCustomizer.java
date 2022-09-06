@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @EnableScheduling
+@SuppressWarnings({})
 public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<TomcatServletWebServerFactory>
 {
     private Http11NioProtocol http11NioProtocol;
@@ -33,7 +34,7 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
     private Boolean sslIsEnabled;
 
     @Override
-    public void customize(TomcatServletWebServerFactory factory)
+    public final void customize(final TomcatServletWebServerFactory factory)
     {
         if (sslIsEnabled)
         {
@@ -45,10 +46,11 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
     }
 
     /**
-     * Reload the {@code SSLHostConfig} if SSL is enabled. Doing so should update ssl settings and fetch certificates from Keystores
-     * It reloads them every 60 seconds by default
+     * Reload the {@code SSLHostConfig} if SSL is enabled. Doing so should update ssl settings and fetch
+     * certificates from Keystores. It reloads them every 60 seconds by default
      */
-    @Scheduled (initialDelayString = "${server.ssl.refresh-rate-in-ms:60000}", fixedRateString = "${server.ssl.refresh-rate-in-ms:60000}")
+    @Scheduled (initialDelayString = "${server.ssl.refresh-rate-in-ms:60000}",
+            fixedRateString = "${server.ssl.refresh-rate-in-ms:60000}")
     public void reloadSslContext()
     {
         if (sslIsEnabled && http11NioProtocol != null)

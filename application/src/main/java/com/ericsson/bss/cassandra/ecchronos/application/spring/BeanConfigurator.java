@@ -88,7 +88,7 @@ public class BeanConfigurator
         jmxSecurity.set(security.getJmx());
     }
 
-    public void close()
+    public final void close()
     {
         if (configRefresher != null)
         {
@@ -113,7 +113,7 @@ public class BeanConfigurator
     }
 
     @Bean
-    public ConfigurableServletWebServerFactory webServerFactory(Config configuration) throws UnknownHostException
+    public ConfigurableServletWebServerFactory webServerFactory(final Config configuration) throws UnknownHostException
     {
         TomcatServletWebServerFactory factory = new TomcatServletWebServerFactory();
         factory.setAddress(InetAddress.getByName(configuration.getRestServer().getHost()));
@@ -122,7 +122,7 @@ public class BeanConfigurator
     }
 
     @Bean
-    public RepairFaultReporter repairFaultReporter(Config config) throws ConfigurationException
+    public RepairFaultReporter repairFaultReporter(final Config config) throws ConfigurationException
     {
         return ReflectionUtils.construct(config.getRepair().getAlarm().getFaultReporter());
     }
@@ -134,59 +134,75 @@ public class BeanConfigurator
     }
 
     @Bean
-    public NativeConnectionProvider nativeConnectionProvider(Config config,
-            DefaultRepairConfigurationProvider defaultRepairConfigurationProvider) throws ConfigurationException
+    public NativeConnectionProvider nativeConnectionProvider(final Config config,
+            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider) throws ConfigurationException
     {
         return getNativeConnectionProvider(config, cqlSecurity::get, defaultRepairConfigurationProvider);
     }
 
-    private static NativeConnectionProvider getNativeConnectionProvider(Config configuration,
-            Supplier<Security.CqlSecurity> securitySupplier, DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
-            throws ConfigurationException
+    private static NativeConnectionProvider getNativeConnectionProvider(
+            final Config configuration,
+            final Supplier<Security.CqlSecurity> securitySupplier,
+            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider) throws ConfigurationException
     {
         Supplier tlsSupplier = () -> securitySupplier.get().getTls();
 
-        CertificateHandler certificateHandler = ReflectionUtils.construct(configuration.getConnectionConfig().getCql().getCertificateHandlerClass(),
-                new Class<?>[]{ Supplier.class }, tlsSupplier);
+        CertificateHandler certificateHandler =
+                ReflectionUtils.construct(configuration.getConnectionConfig().getCql().getCertificateHandlerClass(),
+                new Class<?>[] {
+                        Supplier.class
+                }, tlsSupplier);
         try
         {
             return ReflectionUtils
                     .construct(configuration.getConnectionConfig().getCql().getProviderClass(),
-                            new Class<?>[] { Config.class, Supplier.class, CertificateHandler.class,
-                                    DefaultRepairConfigurationProvider.class },
+                            new Class<?>[] {
+                                    Config.class,
+                                    Supplier.class,
+                                    CertificateHandler.class,
+                                    DefaultRepairConfigurationProvider.class
+                            },
                             configuration, securitySupplier, certificateHandler, defaultRepairConfigurationProvider);
-        } catch (ConfigurationException e)
+        }
+        catch (ConfigurationException e)
         {
-            if (!ReloadingCertificateHandler.class.equals(certificateHandler.getClass()) && e.getCause() instanceof NoSuchMethodException)
+            if (!ReloadingCertificateHandler.class.equals(certificateHandler.getClass())
+                    && e.getCause() instanceof NoSuchMethodException)
             {
-                throw new ConfigurationException("Invalid configuration, connection provider does not support configured certificate handler", e);
+                throw new ConfigurationException("Invalid configuration, connection provider does not support"
+                        + " configured certificate handler", e);
             }
         }
 
         // Check for old versions of DefaultNativeConnectionProvider
         return ReflectionUtils
                 .construct(configuration.getConnectionConfig().getCql().getProviderClass(),
-                        new Class<?>[]{ Config.class, Supplier.class, DefaultRepairConfigurationProvider.class },
+                        new Class<?>[]{
+                                Config.class, Supplier.class, DefaultRepairConfigurationProvider.class
+                        },
                         configuration, securitySupplier, defaultRepairConfigurationProvider);
     }
 
     @Bean
-    public JmxConnectionProvider jmxConnectionProvider(Config config) throws ConfigurationException
+    public JmxConnectionProvider jmxConnectionProvider(final Config config) throws ConfigurationException
     {
         return getJmxConnectionProvider(config, jmxSecurity::get);
     }
 
-    private static JmxConnectionProvider getJmxConnectionProvider(Config configuration,
-            Supplier<Security.JmxSecurity> securitySupplier) throws ConfigurationException
+    private static JmxConnectionProvider getJmxConnectionProvider(final Config configuration,
+                                                                  final Supplier<Security.JmxSecurity> securitySupplier
+        ) throws ConfigurationException
     {
         return ReflectionUtils
                 .construct(configuration.getConnectionConfig().getJmx().getProviderClass(),
-                        new Class<?>[] { Config.class, Supplier.class },
+                        new Class<?>[] {
+                                Config.class, Supplier.class
+                        },
                         configuration, securitySupplier);
     }
 
     @Bean
-    public StatementDecorator statementDecorator(Config config) throws ConfigurationException
+    public StatementDecorator statementDecorator(final Config config) throws ConfigurationException
     {
         return getStatementDecorator(config);
     }
@@ -198,7 +214,7 @@ public class BeanConfigurator
     }
 
     @Bean
-    ServletRegistrationBean registerMetricsServlet(MetricRegistry metricRegistry)
+    ServletRegistrationBean registerMetricsServlet(final MetricRegistry metricRegistry)
     {
         CollectorRegistry collectorRegistry = new CollectorRegistry();
         ServletRegistrationBean servletRegistrationBean = new ServletRegistrationBean();
@@ -209,14 +225,14 @@ public class BeanConfigurator
         return servletRegistrationBean;
     }
 
-    private static StatementDecorator getStatementDecorator(Config configuration) throws ConfigurationException
+    private static StatementDecorator getStatementDecorator(final Config configuration) throws ConfigurationException
     {
         return ReflectionUtils
                 .construct(configuration.getConnectionConfig().getCql().getDecoratorClass(), configuration);
     }
 
-    private void refreshSecurityConfig(Consumer<Security.CqlSecurity> cqlSetter,
-            Consumer<Security.JmxSecurity> jmxSetter)
+    private void refreshSecurityConfig(final Consumer<Security.CqlSecurity> cqlSetter,
+                                       final Consumer<Security.JmxSecurity> jmxSetter)
     {
         try
         {
@@ -232,7 +248,7 @@ public class BeanConfigurator
     }
 
     @Bean
-    public NodeResolver nodeResolver(NativeConnectionProvider nativeConnectionProvider)
+    public NodeResolver nodeResolver(final NativeConnectionProvider nativeConnectionProvider)
     {
         CqlSession session = nativeConnectionProvider.getSession();
 
@@ -240,8 +256,8 @@ public class BeanConfigurator
     }
 
     @Bean
-    public ReplicationState replicationState(NativeConnectionProvider nativeConnectionProvider,
-            NodeResolver nodeResolver)
+    public ReplicationState replicationState(final NativeConnectionProvider nativeConnectionProvider,
+                                             final NodeResolver nodeResolver)
     {
         Node node = nativeConnectionProvider.getLocalNode();
         CqlSession session = nativeConnectionProvider.getSession();
@@ -255,7 +271,7 @@ public class BeanConfigurator
         return new WebMvcConfigurer()
         {
             @Override
-            public void addFormatters(FormatterRegistry registry)
+            public void addFormatters(final FormatterRegistry registry)
             {
                 ApplicationConversionService.configure(registry);
             }

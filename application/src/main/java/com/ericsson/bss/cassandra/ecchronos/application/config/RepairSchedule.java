@@ -27,15 +27,15 @@ public class RepairSchedule
 {
     private Map<String, KeyspaceSchedule> keyspaces = new HashMap<>();
 
-    public void setKeyspaces(List<KeyspaceSchedule> keyspaces)
+    public final void setKeyspaces(final List<KeyspaceSchedule> theKeyspaces)
     {
-        if (keyspaces != null)
+        if (theKeyspaces != null)
         {
-            this.keyspaces = keyspaces.stream().collect(Collectors.toMap(KeyspaceSchedule::getName, ks -> ks));
+            this.keyspaces = theKeyspaces.stream().collect(Collectors.toMap(KeyspaceSchedule::getName, ks -> ks));
         }
     }
 
-    public Optional<RepairConfiguration> getRepairConfiguration(String keyspace, String table)
+    public final Optional<RepairConfiguration> getRepairConfiguration(final String keyspace, final String table)
     {
         return findMatching(keyspace, keyspaces, keyspaceSchedule -> keyspaceSchedule.get(table));
     }
@@ -50,21 +50,21 @@ public class RepairSchedule
             return name;
         }
 
-        public void setName(String name)
+        public void setName(final String nameValue)
         {
-            this.name = name;
+            this.name = nameValue;
         }
 
-        Optional<RepairConfiguration> get(String table)
+        Optional<RepairConfiguration> get(final String table)
         {
             return findMatching(table, tables, repairConfig -> Optional.of(repairConfig.asRepairConfiguration()));
         }
 
-        void setTables(List<TableRepairConfig> tables)
+        void setTables(final List<TableRepairConfig> theTables)
         {
-            if (tables != null)
+            if (theTables != null)
             {
-                this.tables = tables.stream().collect(Collectors.toMap(TableRepairConfig::getName, tb -> tb));
+                this.tables = theTables.stream().collect(Collectors.toMap(TableRepairConfig::getName, tb -> tb));
             }
         }
     }
@@ -79,9 +79,9 @@ public class RepairSchedule
             return name;
         }
 
-        void setName(String name)
+        void setName(final String nameValue)
         {
-            this.name = name;
+            this.name = nameValue;
         }
 
         public boolean isEnabled()
@@ -89,9 +89,9 @@ public class RepairSchedule
             return enabled;
         }
 
-        public void setEnabled(boolean enabled)
+        public void setEnabled(final boolean enabledValue)
         {
-            this.enabled = enabled;
+            this.enabled = enabledValue;
         }
 
         @Override
@@ -106,8 +106,9 @@ public class RepairSchedule
         }
     }
 
-    private static <T, V> Optional<V> findMatching(String searchTerm, Map<String, T> map,
-            Function<T, Optional<V>> function)
+    private static <T, V> Optional<V> findMatching(final String searchTerm,
+                                                   final Map<String, T> map,
+                                                   final Function<T, Optional<V>> function)
     {
         T exactMatch = map.get(searchTerm);
         if (exactMatch != null)

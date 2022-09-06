@@ -14,7 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config;
 
-public class Security
+public final class Security
 {
     private CqlSecurity cql;
     private JmxSecurity jmx;
@@ -24,9 +24,9 @@ public class Security
         return cql;
     }
 
-    public void setCql(CqlSecurity cql)
+    public void setCql(final CqlSecurity aCQL)
     {
-        this.cql = cql;
+        this.cql = aCQL;
     }
 
     public JmxSecurity getJmx()
@@ -34,12 +34,12 @@ public class Security
         return jmx;
     }
 
-    public void setJmx(JmxSecurity jmx)
+    public void setJmx(final JmxSecurity aJMX)
     {
-        this.jmx = jmx;
+        this.jmx = aJMX;
     }
 
-    public static class CqlSecurity
+    public static final class CqlSecurity
     {
         private Credentials credentials;
         private TLSConfig tls;
@@ -49,9 +49,9 @@ public class Security
             return credentials;
         }
 
-        public void setCredentials(Credentials credentials)
+        public void setCredentials(final Credentials theCredentials)
         {
-            this.credentials = credentials;
+            this.credentials = theCredentials;
         }
 
         public TLSConfig getTls()
@@ -59,13 +59,13 @@ public class Security
             return tls;
         }
 
-        public void setTls(TLSConfig tls)
+        public void setTls(final TLSConfig aTLS)
         {
-            this.tls = tls;
+            this.tls = aTLS;
         }
     }
 
-    public static class JmxSecurity
+    public static final class JmxSecurity
     {
         private Credentials credentials;
         private TLSConfig tls;
@@ -75,9 +75,9 @@ public class Security
             return credentials;
         }
 
-        public void setCredentials(Credentials credentials)
+        public void setCredentials(final Credentials theCredentials)
         {
-            this.credentials = credentials;
+            this.credentials = theCredentials;
         }
 
         public TLSConfig getTls()
@@ -85,9 +85,9 @@ public class Security
             return tls;
         }
 
-        public void setTls(TLSConfig tls)
+        public void setTls(final TLSConfig aTLS)
         {
-            this.tls = tls;
+            this.tls = aTLS;
         }
     }
 }

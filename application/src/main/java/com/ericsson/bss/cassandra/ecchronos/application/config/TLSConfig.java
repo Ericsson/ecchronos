@@ -18,8 +18,12 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
+
+@SuppressWarnings({"checkstyle:membername", "checkstyle:methodname"})
 public class TLSConfig
 {
+    private static final int HASH_SEED = 31;
+
     private boolean enabled;
 
     private String keystore;
@@ -35,67 +39,67 @@ public class TLSConfig
 
     private boolean require_endpoint_verification;
 
-    public boolean isEnabled()
+    public final boolean isEnabled()
     {
         return enabled;
     }
 
-    public void setEnabled(boolean enabled)
+    public final void setEnabled(final boolean isEnabled)
     {
-        this.enabled = enabled;
+        this.enabled = isEnabled;
     }
 
-    public String getKeystore()
+    public final String getKeystore()
     {
         return keystore;
     }
 
-    public void setKeystore(String keystore)
+    public final void setKeystore(final String aKeystore)
     {
-        this.keystore = keystore;
+        this.keystore = aKeystore;
     }
 
-    public String getKeystorePassword()
+    public final String getKeystore_password()
     {
         return keystore_password;
     }
 
-    public void setKeystore_password(String keystore_password)
+    public final void setKeystore_password(final String keystorePassword)
     {
-        this.keystore_password = keystore_password;
+        this.keystore_password = keystorePassword;
     }
 
-    public String getTruststore()
+    public final String getTruststore()
     {
         return truststore;
     }
 
-    public void setTruststore(String truststore)
+    public final void setTruststore(final String aTruststore)
     {
-        this.truststore = truststore;
+        this.truststore = aTruststore;
     }
 
-    public String getTruststorePassword()
+    public final String getTruststore_password()
     {
         return truststore_password;
     }
 
-    public void setTruststore_password(String truststore_password)
+    public final void setTruststore_password(final String truststorePassword)
     {
-        this.truststore_password = truststore_password;
+        this.truststore_password = truststorePassword;
     }
 
-    public String getProtocol()
+    public final String getProtocol()
     {
         return protocol;
     }
 
-    public void setProtocol(String protocol)
+    public final void setProtocol(final String aProtocol)
     {
-        this.protocol = protocol;
+        this.protocol = aProtocol;
     }
 
-    public Optional<String[]> getCipherSuites()
+    public final Optional<String[]> getCipher_suites()
     {
         if (cipher_suites == null)
         {
@@ -105,72 +109,76 @@ public class TLSConfig
         return Optional.of(Arrays.copyOf(cipher_suites, cipher_suites.length));
     }
 
-    public void setCipher_suites(String cipher_suites)
+    public final void setCipher_suites(final String cipherSuites)
     {
-        this.cipher_suites = transformCiphers(cipher_suites);
+        this.cipher_suites = transformCiphers(cipherSuites);
     }
 
-    public Optional<String> getAlgorithm()
+    public final Optional<String> getAlgorithm()
     {
         return Optional.ofNullable(algorithm);
     }
 
-    public void setAlgorithm(String algorithm)
+    public final void setAlgorithm(final String theAlgorithm)
     {
-        this.algorithm = algorithm;
+        this.algorithm = theAlgorithm;
     }
 
-    public String getStoreType()
+    public final String getStore_type()
     {
         return store_type;
     }
 
-    public void setStore_type(String store_type)
+    public final void setStore_type(final String storeType)
     {
-        this.store_type = store_type;
+        this.store_type = storeType;
     }
 
-    public boolean requiresEndpointVerification()
+    public final boolean requiresEndpointVerification()
     {
         return require_endpoint_verification;
     }
 
-    public void setRequire_endpoint_verification(boolean require_endpoint_verification)
+    public final void setRequire_endpoint_verification(final boolean requireEndpointVerification)
     {
-        this.require_endpoint_verification = require_endpoint_verification;
+        this.require_endpoint_verification = requireEndpointVerification;
     }
 
-    private static String[] transformCiphers(String cipher_suites)
+    private static String[] transformCiphers(final String cipherSuites)
     {
-        return cipher_suites == null ? null : cipher_suites.split(",");
+        return cipherSuites == null ? null : cipherSuites.split(",");
     }
 
     @Override
-    public boolean equals(Object o)
+    public final boolean equals(final Object o)
     {
         if (this == o)
+        {
             return true;
+        }
         if (o == null || getClass() != o.getClass())
+        {
             return false;
+        }
         TLSConfig tlsConfig = (TLSConfig) o;
-        return enabled == tlsConfig.enabled &&
-                require_endpoint_verification == tlsConfig.require_endpoint_verification &&
-                Objects.equals(keystore, tlsConfig.keystore) &&
-                Objects.equals(keystore_password, tlsConfig.keystore_password) &&
-                Objects.equals(truststore, tlsConfig.truststore) &&
-                Objects.equals(truststore_password, tlsConfig.truststore_password) &&
-                Objects.equals(protocol, tlsConfig.protocol) &&
-                Objects.equals(algorithm, tlsConfig.algorithm) &&
-                Objects.equals(store_type, tlsConfig.store_type) &&
-                Arrays.equals(cipher_suites, tlsConfig.cipher_suites);
+        return enabled == tlsConfig.enabled
+                && require_endpoint_verification == tlsConfig.require_endpoint_verification
+                && Objects.equals(keystore, tlsConfig.keystore)
+                && Objects.equals(keystore_password, tlsConfig.keystore_password)
+                && Objects.equals(truststore, tlsConfig.truststore)
+                && Objects.equals(truststore_password, tlsConfig.truststore_password)
+                && Objects.equals(protocol, tlsConfig.protocol)
+                && Objects.equals(algorithm, tlsConfig.algorithm)
+                && Objects.equals(store_type, tlsConfig.store_type)
+                && Arrays.equals(cipher_suites, tlsConfig.cipher_suites);
     }
 
     @Override
-    public int hashCode()
+    public final int hashCode()
     {
         int result = Objects.hash(enabled, keystore, keystore_password, truststore, truststore_password, protocol,
                 algorithm, store_type, require_endpoint_verification);
-        result = 31 * result + Arrays.hashCode(cipher_suites);
+        result = HASH_SEED * result + Arrays.hashCode(cipher_suites);
         return result;
     }
 }

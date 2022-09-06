@@ -30,14 +30,15 @@ public class FileBasedRepairConfiguration extends AbstractRepairConfigurationPro
 
     private final RepairSchedule repairSchedule;
 
-    public FileBasedRepairConfiguration(ApplicationContext applicationContext) throws ConfigurationException
+    public FileBasedRepairConfiguration(final ApplicationContext applicationContext) throws ConfigurationException
     {
         this(applicationContext, ConfigurationHelper.DEFAULT_INSTANCE, CONFIGURATION_FILE);
     }
 
     @VisibleForTesting
-    FileBasedRepairConfiguration(ApplicationContext applicationContext, ConfigurationHelper configurationHelper,
-            String configurationFile) throws ConfigurationException
+    FileBasedRepairConfiguration(final ApplicationContext applicationContext,
+                                 final ConfigurationHelper configurationHelper,
+                                 final String configurationFile) throws ConfigurationException
     {
         super(applicationContext);
 
@@ -45,7 +46,7 @@ public class FileBasedRepairConfiguration extends AbstractRepairConfigurationPro
     }
 
     @Override
-    public Optional<RepairConfiguration> forTable(TableReference tableReference)
+    public final Optional<RepairConfiguration> forTable(final TableReference tableReference)
     {
         return repairSchedule.getRepairConfiguration(tableReference.getKeyspace(), tableReference.getTable());
     }
