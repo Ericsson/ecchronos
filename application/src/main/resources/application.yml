@@ -49,10 +49,9 @@ springdoc:
 #    key-store-type: <keystore type>
 #    key-alias: <key alias>
 #    key-password: <key password>
-# SSL configuration using certificates in PEM format
+# SSL configuration using certificates in PEM format. This configuration takes precedence when certificate store settings are also specified.
 #    certificate: <path to certificate>
 #    certificate-private-key: <path to certificate private key>
-# Optional configuration for certificates in PEM format
 #    trust-certificate: <path to certificate>
 # Rate at which certificates are reloaded automatically
 #    refresh-rate-in-ms: 60000
