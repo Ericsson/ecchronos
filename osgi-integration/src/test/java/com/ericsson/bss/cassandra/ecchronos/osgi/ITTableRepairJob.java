@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.osgi;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
@@ -114,11 +115,14 @@ public class ITTableRepairJob extends TestBase
     @BeforeClass
     public static void setupAdminSession()
     {
-        myAdminSession = CqlSession.builder()
+        CqlSessionBuilder builder = CqlSession.builder()
                 .addContactPoint(new InetSocketAddress(CASSANDRA_HOST, Integer.parseInt(CASSANDRA_NATIVE_PORT)))
-                .withAuthCredentials("cassandra", "cassandra")
-                .withLocalDatacenter("datacenter1")
-                .build();
+                .withLocalDatacenter("datacenter1");
+        if (IS_LOCAL == null)
+        {
+            builder.withAuthCredentials("cassandra", "cassandra");
+        }
+        myAdminSession = builder.build();
     }
 
     @Before

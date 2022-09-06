@@ -54,9 +54,12 @@ def before_all(context):
     host = cluster.metadata.get_host(cassandra_address)
     context.environment.host_id = host.host_id
 
+
 def after_feature(context, feature): # pylint: disable=unused-argument
     wait_for_local_repairs_to_complete(context)
     context.environment.session.execute('TRUNCATE TABLE ecchronos.on_demand_repair_status')
+    context.environment.session.execute('TRUNCATE TABLE ecchronos.repair_history')
+
 
 def wait_for_local_repairs_to_complete(context):
     timeout_seconds = 180

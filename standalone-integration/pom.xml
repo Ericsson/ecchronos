@@ -130,6 +130,37 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <activation>
+                <property>
+                    <name>localprecommit.tests</name>
+                </property>
+            </activation>
+            <id>local-standalone-integration-tests</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <it-cassandra.ip>127.0.0.1</it-cassandra.ip>
+                                <it-cassandra.jmx.port>7100</it-cassandra.jmx.port>
+                                <it-cassandra.native.port>9042</it-cassandra.native.port>
+                                <it-local-cassandra>true</it-local-cassandra>
+                            </systemPropertyVariables>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
     <build>
