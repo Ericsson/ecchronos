@@ -190,8 +190,8 @@ public class BeanConfigurator
     }
 
     private static JmxConnectionProvider getJmxConnectionProvider(final Config configuration,
-                                                                  final Supplier<Security.JmxSecurity> securitySupplier
-        ) throws ConfigurationException
+                                                                  final Supplier<Security.JmxSecurity> securitySupplier)
+            throws ConfigurationException
     {
         return ReflectionUtils
                 .construct(configuration.getConnectionConfig().getJmx().getProviderClass(),
