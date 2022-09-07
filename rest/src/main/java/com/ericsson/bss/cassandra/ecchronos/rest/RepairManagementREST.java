@@ -82,7 +82,8 @@ public interface RepairManagementREST
      * @param table The table
      * @param since The since time (where the time window starts)
      * @param duration The duration of the time window
+     * @param isLocal Whether the repair information should be shown for local node only or cluster-wide
      * @return A JSON representation of {@link RepairInfo}
      */
-    ResponseEntity<RepairInfo> getRepairInfo(String keyspace, String table, Long since, Duration duration);
+    ResponseEntity<RepairInfo> getRepairInfo(String keyspace, String table, Long since, Duration duration, boolean isLocal);
 }

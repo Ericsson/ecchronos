@@ -150,6 +150,13 @@ public class RepairHistoryService implements RepairHistory, RepairHistoryProvide
         return delegateRepairHistoryProvider.iterate(tableReference, to, from, predicate);
     }
 
+    @Override
+    public Iterator<RepairEntry> iterate(UUID nodeId, TableReference tableReference, long to, long from,
+            Predicate<RepairEntry> predicate)
+    {
+        return delegateRepairHistoryProvider.iterate(nodeId, tableReference, to, from, predicate);
+    }
+
     @ObjectClassDefinition
     public @interface Configuration
     {

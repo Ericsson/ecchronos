@@ -57,6 +57,12 @@ def step_get_repair_info_with_since(context, since):
     handle_repair_info_output(context)
 
 
+@when(u'we get local repair-info with since {since}')
+def step_get_local_repair_info_with_since(context, since):
+    run_ecc_repair_info(context, ['--local', '--since', since])
+    handle_repair_info_output(context)
+
+
 @when(u'we get repair-info for keyspace {keyspace} with since {since} and duration {duration}')
 def step_get_repair_info_for_keyspace_with_since_and_duration(context, keyspace, since, duration):
     run_ecc_repair_info(context, ['--keyspace', keyspace, '--since', since, '--duration', duration])

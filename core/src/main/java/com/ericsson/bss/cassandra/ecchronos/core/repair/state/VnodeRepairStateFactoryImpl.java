@@ -22,9 +22,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A repair state factory which uses a {@link RepairHistoryProvider} to determine repair state.
@@ -74,6 +76,26 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         Iterator<RepairEntry> repairEntryIterator = myRepairHistoryProvider.iterate(tableReference, to, from,
                 (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
         return generateVnodeRepairStates(VnodeRepairState.UNREPAIRED, null, repairEntryIterator, tokenRangeToReplicaMap);
+    }
+
+    @Override
+    public VnodeRepairStates calculateClusterWideState(TableReference tableReference, long to, long from)
+    {
+        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRanges = myReplicationState.getTokenRanges(tableReference);
+        Set<DriverNode> allNodes = new HashSet<>();
+        tokenRanges.values().forEach(n -> allNodes.addAll(n));
+        List<RepairEntry> allRepairEntries = new ArrayList<>();
+        for (DriverNode node : allNodes)
+        {
+            Iterator<RepairEntry> repairEntryIterator = myRepairHistoryProvider.iterate(node.getId(), tableReference, to, from,
+                    (repairEntry) -> acceptRepairEntries(repairEntry, tokenRanges));
+            while(repairEntryIterator.hasNext())
+            {
+                RepairEntry repairEntry = repairEntryIterator.next();
+                allRepairEntries.add(repairEntry);
+            }
+        }
+        return generateVnodeRepairStates(VnodeRepairState.UNREPAIRED, null, allRepairEntries.iterator(), tokenRanges);
     }
 
     private VnodeRepairStates generateVnodeRepairStates(long lastRepairedAt, RepairStateSnapshot previous, Iterator<RepairEntry> repairEntryIterator, Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicaMap)

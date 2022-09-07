@@ -308,8 +308,9 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                     schema = @Schema(type = "string")) final Long since,
             @RequestParam(required = false) @Parameter(
             description = "Duration, can be specified as either a simple duration like"
-                    + "'30s' or as ISO8601 duration 'pt30s'",
-            schema = @Schema(type = "string")) final Duration duration)
+                    + " '30s' or as ISO8601 duration 'pt30s'",
+            schema = @Schema(type = "string")) final Duration duration,
+            @RequestParam(required = false) final boolean isLocal)
     {
         try
         {
@@ -324,11 +325,11 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                         throw new ResponseStatusException(NOT_FOUND,
                                 "Table " + keyspace + "." + table + " does not exist");
                     }
-                    repairInfo = getRepairInfo(Collections.singleton(tableReference), since, duration);
+                    repairInfo = getRepairInfo(Collections.singleton(tableReference), since, duration, isLocal);
                 }
                 else
                 {
-                    repairInfo = getRepairInfo(myTableReferenceFactory.forKeyspace(keyspace), since, duration);
+                    repairInfo = getRepairInfo(myTableReferenceFactory.forKeyspace(keyspace), since, duration, isLocal);
                 }
             }
             else
@@ -337,7 +338,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                 {
                     throw new ResponseStatusException(BAD_REQUEST, "Keyspace must be provided if table is provided");
                 }
-                repairInfo = getRepairInfo(myTableReferenceFactory.forCluster(), since, duration);
+                repairInfo = getRepairInfo(myTableReferenceFactory.forCluster(), since, duration, isLocal);
             }
             return ResponseEntity.ok(repairInfo);
         }
@@ -347,7 +348,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         }
     }
 
-    private RepairInfo getRepairInfo(final Set<TableReference> tables, final Long since, final Duration duration)
+    private RepairInfo getRepairInfo(final Set<TableReference> tables, final Long since, final Duration duration,
+            final boolean isLocal)
     {
         long toTime = System.currentTimeMillis();
         long sinceTime;
@@ -377,7 +379,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         {
             if (myReplicatedTableProvider.accept(table.getKeyspace()))
             {
-                repairStats.add(myRepairStatsProvider.getRepairStats(table, sinceTime, toTime));
+                repairStats.add(myRepairStatsProvider.getRepairStats(table, sinceTime, toTime, isLocal));
             }
         }
         return new RepairInfo(sinceTime, toTime, repairStats);

@@ -47,7 +47,7 @@ public class TestRepairStatsProviderImpl
     private VnodeRepairStateFactory vnodeRepairStateFactoryMock;
 
     @Test
-    public void TestGetRepairStatsAllUnrepaired()
+    public void TestGetRepairStatsAllUnrepairedLocal()
     {
         long since = 1234L;
         long to = 1237L;
@@ -57,7 +57,7 @@ public class TestRepairStatsProviderImpl
                 .build();
         when(vnodeRepairStateFactoryMock.calculateState(eq(TABLE_REFERENCE), eq(to), eq(since))).thenReturn(vnodeRepairStates);
         RepairStatsProvider repairStatsProvider = new RepairStatsProviderImpl(vnodeRepairStateFactoryMock);
-        RepairStats repairStats = repairStatsProvider.getRepairStats(TABLE_REFERENCE, since, to);
+        RepairStats repairStats = repairStatsProvider.getRepairStats(TABLE_REFERENCE, since, to, true);
         assertThat(repairStats.repairedRatio).isEqualTo(0);
         assertThat(repairStats.repairTimeTakenMs).isEqualTo(0);
         assertThat(repairStats.keyspace).isEqualTo(KEYSPACE_NAME);
@@ -65,7 +65,25 @@ public class TestRepairStatsProviderImpl
     }
 
     @Test
-    public void TestGetRepairStatsAllRepaired()
+    public void TestGetRepairStatsAllUnrepairedClusterWide()
+    {
+        long since = 1234L;
+        long to = 1237L;
+        DriverNode node = mockNode("DC1");
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(node), VnodeRepairState.UNREPAIRED);
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Collections.singletonList(vnodeRepairState))
+                .build();
+        when(vnodeRepairStateFactoryMock.calculateClusterWideState(eq(TABLE_REFERENCE), eq(to), eq(since))).thenReturn(vnodeRepairStates);
+        RepairStatsProvider repairStatsProvider = new RepairStatsProviderImpl(vnodeRepairStateFactoryMock);
+        RepairStats repairStats = repairStatsProvider.getRepairStats(TABLE_REFERENCE, since, to, false);
+        assertThat(repairStats.repairedRatio).isEqualTo(0);
+        assertThat(repairStats.repairTimeTakenMs).isEqualTo(0);
+        assertThat(repairStats.keyspace).isEqualTo(KEYSPACE_NAME);
+        assertThat(repairStats.table).isEqualTo(TABLE_NAME);
+    }
+
+    @Test
+    public void TestGetRepairStatsAllRepairedLocal()
     {
         long since = 1234L;
         long to = 1237L;
@@ -83,7 +101,7 @@ public class TestRepairStatsProviderImpl
                 .build();
         when(vnodeRepairStateFactoryMock.calculateState(eq(TABLE_REFERENCE), eq(to), eq(since))).thenReturn(vnodeRepairStates);
         RepairStatsProvider repairStatsProvider = new RepairStatsProviderImpl(vnodeRepairStateFactoryMock);
-        RepairStats repairStats = repairStatsProvider.getRepairStats(TABLE_REFERENCE, since, to);
+        RepairStats repairStats = repairStatsProvider.getRepairStats(TABLE_REFERENCE, since, to, true);
         assertThat(repairStats.repairedRatio).isEqualTo(1);
         assertThat(repairStats.repairTimeTakenMs).isEqualTo(vnodeRepairState.getRepairTime() + vnodeRepairState2.getRepairTime());
         assertThat(repairStats.keyspace).isEqualTo(KEYSPACE_NAME);
@@ -91,7 +109,34 @@ public class TestRepairStatsProviderImpl
     }
 
     @Test
-    public void TestGetRepairStatsSomeRepairedSomeUnrepaired()
+    public void TestGetRepairStatsAllRepairedClusterWide()
+    {
+        long since = 1234L;
+        long to = 1237L;
+        long range1StartedAt = 1235L;
+        long range1FinishedAt = 1236L;
+        long range2StartedAt = 1236L;
+        long range2FinishedAt = 1237L;
+        DriverNode node = mockNode("DC1");
+        DriverNode remoteNode = mockNode("DC2");
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(node), range1StartedAt, range1FinishedAt);
+        VnodeRepairState vnodeRepairState2 = new VnodeRepairState(new LongTokenRange(2, 3), ImmutableSet.of(remoteNode), range2StartedAt, range2FinishedAt);
+        List<VnodeRepairState> repairStates = new ArrayList<>();
+        repairStates.add(vnodeRepairState);
+        repairStates.add(vnodeRepairState2);
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(repairStates)
+                .build();
+        when(vnodeRepairStateFactoryMock.calculateClusterWideState(eq(TABLE_REFERENCE), eq(to), eq(since))).thenReturn(vnodeRepairStates);
+        RepairStatsProvider repairStatsProvider = new RepairStatsProviderImpl(vnodeRepairStateFactoryMock);
+        RepairStats repairStats = repairStatsProvider.getRepairStats(TABLE_REFERENCE, since, to, false);
+        assertThat(repairStats.repairedRatio).isEqualTo(1);
+        assertThat(repairStats.repairTimeTakenMs).isEqualTo(vnodeRepairState.getRepairTime() + vnodeRepairState2.getRepairTime());
+        assertThat(repairStats.keyspace).isEqualTo(KEYSPACE_NAME);
+        assertThat(repairStats.table).isEqualTo(TABLE_NAME);
+    }
+
+    @Test
+    public void TestGetRepairStatsSomeRepairedSomeUnrepairedLocal()
     {
         long range1StartedAt = 1234L;
         long range1FinishedAt = 1235L;
@@ -109,7 +154,34 @@ public class TestRepairStatsProviderImpl
                 .build();
         when(vnodeRepairStateFactoryMock.calculateState(eq(TABLE_REFERENCE), eq(to), eq(since))).thenReturn(vnodeRepairStates);
         RepairStatsProvider repairStatsProvider = new RepairStatsProviderImpl(vnodeRepairStateFactoryMock);
-        RepairStats repairStats = repairStatsProvider.getRepairStats(TABLE_REFERENCE, since, to);
+        RepairStats repairStats = repairStatsProvider.getRepairStats(TABLE_REFERENCE, since, to, true);
+        assertThat(repairStats.repairedRatio).isEqualTo(0.5);
+        assertThat(repairStats.repairTimeTakenMs).isEqualTo(vnodeRepairState2.getRepairTime());
+        assertThat(repairStats.keyspace).isEqualTo(KEYSPACE_NAME);
+        assertThat(repairStats.table).isEqualTo(TABLE_NAME);
+    }
+
+    @Test
+    public void TestGetRepairStatsSomeRepairedSomeUnrepairedClusterWide()
+    {
+        long range1StartedAt = 1234L;
+        long range1FinishedAt = 1235L;
+        long since = 1235L;
+        long to = 1237L;
+        long range2StartedAt = 1235L;
+        long range2FinishedAt = 1236L;
+        DriverNode node = mockNode("DC1");
+        DriverNode remoteNode = mockNode("DC2");
+        VnodeRepairState vnodeRepairState = new VnodeRepairState(new LongTokenRange(1, 2), ImmutableSet.of(node), range1StartedAt, range1FinishedAt);
+        VnodeRepairState vnodeRepairState2 = new VnodeRepairState(new LongTokenRange(2, 3), ImmutableSet.of(remoteNode), range2StartedAt, range2FinishedAt);
+        List<VnodeRepairState> repairStates = new ArrayList<>();
+        repairStates.add(vnodeRepairState);
+        repairStates.add(vnodeRepairState2);
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(repairStates)
+                .build();
+        when(vnodeRepairStateFactoryMock.calculateClusterWideState(eq(TABLE_REFERENCE), eq(to), eq(since))).thenReturn(vnodeRepairStates);
+        RepairStatsProvider repairStatsProvider = new RepairStatsProviderImpl(vnodeRepairStateFactoryMock);
+        RepairStats repairStats = repairStatsProvider.getRepairStats(TABLE_REFERENCE, since, to, false);
         assertThat(repairStats.repairedRatio).isEqualTo(0.5);
         assertThat(repairStats.repairTimeTakenMs).isEqualTo(vnodeRepairState2.getRepairTime());
         assertThat(repairStats.keyspace).isEqualTo(KEYSPACE_NAME);

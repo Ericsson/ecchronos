@@ -286,6 +286,97 @@ public class TestEccRepairHistory extends AbstractCassandraTest
     }
 
     @Test
+    public void testInsertAndIterateClusterWide()
+    {
+        long from = System.currentTimeMillis();
+
+        // Assert that history is empty
+        assertThat(
+                repairHistoryProvider.iterate(tableReference, from + 5000, from, Predicates.alwaysTrue())).toIterable()
+                .isEmpty();
+
+        UUID jobId = UUID.randomUUID();
+        LongTokenRange range1 = new LongTokenRange(1, 2);
+
+        Set<DriverNode> participants1 = Sets.newHashSet(mockLocalNode, mockNode());
+        withKnownRange(range1, participants1);
+
+        RepairHistory.RepairSession repairSession1 = repairHistory
+                .newSession(tableReference, jobId, range1, participants1);
+        repairSession1.start();
+
+        UUID remoteNodeId = UUID.randomUUID();
+        DriverNode remoteNode = mockNode(remoteNodeId);
+        LongTokenRange range2 = new LongTokenRange(2, 3);
+
+        Set<DriverNode> participants2 = Sets.newHashSet(remoteNode, mockNode());
+        withKnownClusterWideRange(range2, participants2);
+
+        //Mock remote node repair session
+        withKnownRange(range2, participants2);
+        EccRepairHistory remoteEccRepairHistory = EccRepairHistory.newBuilder()
+                .withLocalNode(remoteNode)
+                .withLookbackTime(30, TimeUnit.DAYS)
+                .withSession(mySession)
+                .withKeyspace(keyspaceName)
+                .withStatementDecorator(s -> s)
+                .withReplicationState(mockReplicationState)
+                .build();
+
+        RepairHistory.RepairSession repairSession2 = remoteEccRepairHistory
+                .newSession(tableReference, jobId, range2, participants2);
+        repairSession2.start();
+
+        long to = System.currentTimeMillis();
+
+        // Assert that we have a started sessions
+        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider
+                .iterate(localId, tableReference, to, from, Predicates.alwaysTrue());
+        assertThat(repairEntryIterator.hasNext()).isTrue();
+        RepairEntry repairEntry = repairEntryIterator.next();
+        assertThat(repairEntry.getParticipants()).isEqualTo(participants1);
+        assertThat(repairEntry.getStatus()).isEqualTo(RepairStatus.STARTED);
+        assertThat(repairEntry.getRange()).isEqualTo(range1);
+        assertThat(repairEntry.getStartedAt()).isBetween(from, to);
+        assertThat(repairEntry.getFinishedAt()).isEqualTo(-1L);
+        assertThat(repairEntryIterator.hasNext()).isFalse();
+
+        repairEntryIterator = repairHistoryProvider.iterate(remoteNodeId, tableReference, to, from, Predicates.alwaysTrue());
+        assertThat(repairEntryIterator.hasNext()).isTrue();
+        repairEntry = repairEntryIterator.next();
+        assertThat(repairEntry.getParticipants()).isEqualTo(participants2);
+        assertThat(repairEntry.getStatus()).isEqualTo(RepairStatus.STARTED);
+        assertThat(repairEntry.getRange()).isEqualTo(range2);
+        assertThat(repairEntry.getStartedAt()).isBetween(from, to);
+        assertThat(repairEntry.getFinishedAt()).isEqualTo(-1L);
+        assertThat(repairEntryIterator.hasNext()).isFalse();
+
+        repairSession1.finish(RepairStatus.SUCCESS);
+        repairSession2.finish(RepairStatus.SUCCESS);
+
+        // Assert that the sessions has finished
+        repairEntryIterator = repairHistoryProvider.iterate(localId, tableReference, to, from, Predicates.alwaysTrue());
+        assertThat(repairEntryIterator.hasNext()).isTrue();
+        repairEntry = repairEntryIterator.next();
+        assertThat(repairEntry.getParticipants()).isEqualTo(participants1);
+        assertThat(repairEntry.getStatus()).isEqualTo(RepairStatus.SUCCESS);
+        assertThat(repairEntry.getRange()).isEqualTo(range1);
+        assertThat(repairEntry.getStartedAt()).isBetween(from, to);
+        assertThat(repairEntry.getFinishedAt()).isGreaterThanOrEqualTo(to);
+        assertThat(repairEntryIterator.hasNext()).isFalse();
+
+        repairEntryIterator = repairHistoryProvider.iterate(remoteNodeId, tableReference, to, from, Predicates.alwaysTrue());
+        assertThat(repairEntryIterator.hasNext()).isTrue();
+        repairEntry = repairEntryIterator.next();
+        assertThat(repairEntry.getParticipants()).isEqualTo(participants2);
+        assertThat(repairEntry.getStatus()).isEqualTo(RepairStatus.SUCCESS);
+        assertThat(repairEntry.getRange()).isEqualTo(range2);
+        assertThat(repairEntry.getStartedAt()).isBetween(from, to);
+        assertThat(repairEntry.getFinishedAt()).isGreaterThanOrEqualTo(to);
+        assertThat(repairEntryIterator.hasNext()).isFalse();
+    }
+
+    @Test
     public void testMultipleInvocationsThrowsException()
     {
         UUID jobId = UUID.randomUUID();
@@ -369,6 +460,11 @@ public class TestEccRepairHistory extends AbstractCassandraTest
     private void withKnownRange(LongTokenRange range, Set<DriverNode> participants)
     {
         when(mockReplicationState.getNodes(tableReference, range)).thenReturn(ImmutableSet.copyOf(participants));
+    }
+
+    private void withKnownClusterWideRange(LongTokenRange range, Set<DriverNode> participants)
+    {
+        when(mockReplicationState.getNodesClusterWide(tableReference, range)).thenReturn(ImmutableSet.copyOf(participants));
     }
 
     private static DriverNode mockNode()
