@@ -19,7 +19,12 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import com.ericsson.bss.cassandra.ecchronos.application.*;
+import com.ericsson.bss.cassandra.ecchronos.application.AbstractRepairConfigurationProvider;
+import com.ericsson.bss.cassandra.ecchronos.application.DefaultJmxConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.application.DefaultNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.application.FileBasedRepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.application.NoopStatementDecorator;
+import com.ericsson.bss.cassandra.ecchronos.application.ReloadingCertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
@@ -31,6 +36,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 
+@SuppressWarnings({"checkstyle:methodname", "checkstyle:membername"})
 public class Config
 {
     private ConnectionConfig connection = new ConnectionConfig();
@@ -41,94 +47,103 @@ public class Config
     private SchedulerConfig scheduler = new SchedulerConfig();
     private RestServerConfig rest_server = new RestServerConfig();
 
-    public ConnectionConfig getConnectionConfig()
+    public final ConnectionConfig getConnectionConfig()
     {
         return connection;
     }
 
-    public void setConnection(ConnectionConfig connection)
+    public final void setConnection(final ConnectionConfig aConnection)
     {
-        if (connection != null)
+        if (aConnection != null)
         {
-            this.connection = connection;
+            this.connection = aConnection;
         }
     }
 
+    /**
+     *
+     */
     public GlobalRepairConfig getRepair()
     {
         return repair;
     }
 
-    public void setRepair(GlobalRepairConfig repair)
+    /**
+     *
+     */
+    public void setRepair(final GlobalRepairConfig repairConfig)
     {
-        if (repair != null)
+        if (repairConfig != null)
         {
-            this.repair = repair;
+            this.repair = repairConfig;
         }
     }
 
-    public StatisticsConfig getStatistics()
+    public final StatisticsConfig getStatistics()
     {
         return statistics;
     }
 
-    public void setStatistics(StatisticsConfig statistics)
+    public final void setStatistics(final StatisticsConfig theStatistics)
     {
-        if (statistics != null)
+        if (theStatistics != null)
         {
-            this.statistics = statistics;
+            this.statistics = theStatistics;
         }
     }
 
-    public LockFactoryConfig getLockFactory()
+    public final LockFactoryConfig getLockFactory()
     {
         return lock_factory;
     }
 
-    public void setLock_factory(LockFactoryConfig lock_factory)
+    public final void setLock_factory(final LockFactoryConfig lockFactory)
     {
-        if (lock_factory != null)
+        if (lockFactory != null)
         {
-            this.lock_factory = lock_factory;
+            this.lock_factory = lockFactory;
         }
     }
 
-    public RunPolicyConfig getRunPolicy()
+    public final RunPolicyConfig getRunPolicy()
     {
         return run_policy;
     }
 
-    public void setRun_policy(RunPolicyConfig run_policy)
+    public final void setRun_policy(final RunPolicyConfig runPolicy)
     {
-        if (run_policy != null)
+        if (runPolicy != null)
         {
-            this.run_policy = run_policy;
+            this.run_policy = runPolicy;
         }
     }
 
-    public SchedulerConfig getScheduler()
+    public final SchedulerConfig getScheduler()
     {
         return scheduler;
     }
 
-    public void setScheduler(SchedulerConfig scheduler)
+    /**
+     *
+     */
+    public void setScheduler(final SchedulerConfig aScheduler)
     {
-        if (scheduler != null)
+        if (aScheduler != null)
         {
-            this.scheduler = scheduler;
+            this.scheduler = aScheduler;
         }
     }
 
-    public RestServerConfig getRestServer()
+    public final RestServerConfig getRestServer()
     {
         return rest_server;
     }
 
-    public void setRest_server(RestServerConfig rest_server)
+    public final void setRest_server(final RestServerConfig restServer)
     {
-        if (rest_server != null)
+        if (restServer != null)
         {
-            this.rest_server = rest_server;
+            this.rest_server = restServer;
         }
     }
 
@@ -137,112 +152,129 @@ public class Config
         private NativeConnection cql = new NativeConnection();
         private JmxConnection jmx = new JmxConnection();
 
-        public NativeConnection getCql()
+        public final NativeConnection getCql()
         {
             return cql;
         }
 
-        public JmxConnection getJmx()
+        public final JmxConnection getJmx()
         {
             return jmx;
         }
 
-        public void setCql(NativeConnection cql)
+        public final void setCql(final NativeConnection aCQL)
         {
-            if (cql != null)
+            if (aCQL != null)
             {
-                this.cql = cql;
+                this.cql = aCQL;
             }
         }
 
-        public void setJmx(JmxConnection jmx)
+        public final void setJmx(final JmxConnection aJMX)
         {
-            if (jmx != null)
+            if (aJMX != null)
             {
-                this.jmx = jmx;
+                this.jmx = aJMX;
             }
         }
 
         @Override
-        public String toString()
+        public final String toString()
         {
             return String.format("Connection(native=%s, jmx=%s)", cql, jmx);
         }
     }
 
-    public static abstract class Connection<T>
+    public abstract static class Connection<T>
     {
         private String host = "localhost";
-        protected int port;
-        protected Class<? extends T> provider;
-        protected Class<? extends CertificateHandler> certificateHandler;
+        //protected int port;
+        private int port;
+        //protected Class<? extends T> provider;
+        //protected Class<? extends CertificateHandler> certificateHandler;
+        private Class<? extends T> provider;
+        private Class<? extends CertificateHandler> certificateHandler;
         private Timeout timeout = new Timeout();
 
-        public String getHost()
+        public final String getHost()
         {
             return host;
         }
 
-        public int getPort()
+        public final int getPort()
         {
             return port;
         }
 
-        public Class<? extends T> getProviderClass()
+        public final Class<? extends T> getProviderClass()
         {
             return provider;
         }
 
-        public Class<? extends CertificateHandler> getCertificateHandlerClass()
+        public final Class<? extends CertificateHandler> getCertificateHandlerClass()
         {
             return certificateHandler;
         }
 
-        public Timeout getTimeout()
+        public final Timeout getTimeout()
         {
             return timeout;
         }
 
-        public void setHost(String host)
+        public final void setHost(final String aHost)
         {
-            this.host = host;
+            this.host = aHost;
         }
 
-        public void setPort(int port)
+        public final void setPort(final int aPort)
         {
-            this.port = port;
+            this.port = aPort;
         }
 
-        public void setTimeout(Timeout timeout)
+        public final void setTimeout(final Timeout aTimeout)
         {
-            this.timeout = timeout;
+            this.timeout = aTimeout;
         }
 
-        public void setProvider(Class<? extends T> provider) throws NoSuchMethodException
+        public final void setProvider(final Class<? extends T> aProvider) throws NoSuchMethodException
         {
-            provider.getDeclaredConstructor(expectedConstructor());
+            aProvider.getDeclaredConstructor(expectedConstructor());
 
-            this.provider = provider;
+            this.provider = aProvider;
         }
 
         protected abstract Class<?>[] expectedConstructor();
 
-        public void setCertificateHandler(Class<CertificateHandler> certificateHandler) throws NoSuchMethodException
+        /**
+         *
+         */
+        public void setCertificateHandler(final Class<? extends CertificateHandler> aCertificateHandler)
+                throws NoSuchMethodException
         {
-            certificateHandler.getDeclaredConstructor(expectedCertHandlerConstructor());
+            aCertificateHandler.getDeclaredConstructor(expectedCertHandlerConstructor());
 
-            this.certificateHandler = certificateHandler;
+            this.certificateHandler = aCertificateHandler;
         }
 
+        /**
+         *
+         */
         protected Class<?>[] expectedCertHandlerConstructor()
         {
-            return new Class<?>[] { Supplier.class };
+            return new Class<?>[]
+                    {
+                            Supplier.class
+                    };
         }
 
+        /**
+         *
+         */
         @Override
         public String toString()
         {
-            return String.format("(%s:%d:%s),provider=%s,certificateHandler=%s", host, port, timeout, provider, certificateHandler);
+            return String.format("(%s:%d:%s),provider=%s,certificateHandler=%s",
+                    host, port, timeout, provider, certificateHandler);
         }
 
         public static class Timeout
@@ -250,135 +282,161 @@ public class Config
             private long time = 0;
             private TimeUnit unit = TimeUnit.MILLISECONDS;
 
-            public long getConnectionTimeout(TimeUnit unit)
+            public final long getConnectionTimeout(final TimeUnit aUnit)
             {
-                return unit.convert(time, this.unit);
+                return aUnit.convert(time, this.unit);
             }
 
-            public void setTime(long time)
+            public final void setTime(final long aTime)
             {
-                this.time = time;
+                this.time = aTime;
             }
 
-            public void setUnit(String unit)
+            public final void setUnit(final String aUnit)
             {
-                this.unit = TimeUnit.valueOf(unit.toUpperCase(Locale.US));
+                this.unit = TimeUnit.valueOf(aUnit.toUpperCase(Locale.US));
             }
         }
     }
 
     public static class NativeConnection extends Connection<NativeConnectionProvider>
     {
+        private static final int DEFAULT_PORT = 9042;
+
         private Class<? extends StatementDecorator> decoratorClass = NoopStatementDecorator.class;
         private boolean remoteRouting = true;
 
         public NativeConnection()
         {
-            provider = DefaultNativeConnectionProvider.class;
-            certificateHandler = ReloadingCertificateHandler.class;
-            port = 9042;
+            try
+            {
+                this.setProvider(DefaultNativeConnectionProvider.class);
+                this.setCertificateHandler(ReloadingCertificateHandler.class);
+                this.setPort(DEFAULT_PORT);
+            }
+            catch (NoSuchMethodException ignored)
+            {
+                // Do something useful ...
+            }
         }
 
-        public Class<? extends StatementDecorator> getDecoratorClass()
+        public final Class<? extends StatementDecorator> getDecoratorClass()
         {
             return decoratorClass;
         }
 
-        public void setDecoratorClass(Class<StatementDecorator> decoratorClass) throws NoSuchMethodException
+        public final void setDecoratorClass(final Class<StatementDecorator> aDecoratorClass)
+                throws NoSuchMethodException
         {
-            decoratorClass.getDeclaredConstructor(Config.class);
+            aDecoratorClass.getDeclaredConstructor(Config.class);
 
-            this.decoratorClass = decoratorClass;
+            this.decoratorClass = aDecoratorClass;
         }
 
-        public boolean getRemoteRouting()
+        public final boolean getRemoteRouting()
         {
             return remoteRouting;
         }
 
-        public void setRemoteRouting(boolean remoteRouting)
+        public final void setRemoteRouting(final boolean aRemoteRouting)
         {
-            this.remoteRouting = remoteRouting;
+            this.remoteRouting = aRemoteRouting;
         }
 
         @Override
-        protected Class<?>[] expectedConstructor()
+        protected final Class<?>[] expectedConstructor()
         {
-            return new Class<?>[] { Config.class, Supplier.class, DefaultRepairConfigurationProvider.class };
+            return new Class<?>[]
+                    {
+                            Config.class, Supplier.class, DefaultRepairConfigurationProvider.class
+                    };
         }
 
         @Override
-        public String toString()
+        public final String toString()
         {
-            return String.format("(%s:%d),provider=%s,certificateHandler=%s,decorator=%s", getHost(), getPort(), getProviderClass(), getCertificateHandlerClass(),
-                    decoratorClass);
+            return String.format("(%s:%d),provider=%s,certificateHandler=%s,decorator=%s",
+                    getHost(), getPort(), getProviderClass(), getCertificateHandlerClass(), decoratorClass);
         }
     }
 
     public static class JmxConnection extends Connection<JmxConnectionProvider>
     {
+        private static final int DEFAULT_PORT = 7199;
 
         public JmxConnection()
         {
-            provider = DefaultJmxConnectionProvider.class;
-            port = 7199;
+            try
+            {
+                this.setProvider(DefaultJmxConnectionProvider.class);
+                this.setPort(DEFAULT_PORT);
+            }
+            catch (NoSuchMethodException ignored)
+            {
+                // Do something useful ...
+            }
         }
 
         @Override
-        protected Class<?>[] expectedConstructor()
+        protected final Class<?>[] expectedConstructor()
         {
-            return new Class<?>[] { Config.class, Supplier.class };
+            return new Class<?>[]
+                    {
+                            Config.class, Supplier.class
+                    };
         }
     }
 
     public static class GlobalRepairConfig extends RepairConfig
     {
+        private static final int THIRTY_DAYS = 30;
+
         private Class<? extends AbstractRepairConfigurationProvider> provider = FileBasedRepairConfiguration.class;
-        private RepairLockType lock_type = RepairLockType.VNODE;
-        private Interval history_lookback = new Interval(30, TimeUnit.DAYS);
+        private RepairLockType lockType = RepairLockType.VNODE;
+        private Interval historyLookback = new Interval(THIRTY_DAYS, TimeUnit.DAYS);
         private RepairHistory history = new RepairHistory();
 
-        public RepairLockType getLockType()
+        public final RepairLockType getLockType()
         {
-            return lock_type;
+            return lockType;
         }
 
-        public Interval getHistoryLookback()
+        public final Interval getHistoryLookback()
         {
-            return history_lookback;
+            return historyLookback;
         }
 
-        public void setLock_type(String lock_type)
+        public final void setLock_type(final String aLockType)
         {
-            this.lock_type = RepairLockType.valueOf(lock_type.toUpperCase(Locale.US));
+            this.lockType = RepairLockType.valueOf(aLockType.toUpperCase(Locale.US));
         }
 
-        public void setHistory_lookback(Interval history_lookback)
+        public final void setHistory_lookback(final Interval aHistoryLookback)
         {
-            this.history_lookback = history_lookback;
+            this.historyLookback = aHistoryLookback;
         }
 
-        public RepairHistory getHistory()
+        public final RepairHistory getHistory()
         {
             return history;
         }
 
-        public void setHistory(RepairHistory history)
+        public final void setHistory(final RepairHistory aHistory)
         {
-            this.history = history;
+            this.history = aHistory;
         }
 
-        public Class<? extends AbstractRepairConfigurationProvider> getProvider()
+        public final Class<? extends AbstractRepairConfigurationProvider> getProvider()
         {
             return provider;
         }
 
-        public void setProvider(Class<? extends AbstractRepairConfigurationProvider> provider)
+        public final void setProvider(final Class<? extends AbstractRepairConfigurationProvider> aProvider)
                 throws NoSuchMethodException
         {
             provider.getDeclaredConstructor(ApplicationContext.class);
 
-            this.provider = provider;
+            this.provider = aProvider;
         }
     }
 
@@ -392,72 +450,75 @@ public class Config
         private Provider provider = Provider.ECC;
         private String keyspace = "ecchronos";
 
-        public Provider getProvider()
+        public final Provider getProvider()
         {
             return provider;
         }
 
-        public void setProvider(String provider)
+        public final void setProvider(final String aProvider)
         {
-            this.provider = Provider.valueOf(provider.toUpperCase(Locale.US));
+            this.provider = Provider.valueOf(aProvider.toUpperCase(Locale.US));
         }
 
-        public String getKeyspace()
+        public final String getKeyspace()
         {
             return keyspace;
         }
 
-        public void setKeyspace(String keyspace)
+        public final void setKeyspace(final String aKeyspace)
         {
-            this.keyspace = keyspace;
+            this.keyspace = aKeyspace;
         }
     }
 
     public static class Alarm
     {
+        private static final int DEFAULT_EIGHT_DAYS = 8;
+        private static final int DEFAULT_TEN_DAYS = 10;
+
         private Class<? extends RepairFaultReporter> faultReporter = LoggingFaultReporter.class;
-        private Interval warn = new Interval(8, TimeUnit.DAYS);
-        private Interval error = new Interval(10, TimeUnit.DAYS);
+        private Interval warn = new Interval(DEFAULT_EIGHT_DAYS, TimeUnit.DAYS);
+        private Interval error = new Interval(DEFAULT_TEN_DAYS, TimeUnit.DAYS);
 
         public Alarm()
         {
             // Default constructor for jackson
         }
 
-        public Alarm(Interval warn, Interval error)
+        public Alarm(final Interval warningInterval, final Interval errorInterval)
         {
-            this.warn = warn;
-            this.error = error;
+            this.warn = warningInterval;
+            this.error = errorInterval;
         }
 
-        public Class<? extends RepairFaultReporter> getFaultReporter()
+        public final Class<? extends RepairFaultReporter> getFaultReporter()
         {
             return faultReporter;
         }
 
-        public Interval getWarn()
+        public final Interval getWarn()
         {
             return warn;
         }
 
-        public Interval getError()
+        public final Interval getError()
         {
             return error;
         }
 
-        public void setFaultReporter(Class<? extends RepairFaultReporter> faultReporter)
+        public final void setFaultReporter(final Class<? extends RepairFaultReporter> aFaultReporter)
         {
-            this.faultReporter = faultReporter;
+            this.faultReporter = aFaultReporter;
         }
 
-        public void setWarn(Interval warn)
+        public final void setWarn(final Interval warningInterval)
         {
-            this.warn = warn;
+            this.warn = warningInterval;
         }
 
-        public void setError(Interval error)
+        public final void setError(final Interval errorInterval)
         {
-            this.error = error;
+            this.error = errorInterval;
         }
     }
 
@@ -466,24 +527,24 @@ public class Config
         private boolean enabled = true;
         private File directory = new File("./statistics");
 
-        public boolean isEnabled()
+        public final boolean isEnabled()
         {
             return enabled;
         }
 
-        public File getDirectory()
+        public final File getDirectory()
         {
             return directory;
         }
 
-        public void setEnabled(boolean enabled)
+        public final void setEnabled(final boolean enabledValue)
         {
-            this.enabled = enabled;
+            this.enabled = enabledValue;
         }
 
-        public void setDirectory(String directory)
+        public final void setDirectory(final String aDirectory)
         {
-            this.directory = new File(directory);
+            this.directory = new File(aDirectory);
         }
     }
 
@@ -491,14 +552,14 @@ public class Config
     {
         private CasLockFactoryConfig cas = new CasLockFactoryConfig();
 
-        public CasLockFactoryConfig getCas()
+        public final CasLockFactoryConfig getCas()
         {
             return cas;
         }
 
-        public void setCas(CasLockFactoryConfig cas)
+        public final void setCas(final CasLockFactoryConfig aCas)
         {
-            this.cas = cas;
+            this.cas = aCas;
         }
     }
 
@@ -506,29 +567,29 @@ public class Config
     {
         private String keyspace = "ecchronos";
 
-        public String getKeyspace()
+        public final String getKeyspace()
         {
             return keyspace;
         }
 
-        public void setKeyspace(String keyspace)
+        public final void setKeyspace(final String aKeyspace)
         {
-            this.keyspace = keyspace;
+            this.keyspace = aKeyspace;
         }
     }
 
     public static class RunPolicyConfig
     {
-        private TimeBasedConfig time_based = new TimeBasedConfig();
+        private TimeBasedConfig timeBased = new TimeBasedConfig();
 
-        public TimeBasedConfig getTimeBased()
+        public final TimeBasedConfig getTimeBased()
         {
-            return time_based;
+            return timeBased;
         }
 
-        public void setTime_based(TimeBasedConfig time_based)
+        public final void setTime_based(final TimeBasedConfig timeBasedValue)
         {
-            this.time_based = time_based;
+            this.timeBased = timeBasedValue;
         }
     }
 
@@ -536,55 +597,60 @@ public class Config
     {
         private String keyspace = "ecchronos";
 
-        public String getKeyspace()
+        public final String getKeyspace()
         {
             return keyspace;
         }
 
-        public void setKeyspace(String keyspace)
+        public final void setKeyspace(final String aKeyspace)
         {
-            this.keyspace = keyspace;
+            this.keyspace = aKeyspace;
         }
     }
 
     public static class SchedulerConfig
     {
-        private Interval frequency = new Interval(30, TimeUnit.SECONDS);
+        private static final int THIRTY_SECONDS = 30;
 
-        public Interval getFrequency()
+        private Interval frequency = new Interval(THIRTY_SECONDS, TimeUnit.SECONDS);
+
+        public final Interval getFrequency()
         {
             return frequency;
         }
 
-        public void setFrequency(Interval frequency)
+        public final void setFrequency(final Interval aFrequency)
         {
-            this.frequency = frequency;
+            this.frequency = aFrequency;
         }
     }
 
     public static class RestServerConfig
     {
-        private String host = "localhost";
-        private int port = 8080;
+        private static final String DEFAULT_HOST = "localhost";
+        private static final int DEFAULT_PORT = 8080;
 
-        public String getHost()
+        private String host = DEFAULT_HOST;
+        private int port = DEFAULT_PORT;
+
+        public final String getHost()
         {
             return host;
         }
 
-        public void setHost(String host)
+        public final void setHost(final String aHost)
         {
-            this.host = host;
+            this.host = aHost;
         }
 
-        public int getPort()
+        public final int getPort()
         {
             return port;
         }
 
-        public void setPort(int port)
+        public final void setPort(final int aPort)
         {
-            this.port = port;
+            this.port = aPort;
         }
     }
 
@@ -598,25 +664,25 @@ public class Config
             // Default constructor for jackson
         }
 
-        public Interval(long time, TimeUnit unit)
+        public Interval(final long aTime, final TimeUnit aUnit)
         {
-            this.time = time;
-            this.unit = unit;
+            this.time = aTime;
+            this.unit = aUnit;
         }
 
-        public long getInterval(TimeUnit unit)
+        public final long getInterval(final TimeUnit aUnit)
         {
-            return unit.convert(time, this.unit);
+            return aUnit.convert(time, this.unit);
         }
 
-        public void setTime(long time)
+        public final void setTime(final long aTime)
         {
-            this.time = time;
+            this.time = aTime;
         }
 
-        public void setUnit(String unit)
+        public final void setUnit(final String aUnit)
         {
-            this.unit = TimeUnit.valueOf(unit.toUpperCase(Locale.US));
+            this.unit = TimeUnit.valueOf(aUnit.toUpperCase(Locale.US));
         }
     }
 }

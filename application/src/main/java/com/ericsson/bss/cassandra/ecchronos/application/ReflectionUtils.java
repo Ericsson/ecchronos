@@ -32,10 +32,12 @@ public final class ReflectionUtils
      * @param parameters The parameters to send to the constructor.
      * @param <T> The interface/class to construct a subclass for.
      * @return The constructed object.
-     * @throws ConfigurationException Thrown if the constructor is invalid or if it's not possible to access the constructor.
+     * @throws ConfigurationException Thrown if the constructor is invalid or if it's not possible to access the
+     * constructor.
      * @see #construct(Class, Class[], Object...)
      */
-    public static <T> T construct(Class<? extends T> type, Object... parameters) throws ConfigurationException
+    public static <T> T construct(final Class<? extends T> type,
+                                  final Object... parameters) throws ConfigurationException
     {
         return construct(type, getParameterClasses(parameters), parameters);
     }
@@ -48,9 +50,12 @@ public final class ReflectionUtils
      * @param parameters The parameters to send to the constructor.
      * @param <T> The interface/class to construct a subclass for.
      * @return The constructed object.
-     * @throws ConfigurationException Thrown if the constructor is invalid or if it's not possible to access the constructor.
+     * @throws ConfigurationException Thrown if the constructor is invalid or if it's not possible to access the
+     * constructor.
      */
-    public static <T> T construct(Class<? extends T> type, Class<?>[] parameterClasses, Object... parameters) throws ConfigurationException
+    public static <T> T construct(final Class<? extends T> type,
+                                  final Class<?>[] parameterClasses,
+                                  final Object... parameters) throws ConfigurationException
     {
         try
         {
@@ -78,7 +83,10 @@ public final class ReflectionUtils
      *          <li>The class does not have a constructor matching the expected parameters</li>
      *     </ul>
      */
-    public static <T> Class<? extends T> resolveClassOfType(String className, Class<T> wantedClass, Class<?>... parameterClasses) throws ConfigurationException
+    public static <T> Class<? extends T> resolveClassOfType(final String className,
+                                                            final Class<T> wantedClass,
+                                                            final Class<?>... parameterClasses)
+            throws ConfigurationException
     {
         Class<? extends T> clazz;
 
@@ -100,7 +108,9 @@ public final class ReflectionUtils
         return clazz;
     }
 
-    private static <T> Constructor<? extends T> getConstructor(Class<? extends T> type, Class<?>... parameterClasses) throws ConfigurationException
+    private static <T> Constructor<? extends T> getConstructor(final Class<? extends T> type,
+                                                               final Class<?>... parameterClasses)
+            throws ConfigurationException
     {
         try
         {
@@ -109,7 +119,8 @@ public final class ReflectionUtils
         catch (NoSuchMethodException e)
         {
             StringBuilder sb = new StringBuilder();
-            sb.append("Class ").append(type.getName()).append(" does not have a constructor with parameter(s) of type [");
+            sb.append("Class ")
+                    .append(type.getName()).append(" does not have a constructor with parameter(s) of type [");
             for (Class<?> parameterClass : parameterClasses)
             {
                 sb.append(parameterClass.getName()).append(',');
@@ -120,7 +131,7 @@ public final class ReflectionUtils
         }
     }
 
-    private static Class<?>[] getParameterClasses(Object... parameters)
+    private static Class<?>[] getParameterClasses(final Object... parameters)
     {
         Class<?>[] parameterClasses = new Class<?>[parameters.length];
 

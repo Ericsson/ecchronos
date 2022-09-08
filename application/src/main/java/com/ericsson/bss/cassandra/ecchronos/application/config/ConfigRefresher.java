@@ -16,8 +16,18 @@ package com.ericsson.bss.cassandra.ecchronos.application.config;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.file.*;
-import java.util.concurrent.*;
+import java.nio.file.ClosedWatchServiceException;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,15 +38,17 @@ public class ConfigRefresher implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigRefresher.class);
 
+    private static final int TEN_SECONDS = 10;
+
     private final ConcurrentMap<Path, Runnable> knownConfigs = new ConcurrentHashMap<>();
     private final Path baseDirectory;
     private final WatchService watcher;
 
     private final ExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
-    public ConfigRefresher(Path baseDirectory)
+    public ConfigRefresher(final Path theBaseDirectory)
     {
-        this.baseDirectory = baseDirectory.toAbsolutePath();
+        this.baseDirectory = theBaseDirectory.toAbsolutePath();
         WatchService watchService = null;
 
         try
@@ -55,7 +67,7 @@ public class ConfigRefresher implements Closeable
         executor.submit(this::watchForEvents);
     }
 
-    public void watch(Path filePath, Runnable onChange)
+    public final void watch(final Path filePath, final Runnable onChange)
     {
         Path absoluteFilePath = filePath.toAbsolutePath();
         Preconditions.checkArgument(baseDirectory.equals(absoluteFilePath.getParent()),
@@ -71,7 +83,7 @@ public class ConfigRefresher implements Closeable
     }
 
     @Override
-    public void close()
+    public final void close()
     {
         try
         {
@@ -86,7 +98,7 @@ public class ConfigRefresher implements Closeable
 
         try
         {
-            executor.awaitTermination(10, TimeUnit.SECONDS);
+            executor.awaitTermination(TEN_SECONDS, TimeUnit.SECONDS);
         }
         catch (InterruptedException e)
         {
@@ -123,7 +135,7 @@ public class ConfigRefresher implements Closeable
         }
     }
 
-    private void handleEvents(WatchKey watchKey)
+    private void handleEvents(final WatchKey watchKey)
     {
         try
         {
@@ -154,7 +166,7 @@ public class ConfigRefresher implements Closeable
         }
     }
 
-    private void handleEvent(Path file)
+    private void handleEvent(final Path file)
     {
         LOG.debug("Received event for {}/{}", baseDirectory, file);
 

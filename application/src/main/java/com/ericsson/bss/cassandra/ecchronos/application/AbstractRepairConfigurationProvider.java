@@ -24,19 +24,24 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
 public abstract class AbstractRepairConfigurationProvider
 {
-    protected final ApplicationContext applicationContext;
+    private final ApplicationContext applicationContext;
+
+    public final ApplicationContext getApplicationContext()
+    {
+        return applicationContext;
+    }
 
     private final RepairConfiguration defaultRepairConfiguration;
 
-    protected AbstractRepairConfigurationProvider(ApplicationContext applicationContext)
+    protected AbstractRepairConfigurationProvider(final ApplicationContext anApplicationContext)
     {
-        this.applicationContext = applicationContext;
+        this.applicationContext = anApplicationContext;
 
         Config config = applicationContext.getBean(Config.class);
         this.defaultRepairConfiguration = config.getRepair().asRepairConfiguration();
     }
 
-    public RepairConfiguration get(TableReference tableReference)
+    public final RepairConfiguration get(final TableReference tableReference)
     {
         return forTable(tableReference).orElse(defaultRepairConfiguration);
     }

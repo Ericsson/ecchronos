@@ -19,57 +19,63 @@ import java.util.concurrent.TimeUnit;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
 
+@SuppressWarnings({"checkstyle:membername", "checkstyle:methodname"})
 public class RepairConfig
 {
-    private Config.Interval interval = new Config.Interval(7, TimeUnit.DAYS);
-    private Config.Alarm alarm = new Config.Alarm(new Config.Interval(8, TimeUnit.DAYS),
-            new Config.Interval(10, TimeUnit.DAYS));
+    private static final int DAYS_INTERVAL = 7;
+    private static final int DAYS_WARNING = 8;
+    private static final int DAYS_ERROR = 10;
+
+    private Config.Interval interval = new Config.Interval(DAYS_INTERVAL, TimeUnit.DAYS);
+    private Config.Alarm alarm = new Config.Alarm(new Config.Interval(DAYS_WARNING, TimeUnit.DAYS),
+            new Config.Interval(DAYS_ERROR, TimeUnit.DAYS));
     private double unwind_ratio = 0.0d;
     private long size_target = RepairConfiguration.FULL_REPAIR_SIZE;
     private boolean ignore_twcs_tables = false;
 
-    public Config.Alarm getAlarm()
+    public final Config.Alarm getAlarm()
     {
         return alarm;
     }
 
-    public void setInterval(Config.Interval interval)
+    public final void setInterval(final Config.Interval anInterval)
     {
-        this.interval = interval;
+        this.interval = anInterval;
     }
 
-    public void setAlarm(Config.Alarm alarm)
+    public final void setAlarm(final Config.Alarm anAlarm)
     {
-        this.alarm = alarm;
+        this.alarm = anAlarm;
     }
 
-    public void setUnwind_ratio(double unwind_ratio)
+    public final void setUnwind_ratio(final double unwindRatio)
     {
-        this.unwind_ratio = unwind_ratio;
+        this.unwind_ratio = unwindRatio;
     }
 
-    public void setSize_target(String size_target)
+    public final void setSize_target(final String sizeTarget)
     {
-        if (size_target == null)
+        if (sizeTarget == null)
         {
             this.size_target = RepairConfiguration.FULL_REPAIR_SIZE;
         }
         else
         {
-            this.size_target = UnitConverter.toBytes(size_target);
+            this.size_target = UnitConverter.toBytes(sizeTarget);
         }
     }
 
-    public void setIgnore_twcs_tables(boolean ignore_twcs_tables)
+    public final void setIgnore_twcs_tables(final boolean ignoreTWCSTables)
     {
-        this.ignore_twcs_tables = ignore_twcs_tables;
+        this.ignore_twcs_tables = ignoreTWCSTables;
     }
 
-    public boolean getIgnoreTWCSTables()
+    public final boolean getIgnoreTWCSTables()
     {
         return ignore_twcs_tables;
     }
 
+    @SuppressWarnings("checkstyle:designforextension")
     public RepairConfiguration asRepairConfiguration()
     {
         return RepairConfiguration.newBuilder()

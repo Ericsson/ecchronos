@@ -28,12 +28,14 @@ public class SpringBooter extends SpringBootServletInitializer
 {
     private static final Logger LOG = LoggerFactory.getLogger(SpringBooter.class);
 
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
-        try{
+        try
+        {
             SpringApplication.run(SpringBooter.class, args);
         }
-        catch(Exception e){
+        catch (Exception e)
+        {
             LOG.error("Failed to initialize", e);
             System.exit(1);
         }
