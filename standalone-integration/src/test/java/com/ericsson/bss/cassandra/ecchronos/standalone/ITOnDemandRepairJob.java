@@ -178,8 +178,18 @@ public class ITOnDemandRepairJob extends TestBase
             adminSession.execute(QueryBuilder.deleteFrom("system_distributed", "repair_history")
                             .whereColumn("keyspace_name").isEqualTo(literal(tableReference.getKeyspace()))
                             .whereColumn("columnfamily_name").isEqualTo(literal(tableReference.getTable())).build());
+            for (Node node : myMetadata.getNodes().values())
+            {
+                adminSession.execute(QueryBuilder.deleteFrom("ecchronos", "repair_history")
+                        .whereColumn("table_id").isEqualTo(literal(tableReference.getId()))
+                        .whereColumn("node_id").isEqualTo(literal(node.getHostId()))
+                        .build());
+                adminSession.execute(QueryBuilder.deleteFrom("ecchronos", "on_demand_repair_status")
+                        .whereColumn("host_id").isEqualTo(literal(node.getHostId()))
+                        .build());
+            }
         }
-
+        myRepairs.clear();
         reset(mockTableRepairMetrics);
     }
 
