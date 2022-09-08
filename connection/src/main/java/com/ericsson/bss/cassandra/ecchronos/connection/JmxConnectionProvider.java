@@ -26,5 +26,7 @@ public interface JmxConnectionProvider extends Closeable
     JMXConnector getJmxConnector() throws IOException;
 
     @Override
-    default void close() throws IOException {}
+    default void close() throws IOException
+    {
+    }
 }

@@ -35,253 +35,253 @@ public class DataCenterAwareStatement implements BoundStatement
     private final String myDataCenter;
     private final BoundStatement myBoundStatement;
 
-    public DataCenterAwareStatement(BoundStatement statement, String dataCenter)
+    public DataCenterAwareStatement(final BoundStatement statement, final String dataCenter)
     {
         myBoundStatement = statement;
         myDataCenter = dataCenter;
     }
 
-    public String getDataCenter()
+    public final String getDataCenter()
     {
         return myDataCenter;
     }
 
     @Override
-    public PreparedStatement getPreparedStatement()
+    public final PreparedStatement getPreparedStatement()
     {
         return myBoundStatement.getPreparedStatement();
     }
 
     @Override
-    public List<ByteBuffer> getValues()
+    public final List<ByteBuffer> getValues()
     {
         return myBoundStatement.getValues();
     }
 
     @Override
-    public BoundStatement setExecutionProfileName(String newConfigProfileName)
+    public final BoundStatement setExecutionProfileName(final String newConfigProfileName)
     {
         return myBoundStatement.setExecutionProfileName(newConfigProfileName);
     }
 
     @Override
-    public BoundStatement setExecutionProfile(DriverExecutionProfile newProfile)
+    public final BoundStatement setExecutionProfile(final DriverExecutionProfile newProfile)
     {
         return myBoundStatement.setExecutionProfile(newProfile);
     }
 
     @Override
-    public BoundStatement setRoutingKeyspace(CqlIdentifier newRoutingKeyspace)
+    public final BoundStatement setRoutingKeyspace(final CqlIdentifier newRoutingKeyspace)
     {
         return myBoundStatement.setRoutingKeyspace(newRoutingKeyspace);
     }
 
     @Override
-    public BoundStatement setNode(Node node)
+    public final BoundStatement setNode(final Node node)
     {
         return myBoundStatement.setNode(node);
     }
 
     @Override
-    public BoundStatement setRoutingKey(ByteBuffer newRoutingKey)
+    public final BoundStatement setRoutingKey(final ByteBuffer newRoutingKey)
     {
         return myBoundStatement.setRoutingKey(newRoutingKey);
     }
 
     @Override
-    public BoundStatement setRoutingToken(Token newRoutingToken)
+    public final BoundStatement setRoutingToken(final Token newRoutingToken)
     {
         return myBoundStatement.setRoutingToken(newRoutingToken);
     }
 
     @Override
-    public BoundStatement setCustomPayload(Map<String, ByteBuffer> newCustomPayload)
+    public final BoundStatement setCustomPayload(final Map<String, ByteBuffer> newCustomPayload)
     {
         return myBoundStatement.setCustomPayload(newCustomPayload);
     }
 
     @Override
-    public BoundStatement setIdempotent(Boolean newIdempotence)
+    public final BoundStatement setIdempotent(final Boolean newIdempotence)
     {
         return myBoundStatement.setIdempotent(newIdempotence);
     }
 
     @Override
-    public BoundStatement setTracing(boolean newTracing)
+    public final BoundStatement setTracing(final boolean newTracing)
     {
         return myBoundStatement.setTracing(newTracing);
     }
 
     @Override
-    public long getQueryTimestamp()
+    public final long getQueryTimestamp()
     {
         return myBoundStatement.getQueryTimestamp();
     }
 
     @Override
-    public BoundStatement setQueryTimestamp(long newTimestamp)
+    public final BoundStatement setQueryTimestamp(final long newTimestamp)
     {
         return myBoundStatement.setQueryTimestamp(newTimestamp);
     }
 
     @Override
-    public BoundStatement setTimeout(Duration newTimeout)
+    public final BoundStatement setTimeout(final Duration newTimeout)
     {
         return myBoundStatement.setTimeout(newTimeout);
     }
 
     @Override
-    public ByteBuffer getPagingState()
+    public final ByteBuffer getPagingState()
     {
         return myBoundStatement.getPagingState();
     }
 
     @Override
-    public BoundStatement setPagingState(ByteBuffer newPagingState)
+    public final BoundStatement setPagingState(final ByteBuffer newPagingState)
     {
         return myBoundStatement.setPagingState(newPagingState);
     }
 
     @Override
-    public int getPageSize()
+    public final int getPageSize()
     {
         return myBoundStatement.getPageSize();
     }
 
     @Override
-    public BoundStatement setPageSize(int newPageSize)
+    public final BoundStatement setPageSize(final int newPageSize)
     {
         return myBoundStatement.setPageSize(newPageSize);
     }
 
     @Override
-    public ConsistencyLevel getConsistencyLevel()
+    public final ConsistencyLevel getConsistencyLevel()
     {
         return myBoundStatement.getConsistencyLevel();
     }
 
     @Override
-    public BoundStatement setConsistencyLevel(ConsistencyLevel newConsistencyLevel)
+    public final BoundStatement setConsistencyLevel(final ConsistencyLevel newConsistencyLevel)
     {
         return myBoundStatement.setConsistencyLevel(newConsistencyLevel);
     }
 
     @Override
-    public ConsistencyLevel getSerialConsistencyLevel()
+    public final ConsistencyLevel getSerialConsistencyLevel()
     {
         return myBoundStatement.getSerialConsistencyLevel();
     }
 
     @Override
-    public BoundStatement setSerialConsistencyLevel(ConsistencyLevel newSerialConsistencyLevel)
+    public final BoundStatement setSerialConsistencyLevel(final ConsistencyLevel newSerialConsistencyLevel)
     {
         return myBoundStatement.setSerialConsistencyLevel(newSerialConsistencyLevel);
     }
 
     @Override
-    public boolean isTracing()
+    public final boolean isTracing()
     {
         return myBoundStatement.isTracing();
     }
 
     @Override
-    public int firstIndexOf(String name)
+    public final int firstIndexOf(final String name)
     {
         return myBoundStatement.firstIndexOf(name);
     }
 
     @Override
-    public int firstIndexOf(CqlIdentifier id)
+    public final int firstIndexOf(final CqlIdentifier id)
     {
         return myBoundStatement.firstIndexOf(id);
     }
 
     @Override
-    public ByteBuffer getBytesUnsafe(int i)
+    public final ByteBuffer getBytesUnsafe(final int i)
     {
         return myBoundStatement.getBytesUnsafe(i);
     }
 
     @Override
-    public BoundStatement setBytesUnsafe(int i, ByteBuffer v)
+    public final BoundStatement setBytesUnsafe(final int i, final ByteBuffer v)
     {
         return myBoundStatement.setBytesUnsafe(i, v);
     }
 
     @Override
-    public int size()
+    public final int size()
     {
         return myBoundStatement.size();
     }
 
     @Override
-    public DataType getType(int i)
+    public final DataType getType(final int i)
     {
         return myBoundStatement.getType(i);
     }
 
     @Override
-    public CodecRegistry codecRegistry()
+    public final CodecRegistry codecRegistry()
     {
         return myBoundStatement.codecRegistry();
     }
 
     @Override
-    public ProtocolVersion protocolVersion()
+    public final ProtocolVersion protocolVersion()
     {
         return myBoundStatement.protocolVersion();
     }
 
     @Override
-    public String getExecutionProfileName()
+    public final String getExecutionProfileName()
     {
         return myBoundStatement.getExecutionProfileName();
     }
 
     @Override
-    public DriverExecutionProfile getExecutionProfile()
+    public final DriverExecutionProfile getExecutionProfile()
     {
         return myBoundStatement.getExecutionProfile();
     }
 
     @Override
-    public CqlIdentifier getRoutingKeyspace()
+    public final CqlIdentifier getRoutingKeyspace()
     {
         return myBoundStatement.getRoutingKeyspace();
     }
 
     @Override
-    public ByteBuffer getRoutingKey()
+    public final ByteBuffer getRoutingKey()
     {
         return myBoundStatement.getRoutingKey();
     }
 
     @Override
-    public Token getRoutingToken()
+    public final Token getRoutingToken()
     {
         return myBoundStatement.getRoutingToken();
     }
 
     @Override
-    public Map<String, ByteBuffer> getCustomPayload()
+    public final Map<String, ByteBuffer> getCustomPayload()
     {
         return myBoundStatement.getCustomPayload();
     }
 
     @Override
-    public Boolean isIdempotent()
+    public final Boolean isIdempotent()
     {
         return myBoundStatement.isIdempotent();
     }
 
     @Override
-    public Duration getTimeout()
+    public final Duration getTimeout()
     {
         return myBoundStatement.getTimeout();
     }
 
     @Override
-    public Node getNode()
+    public final Node getNode()
     {
         return myBoundStatement.getNode();
     }

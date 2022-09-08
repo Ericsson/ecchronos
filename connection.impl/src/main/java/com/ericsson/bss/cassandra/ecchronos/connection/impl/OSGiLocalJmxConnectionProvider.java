@@ -34,7 +34,7 @@ public class OSGiLocalJmxConnectionProvider implements JmxConnectionProvider
     private volatile LocalJmxConnectionProvider myDelegateJmxConnectionProvider;
 
     @Activate
-    public synchronized void activate(Configuration configuration) throws IOException
+    public final synchronized void activate(final Configuration configuration) throws IOException
     {
         String localhost = configuration.jmxHost();
         int port = configuration.jmxPort();
@@ -43,13 +43,13 @@ public class OSGiLocalJmxConnectionProvider implements JmxConnectionProvider
     }
 
     @Deactivate
-    public synchronized void deactivate() throws IOException
+    public final synchronized void deactivate() throws IOException
     {
         myDelegateJmxConnectionProvider.close();
     }
 
     @Override
-    public JMXConnector getJmxConnector() throws IOException
+    public final JMXConnector getJmxConnector() throws IOException
     {
         return myDelegateJmxConnectionProvider.getJmxConnector();
     }
@@ -57,10 +57,12 @@ public class OSGiLocalJmxConnectionProvider implements JmxConnectionProvider
     @ObjectClassDefinition
     public @interface Configuration
     {
-        @AttributeDefinition(name = "Cassandra JMX Port", description = "The port to use for JMX communication with Cassandra")
+        @AttributeDefinition(name = "Cassandra JMX Port",
+                description = "The port to use for JMX communication with Cassandra")
         int jmxPort() default LocalJmxConnectionProvider.DEFAULT_PORT;
 
-        @AttributeDefinition(name = "Cassandra JMX Host", description = "The host to use for JMX communication with Cassandra")
+        @AttributeDefinition(name = "Cassandra JMX Host",
+                description = "The host to use for JMX communication with Cassandra")
         String jmxHost() default LocalJmxConnectionProvider.DEFAULT_HOST;
     }
 }

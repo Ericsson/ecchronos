@@ -12,27 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.connection;
-
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.metadata.Node;
-
-import java.io.Closeable;
-import java.io.IOException;
 
 /**
- * Provider for native connections.
+ *
  */
-public interface NativeConnectionProvider extends Closeable
-{
-    CqlSession getSession();
-
-    Node getLocalNode();
-
-    boolean getRemoteRouting();
-
-    @Override
-    default void close() throws IOException
-    {
-    }
-}
+package com.ericsson.bss.cassandra.ecchronos.connection.impl;
