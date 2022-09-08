@@ -26,41 +26,49 @@ public class ContactEndPoint implements EndPoint
     private final int port;
     private volatile InetSocketAddress lastResolvedAddress;
 
-    public ContactEndPoint(String hostName, int port)
+    public ContactEndPoint(final String aHostName, final int aPort)
     {
-        this.hostName = hostName;
-        this.port = port;
-        this.metricPrefix = buildMetricPrefix(hostName, port);
+        this.hostName = aHostName;
+        this.port = aPort;
+        this.metricPrefix = buildMetricPrefix(aHostName, aPort);
     }
 
     @Override
-    public InetSocketAddress resolve()
+    public final InetSocketAddress resolve()
     {
         lastResolvedAddress = new InetSocketAddress(hostName, port);
         return lastResolvedAddress;
     }
 
     @Override
-    public String asMetricPrefix()
+    public final String asMetricPrefix()
     {
         return metricPrefix;
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    public final boolean equals(final Object o)
+    {
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
         ContactEndPoint that = (ContactEndPoint) o;
         return port == that.port && hostName.equals(that.hostName);
     }
 
     @Override
-    public int hashCode() {
+    public final int hashCode()
+    {
         return Objects.hash(hostName, port);
     }
 
     @Override
-    public String toString()
+    public final String toString()
     {
         if (lastResolvedAddress != null)
         {
@@ -69,7 +77,8 @@ public class ContactEndPoint implements EndPoint
         return String.format("%s:%d", hostName, port);
     }
 
-    private static String buildMetricPrefix(String host, int port) {
+    private static String buildMetricPrefix(final String host, final int port)
+    {
         return host.replace('.', '_') + ':' + port;
     }
 }

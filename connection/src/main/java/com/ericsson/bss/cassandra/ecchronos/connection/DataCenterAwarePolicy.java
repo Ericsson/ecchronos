@@ -53,13 +53,13 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
     private final ConcurrentMap<String, CopyOnWriteArrayList<Node>> myPerDcLiveNodes = new ConcurrentHashMap<>();
     private final AtomicInteger myIndex = new AtomicInteger();
 
-    public DataCenterAwarePolicy(DriverContext context, String profileName)
+    public DataCenterAwarePolicy(final DriverContext context, final String profileName)
     {
         super(context, profileName);
     }
 
     @Override
-    public void init(Map<UUID, Node> nodes, DistanceReporter distanceReporter)
+    public final void init(final Map<UUID, Node> nodes, final DistanceReporter distanceReporter)
     {
         super.init(nodes, distanceReporter);
         LOG.info("Using provided data-center name '{}' for DataCenterAwareLoadBalancingPolicy", getLocalDatacenter());
@@ -89,7 +89,8 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
         if (!notInLocalDC.isEmpty())
         {
             String nonLocalHosts = Joiner.on(",").join(notInLocalDC);
-            LOG.warn("Some contact points don't match local data center. Local DC = {}. Non-conforming contact points: {}", getLocalDatacenter(),
+            LOG.warn("Some contact points ({}) don't match local data center ({})",
+                    getLocalDatacenter(),
                     nonLocalHosts);
         }
 
@@ -110,7 +111,7 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
      * @return the new query plan.
      */
     @Override
-    public Queue<Node> newQueryPlan(Request request, Session session)
+    public Queue<Node> newQueryPlan(final Request request, final Session session)
     {
         final String dataCenter;
 
@@ -140,7 +141,7 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
         return getQueryPlan(dataCenter, replicas);
     }
 
-    private Queue<Node> getQueryPlan(String datacenter, Set<Node> replicas)
+    private Queue<Node> getQueryPlan(final String datacenter, final Set<Node> replicas)
     {
         Queue queue = new ConcurrentLinkedQueue();
         for (Node node : replicas)
@@ -163,7 +164,7 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
      * @param dataCenter the selected data center.
      * @return the HostDistance to {@code host}.
      */
-    public NodeDistance distance(Node node, String dataCenter)
+    public NodeDistance distance(final Node node, final String dataCenter)
     {
         String dc = getDc(node);
         if (dc.equals(dataCenter))
@@ -202,19 +203,19 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
     }
 
     @SuppressWarnings ("unchecked")
-    private static CopyOnWriteArrayList<Node> cloneList(CopyOnWriteArrayList<Node> list)
+    private static CopyOnWriteArrayList<Node> cloneList(final CopyOnWriteArrayList<Node> list)
     {
         return (CopyOnWriteArrayList<Node>) list.clone();
     }
 
     @Override
-    public void onUp(Node node)
+    public final void onUp(final Node node)
     {
         super.onUp(node);
         markAsUp(node);
     }
 
-    private void markAsUp(Node node)
+    private void markAsUp(final Node node)
     {
         String dc = getDc(node);
 
@@ -233,13 +234,13 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
     }
 
     @Override
-    public void onDown(Node node)
+    public final void onDown(final Node node)
     {
         super.onDown(node);
         markAsDown(node);
     }
 
-    private void markAsDown(Node node)
+    private void markAsDown(final Node node)
     {
         CopyOnWriteArrayList<Node> dcNodes = myPerDcLiveNodes.get(getDc(node));
         if (dcNodes != null)
@@ -248,27 +249,29 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
         }
     }
 
-    private String getDc(Node node)
+    private String getDc(final Node node)
     {
         String dc = node.getDatacenter();
         return dc == null ? getLocalDatacenter() : dc;
     }
 
     @Override
-    public void onAdd(Node node)
+    public final void onAdd(final Node node)
     {
         super.onAdd(node);
         markAsUp(node);
     }
 
     @Override
-    public void onRemove(Node node)
+    public final void onRemove(final Node node)
     {
         super.onRemove(node);
         markAsDown(node);
     }
 
-    // Only for test
+    /**
+     * Only for test purposes.
+     */
     ConcurrentMap<String, CopyOnWriteArrayList<Node>> getPerDcLiveNodes()
     {
         return myPerDcLiveNodes;

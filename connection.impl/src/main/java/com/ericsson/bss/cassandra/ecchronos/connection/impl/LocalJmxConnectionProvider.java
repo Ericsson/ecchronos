@@ -46,24 +46,27 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
     private final Supplier<String[]> credentialsSupplier;
     private final Supplier<Map<String, String>> tlsSupplier;
 
-    public LocalJmxConnectionProvider(String localhost, int port) throws IOException
+    public LocalJmxConnectionProvider(final String localhost, final int port) throws IOException
     {
         this(localhost, port, () -> null, HashMap::new);
     }
 
-    public LocalJmxConnectionProvider(String localhost, int port, Supplier<String[]> credentialsSupplier,
-            Supplier<Map<String, String>> tlsSupplier) throws IOException
+    public LocalJmxConnectionProvider(final String localhost,
+                                      final int port,
+                                      final Supplier<String[]> aCredentialsSupplier,
+                                      final Supplier<Map<String, String>> aTLSSupplier)
+            throws IOException
     {
         myLocalhost = localhost;
         myPort = port;
-        this.credentialsSupplier = credentialsSupplier;
-        this.tlsSupplier = tlsSupplier;
+        this.credentialsSupplier = aCredentialsSupplier;
+        this.tlsSupplier = aTLSSupplier;
 
         reconnect();
     }
 
     @Override
-    public JMXConnector getJmxConnector() throws IOException
+    public final JMXConnector getJmxConnector() throws IOException
     {
         JMXConnector jmxConnector = myJmxConnection.get();
 
@@ -77,7 +80,7 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
     }
 
     @Override
-    public void close() throws IOException
+    public final void close() throws IOException
     {
         switchJmxConnection(null);
     }
@@ -127,7 +130,7 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
         switchJmxConnection(jmxConnector);
     }
 
-    private void switchJmxConnection(JMXConnector newJmxConnector) throws IOException
+    private void switchJmxConnection(final JMXConnector newJmxConnector) throws IOException
     {
         JMXConnector oldJmxConnector = myJmxConnection.getAndSet(newJmxConnector);
 
@@ -137,7 +140,7 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
         }
     }
 
-    private static boolean isConnected(JMXConnector jmxConnector)
+    private static boolean isConnected(final JMXConnector jmxConnector)
     {
         try
         {
