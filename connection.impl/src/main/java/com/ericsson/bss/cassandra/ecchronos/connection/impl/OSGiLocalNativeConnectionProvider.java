@@ -44,11 +44,8 @@ public class OSGiLocalNativeConnectionProvider implements NativeConnectionProvid
 
     private volatile LocalNativeConnectionProvider myDelegateNativeConnectionProvider;
 
-    /**
-     *
-     */
     @Activate
-    public synchronized void activate(final Configuration configuration)
+    public final synchronized void activate(final Configuration configuration)
     {
         String localhost = configuration.localHost();
         int port = configuration.nativePort();
@@ -79,11 +76,8 @@ public class OSGiLocalNativeConnectionProvider implements NativeConnectionProvid
         myDelegateNativeConnectionProvider = builder.build();
     }
 
-    /**
-     *
-     */
     @Deactivate
-    public synchronized void deactivate()
+    public final synchronized void deactivate()
     {
         myDelegateNativeConnectionProvider.close();
     }

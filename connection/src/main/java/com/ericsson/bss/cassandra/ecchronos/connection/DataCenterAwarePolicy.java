@@ -90,8 +90,8 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
         {
             String nonLocalHosts = Joiner.on(",").join(notInLocalDC);
             LOG.warn("Some contact points ({}) don't match local data center ({})",
-                    getLocalDatacenter(),
-                    nonLocalHosts);
+                    nonLocalHosts,
+                    getLocalDatacenter());
         }
 
         myIndex.set(new SecureRandom().nextInt(Math.max(nodes.size(), 1)));
