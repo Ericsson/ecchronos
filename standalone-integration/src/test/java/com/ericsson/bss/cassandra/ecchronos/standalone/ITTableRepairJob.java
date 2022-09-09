@@ -263,7 +263,7 @@ public class ITTableRepairJob extends TestBase
         {
             CompletableFutures.getUninterruptibly(stage);
         }
-
+        myRepairs.clear();
         reset(mockTableRepairMetrics);
         reset(mockFaultReporter);
         reset(mockTableStorageStates);
