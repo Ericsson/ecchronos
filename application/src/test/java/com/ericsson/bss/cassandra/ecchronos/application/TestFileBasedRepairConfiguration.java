@@ -93,6 +93,12 @@ public class TestFileBasedRepairConfiguration
         assertConfig(repairConfigProvider, "any", "table", RepairConfiguration.DEFAULT);
     }
 
+    @Test (expected = ConfigurationException.class)
+    public void testNullScheduleConfig() throws Exception
+    {
+        withSchedule("null_schedule.yml");
+    }
+
     private void assertConfig(AbstractRepairConfigurationProvider repairConfigProvider, String keyspace, String table,
             RepairConfiguration repairConfiguration)
     {
