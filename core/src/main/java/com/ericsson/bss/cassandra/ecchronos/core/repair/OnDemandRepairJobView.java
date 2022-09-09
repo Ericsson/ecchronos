@@ -14,43 +14,86 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import java.util.UUID;
-
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
-public class OnDemandRepairJobView extends RepairJobView
-{
-    UUID hostId;
-    long completionTime;
+import java.util.Objects;
+import java.util.UUID;
 
-    public OnDemandRepairJobView(UUID id, UUID hostId, TableReference tableReference, RepairConfiguration repairConfiguration, Status status, double progress, long completionTime)
+public class OnDemandRepairJobView
+{
+    public enum Status
     {
-        super(id, tableReference, repairConfiguration, null, status, progress);
-        this.hostId = hostId;
-        this.completionTime = completionTime;
+        COMPLETED, IN_QUEUE, WARNING, ERROR, BLOCKED
     }
 
-    @Override
+    private final UUID myId;
+    private final TableReference myTableReference;
+    private final Status myStatus;
+    private final double myProgress;
+    private final UUID myHostId;
+    private final long myCompletionTime;
+
+    public OnDemandRepairJobView(UUID id, UUID hostId, TableReference tableReference, Status status, double progress,
+            long completionTime)
+    {
+        myId = id;
+        myTableReference = tableReference;
+        myStatus = status;
+        myProgress = progress;
+        myHostId = hostId;
+        myCompletionTime = completionTime;
+    }
+
+    public UUID getId()
+    {
+        return myId;
+    }
+
+    public TableReference getTableReference()
+    {
+        return myTableReference;
+    }
+
+    public Status getStatus()
+    {
+        return myStatus;
+    }
+
+    public double getProgress()
+    {
+        return myProgress;
+    }
+
     public UUID getHostId()
     {
-        return this.hostId;
+        return myHostId;
+    }
+
+    public long getCompletionTime()
+    {
+        return myCompletionTime;
     }
 
     @Override
-    public long getLastCompletedAt()
+    public boolean equals(Object o)
     {
-        return completionTime;
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+        OnDemandRepairJobView that = (OnDemandRepairJobView) o;
+        return Double.compare(that.myProgress, myProgress) == 0 && myCompletionTime == that.myCompletionTime
+                && Objects.equals(myId, that.myId) && Objects.equals(myTableReference,
+                that.myTableReference) && myStatus == that.myStatus && Objects.equals(myHostId, that.myHostId);
     }
 
     @Override
-    public long getNextRepair()
+    public int hashCode()
     {
-        return -1;
-    }
-
-    @Override
-    public Boolean isRecurring()
-    {
-        return false;
+        return Objects.hash(myId, myTableReference, myStatus, myProgress, myHostId, myCompletionTime);
     }
 }

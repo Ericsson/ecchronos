@@ -209,10 +209,10 @@ public class TestRepairSchedulerImpl
 
     private void assertOneTableViewExist(RepairScheduler repairScheduler, TableReference tableReference, RepairConfiguration repairConfiguration)
     {
-        List<RepairJobView> repairJobViews = repairScheduler.getCurrentRepairJobs();
+        List<ScheduledRepairJobView> repairJobViews = repairScheduler.getCurrentRepairJobs();
         assertThat(repairJobViews).hasSize(1);
 
-        RepairJobView repairJobView = repairJobViews.get(0);
+        ScheduledRepairJobView repairJobView = repairJobViews.get(0);
         assertThat(repairJobView.getTableReference()).isEqualTo(tableReference);
         assertThat(repairJobView.getRepairConfiguration()).isEqualTo(repairConfiguration);
     }

@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Command;
 import org.apache.karaf.shell.api.action.Completion;
@@ -31,7 +32,6 @@ import org.apache.karaf.shell.support.CommandException;
 import org.apache.karaf.shell.support.completers.StringsCompleter;
 import org.apache.karaf.shell.support.table.ShellTable;
 
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
@@ -94,7 +94,7 @@ public class RepairTableStatusCommand implements Action
                 .stream()
                 .filter(this::correctTable)
                 .findFirst()
-                .map(RepairJobView::getRepairStateSnapshot)
+                .map(ScheduledRepairJobView::getRepairStateSnapshot)
                 .map(RepairStateSnapshot::getVnodeRepairStates)
                 .orElseThrow(() -> new CommandException(
                         "Table reference '" + myTableRef + "' was not found. Format must be <keyspace>.<table>"));
@@ -132,7 +132,7 @@ public class RepairTableStatusCommand implements Action
         table.print(out);
     }
 
-    private boolean correctTable(RepairJobView tableView)
+    private boolean correctTable(ScheduledRepairJobView tableView)
     {
         TableReference tableReference = tableView.getTableReference();
         String tableRef = tableReference.getKeyspace() + "." + tableReference.getTable();

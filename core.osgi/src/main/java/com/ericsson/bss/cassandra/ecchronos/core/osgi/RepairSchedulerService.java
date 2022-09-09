@@ -101,7 +101,7 @@ public class RepairSchedulerService implements RepairScheduler
     }
 
     @Override
-    public List<RepairJobView> getCurrentRepairJobs()
+    public List<ScheduledRepairJobView> getCurrentRepairJobs()
     {
         return myDelegateRepairSchedulerImpl.getCurrentRepairJobs();
     }

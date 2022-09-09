@@ -14,8 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import org.apache.karaf.shell.api.action.lifecycle.Reference;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.api.console.CommandLine;
@@ -39,7 +39,7 @@ public class TableReferenceCompleter implements Completer
         {
             myRepairSchedulerService.getCurrentRepairJobs()
                     .stream()
-                    .map(RepairJobView::getTableReference)
+                    .map(ScheduledRepairJobView::getTableReference)
                     .forEach(tableReference -> delegate.getStrings().add(tableReference.toString()));
         } catch (Exception e) // NOPMD
         {

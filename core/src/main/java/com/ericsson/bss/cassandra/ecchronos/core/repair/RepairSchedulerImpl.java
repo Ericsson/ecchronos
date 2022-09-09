@@ -114,7 +114,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
     }
 
     @Override
-    public List<RepairJobView> getCurrentRepairJobs()
+    public List<ScheduledRepairJobView> getCurrentRepairJobs()
     {
         synchronized (myLock)
         {

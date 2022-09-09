@@ -25,7 +25,6 @@ import java.util.TimeZone;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
@@ -181,12 +180,12 @@ public class TestRepairTableStatusCommand
         return VnodeRepairStatesImpl.newBuilder(asList(states)).build();
     }
 
-    private static RepairJobView mockRepairJob(VnodeRepairStates vnodeRepairStates)
+    private static ScheduledRepairJobView mockRepairJob(VnodeRepairStates vnodeRepairStates)
     {
         TableReference tableReference = createTableRef("ks1.tbl1");
         RepairStateSnapshot state = mock(RepairStateSnapshot.class);
         when(state.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
-        return new ScheduledRepairJobView(UUID.randomUUID(), tableReference, null, state, RepairJobView.Status.IN_QUEUE, 0, 0);
+        return new ScheduledRepairJobView(UUID.randomUUID(), tableReference, null, state, ScheduledRepairJobView.Status.ON_TIME, 0, 0);
     }
 
     private RepairTableStatusCommand mockCommand(String tableRef)
@@ -201,7 +200,7 @@ public class TestRepairTableStatusCommand
 
     private RepairScheduler mockScheduler()
     {
-        RepairJobView repairJobView = mockRepairJob(states);
+        ScheduledRepairJobView repairJobView = mockRepairJob(states);
         RepairScheduler schedulerMock = mock(RepairScheduler.class);
         when(schedulerMock.getCurrentRepairJobs()).thenReturn(asList(repairJobView));
         return schedulerMock;

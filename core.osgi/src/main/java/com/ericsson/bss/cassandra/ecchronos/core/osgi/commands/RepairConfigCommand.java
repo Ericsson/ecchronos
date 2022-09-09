@@ -15,8 +15,8 @@
 package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.karaf.shell.api.action.Action;
@@ -77,7 +77,7 @@ public class RepairConfigCommand implements Action
         return table;
     }
 
-    private List<Object> createRowContent(RepairJobView job)
+    private List<Object> createRowContent(ScheduledRepairJobView job)
     {
         RepairConfiguration config = job.getRepairConfiguration();
         String tableName = job.getTableReference().getKeyspace() + "." + job.getTableReference().getTable();
@@ -91,7 +91,7 @@ public class RepairConfigCommand implements Action
                 );
     }
 
-    private static int sortedByName(RepairJobView view1, RepairJobView view2)
+    private static int sortedByName(ScheduledRepairJobView view1, ScheduledRepairJobView view2)
     {
         TableReference table1 = view1.getTableReference();
         TableReference table2 = view2.getTableReference();

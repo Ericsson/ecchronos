@@ -15,7 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TestUtils;
 import com.google.common.collect.ImmutableSet;
@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView.Status;
+import static com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView.Status;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestSchedule
@@ -43,7 +43,7 @@ public class TestSchedule
         VnodeRepairState vnodeRepairState2 = TestUtils.createVnodeRepairState(3, 4, ImmutableSet.of(), lastRepairedAtSecond);
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
         UUID id = UUID.randomUUID();
-        RepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
+        ScheduledRepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
                 .withId(id)
                 .withKeyspace("ks")
                 .withTable("tb")
@@ -62,7 +62,7 @@ public class TestSchedule
         assertThat(schedule.table).isEqualTo("tb");
         assertThat(schedule.repairedRatio).isEqualTo(1.0d);
         assertThat(schedule.lastRepairedAtInMs).isEqualTo(lastRepairedAt);
-        assertThat(schedule.status).isEqualTo(RepairJobView.ScheduleStatus.COMPLETED);
+        assertThat(schedule.status).isEqualTo(Status.COMPLETED);
         assertThat(schedule.nextRepairInMs).isEqualTo(lastRepairedAt + repairInterval);
         assertThat(schedule.config).isEqualTo(new ScheduleConfig(repairJobView));
 
@@ -76,7 +76,7 @@ public class TestSchedule
         long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(7);
         RepairConfiguration repairConfig = TestUtils.createRepairConfiguration(11, 2.2, 33, 44);
         UUID id = UUID.randomUUID();
-        RepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
+        ScheduledRepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
                 .withId(id)
                 .withKeyspace("ks")
                 .withTable("tb")
@@ -92,7 +92,7 @@ public class TestSchedule
         assertThat(schedule.table).isEqualTo("tb");
         assertThat(schedule.repairedRatio).isEqualTo(0.0d);
         assertThat(schedule.lastRepairedAtInMs).isEqualTo(lastRepairedAt);
-        assertThat(schedule.status).isEqualTo(RepairJobView.ScheduleStatus.ON_TIME);
+        assertThat(schedule.status).isEqualTo(Status.ON_TIME);
         assertThat(schedule.nextRepairInMs).isEqualTo(lastRepairedAt + repairInterval);
         assertThat(schedule.config).isEqualTo(new ScheduleConfig(repairJobView));
         assertThat(schedule.virtualNodeStates).isEmpty();
@@ -112,14 +112,14 @@ public class TestSchedule
 
         UUID id = UUID.randomUUID();
 
-        RepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
+        ScheduledRepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
                 .withId(id)
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withLastRepairedAt(lastRepairedAt)
                 .withRepairInterval(repairInterval)
                 .withVnodeRepairStateSet(Arrays.asList(vnodeRepairState, vnodeRepairState2))
-                .withStatus(Status.WARNING)
+                .withStatus(Status.LATE)
                 .withProgress(0.5d)
                 .withRepairConfiguration(repairConfig)
                 .build();
@@ -131,7 +131,7 @@ public class TestSchedule
         assertThat(schedule.table).isEqualTo("tb");
         assertThat(schedule.repairedRatio).isEqualTo(0.5d);
         assertThat(schedule.lastRepairedAtInMs).isEqualTo(lastRepairedAt);
-        assertThat(schedule.status).isEqualTo(RepairJobView.ScheduleStatus.LATE);
+        assertThat(schedule.status).isEqualTo(Status.LATE);
         assertThat(schedule.nextRepairInMs).isEqualTo(lastRepairedAt + repairInterval);
         assertThat(schedule.config).isEqualTo(new ScheduleConfig(repairJobView));
 
@@ -151,14 +151,14 @@ public class TestSchedule
 
         UUID id = UUID.randomUUID();
 
-        RepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
+        ScheduledRepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
                 .withId(id)
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withLastRepairedAt(lastRepairedAt)
                 .withRepairInterval(repairInterval)
                 .withVnodeRepairStateSet(Arrays.asList(vnodeRepairState, vnodeRepairState2))
-                .withStatus(Status.WARNING)
+                .withStatus(Status.LATE)
                 .withProgress(0.5d)
                 .withRepairConfiguration(repairConfig)
                 .build();
@@ -170,7 +170,7 @@ public class TestSchedule
         assertThat(schedule.table).isEqualTo("tb");
         assertThat(schedule.repairedRatio).isEqualTo(0.5d);
         assertThat(schedule.lastRepairedAtInMs).isEqualTo(lastRepairedAt);
-        assertThat(schedule.status).isEqualTo(RepairJobView.ScheduleStatus.LATE);
+        assertThat(schedule.status).isEqualTo(Status.LATE);
         assertThat(schedule.nextRepairInMs).isEqualTo(lastRepairedAt + repairInterval);
         assertThat(schedule.config).isEqualTo(new ScheduleConfig(repairJobView));
         assertThat(schedule.virtualNodeStates).isEmpty();
@@ -183,18 +183,18 @@ public class TestSchedule
         long repairInterval = TimeUnit.DAYS.toMillis(7);
         long lastRepairedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(11);
         UUID id = UUID.randomUUID();
-        RepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
+        ScheduledRepairJobView repairJobView = new TestUtils.ScheduledRepairJobBuilder()
                 .withId(id)
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withLastRepairedAt(lastRepairedAt)
                 .withRepairInterval(repairInterval)
-                .withStatus(Status.ERROR)
+                .withStatus(Status.OVERDUE)
                 .build();
         Schedule schedule = new Schedule(repairJobView);
 
         assertThat(schedule.lastRepairedAtInMs).isEqualTo(lastRepairedAt);
-        assertThat(schedule.status).isEqualTo(RepairJobView.ScheduleStatus.OVERDUE);
+        assertThat(schedule.status).isEqualTo(Status.OVERDUE);
         assertThat(schedule.nextRepairInMs).isEqualTo(lastRepairedAt + repairInterval);
     }
 

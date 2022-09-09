@@ -15,8 +15,8 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions.RepairParallelism;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
@@ -48,7 +48,7 @@ public class ScheduleConfig
     {
     }
 
-    public ScheduleConfig(RepairJobView repairJobView)
+    public ScheduleConfig(ScheduledRepairJobView repairJobView)
     {
         RepairConfiguration config = repairJobView.getRepairConfiguration();
 

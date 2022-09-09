@@ -31,7 +31,7 @@ import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.support.ansi.SimpleAnsi;
 import org.apache.karaf.shell.support.table.ShellTable;
 
-import static com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView.ScheduleStatus;
+import static com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView.Status;
 
 @Service
 @Command(scope = "repair", name = "status", description = "Give the current repair status")
@@ -102,7 +102,7 @@ public class RepairStatusCommand implements Action
 
     private boolean filterSchedule(Schedule schedule)
     {
-        return showAll || schedule.status != ScheduleStatus.COMPLETED;
+        return showAll || schedule.status != Status.COMPLETED;
     }
 
     Comparator<Schedule> getScheduleComparator()
@@ -150,19 +150,19 @@ public class RepairStatusCommand implements Action
 
     void printSummary(PrintStream out, List<Schedule> schedules)
     {
-        Map<ScheduleStatus, Long> stats = getStatusCount(schedules);
+        Map<Status, Long> stats = getStatusCount(schedules);
 
         StringBuilder sb = new StringBuilder("Summary: ");
-        sb.append(stats.getOrDefault(ScheduleStatus.COMPLETED, 0L)).append(" completed, ");
-        sb.append(stats.getOrDefault(ScheduleStatus.ON_TIME, 0L)).append(" on time, ");
-        sb.append(maybeCreateDescription(stats.get(ScheduleStatus.LATE), SimpleAnsi.COLOR_YELLOW, " late"));
-        sb.append(maybeCreateDescription(stats.get(ScheduleStatus.OVERDUE), SimpleAnsi.COLOR_RED, " overdue"));
+        sb.append(stats.getOrDefault(Status.COMPLETED, 0L)).append(" completed, ");
+        sb.append(stats.getOrDefault(Status.ON_TIME, 0L)).append(" on time, ");
+        sb.append(maybeCreateDescription(stats.get(Status.LATE), SimpleAnsi.COLOR_YELLOW, " late"));
+        sb.append(maybeCreateDescription(stats.get(Status.OVERDUE), SimpleAnsi.COLOR_RED, " overdue"));
         sb.setLength(sb.length() - 2);
 
         out.println(sb.toString());
     }
 
-    private Map<ScheduleStatus, Long> getStatusCount(List<Schedule> schedules)
+    private Map<Status, Long> getStatusCount(List<Schedule> schedules)
     {
         return schedules.stream().collect(Collectors.groupingBy(schedule -> schedule.status, Collectors.counting()));
     }
