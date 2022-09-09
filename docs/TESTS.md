@@ -40,7 +40,50 @@ This can be done by running either `mvn clean install -P docker-integration-test
 The acceptance test use behave to verify the python scripts as well as the REST server in ecChronos.
 They are activated by using `-P python-integration-tests` in combination with the docker flag.
 
-### Running acceptance tests towards local ecChronos/Cassandra
+### Running acceptance/integration tests towards local ccm cluster
+
+Running acceptance and integration tests towards local ccm cluster will save a lot of time because the Cassandra instances
+will be reused for the tests.
+This is especially useful during test development to have shorter feedback loop.
+
+**NOTE: These tests does not use TLS or auth therefore,
+it's recommended to run all the tests using `mvn clean verify -Dprecommit.tests` once you're done with development**
+
+1. Setup local ccm cluster
+
+```
+ccm create test -n 4 -v 3.11 --vnodes; ccm updateconf "num_tokens: 16"; ccm start;
+```
+
+2. Prepare keyspaces and tables:
+
+```
+ccm node1 cqlsh -f cassandra-test-image/src/main/docker/create_keyspaces.cql
+```
+
+3. Run the tests.
+
+Python integration tests
+```
+mvn clean install -P local-python-integration-tests
+```
+
+Standalone integration tests
+```
+mvn clean install -P local-standalone-integration-tests
+```
+
+OSGi integration tests
+```
+mvn clean install -P local-osgi-integration-tests
+```
+
+All the above in one property.
+```
+mvn clean install -Dlocalprecommit.tests
+```
+
+### Running acceptance tests towards local ecChronos&Cassandra
 
 For development, it's much faster to run behave tests without needing to do the ecChronos/Cassandra setup each time.
 Running behave tests manually is roughly 7x faster than running through `python-integration-tests`.

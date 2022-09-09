@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.standalone;
 
+import com.datastax.oss.driver.api.core.auth.AuthProvider;
 import com.datastax.oss.driver.api.core.auth.ProgrammaticPlainTextAuthProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalNativeConnectionProvider;
@@ -29,6 +30,7 @@ public class TestBase
     private static final String CASSANDRA_HOST = System.getProperty("it-cassandra.ip");
     private static final int CASSANDRA_NATIVE_PORT = Integer.parseInt(System.getProperty("it-cassandra.native.port"));
     private static final int CASSANDRA_JMX_PORT = Integer.parseInt(System.getProperty("it-cassandra.jmx.port"));
+    private static final String IS_LOCAL = System.getProperty("it-local-cassandra");
 
     private static LocalNativeConnectionProvider myNativeConnectionProvider;
     private static LocalNativeConnectionProvider myAdminNativeConnectionProvider;
@@ -38,15 +40,22 @@ public class TestBase
 
     public static void initialize() throws IOException
     {
+        AuthProvider authProvider = new ProgrammaticPlainTextAuthProvider("eccuser", "eccpassword");
+        AuthProvider adminAuthProvider = new ProgrammaticPlainTextAuthProvider("cassandra", "cassandra");
+        if (IS_LOCAL != null)
+        {
+            authProvider = null;
+            adminAuthProvider = null;
+        }
         myNativeConnectionProvider = LocalNativeConnectionProvider.builder()
                 .withPort(CASSANDRA_NATIVE_PORT)
                 .withLocalhost(CASSANDRA_HOST)
-                .withAuthProvider(new ProgrammaticPlainTextAuthProvider("eccuser", "eccpassword"))
+                .withAuthProvider(authProvider)
                 .build();
         myAdminNativeConnectionProvider = LocalNativeConnectionProvider.builder()
                 .withPort(CASSANDRA_NATIVE_PORT)
                 .withLocalhost(CASSANDRA_HOST)
-                .withAuthProvider(new ProgrammaticPlainTextAuthProvider("cassandra", "cassandra"))
+                .withAuthProvider(adminAuthProvider)
                 .withRemoteRouting(myRemoteRouting)
                 .build();
         myJmxConnectionProvider = new LocalJmxConnectionProvider(CASSANDRA_HOST, CASSANDRA_JMX_PORT);
