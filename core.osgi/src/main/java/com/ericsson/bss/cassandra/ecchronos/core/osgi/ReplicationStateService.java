@@ -46,7 +46,7 @@ public class ReplicationStateService implements ReplicationState
     private volatile ReplicationState delegateReplicationState;
 
     @Activate
-    public void activate()
+    public final void activate()
     {
         CqlSession session = nativeConnectionProvider.getSession();
         Node localNode = nativeConnectionProvider.getLocalNode();
@@ -55,26 +55,28 @@ public class ReplicationStateService implements ReplicationState
     }
 
     @Override
-    public ImmutableSet<DriverNode> getNodes(TableReference tableReference, LongTokenRange tokenRange)
+    public final ImmutableSet<DriverNode> getNodes(final TableReference tableReference,
+                                                   final LongTokenRange tokenRange)
     {
         return delegateReplicationState.getNodes(tableReference, tokenRange);
     }
 
     @Override
-    public ImmutableSet<DriverNode> getNodesClusterWide(TableReference tableReference,
-            LongTokenRange tokenRange)
+    public final ImmutableSet<DriverNode> getNodesClusterWide(final TableReference tableReference,
+                                                              final LongTokenRange tokenRange)
     {
         return delegateReplicationState.getNodesClusterWide(tableReference, tokenRange);
     }
 
     @Override
-    public Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRangeToReplicas(TableReference tableReference)
+    public final Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRangeToReplicas(
+            final TableReference tableReference)
     {
         return delegateReplicationState.getTokenRangeToReplicas(tableReference);
     }
 
     @Override
-    public Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRanges(TableReference tableReference)
+    public final Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRanges(final TableReference tableReference)
     {
         return delegateReplicationState.getTokenRanges(tableReference);
     }

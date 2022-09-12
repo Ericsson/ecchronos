@@ -18,20 +18,26 @@ import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxy;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactoryImpl;
-import org.osgi.service.component.annotations.*;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 
 import java.io.IOException;
 
 @Component(service = JmxProxyFactory.class)
 public class JmxProxyFactoryService implements JmxProxyFactory
 {
-    @Reference(service = JmxConnectionProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = JmxConnectionProvider.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile JmxConnectionProvider myJmxConnectionProvider;
 
     private volatile JmxProxyFactoryImpl myDelegateJmxProxyFactory;
 
     @Activate
-    public void activate()
+    public final void activate()
     {
         myDelegateJmxProxyFactory = JmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(myJmxConnectionProvider)
@@ -39,7 +45,7 @@ public class JmxProxyFactoryService implements JmxProxyFactory
     }
 
     @Override
-    public JmxProxy connect() throws IOException
+    public final JmxProxy connect() throws IOException
     {
         return myDelegateJmxProxyFactory.connect();
     }

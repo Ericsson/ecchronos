@@ -16,7 +16,18 @@ package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
 import java.util.List;
 
-import org.osgi.service.component.annotations.*;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairSchedulerImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairPolicy;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
@@ -24,7 +35,7 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.*;
+
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
@@ -32,7 +43,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 
 /**
- * A factory creating {@link TableRepairJob}'s for tables that replicates data over multiple nodes.
+ * A factory creating TableRepairJob's for tables that replicates data over multiple nodes.
  * <p>
  * This factory will schedule new jobs automatically when new tables are added.
  */
@@ -40,34 +51,42 @@ import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 @Designate(ocd = RepairSchedulerService.Configuration.class)
 public class RepairSchedulerService implements RepairScheduler
 {
-    @Reference(service = RepairFaultReporter.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = RepairFaultReporter.class,
+            cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile RepairFaultReporter myFaultReporter;
 
-    @Reference(service = JmxProxyFactory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = JmxProxyFactory.class,
+            cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile JmxProxyFactory myJmxProxyFactory;
 
-    @Reference(service = TableRepairMetrics.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = TableRepairMetrics.class,
+            cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile TableRepairMetrics myTableRepairMetrics;
 
-    @Reference(service = ScheduleManager.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = ScheduleManager.class,
+            cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile ScheduleManager myScheduleManager;
 
-    @Reference(service = RepairStateFactory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = RepairStateFactory.class,
+            cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile RepairStateFactory myRepairStateFactory;
 
-    @Reference(service = TableStorageStates.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = TableStorageStates.class,
+            cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile TableStorageStates myTableStorageStates;
 
-    @Reference(service = TableRepairPolicy.class, cardinality = ReferenceCardinality.AT_LEAST_ONE, policy = ReferencePolicy.STATIC)
+    @Reference(service = TableRepairPolicy.class,
+            cardinality = ReferenceCardinality.AT_LEAST_ONE, policy = ReferencePolicy.STATIC)
     private volatile List<TableRepairPolicy> myRepairPolicies;
 
-    @Reference(service = RepairHistory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = RepairHistory.class,
+            cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile RepairHistory myRepairHistory;
 
     private volatile RepairSchedulerImpl myDelegateRepairSchedulerImpl;
 
     @Activate
-    public synchronized void activate(Configuration configuration)
+    public final synchronized void activate(final Configuration configuration)
     {
         myDelegateRepairSchedulerImpl = RepairSchedulerImpl.builder()
                 .withFaultReporter(myFaultReporter)
@@ -83,25 +102,26 @@ public class RepairSchedulerService implements RepairScheduler
     }
 
     @Deactivate
-    public synchronized void deactivate()
+    public final synchronized void deactivate()
     {
         myDelegateRepairSchedulerImpl.close();
     }
 
     @Override
-    public void putConfiguration(TableReference tableReference, RepairConfiguration repairConfiguration)
+    public final void putConfiguration(final TableReference tableReference,
+                                       final RepairConfiguration repairConfiguration)
     {
         myDelegateRepairSchedulerImpl.putConfiguration(tableReference, repairConfiguration);
     }
 
     @Override
-    public void removeConfiguration(TableReference tableReference)
+    public final void removeConfiguration(final TableReference tableReference)
     {
         myDelegateRepairSchedulerImpl.removeConfiguration(tableReference);
     }
 
     @Override
-    public List<RepairJobView> getCurrentRepairJobs()
+    public final List<RepairJobView> getCurrentRepairJobs()
     {
         return myDelegateRepairSchedulerImpl.getCurrentRepairJobs();
     }

@@ -51,28 +51,35 @@ public class RepairTableStatusCommand implements Action
     @Reference
     private RepairScheduler myRepairSchedulerService;
 
-    @Option(name = "-t", aliases = "--table-reference", description = "The table reference in format <keyspace>.<table>", required = true)
+    @Option(name = "-t", aliases = "--table-reference",
+            description = "The table reference in format <keyspace>.<table>", required = true)
     @Completion(TableReferenceCompleter.class)
-    String myTableRef;
+    private String myTableRef;
 
-    @Option(name = "-s", aliases = "--sort-by", description = "Sort output based on " + SORT_RANGE + "/"
+    @Option(name = "-s", aliases = "--sort-by",
+            description = "Sort output based on " + SORT_RANGE + "/"
             + SORT_REPAIRED_AT)
     @Completion(value = StringsCompleter.class, values = { SORT_RANGE, SORT_REPAIRED_AT })
-    String mySortBy = SORT_RANGE;
+    private String mySortBy = SORT_RANGE;
 
-    @Option(name = "-r", aliases = "--reverse", description = "Reverse the sort order")
-    boolean myReverse = false;
+    @Option(name = "-r", aliases = "--reverse",
+            description = "Reverse the sort order")
+    private boolean myReverse = false;
 
-    @Option(name = "-l", aliases = "--limit", description = "Number of entries to display")
-    int myLimit = Integer.MAX_VALUE;
+    @Option(name = "-l", aliases = "--limit",
+            description = "Number of entries to display")
+    private int myLimit = Integer.MAX_VALUE;
 
     public RepairTableStatusCommand()
     {
     }
 
     @VisibleForTesting
-    RepairTableStatusCommand(RepairScheduler repairScheduler, String tableRef, String sortBy, boolean reverse,
-            int limit)
+    RepairTableStatusCommand(final RepairScheduler repairScheduler,
+                             final String tableRef,
+                             final String sortBy,
+                             final boolean reverse,
+                             final int limit)
     {
         myRepairSchedulerService = repairScheduler;
         myTableRef = tableRef;
@@ -82,13 +89,13 @@ public class RepairTableStatusCommand implements Action
     }
 
     @Override
-    public Object execute() throws Exception
+    public final Object execute() throws Exception
     {
         printTableRanges(System.out, getVnodeRepairStates(), getRepairStateComparator());
         return null;
     }
 
-    VnodeRepairStates getVnodeRepairStates() throws CommandException
+    public final VnodeRepairStates getVnodeRepairStates() throws CommandException
     {
         return myRepairSchedulerService.getCurrentRepairJobs()
                 .stream()
@@ -100,7 +107,7 @@ public class RepairTableStatusCommand implements Action
                         "Table reference '" + myTableRef + "' was not found. Format must be <keyspace>.<table>"));
     }
 
-    Comparator<VnodeRepairState> getRepairStateComparator()
+    public final Comparator<VnodeRepairState> getRepairStateComparator()
     {
         Comparator<VnodeRepairState> comparator;
         switch (mySortBy)
@@ -119,7 +126,9 @@ public class RepairTableStatusCommand implements Action
                 : comparator;
     }
 
-    void printTableRanges(PrintStream out, VnodeRepairStates repairStates, Comparator<VnodeRepairState> comparator)
+    public final void printTableRanges(final PrintStream out,
+                                       final VnodeRepairStates repairStates,
+                                       final Comparator<VnodeRepairState> comparator)
     {
         ShellTable table = createShellTable();
 
@@ -132,7 +141,7 @@ public class RepairTableStatusCommand implements Action
         table.print(out);
     }
 
-    private boolean correctTable(RepairJobView tableView)
+    private boolean correctTable(final RepairJobView tableView)
     {
         TableReference tableReference = tableView.getTableReference();
         String tableRef = tableReference.getKeyspace() + "." + tableReference.getTable();
@@ -148,7 +157,7 @@ public class RepairTableStatusCommand implements Action
         return table;
     }
 
-    private static List<Object> getRowContent(VnodeRepairState state)
+    private static List<Object> getRowContent(final VnodeRepairState state)
     {
         LongTokenRange tokenRange = state.getTokenRange();
         String lastRepairedAt = PrintUtils.epochToHumanReadable(state.lastRepairedAt());

@@ -19,23 +19,31 @@ import com.ericsson.bss.cassandra.ecchronos.core.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
-import org.osgi.service.component.annotations.*;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 
 import java.net.InetAddress;
 
 /**
- * Implementation of the {@link HostStates} interface using JMX to retrieve node statuses and then caches the retrieved statuses for some time.
+ * Implementation of the {@link HostStates} interface using JMX to retrieve node statuses and then caches the retrieved
+ * statuses for some time.
  */
 @Component(service = HostStates.class)
 public class HostStatesService implements HostStates
 {
-    @Reference(service = JmxProxyFactory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = JmxProxyFactory.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile JmxProxyFactory myJmxProxyFactory;
 
     private volatile HostStatesImpl myDelegateHostStates;
 
     @Activate
-    public void activate()
+    public final void activate()
     {
         myDelegateHostStates = HostStatesImpl.builder()
                 .withJmxProxyFactory(myJmxProxyFactory)
@@ -43,25 +51,25 @@ public class HostStatesService implements HostStates
     }
 
     @Deactivate
-    public void deactivate()
+    public final void deactivate()
     {
         myDelegateHostStates.close();
     }
 
     @Override
-    public boolean isUp(InetAddress address)
+    public final boolean isUp(final InetAddress address)
     {
         return myDelegateHostStates.isUp(address);
     }
 
     @Override
-    public boolean isUp(Node node)
+    public final boolean isUp(final Node node)
     {
         return myDelegateHostStates.isUp(node);
     }
 
     @Override
-    public boolean isUp(DriverNode node)
+    public final boolean isUp(final DriverNode node)
     {
         return myDelegateHostStates.isUp(node);
     }
