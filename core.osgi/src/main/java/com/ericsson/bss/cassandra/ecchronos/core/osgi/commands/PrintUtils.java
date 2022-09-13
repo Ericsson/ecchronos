@@ -23,18 +23,21 @@ import java.time.temporal.ChronoUnit;
 
 final class PrintUtils
 {
+    private static final int PERCENT_FACTOR = 100;
+
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private PrintUtils()
     {
     }
 
-    static String epochToHumanReadable(long timeInMillis)
+    public static String epochToHumanReadable(final long timeInMillis)
     {
-        return DATE_FORMATTER.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(timeInMillis), ZoneId.systemDefault()));
+        return DATE_FORMATTER.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(timeInMillis),
+                ZoneId.systemDefault()));
     }
 
-    static String durationToHumanReadable(long durationInMillis)
+    public static String durationToHumanReadable(final long durationInMillis)
     {
         Duration currentDuration = Duration.of(durationInMillis, ChronoUnit.MILLIS);
 
@@ -68,8 +71,8 @@ final class PrintUtils
         return sb.toString().trim();
     }
 
-    static String toPercentage(Double ratio)
+    public static String toPercentage(final Double ratio)
     {
-        return String.format("%.0f%%", ratio * 100);
+        return String.format("%.0f%%", ratio * PERCENT_FACTOR);
     }
 }
