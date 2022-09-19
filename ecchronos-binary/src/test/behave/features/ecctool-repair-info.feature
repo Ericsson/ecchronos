@@ -10,6 +10,13 @@ Feature: ecctool repair-info
     And the output should contain a repair-info row for test2.table2
     And the output should not contain more rows
 
+  Scenario: Get repair-info for all tables with duration and limit
+    Given we have access to ecctool
+    When we get repair-info with duration 5m and limit 1
+    Then the output should contain a valid repair-info header
+    And the output should contain a repair-info row for test.table1
+    And the output should not contain more rows
+
   Scenario: Get repair-info for all tables with ISO8601 duration
     Given we have access to ecctool
     When we get repair-info with duration pt5m
@@ -28,6 +35,13 @@ Feature: ecctool repair-info
     And the output should contain a repair-info row for test.table2
     And the output should contain a repair-info row for test2.table1
     And the output should contain a repair-info row for test2.table2
+    And the output should not contain more rows
+
+  Scenario: Get repair-info for all tables with since and limit 1
+    Given we have access to ecctool
+    When we get repair-info with since 0 and limit 1
+    Then the output should contain a valid repair-info header
+    And the output should contain a repair-info row for test.table1
     And the output should not contain more rows
 
   Scenario: Get local repair-info for all tables with since

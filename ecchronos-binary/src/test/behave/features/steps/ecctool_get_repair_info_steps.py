@@ -45,9 +45,21 @@ def step_get_repair_info_with_since_and_duration(context, since, duration):
     handle_repair_info_output(context)
 
 
+@when(u'we get repair-info with duration {duration} and limit {limit}')
+def step_get_repair_info_with_duration_and_limit(context, duration, limit):
+    run_ecc_repair_info(context, ['--duration', duration, '--limit', limit])
+    handle_repair_info_output(context)
+
+
 @when(u'we get repair-info with duration {duration}')
 def step_get_repair_info_with_duration(context, duration):
     run_ecc_repair_info(context, ['--duration', duration])
+    handle_repair_info_output(context)
+
+
+@when(u'we get repair-info with since {since} and limit {limit}')
+def step_get_repair_info_with_since_and_limit(context, since, limit):
+    run_ecc_repair_info(context, ['--since', since, '--limit', limit])
     handle_repair_info_output(context)
 
 
