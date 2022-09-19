@@ -71,7 +71,7 @@ public class TestUtils
         private RepairConfiguration repairConfiguration;
 
         private double progress = 0;
-        private RepairJobView.Status status = RepairJobView.Status.IN_QUEUE;
+        private ScheduledRepairJobView.Status status = ScheduledRepairJobView.Status.ON_TIME;
 
         public ScheduledRepairJobBuilder withId(UUID id)
         {
@@ -109,7 +109,7 @@ public class TestUtils
             return this;
         }
 
-        public ScheduledRepairJobBuilder withStatus(RepairJobView.Status status)
+        public ScheduledRepairJobBuilder withStatus(ScheduledRepairJobView.Status status)
         {
             this.status = status;
             return this;
@@ -128,7 +128,7 @@ public class TestUtils
         }
 
 
-        public RepairJobView build()
+        public ScheduledRepairJobView build()
         {
             Preconditions.checkNotNull(keyspace, "Keyspace cannot be null");
             Preconditions.checkNotNull(table, "Table cannot be null");
@@ -163,7 +163,7 @@ public class TestUtils
         private long completedAt = 0;
 
         private double progress = 0;
-        private RepairJobView.Status status = RepairJobView.Status.IN_QUEUE;
+        private OnDemandRepairJobView.Status status = OnDemandRepairJobView.Status.IN_QUEUE;
 		private RepairConfiguration repairConfiguration = RepairConfiguration.DEFAULT;
 
         public OnDemandRepairJobBuilder withId(UUID id)
@@ -202,7 +202,7 @@ public class TestUtils
             return this;
         }
 
-        public OnDemandRepairJobBuilder withStatus(RepairJobView.Status status)
+        public OnDemandRepairJobBuilder withStatus(OnDemandRepairJobView.Status status)
         {
             this.status = status;
             return this;
@@ -214,14 +214,13 @@ public class TestUtils
             return this;
         }
 
-        public RepairJobView build()
+        public OnDemandRepairJobView build()
         {
             Preconditions.checkNotNull(keyspace, "Keyspace cannot be null");
             Preconditions.checkNotNull(table, "Table cannot be null");
             Preconditions.checkArgument(completedAt > 0 || completedAt == -1, "Last repaired not set");
 
-            return new OnDemandRepairJobView(id, hostId, tableReference(keyspace, table), repairConfiguration,
-                    status, progress, completedAt);
+            return new OnDemandRepairJobView(id, hostId, tableReference(keyspace, table), status, progress, completedAt);
         }
     }
 

@@ -14,7 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairJobView;
 import com.google.common.annotations.VisibleForTesting;
 
 import javax.validation.constraints.Max;
@@ -40,7 +40,7 @@ public class OnDemandRepair
     @NotBlank
     public String table;
     @NotBlank
-    public RepairJobView.Status status;
+    public OnDemandRepairJobView.Status status;
     @NotBlank
     @Min(0)
     @Max(1)
@@ -54,7 +54,7 @@ public class OnDemandRepair
     }
 
     @VisibleForTesting
-    public OnDemandRepair(UUID id, UUID hostId, String keyspace, String table, RepairJobView.Status status, double repairedRatio, long completedAt)
+    public OnDemandRepair(UUID id, UUID hostId, String keyspace, String table, OnDemandRepairJobView.Status status, double repairedRatio, long completedAt)
     {
         this.id = id;
         this.hostId = hostId;
@@ -65,7 +65,7 @@ public class OnDemandRepair
         this.completedAt = completedAt;
     }
 
-    public OnDemandRepair(RepairJobView repairJobView)
+    public OnDemandRepair(OnDemandRepairJobView repairJobView)
     {
         this.id = repairJobView.getId();
         this.hostId = repairJobView.getHostId();
@@ -73,7 +73,7 @@ public class OnDemandRepair
         this.table = repairJobView.getTableReference().getTable();
         this.status = repairJobView.getStatus();
         this.repairedRatio = repairJobView.getProgress();
-        this.completedAt = repairJobView.getLastCompletedAt();
+        this.completedAt = repairJobView.getCompletionTime();
     }
 
     @Override

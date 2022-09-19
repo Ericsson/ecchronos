@@ -105,21 +105,21 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     }
 
     @Override
-    public List<RepairJobView> scheduleClusterWideJob(TableReference tableReference) throws EcChronosException
+    public List<OnDemandRepairJobView> scheduleClusterWideJob(TableReference tableReference) throws EcChronosException
     {
-        RepairJobView currentJob = scheduleJob(tableReference, true);
+        OnDemandRepairJobView currentJob = scheduleJob(tableReference, true);
         return getAllClusterWideRepairJobs().stream()
                 .filter(j -> j.getId().equals(currentJob.getId()))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public RepairJobView scheduleJob(TableReference tableReference) throws EcChronosException
+    public OnDemandRepairJobView scheduleJob(TableReference tableReference) throws EcChronosException
     {
         return scheduleJob(tableReference, false);
     }
 
-    private RepairJobView scheduleJob(TableReference tableReference, boolean isClusterWide) throws EcChronosException
+    private OnDemandRepairJobView scheduleJob(TableReference tableReference, boolean isClusterWide) throws EcChronosException
     {
         synchronized (myLock)
         {
@@ -151,7 +151,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         }
     }
 
-    public List<RepairJobView> getActiveRepairJobs()
+    public List<OnDemandRepairJobView> getActiveRepairJobs()
     {
         synchronized (myLock)
         {
@@ -162,7 +162,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     }
 
     @Override
-    public List<RepairJobView> getAllClusterWideRepairJobs()
+    public List<OnDemandRepairJobView> getAllClusterWideRepairJobs()
     {
         return myOnDemandStatus.getAllClusterWideJobs().stream()
                 .map(job -> getOngoingRepairJob(job))
@@ -171,7 +171,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     }
 
     @Override
-    public List<RepairJobView> getAllRepairJobs()
+    public List<OnDemandRepairJobView> getAllRepairJobs()
     {
         return myOnDemandStatus.getAllJobs(myReplicationState).stream()
                 .map(job -> getOngoingRepairJob(job))

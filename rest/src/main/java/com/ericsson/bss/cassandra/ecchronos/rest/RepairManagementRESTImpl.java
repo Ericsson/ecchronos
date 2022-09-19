@@ -15,9 +15,10 @@
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.RepairInfo;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.RepairStats;
@@ -117,7 +118,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         {
             if (table != null)
             {
-                List<Schedule> repairJobs = getScheduledRepairJobs(forTable(keyspace, table));
+                List<Schedule> repairJobs = getScheduledRepairJobs(forTableSchedule(keyspace, table));
                 return ResponseEntity.ok(repairJobs);
             }
             List<Schedule> repairJobs = getScheduledRepairJobs(
@@ -149,7 +150,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         {
             throw new ResponseStatusException(BAD_REQUEST, BAD_REQUEST.getReasonPhrase(), e);
         }
-        Optional<RepairJobView> repairJobView = getScheduleView(uuid);
+        Optional<ScheduledRepairJobView> repairJobView = getScheduleView(uuid);
         if (!repairJobView.isPresent())
         {
             throw new ResponseStatusException(NOT_FOUND);
@@ -173,7 +174,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
             {
                 if (hostId == null)
                 {
-                    List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(forTable(keyspace, table));
+                    List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(forTableOnDemand(keyspace, table));
                     return ResponseEntity.ok(repairJobs);
                 }
                 UUID host = parseIdOrThrow(hostId);
@@ -402,7 +403,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
             {
                 if (myReplicatedTableProvider.accept(tableReference.getKeyspace()))
                 {
-                    List<RepairJobView> repairJobView = myOnDemandRepairScheduler.scheduleClusterWideJob(
+                    List<OnDemandRepairJobView> repairJobView = myOnDemandRepairScheduler.scheduleClusterWideJob(
                             tableReference);
                     onDemandRepairs.addAll(
                             repairJobView.stream().map(OnDemandRepair::new).collect(Collectors.toList()));
@@ -412,7 +413,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         return onDemandRepairs;
     }
 
-    private List<Schedule> getScheduledRepairJobs(final Predicate<RepairJobView> filter)
+    private List<Schedule> getScheduledRepairJobs(final Predicate<ScheduledRepairJobView> filter)
     {
         return myRepairScheduler.getCurrentRepairJobs().stream()
                 .filter(filter)
@@ -420,7 +421,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                 .collect(Collectors.toList());
     }
 
-    private List<OnDemandRepair> getClusterWideOnDemandJobs(final Predicate<RepairJobView> filter)
+    private List<OnDemandRepair> getClusterWideOnDemandJobs(final Predicate<OnDemandRepairJobView> filter)
     {
         return myOnDemandRepairScheduler.getAllClusterWideRepairJobs().stream()
                 .filter(filter)
@@ -428,13 +429,23 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                 .collect(Collectors.toList());
     }
 
-    private Optional<RepairJobView> getScheduleView(final UUID id)
+    private Optional<ScheduledRepairJobView> getScheduleView(final UUID id)
     {
         return myRepairScheduler.getCurrentRepairJobs().stream()
                 .filter(job -> job.getId().equals(id)).findFirst();
     }
 
-    private Predicate<RepairJobView> forTable(final String keyspace, final String table)
+    private Predicate<ScheduledRepairJobView> forTableSchedule(final String keyspace, final String table)
+    {
+        return tableView ->
+        {
+            TableReference tableReference = tableView.getTableReference();
+            return tableReference.getKeyspace().equals(keyspace)
+                    && tableReference.getTable().equals(table);
+        };
+    }
+
+    private Predicate<OnDemandRepairJobView> forTableOnDemand(final String keyspace, final String table)
     {
         return tableView ->
         {

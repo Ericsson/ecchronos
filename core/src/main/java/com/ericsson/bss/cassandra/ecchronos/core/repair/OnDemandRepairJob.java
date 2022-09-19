@@ -128,34 +128,28 @@ public class OnDemandRepairJob extends ScheduledJob
         return myOngoingJob.getTableReference();
     }
 
-    public RepairConfiguration getRepairConfiguration()
-    {
-        return myRepairConfiguration;
-    }
-
-    public RepairJobView getView()
+    public OnDemandRepairJobView getView()
     {
         return new OnDemandRepairJobView(
                 getId(),
                 myOngoingJob.getHostId(),
                 myOngoingJob.getTableReference(),
-                myRepairConfiguration,
                 getStatus(),
                 getProgress(),
                 myOngoingJob.getCompletedTime());
     }
 
-    private RepairJobView.Status getStatus()
+    private OnDemandRepairJobView.Status getStatus()
     {
         if (failed || myOngoingJob.getStatus() == Status.failed)
         {
-            return RepairJobView.Status.ERROR;
+            return OnDemandRepairJobView.Status.ERROR;
         }
         else if(myOngoingJob.getStatus() == Status.finished)
         {
-            return RepairJobView.Status.COMPLETED;
+            return OnDemandRepairJobView.Status.COMPLETED;
         }
-        return RepairJobView.Status.IN_QUEUE;
+        return OnDemandRepairJobView.Status.IN_QUEUE;
     }
 
     @Override

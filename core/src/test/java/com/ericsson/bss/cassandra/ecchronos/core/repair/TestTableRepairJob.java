@@ -290,13 +290,13 @@ public class TestTableRepairJob
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState))
                 .build();
         when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
-        RepairJobView repairJobView = myRepairJob.getView();
+        ScheduledRepairJobView repairJobView = myRepairJob.getView();
 
         assertThat(repairJobView.getId()).isEqualTo(myTableReference.getId());
         assertThat(repairJobView.getTableReference()).isEqualTo(myTableReference);
         assertThat(repairJobView.getRepairConfiguration()).isEqualTo(myRepairConfiguration);
         assertThat(repairJobView.getRepairStateSnapshot()).isEqualTo(myRepairStateSnapshot);
-        assertThat(repairJobView.getStatus()).isEqualTo(RepairJobView.Status.ERROR);
+        assertThat(repairJobView.getStatus()).isEqualTo(ScheduledRepairJobView.Status.OVERDUE);
     }
 
     @Test
@@ -396,7 +396,7 @@ public class TestTableRepairJob
                 .build();
         when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
 
-        assertThat(myRepairJob.getView().getStatus()).isEqualTo(RepairJobView.Status.COMPLETED);
+        assertThat(myRepairJob.getView().getStatus()).isEqualTo(ScheduledRepairJobView.Status.COMPLETED);
     }
 
     @Test
@@ -409,7 +409,7 @@ public class TestTableRepairJob
         when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
         doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 
-        assertThat(myRepairJob.getView().getStatus()).isEqualTo(RepairJobView.Status.ERROR);
+        assertThat(myRepairJob.getView().getStatus()).isEqualTo(ScheduledRepairJobView.Status.OVERDUE);
     }
 
     @Test
@@ -422,7 +422,7 @@ public class TestTableRepairJob
         when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
         doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 
-        assertThat(myRepairJob.getView().getStatus()).isEqualTo(RepairJobView.Status.IN_QUEUE);
+        assertThat(myRepairJob.getView().getStatus()).isEqualTo(ScheduledRepairJobView.Status.ON_TIME);
     }
 
     @Test
@@ -435,7 +435,7 @@ public class TestTableRepairJob
         when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
         doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 
-        assertThat(myRepairJob.getView().getStatus()).isEqualTo(RepairJobView.Status.WARNING);
+        assertThat(myRepairJob.getView().getStatus()).isEqualTo(ScheduledRepairJobView.Status.LATE);
     }
 
     @Test
@@ -449,7 +449,7 @@ public class TestTableRepairJob
         doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
         myRepairJob.setRunnableIn(TimeUnit.HOURS.toMillis(1));
 
-        assertThat(myRepairJob.getView().getStatus()).isEqualTo(RepairJobView.Status.BLOCKED);
+        assertThat(myRepairJob.getView().getStatus()).isEqualTo(ScheduledRepairJobView.Status.BLOCKED);
     }
 
     @Test

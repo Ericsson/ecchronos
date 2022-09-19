@@ -14,7 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 import com.google.common.annotations.VisibleForTesting;
 
@@ -41,7 +41,7 @@ public class Schedule
     @NotBlank
     public String table;
     @NotBlank
-    public RepairJobView.ScheduleStatus status;
+    public ScheduledRepairJobView.Status status;
     @NotBlank
     @Min(0)
     @Max(1)
@@ -59,7 +59,7 @@ public class Schedule
     }
 
     @VisibleForTesting
-    public Schedule(UUID id, String keyspace, String table, RepairJobView.ScheduleStatus status, double repairedRatio, long lastRepairedAtInMs, long nextRepairInMs, ScheduleConfig config)
+    public Schedule(UUID id, String keyspace, String table, ScheduledRepairJobView.Status status, double repairedRatio, long lastRepairedAtInMs, long nextRepairInMs, ScheduleConfig config)
     {
         this.id = id;
         this.keyspace = keyspace;
@@ -72,20 +72,20 @@ public class Schedule
         this.virtualNodeStates = Collections.emptyList();
     }
 
-    public Schedule(RepairJobView repairJobView)
+    public Schedule(ScheduledRepairJobView repairJobView)
     {
         this.id = repairJobView.getId();
         this.keyspace = repairJobView.getTableReference().getKeyspace();
         this.table = repairJobView.getTableReference().getTable();
-        this.status = repairJobView.getScheduleStatus();
+        this.status = repairJobView.getStatus();
         this.repairedRatio = repairJobView.getProgress();
-        this.lastRepairedAtInMs = repairJobView.getLastCompletedAt();
+        this.lastRepairedAtInMs = repairJobView.getCompletionTime();
         this.nextRepairInMs = repairJobView.getNextRepair();
         this.config = new ScheduleConfig(repairJobView);
         this.virtualNodeStates = Collections.emptyList();
     }
 
-    public Schedule(RepairJobView repairJobView, boolean full)
+    public Schedule(ScheduledRepairJobView repairJobView, boolean full)
     {
         this(repairJobView);
         if (full)

@@ -17,10 +17,10 @@ package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 import java.util.List;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairSchedulerImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairPolicy;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -121,7 +121,7 @@ public class RepairSchedulerService implements RepairScheduler
     }
 
     @Override
-    public final List<RepairJobView> getCurrentRepairJobs()
+    public final List<ScheduledRepairJobView> getCurrentRepairJobs()
     {
         return myDelegateRepairSchedulerImpl.getCurrentRepairJobs();
     }

@@ -15,7 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.osgi.commands;
 
 import com.ericsson.bss.cassandra.ecchronos.core.osgi.commands.RepairStatusCommand.SortBy;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.Schedule;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.ScheduleConfig;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -42,16 +42,16 @@ import static org.mockito.Mockito.when;
 public class TestRepairStatusCommand
 {
     private static final Schedule SCHEDULE1 = new Schedule(UUID.randomUUID(), "ks", "tbl3",
-            RepairJobView.ScheduleStatus.ON_TIME, 0.234, toMillis("1970-01-01T00:00:00Z"),
+            ScheduledRepairJobView.Status.ON_TIME, 0.234, toMillis("1970-01-01T00:00:00Z"),
             toMillis("2019-12-31T23:59:00Z"), new ScheduleConfig());
     private static final Schedule SCHEDULE2 = new Schedule(UUID.randomUUID(), "ks", "tbl2",
-            RepairJobView.ScheduleStatus.COMPLETED, 0.0, toMillis("2019-12-24T12:34:00Z"),
+            ScheduledRepairJobView.Status.COMPLETED, 0.0, toMillis("2019-12-24T12:34:00Z"),
             toMillis("2019-12-29T00:34:00Z"), new ScheduleConfig());
     private static final Schedule SCHEDULE3 = new Schedule(UUID.randomUUID(), "ks", "tbl1",
-            RepairJobView.ScheduleStatus.LATE, 1.0, toMillis("2019-11-12T12:34:00Z"), toMillis("2019-12-29T12:34:00Z"),
+            ScheduledRepairJobView.Status.LATE, 1.0, toMillis("2019-11-12T12:34:00Z"), toMillis("2019-12-29T12:34:00Z"),
             new ScheduleConfig());
     private static final Schedule SCHEDULE4 = new Schedule(UUID.randomUUID(), "ks", "tbl4",
-            RepairJobView.ScheduleStatus.OVERDUE, 0.456, toMillis("2029-11-12T23:59:00Z"),
+            ScheduledRepairJobView.Status.OVERDUE, 0.456, toMillis("2029-11-12T23:59:00Z"),
             toMillis("2030-11-19T00:00:00Z"), new ScheduleConfig());
     private static final List<Schedule> SCHEDULES = asList(SCHEDULE1, SCHEDULE2, SCHEDULE3, SCHEDULE4);
 

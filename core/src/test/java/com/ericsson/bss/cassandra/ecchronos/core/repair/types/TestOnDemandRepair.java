@@ -14,7 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TestUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
@@ -22,7 +22,7 @@ import org.junit.Test;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView.Status;
+import static com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairJobView.Status;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestOnDemandRepair
@@ -34,7 +34,7 @@ public class TestOnDemandRepair
         UUID id = UUID.randomUUID();
         UUID hostId = UUID.randomUUID();
 
-        RepairJobView repairJobView = new TestUtils.OnDemandRepairJobBuilder()
+        OnDemandRepairJobView repairJobView = new TestUtils.OnDemandRepairJobBuilder()
                 .withId(id)
                 .withHostId(hostId)
                 .withKeyspace("ks")
@@ -62,7 +62,7 @@ public class TestOnDemandRepair
         UUID id = UUID.randomUUID();
         UUID hostId = UUID.randomUUID();
 
-        RepairJobView repairJobView = new TestUtils.OnDemandRepairJobBuilder()
+        OnDemandRepairJobView repairJobView = new TestUtils.OnDemandRepairJobBuilder()
                 .withId(id)
                 .withHostId(hostId)
                 .withKeyspace("ks")
@@ -86,7 +86,7 @@ public class TestOnDemandRepair
     public void testInProgress()
     {
         long completedAt = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(6);
-        RepairJobView repairJobView = new TestUtils.OnDemandRepairJobBuilder()
+        OnDemandRepairJobView repairJobView = new TestUtils.OnDemandRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withCompletedAt(completedAt)
