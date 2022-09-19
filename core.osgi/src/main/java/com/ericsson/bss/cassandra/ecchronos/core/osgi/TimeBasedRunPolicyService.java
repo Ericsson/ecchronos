@@ -38,16 +38,20 @@ public class TimeBasedRunPolicyService implements RunPolicy, TableRepairPolicy
 {
     private static final String DEFAULT_KEYSPACE_NAME = "ecchronos";
 
-    @Reference(service = NativeConnectionProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = NativeConnectionProvider.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile NativeConnectionProvider myNativeConnectionProvider;
 
-    @Reference (service = StatementDecorator.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference (service = StatementDecorator.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile StatementDecorator myStatementDecorator;
 
     private volatile TimeBasedRunPolicy myDelegatePolicy;
 
     @Activate
-    public synchronized void activate(Configuration configuration)
+    public final synchronized void activate(final Configuration configuration)
     {
         myDelegatePolicy = TimeBasedRunPolicy.builder()
                 .withSession(myNativeConnectionProvider.getSession())
@@ -57,19 +61,19 @@ public class TimeBasedRunPolicyService implements RunPolicy, TableRepairPolicy
     }
 
     @Deactivate
-    public synchronized void deactivate()
+    public final synchronized void deactivate()
     {
         myDelegatePolicy.close();
     }
 
     @Override
-    public long validate(ScheduledJob job)
+    public final long validate(final ScheduledJob job)
     {
         return myDelegatePolicy.validate(job);
     }
 
     @Override
-    public boolean shouldRun(TableReference tableReference)
+    public final boolean shouldRun(final TableReference tableReference)
     {
         return myDelegatePolicy.shouldRun(tableReference);
     }
@@ -77,7 +81,8 @@ public class TimeBasedRunPolicyService implements RunPolicy, TableRepairPolicy
     @ObjectClassDefinition
     public @interface Configuration
     {
-        @AttributeDefinition(name = "The time based runpolicy keyspace to use", description = "The name of the keyspace containing the time based runpolicy tables")
+        @AttributeDefinition(name = "The time based runpolicy keyspace to use",
+                description = "The name of the keyspace containing the time based runpolicy tables")
         String keyspaceName() default DEFAULT_KEYSPACE_NAME;
     }
 }

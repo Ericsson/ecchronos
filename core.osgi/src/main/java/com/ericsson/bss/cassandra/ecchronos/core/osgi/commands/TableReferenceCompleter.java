@@ -32,7 +32,7 @@ public class TableReferenceCompleter implements Completer
     private RepairScheduler myRepairSchedulerService;
 
     @Override
-    public int complete(Session session, CommandLine commandLine, List<String> candidates)
+    public final int complete(final Session session, final CommandLine commandLine, final List<String> candidates)
     {
         StringsCompleter delegate = new StringsCompleter();
         try
@@ -41,7 +41,8 @@ public class TableReferenceCompleter implements Completer
                     .stream()
                     .map(ScheduledRepairJobView::getTableReference)
                     .forEach(tableReference -> delegate.getStrings().add(tableReference.toString()));
-        } catch (Exception e) // NOPMD
+        }
+        catch (Exception e) // NOPMD
         {
             // Ignore
         }

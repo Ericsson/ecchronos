@@ -39,7 +39,7 @@ public class TableReferenceFactoryService implements TableReferenceFactory
     private volatile TableReferenceFactory delegateTableReferenceFactory;
 
     @Activate
-    public void activate()
+    public final void activate()
     {
         CqlSession session = nativeConnectionProvider.getSession();
 
@@ -47,25 +47,25 @@ public class TableReferenceFactoryService implements TableReferenceFactory
     }
 
     @Override
-    public TableReference forTable(String keyspace, String table)
+    public final TableReference forTable(final String keyspace, final String table)
     {
         return delegateTableReferenceFactory.forTable(keyspace, table);
     }
 
     @Override
-    public TableReference forTable(TableMetadata table)
+    public final TableReference forTable(final TableMetadata table)
     {
         return delegateTableReferenceFactory.forTable(table);
     }
 
     @Override
-    public Set<TableReference> forKeyspace(String keyspace) throws EcChronosException
+    public final Set<TableReference> forKeyspace(final String keyspace) throws EcChronosException
     {
         return delegateTableReferenceFactory.forKeyspace(keyspace);
     }
 
     @Override
-    public Set<TableReference> forCluster()
+    public final Set<TableReference> forCluster()
     {
         return delegateTableReferenceFactory.forCluster();
     }

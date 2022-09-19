@@ -78,7 +78,12 @@ public class ConfigurationHelper
         {
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
 
-            return objectMapper.readValue(configurationFile, clazz);
+            T config = objectMapper.readValue(configurationFile, clazz);
+            if (config == null)
+            {
+                throw new IOException("parsed config is null");
+            }
+            return config;
         }
         catch (IOException e)
         {
@@ -93,7 +98,12 @@ public class ConfigurationHelper
         {
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
 
-            return objectMapper.readValue(configurationFile, clazz);
+            T config = objectMapper.readValue(configurationFile, clazz);
+            if (config == null)
+            {
+                throw new IOException("parsed config is null");
+            }
+            return config;
         }
         catch (IOException e)
         {

@@ -50,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 @Designate(ocd = RepairHistoryService.Configuration.class)
 public class RepairHistoryService implements RepairHistory, RepairHistoryProvider
 {
+    private static final int ONE_SECOND_MILLIS = 1000;
     private static final Logger LOG = LoggerFactory.getLogger(RepairHistoryService.class);
 
     private static final String DEFAULT_PROVIDER_KEYSPACE = "ecchronos";
@@ -84,7 +85,7 @@ public class RepairHistoryService implements RepairHistory, RepairHistoryProvide
     private volatile RepairHistoryProvider delegateRepairHistoryProvider;
 
     @Activate
-    public void activate(Configuration configuration)
+    public final void activate(final Configuration configuration)
     {
         Node node = nativeConnectionProvider.getLocalNode();
         Optional<DriverNode> localNode = nodeResolver.fromUUID(node.getHostId());
@@ -94,7 +95,7 @@ public class RepairHistoryService implements RepairHistory, RepairHistoryProvide
             throw new IllegalStateException("Local node (" + node.getHostId() + ") not found in resolver");
         }
 
-        long lookbackTimeInMillis = configuration.lookbackTimeSeconds() * 1000;
+        long lookbackTimeInMillis = configuration.lookbackTimeSeconds() * ONE_SECOND_MILLIS;
 
         CqlSession session = nativeConnectionProvider.getSession();
 
@@ -130,29 +131,37 @@ public class RepairHistoryService implements RepairHistory, RepairHistoryProvide
     }
 
     @Override
-    public RepairSession newSession(TableReference tableReference, UUID jobId, LongTokenRange range,
-            Set<DriverNode> participants)
+    public final RepairSession newSession(final TableReference tableReference,
+                                          final UUID jobId,
+                                          final LongTokenRange range,
+                                          final Set<DriverNode> participants)
     {
         return delegateRepairHistory.newSession(tableReference, jobId, range, participants);
     }
 
     @Override
-    public Iterator<RepairEntry> iterate(TableReference tableReference, long to,
-            Predicate<RepairEntry> predicate)
+    public final Iterator<RepairEntry> iterate(final TableReference tableReference,
+                                               final long to,
+                                               final Predicate<RepairEntry> predicate)
     {
         return delegateRepairHistoryProvider.iterate(tableReference, to, predicate);
     }
 
     @Override
-    public Iterator<RepairEntry> iterate(TableReference tableReference, long to, long from,
-            Predicate<RepairEntry> predicate)
+    public final Iterator<RepairEntry> iterate(final TableReference tableReference,
+                                               final long to,
+                                               final long from,
+                                               final Predicate<RepairEntry> predicate)
     {
         return delegateRepairHistoryProvider.iterate(tableReference, to, from, predicate);
     }
 
     @Override
-    public Iterator<RepairEntry> iterate(UUID nodeId, TableReference tableReference, long to, long from,
-            Predicate<RepairEntry> predicate)
+    public final Iterator<RepairEntry> iterate(final UUID nodeId,
+                                               final TableReference tableReference,
+                                               final long to,
+                                               final long from,
+                                               final Predicate<RepairEntry> predicate)
     {
         return delegateRepairHistoryProvider.iterate(nodeId, tableReference, to, from, predicate);
     }
@@ -168,7 +177,8 @@ public class RepairHistoryService implements RepairHistory, RepairHistoryProvide
         String providerKeyspace() default DEFAULT_PROVIDER_KEYSPACE;
 
         @AttributeDefinition(name = "Repair history lookback time",
-                description = "The lookback time in seconds for when the repair_history table is queried to get initial repair state at startup")
+                description = "The lookback time in seconds for when the repair_history table is queried to get "
+                            + "initial repair state at startup")
         long lookbackTimeSeconds() default DEFAULT_REPAIR_HISTORY_LOOKBACK_SECONDS;
     }
 }

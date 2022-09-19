@@ -39,19 +39,25 @@ public class CASLockFactoryService implements LockFactory
 {
     private static final String DEFAULT_KEYSPACE_NAME = "ecchronos";
 
-    @Reference(service = NativeConnectionProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = NativeConnectionProvider.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile NativeConnectionProvider myNativeConnectionProvider;
 
-    @Reference (service = StatementDecorator.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference (service = StatementDecorator.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile StatementDecorator myStatementDecorator;
 
-    @Reference (service = HostStates.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference (service = HostStates.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile HostStates myHostStates;
 
     private volatile CASLockFactory myDelegateLockFactory;
 
     @Activate
-    public synchronized void activate(Configuration configuration)
+    public final synchronized void activate(final Configuration configuration)
     {
         myDelegateLockFactory = CASLockFactory.builder()
                 .withNativeConnectionProvider(myNativeConnectionProvider)
@@ -62,25 +68,29 @@ public class CASLockFactoryService implements LockFactory
     }
 
     @Deactivate
-    public synchronized void deactivate()
+    public final synchronized void deactivate()
     {
         myDelegateLockFactory.close();
     }
 
     @Override
-    public DistributedLock tryLock(String dataCenter, String resource, int priority, Map<String, String> metadata) throws LockException
+    public final DistributedLock tryLock(final String dataCenter,
+                                         final String resource,
+                                         final int priority,
+                                         final Map<String, String> metadata)
+            throws LockException
     {
         return myDelegateLockFactory.tryLock(dataCenter, resource, priority, metadata);
     }
 
     @Override
-    public Map<String, String> getLockMetadata(String dataCenter, String resource)
+    public final Map<String, String> getLockMetadata(final String dataCenter, final String resource)
     {
         return myDelegateLockFactory.getLockMetadata(dataCenter, resource);
     }
 
     @Override
-    public boolean sufficientNodesForLocking(String dataCenter, String resource)
+    public final boolean sufficientNodesForLocking(final String dataCenter, final String resource)
     {
         return myDelegateLockFactory.sufficientNodesForLocking(dataCenter, resource);
     }
@@ -88,7 +98,8 @@ public class CASLockFactoryService implements LockFactory
     @ObjectClassDefinition
     public @interface Configuration
     {
-        @AttributeDefinition(name = "The lock factory keyspace to use", description = "The name of the keyspace containing the lock factory tables")
+        @AttributeDefinition(name = "The lock factory keyspace to use",
+                description = "The name of the keyspace containing the lock factory tables")
         String keyspaceName() default DEFAULT_KEYSPACE_NAME;
     }
 }

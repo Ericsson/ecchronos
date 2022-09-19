@@ -47,22 +47,30 @@ public class DefaultRepairConfigurationProviderComponent
     private static final long DEFAULT_REPAIR_ERROR_SECONDS = 10L * 24L * 60L * 60L;
     private static final long DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES = RepairConfiguration.FULL_REPAIR_SIZE;
 
-    @Reference (service = NativeConnectionProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference (service = NativeConnectionProvider.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile NativeConnectionProvider myNativeConnectionProvider;
 
-    @Reference (service = ReplicatedTableProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference (service = ReplicatedTableProvider.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile ReplicatedTableProvider myReplicatedTableProvider;
 
-    @Reference (service = RepairScheduler.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference (service = RepairScheduler.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile RepairScheduler myRepairScheduler;
 
-    @Reference(service = TableReferenceFactory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = TableReferenceFactory.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile TableReferenceFactory myTableReferenceFactory;
 
     private volatile DefaultRepairConfigurationProvider myDelegateRepairConfigurationProvider;
 
     @Activate
-    public synchronized void activate(Configuration configuration)
+    public final synchronized void activate(final Configuration configuration)
     {
         if (configuration.enabled())
         {
@@ -93,7 +101,7 @@ public class DefaultRepairConfigurationProviderComponent
     }
 
     @Deactivate
-    public synchronized void deactivate()
+    public final synchronized void deactivate()
     {
         if (myDelegateRepairConfigurationProvider != null)
         {
@@ -104,25 +112,34 @@ public class DefaultRepairConfigurationProviderComponent
     @ObjectClassDefinition
     public @interface Configuration
     {
-        @AttributeDefinition (name = "Enable or disable", description = "If the default repair configuration provider should be enabled or disabled")
+        @AttributeDefinition (name = "Enable or disable",
+                description = "If the default repair configuration provider should be enabled or disabled")
         boolean enabled() default true;
 
-        @AttributeDefinition (name = "Repair interval in seconds", description = "The wanted interval between successful repairs in seconds")
+        @AttributeDefinition (name = "Repair interval in seconds",
+                description = "The wanted interval between successful repairs in seconds")
         long repairIntervalSeconds() default DEFAULT_REPAIR_INTERVAL_SECONDS;
 
-        @AttributeDefinition (name = "Repair warning time", description = "After a table has not been repaired for the specified")
+        @AttributeDefinition (name = "Repair warning time",
+                description = "After a table has not been repaired for the specified")
         long repairWarningSeconds() default DEFAULT_REPAIR_WARNING_SECONDS;
 
-        @AttributeDefinition (name = "Repair error time", description = "The wanted interval between successful repairs in seconds")
+        @AttributeDefinition (name = "Repair error time",
+                description = "The wanted interval between successful repairs in seconds")
         long repairErrorSeconds() default DEFAULT_REPAIR_ERROR_SECONDS;
 
-        @AttributeDefinition (name = "Repair paralleism", description = "The repair parallelism to use")
+        @AttributeDefinition (name = "Repair paralleism",
+                description = "The repair parallelism to use")
         RepairOptions.RepairParallelism repairParallelism() default RepairOptions.RepairParallelism.PARALLEL;
 
-        @AttributeDefinition (name = "Repair unwind ratio", description = "The ratio of time to wait before starting the next repair. The amount of time to wait is based on the time it took to perform the repair. A value of 1.0 gives 100% of the repair time as wait time.")
+        @AttributeDefinition (name = "Repair unwind ratio",
+                description = "The ratio of time to wait before starting the next repair. The amount of time "
+                            + "to wait is based on the time it took to perform the repair. A value of 1.0 gives "
+                            + "100% of the repair time as wait time.")
         double repairUnwindRatio() default RepairConfiguration.NO_UNWIND;
 
-        @AttributeDefinition (name = "Target repair size", description = "An indication of how much data a repair session should handle.")
+        @AttributeDefinition (name = "Target repair size",
+                description = "An indication of how much data a repair session should handle.")
         String targetRepairSize() default "";
     }
 }
