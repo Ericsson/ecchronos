@@ -51,8 +51,8 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class TestDefaultRepairConfigurationProvider
 {
-    private static final String KEYSPACE_NAME = "keyspace";
-    private static final String TABLE_NAME = "table";
+    private static final String KEYSPACE_NAME = "keyspace1";
+    private static final String TABLE_NAME = "table1";
 
     private static final TableReference TABLE_REFERENCE = tableReference(KEYSPACE_NAME, TABLE_NAME);
 

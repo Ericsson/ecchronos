@@ -53,7 +53,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 @RunWith(MockitoJUnitRunner.class)
 public class TestOnDemandRepairSchedulerImpl
 {
-    private static final TableReference TABLE_REFERENCE = tableReference("keyspace", "table");
+    private static final TableReference TABLE_REFERENCE = tableReference("keyspace1", "table1");
 
     @Mock
     private JmxProxyFactory jmxProxyFactory;
