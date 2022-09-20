@@ -250,7 +250,7 @@ def repair_info(arguments):
                                      since=arguments.since, duration=duration,
                                      local=arguments.local)
     if result.is_successful():
-        table_printer.print_repair_info(result.data)
+        table_printer.print_repair_info(result.data, arguments.limit)
     else:
         print(result.format_exception())
 

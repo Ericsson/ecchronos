@@ -2,6 +2,7 @@
 
 ## Version 4.0.0
 
+* Fix limit for repair-info - Issue #359
 * Remove version override of log4j - Issue #356
 * Throw configexception if yaml config contains null - Issue #352
 * Add cluster-wide support for repair-info - Issue #156
