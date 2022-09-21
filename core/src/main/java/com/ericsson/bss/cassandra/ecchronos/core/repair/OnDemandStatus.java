@@ -83,7 +83,10 @@ public class OnDemandStatus
     private final PreparedStatement myUpdateJobToFailedStatement;
     private final TableReferenceFactory myTableReferenceFactory;
 
-    public OnDemandStatus(NativeConnectionProvider nativeConnectionProvider)
+    /**
+     * Get current on demand status.
+     */
+    public OnDemandStatus(final NativeConnectionProvider nativeConnectionProvider)
     {
         mySession = nativeConnectionProvider.getSession();
         myHostId = nativeConnectionProvider.getLocalNode().getHostId();
@@ -134,12 +137,18 @@ public class OnDemandStatus
         myUpdateJobToFailedStatement = mySession.prepare(updateJobToFailedStatement);
     }
 
+    /**
+     * Get host ID.
+     */
     public UUID getHostId()
     {
         return myHostId;
     }
 
-    public Set<OngoingJob> getOngoingJobs(ReplicationState replicationState)
+    /**
+     * Get ongoing jobs.
+     */
+    public Set<OngoingJob> getOngoingJobs(final ReplicationState replicationState)
     {
         ResultSet result = mySession.execute(myGetStatusStatement.bind(myHostId));
 
@@ -167,6 +176,9 @@ public class OnDemandStatus
         return ongoingJobs;
     }
 
+    /**
+     * Get all cluster wide jobs.
+     */
     public Set<OngoingJob> getAllClusterWideJobs()
     {
         Metadata metadata = mySession.getMetadata();
@@ -181,12 +193,18 @@ public class OnDemandStatus
         return ongoingJobs;
     }
 
-    public Set<OngoingJob> getAllJobs(ReplicationState replicationState)
+    /**
+     * Get all jobs.
+     */
+    public Set<OngoingJob> getAllJobs(final ReplicationState replicationState)
     {
         return getAllJobsForHost(replicationState, myHostId);
     }
 
-    private Set<OngoingJob> getAllJobsForHost(ReplicationState replicationState, UUID hostId)
+    /**
+     * Get all jobs for a host.
+     */
+    private Set<OngoingJob> getAllJobsForHost(final ReplicationState replicationState, final UUID hostId)
     {
         ResultSet result = mySession.execute(myGetStatusStatement.bind(hostId));
 
@@ -211,8 +229,11 @@ public class OnDemandStatus
         return ongoingJobs;
     }
 
-    private void createOngoingJob(ReplicationState replicationState, Set<OngoingJob> ongoingJobs, Row row,
-            Status status, UUID hostId)
+    private void createOngoingJob(final ReplicationState replicationState,
+                                  final Set<OngoingJob> ongoingJobs,
+                                  final Row row,
+                                  final Status status,
+                                  final UUID hostId)
     {
         UUID jobId = row.getUuid(JOB_ID_COLUMN_NAME);
         int tokenMapHash = row.getInt(TOKEN_MAP_HASH_COLUMN_NAME);
@@ -246,13 +267,22 @@ public class OnDemandStatus
         }
     }
 
-    public void addNewJob(UUID jobId, TableReference tableReference, int tokenMapHash)
+    /**
+     * Add new job.
+     */
+    public void addNewJob(final UUID jobId, final TableReference tableReference, final int tokenMapHash)
     {
         addNewJob(myHostId, jobId, tableReference, tokenMapHash, Collections.EMPTY_SET);
     }
 
-    public void addNewJob(UUID host, UUID jobId, TableReference tableReference, int tokenMapHash,
-            Set<LongTokenRange> repairedRanges)
+    /**
+     * Add new job.
+     */
+    public void addNewJob(final UUID host,
+                          final UUID jobId,
+                          final TableReference tableReference,
+                          final int tokenMapHash,
+                          final Set<LongTokenRange> repairedRanges)
     {
         Set<UdtValue> repairedRangesUDT = new HashSet<>();
         if (repairedRanges != null)
@@ -267,33 +297,55 @@ public class OnDemandStatus
         mySession.execute(statement);
     }
 
-    public void updateJob(UUID jobId, Set<UdtValue> repairedTokens)
+    /**
+     * Update job.
+     */
+    public void updateJob(final UUID jobId, final Set<UdtValue> repairedTokens)
     {
         mySession.execute(myUpdateRepairedTokenForJobStatement.bind(repairedTokens, myHostId, jobId));
     }
 
-    public void finishJob(UUID jobId)
+    /**
+     * Finish job.
+     */
+    public void finishJob(final UUID jobId)
     {
-        mySession.execute(myUpdateJobToFinishedStatement.bind(Instant.ofEpochMilli(System.currentTimeMillis()), myHostId, jobId));
+        mySession.execute(myUpdateJobToFinishedStatement.bind(Instant.ofEpochMilli(System.currentTimeMillis()),
+                myHostId,
+                jobId));
     }
 
-    public void failJob(UUID jobId)
+    /**
+     * Fail job.
+     */
+    public void failJob(final UUID jobId)
     {
-        mySession.execute(myUpdateJobToFailedStatement.bind(Instant.ofEpochMilli(System.currentTimeMillis()), myHostId, jobId));
+        mySession.execute(myUpdateJobToFailedStatement.bind(Instant.ofEpochMilli(System.currentTimeMillis()),
+                myHostId,
+                jobId));
     }
 
-    public UdtValue createUDTTokenRangeValue(Long start, Long end)
+    /**
+     * Create UDT token range value.
+     */
+    public UdtValue createUDTTokenRangeValue(final Long start, final Long end)
     {
         return myUDTTokenType.newValue().setString(UDT_START_TOKEN_NAME, start.toString())
                 .setString(UDT_END_TOKEN_NAME, end.toString());
     }
 
-    public long getStartTokenFrom(UdtValue t)
+    /**
+     * Get start token.
+     */
+    public long getStartTokenFrom(final UdtValue t)
     {
         return Long.valueOf(t.getString(UDT_START_TOKEN_NAME));
     }
 
-    public long getEndTokenFrom(UdtValue t)
+    /**
+     * Get end token.
+     */
+    public long getEndTokenFrom(final UdtValue t)
     {
         return Long.valueOf(t.getString(UDT_END_TOKEN_NAME));
     }

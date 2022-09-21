@@ -32,7 +32,20 @@ public class RepairEntry
     private final RepairStatus myStatus;
     private final long myFinishedAt;
 
-    public RepairEntry(LongTokenRange range, long startedAt, long finishedAt, Set<DriverNode> participants, String status)
+    /**
+     * Constructor.
+     *
+     * @param range
+     * @param startedAt
+     * @param finishedAt
+     * @param participants
+     * @param status
+     */
+    public RepairEntry(final LongTokenRange range,
+                       final long startedAt,
+                       final long finishedAt,
+                       final Set<DriverNode> participants,
+                       final String status)
     {
         myRange = range;
         myStartedAt = startedAt;
@@ -41,44 +54,86 @@ public class RepairEntry
         myStatus = RepairStatus.getFromStatus(status);
     }
 
+    /**
+     * Get range.
+     *
+     * @return LongTokenRange
+     */
     public LongTokenRange getRange()
     {
         return myRange;
     }
 
+    /**
+     * Get started at.
+     *
+     * @return long
+     */
     public long getStartedAt()
     {
         return myStartedAt;
     }
 
+    /**
+     * Get finished at.
+     *
+     * @return long
+     */
     public long getFinishedAt()
     {
         return myFinishedAt;
     }
 
+    /**
+     * Get participants.
+     *
+     * @return Set<DriverNode>
+     */
     public Set<DriverNode> getParticipants()
     {
         return myParticipants;
     }
 
+    /**
+     * Get status.
+     *
+     * @return RepairStatus
+     */
     public RepairStatus getStatus()
     {
         return myStatus;
     }
 
+    /**
+     * Equality.
+     *
+     * @param o
+     * @return boolean
+     */
     @Override
-    public boolean equals(Object o)
+    public boolean equals(final Object o)
     {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
         RepairEntry that = (RepairEntry) o;
-        return myStartedAt == that.myStartedAt &&
-                myFinishedAt == that.myFinishedAt &&
-                Objects.equals(myRange, that.myRange) &&
-                Objects.equals(myParticipants, that.myParticipants) &&
-                myStatus == that.myStatus;
+        return myStartedAt == that.myStartedAt
+                && myFinishedAt == that.myFinishedAt
+                && Objects.equals(myRange, that.myRange)
+                && Objects.equals(myParticipants, that.myParticipants)
+                && myStatus == that.myStatus;
     }
 
+    /**
+     * Hash representation.
+     *
+     * @return int
+     */
     @Override
     public int hashCode()
     {

@@ -26,14 +26,14 @@ import java.util.stream.Collectors;
 public class VnodeRepairResourceFactory implements RepairResourceFactory
 {
     @Override
-    public Set<RepairResource> getRepairResources(ReplicaRepairGroup replicaRepairGroup)
+    public final Set<RepairResource> getRepairResources(final ReplicaRepairGroup replicaRepairGroup)
     {
         return replicaRepairGroup.getReplicas().stream()
                 .map(this::replicaToRepairResource)
                 .collect(Collectors.toSet());
     }
 
-    private RepairResource replicaToRepairResource(DriverNode node)
+    private RepairResource replicaToRepairResource(final DriverNode node)
     {
         return new RepairResource(node.getDatacenter(), node.getId().toString());
     }

@@ -35,11 +35,16 @@ public class RepairLockFactoryImpl implements RepairLockFactory
     private static final int LOCKS_PER_RESOURCE = 1;
 
     @Override
-    public LockFactory.DistributedLock getLock(LockFactory lockFactory, Set<RepairResource> repairResources, Map<String, String> metadata, int priority) throws LockException
+    public final LockFactory.DistributedLock getLock(final LockFactory lockFactory,
+                                                     final Set<RepairResource> repairResources,
+                                                     final Map<String, String> metadata,
+                                                     final int priority)
+            throws LockException
     {
         for (RepairResource repairResource : repairResources)
         {
-            if (!lockFactory.sufficientNodesForLocking(repairResource.getDataCenter(), repairResource.getResourceName(LOCKS_PER_RESOURCE)))
+            if (!lockFactory.sufficientNodesForLocking(repairResource.getDataCenter(),
+                    repairResource.getResourceName(LOCKS_PER_RESOURCE)))
             {
                 throw new LockException(repairResource + " not lockable. Repair will be retried later.");
             }
@@ -54,16 +59,21 @@ public class RepairLockFactoryImpl implements RepairLockFactory
 
         validateNoCachedFailures(lockFactory, repairResources);
 
-        Collection<LockFactory.DistributedLock> locks = getRepairResourceLocks(lockFactory, repairResources, metadata, priority);
+        Collection<LockFactory.DistributedLock> locks = getRepairResourceLocks(lockFactory,
+                repairResources,
+                metadata,
+                priority);
 
         return new LockCollection(locks);
     }
 
-    private void validateNoCachedFailures(LockFactory lockFactory, Set<RepairResource> repairResources) throws LockException
+    private void validateNoCachedFailures(final LockFactory lockFactory, final Set<RepairResource> repairResources)
+            throws LockException
     {
         for (RepairResource repairResource : repairResources)
         {
-            Optional<LockException> cachedException = lockFactory.getCachedFailure(repairResource.getDataCenter(), repairResource.getResourceName(LOCKS_PER_RESOURCE));
+            Optional<LockException> cachedException = lockFactory.getCachedFailure(repairResource.getDataCenter(),
+                    repairResource.getResourceName(LOCKS_PER_RESOURCE));
             if (cachedException.isPresent())
             {
                 LockException e = cachedException.get();
@@ -73,7 +83,12 @@ public class RepairLockFactoryImpl implements RepairLockFactory
         }
     }
 
-    private Collection<LockFactory.DistributedLock> getRepairResourceLocks(LockFactory lockFactory, Collection<RepairResource> repairResources, Map<String, String> metadata, int priority) throws LockException
+    private Collection<LockFactory.DistributedLock> getRepairResourceLocks(
+            final LockFactory lockFactory,
+            final Collection<RepairResource> repairResources,
+            final Map<String, String> metadata,
+            final int priority)
+            throws LockException
     {
         try (TemporaryLockHolder lockHolder = new TemporaryLockHolder())
         {
@@ -85,7 +100,10 @@ public class RepairLockFactoryImpl implements RepairLockFactory
                 }
                 catch (LockException e)
                 {
-                    LOG.debug("{} - Unable to get lock for repair resource '{}', releasing previously acquired locks - {}", this, repairResource, e.getMessage());
+                    LOG.debug("{} - Unable to get repair resource lock '{}', releasing previously acquired locks - {}",
+                            this,
+                            repairResource,
+                            e.getMessage());
                     throw e;
                 }
             }
@@ -94,7 +112,12 @@ public class RepairLockFactoryImpl implements RepairLockFactory
         }
     }
 
-    private LockFactory.DistributedLock getLockForRepairResource(LockFactory lockFactory, RepairResource repairResource, Map<String, String> metadata, int priority) throws LockException
+    private LockFactory.DistributedLock getLockForRepairResource(
+            final LockFactory lockFactory,
+            final RepairResource repairResource,
+            final Map<String, String> metadata,
+            final int priority)
+            throws LockException
     {
         LockFactory.DistributedLock myLock;
 
@@ -125,7 +148,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
     {
         private final List<LockFactory.DistributedLock> temporaryLocks = new ArrayList<>();
 
-        void add(LockFactory.DistributedLock lock)
+        void add(final LockFactory.DistributedLock lock)
         {
             temporaryLocks.add(lock);
         }

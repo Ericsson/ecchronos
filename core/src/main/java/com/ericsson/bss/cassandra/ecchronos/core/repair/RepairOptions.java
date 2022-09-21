@@ -17,8 +17,16 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 /**
  * The repair options available for the repair.
  */
-public class RepairOptions
+public final class RepairOptions
 {
+    /**
+     * Private default constructor.
+     */
+    private RepairOptions()
+    {
+        // Do nothing
+    }
+
     /**
      * The {@link RepairParallelism repair parallelism} to use for the repair.
      * <p>
@@ -75,7 +83,7 @@ public class RepairOptions
 
         private final String myName;
 
-        RepairParallelism(String name)
+        RepairParallelism(final String name)
         {
             myName = name;
         }

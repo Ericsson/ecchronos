@@ -27,13 +27,16 @@ public class RepairStatsProviderImpl implements RepairStatsProvider
 {
     private final VnodeRepairStateFactory myVnodeRepairStateFactory;
 
-    public RepairStatsProviderImpl(VnodeRepairStateFactory vnodeRepairStateFactory)
+    public RepairStatsProviderImpl(final VnodeRepairStateFactory vnodeRepairStateFactory)
     {
         myVnodeRepairStateFactory = vnodeRepairStateFactory;
     }
 
     @Override
-    public RepairStats getRepairStats(TableReference tableReference, long since, long to, boolean isLocal)
+    public final RepairStats getRepairStats(final TableReference tableReference,
+                                            final long since,
+                                            final long to,
+                                            final boolean isLocal)
     {
         VnodeRepairStates vnodeRepairStates;
         if (isLocal)
@@ -52,7 +55,7 @@ public class RepairStatsProviderImpl implements RepairStatsProvider
                 getRepairTime(repairedStates));
     }
 
-    private long getRepairTime(Collection<VnodeRepairState> repairedStates)
+    private long getRepairTime(final Collection<VnodeRepairState> repairedStates)
     {
         long totalRepairTime = 0L;
         for (VnodeRepairState vnodeRepairState : repairedStates)
@@ -62,7 +65,7 @@ public class RepairStatsProviderImpl implements RepairStatsProvider
         return totalRepairTime;
     }
 
-    private boolean isRepaired(VnodeRepairState state, long since, long to)
+    private boolean isRepaired(final VnodeRepairState state, final long since, final long to)
     {
         return state.getStartedAt() >= since && state.getFinishedAt() <= to;
     }

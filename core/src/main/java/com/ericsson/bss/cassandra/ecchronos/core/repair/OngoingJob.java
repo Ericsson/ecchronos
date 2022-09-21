@@ -27,6 +27,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 
+@SuppressWarnings("FinalClass")
 public class OngoingJob
 {
     public enum Status
@@ -40,12 +41,12 @@ public class OngoingJob
     private final Map<LongTokenRange, ImmutableSet<DriverNode>> myTokens;
     private final Set<UdtValue> myRepairedTokens;
     private final OnDemandStatus myOnDemandStatus;
-	private final ReplicationState myReplicationState;
+    private final ReplicationState myReplicationState;
     private final Integer myTokenHash;
     private final Status myStatus;
     private final long myCompletedTime;
 
-    private OngoingJob(Builder builder)
+    private OngoingJob(final Builder builder)
     {
         myOnDemandStatus = builder.onDemandStatus;
         myJobId = builder.jobId == null ? UUID.randomUUID() : builder.jobId;
@@ -58,7 +59,7 @@ public class OngoingJob
         myStatus = builder.status;
         myCompletedTime = builder.completedTime;
 
-        if(myTokenHash == null)
+        if (myTokenHash == null)
         {
             myOnDemandStatus.addNewJob(myJobId, myTableReference, myTokens.keySet().hashCode());
         }
@@ -92,11 +93,12 @@ public class OngoingJob
     public Set<LongTokenRange> getRepairedTokens()
     {
         Set<LongTokenRange> repairedLongTokenRanges = new HashSet<>();
-        myRepairedTokens.forEach(t -> repairedLongTokenRanges.add(new LongTokenRange(myOnDemandStatus.getStartTokenFrom(t), myOnDemandStatus.getEndTokenFrom(t))));
+        myRepairedTokens.forEach(t -> repairedLongTokenRanges
+                .add(new LongTokenRange(myOnDemandStatus.getStartTokenFrom(t), myOnDemandStatus.getEndTokenFrom(t))));
         return repairedLongTokenRanges;
     }
 
-    public void finishRanges(Set<LongTokenRange> ranges)
+    public void finishRanges(final Set<LongTokenRange> ranges)
     {
         ranges.forEach(t -> myRepairedTokens.add(myOnDemandStatus.createUDTTokenRangeValue(t.start, t.end)));
         myOnDemandStatus.updateJob(myJobId, myRepairedTokens);
@@ -104,18 +106,21 @@ public class OngoingJob
 
     public Map<LongTokenRange, ImmutableSet<DriverNode>> getTokens()
     {
-    	return myTokens;
+        return myTokens;
     }
 
     public boolean hasTopologyChanged()
     {
         return !myTokens.equals(myReplicationState.getTokenRangeToReplicas(myTableReference))
-                || (myTokenHash != null && (myTokenHash != myTokens.keySet().hashCode() && myTokenHash != myTokens.hashCode()));
+                || (myTokenHash != null
+                && (myTokenHash != myTokens.keySet().hashCode()
+                && myTokenHash != myTokens.hashCode()));
     }
 
     public void startClusterWideJob()
     {
-        Map<LongTokenRange, ImmutableSet<DriverNode>> allTokenRanges = myReplicationState.getTokenRanges(myTableReference);
+        Map<LongTokenRange, ImmutableSet<DriverNode>> allTokenRanges = myReplicationState
+                .getTokenRanges(myTableReference);
         Map<DriverNode, Set<LongTokenRange>> repairedRangesPerNode = new HashMap<>();
         Map<DriverNode, Set<LongTokenRange>> remainingRangesPerNode = new HashMap<>();
         for (Map.Entry<LongTokenRange, ImmutableSet<DriverNode>> range : allTokenRanges.entrySet())
@@ -150,18 +155,22 @@ public class OngoingJob
             {
                 allTokensForNode.addAll(repairedRanges);
             }
-            myOnDemandStatus.addNewJob(node.getId(), myJobId, myTableReference, allTokensForNode.hashCode(), repairedRanges);
+            myOnDemandStatus.addNewJob(node.getId(),
+                    myJobId,
+                    myTableReference,
+                    allTokensForNode.hashCode(),
+                    repairedRanges);
         }
     }
 
     public void finishJob()
     {
-    	myOnDemandStatus.finishJob(myJobId);
+        myOnDemandStatus.finishJob(myJobId);
     }
 
     public void failJob()
     {
-    	myOnDemandStatus.failJob(myJobId);
+        myOnDemandStatus.failJob(myJobId);
     }
 
     public static class Builder
@@ -176,43 +185,65 @@ public class OngoingJob
         private Status status = Status.started;
         private long completedTime = -1;
 
-        public Builder withOngoingJobInfo(UUID jobId, int tokenMapHash, Set<UdtValue> repairedTokens, Status status, Long completedTime)
+        /**
+         * Ongoing job build with ongoing job info.
+         */
+        public Builder withOngoingJobInfo(final UUID theJobId,
+                                          final int theTokenMapHash,
+                                          final Set<UdtValue> theRepairedTokens,
+                                          final Status theStatus,
+                                          final Long theCompletedTime)
         {
-            this.jobId = jobId;
-            this.tokenMapHash  = tokenMapHash;
-            this.repairedTokens = repairedTokens;
-            this.status = status;
-            if(completedTime != null)
+            this.jobId = theJobId;
+            this.tokenMapHash  = theTokenMapHash;
+            this.repairedTokens = theRepairedTokens;
+            this.status = theStatus;
+            if (theCompletedTime != null)
             {
-                this.completedTime = completedTime;
+                this.completedTime = theCompletedTime;
             }
             return this;
         }
 
-        public Builder withTableReference(TableReference tableReference)
+        /**
+         * Ongoing job build with table reference.
+         */
+        public Builder withTableReference(final TableReference aTableReference)
         {
-        	this.tableReference = tableReference;
-        	return this;
-        }
-
-        public Builder withOnDemandStatus(OnDemandStatus onDemandStatus)
-        {
-            this.onDemandStatus = onDemandStatus;
-        	return this;
-        }
-
-        public Builder withReplicationState(ReplicationState replicationState)
-        {
-            this.replicationState = replicationState;
+            this.tableReference = aTableReference;
             return this;
         }
 
-        public Builder withHostId(UUID hostId)
+        /**
+         * Ongoing job build with on demand status.
+         */
+        public Builder withOnDemandStatus(final OnDemandStatus theOnDemandStatus)
         {
-            this.hostId = hostId;
+            this.onDemandStatus = theOnDemandStatus;
             return this;
         }
 
+        /**
+         * Ongoing job build with replication state.
+         */
+        public Builder withReplicationState(final ReplicationState aReplicationState)
+        {
+            this.replicationState = aReplicationState;
+            return this;
+        }
+
+        /**
+         * Ongoing job build with host ID.
+         */
+        public Builder withHostId(final UUID aHostId)
+        {
+            this.hostId = aHostId;
+            return this;
+        }
+
+        /**
+         * Ongoing job build.
+         */
         public OngoingJob build()
         {
             return new OngoingJob(this);

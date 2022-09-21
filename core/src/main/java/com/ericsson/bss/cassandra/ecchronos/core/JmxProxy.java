@@ -21,7 +21,6 @@ import java.util.Map;
 import javax.management.NotificationListener;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 
 /**
  * Cassandra JMX proxy interface used to interact with the local Cassandra node using JMX.
@@ -62,7 +61,7 @@ public interface JmxProxy extends Closeable
      *            The options for the repair.
      * @return a positive value if a repair was started, zero otherwise.
      *
-     * @see RepairOptions
+     * @see com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions
      */
     int repairAsync(String keyspace, Map<String, String> options);
 

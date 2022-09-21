@@ -26,9 +26,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Implementation of the {@link HostStates} interface using JMX to retrieve node statuses and then caches the retrieved statuses for some time.
+ * Implementation of the {@link HostStates} interface using JMX to retrieve node statuses and then caches the retrieved
+ * statuses for some time.
  */
-public class HostStatesImpl implements HostStates, Closeable
+public final class HostStatesImpl implements HostStates, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HostStatesImpl.class);
 
@@ -42,14 +43,14 @@ public class HostStatesImpl implements HostStates, Closeable
 
     private final JmxProxyFactory myJmxProxyFactory;
 
-    private HostStatesImpl(Builder builder)
+    private HostStatesImpl(final Builder builder)
     {
         myRefreshIntervalInMs = builder.myRefreshIntervalInMs;
         myJmxProxyFactory = builder.myJmxProxyFactory;
     }
 
     @Override
-    public boolean isUp(InetAddress address)
+    public boolean isUp(final InetAddress address)
     {
         refreshNodeStatus();
 
@@ -58,13 +59,13 @@ public class HostStatesImpl implements HostStates, Closeable
     }
 
     @Override
-    public boolean isUp(Node node)
+    public boolean isUp(final Node node)
     {
         return isUp(node.getBroadcastAddress().get().getAddress());
     }
 
     @Override
-    public boolean isUp(DriverNode node)
+    public boolean isUp(final DriverNode node)
     {
         return isUp(node.getPublicAddress());
     }
@@ -134,7 +135,7 @@ public class HostStatesImpl implements HostStates, Closeable
         return false;
     }
 
-    private boolean changeHostState(InetAddress host, boolean newValue)
+    private boolean changeHostState(final InetAddress host, final boolean newValue)
     {
         Boolean oldValue = myHostStates.put(host, newValue);
 
@@ -151,19 +152,19 @@ public class HostStatesImpl implements HostStates, Closeable
         private JmxProxyFactory myJmxProxyFactory;
         private long myRefreshIntervalInMs = DEFAULT_REFRESH_INTERVAL_IN_MS;
 
-        public Builder withJmxProxyFactory(JmxProxyFactory jmxProxyFactory)
+        public final Builder withJmxProxyFactory(final JmxProxyFactory jmxProxyFactory)
         {
             myJmxProxyFactory = jmxProxyFactory;
             return this;
         }
 
-        public Builder withRefreshIntervalInMs(long refreshIntervalInMs)
+        public final Builder withRefreshIntervalInMs(final long refreshIntervalInMs)
         {
             myRefreshIntervalInMs = refreshIntervalInMs;
             return this;
         }
 
-        public HostStatesImpl build()
+        public final HostStatesImpl build()
         {
             if (myJmxProxyFactory == null)
             {

@@ -58,8 +58,9 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     private static final String REPAIR_HISTORY = "repair_history";
 
     private static final String REPAIR_HISTORY_BY_TIME_STATEMENT = String
-            .format("SELECT started_at, finished_at, range_begin, range_end, status, participants, coordinator FROM %s.%s WHERE keyspace_name=? AND columnfamily_name=? AND id >= minTimeuuid(?) and id <= maxTimeuuid(?)",
-                    KEYSPACE_NAME, REPAIR_HISTORY);
+            .format("SELECT started_at, finished_at, range_begin, range_end, status, participants, coordinator "
+                    + "FROM %s.%s WHERE keyspace_name=? AND columnfamily_name=? AND id >= minTimeuuid(?) and id <= "
+                    + "maxTimeuuid(?)", KEYSPACE_NAME, REPAIR_HISTORY);
 
     private final NodeResolver myNodeResolver;
     private final CqlSession mySession;
@@ -69,17 +70,20 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     private final long myLookbackTime;
     private final Clock myClock;
 
-    public RepairHistoryProviderImpl(NodeResolver nodeResolver, CqlSession session,
-            StatementDecorator statementDecorator,
-            long lookbackTime)
+    public RepairHistoryProviderImpl(final NodeResolver nodeResolver,
+                                     final CqlSession session,
+                                     final StatementDecorator statementDecorator,
+                                     final long lookbackTime)
     {
         this(nodeResolver, session, statementDecorator, lookbackTime, Clock.systemDefaultZone());
     }
 
     @VisibleForTesting
-    RepairHistoryProviderImpl(NodeResolver nodeResolver, CqlSession session,
-                              StatementDecorator statementDecorator,
-                              long lookbackTime, Clock clock)
+    RepairHistoryProviderImpl(final NodeResolver nodeResolver,
+                              final CqlSession session,
+                              final StatementDecorator statementDecorator,
+                              final long lookbackTime,
+                              final Clock clock)
     {
         myNodeResolver = nodeResolver;
         mySession = session;
@@ -89,16 +93,37 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
         myClock = clock;
     }
 
+    /**
+     * Iterate.
+     *
+     * @param tableReference The table for which the history should be iterated.
+     * @param to The latest point in time to iterate to.
+     * @param predicate The predicate used to filter out entries in the iterator results.
+     * @return Iterator<RepairEntry>
+     */
     @Override
-    public Iterator<RepairEntry> iterate(TableReference tableReference, long to, Predicate<RepairEntry> predicate)
+    public Iterator<RepairEntry> iterate(final TableReference tableReference,
+                                         final long to,
+                                         final Predicate<RepairEntry> predicate)
     {
         long from = myClock.millis() - myLookbackTime;
         return iterate(tableReference, to, from, predicate);
     }
 
+    /**
+     * Iterate.
+     *
+     * @param tableReference The table for which the history should be iterated.
+     * @param to The last point in time to iterate to.
+     * @param from The point in time to start iterating from.
+     * @param predicate The predicate used to filter out entries in the iterator results.
+     * @return Iterator<RepairEntry>
+     */
     @Override
-    public Iterator<RepairEntry> iterate(TableReference tableReference, long to, long from,
-            Predicate<RepairEntry> predicate)
+    public Iterator<RepairEntry> iterate(final TableReference tableReference,
+                                         final long to,
+                                         final long from,
+                                         final Predicate<RepairEntry> predicate)
     {
         Instant fromDate = Instant.ofEpochMilli(from);
         Instant toDate = Instant.ofEpochMilli(to);
@@ -114,14 +139,27 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
         return new RepairEntryIterator(resultSet.iterator(), predicate);
     }
 
+    /**
+     * Iterate.
+     *
+     * @param nodeId The node to iterate repair history for.
+     * @param tableReference The table for which the history should be iterated.
+     * @param to The last point in time to iterate to.
+     * @param from The point in time to start iterating from.
+     * @param predicate The predicate used to filter out entries in the iterator results.
+     * @return Iterator<RepairEntry>
+     */
     @Override
-    public Iterator<RepairEntry> iterate(UUID nodeId, TableReference tableReference, long to, long from,
-            Predicate<RepairEntry> predicate)
+    public Iterator<RepairEntry> iterate(final UUID nodeId,
+                                         final TableReference tableReference,
+                                         final long to,
+                                         final long from,
+                                         final Predicate<RepairEntry> predicate)
     {
         return iterate(tableReference, to, from, predicate);
     }
 
-    private ResultSet execute(Statement statement)
+    private ResultSet execute(final Statement statement)
     {
         return mySession.execute(myStatementDecorator.apply(statement));
     }
@@ -131,7 +169,7 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
         private final Iterator<Row> myIterator;
         private final Predicate<RepairEntry> myPredicate;
 
-        RepairEntryIterator(Iterator<Row> iterator, Predicate<RepairEntry> predicate)
+        RepairEntryIterator(final Iterator<Row> iterator, final Predicate<RepairEntry> predicate)
         {
             myIterator = iterator;
             myPredicate = predicate;
@@ -195,13 +233,13 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
             return endOfData();
         }
 
-        private boolean validateFields(Row row)
+        private boolean validateFields(final Row row)
         {
-            return !row.isNull(PARTICIPANTS_COLUMN) &&
-                    !row.isNull(RANGE_BEGIN_COLUMN) &&
-                    !row.isNull(RANGE_END_COLUMN) &&
-                    !row.isNull(COORDINATOR_COLUMN) &&
-                    !row.isNull(STARTED_AT_COLUMN);
+            return !row.isNull(PARTICIPANTS_COLUMN)
+                    && !row.isNull(RANGE_BEGIN_COLUMN)
+                    && !row.isNull(RANGE_END_COLUMN)
+                    && !row.isNull(COORDINATOR_COLUMN)
+                    && !row.isNull(STARTED_AT_COLUMN);
         }
     }
 }

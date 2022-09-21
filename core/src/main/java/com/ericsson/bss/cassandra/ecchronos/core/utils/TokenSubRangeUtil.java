@@ -34,10 +34,10 @@ public class TokenSubRangeUtil
     private final BigInteger tokenStart;
     private final BigInteger totalRangeSize;
 
-    public TokenSubRangeUtil(LongTokenRange tokenRange)
+    public TokenSubRangeUtil(final LongTokenRange aTokenRange)
     {
-        this.tokenRange = tokenRange;
-        this.tokenStart = BigInteger.valueOf(tokenRange.start);
+        this.tokenRange = aTokenRange;
+        this.tokenStart = BigInteger.valueOf(aTokenRange.start);
         this.totalRangeSize = this.tokenRange.rangeSize();
     }
 
@@ -49,7 +49,7 @@ public class TokenSubRangeUtil
      * @param tokenPerSubRange The number of wanted tokens per subrange
      * @return The sub ranges containing the full range.
      */
-    public List<LongTokenRange> generateSubRanges(BigInteger tokenPerSubRange)
+    public List<LongTokenRange> generateSubRanges(final BigInteger tokenPerSubRange)
     {
         if (totalRangeSize.compareTo(tokenPerSubRange) <= 0)
         {
@@ -77,7 +77,7 @@ public class TokenSubRangeUtil
         return subRanges;
     }
 
-    private void validateSubRangeSize(List<LongTokenRange> subRanges)
+    private void validateSubRangeSize(final List<LongTokenRange> subRanges)
     {
         BigInteger subRangeSize = BigInteger.ZERO;
 
@@ -89,14 +89,16 @@ public class TokenSubRangeUtil
         if (subRangeSize.compareTo(totalRangeSize) != 0)
         {
             BigInteger difference = totalRangeSize.subtract(subRangeSize).abs();
-            String message = String.format("Unexpected sub-range generation for %s. Difference of %s. Sub-ranges generated: %s", tokenRange, difference, subRanges);
+            String message = String.format(
+                    "Unexpected sub-range generation for %s. Difference of %s. Sub-ranges generated: %s",
+                    tokenRange, difference, subRanges);
 
             LOG.error(message);
             throw new InternalException(message);
         }
     }
 
-    private LongTokenRange newSubRange(BigInteger rangeSize, long rangeId)
+    private LongTokenRange newSubRange(final BigInteger rangeSize, final long rangeId)
     {
         BigInteger rangeOffset = rangeSize.multiply(BigInteger.valueOf(rangeId));
         BigInteger rangeStartTmp = tokenStart.add(rangeOffset);
@@ -108,7 +110,7 @@ public class TokenSubRangeUtil
         return new LongTokenRange(rangeStart, rangeEnd);
     }
 
-    private long enforceValidBounds(BigInteger tokenValue)
+    private long enforceValidBounds(final BigInteger tokenValue)
     {
         if (tokenValue.compareTo(LongTokenRange.RANGE_END) > 0)
         {

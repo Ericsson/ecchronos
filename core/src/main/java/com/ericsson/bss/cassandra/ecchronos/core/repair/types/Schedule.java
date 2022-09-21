@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
  *
  * Primarily used to have a type to convert to JSON.
  */
+@SuppressWarnings("VisibilityModifier")
 public class Schedule
 {
     @NotBlank
@@ -59,20 +60,27 @@ public class Schedule
     }
 
     @VisibleForTesting
-    public Schedule(UUID id, String keyspace, String table, ScheduledRepairJobView.Status status, double repairedRatio, long lastRepairedAtInMs, long nextRepairInMs, ScheduleConfig config)
+    public Schedule(final UUID theId,
+                    final String theKeyspace,
+                    final String theTable,
+                    final ScheduledRepairJobView.Status theStatus,
+                    final double theRepairedRatio,
+                    final long theLastRepairedAtInMs,
+                    final long theNextRepairInMs,
+                    final ScheduleConfig theConfig)
     {
-        this.id = id;
-        this.keyspace = keyspace;
-        this.table = table;
-        this.status = status;
-        this.repairedRatio = repairedRatio;
-        this.lastRepairedAtInMs = lastRepairedAtInMs;
-        this.nextRepairInMs = nextRepairInMs;
-        this.config = config;
+        this.id = theId;
+        this.keyspace = theKeyspace;
+        this.table = theTable;
+        this.status = theStatus;
+        this.repairedRatio = theRepairedRatio;
+        this.lastRepairedAtInMs = theLastRepairedAtInMs;
+        this.nextRepairInMs = theNextRepairInMs;
+        this.config = theConfig;
         this.virtualNodeStates = Collections.emptyList();
     }
 
-    public Schedule(ScheduledRepairJobView repairJobView)
+    public Schedule(final ScheduledRepairJobView repairJobView)
     {
         this.id = repairJobView.getId();
         this.keyspace = repairJobView.getTableReference().getKeyspace();
@@ -85,12 +93,13 @@ public class Schedule
         this.virtualNodeStates = Collections.emptyList();
     }
 
-    public Schedule(ScheduledRepairJobView repairJobView, boolean full)
+    public Schedule(final ScheduledRepairJobView repairJobView, final boolean full)
     {
         this(repairJobView);
         if (full)
         {
-            long repairedAfter = System.currentTimeMillis() - repairJobView.getRepairConfiguration().getRepairIntervalInMs();
+            long repairedAfter
+                    = System.currentTimeMillis() - repairJobView.getRepairConfiguration().getRepairIntervalInMs();
             VnodeRepairStates vnodeRepairStates = repairJobView.getRepairStateSnapshot().getVnodeRepairStates();
 
             this.virtualNodeStates = vnodeRepairStates.getVnodeRepairStates().stream()
@@ -99,28 +108,44 @@ public class Schedule
         }
     }
 
+    /**
+     * Equality.
+     *
+     * @param o
+     * @return boolean
+     */
     @Override
-    public boolean equals(Object o)
+    public boolean equals(final Object o)
     {
         if (this == o)
+        {
             return true;
+        }
         if (o == null || getClass() != o.getClass())
+        {
             return false;
+        }
         Schedule that = (Schedule) o;
-        return lastRepairedAtInMs == that.lastRepairedAtInMs &&
-                Double.compare(that.repairedRatio, repairedRatio) == 0 &&
-                nextRepairInMs == that.nextRepairInMs &&
-                keyspace.equals(that.keyspace) &&
-                table.equals(that.table) &&
-                status == that.status &&
-                id.equals(that.id) &&
-                config.equals(that.config) &&
-                virtualNodeStates.equals(that.virtualNodeStates);
+        return lastRepairedAtInMs == that.lastRepairedAtInMs
+                && Double.compare(that.repairedRatio, repairedRatio) == 0
+                && nextRepairInMs == that.nextRepairInMs
+                && keyspace.equals(that.keyspace)
+                && table.equals(that.table)
+                && status == that.status
+                && id.equals(that.id)
+                && config.equals(that.config)
+                && virtualNodeStates.equals(that.virtualNodeStates);
     }
 
+    /**
+     * Hash representation.
+     *
+     * @return int
+     */
     @Override
     public int hashCode()
     {
-        return Objects.hash(id, keyspace, table, lastRepairedAtInMs, repairedRatio, status, nextRepairInMs, config, virtualNodeStates);
+        return Objects.hash(id, keyspace, table, lastRepairedAtInMs, repairedRatio,
+                status, nextRepairInMs, config, virtualNodeStates);
     }
 }

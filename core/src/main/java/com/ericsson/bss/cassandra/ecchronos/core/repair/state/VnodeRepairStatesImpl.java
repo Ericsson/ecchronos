@@ -22,11 +22,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
+public final class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
 {
     private final ImmutableList<VnodeRepairState> myVnodeRepairStatuses;
 
-    private VnodeRepairStatesImpl(Builder builder)
+    private VnodeRepairStatesImpl(final Builder builder)
     {
         myVnodeRepairStatuses = ImmutableList.copyOf(builder.myVnodeRepairStates.values());
     }
@@ -38,13 +38,14 @@ public class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
     }
 
     @Override
-    public VnodeRepairStatesImpl combineWithRepairedAt(long repairedAt)
+    public VnodeRepairStatesImpl combineWithRepairedAt(final long repairedAt)
     {
         Builder builder = newBuilder(getVnodeRepairStates());
 
         for (VnodeRepairState vnodeRepairState : getVnodeRepairStates())
         {
-            VnodeRepairState vnodeRepairStateWithRepairedAt = new VnodeRepairState(vnodeRepairState.getTokenRange(), vnodeRepairState.getReplicas(), repairedAt);
+            VnodeRepairState vnodeRepairStateWithRepairedAt = new VnodeRepairState(vnodeRepairState.getTokenRange(),
+                    vnodeRepairState.getReplicas(), repairedAt);
             builder.updateVnodeRepairState(vnodeRepairStateWithRepairedAt);
         }
 
@@ -57,16 +58,22 @@ public class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
         return myVnodeRepairStatuses.toString();
     }
 
-    public static Builder newBuilder(Collection<VnodeRepairState> vnodeRepairStates)
+    public static Builder newBuilder(final Collection<VnodeRepairState> vnodeRepairStates)
     {
         return new Builder(vnodeRepairStates);
     }
 
     @Override
-    public boolean equals(Object o)
+    public boolean equals(final Object o)
     {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
         VnodeRepairStatesImpl that = (VnodeRepairStatesImpl) o;
         return Objects.equals(myVnodeRepairStatuses, that.myVnodeRepairStatuses);
     }
@@ -81,7 +88,7 @@ public class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
     {
         private final Map<LongTokenRange, VnodeRepairState> myVnodeRepairStates = new LinkedHashMap<>();
 
-        public Builder(Collection<VnodeRepairState> vnodeRepairStates)
+        public Builder(final Collection<VnodeRepairState> vnodeRepairStates)
         {
             for (VnodeRepairState vnodeRepairState : vnodeRepairStates)
             {
@@ -89,8 +96,13 @@ public class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
             }
         }
 
+        /**
+         * Update vNode repair states.
+         *
+         * @return Builder
+         */
         @Override
-        public Builder updateVnodeRepairStates(Collection<VnodeRepairState> vnodeRepairStates)
+        public Builder updateVnodeRepairStates(final Collection<VnodeRepairState> vnodeRepairStates)
         {
             for (VnodeRepairState vnodeRepairState : vnodeRepairStates)
             {
@@ -99,8 +111,13 @@ public class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
             return this;
         }
 
+        /**
+         * Update vNode repair state.
+         *
+         * @return Builder
+         */
         @Override
-        public Builder updateVnodeRepairState(VnodeRepairState vnodeRepairState)
+        public Builder updateVnodeRepairState(final VnodeRepairState vnodeRepairState)
         {
             VnodeRepairState oldVnode = myVnodeRepairStates.get(vnodeRepairState.getTokenRange());
             if (shouldReplace(oldVnode, vnodeRepairState))
@@ -110,13 +127,18 @@ public class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
             return this;
         }
 
+        /**
+         * Build vNode repair state.
+         *
+         * @return VnodeRepairStatesImpl
+         */
         @Override
         public VnodeRepairStatesImpl build()
         {
             return new VnodeRepairStatesImpl(this);
         }
 
-        private boolean shouldReplace(VnodeRepairState oldVnode, VnodeRepairState newVnode)
+        private boolean shouldReplace(final VnodeRepairState oldVnode, final VnodeRepairState newVnode)
         {
             if (oldVnode == null)
             {
@@ -128,8 +150,8 @@ public class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
                 return false;
             }
 
-            return oldVnode.lastRepairedAt() < newVnode.lastRepairedAt() || oldVnode.getFinishedAt() <
-                    newVnode.getFinishedAt();
+            return oldVnode.lastRepairedAt() < newVnode.lastRepairedAt()
+                    || oldVnode.getFinishedAt() < newVnode.getFinishedAt();
         }
     }
 }

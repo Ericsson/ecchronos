@@ -39,17 +39,27 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
     private final RepairHistoryProvider myRepairHistoryProvider;
     private final boolean useSubRanges;
 
-    public VnodeRepairStateFactoryImpl(ReplicationState replicationState, RepairHistoryProvider repairHistoryProvider, boolean useSubRanges)
+    public VnodeRepairStateFactoryImpl(final ReplicationState replicationState,
+                                       final RepairHistoryProvider repairHistoryProvider,
+                                       final boolean toUseSubRanges)
     {
         myReplicationState = replicationState;
         myRepairHistoryProvider = repairHistoryProvider;
-        this.useSubRanges = useSubRanges;
+        this.useSubRanges = toUseSubRanges;
     }
 
+    /**
+     * Calculate new state.
+     *
+     * @param tableReference The table to calculate the new repair state for vnodes.
+     * @param previous The previous repair state or null if non exists.
+     * @return VnodeRepairStates
+     */
     @Override
-    public VnodeRepairStates calculateNewState(TableReference tableReference, RepairStateSnapshot previous)
+    public VnodeRepairStates calculateNewState(final TableReference tableReference, final RepairStateSnapshot previous)
     {
-        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicaMap = myReplicationState.getTokenRangeToReplicas(tableReference);
+        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicaMap
+                = myReplicationState.getTokenRangeToReplicas(tableReference);
         long lastRepairedAt = previousLastRepairedAt(previous, tokenRangeToReplicaMap);
         long now = System.currentTimeMillis();
 
@@ -58,28 +68,53 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         if (lastRepairedAt == VnodeRepairState.UNREPAIRED)
         {
             LOG.debug("No last repaired at found for {}, iterating over all repair entries", tableReference);
-            repairEntryIterator = myRepairHistoryProvider.iterate(tableReference, now, (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
+            repairEntryIterator = myRepairHistoryProvider.iterate(tableReference,
+                    now, (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
         }
         else
         {
-            LOG.debug("Table {} last repaired at {}, iterating repair entries until that time", tableReference, lastRepairedAt);
-            repairEntryIterator = myRepairHistoryProvider.iterate(tableReference, now, lastRepairedAt, (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
+            LOG.debug("Table {} last repaired at {}, iterating repair entries until that time",
+                    tableReference, lastRepairedAt);
+            repairEntryIterator = myRepairHistoryProvider.iterate(tableReference,
+                    now, lastRepairedAt, (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
         }
 
         return generateVnodeRepairStates(lastRepairedAt, previous, repairEntryIterator, tokenRangeToReplicaMap);
     }
 
+    /**
+     * Calculate state.
+     *
+     * @param tableReference The table to calculate the repair state for vnodes.
+     * @param to Timestamp from when the repair state should start
+     * @param from Timestamp to when the repair state should stop
+     * @return VnodeRepairStates
+     */
     @Override
-    public VnodeRepairStates calculateState(TableReference tableReference, long to, long from)
+    public VnodeRepairStates calculateState(final TableReference tableReference,
+                                            final long to,
+                                            final long from)
     {
-        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicaMap = myReplicationState.getTokenRangeToReplicas(tableReference);
+        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicaMap
+                = myReplicationState.getTokenRangeToReplicas(tableReference);
         Iterator<RepairEntry> repairEntryIterator = myRepairHistoryProvider.iterate(tableReference, to, from,
                 (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
-        return generateVnodeRepairStates(VnodeRepairState.UNREPAIRED, null, repairEntryIterator, tokenRangeToReplicaMap);
+        return generateVnodeRepairStates(VnodeRepairState.UNREPAIRED,
+                null, repairEntryIterator, tokenRangeToReplicaMap);
     }
 
+    /**
+     * Calculate cluster wide state.
+     *
+     * @param tableReference The table to calculate the repair state for vnodes.
+     * @param to Timestamp from when the repair state should start
+     * @param from Timestamp to when the repair state should stop
+     * @return VnodeRepairStates
+     */
     @Override
-    public VnodeRepairStates calculateClusterWideState(TableReference tableReference, long to, long from)
+    public VnodeRepairStates calculateClusterWideState(final TableReference tableReference,
+                                                       final long to,
+                                                       final long from)
     {
         Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRanges = myReplicationState.getTokenRanges(tableReference);
         Set<DriverNode> allNodes = new HashSet<>();
@@ -87,9 +122,9 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         List<RepairEntry> allRepairEntries = new ArrayList<>();
         for (DriverNode node : allNodes)
         {
-            Iterator<RepairEntry> repairEntryIterator = myRepairHistoryProvider.iterate(node.getId(), tableReference, to, from,
-                    (repairEntry) -> acceptRepairEntries(repairEntry, tokenRanges));
-            while(repairEntryIterator.hasNext())
+            Iterator<RepairEntry> repairEntryIterator = myRepairHistoryProvider.iterate(node.getId(),
+                    tableReference, to, from, (repairEntry) -> acceptRepairEntries(repairEntry, tokenRanges));
+            while (repairEntryIterator.hasNext())
             {
                 RepairEntry repairEntry = repairEntryIterator.next();
                 allRepairEntries.add(repairEntry);
@@ -98,7 +133,11 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         return generateVnodeRepairStates(VnodeRepairState.UNREPAIRED, null, allRepairEntries.iterator(), tokenRanges);
     }
 
-    private VnodeRepairStates generateVnodeRepairStates(long lastRepairedAt, RepairStateSnapshot previous, Iterator<RepairEntry> repairEntryIterator, Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicaMap)
+    private VnodeRepairStates generateVnodeRepairStates(final long lastRepairedAt,
+                                                        final RepairStateSnapshot previous,
+                                                        final Iterator<RepairEntry> repairEntryIterator,
+                                                        final Map<LongTokenRange, ImmutableSet<DriverNode>>
+                                                                tokenRangeToReplicaMap)
     {
         List<VnodeRepairState> vnodeRepairStatesBase = new ArrayList<>();
 
@@ -124,13 +163,14 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
             vnodeRepairStatusesBuilder.updateVnodeRepairStates(previous.getVnodeRepairStates().getVnodeRepairStates());
         }
 
-        while(repairEntryIterator.hasNext())
+        while (repairEntryIterator.hasNext())
         {
             RepairEntry repairEntry = repairEntryIterator.next();
             LongTokenRange longTokenRange = repairEntry.getRange();
             ImmutableSet<DriverNode> replicas = getReplicasForRange(longTokenRange, tokenRangeToReplicaMap);
 
-            VnodeRepairState vnodeRepairState = new VnodeRepairState(longTokenRange, replicas, repairEntry.getStartedAt(), repairEntry.getFinishedAt());
+            VnodeRepairState vnodeRepairState = new VnodeRepairState(longTokenRange,
+                    replicas, repairEntry.getStartedAt(), repairEntry.getFinishedAt());
 
             vnodeRepairStatusesBuilder.updateVnodeRepairState(vnodeRepairState);
         }
@@ -138,7 +178,8 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         return vnodeRepairStatusesBuilder.build();
     }
 
-    private long previousLastRepairedAt(RepairStateSnapshot previous, Map<LongTokenRange, ImmutableSet<DriverNode>> tokenToReplicaMap)
+    private long previousLastRepairedAt(final RepairStateSnapshot previous,
+                                        final Map<LongTokenRange, ImmutableSet<DriverNode>> tokenToReplicaMap)
     {
         if (previous == null)
         {
@@ -166,7 +207,8 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         return lastRepairedAt == Long.MAX_VALUE ? VnodeRepairState.UNREPAIRED : lastRepairedAt;
     }
 
-    private boolean acceptRepairEntries(RepairEntry repairEntry, Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicaMap)
+    private boolean acceptRepairEntries(final RepairEntry repairEntry,
+                                        final Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicaMap)
     {
         if (RepairStatus.SUCCESS != repairEntry.getStatus())
         {
@@ -192,7 +234,9 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         return true;
     }
 
-    private ImmutableSet<DriverNode> getReplicasForRange(LongTokenRange range, Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicaMap)
+    private ImmutableSet<DriverNode> getReplicasForRange(final LongTokenRange range,
+                                                         final Map<LongTokenRange, ImmutableSet<DriverNode>>
+                                                                 tokenRangeToReplicaMap)
     {
         ImmutableSet<DriverNode> nodes = tokenRangeToReplicaMap.get(range);
         if (nodes == null && useSubRanges)

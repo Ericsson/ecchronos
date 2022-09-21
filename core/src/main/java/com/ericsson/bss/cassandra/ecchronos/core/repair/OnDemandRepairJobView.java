@@ -33,8 +33,12 @@ public class OnDemandRepairJobView
     private final UUID myHostId;
     private final long myCompletionTime;
 
-    public OnDemandRepairJobView(UUID id, UUID hostId, TableReference tableReference, Status status, double progress,
-            long completionTime)
+    public OnDemandRepairJobView(final UUID id,
+                                 final UUID hostId,
+                                 final TableReference tableReference,
+                                 final Status status,
+                                 final double progress,
+                                 final long completionTime)
     {
         myId = id;
         myTableReference = tableReference;
@@ -44,38 +48,73 @@ public class OnDemandRepairJobView
         myCompletionTime = completionTime;
     }
 
+    /**
+     * Get id.
+     *
+     * @return UUID
+     */
     public UUID getId()
     {
         return myId;
     }
 
+    /**
+     * Get table reference.
+     *
+     * @return TableReference
+     */
     public TableReference getTableReference()
     {
         return myTableReference;
     }
 
+    /**
+     * Get status.
+     *
+     * @return Status
+     */
     public Status getStatus()
     {
         return myStatus;
     }
 
+    /**
+     * Get progress.
+     *
+     * @return double
+     */
     public double getProgress()
     {
         return myProgress;
     }
 
+    /**
+     * Get host id.
+     *
+     * @return UUID
+     */
     public UUID getHostId()
     {
         return myHostId;
     }
 
+    /**
+    * Get completion time.
+    *
+    * @return long
+    */
     public long getCompletionTime()
     {
         return myCompletionTime;
     }
 
+    /**
+     * Get the next repair.
+     *
+     * @return long
+     */
     @Override
-    public boolean equals(Object o)
+    public boolean equals(final Object o)
     {
         if (this == o)
         {
@@ -91,6 +130,11 @@ public class OnDemandRepairJobView
                 that.myTableReference) && myStatus == that.myStatus && Objects.equals(myHostId, that.myHostId);
     }
 
+    /**
+     * Is it a recurring job.
+     *
+     * @return Boolean
+     */
     @Override
     public int hashCode()
     {

@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * A update hook that raises and ceases alarms based on the elapsed time without repair
+ * A update hook that raises and ceases alarms based on the elapsed time without repair.
  */
 public class AlarmPostUpdateHook implements PostUpdateHook
 {
@@ -34,15 +34,23 @@ public class AlarmPostUpdateHook implements PostUpdateHook
     private final RepairConfiguration myRepairConfiguration;
     private final AtomicReference<Clock> myClock = new AtomicReference<>(Clock.systemDefaultZone());
 
-    public AlarmPostUpdateHook(TableReference tableReference, RepairConfiguration repairConfiguration, RepairFaultReporter faultReporter)
+    public AlarmPostUpdateHook(final TableReference tableReference,
+                               final RepairConfiguration repairConfiguration,
+                               final RepairFaultReporter faultReporter)
     {
         myFaultReporter = faultReporter;
         myTableReference = tableReference;
         myRepairConfiguration = repairConfiguration;
 
     }
+
+    /**
+     * Post update.
+     *
+     * @param repairStateSnapshot The current repair state snapshot
+     */
     @Override
-    public void postUpdate(RepairStateSnapshot repairStateSnapshot)
+    public void postUpdate(final RepairStateSnapshot repairStateSnapshot)
     {
         long lastRepaired = repairStateSnapshot.lastCompletedAt();
 
@@ -52,7 +60,7 @@ public class AlarmPostUpdateHook implements PostUpdateHook
         }
     }
 
-    private void sendOrCeaseAlarm(long lastRepairedAt)
+    private void sendOrCeaseAlarm(final long lastRepairedAt)
     {
         long msSinceLastRepair = myClock.get().millis() - lastRepairedAt;
         RepairFaultReporter.FaultCode faultCode = null;
@@ -79,8 +87,13 @@ public class AlarmPostUpdateHook implements PostUpdateHook
         }
     }
 
+    /**
+     * Set clock.
+     *
+     * @param clock
+     */
     @VisibleForTesting
-    void setClock(Clock clock)
+    void setClock(final Clock clock)
     {
         myClock.set(clock);
     }

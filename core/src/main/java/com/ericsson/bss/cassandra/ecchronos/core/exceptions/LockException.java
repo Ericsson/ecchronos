@@ -21,17 +21,17 @@ public class LockException extends Exception
 {
     private static final long serialVersionUID = 1699712279389641954L;
 
-    public LockException(String message)
+    public LockException(final String message)
     {
         super(message);
     }
 
-    public LockException(String message, Throwable t)
+    public LockException(final String message, final Throwable t)
     {
         super(message, t);
     }
 
-    public LockException(Throwable t)
+    public LockException(final Throwable t)
     {
         super(t);
     }

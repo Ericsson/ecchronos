@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
  *
  * Primarily used to to have a type to convert to JSON.
  */
+@SuppressWarnings("VisibilityModifier")
 public class VirtualNodeState
 {
     @NotBlank
@@ -50,41 +51,62 @@ public class VirtualNodeState
     {
     }
 
-    public VirtualNodeState(long startToken, long endToken, Set<String> replicas, long lastRepairedAtInMs, boolean repaired)
+    public VirtualNodeState(final long theStartToken,
+                            final long theEndToken,
+                            final Set<String> theReplicas,
+                            final long wasLastRepairedAtInMs,
+                            final boolean isRepaired)
     {
-        this.startToken = startToken;
-        this.endToken = endToken;
-        this.replicas = replicas;
-        this.lastRepairedAtInMs = lastRepairedAtInMs;
-        this.repaired = repaired;
+        this.startToken = theStartToken;
+        this.endToken = theEndToken;
+        this.replicas = theReplicas;
+        this.lastRepairedAtInMs = wasLastRepairedAtInMs;
+        this.repaired = isRepaired;
     }
 
-    public static VirtualNodeState convert(VnodeRepairState vnodeRepairState, long repairedAfter)
+    public static VirtualNodeState convert(final VnodeRepairState vnodeRepairState, final long repairedAfter)
     {
         long startToken = vnodeRepairState.getTokenRange().start;
         long endToken = vnodeRepairState.getTokenRange().end;
-        Set<String> replicas = vnodeRepairState.getReplicas().stream().map(DriverNode::getPublicAddress).map(InetAddress::getHostAddress).collect(Collectors.toSet());
+        Set<String> replicas = vnodeRepairState
+                .getReplicas().stream().map(DriverNode::getPublicAddress)
+                .map(InetAddress::getHostAddress).collect(Collectors.toSet());
         long lastRepairedAt = vnodeRepairState.lastRepairedAt();
         boolean repaired = lastRepairedAt > repairedAfter;
 
         return new VirtualNodeState(startToken, endToken, replicas, lastRepairedAt, repaired);
     }
 
+    /**
+     * Equality.
+     *
+     * @param o
+     * @return boolean
+     */
     @Override
-    public boolean equals(Object o)
+    public boolean equals(final Object o)
     {
         if (this == o)
+        {
             return true;
+        }
         if (o == null || getClass() != o.getClass())
+        {
             return false;
+        }
         VirtualNodeState that = (VirtualNodeState) o;
-        return startToken == that.startToken &&
-                endToken == that.endToken &&
-                lastRepairedAtInMs == that.lastRepairedAtInMs &&
-                repaired == that.repaired &&
-                replicas.equals(that.replicas);
+        return startToken == that.startToken
+                && endToken == that.endToken
+                && lastRepairedAtInMs == that.lastRepairedAtInMs
+                && repaired == that.repaired
+                && replicas.equals(that.replicas);
     }
 
+    /**
+     * Hash representation.
+     *
+     * @return int
+     */
     @Override
     public int hashCode()
     {

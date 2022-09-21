@@ -12,14 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-
-public interface RepairStateFactory
-{
-    RepairState create(TableReference tableReference,
-                       RepairConfiguration repairConfiguration,
-                       PostUpdateHook postUpdateHook);
-}
+/**
+ *
+ */
+package com.ericsson.bss.cassandra.ecchronos.core.scheduling;

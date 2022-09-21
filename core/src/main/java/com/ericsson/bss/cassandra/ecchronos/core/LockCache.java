@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class LockCache
+public final class LockCache
 {
     private static final Logger LOG = LoggerFactory.getLogger(LockCache.class);
 
@@ -37,12 +37,12 @@ public class LockCache
     private final Cache<LockKey, LockException> myFailureCache;
     private final LockSupplier myLockSupplier;
 
-    public LockCache(LockSupplier lockSupplier)
+    public LockCache(final LockSupplier lockSupplier)
     {
         this(lockSupplier, DEFAULT_EXPIRE_TIME_IN_SECONDS, TimeUnit.SECONDS);
     }
 
-    LockCache(LockSupplier lockSupplier, long expireTime, TimeUnit expireTimeUnit)
+    LockCache(final LockSupplier lockSupplier, final long expireTime, final TimeUnit expireTimeUnit)
     {
         myLockSupplier = lockSupplier;
 
@@ -51,12 +51,16 @@ public class LockCache
                 .build();
     }
 
-    public Optional<LockException> getCachedFailure(String dataCenter, String resource)
+    public Optional<LockException> getCachedFailure(final String dataCenter, final String resource)
     {
         return getCachedFailure(new LockKey(dataCenter, resource));
     }
 
-    public DistributedLock getLock(String dataCenter, String resource, int priority, Map<String, String> metadata) throws LockException
+    public DistributedLock getLock(final String dataCenter,
+                                   final String resource,
+                                   final int priority,
+                                   final Map<String, String> metadata)
+            throws LockException
     {
         LockKey lockKey = new LockKey(dataCenter, resource);
 
@@ -78,13 +82,13 @@ public class LockCache
         }
     }
 
-    private void throwCachedLockException(LockException e) throws LockException
+    private void throwCachedLockException(final LockException e) throws LockException
     {
         LOG.debug("Encountered cached locking failure, throwing exception", e);
         throw e;
     }
 
-    private Optional<LockException> getCachedFailure(LockKey lockKey)
+    private Optional<LockException> getCachedFailure(final LockKey lockKey)
     {
         return Optional.ofNullable(myFailureCache.getIfPresent(lockKey));
     }
@@ -92,7 +96,8 @@ public class LockCache
     @FunctionalInterface
     public interface LockSupplier
     {
-        DistributedLock getLock(String dataCenter, String resource, int priority, Map<String, String> metadata) throws LockException;
+        DistributedLock getLock(String dataCenter, String resource, int priority, Map<String, String> metadata)
+                throws LockException;
     }
 
     static final class LockKey
@@ -100,20 +105,26 @@ public class LockCache
         private final String myDataCenter;
         private final String myResourceName;
 
-        LockKey(String dataCenter, String resourceName)
+        LockKey(final String dataCenter, final String resourceName)
         {
             myDataCenter = dataCenter;
             myResourceName = checkNotNull(resourceName);
         }
 
         @Override
-        public boolean equals(Object o)
+        public boolean equals(final Object o)
         {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+            {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass())
+            {
+                return false;
+            }
             LockKey lockKey = (LockKey) o;
-            return Objects.equals(myDataCenter, lockKey.myDataCenter) &&
-                    Objects.equals(myResourceName, lockKey.myResourceName);
+            return Objects.equals(myDataCenter, lockKey.myDataCenter)
+                    && Objects.equals(myResourceName, lockKey.myResourceName);
         }
 
         @Override

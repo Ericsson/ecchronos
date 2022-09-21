@@ -51,7 +51,11 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         //NOOP
     }
 
-    public void fromBuilder(Builder builder)
+    /**
+     * From builder.
+     * @param builder
+     */
+    public void fromBuilder(final Builder builder)
     {
         mySession = builder.mySession;
         myReplicatedTableProvider = builder.myReplicatedTableProvider;
@@ -70,7 +74,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         }
     }
 
-    private DefaultRepairConfigurationProvider(Builder builder)
+    private DefaultRepairConfigurationProvider(final Builder builder)
     {
         mySession = builder.mySession;
         myReplicatedTableProvider = builder.myReplicatedTableProvider;
@@ -89,8 +93,13 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         }
     }
 
+    /**
+     * On keyspace created.
+     *
+     * @param keyspace
+     */
     @Override
-    public void onKeyspaceCreated(KeyspaceMetadata keyspace)
+    public void onKeyspaceCreated(final KeyspaceMetadata keyspace)
     {
         String keyspaceName = keyspace.getName().asInternal();
         if (myReplicatedTableProvider.accept(keyspaceName))
@@ -103,14 +112,26 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         }
     }
 
+    /**
+     * On keyspace updated.
+     *
+     * @param current
+     * @param previous
+     */
     @Override
-    public void onKeyspaceUpdated(KeyspaceMetadata current, KeyspaceMetadata previous)
+    public void onKeyspaceUpdated(final KeyspaceMetadata current,
+                                  final KeyspaceMetadata previous)
     {
         onKeyspaceCreated(current);
     }
 
+    /**
+     * On table created.
+     *
+     * @param table
+     */
     @Override
-    public void onTableCreated(TableMetadata table)
+    public void onTableCreated(final TableMetadata table)
     {
         if (myReplicatedTableProvider.accept(table.getKeyspace().asInternal()))
         {
@@ -120,8 +141,13 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         }
     }
 
+    /**
+     * On table dropped.
+     *
+     * @param table
+     */
     @Override
-    public void onTableDropped(TableMetadata table)
+    public void onTableDropped(final TableMetadata table)
     {
         if (myReplicatedTableProvider.accept(table.getKeyspace().asInternal()))
         {
@@ -130,12 +156,21 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         }
     }
 
+    /**
+     * On table updated.
+     *
+     * @param current
+     * @param previous
+     */
     @Override
-    public void onTableUpdated(TableMetadata current, TableMetadata previous)
+    public void onTableUpdated(final TableMetadata current, final TableMetadata previous)
     {
         onTableCreated(current);
     }
 
+    /**
+     * Close.
+     */
     @Override
     public void close()
     {
@@ -145,7 +180,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         }
     }
 
-    private void allTableOperation(String keyspaceName, BiConsumer<TableReference, TableMetadata> consumer)
+    private void allTableOperation(final String keyspaceName, final BiConsumer<TableReference, TableMetadata> consumer)
     {
         for (TableMetadata tableMetadata : Metadata.getKeyspace(mySession, keyspaceName).get().getTables().values())
         {
@@ -156,7 +191,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         }
     }
 
-    private void allTableOperation(String keyspaceName, Consumer<TableReference> consumer)
+    private void allTableOperation(final String keyspaceName, final Consumer<TableReference> consumer)
     {
         for (TableMetadata tableMetadata : Metadata.getKeyspace(mySession, keyspaceName).get().getTables().values())
         {
@@ -167,11 +202,12 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         }
     }
 
-    private void updateConfiguration(TableReference tableReference, TableMetadata table)
+    private void updateConfiguration(final TableReference tableReference, final TableMetadata table)
     {
         RepairConfiguration repairConfiguration = myRepairConfigurationFunction.apply(tableReference);
 
-        if (RepairConfiguration.DISABLED.equals(repairConfiguration) || isTableIgnored(table, repairConfiguration.getIgnoreTWCSTables()))
+        if (RepairConfiguration.DISABLED.equals(repairConfiguration)
+                || isTableIgnored(table, repairConfiguration.getIgnoreTWCSTables()))
         {
             myRepairScheduler.removeConfiguration(tableReference);
         }
@@ -181,19 +217,21 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         }
     }
 
-    private boolean isTableIgnored(TableMetadata table, boolean ignore)
+    private boolean isTableIgnored(final TableMetadata table, final boolean ignore)
     {
         Map<CqlIdentifier, Object> tableOptions = table.getOptions();
         if (tableOptions == null)
         {
             return false;
         }
-        Map<String, String> compaction = (Map<String, String>) tableOptions.get(CqlIdentifier.fromInternal("compaction"));
+        Map<String, String> compaction
+                = (Map<String, String>) tableOptions.get(CqlIdentifier.fromInternal("compaction"));
         if (compaction == null)
         {
             return false;
         }
-        return ignore && "org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy".equals(compaction.get("class"));
+        return ignore
+                && "org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy".equals(compaction.get("class"));
     }
 
     public static Builder newBuilder()
@@ -201,80 +239,148 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         return new Builder();
     }
 
+    /**
+     * On keyspace dropped.
+     *
+     * @param keyspace
+     */
     @Override
-    public void onKeyspaceDropped(KeyspaceMetadata keyspace)
+    public void onKeyspaceDropped(final KeyspaceMetadata keyspace)
     {
         // NOOP
     }
 
+    /**
+     * On user defined type created.
+     * @param type
+     */
     @Override
-    public void onUserDefinedTypeCreated(UserDefinedType type)
+    public void onUserDefinedTypeCreated(final UserDefinedType type)
     {
         // NOOP
     }
 
+    /**
+     * On user defined type dropped.
+     *
+     * @param type
+     */
     @Override
-    public void onUserDefinedTypeDropped(UserDefinedType type)
+    public void onUserDefinedTypeDropped(final UserDefinedType type)
     {
         // NOOP
     }
 
+    /**
+     * On user defined type updated.
+     *
+     * @param current
+     * @param previous
+     */
     @Override
-    public void onUserDefinedTypeUpdated(UserDefinedType current, UserDefinedType previous)
+    public void onUserDefinedTypeUpdated(final UserDefinedType current, final UserDefinedType previous)
     {
         // NOOP
     }
 
+    /**
+     * On function created.
+     *
+     * @param function
+     */
     @Override
-    public void onFunctionCreated(FunctionMetadata function)
+    public void onFunctionCreated(final FunctionMetadata function)
     {
         // NOOP
     }
 
+    /**
+     * On function dropped.
+     *
+     * @param function
+     */
     @Override
-    public void onFunctionDropped(FunctionMetadata function)
+    public void onFunctionDropped(final FunctionMetadata function)
     {
         // NOOP
     }
 
+    /**
+     * On function updated.
+     *
+     * @param current
+     * @param previous
+     */
     @Override
-    public void onFunctionUpdated(FunctionMetadata current, FunctionMetadata previous)
+    public void onFunctionUpdated(final FunctionMetadata current, final FunctionMetadata previous)
     {
         // NOOP
     }
 
+    /**
+     * On aggregate created.
+     *
+     * @param aggregate
+     */
     @Override
-    public void onAggregateCreated(AggregateMetadata aggregate)
+    public void onAggregateCreated(final AggregateMetadata aggregate)
     {
         // NOOP
     }
 
+    /**
+     * On aggregate updated.
+     *
+     * @param aggregate
+     */
     @Override
-    public void onAggregateDropped(AggregateMetadata aggregate)
+    public void onAggregateDropped(final AggregateMetadata aggregate)
     {
         // NOOP
     }
 
+    /**
+     * On aggregate updated.
+     *
+     * @param current
+     * @param previous
+     */
     @Override
-    public void onAggregateUpdated(AggregateMetadata current, AggregateMetadata previous)
+    public void onAggregateUpdated(final AggregateMetadata current, final AggregateMetadata previous)
     {
         // NOOP
     }
 
+    /**
+     * On view created.
+     *
+     * @param view
+     */
     @Override
-    public void onViewCreated(ViewMetadata view)
+    public void onViewCreated(final ViewMetadata view)
     {
         // NOOP
     }
 
+    /**
+     * On view dropped.
+     *
+     * @param view
+     */
     @Override
-    public void onViewDropped(ViewMetadata view)
+    public void onViewDropped(final ViewMetadata view)
     {
         // NOOP
     }
 
+    /**
+     * On view updated.
+     *
+     * @param current
+     * @param previous
+     */
     @Override
-    public void onViewUpdated(ViewMetadata current, ViewMetadata previous)
+    public void onViewUpdated(final ViewMetadata current, final ViewMetadata previous)
     {
         // NOOP
     }
@@ -287,42 +393,84 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         private Function<TableReference, RepairConfiguration> myRepairConfigurationFunction;
         private TableReferenceFactory myTableReferenceFactory;
 
-        public Builder withSession(CqlSession session)
+        /**
+         * Build with session.
+         *
+         * @param session
+         * @return Builder
+         */
+        public Builder withSession(final CqlSession session)
         {
             mySession = session;
             return this;
         }
 
-        public Builder withDefaultRepairConfiguration(RepairConfiguration defaultRepairConfiguration)
+        /**
+         * Buiild with default repair configuration.
+         *
+         * @param defaultRepairConfiguration
+         * @return Builder
+         */
+        public Builder withDefaultRepairConfiguration(final RepairConfiguration defaultRepairConfiguration)
         {
             myRepairConfigurationFunction = (tableReference) -> defaultRepairConfiguration;
             return this;
         }
 
-        public Builder withRepairConfiguration(Function<TableReference, RepairConfiguration> defaultRepairConfiguration)
+        /**
+         * Build with repair configuration.
+         *
+         * @param defaultRepairConfiguration
+         * @return Builder
+         */
+        public Builder withRepairConfiguration(final Function<TableReference, RepairConfiguration>
+                                                       defaultRepairConfiguration)
         {
             myRepairConfigurationFunction = defaultRepairConfiguration;
             return this;
         }
 
-        public Builder withReplicatedTableProvider(ReplicatedTableProvider replicatedTableProvider)
+        /**
+         * Build with replicated table provider.
+         *
+         * @param replicatedTableProvider
+         * @return Builder
+         */
+        public Builder withReplicatedTableProvider(final ReplicatedTableProvider replicatedTableProvider)
         {
             myReplicatedTableProvider = replicatedTableProvider;
             return this;
         }
 
-        public Builder withRepairScheduler(RepairScheduler repairScheduler)
+        /**
+         * Build with table repair scheduler.
+         *
+         * @param repairScheduler
+         * @return Builder
+         */
+        public Builder withRepairScheduler(final RepairScheduler repairScheduler)
         {
             myRepairScheduler = repairScheduler;
             return this;
         }
 
-        public Builder withTableReferenceFactory(TableReferenceFactory tableReferenceFactory)
+        /**
+         * Build with table reference factory.
+         *
+         * @param tableReferenceFactory
+         * @return Builder
+         */
+        public Builder withTableReferenceFactory(final TableReferenceFactory tableReferenceFactory)
         {
             myTableReferenceFactory = tableReferenceFactory;
             return this;
         }
 
+        /**
+         * Build.
+         *
+         * @return DefaultRepairConfigurationProvider
+         */
         public DefaultRepairConfigurationProvider build()
         {
             DefaultRepairConfigurationProvider configurationProvider = new DefaultRepairConfigurationProvider(this);

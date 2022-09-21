@@ -19,18 +19,26 @@ import java.math.BigInteger;
 /**
  * A representation of a token range in Cassandra.
  */
+@SuppressWarnings("VisibilityModifier")
 public class LongTokenRange
 {
-    public static final BigInteger RANGE_END = BigInteger.valueOf(2).pow(63).subtract(BigInteger.ONE); // Long.MAX_VALUE
-    public static final BigInteger FULL_RANGE = BigInteger.valueOf(2).pow(64);
+    private static final int HASH_THIRTYONE = 31;
+    private static final int HASH_THIRTYTWO = 32;
+
+    private static final int LONG_VALUE_BITS = 64;
+
+    public static final BigInteger RANGE_END =
+            BigInteger.valueOf(2).pow(LONG_VALUE_BITS - 1).subtract(BigInteger.ONE); // Long.MAX_VALUE
+    public static final BigInteger FULL_RANGE =
+            BigInteger.valueOf(2).pow(LONG_VALUE_BITS);
 
     public final long start;
     public final long end;
 
-    public LongTokenRange(long start, long end)
+    public LongTokenRange(final long aStart, final long anEnd)
     {
-        this.start = start;
-        this.end = end;
+        this.start = aStart;
+        this.end = anEnd;
     }
 
     /**
@@ -75,7 +83,7 @@ public class LongTokenRange
      * @param other The token range to check if this is covering.
      * @return True if this token range covers the provided token range.
      */
-    public boolean isCovering(LongTokenRange other)
+    public boolean isCovering(final LongTokenRange other)
     {
         boolean thisWraps = isWrapAround();
         boolean otherWraps = other.isWrapAround();
@@ -98,28 +106,37 @@ public class LongTokenRange
     }
 
     @Override
-    public String toString()
+    public final String toString()
     {
         return String.format("(%s,%s]", start, end);
     }
 
     @Override
-    public boolean equals(Object o)
+    public final boolean equals(final Object o)
     {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
 
         LongTokenRange that = (LongTokenRange) o;
 
-        if (start != that.start) return false;
+        if (start != that.start)
+        {
+            return false;
+        }
         return end == that.end;
     }
 
     @Override
-    public int hashCode()
+    public final int hashCode()
     {
-        int result = (int) (start ^ (start >>> 32));
-        result = 31 * result + (int) (end ^ (end >>> 32));
+        int result = (int) (start ^ (start >>> HASH_THIRTYTWO));
+        result = HASH_THIRTYONE * result + (int) (end ^ (end >>> HASH_THIRTYTWO));
         return result;
     }
 }

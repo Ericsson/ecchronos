@@ -52,13 +52,18 @@ public class TableMetricHolder implements Closeable
     private final AtomicReference<Meter> myRepairFailedAttempts = new AtomicReference<>(null);
     private final AtomicReference<Meter> myRepairSucceededAttempts = new AtomicReference<>(null);
 
-    public TableMetricHolder(TableReference tableReference, MetricRegistry metricRegistry, NodeMetricHolder nodeMetricHolder)
+    public TableMetricHolder(final TableReference tableReference,
+                             final MetricRegistry metricRegistry,
+                             final NodeMetricHolder nodeMetricHolder)
     {
         myTableReference = tableReference;
         myMetricRegistry = metricRegistry;
         myNodeMetricHolder = nodeMetricHolder;
     }
 
+    /**
+     * Init.
+     */
     public void init()
     {
         myMetricRegistry.register(metricName(REPAIR_STATE), new RatioGauge()
@@ -90,7 +95,13 @@ public class TableMetricHolder implements Closeable
         timer(REPAIR_TIMING_FAILED);
     }
 
-    public void repairState(int repairedRanges, int notRepairedRanges)
+    /**
+     * Set repair state.
+     *
+     * @param repairedRanges
+     * @param notRepairedRanges
+     */
+    public void repairState(final int repairedRanges, final int notRepairedRanges)
     {
         myRepairState.set(new RangeRepairState(repairedRanges, notRepairedRanges));
 
@@ -106,33 +117,57 @@ public class TableMetricHolder implements Closeable
         }
         else
         {
-            ratio = (double)repairedRanges / (repairedRanges + notRepairedRanges);
+            ratio = (double) repairedRanges / (repairedRanges + notRepairedRanges);
         }
 
         myNodeMetricHolder.repairState(myTableReference, ratio);
     }
 
-    public void lastRepairedAt(long lastRepairedAt)
+    /**
+     * Set last repaired at.
+     *
+     * @param lastRepairedAt
+     */
+    public void lastRepairedAt(final long lastRepairedAt)
     {
         myLastRepairedAt.set(lastRepairedAt);
     }
 
-    public void remainingRepairTime(long remainingRepairTime)
+    /**
+     * Set remaining repair time.
+     *
+     * @param remainingRepairTime
+     */
+    public void remainingRepairTime(final long remainingRepairTime)
     {
         myRemainingRepairTime.set(remainingRepairTime);
     }
 
+    /**
+     * Set failed repair time.
+     *
+     */
     public void failedRepairTask()
     {
         myRepairFailedAttempts.get().mark();
     }
 
+    /**
+     * Set succeeded repair task.
+     */
     public void succeededRepairTask()
     {
         myRepairSucceededAttempts.get().mark();
     }
 
-    public void repairTiming(long timeTaken, TimeUnit timeUnit, boolean successful)
+    /**
+     * Set repair timing.
+     *
+     * @param timeTaken
+     * @param timeUnit
+     * @param successful
+     */
+    public void repairTiming(final long timeTaken, final TimeUnit timeUnit, final boolean successful)
     {
         if (successful)
         {
@@ -146,6 +181,9 @@ public class TableMetricHolder implements Closeable
         myNodeMetricHolder.repairTiming(timeTaken, timeUnit, successful);
     }
 
+    /**
+     * Close.
+     */
     @Override
     public void close()
     {
@@ -158,13 +196,13 @@ public class TableMetricHolder implements Closeable
         myMetricRegistry.remove(metricName(SUCCEEDED_REPAIR_TASKS));
     }
 
-    private String metricName(String name)
+    private String metricName(final String name)
     {
         return myTableReference.getKeyspace() + "." + myTableReference.getTable() + "-" + myTableReference.getId() + "-"
                 + name;
     }
 
-    private Timer timer(String name)
+    private Timer timer(final String name)
     {
         return myMetricRegistry.timer(metricName(name), Timer::new);
     }
@@ -184,7 +222,7 @@ public class TableMetricHolder implements Closeable
         private final int myRepairedRanges;
         private final int myFullRanges;
 
-        public RangeRepairState(int repairedRanges, int notRepairedRanges)
+        RangeRepairState(final int repairedRanges, final int notRepairedRanges)
         {
             myRepairedRanges = repairedRanges;
             myFullRanges = repairedRanges + notRepairedRanges;

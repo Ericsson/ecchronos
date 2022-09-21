@@ -22,7 +22,7 @@ public class InternalException extends RuntimeException
 {
     private static final long serialVersionUID = 8519513326549621415L;
 
-    public InternalException(String message)
+    public InternalException(final String message)
     {
         super(message);
     }

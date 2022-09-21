@@ -33,8 +33,20 @@ import javax.management.Notification;
 import javax.management.NotificationListener;
 import javax.management.remote.JMXConnectionNotification;
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -42,13 +54,17 @@ import java.util.stream.Collectors;
 /**
  * A task that is run to repair a specific keyspace and table using the options from {@link RepairOptions}.
  * <p>
- * If the repair failed the {@link #getUnknownRanges()} can be used to retrieve the ranges that have an unknown status during the repair.
+ * If the repair failed the {@link #getUnknownRanges()} can be used to retrieve the ranges that have an unknown status
+ * during the repair.
  */
 public class RepairTask implements NotificationListener //NOPMD Possible god class, needs refactoring
 {
+    private static final double PROGRESS_FACTOR = 100.0d;
+
     private static final Logger LOG = LoggerFactory.getLogger(RepairTask.class);
 
-    private static final Pattern REPAIR_PATTERN = Pattern.compile("Repair session [0-9a-zA-Z-]+ for range \\[\\(([-]?[0-9]+),([-]?[0-9]+)(\\]){2} finished");
+    private static final Pattern REPAIR_PATTERN = Pattern
+            .compile("Repair session [0-9a-zA-Z-]+ for range \\[\\(([-]?[0-9]+),([-]?[0-9]+)(\\]){2} finished");
 
     private static final long HANG_PREVENT_TIME_IN_MINUTES = 30;
 
@@ -71,12 +87,14 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
     private volatile ScheduledFuture<?> myHangPreventFuture;
     private volatile int myCommand;
 
-    private final ConcurrentMap<LongTokenRange, RepairHistory.RepairSession> myRepairSessions = new ConcurrentHashMap<>();
+    private final ConcurrentMap<LongTokenRange, RepairHistory.RepairSession> myRepairSessions
+            = new ConcurrentHashMap<>();
 
-    RepairTask(Builder builder)
+    RepairTask(final Builder builder)
     {
         UUID jobId = Preconditions.checkNotNull(builder.jobId, "Job id must be set");
-        RepairHistory repairHistory = Preconditions.checkNotNull(builder.repairHistory, "Repair history must be set");
+        RepairHistory repairHistory = Preconditions
+                .checkNotNull(builder.repairHistory, "Repair history must be set");
 
         myJmxProxyFactory = builder.jmxProxyFactory;
         myTableReference = builder.tableReference;
@@ -91,6 +109,11 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         }
     }
 
+    /**
+     * Execute the repair task.
+     *
+     * @throws ScheduledJobException
+     */
     public void execute() throws ScheduledJobException
     {
         long start = System.nanoTime();
@@ -129,18 +152,18 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         lazySleep(executionNanos);
     }
 
-    private void finish(RepairStatus repairStatus)
+    private void finish(final RepairStatus repairStatus)
     {
         myRepairSessions.values().forEach(rs -> rs.finish(repairStatus));
         myRepairSessions.clear();
     }
 
-    private void finish(LongTokenRange range, RepairStatus repairStatus)
+    private void finish(final LongTokenRange range, final RepairStatus repairStatus)
     {
         RepairHistory.RepairSession repairSession = myRepairSessions.remove(range);
         if (repairSession == null)
         {
-            LOG.error("{}: Finished range {} - but it was not included in the known repair sessions {}, all ranges are {}",
+            LOG.error("{}: Finished range {} - but not included in the known repair sessions {}, all ranges are {}",
                     this, range, myRepairSessions.keySet(), myTokenRanges);
         }
         else
@@ -149,7 +172,7 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         }
     }
 
-    private void lazySleep(long executionNanos) throws ScheduledJobException
+    private void lazySleep(final long executionNanos) throws ScheduledJobException
     {
         if (myRepairConfiguration.getRepairUnwindRatio() != RepairConfiguration.NO_UNWIND)
         {
@@ -170,6 +193,9 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         }
     }
 
+    /**
+     * Clean up the repair task.
+     */
     public void cleanup()
     {
         myExecutor.shutdown();
@@ -185,9 +211,15 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         return myUnknownRanges == null ? null : new HashSet<>(myUnknownRanges);
     }
 
+    /**
+     * Notification handler.
+     *
+     * @param notification
+     * @param handback
+     */
     @SuppressWarnings ("unchecked")
     @Override
-    public void handleNotification(Notification notification, Object handback)
+    public void handleNotification(final Notification notification, final Object handback)
     {
         switch (notification.getType())
         {
@@ -221,6 +253,11 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         }
     }
 
+    /**
+     * String representation.
+     *
+     * @return String
+     */
     @Override
     public String toString()
     {
@@ -254,7 +291,7 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         return options;
     }
 
-    private void repair(JmxProxy proxy) throws ScheduledJobException
+    private void repair(final JmxProxy proxy) throws ScheduledJobException
     {
         proxy.addStorageServiceListener(this);
         myCommand = proxy.repairAsync(myTableReference.getKeyspace(), getOptions());
@@ -280,7 +317,7 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         }
     }
 
-    private void verifyRepair(JmxProxy proxy) throws ScheduledJobException
+    private void verifyRepair(final JmxProxy proxy) throws ScheduledJobException
     {
         if (!validateRepairedRanges())
         {
@@ -324,8 +361,16 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         myLatch.countDown();
     }
 
+    /**
+     * Update progress.
+     *
+     * @param type
+     * @param progressCount
+     * @param total
+     * @param message
+     */
     @VisibleForTesting
-    void progress(ProgressEventType type, int progressCount, int total, String message)
+    void progress(final ProgressEventType type, final int progressCount, final int total, final String message)
     {
         if (type == ProgressEventType.PROGRESS)
         {
@@ -359,14 +404,14 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         }
     }
 
-    private double calculateProgress(int progressCount, int total)
+    private double calculateProgress(final int progressCount, final int total)
     {
         if (total == 0)
         {
             return 0.0d;
         }
 
-        return (progressCount * 100.0d) / total;
+        return (progressCount * PROGRESS_FACTOR) / total;
     }
 
     private void rescheduleHangPrevention()
@@ -375,7 +420,8 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         {
             myHangPreventFuture.cancel(false);
         }
-        myHangPreventFuture = myExecutor.schedule(new HangPreventingTask(), HANG_PREVENT_TIME_IN_MINUTES, TimeUnit.MINUTES);
+        myHangPreventFuture = myExecutor.schedule(new HangPreventingTask(),
+                HANG_PREVENT_TIME_IN_MINUTES, TimeUnit.MINUTES);
     }
 
     /**
@@ -392,54 +438,99 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         private TableRepairMetrics tableRepairMetrics;
         private RepairConfiguration repairConfiguration = RepairConfiguration.DEFAULT;
 
-        public Builder withRepairHistory(RepairHistory repairHistory)
+        /**
+         * Build with repair history.
+         *
+         * @return Builder
+         */
+        public Builder withRepairHistory(final RepairHistory theRepairHistory)
         {
-            this.repairHistory = repairHistory;
+            this.repairHistory = theRepairHistory;
             return this;
         }
 
-        public Builder withJobId(UUID jobId)
+        /**
+         * Build with job id.
+         *
+         * @return Builder
+         */
+        public Builder withJobId(final UUID theJobId)
         {
-            this.jobId = jobId;
+            this.jobId = theJobId;
             return this;
         }
 
-        public Builder withJMXProxyFactory(JmxProxyFactory jmxProxyFactory)
+        /**
+         * Build with JMX proxy factory.
+         *
+         * @return Builder
+         */
+        public Builder withJMXProxyFactory(final JmxProxyFactory theJMXProxyFactory)
         {
-            this.jmxProxyFactory = jmxProxyFactory;
+            this.jmxProxyFactory = theJMXProxyFactory;
             return this;
         }
 
-        public Builder withTableReference(TableReference tableReference)
+        /**
+         * Build with table references.
+         *
+         * @return Builder
+         */
+        public Builder withTableReference(final TableReference theTableReference)
         {
-            this.tableReference = tableReference;
+            this.tableReference = theTableReference;
             return this;
         }
 
-        public Builder withTokenRanges(Collection<LongTokenRange> tokenRanges)
+        /**
+         * Build with token ranges.
+         *
+         * @return Builder
+         */
+        public Builder withTokenRanges(final Collection<LongTokenRange> theTokenRanges)
         {
-            this.tokenRanges = new HashSet<>(tokenRanges);
+            this.tokenRanges = new HashSet<>(theTokenRanges);
             return this;
         }
 
-        public Builder withReplicas(Collection<DriverNode> replicas)
+        /**
+         * Build with replicas.
+         *
+         * @return Builder
+         */
+        public Builder withReplicas(final Collection<DriverNode> theReplicas)
         {
-            this.replicas = new HashSet<>(replicas);
+            this.replicas = new HashSet<>(theReplicas);
             return this;
         }
 
-        public Builder withTableRepairMetrics(TableRepairMetrics tableRepairMetrics)
+        /**
+         * Build with table repair metrics.
+         *
+         * @return Builder
+         */
+        public Builder withTableRepairMetrics(final TableRepairMetrics theTableRepairMetrics)
         {
-            this.tableRepairMetrics = tableRepairMetrics;
+            this.tableRepairMetrics = theTableRepairMetrics;
             return this;
         }
 
-        public Builder withRepairConfiguration(RepairConfiguration repairConfiguration)
+        /**
+         * Build with repair configuration.
+         *
+         * @return Builder
+         */
+        public Builder withRepairConfiguration(final RepairConfiguration theRepairConfiguration)
         {
-            this.repairConfiguration = repairConfiguration;
+            this.repairConfiguration = theRepairConfiguration;
             return this;
         }
 
+        /**
+         * Build RepairTask.
+         *
+         * @return RepairTask
+         */
         public RepairTask build()
         {
             if (tableRepairMetrics == null)
@@ -479,8 +570,8 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         SUCCESS,
 
         /**
-         * Fire when progress complete. This is fired once, after ERROR/ABORT/SUCCESS is fired. After this, no more ProgressEvent should be fired for
-         * the same event.
+         * Fire when progress complete. This is fired once, after ERROR/ABORT/SUCCESS is fired. After this, no more
+         * ProgressEvent should be fired for the same event.
          */
         COMPLETE,
 
@@ -509,30 +600,55 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
 
     }
 
+    /**
+     * Get token ranges.
+     *
+     * @return Set<LongTokenRanges>
+     */
     @VisibleForTesting
     Set<LongTokenRange> getTokenRanges()
     {
         return Sets.newHashSet(myTokenRanges);
     }
 
+    /**
+     * Get completed ranges.
+     *
+     * @return Collection<LongTokenRange>
+     */
     @VisibleForTesting
     Collection<LongTokenRange> getCompletedRanges()
     {
         return Sets.newHashSet(completedRanges);
     }
 
+    /**
+     * Get replicas.
+     *
+     * @return Set<DriverNode>
+     */
     @VisibleForTesting
     Set<DriverNode> getReplicas()
     {
         return Sets.newHashSet(myReplicas);
     }
 
+    /**
+     * Get table reference.
+     *
+     * @return TableReference
+     */
     @VisibleForTesting
     TableReference getTableReference()
     {
         return myTableReference;
     }
 
+    /**
+     * Get the repair configuration.
+     *
+     * @return RepairConfiguration
+     */
     @VisibleForTesting
     RepairConfiguration getRepairConfiguration()
     {

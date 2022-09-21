@@ -41,14 +41,17 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
     private final CqlSession mySession;
     private final TableReferenceFactory myTableReferenceFactory;
 
-    public ReplicatedTableProviderImpl(Node node, CqlSession session, TableReferenceFactory tableReferenceFactory)
+    public ReplicatedTableProviderImpl(final Node node,
+                                       final CqlSession session,
+                                       final TableReferenceFactory tableReferenceFactory)
     {
         myLocalNode = node;
         mySession = session;
         myTableReferenceFactory = tableReferenceFactory;
     }
 
-    @Override public Set<TableReference> getAll()
+    @Override
+    public final Set<TableReference> getAll()
     {
         return mySession.getMetadata().getKeyspaces().values().stream()
                 .filter(k -> accept(k.getName().asInternal()))
@@ -57,8 +60,14 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
                 .collect(Collectors.toSet());
     }
 
+    /**
+     * Accept.
+     *
+     * @param keyspace The keyspace to check.
+     * @return boolean
+     */
     @Override
-    public boolean accept(String keyspace)
+    public boolean accept(final String keyspace)
     {
         if (keyspace.startsWith("system") && !SYSTEM_AUTH_KEYSPACE.equals(keyspace))
         {
@@ -87,14 +96,14 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
         return false;
     }
 
-    private boolean validateSimpleStrategy(Map<String, String> replication)
+    private boolean validateSimpleStrategy(final Map<String, String> replication)
     {
         int replicationFactor = Integer.parseInt(replication.get(SIMPLE_STRATEGY_REPLICATION_FACTOR));
 
         return replicationFactor > 1;
     }
 
-    private boolean validateNetworkTopologyStrategy(String keyspace, Map<String, String> replication)
+    private boolean validateNetworkTopologyStrategy(final String keyspace, final Map<String, String> replication)
     {
         String localDc = myLocalNode.getDatacenter();
 
@@ -113,7 +122,7 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
         return definedReplicationInNetworkTopologyStrategy(replication) > 1;
     }
 
-    private int definedReplicationInNetworkTopologyStrategy(Map<String, String> replication)
+    private int definedReplicationInNetworkTopologyStrategy(final Map<String, String> replication)
     {
         int replicationFactor = 0;
 

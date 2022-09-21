@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.utils;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@SuppressWarnings("constantname")
 public final class UnitConverter
 {
     private static final Pattern BYTE_PATTERN = Pattern.compile("^([0-9]+)([kKmMgG]?)$");
@@ -30,16 +31,16 @@ public final class UnitConverter
         // Utility class
     }
 
-    public static long toBytes(String value)
+    public static long toBytes(final String value)
     {
         Matcher matcher = BYTE_PATTERN.matcher(value);
         if (!matcher.matches())
         {
-            throw new IllegalArgumentException("Unknown value" + value);
+            throw new IllegalArgumentException("Unknown value " + value);
         }
         long baseValue = Long.parseLong(matcher.group(1));
 
-        switch(matcher.group(2))
+        switch (matcher.group(2))
         {
             case "g":
             case "G":

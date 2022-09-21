@@ -22,6 +22,7 @@ import java.util.HashMap;
 /**
  * A scheduled task run by the scheduled job.
  */
+@SuppressWarnings("VisibilityModifier")
 public abstract class ScheduledTask
 {
     private static final String DEFAULT_SCHEDULE_RESOURCE = "SCHEDULE_LOCK";
@@ -33,12 +34,12 @@ public abstract class ScheduledTask
         this(1);
     }
 
-    protected ScheduledTask(int priority)
+    protected ScheduledTask(final int priority)
     {
         myPriority = priority;
     }
 
-    public boolean preValidate()
+    public final boolean preValidate()
     {
         return true;
     }
@@ -68,7 +69,7 @@ public abstract class ScheduledTask
      * @return The lock used by this scheduled job.
      * @throws LockException Thrown when it's not possible to get the lock.
      */
-    public LockFactory.DistributedLock getLock(LockFactory lockFactory) throws LockException
+    public LockFactory.DistributedLock getLock(final LockFactory lockFactory) throws LockException
     {
         return lockFactory.tryLock(null, DEFAULT_SCHEDULE_RESOURCE, myPriority, new HashMap<>());
     }

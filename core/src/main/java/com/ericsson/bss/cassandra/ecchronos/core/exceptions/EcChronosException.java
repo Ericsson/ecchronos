@@ -21,17 +21,17 @@ public class EcChronosException extends Exception
 {
     private static final long serialVersionUID = 1148561336907867613L;
 
-    public EcChronosException(String message)
+    public EcChronosException(final String message)
     {
         super(message);
     }
 
-    public EcChronosException(Throwable t)
+    public EcChronosException(final Throwable t)
     {
         super(t);
     }
 
-    public EcChronosException(String message, Throwable t)
+    public EcChronosException(final String message, final Throwable t)
     {
         super(message, t);
     }

@@ -19,7 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
-public class RepairStateFactoryImpl implements RepairStateFactory
+public final class RepairStateFactoryImpl implements RepairStateFactory
 {
     private final HostStates myHostStates;
     private final TableRepairMetrics myTableRepairMetrics;
@@ -27,7 +27,7 @@ public class RepairStateFactoryImpl implements RepairStateFactory
     private final VnodeRepairStateFactoryImpl myVnodeRepairStateFactory;
     private final VnodeRepairStateFactoryImpl mySubRangeRepairStateFactory;
 
-    private RepairStateFactoryImpl(Builder builder)
+    private RepairStateFactoryImpl(final Builder builder)
     {
         myHostStates = builder.myHostStates;
         myTableRepairMetrics = builder.myTableRepairMetrics;
@@ -39,8 +39,9 @@ public class RepairStateFactoryImpl implements RepairStateFactory
     }
 
     @Override
-    public RepairState create(TableReference tableReference, RepairConfiguration repairConfiguration,
-            PostUpdateHook postUpdateHook)
+    public RepairState create(final TableReference tableReference,
+                              final RepairConfiguration repairConfiguration,
+                              final PostUpdateHook postUpdateHook)
     {
         ReplicaRepairGroupFactory replicaRepairGroupFactory = VnodeRepairGroupFactory.INSTANCE;
 
@@ -66,30 +67,55 @@ public class RepairStateFactoryImpl implements RepairStateFactory
         private RepairHistoryProvider myRepairHistoryProvider;
         private TableRepairMetrics myTableRepairMetrics;
 
-        public Builder withReplicationState(ReplicationState replicationState)
+        /**
+         * Build repair state with replication state.
+         *
+         * @return Builder
+         */
+        public Builder withReplicationState(final ReplicationState replicationState)
         {
             myReplicationState = replicationState;
             return this;
         }
 
-        public Builder withHostStates(HostStates hostStates)
+        /**
+         * Build repair state with host states.
+         *
+         * @return Builder
+         */
+        public Builder withHostStates(final HostStates hostStates)
         {
             myHostStates = hostStates;
             return this;
         }
 
-        public Builder withRepairHistoryProvider(RepairHistoryProvider repairHistoryProvider)
+        /**
+         * Build repair state with repair history provider.
+         *
+         * @return Builder
+         */
+        public Builder withRepairHistoryProvider(final RepairHistoryProvider repairHistoryProvider)
         {
             myRepairHistoryProvider = repairHistoryProvider;
             return this;
         }
 
-        public Builder withTableRepairMetrics(TableRepairMetrics tableRepairMetrics)
+        /**
+         * Build repair state with table repair metrics.
+         *
+         * @return Builder
+         */
+        public Builder withTableRepairMetrics(final TableRepairMetrics tableRepairMetrics)
         {
             myTableRepairMetrics = tableRepairMetrics;
             return this;
         }
 
+        /**
+         * Build repair state.
+         *
+         * @return RepairStateFactoryImpl
+         */
         public RepairStateFactoryImpl build()
         {
             return new RepairStateFactoryImpl(this);

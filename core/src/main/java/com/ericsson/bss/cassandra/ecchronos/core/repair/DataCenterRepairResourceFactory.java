@@ -25,14 +25,14 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup
 public class DataCenterRepairResourceFactory implements RepairResourceFactory
 {
     @Override
-    public Set<RepairResource> getRepairResources(ReplicaRepairGroup replicaRepairGroup)
+    public final Set<RepairResource> getRepairResources(final ReplicaRepairGroup replicaRepairGroup)
     {
         return replicaRepairGroup.getDataCenters().stream()
             .map(this::dataCenterToRepairResource)
             .collect(Collectors.toSet());
     }
 
-    private RepairResource dataCenterToRepairResource(String dataCenter)
+    private RepairResource dataCenterToRepairResource(final String dataCenter)
     {
         return new RepairResource(dataCenter, dataCenter);
     }

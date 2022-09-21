@@ -41,16 +41,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 /**
- * A scheduled job that keeps track of the repair status of a single table. The table is considered repaired for this node if all the ranges this node
- * is responsible for is repaired within the minimum run interval.
+ * A scheduled job that keeps track of the repair status of a single table. The table is considered repaired for this
+ * node if all the ranges this node is responsible for is repaired within the minimum run interval.
  * <p>
  * When run this job will create {@link RepairTask RepairTasks} that repairs the table.
  */
 public class TableRepairJob extends ScheduledJob
 {
+    private static final int DAYS_IN_A_WEEK = 7;
+
     private static final Logger LOG = LoggerFactory.getLogger(TableRepairJob.class);
 
-    private static final RepairLockFactory repairLockFactory = new RepairLockFactoryImpl();
+    private static final RepairLockFactory REPAIR_LOCK_FACTORY = new RepairLockFactoryImpl();
 
     private final TableReference myTableReference;
     private final JmxProxyFactory myJmxProxyFactory;
@@ -63,34 +65,57 @@ public class TableRepairJob extends ScheduledJob
     private final TableStorageStates myTableStorageStates;
     private final RepairHistory myRepairHistory;
 
-    TableRepairJob(Builder builder)
+    TableRepairJob(final Builder builder)
     {
         super(builder.configuration, builder.tableReference.getId());
 
         myTableReference = builder.tableReference;
-        myJmxProxyFactory = Preconditions.checkNotNull(builder.jmxProxyFactory, "JMX Proxy Factory must be set");
-        myRepairState = Preconditions.checkNotNull(builder.repairState, "Repair state must be set");
+        myJmxProxyFactory = Preconditions.checkNotNull(builder.jmxProxyFactory,
+                "JMX Proxy Factory must be set");
+        myRepairState = Preconditions.checkNotNull(builder.repairState,
+                "Repair state must be set");
         myTableRepairMetrics = Preconditions
-                .checkNotNull(builder.tableRepairMetrics, "Table repair metrics must be set");
+                .checkNotNull(builder.tableRepairMetrics,
+                        "Table repair metrics must be set");
         myRepairConfiguration = Preconditions
-                .checkNotNull(builder.repairConfiguration, "Repair configuration must be set");
-        myRepairLockType = Preconditions.checkNotNull(builder.repairLockType, "Repair lock type must be set");
+                .checkNotNull(builder.repairConfiguration,
+                        "Repair configuration must be set");
+        myRepairLockType = Preconditions.checkNotNull(builder.repairLockType,
+                "Repair lock type must be set");
         myTableStorageStates = Preconditions
-                .checkNotNull(builder.tableStorageStates, "Table storage states must be set");
-        myRepairPolicies = Preconditions.checkNotNull(builder.repairPolicies, "Repair policies cannot be null");
-        myRepairHistory = Preconditions.checkNotNull(builder.repairHistory, "Repair history must be set");
+                .checkNotNull(builder.tableStorageStates,
+                        "Table storage states must be set");
+        myRepairPolicies = Preconditions.checkNotNull(builder.repairPolicies,
+                "Repair policies cannot be null");
+        myRepairHistory = Preconditions.checkNotNull(builder.repairHistory,
+                "Repair history must be set");
     }
 
+    /**
+     * Get table reference.
+     *
+     * @return TableReference
+     */
     public TableReference getTableReference()
     {
         return myTableReference;
     }
 
+    /**
+     * Get repair configuration.
+     *
+     * @return RepairConfiguration
+     */
     public RepairConfiguration getRepairConfiguration()
     {
         return myRepairConfiguration;
     }
 
+    /**
+     * Get scheduled repair job view.
+     *
+     * @return ScheduledRepairJobView
+     */
     public ScheduledRepairJobView getView()
     {
         long now = System.currentTimeMillis();
@@ -103,7 +128,7 @@ public class TableRepairJob extends ScheduledJob
         return (getLastSuccessfulRun() + getRepairConfiguration().getRepairIntervalInMs()) - getRunOffset();
     }
 
-    private double getProgress(long timestamp)
+    private double getProgress(final long timestamp)
     {
         long interval = myRepairConfiguration.getRepairIntervalInMs();
         Collection<VnodeRepairState> states = myRepairState.getSnapshot().getVnodeRepairStates().getVnodeRepairStates();
@@ -117,12 +142,12 @@ public class TableRepairJob extends ScheduledJob
                 : (double) nRepaired / states.size();
     }
 
-    private Predicate<VnodeRepairState> isRepaired(long timestamp, long interval)
+    private Predicate<VnodeRepairState> isRepaired(final long timestamp, final long interval)
     {
         return state -> timestamp - state.lastRepairedAt() <= interval;
     }
 
-    private ScheduledRepairJobView.Status getStatus(long timestamp)
+    private ScheduledRepairJobView.Status getStatus(final long timestamp)
     {
         if (getRealPriority() != -1 && !super.runnable())
         {
@@ -147,6 +172,11 @@ public class TableRepairJob extends ScheduledJob
         return ScheduledRepairJobView.Status.COMPLETED;
     }
 
+    /**
+     * Iterate.
+     *
+     * @return Iterator<ScheduledTask>
+     */
     @Override
     public Iterator<ScheduledTask> iterator()
     {
@@ -166,7 +196,7 @@ public class TableRepairJob extends ScheduledJob
                         .withJmxProxyFactory(myJmxProxyFactory)
                         .withTableRepairMetrics(myTableRepairMetrics)
                         .withRepairResourceFactory(myRepairLockType.getLockFactory())
-                        .withRepairLockFactory(repairLockFactory)
+                        .withRepairLockFactory(REPAIR_LOCK_FACTORY)
                         .withTokensPerRepair(tokensPerRepair)
                         .withRepairPolicies(myRepairPolicies)
                         .withRepairHistory(myRepairHistory)
@@ -183,8 +213,16 @@ public class TableRepairJob extends ScheduledJob
         }
     }
 
+    /**
+     * Post execute.
+     *
+     * @param successful
+     *            If the job ran successfully.
+     * @param task
+     *            Last task that has completely successful
+     */
     @Override
-    public void postExecute(boolean successful, ScheduledTask task)
+    public void postExecute(final boolean successful, final ScheduledTask task)
     {
         try
         {
@@ -198,18 +236,33 @@ public class TableRepairJob extends ScheduledJob
         super.postExecute(successful, task);
     }
 
+    /**
+     * Get last successful run.
+     *
+     * @return long
+     */
     @Override
     public long getLastSuccessfulRun()
     {
         return myRepairState.getSnapshot().lastCompletedAt();
     }
 
+    /**
+     * Get run offset.
+     *
+     * @return long
+     */
     @Override
     public long getRunOffset()
     {
         return myRepairState.getSnapshot().getEstimatedRepairTime();
     }
 
+    /**
+     * Runnable.
+     *
+     * @return boolean
+     */
     @Override
     public boolean runnable()
     {
@@ -228,13 +281,18 @@ public class TableRepairJob extends ScheduledJob
         return myRepairState.getSnapshot().canRepair() && super.runnable();
     }
 
+    /**
+     * String representation.
+     *
+     * @return String
+     */
     @Override
     public String toString()
     {
         return String.format("Repair job of %s", myTableReference);
     }
 
-    private BigInteger getTokensPerRepair(VnodeRepairStates vnodeRepairStates)
+    private BigInteger getTokensPerRepair(final VnodeRepairStates vnodeRepairStates)
     {
         BigInteger tokensPerRepair = LongTokenRange.FULL_RANGE;
 
@@ -259,11 +317,12 @@ public class TableRepairJob extends ScheduledJob
         return tokensPerRepair;
     }
 
+    @SuppressWarnings("VisibilityModifier")
     public static class Builder
     {
         Configuration configuration = new ConfigurationBuilder()
                 .withPriority(Priority.LOW)
-                .withRunInterval(7, TimeUnit.DAYS)
+                .withRunInterval(DAYS_IN_A_WEEK, TimeUnit.DAYS)
                 .build();
         private TableReference tableReference;
         private JmxProxyFactory jmxProxyFactory;
@@ -275,66 +334,121 @@ public class TableRepairJob extends ScheduledJob
         private final List<TableRepairPolicy> repairPolicies = new ArrayList<>();
         private RepairHistory repairHistory;
 
-        public Builder withConfiguration(Configuration configuration)
+        /**
+         * Build table repair job with configuration.
+         *
+         * @return Builder
+         */
+        public Builder withConfiguration(final Configuration theConfiguration)
         {
-            this.configuration = configuration;
+            this.configuration = theConfiguration;
             return this;
         }
 
-        public Builder withTableReference(TableReference tableReference)
+        /**
+         * Build table repair job with table reference.
+         *
+         * @return Builder
+         */
+        public Builder withTableReference(final TableReference theTableReference)
         {
-            this.tableReference = tableReference;
+            this.tableReference = theTableReference;
             return this;
         }
 
-        public Builder withJmxProxyFactory(JmxProxyFactory jmxProxyFactory)
+        /**
+         * Build table repair job with JMX proxy factory.
+         *
+         * @return Builder
+         */
+        public Builder withJmxProxyFactory(final JmxProxyFactory aJMXProxyFactory)
         {
-            this.jmxProxyFactory = jmxProxyFactory;
+            this.jmxProxyFactory = aJMXProxyFactory;
             return this;
         }
 
-        public Builder withRepairState(RepairState repairState)
+        /**
+         * Build table repair job with repair state.
+         *
+         * @return Builder
+         */
+        public Builder withRepairState(final RepairState theRepairState)
         {
-            this.repairState = repairState;
+            this.repairState = theRepairState;
             return this;
         }
 
-        public Builder withTableRepairMetrics(TableRepairMetrics tableRepairMetrics)
+        /**
+         * Build table repair job with table repair metrics.
+         *
+         * @return Builder
+         */
+        public Builder withTableRepairMetrics(final TableRepairMetrics theTableRepairMetrics)
         {
-            this.tableRepairMetrics = tableRepairMetrics;
+            this.tableRepairMetrics = theTableRepairMetrics;
             return this;
         }
 
-        public Builder withRepairConfiguration(RepairConfiguration repairConfiguration)
+        /**
+         * Build table repair job with repair configuration.
+         *
+         * @return Builder
+         */
+        public Builder withRepairConfiguration(final RepairConfiguration theRepairConfiguration)
         {
-            this.repairConfiguration = repairConfiguration;
+            this.repairConfiguration = theRepairConfiguration;
             return this;
         }
 
-        public Builder withRepairLockType(RepairLockType repairLockType)
+        /**
+         * Build table repair job with repair lock type.
+         *
+         * @return Builder
+         */
+        public Builder withRepairLockType(final RepairLockType theRepairLockType)
         {
-            this.repairLockType = repairLockType;
+            this.repairLockType = theRepairLockType;
             return this;
         }
 
-        public Builder withTableStorageStates(TableStorageStates tableStorageStates)
+        /**
+         * Build table repair job with table storage states.
+         *
+         * @return Builder
+         */
+        public Builder withTableStorageStates(final TableStorageStates theTableStorageStates)
         {
-            this.tableStorageStates = tableStorageStates;
+            this.tableStorageStates = theTableStorageStates;
             return this;
         }
 
-        public Builder withRepairPolices(Collection<TableRepairPolicy> tableRepairPolicies)
+        /**
+         * Build table repair job with repair policies.
+         *
+         * @return Builder
+         */
+        public Builder withRepairPolices(final Collection<TableRepairPolicy> tableRepairPolicies)
         {
             this.repairPolicies.addAll(tableRepairPolicies);
             return this;
         }
 
-        public Builder withRepairHistory(RepairHistory repairHistory)
+        /**
+         * Build table repair job with repair history.
+         *
+         * @return Builder
+         */
+        public Builder withRepairHistory(final RepairHistory aRepairHistory)
         {
-            this.repairHistory = repairHistory;
+            this.repairHistory = aRepairHistory;
             return this;
         }
 
+        /**
+         * Build table repair job.
+         *
+         * @return TableRepairJob
+         */
         public TableRepairJob build()
         {
             Preconditions.checkNotNull(tableReference, "Table reference must be set");

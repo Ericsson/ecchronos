@@ -24,7 +24,13 @@ public enum RepairStatus
     FAILED,
     UNKNOWN;
 
-    public static RepairStatus getFromStatus(String status)
+    /**
+     * Get RepairStatus vale.
+     *
+     * @param status
+     * @return RepairStatus
+     */
+    public static RepairStatus getFromStatus(final String status)
     {
         RepairStatus repairStatus;
 

@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 
-public class TableStorageStatesImpl implements TableStorageStates, Closeable
+public final class TableStorageStatesImpl implements TableStorageStates, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(TableStorageStatesImpl.class);
 
@@ -43,17 +43,20 @@ public class TableStorageStatesImpl implements TableStorageStates, Closeable
     private final ReplicatedTableProvider myReplicatedTableProvider;
     private final JmxProxyFactory myJmxProxyFactory;
 
-    private TableStorageStatesImpl(Builder builder)
+    private TableStorageStatesImpl(final Builder builder)
     {
         myReplicatedTableProvider = builder.myReplicatedTableProvider;
         myJmxProxyFactory = builder.myJmxProxyFactory;
 
         myScheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-        myScheduledExecutorService.scheduleAtFixedRate(this::updateTableStates, builder.myInitialDelayInMs, builder.myUpdateDelayInMs, TimeUnit.MILLISECONDS);
+        myScheduledExecutorService.scheduleAtFixedRate(this::updateTableStates,
+                builder.myInitialDelayInMs,
+                builder.myUpdateDelayInMs,
+                TimeUnit.MILLISECONDS);
     }
 
     @Override
-    public long getDataSize(TableReference tableReference)
+    public long getDataSize(final TableReference tableReference)
     {
         ImmutableMap<TableReference, Long> dataSizes = myTableSizes.get();
 
@@ -99,31 +102,31 @@ public class TableStorageStatesImpl implements TableStorageStates, Closeable
         private long myInitialDelayInMs = 0;
         private long myUpdateDelayInMs = DEFAULT_UPDATE_DELAY_IN_MS;
 
-        public Builder withReplicatedTableProvider(ReplicatedTableProvider replicatedTableProvider)
+        public final Builder withReplicatedTableProvider(final ReplicatedTableProvider replicatedTableProvider)
         {
             myReplicatedTableProvider = replicatedTableProvider;
             return this;
         }
 
-        public Builder withJmxProxyFactory(JmxProxyFactory jmxProxyFactory)
+        public final Builder withJmxProxyFactory(final JmxProxyFactory jmxProxyFactory)
         {
             myJmxProxyFactory = jmxProxyFactory;
             return this;
         }
 
-        public Builder withInitialDelay(long initialDelay, TimeUnit timeUnit)
+        public final Builder withInitialDelay(final long initialDelay, final TimeUnit timeUnit)
         {
             myInitialDelayInMs = timeUnit.toMillis(initialDelay);
             return this;
         }
 
-        public Builder withUpdateDelay(long updateDelay, TimeUnit timeUnit)
+        public final Builder withUpdateDelay(final long updateDelay, final TimeUnit timeUnit)
         {
             myUpdateDelayInMs = timeUnit.toMillis(updateDelay);
             return this;
         }
 
-        public TableStorageStatesImpl build()
+        public final TableStorageStatesImpl build()
         {
             if (myReplicatedTableProvider == null)
             {
@@ -155,7 +158,7 @@ public class TableStorageStatesImpl implements TableStorageStates, Closeable
         }
     }
 
-    private ImmutableMap<TableReference, Long> getTableSizes(JmxProxy jmxProxy)
+    private ImmutableMap<TableReference, Long> getTableSizes(final JmxProxy jmxProxy)
     {
         Map<TableReference, Long> dataSizes = new HashMap<>();
 

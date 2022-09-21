@@ -21,11 +21,17 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
+/**
+ * Repair history interface.
+ */
 public interface RepairHistory
 {
     RepairHistory NO_OP = new NoOpRepairHistory();
 
-    RepairSession newSession(TableReference tableReference, UUID jobId, LongTokenRange range, Set<DriverNode> participants);
+    RepairSession newSession(TableReference tableReference,
+                             UUID jobId,
+                             LongTokenRange range,
+                             Set<DriverNode> participants);
 
     interface RepairSession
     {
@@ -38,9 +44,14 @@ public interface RepairHistory
     {
         private static final RepairSession NO_OP = new NoOpRepairSession();
 
+        /**
+         * New session.
+         */
         @Override
-        public RepairSession newSession(TableReference tableReference, UUID jobId, LongTokenRange range,
-                Set<DriverNode> participants)
+        public RepairSession newSession(final TableReference tableReference,
+                                        final UUID jobId,
+                                        final LongTokenRange range,
+                                        final Set<DriverNode> participants)
         {
             return NO_OP;
         }
@@ -48,14 +59,20 @@ public interface RepairHistory
 
     class NoOpRepairSession implements RepairSession
     {
+        /**
+         * Start.
+         */
         @Override
         public void start()
         {
             // Do nothing
         }
 
+        /**
+         * End.
+         */
         @Override
-        public void finish(RepairStatus repairStatus)
+        public void finish(final RepairStatus repairStatus)
         {
             // Do nothing
         }

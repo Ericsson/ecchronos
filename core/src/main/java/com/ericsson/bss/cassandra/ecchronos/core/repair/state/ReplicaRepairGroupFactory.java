@@ -17,7 +17,8 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 import java.util.List;
 
 /**
- * An factory interface that creates {@link ReplicaRepairGroup ReplicaRepairGroups} based on the currently repairable vnodes.
+ * An factory interface that creates {@link ReplicaRepairGroup ReplicaRepairGroups} based on the currently repairable
+ * vnodes.
  */
 public interface ReplicaRepairGroupFactory
 {
