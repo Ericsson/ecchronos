@@ -2,6 +2,7 @@
 
 ## Version 4.0.0
 
+* Sort repair-info based on repaired-ratio - Issue #358
 * Fix limit for repair-info - Issue #359
 * Remove version override of log4j - Issue #356
 * Throw configexception if yaml config contains null - Issue #352
