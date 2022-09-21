@@ -67,7 +67,7 @@ public class ReplicationStateImpl implements ReplicationState
      *
      * @param tableReference The table used to calculate the proper replication.
      * @param tokenRange The token range to get nodes for.
-     * @return ImmutableSet<DriverNode>
+     * @return Nodes
      */
     @Override
     public ImmutableSet<DriverNode> getNodes(final TableReference tableReference, final LongTokenRange tokenRange)
@@ -83,7 +83,7 @@ public class ReplicationStateImpl implements ReplicationState
      *
      * @param tableReference The table used to calculate the proper replication.
      * @param tokenRange The token range to get nodes for.
-     * @return ImmutableSet<DriverNode>
+     * @return Nodes
      */
     @Override
     public ImmutableSet<DriverNode> getNodesClusterWide(final TableReference tableReference,
@@ -120,7 +120,7 @@ public class ReplicationStateImpl implements ReplicationState
      *
      * @param tableReference
      *            The table used to calculate the proper replication.
-     * @return Map<LongTokenRange, ImmutableSet<DriverNode>>
+     * @return Nodes and their ranges
      */
     @Override
     public Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRangeToReplicas(final TableReference tableReference)
@@ -140,7 +140,7 @@ public class ReplicationStateImpl implements ReplicationState
      * Get token ranges.
      *
      * @param tableReference
-     * @return Map<LongTokenRange, ImmutableSet<DriverNode>>
+     * @return Nodes and their ranges
      */
     @Override
     public Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRanges(final TableReference tableReference)

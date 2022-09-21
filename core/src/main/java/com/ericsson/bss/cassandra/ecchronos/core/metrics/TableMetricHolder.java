@@ -98,8 +98,8 @@ public class TableMetricHolder implements Closeable
     /**
      * Set repair state.
      *
-     * @param repairedRanges
-     * @param notRepairedRanges
+     * @param repairedRanges Ranges repaired
+     * @param notRepairedRanges Ranges NOT repaired
      */
     public void repairState(final int repairedRanges, final int notRepairedRanges)
     {
@@ -126,7 +126,7 @@ public class TableMetricHolder implements Closeable
     /**
      * Set last repaired at.
      *
-     * @param lastRepairedAt
+     * @param lastRepairedAt Last repaired at
      */
     public void lastRepairedAt(final long lastRepairedAt)
     {
@@ -136,7 +136,7 @@ public class TableMetricHolder implements Closeable
     /**
      * Set remaining repair time.
      *
-     * @param remainingRepairTime
+     * @param remainingRepairTime Remaining repair time
      */
     public void remainingRepairTime(final long remainingRepairTime)
     {
@@ -163,9 +163,9 @@ public class TableMetricHolder implements Closeable
     /**
      * Set repair timing.
      *
-     * @param timeTaken
-     * @param timeUnit
-     * @param successful
+     * @param timeTaken Time token
+     * @param timeUnit Time unit
+     * @param successful Successful flag
      */
     public void repairTiming(final long timeTaken, final TimeUnit timeUnit, final boolean successful)
     {

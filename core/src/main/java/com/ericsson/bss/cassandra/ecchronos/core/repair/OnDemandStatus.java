@@ -85,6 +85,8 @@ public class OnDemandStatus
 
     /**
      * Get current on demand status.
+     *
+     * @param nativeConnectionProvider
      */
     public OnDemandStatus(final NativeConnectionProvider nativeConnectionProvider)
     {
@@ -139,6 +141,8 @@ public class OnDemandStatus
 
     /**
      * Get host ID.
+     *
+     * @return Ongoing jobs
      */
     public UUID getHostId()
     {
@@ -147,6 +151,9 @@ public class OnDemandStatus
 
     /**
      * Get ongoing jobs.
+     *
+     * @param replicationState
+     * @return Ongoing jobs
      */
     public Set<OngoingJob> getOngoingJobs(final ReplicationState replicationState)
     {
@@ -178,6 +185,8 @@ public class OnDemandStatus
 
     /**
      * Get all cluster wide jobs.
+     *
+     * @return  Ongoing jobs
      */
     public Set<OngoingJob> getAllClusterWideJobs()
     {
@@ -195,6 +204,9 @@ public class OnDemandStatus
 
     /**
      * Get all jobs.
+     *
+     * @param replicationState
+     * @return Ongoing jobs
      */
     public Set<OngoingJob> getAllJobs(final ReplicationState replicationState)
     {
@@ -203,6 +215,10 @@ public class OnDemandStatus
 
     /**
      * Get all jobs for a host.
+     *
+     * @param hostId
+     * @param replicationState
+     * @return Ongoing jobs
      */
     private Set<OngoingJob> getAllJobsForHost(final ReplicationState replicationState, final UUID hostId)
     {
@@ -269,6 +285,10 @@ public class OnDemandStatus
 
     /**
      * Add new job.
+     *
+     * @param jobId
+     * @param tableReference
+     * @param tokenMapHash
      */
     public void addNewJob(final UUID jobId, final TableReference tableReference, final int tokenMapHash)
     {
@@ -277,6 +297,12 @@ public class OnDemandStatus
 
     /**
      * Add new job.
+     *
+     * @param jobId
+     * @param host
+     * @param tableReference
+     * @param tokenMapHash
+     * @param repairedRanges
      */
     public void addNewJob(final UUID host,
                           final UUID jobId,
@@ -299,6 +325,9 @@ public class OnDemandStatus
 
     /**
      * Update job.
+     *
+     * @param jobId
+     * @param repairedTokens
      */
     public void updateJob(final UUID jobId, final Set<UdtValue> repairedTokens)
     {
@@ -307,6 +336,8 @@ public class OnDemandStatus
 
     /**
      * Finish job.
+     *
+     * @param jobId
      */
     public void finishJob(final UUID jobId)
     {
@@ -317,6 +348,8 @@ public class OnDemandStatus
 
     /**
      * Fail job.
+     *
+     * @param jobId
      */
     public void failJob(final UUID jobId)
     {
@@ -327,6 +360,10 @@ public class OnDemandStatus
 
     /**
      * Create UDT token range value.
+     *
+     * @param start
+     * @param end
+     * @return UdtValue
      */
     public UdtValue createUDTTokenRangeValue(final Long start, final Long end)
     {
@@ -336,6 +373,9 @@ public class OnDemandStatus
 
     /**
      * Get start token.
+     *
+     * @param t
+     * @return long
      */
     public long getStartTokenFrom(final UdtValue t)
     {
@@ -344,6 +384,9 @@ public class OnDemandStatus
 
     /**
      * Get end token.
+     *
+     * @param t
+     * @return long
      */
     public long getEndTokenFrom(final UdtValue t)
     {

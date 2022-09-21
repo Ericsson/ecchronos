@@ -53,7 +53,8 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
 
     /**
      * From builder.
-     * @param builder
+     *
+     * @param builder A builder
      */
     public void fromBuilder(final Builder builder)
     {
@@ -96,7 +97,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     /**
      * On keyspace created.
      *
-     * @param keyspace
+     * @param keyspace Keyspace metadata
      */
     @Override
     public void onKeyspaceCreated(final KeyspaceMetadata keyspace)
@@ -115,8 +116,8 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     /**
      * On keyspace updated.
      *
-     * @param current
-     * @param previous
+     * @param current Current keyspace metadata
+     * @param previous Previous keyspace metadata
      */
     @Override
     public void onKeyspaceUpdated(final KeyspaceMetadata current,
@@ -128,7 +129,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     /**
      * On table created.
      *
-     * @param table
+     * @param table Table metadata
      */
     @Override
     public void onTableCreated(final TableMetadata table)
@@ -144,7 +145,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     /**
      * On table dropped.
      *
-     * @param table
+     * @param table Table metadata
      */
     @Override
     public void onTableDropped(final TableMetadata table)
@@ -159,8 +160,8 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     /**
      * On table updated.
      *
-     * @param current
-     * @param previous
+     * @param current Current table metadata
+     * @param previous Previous table metadata
      */
     @Override
     public void onTableUpdated(final TableMetadata current, final TableMetadata previous)
@@ -242,7 +243,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     /**
      * On keyspace dropped.
      *
-     * @param keyspace
+     * @param keyspace Keyspace metadata
      */
     @Override
     public void onKeyspaceDropped(final KeyspaceMetadata keyspace)
@@ -252,7 +253,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
 
     /**
      * On user defined type created.
-     * @param type
+     * @param type User defined type
      */
     @Override
     public void onUserDefinedTypeCreated(final UserDefinedType type)
@@ -263,7 +264,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     /**
      * On user defined type dropped.
      *
-     * @param type
+     * @param type User defined type
      */
     @Override
     public void onUserDefinedTypeDropped(final UserDefinedType type)
@@ -274,8 +275,8 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     /**
      * On user defined type updated.
      *
-     * @param current
-     * @param previous
+     * @param current Current user defined type
+     * @param previous previous user defined type
      */
     @Override
     public void onUserDefinedTypeUpdated(final UserDefinedType current, final UserDefinedType previous)
@@ -286,7 +287,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     /**
      * On function created.
      *
-     * @param function
+     * @param function Function metadata
      */
     @Override
     public void onFunctionCreated(final FunctionMetadata function)
@@ -297,7 +298,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     /**
      * On function dropped.
      *
-     * @param function
+     * @param function Function metadata
      */
     @Override
     public void onFunctionDropped(final FunctionMetadata function)
@@ -308,8 +309,8 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     /**
      * On function updated.
      *
-     * @param current
-     * @param previous
+     * @param current Current function metadata
+     * @param previous Previous function metadata
      */
     @Override
     public void onFunctionUpdated(final FunctionMetadata current, final FunctionMetadata previous)
@@ -320,7 +321,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     /**
      * On aggregate created.
      *
-     * @param aggregate
+     * @param aggregate Aggregate metadata
      */
     @Override
     public void onAggregateCreated(final AggregateMetadata aggregate)
@@ -331,7 +332,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     /**
      * On aggregate updated.
      *
-     * @param aggregate
+     * @param aggregate Aggregate metadata
      */
     @Override
     public void onAggregateDropped(final AggregateMetadata aggregate)
@@ -342,8 +343,8 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     /**
      * On aggregate updated.
      *
-     * @param current
-     * @param previous
+     * @param current Current aggregate metadata
+     * @param previous previous aggregate metadata
      */
     @Override
     public void onAggregateUpdated(final AggregateMetadata current, final AggregateMetadata previous)
@@ -354,7 +355,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     /**
      * On view created.
      *
-     * @param view
+     * @param view View metadata
      */
     @Override
     public void onViewCreated(final ViewMetadata view)
@@ -365,7 +366,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     /**
      * On view dropped.
      *
-     * @param view
+     * @param view View metadata
      */
     @Override
     public void onViewDropped(final ViewMetadata view)
@@ -376,8 +377,8 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     /**
      * On view updated.
      *
-     * @param current
-     * @param previous
+     * @param current Current view metadata
+     * @param previous Previous view metadata
      */
     @Override
     public void onViewUpdated(final ViewMetadata current, final ViewMetadata previous)
@@ -396,7 +397,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         /**
          * Build with session.
          *
-         * @param session
+         * @param session The CQl session
          * @return Builder
          */
         public Builder withSession(final CqlSession session)
@@ -408,7 +409,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         /**
          * Buiild with default repair configuration.
          *
-         * @param defaultRepairConfiguration
+         * @param defaultRepairConfiguration The default repair configuration
          * @return Builder
          */
         public Builder withDefaultRepairConfiguration(final RepairConfiguration defaultRepairConfiguration)
@@ -420,7 +421,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         /**
          * Build with repair configuration.
          *
-         * @param defaultRepairConfiguration
+         * @param defaultRepairConfiguration The default repair configuration
          * @return Builder
          */
         public Builder withRepairConfiguration(final Function<TableReference, RepairConfiguration>
@@ -433,7 +434,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         /**
          * Build with replicated table provider.
          *
-         * @param replicatedTableProvider
+         * @param replicatedTableProvider The replicated table provider
          * @return Builder
          */
         public Builder withReplicatedTableProvider(final ReplicatedTableProvider replicatedTableProvider)
@@ -445,7 +446,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         /**
          * Build with table repair scheduler.
          *
-         * @param repairScheduler
+         * @param repairScheduler The repair scheduler
          * @return Builder
          */
         public Builder withRepairScheduler(final RepairScheduler repairScheduler)
@@ -457,7 +458,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         /**
          * Build with table reference factory.
          *
-         * @param tableReferenceFactory
+         * @param tableReferenceFactory The table reference factory
          * @return Builder
          */
         public Builder withTableReferenceFactory(final TableReferenceFactory tableReferenceFactory)

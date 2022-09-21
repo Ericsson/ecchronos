@@ -85,8 +85,8 @@ public class NodeMetricHolder implements Closeable
     /**
      * Get repair state.
      *
-     * @param tableReference
-     * @param repairRatio
+     * @param tableReference Table reference
+     * @param repairRatio The repair ratio
      */
     public void repairState(final TableReference tableReference, final double repairRatio)
     {
@@ -96,7 +96,7 @@ public class NodeMetricHolder implements Closeable
     /**
      * Get repair ratio.
      *
-     * @param tableReference
+     * @param tableReference Table reference
      * @return Double
      */
     public Double getRepairRatio(final TableReference tableReference)
@@ -107,9 +107,9 @@ public class NodeMetricHolder implements Closeable
     /**
      * Repair timing.
      *
-     * @param timeTaken
-     * @param timeUnit
-     * @param successful
+     * @param timeTaken Time token
+     * @param timeUnit Time unit
+     * @param successful Successful flag
      */
     public void repairTiming(final long timeTaken, final TimeUnit timeUnit, final boolean successful)
     {

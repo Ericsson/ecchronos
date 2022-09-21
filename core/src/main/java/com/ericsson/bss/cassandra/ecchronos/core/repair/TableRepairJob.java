@@ -175,7 +175,7 @@ public class TableRepairJob extends ScheduledJob
     /**
      * Iterate.
      *
-     * @return Iterator<ScheduledTask>
+     * @return Scheduled task iterator
      */
     @Override
     public Iterator<ScheduledTask> iterator()

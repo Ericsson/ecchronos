@@ -30,7 +30,7 @@ public class CombinedRepairResourceFactory implements RepairResourceFactory
     /**
      * Constructor.
      *
-     * @param repairResourceFactories
+     * @param repairResourceFactories Repair resource factories
      */
     public CombinedRepairResourceFactory(final RepairResourceFactory... repairResourceFactories)
     {
@@ -41,7 +41,7 @@ public class CombinedRepairResourceFactory implements RepairResourceFactory
      * Get repair resources.
      *
      * @param replicaRepairGroup The replica repair group.
-     * @return Set<RepairResource>
+     * @return Repair resources
      */
     @Override
     public Set<RepairResource> getRepairResources(final ReplicaRepairGroup replicaRepairGroup)

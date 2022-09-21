@@ -87,7 +87,7 @@ public class RepairEntry
     /**
      * Get participants.
      *
-     * @return Set<DriverNode>
+     * @return The participants
      */
     public Set<DriverNode> getParticipants()
     {

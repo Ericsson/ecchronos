@@ -113,8 +113,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
      *
      * @param tableReference
      *            The table to schedule a job on.
-     * @return List<RepairJobView>
-     * @throws EcChronosException
+     * @return Repair job view list
      */
     @Override
     public List<OnDemandRepairJobView> scheduleClusterWideJob(final TableReference tableReference)
@@ -132,7 +131,6 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
      * @param tableReference
      *            The table to schedule a job on.
      * @return RepairJobView
-     * @throws EcChronosException
      */
     @Override
     public OnDemandRepairJobView scheduleJob(final TableReference tableReference) throws EcChronosException
@@ -187,7 +185,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
     /**
      * Get all cluster wide repair jobs.
      *
-     * @return List<RepairJobView>
+     * @return Repair job view list
      */
     @Override
     public List<OnDemandRepairJobView> getAllClusterWideRepairJobs()
@@ -201,7 +199,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
     /**
      * Get all repair jobs.
      *
-     * @return List<RepairJobView>
+     * @return Repair job view list
      */
     @Override
     public List<OnDemandRepairJobView> getAllRepairJobs()
@@ -287,6 +285,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         /**
          * Build on demand repair scheduler with JMX proxy factory.
          *
+         * @param theJMXProxyFactory
          * @return Builder
          */
         public Builder withJmxProxyFactory(final JmxProxyFactory theJMXProxyFactory)
@@ -298,6 +297,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         /**
          * Build on demand repair scheduler with table repair metrics.
          *
+         * @param theTableRepairMetrics
          * @return Builder
          */
         public Builder withTableRepairMetrics(final TableRepairMetrics theTableRepairMetrics)
@@ -309,6 +309,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         /**
          * Build on demand repair scheduler with scheule manager.
          *
+         * @param theScheduleManager
          * @return Builder
          */
         public Builder withScheduleManager(final ScheduleManager theScheduleManager)
@@ -320,6 +321,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         /**
          * Build on demand repair scheduler with replication state.
          *
+         * @param theReplicationState
          * @return Builder
          */
         public Builder withReplicationState(final ReplicationState theReplicationState)
@@ -331,6 +333,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         /**
          * Build on demand repair scheduler with repair lock type.
          *
+         * @param theRepairLockType
          * @return Builder
          */
         public Builder withRepairLockType(final RepairLockType theRepairLockType)
@@ -342,6 +345,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         /**
          * Build on demand repair scheduler with session.
          *
+         * @param theSession
          * @return Builder
          */
         public Builder withSession(final CqlSession theSession)
@@ -353,6 +357,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         /**
          * Build on demand repair scheduler with repair configuration.
          *
+         * @param theRepairConfiguration
          * @return Builder
          */
         public Builder withRepairConfiguration(final RepairConfiguration theRepairConfiguration)
@@ -364,6 +369,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         /**
          * Build on demand repair scheduler with repair history.
          *
+         * @param theRepairHistory
          * @return Builder
          */
         public Builder withRepairHistory(final RepairHistory theRepairHistory)
@@ -375,6 +381,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         /**
          * Build on demand repair scheduler with on demand status.
          *
+         * @param theOnDemandStatus
          * @return Builder
          */
         public Builder withOnDemandStatus(final OnDemandStatus theOnDemandStatus)

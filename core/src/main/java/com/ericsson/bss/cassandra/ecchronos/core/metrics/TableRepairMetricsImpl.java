@@ -160,7 +160,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         /**
          * Build with table storage states.
          *
-         * @param tableStorageStates
+         * @param tableStorageStates Table storage states
          * @return Builder
          */
         public Builder withTableStorageStates(final TableStorageStates tableStorageStates)
@@ -172,7 +172,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         /**
          * Build with statistics directory.
          *
-         * @param statisticsDirectory
+         * @param statisticsDirectory Statistic directory
          * @return Builder
          */
         public Builder withStatisticsDirectory(final String statisticsDirectory)
@@ -184,8 +184,8 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         /**
          * Build with report interval.
          *
-         * @param reportInterval
-         * @param timeUnit
+         * @param reportInterval Report interval
+         * @param timeUnit The time unit
          * @return Builder
          */
         public Builder withReportInterval(final long reportInterval, final TimeUnit timeUnit)
@@ -197,7 +197,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         /**
          * Build with metric registry.
          *
-         * @param metricRegistry
+         * @param metricRegistry Metric registry
          * @return Builder
          */
         public Builder withMetricRegistry(final MetricRegistry metricRegistry)

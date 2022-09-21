@@ -46,7 +46,7 @@ public class ReplicaRepairGroup implements Iterable<LongTokenRange>
     /**
      * Get replicas.
      *
-     * @return Set<DriverNode>
+     * @return Replicas
      */
     public Set<DriverNode> getReplicas()
     {
@@ -56,7 +56,7 @@ public class ReplicaRepairGroup implements Iterable<LongTokenRange>
     /**
      * Get datacenters.
      *
-     * @return Set<String>
+     * @return Datacenters
      */
     public Set<String> getDataCenters()
     {
@@ -66,7 +66,7 @@ public class ReplicaRepairGroup implements Iterable<LongTokenRange>
     /**
      * Iterate.
      *
-     * @return Iterator<LongTokenRange>
+     * @return Token range iterator
      */
     @Override
     public Iterator<LongTokenRange> iterator()

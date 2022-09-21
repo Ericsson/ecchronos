@@ -110,7 +110,7 @@ public class VnodeRepairState
     /**
      * Get replicas.
      *
-     * @return ImmutableSet<DriverNode>
+     * @return The nodes
      */
     public ImmutableSet<DriverNode> getReplicas()
     {

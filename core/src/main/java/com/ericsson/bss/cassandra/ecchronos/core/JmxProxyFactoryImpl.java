@@ -259,7 +259,7 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
         /**
          * Build with JMX connection provider.
          *
-         * @param jmxConnectionProvider
+         * @param jmxConnectionProvider The JMX connection provider
          * @return Builder
          */
         public Builder withJmxConnectionProvider(final JmxConnectionProvider jmxConnectionProvider)
