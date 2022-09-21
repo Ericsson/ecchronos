@@ -12,3 +12,5 @@ CREATE TABLE IF NOT EXISTS test.table2 (key1 text, key2 int, value int, PRIMARY 
 CREATE KEYSPACE IF NOT EXISTS test2 WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 3};
 CREATE TABLE IF NOT EXISTS test2.table1 (key1 text, key2 int, value int, PRIMARY KEY(key1, key2));
 CREATE TABLE IF NOT EXISTS test2.table2 (key1 text, key2 int, value int, PRIMARY KEY(key1, key2));
+CREATE KEYSPACE IF NOT EXISTS "keyspaceWithCamelCase" WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 3};
+CREATE TABLE IF NOT EXISTS "keyspaceWithCamelCase"."tableWithCamelCase" (key1 text, key2 int, value int, PRIMARY KEY(key1, key2));

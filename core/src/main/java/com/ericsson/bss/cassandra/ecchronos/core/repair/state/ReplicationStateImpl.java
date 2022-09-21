@@ -37,6 +37,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import static com.ericsson.bss.cassandra.ecchronos.core.utils.Metadata.quoteIfNeeded;
+
 /**
  * Utility class to generate a token -&gt; replicas map for a specific table.
  */
@@ -133,6 +135,7 @@ public class ReplicationStateImpl implements ReplicationState
         {
             throw new IllegalStateException("Cannot determine ranges, is metadata/tokenMap disabled?");
         }
+        String keyspaceName = quoteIfNeeded(keyspace);
         Set<TokenRange> tokenRanges;
         if (clusterWide)
         {
@@ -140,12 +143,12 @@ public class ReplicationStateImpl implements ReplicationState
         }
         else
         {
-            tokenRanges = tokenMap.get().getTokenRanges(keyspace, myLocalNode);
+            tokenRanges = tokenMap.get().getTokenRanges(keyspaceName, myLocalNode);
         }
         for (TokenRange tokenRange : tokenRanges)
         {
             LongTokenRange longTokenRange = convert(tokenRange);
-            ImmutableSet<DriverNode> replicas = replicaCache.computeIfAbsent(tokenMap.get().getReplicas(keyspace, tokenRange),
+            ImmutableSet<DriverNode> replicas = replicaCache.computeIfAbsent(tokenMap.get().getReplicas(keyspaceName, tokenRange),
                     this::convert);
 
             replicationBuilder.put(longTokenRange, replicas);

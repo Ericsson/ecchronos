@@ -28,6 +28,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.ViewMetadata;
 import com.datastax.oss.driver.api.core.type.UserDefinedType;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
@@ -146,7 +147,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
 
     private void allTableOperation(String keyspaceName, BiConsumer<TableReference, TableMetadata> consumer)
     {
-        for (TableMetadata tableMetadata : mySession.getMetadata().getKeyspace(keyspaceName).get().getTables().values())
+        for (TableMetadata tableMetadata : Metadata.getKeyspace(mySession, keyspaceName).get().getTables().values())
         {
             String tableName = tableMetadata.getName().asInternal();
             TableReference tableReference = myTableReferenceFactory.forTable(keyspaceName, tableName);
@@ -157,7 +158,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
 
     private void allTableOperation(String keyspaceName, Consumer<TableReference> consumer)
     {
-        for (TableMetadata tableMetadata : mySession.getMetadata().getKeyspace(keyspaceName).get().getTables().values())
+        for (TableMetadata tableMetadata : Metadata.getKeyspace(mySession, keyspaceName).get().getTables().values())
         {
             String tableName = tableMetadata.getName().asInternal();
             TableReference tableReference = myTableReferenceFactory.forTable(keyspaceName, tableName);
