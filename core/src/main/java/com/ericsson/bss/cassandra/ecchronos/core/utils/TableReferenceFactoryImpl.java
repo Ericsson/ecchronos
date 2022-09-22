@@ -42,12 +42,12 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
     @Override
     public TableReference forTable(String keyspace, String table)
     {
-        Optional<KeyspaceMetadata> keyspaceMetadata = session.getMetadata().getKeyspace(keyspace);
+        Optional<KeyspaceMetadata> keyspaceMetadata = Metadata.getKeyspace(session, keyspace);
         if (!keyspaceMetadata.isPresent())
         {
             return null;
         }
-        Optional<TableMetadata> tableMetadata = keyspaceMetadata.get().getTable(table);
+        Optional<TableMetadata> tableMetadata = Metadata.getTable(keyspaceMetadata.get(), table);
         if (!tableMetadata.isPresent())
         {
             return null;
@@ -66,7 +66,7 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
     public Set<TableReference> forKeyspace(String keyspace) throws EcChronosException
     {
         Set<TableReference> tableReferences = new HashSet<>();
-        Optional<KeyspaceMetadata> keyspaceMetadata = session.getMetadata().getKeyspace(keyspace);
+        Optional<KeyspaceMetadata> keyspaceMetadata = Metadata.getKeyspace(session, keyspace);
         if (!keyspaceMetadata.isPresent())
         {
             throw new EcChronosException("Keyspace " + keyspace + " does not exist");

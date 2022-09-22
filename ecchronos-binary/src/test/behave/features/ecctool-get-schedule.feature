@@ -5,6 +5,7 @@ Feature: ecctool schedules
     When we list all schedules
     Then the output should contain a valid snapshot header
     And the output should contain a valid schedule header
+    And the output should contain a schedule row for keyspaceWithCamelCase.tableWithCamelCase
     And the output should contain a schedule row for test.table1
     And the output should contain a schedule row for test.table2
     And the output should contain a schedule row for test2.table1

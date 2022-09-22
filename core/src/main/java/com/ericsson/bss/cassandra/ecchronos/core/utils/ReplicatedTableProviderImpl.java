@@ -57,14 +57,15 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
                 .collect(Collectors.toSet());
     }
 
-    @Override public boolean accept(String keyspace)
+    @Override
+    public boolean accept(String keyspace)
     {
         if (keyspace.startsWith("system") && !SYSTEM_AUTH_KEYSPACE.equals(keyspace))
         {
             return false;
         }
 
-        Optional<KeyspaceMetadata> keyspaceMetadata = mySession.getMetadata().getKeyspace(keyspace);
+        Optional<KeyspaceMetadata> keyspaceMetadata = Metadata.getKeyspace(mySession, keyspace);
 
         if (keyspaceMetadata.isPresent())
         {

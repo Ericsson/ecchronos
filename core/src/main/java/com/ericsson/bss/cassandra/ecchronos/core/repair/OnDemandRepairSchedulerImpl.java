@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,8 +126,8 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         {
             if (tableReference != null)
             {
-                Optional<KeyspaceMetadata> ks = mySession.getMetadata().getKeyspace(tableReference.getKeyspace());
-                if (ks.isPresent() && ks.get().getTable(tableReference.getTable()).isPresent())
+                Optional<KeyspaceMetadata> ks = Metadata.getKeyspace(mySession, tableReference.getKeyspace());
+                if (ks.isPresent() && Metadata.getTable(ks.get(), tableReference.getTable()).isPresent())
                 {
                     OnDemandRepairJob job = getRepairJob(tableReference, isClusterWide);
                     myScheduledJobs.put(job.getId(), job);
