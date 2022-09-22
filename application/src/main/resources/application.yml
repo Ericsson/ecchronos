@@ -49,7 +49,9 @@ springdoc:
 #    key-store-type: <keystore type>
 #    key-alias: <key alias>
 #    key-password: <key password>
-# SSL configuration using certificates in PEM format. This configuration takes precedence when certificate store settings are also specified.
+# SSL configuration using certificates in PEM format
+# This configuration takes precedence when certificate store settings are also specified
+# Only certificates using RSA algorithm are supported
 #    certificate: <path to certificate>
 #    certificate-private-key: <path to certificate private key>
 #    trust-certificate: <path to certificate>
