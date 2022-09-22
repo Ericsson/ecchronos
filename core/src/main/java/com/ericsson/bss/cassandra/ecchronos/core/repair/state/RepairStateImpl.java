@@ -236,6 +236,9 @@ public class RepairStateImpl implements RepairState
     /**
      * Returns if repair is needed.
      *
+     * @param lastRepairedAt Time when last repaired.
+     * @param estimatedRepairTime The estimated repair time.
+     * @param now Current time.
      * @return boolean
      */
     @VisibleForTesting

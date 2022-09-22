@@ -175,7 +175,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         }
 
         /**
-         * Also visibile for testing.
+         * Also visible for testing.
          */
         @VisibleForTesting
         Builder withCacheExpireTime(final long expireTime)
@@ -185,7 +185,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         }
 
         /**
-         * Also visibile for testing.
+         * Also visible for testing.
          */
         @VisibleForTesting
         Builder withClock(final Clock clock)
@@ -221,7 +221,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     }
 
     /**
-     * Also visibile for testing.
+     * Also visible for testing.
      */
     @VisibleForTesting
     void clearCache()

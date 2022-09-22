@@ -84,7 +84,7 @@ public class OnDemandStatus
     private final TableReferenceFactory myTableReferenceFactory;
 
     /**
-     * Get current on demand status.
+     * Constructor.
      *
      * @param nativeConnectionProvider
      */
@@ -150,9 +150,9 @@ public class OnDemandStatus
     }
 
     /**
-     * Get ongoing jobs.
+     * Create and get ongoing jobs with a replication state.
      *
-     * @param replicationState
+     * @param replicationState The replication state
      * @return Ongoing jobs
      */
     public Set<OngoingJob> getOngoingJobs(final ReplicationState replicationState)
@@ -203,9 +203,9 @@ public class OnDemandStatus
     }
 
     /**
-     * Get all jobs.
+     * Get all jobs with a certain replication state.
      *
-     * @param replicationState
+     * @param replicationState The replication state
      * @return Ongoing jobs
      */
     public Set<OngoingJob> getAllJobs(final ReplicationState replicationState)
@@ -214,10 +214,10 @@ public class OnDemandStatus
     }
 
     /**
-     * Get all jobs for a host.
+     * Get all jobs for a specific host with a replication state.
      *
-     * @param hostId
-     * @param replicationState
+     * @param hostId The host id.
+     * @param replicationState The replication state.
      * @return Ongoing jobs
      */
     private Set<OngoingJob> getAllJobsForHost(final ReplicationState replicationState, final UUID hostId)
@@ -284,11 +284,11 @@ public class OnDemandStatus
     }
 
     /**
-     * Add new job.
+     * Add a new job.
      *
-     * @param jobId
-     * @param tableReference
-     * @param tokenMapHash
+     * @param jobId The job id.
+     * @param tableReference The table reference.
+     * @param tokenMapHash The token map hash.
      */
     public void addNewJob(final UUID jobId, final TableReference tableReference, final int tokenMapHash)
     {
@@ -296,13 +296,13 @@ public class OnDemandStatus
     }
 
     /**
-     * Add new job.
+     * Add new job with a specific host.
      *
-     * @param jobId
-     * @param host
-     * @param tableReference
-     * @param tokenMapHash
-     * @param repairedRanges
+     * @param jobId The job id.
+     * @param host The host.
+     * @param tableReference The table reference.
+     * @param tokenMapHash The token map hash.
+     * @param repairedRanges The ranges.
      */
     public void addNewJob(final UUID host,
                           final UUID jobId,
@@ -335,34 +335,32 @@ public class OnDemandStatus
     }
 
     /**
-     * Finish job.
+     * Set job as finished.
      *
-     * @param jobId
+     * @param jobId Id of the job set as finished.
      */
     public void finishJob(final UUID jobId)
     {
         mySession.execute(myUpdateJobToFinishedStatement.bind(Instant.ofEpochMilli(System.currentTimeMillis()),
-                myHostId,
-                jobId));
+                myHostId, jobId));
     }
 
     /**
-     * Fail job.
+     * Set job as failed.
      *
-     * @param jobId
+     * @param jobId Id of the job to set as failed.
      */
     public void failJob(final UUID jobId)
     {
         mySession.execute(myUpdateJobToFailedStatement.bind(Instant.ofEpochMilli(System.currentTimeMillis()),
-                myHostId,
-                jobId));
+                myHostId, jobId));
     }
 
     /**
      * Create UDT token range value.
      *
-     * @param start
-     * @param end
+     * @param start Start token.
+     * @param end End token.
      * @return UdtValue
      */
     public UdtValue createUDTTokenRangeValue(final Long start, final Long end)
@@ -372,9 +370,9 @@ public class OnDemandStatus
     }
 
     /**
-     * Get start token.
+     * Get the start token from a UDT.
      *
-     * @param t
+     * @param t The UDT value.
      * @return long
      */
     public long getStartTokenFrom(final UdtValue t)
@@ -383,9 +381,9 @@ public class OnDemandStatus
     }
 
     /**
-     * Get end token.
+     * Get the end token from a UDT.
      *
-     * @param t
+     * @param t The UDT value.
      * @return long
      */
     public long getEndTokenFrom(final UdtValue t)

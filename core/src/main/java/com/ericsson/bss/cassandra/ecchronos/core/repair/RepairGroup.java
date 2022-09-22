@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-//import java.util.*;
 
 public class RepairGroup extends ScheduledTask
 {
@@ -138,10 +137,9 @@ public class RepairGroup extends ScheduledTask
     }
 
     /**
-     * Get lock.
+     * Get lock for the table.
      *
-     * @param lockFactory
-     *            The lock factory to use.
+     * @param lockFactory The lock factory to use.
      * @return LockFactory.DistributedLock
      * @throws LockException
      */

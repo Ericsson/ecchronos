@@ -62,7 +62,7 @@ public class TableMetricHolder implements Closeable
     }
 
     /**
-     * Init.
+     * Initialize all metrics and register them in metric registry.
      */
     public void init()
     {
@@ -96,7 +96,7 @@ public class TableMetricHolder implements Closeable
     }
 
     /**
-     * Set repair state.
+     * Update repair state metric.
      *
      * @param repairedRanges Ranges repaired
      * @param notRepairedRanges Ranges NOT repaired
@@ -124,7 +124,7 @@ public class TableMetricHolder implements Closeable
     }
 
     /**
-     * Set last repaired at.
+     * Update last repaired at metric.
      *
      * @param lastRepairedAt Last repaired at
      */
@@ -134,7 +134,7 @@ public class TableMetricHolder implements Closeable
     }
 
     /**
-     * Set remaining repair time.
+     * Update remaining repair time metric.
      *
      * @param remainingRepairTime Remaining repair time
      */
@@ -144,8 +144,7 @@ public class TableMetricHolder implements Closeable
     }
 
     /**
-     * Set failed repair time.
-     *
+     * Update failed repair time metric.
      */
     public void failedRepairTask()
     {
@@ -153,7 +152,7 @@ public class TableMetricHolder implements Closeable
     }
 
     /**
-     * Set succeeded repair task.
+     * Increment succeeded repair tasks metric.
      */
     public void succeededRepairTask()
     {
@@ -161,9 +160,9 @@ public class TableMetricHolder implements Closeable
     }
 
     /**
-     * Set repair timing.
+     * Update repair timing metric.
      *
-     * @param timeTaken Time token
+     * @param timeTaken Time taken
      * @param timeUnit Time unit
      * @param successful Successful flag
      */
@@ -182,7 +181,7 @@ public class TableMetricHolder implements Closeable
     }
 
     /**
-     * Close.
+     * Removes metrics from the registry when closing the JMX connection.
      */
     @Override
     public void close()

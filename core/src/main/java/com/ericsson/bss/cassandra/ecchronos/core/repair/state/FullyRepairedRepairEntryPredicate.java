@@ -33,7 +33,7 @@ public class FullyRepairedRepairEntryPredicate implements Predicate<RepairEntry>
     /**
      * Apply repair entry.
      *
-     * @param repairEntry
+     * @param repairEntry The repair entry to be applied.
      * @return boolean
      */
     @Override

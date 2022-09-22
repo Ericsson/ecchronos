@@ -330,9 +330,9 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
         }
 
         /**
-         * Finish.
+         * Finish with repair status.
          *
-         * @param repairStatus
+         * @param repairStatus The status
          */
         @Override
         public void finish(final RepairStatus repairStatus)

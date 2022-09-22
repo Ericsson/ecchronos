@@ -61,7 +61,7 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
     }
 
     /**
-     * Accept.
+     * Validate the replication strategy set is supported for the given keyspace.
      *
      * @param keyspace The keyspace to check.
      * @return boolean

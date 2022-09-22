@@ -63,7 +63,7 @@ public class ReplicationStateImpl implements ReplicationState
     }
 
     /**
-     * Get nodes.
+     * Get nodes for a table and a token range.
      *
      * @param tableReference The table used to calculate the proper replication.
      * @param tokenRange The token range to get nodes for.
@@ -79,7 +79,7 @@ public class ReplicationStateImpl implements ReplicationState
     }
 
     /**
-     * Get nodes cluster wide.
+     * Get cluster wide nodes for a table and a token range.
      *
      * @param tableReference The table used to calculate the proper replication.
      * @param tokenRange The token range to get nodes for.

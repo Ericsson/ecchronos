@@ -95,7 +95,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     /**
-     * On keyspace created.
+     * Called when keyspace is created.
      *
      * @param keyspace Keyspace metadata
      */
@@ -114,7 +114,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     /**
-     * On keyspace updated.
+     * Called when keyspace is updated.
      *
      * @param current Current keyspace metadata
      * @param previous Previous keyspace metadata
@@ -127,7 +127,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     /**
-     * On table created.
+     * Called when table is created.
      *
      * @param table Table metadata
      */
@@ -143,7 +143,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     /**
-     * On table dropped.
+     * Called when table is dropped.
      *
      * @param table Table metadata
      */
@@ -158,7 +158,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     /**
-     * On table updated.
+     * Called when table is updated.
      *
      * @param current Current table metadata
      * @param previous Previous table metadata
@@ -241,7 +241,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     /**
-     * On keyspace dropped.
+     * Called when keyspace is dropped.
      *
      * @param keyspace Keyspace metadata
      */
@@ -252,7 +252,8 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     /**
-     * On user defined type created.
+     * Called when user defined types are created.
+     *
      * @param type User defined type
      */
     @Override
@@ -262,7 +263,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     /**
-     * On user defined type dropped.
+     * Called when user defined types are dropped.
      *
      * @param type User defined type
      */
@@ -273,7 +274,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     /**
-     * On user defined type updated.
+     * Called when user defined types are updated.
      *
      * @param current Current user defined type
      * @param previous previous user defined type
@@ -285,7 +286,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     /**
-     * On function created.
+     * Called when functions are created.
      *
      * @param function Function metadata
      */
@@ -296,7 +297,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     /**
-     * On function dropped.
+     * Called when functions are dropped.
      *
      * @param function Function metadata
      */
@@ -307,7 +308,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     /**
-     * On function updated.
+     * Called when functions are updated.
      *
      * @param current Current function metadata
      * @param previous Previous function metadata
@@ -319,7 +320,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     /**
-     * On aggregate created.
+     * Called when aggregates are created.
      *
      * @param aggregate Aggregate metadata
      */
@@ -330,7 +331,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     /**
-     * On aggregate updated.
+     * Called when aggregates are dropped.
      *
      * @param aggregate Aggregate metadata
      */
@@ -341,7 +342,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     /**
-     * On aggregate updated.
+     * Called when aggregates are updated.
      *
      * @param current Current aggregate metadata
      * @param previous previous aggregate metadata
@@ -353,7 +354,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     /**
-     * On view created.
+     * Called when views are created.
      *
      * @param view View metadata
      */
@@ -364,7 +365,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     /**
-     * On view dropped.
+     * Called when views are dropped.
      *
      * @param view View metadata
      */
@@ -375,7 +376,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     /**
-     * On view updated.
+     * Called when views are updated.
      *
      * @param current Current view metadata
      * @param previous Previous view metadata

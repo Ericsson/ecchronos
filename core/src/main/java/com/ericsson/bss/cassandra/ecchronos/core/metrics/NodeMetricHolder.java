@@ -83,7 +83,7 @@ public class NodeMetricHolder implements Closeable
     }
 
     /**
-     * Get repair state.
+     * Set repair state.
      *
      * @param tableReference Table reference
      * @param repairRatio The repair ratio
@@ -105,7 +105,7 @@ public class NodeMetricHolder implements Closeable
     }
 
     /**
-     * Repair timing.
+     * Update repair timing metric.
      *
      * @param timeTaken Time token
      * @param timeUnit Time unit

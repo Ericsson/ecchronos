@@ -109,9 +109,9 @@ public class OnDemandRepairJobView
     }
 
     /**
-     * Get the next repair.
+     * Equality check.
      *
-     * @return long
+     * @return boolean
      */
     @Override
     public boolean equals(final Object o)
@@ -131,9 +131,9 @@ public class OnDemandRepairJobView
     }
 
     /**
-     * Is it a recurring job.
+     * Hash representation of the object.
      *
-     * @return Boolean
+     * @return int
      */
     @Override
     public int hashCode()

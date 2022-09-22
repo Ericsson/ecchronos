@@ -94,7 +94,7 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     }
 
     /**
-     * Iterate.
+     * Iterating over repair history in a table, based on time and filters.
      *
      * @param tableReference The table for which the history should be iterated.
      * @param to The latest point in time to iterate to.
@@ -111,7 +111,7 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     }
 
     /**
-     * Iterate.
+     * Iterating over repair history in a table, based on time and filters.
      *
      * @param tableReference The table for which the history should be iterated.
      * @param to The last point in time to iterate to.
@@ -140,7 +140,7 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     }
 
     /**
-     * Iterate.
+     * Iterating over repair history in a table, based on time and filters.
      *
      * @param nodeId The node to iterate repair history for.
      * @param tableReference The table for which the history should be iterated.

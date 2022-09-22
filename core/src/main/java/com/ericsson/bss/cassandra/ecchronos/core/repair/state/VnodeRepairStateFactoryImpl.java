@@ -49,7 +49,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
     }
 
     /**
-     * Calculate new state.
+     * Calculate new vnode repair states.
      *
      * @param tableReference The table to calculate the new repair state for vnodes.
      * @param previous The previous repair state or null if non exists.
@@ -83,7 +83,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
     }
 
     /**
-     * Calculate state.
+     * Calculate new vnode repair states within certain a time frame.
      *
      * @param tableReference The table to calculate the repair state for vnodes.
      * @param to Timestamp from when the repair state should start
@@ -104,7 +104,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
     }
 
     /**
-     * Calculate cluster wide state.
+     * Calculate new vnode repair states within a certain time frame.
      *
      * @param tableReference The table to calculate the repair state for vnodes.
      * @param to Timestamp from when the repair state should start

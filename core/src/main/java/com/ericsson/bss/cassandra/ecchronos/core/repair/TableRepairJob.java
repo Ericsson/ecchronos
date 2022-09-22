@@ -173,7 +173,7 @@ public class TableRepairJob extends ScheduledJob
     }
 
     /**
-     * Iterate.
+     * Iterator for scheduled tasks built up by repair groups.
      *
      * @return Scheduled task iterator
      */
@@ -214,7 +214,7 @@ public class TableRepairJob extends ScheduledJob
     }
 
     /**
-     * Post execute.
+     * Update the state and set if the task was successful.
      *
      * @param successful
      *            If the job ran successfully.

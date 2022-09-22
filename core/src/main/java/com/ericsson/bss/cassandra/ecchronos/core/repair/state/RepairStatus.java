@@ -25,9 +25,9 @@ public enum RepairStatus
     UNKNOWN;
 
     /**
-     * Get RepairStatus vale.
+     * Get RepairStatus from value.
      *
-     * @param status
+     * @param status The status value.
      * @return RepairStatus
      */
     public static RepairStatus getFromStatus(final String status)

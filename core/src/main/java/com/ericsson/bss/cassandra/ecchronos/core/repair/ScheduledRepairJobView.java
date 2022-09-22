@@ -105,7 +105,7 @@ public class ScheduledRepairJobView
     }
 
     /**
-     * Get progess.
+     * Get progress.
      *
      * @return double
      */
@@ -115,7 +115,7 @@ public class ScheduledRepairJobView
     }
 
     /**
-     * Get net repair.
+     * Get next repair.
      *
      * @return long
      */

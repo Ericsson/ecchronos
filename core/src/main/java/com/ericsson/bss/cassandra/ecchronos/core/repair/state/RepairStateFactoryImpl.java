@@ -68,7 +68,7 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
         private TableRepairMetrics myTableRepairMetrics;
 
         /**
-         * Build repair state with replication state.
+         * Build repair state factory with replication state.
          *
          * @return Builder
          */
@@ -79,7 +79,7 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
         }
 
         /**
-         * Build repair state with host states.
+         * Build repair state factory with host states.
          *
          * @return Builder
          */
@@ -90,7 +90,7 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
         }
 
         /**
-         * Build repair state with repair history provider.
+         * Build repair state factory with repair history provider.
          *
          * @return Builder
          */
@@ -101,7 +101,7 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
         }
 
         /**
-         * Build repair state with table repair metrics.
+         * Build repair state factory with table repair metrics.
          *
          * @return Builder
          */
@@ -112,7 +112,7 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
         }
 
         /**
-         * Build repair state.
+         * Build repair state factory.
          *
          * @return RepairStateFactoryImpl
          */
