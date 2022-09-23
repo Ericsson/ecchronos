@@ -27,10 +27,12 @@ For more information about each subcommand refer to the specific sections below.
 `ecctool repairs` subcommand is used to show the status of all manual repairs.
 This subcommand has no mandatory parameters.
 
-#### Example output
+#### Example
+
+In this example, we will use `ecctool repairs` to check the status of manual repairs.
+The output should show all manual repairs for all ecChronos instances.
 
 ```bash
-ecctool repairs
 ---------------------------------------------------------------------------------------------------------------------------------------------------
 | Id                                   | Host Id                              | Keyspace | Table  | Status    | Repaired(%) | Completed at        |
 ---------------------------------------------------------------------------------------------------------------------------------------------------
@@ -78,10 +80,12 @@ This value should never go down.
 `ecctool schedules` subcommand is used to show the status of schedules.
 This subcommand has no mandatory parameters.
 
-#### Example output
+#### Example
+
+In this example we will use `ecctool schedules` to check the status of schedules.
+The output should show all the schedules the local ecChronos instance has.
 
 ```bash
-ecctool schedules
 Snapshot as of 2022-09-22 14:05:12
 -----------------------------------------------------------------------------------------------------------------------------------------------------------
 | Id                                   | Keyspace              | Table              | Status    | Repaired(%) | Completed at        | Next repair         |
@@ -135,10 +139,13 @@ ecChronos assumes all ranges are repaired if there's no repair history.
 `ecctool run-repair` subcommand is used to run a manual repair.
 This subcommand has no mandatory parameters.
 
-#### Example output
+#### Example
+
+In this example we will use `ecctool run-repair` to run a manual repair for all ecChronos instances,
+for all keyspaces and tables.
+The output should show the created manual repairs for all ecChronos instances.
 
 ```bash
-ecctool run-repair
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 | Id                                   | Host Id                              | Keyspace              | Table              | Status   | Repaired(%) | Completed at |
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -192,10 +199,22 @@ The repair information is based on repair history,
 meaning that both manual repairs and schedules will contribute to the repair information.
 This subcommand requires the user to provide either `--since` or `--duration`.
 
-#### Example output
+#### Example
+
+In this example we will use `ecctool repair-info --duration 5m` to check how much each table is repaired.
+The output should show the cluster wide repair information for all tables in the past 5 minutes.
 
 ```bash
-TODO WHEN PR IS IN
+Time window between '2022-09-23 13:12:54' and '2022-09-23 13:17:54'
+---------------------------------------------------------------------------------
+| Keyspace              | Table              | Repaired (%) | Repair time taken |
+---------------------------------------------------------------------------------
+| keyspaceWithCamelCase | tableWithCamelCase | 73.73        | 3 seconds         |
+| test                  | table1             | 73.73        | 3 seconds         |
+| test                  | table2             | 73.73        | 4 seconds         |
+| test2                 | table1             | 73.73        | 3 seconds         |
+| test2                 | table2             | 73.73        | 4 seconds         |
+---------------------------------------------------------------------------------
 ```
 
 Looking at the example output above, the columns are:
@@ -206,7 +225,13 @@ Looking at the example output above, the columns are:
 
 `Repaired (%)` - the repaired ratio of the table in %.
 
-`Repair time taken` - the time taken for the Cassandra to finish repairs.
+`Repair time taken` - the time taken for the Cassandra to finish the repairs.
+
+By default, repair-info fetches the information on cluster level.
+To check the repair information for the local node use `--local` flag.
+If repair information fetched using `--local` flag reports `100%` but without it reports a lower percent,
+this means that some parts of the table that other nodes are responsible to repair have not repaired the table within the specified
+time window.
 
 #### Arguments
 
