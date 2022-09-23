@@ -139,7 +139,7 @@ def print_repair_info(repair_info, max_lines=-1):
 def print_repair_stats(repair_stats, max_lines=-1):
     repair_stats_table = [["Keyspace", "Table", "Repaired (%)",
                            "Repair time taken"]]
-    sorted_repair_stats = sorted(repair_stats, key=lambda x: (x.keyspace, x.table), reverse=False)
+    sorted_repair_stats = sorted(repair_stats, key=lambda x: (x.repaired_ratio, x.keyspace, x.table), reverse=False)
     if max_lines > -1:
         sorted_repair_stats = sorted_repair_stats[:max_lines]
 
