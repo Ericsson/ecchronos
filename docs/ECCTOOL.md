@@ -30,7 +30,7 @@ This subcommand has no mandatory parameters.
 #### Example
 
 In this example, we will use `ecctool repairs` to check the status of manual repairs.
-The output should show all manual repairs for all ecChronos instances.
+The output shows all manual repairs for all ecChronos instances.
 
 ```bash
 ---------------------------------------------------------------------------------------------------------------------------------------------------
@@ -83,7 +83,7 @@ This subcommand has no mandatory parameters.
 #### Example
 
 In this example we will use `ecctool schedules` to check the status of schedules.
-The output should show all the schedules the local ecChronos instance has.
+The output shows all schedules the local ecChronos instance has.
 
 ```bash
 Snapshot as of 2022-09-22 14:05:12
@@ -120,7 +120,7 @@ This value can go up and down as ranges become unrepaired.
 `Completed at` - the time when the all ranges for the schedule are repaired.
 ecChronos assumes all ranges are repaired if there's no repair history.
 
-`Next repair` - the time when the schedule will be made ready for next execution.
+`Next repair` - the time when the schedule will be made ready for execution.
 
 #### Arguments
 
@@ -143,7 +143,7 @@ This subcommand has no mandatory parameters.
 
 In this example we will use `ecctool run-repair` to run a manual repair for all ecChronos instances,
 for all keyspaces and tables.
-The output should show the created manual repairs for all ecChronos instances.
+The output shows created manual repairs for all ecChronos instances.
 
 ```bash
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -202,7 +202,7 @@ This subcommand requires the user to provide either `--since` or `--duration`.
 #### Example
 
 In this example we will use `ecctool repair-info --duration 5m` to check how much each table is repaired.
-The output should show the cluster wide repair information for all tables in the past 5 minutes.
+The output shows the cluster wide repair information for all tables in the past 5 minutes.
 
 ```bash
 Time window between '2022-09-23 13:12:54' and '2022-09-23 13:17:54'
@@ -229,9 +229,6 @@ Looking at the example output above, the columns are:
 
 By default, repair-info fetches the information on cluster level.
 To check the repair information for the local node use `--local` flag.
-If repair information fetched using `--local` flag reports `100%` but without it reports a lower percent,
-this means that some parts of the table that other nodes are responsible to repair have not repaired the table within the specified
-time window.
 
 #### Arguments
 
