@@ -1,6 +1,10 @@
 # ECChronos tool
 
-Standalone ecChronos includes a commandline utility (ecctool).
+`ecctool` is a command line utility which can be used to perform actions towards a local ecChronos instance.
+The actions are implemented in form of subcommands with arguments.
+
+All visualization is displayed in form of human-readable tables.
+For more information refer to sections below.
 
 ## Subcommands
 
@@ -52,7 +56,8 @@ The possible statuses are:
 * `ERROR` - the manual repair failed
 * `COMPLETED` - the manual repair is completed
 
-`Repaired(%)` - the progress of the manual repair.
+`Repaired(%)` - the number of ranges repaired vs total ranges.
+This value should never go down.
 
 `Completed at` - the time when the manual repair has finished.
 
@@ -163,11 +168,12 @@ Looking at the example output above, the columns are:
 
 `Status` - the status of the manual repair. This will always be `IN_QUEUE` for newly run manual repairs.
 
-`Repaired(%)` - the progress of the manual repair. This will always be `0` for newly run manual repairs.
+`Repaired(%)` - the number of ranges repaired vs total ranges.
+This value should never go down. This will always be `0` for newly run manual repairs.
 
 `Completed at` - the time when the manual repair has finished. This will always be `-` for newly run manual repairs.
 
-After running this subcommand, to check the progress of running repairs use `ecctool repairs`.
+After running this subcommand, to check the progress of running manual repairs use `ecctool repairs`.
 
 #### Arguments
 
