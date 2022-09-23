@@ -234,7 +234,7 @@ public class RepairStateImpl implements RepairState
     }
 
     /**
-     * Returns if repair is needed.
+     * Returns if repair is needed. If the job's estimated finished time has passed, it is up for repair.
      *
      * @param lastRepairedAt Time when last repaired.
      * @param estimatedRepairTime The estimated repair time.

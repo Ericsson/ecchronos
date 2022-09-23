@@ -94,12 +94,7 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     }
 
     /**
-     * Iterating over repair history in a table, based on time and filters.
-     *
-     * @param tableReference The table for which the history should be iterated.
-     * @param to The latest point in time to iterate to.
-     * @param predicate The predicate used to filter out entries in the iterator results.
-     * @return Repair entry iterator
+     * @inheritDoc
      */
     @Override
     public Iterator<RepairEntry> iterate(final TableReference tableReference,
@@ -111,13 +106,7 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     }
 
     /**
-     * Iterating over repair history in a table, based on time and filters.
-     *
-     * @param tableReference The table for which the history should be iterated.
-     * @param to The last point in time to iterate to.
-     * @param from The point in time to start iterating from.
-     * @param predicate The predicate used to filter out entries in the iterator results.
-     * @return Repair entry iterator
+     * @inheritDoc
      */
     @Override
     public Iterator<RepairEntry> iterate(final TableReference tableReference,
@@ -140,14 +129,7 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     }
 
     /**
-     * Iterating over repair history in a table, based on time and filters.
-     *
-     * @param nodeId The node to iterate repair history for.
-     * @param tableReference The table for which the history should be iterated.
-     * @param to The last point in time to iterate to.
-     * @param from The point in time to start iterating from.
-     * @param predicate The predicate used to filter out entries in the iterator results.
-     * @return Repair entry iterator
+     * @inheritDoc
      */
     @Override
     public Iterator<RepairEntry> iterate(final UUID nodeId,

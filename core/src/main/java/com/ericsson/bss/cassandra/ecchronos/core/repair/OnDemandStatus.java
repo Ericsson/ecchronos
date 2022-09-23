@@ -140,7 +140,7 @@ public class OnDemandStatus
     }
 
     /**
-     * Get host ID.
+     * Get host ID for the local node.
      *
      * @return Ongoing jobs
      */
@@ -150,10 +150,10 @@ public class OnDemandStatus
     }
 
     /**
-     * Create and get ongoing jobs with a replication state.
+     * Get all jobs for the host that have the status 'started' and add them to ongoing jobs.
      *
-     * @param replicationState The replication state
-     * @return Ongoing jobs
+     * @param replicationState The replication state.
+     * @return Set of ongoing jobs
      */
     public Set<OngoingJob> getOngoingJobs(final ReplicationState replicationState)
     {
@@ -184,9 +184,9 @@ public class OnDemandStatus
     }
 
     /**
-     * Get all cluster wide jobs.
+     * Add jobs for all nodes and their token ranges to ongoing jobs and return them.
      *
-     * @return  Ongoing jobs
+     * @return  Set of ongoing jobs
      */
     public Set<OngoingJob> getAllClusterWideJobs()
     {
@@ -203,23 +203,16 @@ public class OnDemandStatus
     }
 
     /**
-     * Get all jobs with a certain replication state.
+     * Add jobs for the local node and its token ranges to ongoing jobs and return them.
      *
      * @param replicationState The replication state
-     * @return Ongoing jobs
+     * @return Set of ongoing jobs
      */
     public Set<OngoingJob> getAllJobs(final ReplicationState replicationState)
     {
         return getAllJobsForHost(replicationState, myHostId);
     }
 
-    /**
-     * Get all jobs for a specific host with a replication state.
-     *
-     * @param hostId The host id.
-     * @param replicationState The replication state.
-     * @return Ongoing jobs
-     */
     private Set<OngoingJob> getAllJobsForHost(final ReplicationState replicationState, final UUID hostId)
     {
         ResultSet result = mySession.execute(myGetStatusStatement.bind(hostId));
@@ -296,7 +289,7 @@ public class OnDemandStatus
     }
 
     /**
-     * Add new job with a specific host.
+     * Add a new job for a specific host.
      *
      * @param jobId The job id.
      * @param host The host.
@@ -324,7 +317,7 @@ public class OnDemandStatus
     }
 
     /**
-     * Update job.
+     * Update job with repaired tokens.
      *
      * @param jobId
      * @param repairedTokens
@@ -335,7 +328,7 @@ public class OnDemandStatus
     }
 
     /**
-     * Set job as finished.
+     * Update a job as finished with current time stamp.
      *
      * @param jobId Id of the job set as finished.
      */
@@ -346,7 +339,7 @@ public class OnDemandStatus
     }
 
     /**
-     * Set job as failed.
+     * Update a failed job with current time stamp.
      *
      * @param jobId Id of the job to set as failed.
      */
@@ -357,7 +350,7 @@ public class OnDemandStatus
     }
 
     /**
-     * Create UDT token range value.
+     * Create a new UDT token range value from the given start and end tokens.
      *
      * @param start Start token.
      * @param end End token.

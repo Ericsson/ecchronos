@@ -87,7 +87,8 @@ public class RepairGroup extends ScheduledTask
     }
 
     /**
-     * Execute repair job.
+     * Executes the repair tasks this repair group is responsible for. Repair tasks can succeed or fail. Repair
+     * tasks blocked by run policy are counted as failed.
      *
      * @return boolean
      */
