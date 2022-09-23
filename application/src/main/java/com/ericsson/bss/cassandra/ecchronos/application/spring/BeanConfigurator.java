@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -30,8 +31,10 @@ import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.convert.ApplicationConversionService;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
@@ -57,15 +60,30 @@ import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.MetricsServlet;
 import org.springframework.format.FormatterRegistry;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 @Configuration
 public class BeanConfigurator
 {
+    @Value("${metricsServer.port:8081}")
+    private int metricsPort;
+
+    @Value("${metricsServer.enabled:false}")
+    private Boolean isMetricsServerEnabled;
+
     private static final Logger LOG = LoggerFactory.getLogger(BeanConfigurator.class);
 
     private static final String CONFIGURATION_FILE = "ecc.yml";
     private static final String SECURITY_FILE = "security.yml";
+    private static final String METRICS_ENDPOINT = "/metrics";
 
     private final AtomicReference<Security.CqlSecurity> cqlSecurity = new AtomicReference<>();
     private final AtomicReference<Security.JmxSecurity> jmxSecurity = new AtomicReference<>();
@@ -229,8 +247,46 @@ public class BeanConfigurator
 
         collectorRegistry.register(new DropwizardExports(metricRegistry, metricFilter));
         servletRegistrationBean.setServlet(new MetricsServlet(collectorRegistry));
-        servletRegistrationBean.setUrlMappings(Arrays.asList("/metrics/*"));
+        servletRegistrationBean.setUrlMappings(Arrays.asList(METRICS_ENDPOINT + "/*"));
         return servletRegistrationBean;
+    }
+
+    /**
+     * Creates a bean that filters requests based on URI and port.
+     *
+     * @return the filter that disallows /metric on any other port than metricsServer.port
+     * and disallows any endpoint besides /metric on metricsServer.port.
+     */
+    @Bean
+    public FilterRegistrationBean requestFilter()
+    {
+        Filter filter = new OncePerRequestFilter()
+        {
+            @Override
+            protected void doFilterInternal(final HttpServletRequest request, final HttpServletResponse response,
+                    final FilterChain filterChain) throws ServletException, IOException
+            {
+                int requestPort = request.getLocalPort();
+                String requestURI = request.getRequestURI();
+                if (isMetricsServerEnabled && (requestURI.startsWith(METRICS_ENDPOINT) && requestPort != metricsPort))
+                {
+                    response.sendError(HttpStatus.NOT_FOUND.value());
+                }
+                else if (isMetricsServerEnabled && (!requestURI.startsWith(METRICS_ENDPOINT)
+                        && requestPort == metricsPort))
+                {
+                    response.sendError(HttpStatus.NOT_FOUND.value());
+                }
+                else
+                {
+                    filterChain.doFilter(request, response);
+                }
+            }
+        };
+        FilterRegistrationBean filterRegistrationBean = new FilterRegistrationBean();
+        filterRegistrationBean.setFilter(filter);
+        filterRegistrationBean.addUrlPatterns("/*");
+        return filterRegistrationBean;
     }
 
     private static StatementDecorator getStatementDecorator(final Config configuration) throws ConfigurationException
