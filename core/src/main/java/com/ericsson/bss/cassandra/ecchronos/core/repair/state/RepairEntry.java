@@ -35,11 +35,11 @@ public class RepairEntry
     /**
      * Constructor.
      *
-     * @param range
-     * @param startedAt
-     * @param finishedAt
-     * @param participants
-     * @param status
+     * @param range Token range.
+     * @param startedAt Start timestamp.
+     * @param finishedAt End timestamp.
+     * @param participants Node participants.
+     * @param status The status.
      */
     public RepairEntry(final LongTokenRange range,
                        final long startedAt,
@@ -107,7 +107,7 @@ public class RepairEntry
     /**
      * Equality.
      *
-     * @param o
+     * @param o The object to test equality with.
      * @return boolean
      */
     @Override

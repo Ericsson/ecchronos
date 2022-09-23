@@ -63,7 +63,7 @@ public class ReplicationStateImpl implements ReplicationState
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public ImmutableSet<DriverNode> getNodes(final TableReference tableReference, final LongTokenRange tokenRange)
@@ -75,7 +75,7 @@ public class ReplicationStateImpl implements ReplicationState
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public ImmutableSet<DriverNode> getNodesClusterWide(final TableReference tableReference,

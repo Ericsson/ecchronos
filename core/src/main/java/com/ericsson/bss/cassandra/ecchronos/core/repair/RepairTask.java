@@ -112,7 +112,7 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
     /**
      * Execute the repair task.
      *
-     * @throws ScheduledJobException
+     * @throws ScheduledJobException Scheduled job exception.
      */
     public void execute() throws ScheduledJobException
     {
@@ -214,8 +214,8 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
     /**
      * Notification handler.
      *
-     * @param notification
-     * @param handback
+     * @param notification The notification.
+     * @param handback The handback.
      */
     @SuppressWarnings ("unchecked")
     @Override
@@ -364,10 +364,10 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
     /**
      * Update progress.
      *
-     * @param type
-     * @param progressCount
-     * @param total
-     * @param message
+     * @param type Progress event type.
+     * @param progressCount Progress count.
+     * @param total The total.
+     * @param message The message.
      */
     @VisibleForTesting
     void progress(final ProgressEventType type, final int progressCount, final int total, final String message)
@@ -441,6 +441,7 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         /**
          * Build with repair history.
          *
+         * @param theRepairHistory Repair history.
          * @return Builder
          */
         public Builder withRepairHistory(final RepairHistory theRepairHistory)
@@ -452,6 +453,7 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         /**
          * Build with job id.
          *
+         * @param theJobId Job id.
          * @return Builder
          */
         public Builder withJobId(final UUID theJobId)
@@ -463,6 +465,7 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         /**
          * Build with JMX proxy factory.
          *
+         * @param theJMXProxyFactory JMX proxy factory.
          * @return Builder
          */
         public Builder withJMXProxyFactory(final JmxProxyFactory theJMXProxyFactory)
@@ -474,6 +477,7 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         /**
          * Build with table references.
          *
+         * @param theTableReference Table reference.
          * @return Builder
          */
         public Builder withTableReference(final TableReference theTableReference)
@@ -485,6 +489,7 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         /**
          * Build with token ranges.
          *
+         * @param theTokenRanges The token ranges.
          * @return Builder
          */
         public Builder withTokenRanges(final Collection<LongTokenRange> theTokenRanges)
@@ -496,6 +501,7 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         /**
          * Build with replicas.
          *
+         * @param theReplicas The replicas.
          * @return Builder
          */
         public Builder withReplicas(final Collection<DriverNode> theReplicas)
@@ -507,6 +513,7 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         /**
          * Build with table repair metrics.
          *
+         * @param theTableRepairMetrics Table repair metrics.
          * @return Builder
          */
         public Builder withTableRepairMetrics(final TableRepairMetrics theTableRepairMetrics)
@@ -518,6 +525,7 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
         /**
          * Build with repair configuration.
          *
+         * @param theRepairConfiguration Repair configuration.
          * @return Builder
          */
         public Builder withRepairConfiguration(final RepairConfiguration theRepairConfiguration)

@@ -188,11 +188,11 @@ public class OngoingJob
         /**
          * Ongoing job build with ongoing job info.
          *
-         * @param theJobId
-         * @param theCompletedTime
-         * @param theRepairedTokens
-         * @param theTokenMapHash
-         * @param theStatus
+         * @param theJobId The job id.
+         * @param theCompletedTime Completion time.
+         * @param theRepairedTokens Repaired tokens.
+         * @param theTokenMapHash Token map hash.
+         * @param theStatus Status.
          * @return The builder
          */
         public Builder withOngoingJobInfo(final UUID theJobId,
@@ -215,7 +215,7 @@ public class OngoingJob
         /**
          * Ongoing job build with table reference.
          *
-         * @param aTableReference
+         * @param aTableReference Table reference.
          * @return The builder
          */
         public Builder withTableReference(final TableReference aTableReference)
@@ -227,7 +227,7 @@ public class OngoingJob
         /**
          * Ongoing job build with on demand status.
          *
-         * @param theOnDemandStatus
+         * @param theOnDemandStatus Status.
          * @return The builder
          */
         public Builder withOnDemandStatus(final OnDemandStatus theOnDemandStatus)
@@ -239,7 +239,7 @@ public class OngoingJob
         /**
          * Ongoing job build with replication state.
          *
-         * @param aReplicationState
+         * @param aReplicationState Replication state.
          * @return The builder
          */
         public Builder withReplicationState(final ReplicationState aReplicationState)
@@ -251,7 +251,7 @@ public class OngoingJob
         /**
          * Ongoing job build with host ID.
          *
-         * @param aHostId
+         * @param aHostId Host id.
          * @return The builder
          */
         public Builder withHostId(final UUID aHostId)

@@ -81,7 +81,7 @@ public final class RepairedAt
     /**
      * Generate a repaired at.
      *
-     * @param vnodeRepairStates
+     * @param vnodeRepairStates Vnode repair states.
      * @return RepairedAt
      */
     public static RepairedAt generate(final VnodeRepairStates vnodeRepairStates)

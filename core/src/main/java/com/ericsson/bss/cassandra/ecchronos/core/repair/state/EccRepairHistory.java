@@ -451,6 +451,7 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
         /**
          * Build ECC repair history with session.
          *
+         * @param aSession Session.
          * @return Builder
          */
         public Builder withSession(final CqlSession aSession)
@@ -462,6 +463,7 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
         /**
          * Build ECC repair history with local node.
          *
+         * @param aLocalNode The local node.
          * @return Builder
          */
         public Builder withLocalNode(final DriverNode aLocalNode)
@@ -473,6 +475,7 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
         /**
          * Build ECC repair history with statement decorator.
          *
+         * @param aStatementDecorator The statement decorator.
          * @return Builder
          */
         public Builder withStatementDecorator(final StatementDecorator aStatementDecorator)
@@ -484,6 +487,7 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
         /**
          * Build ECC repair history with replication history.
          *
+         * @param aReplicationState Replication state.
          * @return Builder
          */
         public Builder withReplicationState(final ReplicationState aReplicationState)
@@ -495,6 +499,8 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
         /**
          * Build ECC repair history with lookback time.
          *
+         * @param lookbackTime  Lookback time.
+         * @param unit Time unit.
          * @return Builder
          */
         public Builder withLookbackTime(final long lookbackTime, final TimeUnit unit)
@@ -506,6 +512,7 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
         /**
          * Build ECC repair history with keyspace.
          *
+         * @param theKeyspaceName Keyspace.
          * @return Builder
          */
         public Builder withKeyspace(final String theKeyspaceName)

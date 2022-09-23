@@ -164,7 +164,7 @@ public class RepairConfiguration
         /**
          * Constructor using repair configuration.
          *
-         * @param from
+         * @param from Repair configuration.
          */
         public Builder(final RepairConfiguration from)
         {
@@ -178,7 +178,7 @@ public class RepairConfiguration
         /**
          * Set the parallelism type to use for repairs.
          *
-         * @param parallelism The parallelism
+         * @param parallelism The parallelism.
          * @return The builder
          */
         public Builder withParallelism(final RepairOptions.RepairParallelism parallelism)
@@ -267,7 +267,7 @@ public class RepairConfiguration
         /**
          * Buiild with ignore TWCS tables.
          *
-         * @param ignore
+         * @param ignore Ignore flag.
          * @return Builder
          */
         public Builder withIgnoreTWCSTables(final boolean ignore)

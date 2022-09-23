@@ -120,7 +120,7 @@ public class NormalizedBaseRange
     /**
      * Checks equality.
      *
-     * @param o
+     * @param o Object to test equality with.
      * @return Boolean
      */
     @Override

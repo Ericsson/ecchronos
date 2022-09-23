@@ -337,6 +337,7 @@ public class TableRepairJob extends ScheduledJob
         /**
          * Build table repair job with configuration.
          *
+         * @param theConfiguration Configuration.
          * @return Builder
          */
         public Builder withConfiguration(final Configuration theConfiguration)
@@ -348,6 +349,7 @@ public class TableRepairJob extends ScheduledJob
         /**
          * Build table repair job with table reference.
          *
+         * @param theTableReference Table reference.
          * @return Builder
          */
         public Builder withTableReference(final TableReference theTableReference)
@@ -359,6 +361,7 @@ public class TableRepairJob extends ScheduledJob
         /**
          * Build table repair job with JMX proxy factory.
          *
+         * @param aJMXProxyFactory JMX proxy factory.
          * @return Builder
          */
         public Builder withJmxProxyFactory(final JmxProxyFactory aJMXProxyFactory)
@@ -370,6 +373,7 @@ public class TableRepairJob extends ScheduledJob
         /**
          * Build table repair job with repair state.
          *
+         * @param theRepairState Repair state.
          * @return Builder
          */
         public Builder withRepairState(final RepairState theRepairState)
@@ -381,6 +385,7 @@ public class TableRepairJob extends ScheduledJob
         /**
          * Build table repair job with table repair metrics.
          *
+         * @param theTableRepairMetrics Table repair metrics.
          * @return Builder
          */
         public Builder withTableRepairMetrics(final TableRepairMetrics theTableRepairMetrics)
@@ -392,6 +397,7 @@ public class TableRepairJob extends ScheduledJob
         /**
          * Build table repair job with repair configuration.
          *
+         * @param theRepairConfiguration The repair confiuration.
          * @return Builder
          */
         public Builder withRepairConfiguration(final RepairConfiguration theRepairConfiguration)
@@ -403,6 +409,7 @@ public class TableRepairJob extends ScheduledJob
         /**
          * Build table repair job with repair lock type.
          *
+         * @param theRepairLockType Repair lock type.
          * @return Builder
          */
         public Builder withRepairLockType(final RepairLockType theRepairLockType)
@@ -414,6 +421,7 @@ public class TableRepairJob extends ScheduledJob
         /**
          * Build table repair job with table storage states.
          *
+         * @param theTableStorageStates Table storage states.
          * @return Builder
          */
         public Builder withTableStorageStates(final TableStorageStates theTableStorageStates)
@@ -425,6 +433,7 @@ public class TableRepairJob extends ScheduledJob
         /**
          * Build table repair job with repair policies.
          *
+         * @param tableRepairPolicies The table repair policies.
          * @return Builder
          */
         public Builder withRepairPolices(final Collection<TableRepairPolicy> tableRepairPolicies)
@@ -436,6 +445,7 @@ public class TableRepairJob extends ScheduledJob
         /**
          * Build table repair job with repair history.
          *
+         * @param aRepairHistory Repair history.
          * @return Builder
          */
         public Builder withRepairHistory(final RepairHistory aRepairHistory)

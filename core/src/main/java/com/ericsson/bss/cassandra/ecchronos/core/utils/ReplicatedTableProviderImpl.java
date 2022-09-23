@@ -51,7 +51,7 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public final Set<TableReference> getAll()
@@ -64,7 +64,7 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public boolean accept(final String keyspace)

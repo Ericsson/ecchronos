@@ -49,7 +49,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public VnodeRepairStates calculateNewState(final TableReference tableReference, final RepairStateSnapshot previous)
@@ -79,7 +79,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public VnodeRepairStates calculateState(final TableReference tableReference,
@@ -95,7 +95,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public VnodeRepairStates calculateClusterWideState(final TableReference tableReference,

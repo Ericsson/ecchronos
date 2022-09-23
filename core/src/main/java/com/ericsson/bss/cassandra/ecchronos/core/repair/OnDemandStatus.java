@@ -86,7 +86,7 @@ public class OnDemandStatus
     /**
      * Constructor.
      *
-     * @param nativeConnectionProvider
+     * @param nativeConnectionProvider The native connection provider.
      */
     public OnDemandStatus(final NativeConnectionProvider nativeConnectionProvider)
     {
@@ -319,8 +319,8 @@ public class OnDemandStatus
     /**
      * Update job with repaired tokens.
      *
-     * @param jobId
-     * @param repairedTokens
+     * @param jobId Job id.
+     * @param repairedTokens Repaired tokens.
      */
     public void updateJob(final UUID jobId, final Set<UdtValue> repairedTokens)
     {

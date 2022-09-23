@@ -125,7 +125,7 @@ public class RepairStateSnapshot
         /**
          * Build repair state snapshot with last completed at.
          *
-         * @param lastCompletedAt
+         * @param lastCompletedAt Time stamp of last completion.
          * @return Builder
          */
         public Builder withLastCompletedAt(final long lastCompletedAt)
@@ -137,7 +137,7 @@ public class RepairStateSnapshot
         /**
          * Build repair state snapshot with replica repair groups.
          *
-         * @param replicaRepairGroup
+         * @param replicaRepairGroup The repair replica group.
          * @return Builder
          */
         public Builder withReplicaRepairGroups(final List<ReplicaRepairGroup> replicaRepairGroup)
@@ -149,7 +149,7 @@ public class RepairStateSnapshot
         /**
          * Build repair state snapshot with vNode repair state.
          *
-         * @param vnodeRepairStates
+         * @param vnodeRepairStates The vnode repair states.
          * @return Builder
          */
         public Builder withVnodeRepairStates(final VnodeRepairStates vnodeRepairStates)

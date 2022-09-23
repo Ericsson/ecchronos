@@ -29,8 +29,8 @@ public class RepairResource
     /**
      * Constructor.
      *
-     * @param dataCenter
-     * @param resourceName
+     * @param dataCenter The data center.
+     * @param resourceName Resource name.
      */
     public RepairResource(final String dataCenter, final String resourceName)
     {
@@ -51,7 +51,7 @@ public class RepairResource
     /**
      * Get resource name.
      *
-     * @param n
+     * @param n Resource number.
      * @return String
      */
     public String getResourceName(final int n)
@@ -73,7 +73,7 @@ public class RepairResource
     /**
      * Checks equality.
      *
-     * @param o
+     * @param o Object to check equality with.
      * @return boolean
      */
     @Override

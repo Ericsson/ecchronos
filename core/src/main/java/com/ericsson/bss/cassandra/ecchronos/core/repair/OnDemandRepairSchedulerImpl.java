@@ -285,7 +285,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         /**
          * Build on demand repair scheduler with JMX proxy factory.
          *
-         * @param theJMXProxyFactory
+         * @param theJMXProxyFactory JMX proxy factory.
          * @return Builder
          */
         public Builder withJmxProxyFactory(final JmxProxyFactory theJMXProxyFactory)
@@ -297,7 +297,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         /**
          * Build on demand repair scheduler with table repair metrics.
          *
-         * @param theTableRepairMetrics
+         * @param theTableRepairMetrics Table repair metrics.
          * @return Builder
          */
         public Builder withTableRepairMetrics(final TableRepairMetrics theTableRepairMetrics)
@@ -309,7 +309,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         /**
          * Build on demand repair scheduler with scheule manager.
          *
-         * @param theScheduleManager
+         * @param theScheduleManager Schedule manager.
          * @return Builder
          */
         public Builder withScheduleManager(final ScheduleManager theScheduleManager)
@@ -321,7 +321,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         /**
          * Build on demand repair scheduler with replication state.
          *
-         * @param theReplicationState
+         * @param theReplicationState Replication state.
          * @return Builder
          */
         public Builder withReplicationState(final ReplicationState theReplicationState)
@@ -333,7 +333,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         /**
          * Build on demand repair scheduler with repair lock type.
          *
-         * @param theRepairLockType
+         * @param theRepairLockType Repair lock type.
          * @return Builder
          */
         public Builder withRepairLockType(final RepairLockType theRepairLockType)
@@ -345,7 +345,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         /**
          * Build on demand repair scheduler with session.
          *
-         * @param theSession
+         * @param theSession Session.
          * @return Builder
          */
         public Builder withSession(final CqlSession theSession)
@@ -357,7 +357,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         /**
          * Build on demand repair scheduler with repair configuration.
          *
-         * @param theRepairConfiguration
+         * @param theRepairConfiguration Repair configuration.
          * @return Builder
          */
         public Builder withRepairConfiguration(final RepairConfiguration theRepairConfiguration)
@@ -369,7 +369,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         /**
          * Build on demand repair scheduler with repair history.
          *
-         * @param theRepairHistory
+         * @param theRepairHistory Repair history.
          * @return Builder
          */
         public Builder withRepairHistory(final RepairHistory theRepairHistory)
@@ -381,7 +381,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         /**
          * Build on demand repair scheduler with on demand status.
          *
-         * @param theOnDemandStatus
+         * @param theOnDemandStatus Status.
          * @return Builder
          */
         public Builder withOnDemandStatus(final OnDemandStatus theOnDemandStatus)

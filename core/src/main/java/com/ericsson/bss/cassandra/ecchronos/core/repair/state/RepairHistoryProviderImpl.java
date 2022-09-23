@@ -94,7 +94,7 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public Iterator<RepairEntry> iterate(final TableReference tableReference,
@@ -106,7 +106,7 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public Iterator<RepairEntry> iterate(final TableReference tableReference,
@@ -129,7 +129,7 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     @Override
     public Iterator<RepairEntry> iterate(final UUID nodeId,

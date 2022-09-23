@@ -244,6 +244,9 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
         /**
          * RepairSchedulerImpl build with fault reporter.
+         *
+         * @param repairFaultReporter Repair fault reporter.
+         * @return Builder
          */
         public Builder withFaultReporter(final RepairFaultReporter repairFaultReporter)
         {
@@ -253,6 +256,9 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
         /**
          * RepairSchedulerImpl build with JMX proxy factory.
+         *
+         * @param jmxProxyFactory JMX proxy factory.
+         * @return Builder
          */
         public Builder withJmxProxyFactory(final JmxProxyFactory jmxProxyFactory)
         {
@@ -262,6 +268,9 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
         /**
          * RepairSchedulerImpl build with table repair metrics.
+         *
+         * @param tableRepairMetrics Table repair metrics.
+         * @return Builder
          */
         public Builder withTableRepairMetrics(final TableRepairMetrics tableRepairMetrics)
         {
@@ -271,6 +280,9 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
         /**
          * RepairSchedulerImpl build with schedule manager.
+         *
+         * @param scheduleManager Schedule manager.
+         * @return Builder
          */
         public Builder withScheduleManager(final ScheduleManager scheduleManager)
         {
@@ -280,6 +292,9 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
         /**
          * RepairSchedulerImpl build with repair state factory.
+         *
+         * @param repairStateFactory Repair state factory.
+         * @return Builder
          */
         public Builder withRepairStateFactory(final RepairStateFactory repairStateFactory)
         {
@@ -289,6 +304,9 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
         /**
          * RepairSchedulerImpl build with repair lock type.
+         *
+         * @param repairLockType Repair lock type.
+         * @return Builder
          */
         public Builder withRepairLockType(final RepairLockType repairLockType)
         {
@@ -298,6 +316,9 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
         /**
          * RepairSchedulerImpl build with table storage states.
+         *
+         * @param tableStorageStates Table storage states.
+         * @return Builder
          */
         public Builder withTableStorageStates(final TableStorageStates tableStorageStates)
         {
@@ -307,6 +328,9 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
         /**
          * RepairSchedulerImpl build with repair policies.
+         *
+         * @param tableRepairPolicies Table repair policies.
+         * @return Builder
          */
         public Builder withRepairPolicies(final Collection<TableRepairPolicy> tableRepairPolicies)
         {
@@ -316,6 +340,9 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
         /**
          * RepairSchedulerImpl build with repair history.
+         *
+         * @param repairHistory Repair history.
+         * @return Builder
          */
         public Builder withRepairHistory(final RepairHistory repairHistory)
         {
@@ -325,6 +352,8 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
         /**
          * RepairSchedulerImpl build.
+         *
+         * @return RepairSchedulerImpl
          */
         public RepairSchedulerImpl build()
         {

@@ -70,6 +70,7 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
         /**
          * Build repair state factory with replication state.
          *
+         * @param replicationState Replication state.
          * @return Builder
          */
         public Builder withReplicationState(final ReplicationState replicationState)
@@ -81,6 +82,7 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
         /**
          * Build repair state factory with host states.
          *
+         * @param hostStates The host states.
          * @return Builder
          */
         public Builder withHostStates(final HostStates hostStates)
@@ -92,6 +94,7 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
         /**
          * Build repair state factory with repair history provider.
          *
+         * @param repairHistoryProvider The repair history provider.
          * @return Builder
          */
         public Builder withRepairHistoryProvider(final RepairHistoryProvider repairHistoryProvider)
@@ -103,6 +106,7 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
         /**
          * Build repair state factory with table repair metrics.
          *
+         * @param tableRepairMetrics  The table repair metrics.
          * @return Builder
          */
         public Builder withTableRepairMetrics(final TableRepairMetrics tableRepairMetrics)

@@ -220,6 +220,7 @@ public class RepairGroup extends ScheduledTask
         /**
          * Build with table reference.
          *
+         * @param theTableReference Table reference.
          * @return Builder
          */
         public Builder withTableReference(final TableReference theTableReference)
@@ -231,6 +232,7 @@ public class RepairGroup extends ScheduledTask
         /**
          * Build with repair configuration.
          *
+         * @param theRepairConfiguration Repair configuration.
          * @return Builder
          */
         public Builder withRepairConfiguration(final RepairConfiguration theRepairConfiguration)
@@ -242,6 +244,7 @@ public class RepairGroup extends ScheduledTask
         /**
          * Build with replica repair group.
          *
+         * @param theReplicaRepairGroup Replica repair group.
          * @return Builder
          */
         public Builder withReplicaRepairGroup(final ReplicaRepairGroup theReplicaRepairGroup)
@@ -253,6 +256,7 @@ public class RepairGroup extends ScheduledTask
         /**
          * Build with JMX proxy factory.
          *
+         * @param theJMXProxyFactory JMX proxy factory.
          * @return Builder
          */
         public Builder withJmxProxyFactory(final JmxProxyFactory theJMXProxyFactory)
@@ -264,6 +268,7 @@ public class RepairGroup extends ScheduledTask
         /**
          * Build with table repair metrics.
          *
+         * @param theTableRepairMetrics Table repair metrics.
          * @return Builder
          */
         public Builder withTableRepairMetrics(final TableRepairMetrics theTableRepairMetrics)
@@ -275,6 +280,7 @@ public class RepairGroup extends ScheduledTask
         /**
          * Build with repair resource factory.
          *
+         * @param theRepairResourceFactory Repair resource factory.
          * @return Builder
          */
         public Builder withRepairResourceFactory(final RepairResourceFactory theRepairResourceFactory)
@@ -284,8 +290,9 @@ public class RepairGroup extends ScheduledTask
         }
 
         /**
-         * Build with repair lock repair lock factory.
+         * Build with repair lock factory.
          *
+         * @param theRepairLockFactory Repair lock factory.
          * @return Builder
          */
         public Builder withRepairLockFactory(final RepairLockFactory theRepairLockFactory)
@@ -297,6 +304,7 @@ public class RepairGroup extends ScheduledTask
         /**
          * Build with repair policies.
          *
+         * @param theRepairPolicies Repair policies.
          * @return Builder
          */
         public Builder withRepairPolicies(final List<TableRepairPolicy> theRepairPolicies)
@@ -308,6 +316,7 @@ public class RepairGroup extends ScheduledTask
         /**
          * Build with tokens per repair.
          *
+         * @param theTokensPerRepair Tokens per repair.
          * @return Builder
          */
         public Builder withTokensPerRepair(final BigInteger theTokensPerRepair)
@@ -319,6 +328,7 @@ public class RepairGroup extends ScheduledTask
         /**
          * Build with repair history.
          *
+         * @param theRepairHistory Repair history.
          * @return Builder
          */
         public Builder withRepairHistory(final RepairHistory theRepairHistory)
@@ -330,6 +340,7 @@ public class RepairGroup extends ScheduledTask
         /**
          * Build with job id.
          *
+         * @param theJobId Job id.
          * @return Builder
          */
         public Builder withJobId(final UUID theJobId)
@@ -341,7 +352,7 @@ public class RepairGroup extends ScheduledTask
         /**
          * Build repair group.
          *
-         * @param priority
+         * @param priority The priority.
          * @return RepairGroup
          */
         public RepairGroup build(final int priority)
