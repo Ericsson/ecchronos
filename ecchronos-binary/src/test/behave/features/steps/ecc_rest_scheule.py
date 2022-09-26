@@ -19,10 +19,10 @@ from behave import given  # pylint: disable=no-name-in-module
 @given('I fetch schedules with id and full')
 def step_fetch_schedule_with_id_and_full(context):
     assert context.id is not None
-    context.url = "http://localhost:8080/repair-management/v2/schedules/{0}?full=true".format(context.id)
+    context.url = "localhost:8080/repair-management/v2/schedules/{0}?full=true".format(context.id)
 
 
 @given('I fetch schedules with id')
 def step_fetch_schedule_with_id(context):
     assert context.id is not None
-    context.url = "http://localhost:8080/repair-management/v2/schedules/{0}".format(context.id)
+    context.url = "localhost:8080/repair-management/v2/schedules/{0}".format(context.id)

@@ -21,6 +21,8 @@ except ImportError:
     from urllib2 import urlopen, Request, HTTPError, URLError
     from urllib import quote # pylint: disable=ungrouped-imports
 import json
+import os
+import ssl
 from ecchronoslib.types import FullSchedule, Repair, Schedule, RepairInfo
 
 
@@ -77,7 +79,15 @@ class RestRequest(object):
         try:
             request = Request(request_url)
             request.get_method = lambda: method
-            response = urlopen(request)
+            cert_file = os.getenv("ECCTOOL_CERT_FILE")
+            key_file = os.getenv("ECCTOOL_KEY_FILE")
+            ca_file = os.getenv("ECCTOOL_CA_FILE")
+            if cert_file and key_file and ca_file:
+                context = ssl.create_default_context(cafile=ca_file)
+                context.load_cert_chain(cert_file, key_file)
+                response = urlopen(request, context=context)
+            else:
+                response = urlopen(request)
             json_data = json.loads(response.read().decode(RestRequest.get_charset(response)))
 
             response.close()

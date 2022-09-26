@@ -14,9 +14,8 @@
 #
 
 import re
-from subprocess import Popen, PIPE
 from behave import when, then  # pylint: disable=no-name-in-module
-from ecc_step_library.common_steps import match_and_remove_row, validate_header
+from ecc_step_library.common_steps import match_and_remove_row, validate_header, run_ecctool
 
 
 ID_PATTERN = r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
@@ -26,9 +25,7 @@ TABLE_REPAIR_ROW_FORMAT_PATTERN = r'\| .* \| .* \| {0} \| {1} \| (COMPLETED|IN_Q
 
 
 def run_ecc_repair_status(context, params):
-    cmd = [context.config.userdata.get("ecctool")] + ["repairs"] + params
-    context.proc = Popen(cmd, stdout=PIPE, stderr=PIPE) # pylint: disable=consider-using-with
-    (context.out, context.err) = context.proc.communicate()
+    run_ecctool(context, ["repairs"] + params)
 
 
 def table_row(keyspace, table):

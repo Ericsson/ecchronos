@@ -13,9 +13,8 @@
 # limitations under the License.
 #
 
-from subprocess import Popen, PIPE
 from behave import when, then  # pylint: disable=no-name-in-module
-from ecc_step_library.common_steps import match_and_remove_row, validate_header
+from ecc_step_library.common_steps import match_and_remove_row, validate_header, run_ecctool
 
 
 REPAIR_INFO_HEADER = r'| Keyspace | Table | Repaired (%) | Repair time taken |'
@@ -23,9 +22,7 @@ REPAIR_INFO_ROW_FORMAT_PATTERN = r'\| {0} \| {1} \| \d+[.]\d+ \| .* \|'
 
 
 def run_ecc_repair_info(context, params):
-    cmd = [context.config.userdata.get("ecctool")] + ["repair-info"] + params
-    context.proc = Popen(cmd, stdout=PIPE, stderr=PIPE) # pylint: disable=consider-using-with
-    (context.out, context.err) = context.proc.communicate()
+    run_ecctool(context, ["repair-info"] + params)
 
 
 def table_row(keyspace, table):
