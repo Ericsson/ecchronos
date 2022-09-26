@@ -99,11 +99,10 @@ def add_run_repair_subcommand(sub_parsers):
                                        default=None)
     parser_trigger_repair.add_argument("--local", action='store_true',
                                        help='repair will run for the local node, disabled by default', default=False)
-    required_args = parser_trigger_repair.add_argument_group("required arguments")
-    required_args.add_argument("-k", "--keyspace", type=str,
-                               help="Keyspace where the repair should be triggered", required=False)
-    required_args.add_argument("-t", "--table", type=str,
-                               help="Table where the repair should be triggered", required=False)
+    parser_trigger_repair.add_argument("-k", "--keyspace", type=str,
+                                       help="Keyspace where the repair should be triggered", required=False)
+    parser_trigger_repair.add_argument("-t", "--table", type=str,
+                                       help="Table where the repair should be triggered", required=False)
 
 
 def add_repair_info_subcommand(sub_parsers):

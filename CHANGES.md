@@ -2,6 +2,7 @@
 
 ## Version 4.0.0
 
+* Fix help for ecctool run-repair - Issue #365
 * Sort repair-info based on repaired-ratio - Issue #358
 * Support keyspaces and tables with camelCase - Issue #362
 * Fix limit for repair-info - Issue #359
