@@ -103,7 +103,7 @@ def step_set_url(context, url):
 @when('I send a GET request')
 def step_send_get_request(context):
     assert context.url is not None
-    assert not context.url.encode().startswith("http"), \
+    assert not context.url.encode("utf-8").startswith("http"), \
         "context.url cannot contain protocol 'http' or 'https'"
     client_cert = context.config.userdata.get("client_cert")
     client_key = context.config.userdata.get("client_key")
@@ -119,7 +119,7 @@ def step_send_get_request(context):
 @when('I send a POST request')
 def step_send_post_request(context):
     assert context.url is not None
-    assert not context.url.encode().startswith("http"), \
+    assert not context.url.encode("utf-8").startswith("http"), \
         "context.url cannot contain protocol 'http' or 'https'"
     client_cert = context.config.userdata.get("client_cert")
     client_key = context.config.userdata.get("client_key")
