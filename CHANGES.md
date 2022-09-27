@@ -2,6 +2,15 @@
 
 ## Version 4.0.0
 
+* Fix help for ecctool run-repair - Issue #365
+* Sort repair-info based on repaired-ratio - Issue #358
+* Support keyspaces and tables with camelCase - Issue #362
+* Fix limit for repair-info - Issue #359
+* Remove version override of log4j - Issue #356
+* Throw configexception if yaml config contains null - Issue #352
+* Add cluster-wide support for repair-info - Issue #156
+* Example size targets are incorrect in schedule.yml - Issue #337
+* Add repair-info - Issue #327
 * Add config to skip schedules of tables with TWCS - Issue #151
 * Add metric for failed and succeeded repair tasks - Issue #295
 * Remove deprecated v1 REST interface

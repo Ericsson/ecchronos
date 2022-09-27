@@ -26,10 +26,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
@@ -53,7 +55,8 @@ public class TestVnodeRepairStateFactoryImpl
     @Mock
     private ReplicationState mockReplicationState;
 
-    private Map<LongTokenRange, ImmutableSet<DriverNode>> tokenToNodeMap = new TreeMap<>((l1, l2) -> Long.compare(l1.start, l2.start));
+    private Map<LongTokenRange, ImmutableSet<DriverNode>> tokenToNodeMap = new TreeMap<>(
+            Comparator.comparingLong(l -> l.start));
 
     private RepairHistoryProvider repairHistoryProvider = new MockedRepairHistoryProvider(TABLE_REFERENCE);
     private List<RepairEntry> repairHistory = new ArrayList<>();
@@ -62,6 +65,7 @@ public class TestVnodeRepairStateFactoryImpl
     public void setup()
     {
         when(mockReplicationState.getTokenRangeToReplicas(eq(TABLE_REFERENCE))).thenReturn(tokenToNodeMap);
+        when(mockReplicationState.getTokenRanges(eq(TABLE_REFERENCE))).thenReturn(tokenToNodeMap);
     }
 
     @Test
@@ -73,7 +77,33 @@ public class TestVnodeRepairStateFactoryImpl
         withRange(range(1, 2), node1, node2);
         withRange(range(2, 3), node1, node2);
 
-        assertSameForVnodeAndSubrange(newUnrepairedState(range(1, 2)),
+        assertNewStateSameForVnodeAndSubrange(newUnrepairedState(range(1, 2)),
+                newUnrepairedState(range(2, 3)));
+    }
+
+    @Test
+    public void testCalculateStateEmptyHistoryIsUnrepaired() throws UnknownHostException
+    {
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
+
+        withRange(range(1, 2), node1, node2);
+        withRange(range(2, 3), node1, node2);
+
+        assertStateSameForVnodeAndSubrange(1234L, 1235L, newUnrepairedState(range(1, 2)),
+                newUnrepairedState(range(2, 3)));
+    }
+
+    @Test
+    public void testCalculateStateClusterWideEmptyHistoryIsUnrepaired() throws UnknownHostException
+    {
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
+
+        withRange(range(1, 2), node1, node2);
+        withRange(range(2, 3), node1, node2);
+
+        assertClusterWideStateSameForVnodeAndSubrange(1234L, 1235L, newUnrepairedState(range(1, 2)),
                 newUnrepairedState(range(2, 3)));
     }
 
@@ -90,10 +120,10 @@ public class TestVnodeRepairStateFactoryImpl
                 newState(range(1, 2), 1234L, 1235L),
                 newState(range(2, 3), 2345L, 2346L));
 
-        assertVnodeStates(previousSnapshot,
+        assertNewVnodeStates(previousSnapshot,
                 newState(range(1, 2), 1234L, 1235L),
                 newState(range(2, 3), 2345L, 2346L));
-        assertSubRangeStates(previousSnapshot, newState(range(1, 2), 1234L, -1L),
+        assertNewSubRangeStates(previousSnapshot, newState(range(1, 2), 1234L, -1L),
                 newState(range(2, 3), 2345L, 2346L));
     }
 
@@ -109,7 +139,41 @@ public class TestVnodeRepairStateFactoryImpl
         withSuccessfulRepairHistory(range(1, 2), 1234L, 1235L);
         withSuccessfulRepairHistory(range(2, 3), 2345L, 2346L);
 
-        assertSameForVnodeAndSubrange(newState(range(1, 2), 1234L, 1235L),
+        assertNewStateSameForVnodeAndSubrange(newState(range(1, 2), 1234L, 1235L),
+                newState(range(2, 3), 2345L, 2346L));
+    }
+
+    @Test
+    public void testCalculateStateWithHistoryIsRepaired() throws UnknownHostException
+    {
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
+
+        withRange(range(1, 2), node1, node2);
+        withRange(range(2, 3), node1, node2);
+
+        withSuccessfulRepairHistory(range(1, 2), 1234L, 1235L);
+        withSuccessfulRepairHistory(range(2, 3), 2345L, 2346L);
+
+        assertStateSameForVnodeAndSubrange(2346L, 1234L,
+                newState(range(1, 2), 1234L, 1235L),
+                newState(range(2, 3), 2345L, 2346L));
+    }
+
+    @Test
+    public void testCalculateClusterWideStateWithHistoryIsRepaired() throws UnknownHostException
+    {
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
+
+        withRange(range(1, 2), node1, node2);
+        withRange(range(2, 3), node1, node2);
+
+        withSuccessfulRepairHistory(range(1, 2), 1234L, 1235L);
+        withSuccessfulRepairHistory(range(2, 3), 2345L, 2346L);
+
+        assertClusterWideStateSameForVnodeAndSubrange(2346L, 1234L,
+                newState(range(1, 2), 1234L, 1235L),
                 newState(range(2, 3), 2345L, 2346L));
     }
 
@@ -133,10 +197,10 @@ public class TestVnodeRepairStateFactoryImpl
         withSubRangeSuccessfulRepairHistory(range(5, 8), range2StartedAt, range2FinishedAt);
         withSubRangeSuccessfulRepairHistory(range(8, 10), range2StartedAt, range2FinishedAt);
 
-        assertVnodeStates(newUnrepairedState(range(1, 5)),
+        assertNewVnodeStates(newUnrepairedState(range(1, 5)),
                 newUnrepairedState(range(5, 10)));
-        assertSubRangeStates(newState(range(1, 5), range1StartedAt, range1FinishedAt),
-                newState(range(5, 10), range2StartedAt, range2FinishedAt));
+        assertNewSubRangeStates(newState(range(1, 5), range1StartedAt, range1FinishedAt, (range1FinishedAt-range1StartedAt) + (range1FinishedAt-range1StartedAt)),
+                newState(range(5, 10), range2StartedAt, range2FinishedAt, (range2FinishedAt-range2StartedAt) + (range2FinishedAt-range2StartedAt)));
     }
 
     @Test
@@ -158,9 +222,63 @@ public class TestVnodeRepairStateFactoryImpl
         withSubRangeSuccessfulRepairHistory(range(5, 8), range2StartedAt, range2FinishedAt);
         withSubRangeSuccessfulRepairHistory(range(8, 10), range2StartedAt, range2FinishedAt);
 
-        assertVnodeStates(newUnrepairedState(range(1, 5)),
+        assertNewVnodeStates(newUnrepairedState(range(1, 5)),
                 newUnrepairedState(range(5, 10)));
-        assertSubRangeStates(newSubRangeState(range(1, 3), range1StartedAt, range1FinishedAt),
+        assertNewSubRangeStates(newSubRangeState(range(1, 3), range1StartedAt, range1FinishedAt),
+                newSubRangeUnrepairedState(range(3, 5)),
+                newState(range(5, 10), range2StartedAt, range2FinishedAt));
+    }
+
+    @Test
+    public void testCalculateStateWithSubRangeHistoryIsPartiallyRepaired() throws UnknownHostException
+    {
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
+
+        withRange(range(1, 5), node1, node2);
+        withRange(range(5, 10), node1, node2);
+
+        long range1StartedAt = TimeUnit.DAYS.toMillis(10);
+        long range1FinishedAt = TimeUnit.DAYS.toMillis(10);
+        long range2StartedAt = TimeUnit.DAYS.toMillis(11);
+        long range2FinishedAt = TimeUnit.DAYS.toMillis(11);
+
+        withSubRangeSuccessfulRepairHistory(range(1, 3), range1StartedAt, range1FinishedAt);
+
+        withSubRangeSuccessfulRepairHistory(range(5, 8), range2StartedAt, range2FinishedAt);
+        withSubRangeSuccessfulRepairHistory(range(8, 10), range2StartedAt, range2FinishedAt);
+
+        assertVnodeStates(range1StartedAt, range2FinishedAt, newUnrepairedState(range(1, 5)),
+                newUnrepairedState(range(5, 10)));
+        assertSubRangeStates(range2FinishedAt, range1StartedAt,
+                newSubRangeState(range(1, 3), range1StartedAt, range1FinishedAt),
+                newSubRangeUnrepairedState(range(3, 5)),
+                newState(range(5, 10), range2StartedAt, range2FinishedAt));
+    }
+
+    @Test
+    public void testCalculateClusterWideStateWithSubRangeHistoryIsPartiallyRepaired() throws UnknownHostException
+    {
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
+
+        withRange(range(1, 5), node1, node2);
+        withRange(range(5, 10), node1, node2);
+
+        long range1StartedAt = TimeUnit.DAYS.toMillis(10);
+        long range1FinishedAt = TimeUnit.DAYS.toMillis(10);
+        long range2StartedAt = TimeUnit.DAYS.toMillis(11);
+        long range2FinishedAt = TimeUnit.DAYS.toMillis(11);
+
+        withSubRangeSuccessfulRepairHistory(range(1, 3), range1StartedAt, range1FinishedAt);
+
+        withSubRangeSuccessfulRepairHistory(range(5, 8), range2StartedAt, range2FinishedAt);
+        withSubRangeSuccessfulRepairHistory(range(8, 10), range2StartedAt, range2FinishedAt);
+
+        assertClusterWideVnodeStates(range1StartedAt, range2FinishedAt, newUnrepairedState(range(1, 5)),
+                newUnrepairedState(range(5, 10)));
+        assertClusterWideSubRangeStates(range2FinishedAt, range1StartedAt,
+                newSubRangeState(range(1, 3), range1StartedAt, range1FinishedAt),
                 newSubRangeUnrepairedState(range(3, 5)),
                 newState(range(5, 10), range2StartedAt, range2FinishedAt));
     }
@@ -190,11 +308,11 @@ public class TestVnodeRepairStateFactoryImpl
                 newState(range(1, 5), firstStartedAt, firstFinishedAt),
                 newState(range(5, 10), firstStartedAt, firstFinishedAt));
 
-        assertVnodeStates(previousSnapshot,
+        assertNewVnodeStates(previousSnapshot,
                 newState(range(1, 5), firstStartedAt, firstFinishedAt),
                 newState(range(5, 10), firstStartedAt, firstFinishedAt));
 
-        assertSubRangeStates(previousSnapshot,
+        assertNewSubRangeStates(previousSnapshot,
                 newSubRangeState(range(1, 3), range1StartedAt, range1FinishedAt),
                 newSubRangeState(range(3, 5), firstStartedAt, VnodeRepairState.UNREPAIRED),
                 newSubRangeState(range(5, 10), range2StartedAt, range2FinishedAt));
@@ -216,8 +334,48 @@ public class TestVnodeRepairStateFactoryImpl
         withSuccessfulRepairHistory(range(1, 2), range1StartedAt, range1FinishedAt);
         withFailedRepairHistory(range(2, 3), range2StartedAt);
 
-        assertSameForVnodeAndSubrange(newState(range(1, 2), range1StartedAt, range1FinishedAt),
+        assertNewStateSameForVnodeAndSubrange(newState(range(1, 2), range1StartedAt, range1FinishedAt),
                 newUnrepairedState(range(2, 3)));
+    }
+
+    @Test
+    public void testCalculateStateWithHistoryIsPartiallyRepaired() throws UnknownHostException
+    {
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
+
+        withRange(range(1, 2), node1, node2);
+        withRange(range(2, 3), node1, node2);
+
+        long range1StartedAt = 1;
+        long range1FinishedAt = 2;
+        long range2StartedAt = 3;
+
+        withSuccessfulRepairHistory(range(1, 2), range1StartedAt, range1FinishedAt);
+        withFailedRepairHistory(range(2, 3), range2StartedAt);
+
+        assertStateSameForVnodeAndSubrange(range2StartedAt, range1StartedAt, newState(range(1, 2), range1StartedAt, range1FinishedAt),
+                newUnrepairedState(range(2, 3)));
+    }
+
+    @Test
+    public void testCalculateClusterWideStateWithHistoryIsPartiallyRepaired() throws UnknownHostException
+    {
+        DriverNode node1 = withNode("127.0.0.1");
+        DriverNode node2 = withNode("127.0.0.2");
+
+        withRange(range(1, 2), node1, node2);
+        withRange(range(2, 3), node1, node2);
+
+        long range1StartedAt = 1;
+        long range1FinishedAt = 2;
+        long range2StartedAt = 3;
+
+        withSuccessfulRepairHistory(range(1, 2), range1StartedAt, range1FinishedAt);
+        withFailedRepairHistory(range(2, 3), range2StartedAt);
+
+        assertClusterWideStateSameForVnodeAndSubrange(range2StartedAt, range1StartedAt, newState(range(1, 2),
+                        range1StartedAt, range1FinishedAt), newUnrepairedState(range(2, 3)));
     }
 
     @Test
@@ -240,7 +398,7 @@ public class TestVnodeRepairStateFactoryImpl
 
         withSuccessfulRepairHistory(range(1, 2), range1StartedAt, range1FinishedAt);
 
-        assertSameForVnodeAndSubrange(newState(range(1, 2), range1StartedAt, range1FinishedAt),
+        assertNewStateSameForVnodeAndSubrange(newState(range(1, 2), range1StartedAt, range1FinishedAt),
                 newUnrepairedState(range(2, 3)));
     }
 
@@ -260,7 +418,7 @@ public class TestVnodeRepairStateFactoryImpl
                 newState(range(1, 4), 1234L, 1235L),
                 newState(range(5, 0), 1236L, 1237L));
 
-        assertSameForVnodeAndSubrange(previousSnapshot,
+        assertNewStateSameForVnodeAndSubrange(previousSnapshot,
                 newState(range(1, 2), 1234L, VnodeRepairState.UNREPAIRED),
                 newState(range(5, 0), 1236L, 1237L));
     }
@@ -311,6 +469,11 @@ public class TestVnodeRepairStateFactoryImpl
     private VnodeRepairState newState(LongTokenRange range, long startedAt, long finishedAt)
     {
         return new VnodeRepairState(range, getKnownReplicas(range), startedAt, finishedAt);
+    }
+
+    private VnodeRepairState newState(LongTokenRange range, long startedAt, long finishedAt, long repairTime)
+    {
+        return new VnodeRepairState(range, getKnownReplicas(range), startedAt, finishedAt, repairTime);
     }
 
     private VnodeRepairState newSubRangeUnrepairedState(LongTokenRange range)
@@ -374,37 +537,37 @@ public class TestVnodeRepairStateFactoryImpl
         return node;
     }
 
-    private void assertVnodeStates(VnodeRepairState... states)
+    private void assertNewVnodeStates(VnodeRepairState... states)
     {
-        assertVnodeStates(null, states);
+        assertNewVnodeStates(null, states);
     }
 
-    private void assertVnodeStates(RepairStateSnapshot previous, VnodeRepairState... states)
+    private void assertNewVnodeStates(RepairStateSnapshot previous, VnodeRepairState... states)
     {
         VnodeRepairStateFactory vnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider, false);
         assertNewState(vnodeRepairStateFactory, previous, VnodeRepairStatesImpl.class, states);
     }
 
-    private void assertSubRangeStates(VnodeRepairState... states)
+    private void assertNewSubRangeStates(VnodeRepairState... states)
     {
-        assertSubRangeStates(null, states);
+        assertNewSubRangeStates(null, states);
     }
 
-    private void assertSubRangeStates(RepairStateSnapshot previous, VnodeRepairState... states)
+    private void assertNewSubRangeStates(RepairStateSnapshot previous, VnodeRepairState... states)
     {
         VnodeRepairStateFactory subRangeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider, true);
         assertNewState(subRangeRepairStateFactory, previous, SubRangeRepairStates.class, states);
     }
 
-    private void assertSameForVnodeAndSubrange(VnodeRepairState... states)
+    private void assertNewStateSameForVnodeAndSubrange(VnodeRepairState... states)
     {
-        assertSameForVnodeAndSubrange(null, states);
+        assertNewStateSameForVnodeAndSubrange(null, states);
     }
 
-    private void assertSameForVnodeAndSubrange(RepairStateSnapshot previous, VnodeRepairState... states)
+    private void assertNewStateSameForVnodeAndSubrange(RepairStateSnapshot previous, VnodeRepairState... states)
     {
-        assertVnodeStates(previous, states);
-        assertSubRangeStates(previous, states);
+        assertNewVnodeStates(previous, states);
+        assertNewSubRangeStates(previous, states);
     }
 
     private void assertNewState(VnodeRepairStateFactory factory, RepairStateSnapshot previous, Class<? extends VnodeRepairStates> expectedClass, VnodeRepairState... expectedStates)
@@ -415,6 +578,70 @@ public class TestVnodeRepairStateFactoryImpl
     private void assertNewState(VnodeRepairStateFactory factory, RepairStateSnapshot previous, Class<? extends VnodeRepairStates> expectedClass, Collection<VnodeRepairState> expectedStates)
     {
         VnodeRepairStates newStates = factory.calculateNewState(TABLE_REFERENCE, previous);
+        assertThat(newStates).isInstanceOf(expectedClass);
+
+        Collection<VnodeRepairState> vnodeRepairStates = newStates.getVnodeRepairStates();
+        assertThat(vnodeRepairStates).containsOnlyElementsOf(expectedStates);
+    }
+
+    private void assertClusterWideStateSameForVnodeAndSubrange(long to, long from, VnodeRepairState... states)
+    {
+        assertClusterWideVnodeStates(to, from, states);
+        assertClusterWideSubRangeStates(to, from, states);
+    }
+
+    private void assertClusterWideVnodeStates(long to, long from, VnodeRepairState... states)
+    {
+        VnodeRepairStateFactory vnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider, false);
+        assertClusterWideState(vnodeRepairStateFactory, to, from, VnodeRepairStatesImpl.class, states);
+    }
+
+    private void assertClusterWideSubRangeStates(long to, long from, VnodeRepairState... states)
+    {
+        VnodeRepairStateFactory subRangeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider, true);
+        assertClusterWideState(subRangeRepairStateFactory, to, from, SubRangeRepairStates.class, states);
+    }
+
+    private void assertClusterWideState(VnodeRepairStateFactory factory, long to, long from, Class<? extends VnodeRepairStates> expectedClass, VnodeRepairState... expectedStates)
+    {
+        assertClusterWideState(factory, to, from, expectedClass, Arrays.asList(expectedStates));
+    }
+
+    private void assertClusterWideState(VnodeRepairStateFactory factory, long to, long from, Class<? extends VnodeRepairStates> expectedClass, Collection<VnodeRepairState> expectedStates)
+    {
+        VnodeRepairStates states = factory.calculateClusterWideState(TABLE_REFERENCE, to, from);
+        assertThat(states).isInstanceOf(expectedClass);
+
+        Collection<VnodeRepairState> vnodeRepairStates = states.getVnodeRepairStates();
+        assertThat(vnodeRepairStates).containsOnlyElementsOf(expectedStates);
+    }
+
+    private void assertStateSameForVnodeAndSubrange(long to, long from, VnodeRepairState... states)
+    {
+        assertVnodeStates(to, from, states);
+        assertSubRangeStates(to, from, states);
+    }
+
+    private void assertVnodeStates(long to, long from, VnodeRepairState... states)
+    {
+        VnodeRepairStateFactory vnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider, false);
+        assertState(vnodeRepairStateFactory, to, from, VnodeRepairStatesImpl.class, states);
+    }
+
+    private void assertSubRangeStates(long to, long from, VnodeRepairState... states)
+    {
+        VnodeRepairStateFactory subRangeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider, true);
+        assertState(subRangeRepairStateFactory, to, from, SubRangeRepairStates.class, states);
+    }
+
+    private void assertState(VnodeRepairStateFactory factory, long to, long from, Class<? extends VnodeRepairStates> expectedClass, VnodeRepairState... expectedStates)
+    {
+        assertState(factory, to, from, expectedClass, Arrays.asList(expectedStates));
+    }
+
+    private void assertState(VnodeRepairStateFactory factory, long to, long from, Class<? extends VnodeRepairStates> expectedClass, Collection<VnodeRepairState> expectedStates)
+    {
+        VnodeRepairStates newStates = factory.calculateState(TABLE_REFERENCE, to, from);
         assertThat(newStates).isInstanceOf(expectedClass);
 
         Collection<VnodeRepairState> vnodeRepairStates = newStates.getVnodeRepairStates();
@@ -435,7 +662,7 @@ public class TestVnodeRepairStateFactoryImpl
         {
             assertThat(tableReference).isEqualTo(myTableReference);
 
-            return new MockedRepairEntryIterator(repairHistory.iterator(), predicate);
+            return new MockedRepairEntryIterator(repairHistory.iterator(), predicate, to, -1L);
         }
 
         @Override
@@ -443,7 +670,16 @@ public class TestVnodeRepairStateFactoryImpl
         {
             assertThat(tableReference).isEqualTo(myTableReference);
 
-            return new MockedRepairEntryIterator(repairHistory.iterator(), predicate);
+            return new MockedRepairEntryIterator(repairHistory.iterator(), predicate, to, from);
+        }
+
+        @Override
+        public Iterator<RepairEntry> iterate(UUID nodeId, TableReference tableReference, long to, long from,
+                Predicate<RepairEntry> predicate)
+        {
+            assertThat(tableReference).isEqualTo(myTableReference);
+
+            return new MockedRepairEntryIterator(repairHistory.iterator(), predicate, to, from);
         }
     }
 
@@ -451,11 +687,15 @@ public class TestVnodeRepairStateFactoryImpl
     {
         private final Iterator<RepairEntry> myBaseIterator;
         private final Predicate<RepairEntry> myPredicate;
+        private final long myTo;
+        private final long myFrom;
 
-        MockedRepairEntryIterator(Iterator<RepairEntry> baseIterator, Predicate<RepairEntry> predicate)
+        MockedRepairEntryIterator(Iterator<RepairEntry> baseIterator, Predicate<RepairEntry> predicate, long to, long from)
         {
             myBaseIterator = baseIterator;
             myPredicate = predicate;
+            myTo = to;
+            myFrom = from;
         }
 
         @Override
@@ -464,9 +704,22 @@ public class TestVnodeRepairStateFactoryImpl
             while(myBaseIterator.hasNext())
             {
                 RepairEntry next = myBaseIterator.next();
-                if (myPredicate.apply(next))
+                if (next.getFinishedAt() <= myTo)
                 {
-                    return next;
+                    if (myFrom != -1L)
+                    {
+                        if (next.getStartedAt() >= myFrom && myPredicate.apply(next))
+                        {
+                            return next;
+                        }
+                    }
+                    else
+                    {
+                        if (myPredicate.apply(next))
+                        {
+                            return next;
+                        }
+                    }
                 }
             }
 

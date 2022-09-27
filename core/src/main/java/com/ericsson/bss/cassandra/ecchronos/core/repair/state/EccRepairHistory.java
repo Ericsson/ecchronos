@@ -145,13 +145,25 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
     public Iterator<RepairEntry> iterate(TableReference tableReference, long to, long from,
             Predicate<RepairEntry> predicate)
     {
+        return iterate(localNode.getId(), tableReference, to, from, predicate);
+    }
+
+    @Override
+    public Iterator<RepairEntry> iterate(UUID nodeId, TableReference tableReference, long to, long from,
+            Predicate<RepairEntry> predicate)
+    {
         UUID start = Uuids.startOf(from);
         UUID finish = Uuids.endOf(to);
 
-        Statement statement = iterateStatement.bind(tableReference.getId(), localNode.getId(), start, finish);
+        boolean clusterWide = false;
+        if (!nodeId.equals(localNode.getId()))
+        {
+            clusterWide = true;
+        }
+        Statement statement = iterateStatement.bind(tableReference.getId(), nodeId, start, finish);
         ResultSet resultSet = execute(statement);
 
-        return new RepairEntryIterator(tableReference, resultSet, predicate);
+        return new RepairEntryIterator(tableReference, resultSet, predicate, clusterWide);
     }
 
     private ResultSet execute(Statement statement)
@@ -169,12 +181,14 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
         private final TableReference tableReference;
         private final Iterator<Row> rowIterator;
         private final Predicate<RepairEntry> predicate;
+        private final boolean clusterWide;
 
-        RepairEntryIterator(TableReference tableReference, ResultSet resultSet, Predicate<RepairEntry> predicate)
+        RepairEntryIterator(TableReference tableReference, ResultSet resultSet, Predicate<RepairEntry> predicate, boolean clusterWide)
         {
             this.tableReference = tableReference;
             this.rowIterator = resultSet.iterator();
             this.predicate = predicate;
+            this.clusterWide = clusterWide;
         }
 
         @Override
@@ -186,7 +200,7 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
 
                 if (validateFields(row))
                 {
-                    RepairEntry repairEntry = buildFrom(row);
+                    RepairEntry repairEntry = buildFrom(row, clusterWide);
                     if (repairEntry != null && predicate.apply(repairEntry))
                     {
                         return repairEntry;
@@ -197,7 +211,7 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
             return endOfData();
         }
 
-        private RepairEntry buildFrom(Row row)
+        private RepairEntry buildFrom(Row row, boolean clusterWide)
         {
             long rangeBegin = Long.parseLong(row.getString(COLUMN_RANGE_BEGIN));
             long rangeEnd = Long.parseLong(row.getString(COLUMN_RANGE_END));
@@ -210,7 +224,15 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
             {
                 finishedAt = finished.toEpochMilli();
             }
-            Set<DriverNode> nodes = replicationState.getNodes(tableReference, tokenRange);
+            Set<DriverNode> nodes;
+            if (clusterWide)
+            {
+                nodes = replicationState.getNodesClusterWide(tableReference, tokenRange);
+            }
+            else
+            {
+                nodes = replicationState.getNodes(tableReference, tokenRange);
+            }
             if (nodes == null)
             {
                 LOG.debug("Token range {} was not found in metadata", tokenRange);

@@ -31,10 +31,20 @@ public class VnodeRepairState
     private final ImmutableSet<DriverNode> myReplicas;
     private final long myStartedAt;
     private final long myFinishedAt;
+    private final long myRepairTime;
 
     public VnodeRepairState(LongTokenRange tokenRange, ImmutableSet<DriverNode> replicas, long startedAt)
     {
         this(tokenRange, replicas, startedAt, UNREPAIRED);
+    }
+
+    public VnodeRepairState(LongTokenRange tokenRange, ImmutableSet<DriverNode> replicas, long startedAt, long finishedAt, long repairTime)
+    {
+        myTokenRange = tokenRange;
+        myReplicas = replicas;
+        myStartedAt = startedAt;
+        myFinishedAt = finishedAt;
+        myRepairTime = repairTime;
     }
 
     public VnodeRepairState(LongTokenRange tokenRange, ImmutableSet<DriverNode> replicas, long startedAt, long finishedAt)
@@ -43,6 +53,15 @@ public class VnodeRepairState
         myReplicas = replicas;
         myStartedAt = startedAt;
         myFinishedAt = finishedAt;
+        if (myFinishedAt != UNREPAIRED)
+        {
+            myRepairTime = myFinishedAt - myStartedAt;
+        }
+        else
+        {
+            myRepairTime = 0;
+        }
+
     }
 
     public LongTokenRange getTokenRange()
@@ -70,6 +89,11 @@ public class VnodeRepairState
         return myStartedAt;
     }
 
+    public long getRepairTime()
+    {
+        return myRepairTime;
+    }
+
     /**
      * Check if the vnodes are the same.
      *
@@ -91,6 +115,7 @@ public class VnodeRepairState
                 ", myReplicas=" + myReplicas +
                 ", myStartedAt=" + myStartedAt +
                 ", myFinishedAt=" + myFinishedAt +
+                ", myRepairTime=" + myRepairTime +
                 '}';
     }
 
@@ -102,6 +127,7 @@ public class VnodeRepairState
         VnodeRepairState that = (VnodeRepairState) o;
         return myStartedAt == that.myStartedAt &&
                 myFinishedAt == that.myFinishedAt &&
+                myRepairTime == that.myRepairTime &&
                 Objects.equals(myTokenRange, that.myTokenRange) &&
                 Objects.equals(myReplicas, that.myReplicas);
     }
@@ -109,6 +135,6 @@ public class VnodeRepairState
     @Override
     public int hashCode()
     {
-        return Objects.hash(myTokenRange, myReplicas, myStartedAt, myFinishedAt);
+        return Objects.hash(myTokenRange, myReplicas, myStartedAt, myFinishedAt, myRepairTime);
     }
 }

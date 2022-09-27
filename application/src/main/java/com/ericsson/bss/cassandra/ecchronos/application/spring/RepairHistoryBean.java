@@ -37,8 +37,11 @@ public class RepairHistoryBean
     private final RepairHistory repairHistory;
     private final RepairHistoryProvider repairHistoryProvider;
 
-    public RepairHistoryBean(Config configuration, NativeConnectionProvider nativeConnectionProvider,
-            NodeResolver nodeResolver, StatementDecorator statementDecorator, ReplicationState replicationState)
+    public RepairHistoryBean(final Config configuration,
+                             final NativeConnectionProvider nativeConnectionProvider,
+                             final NodeResolver nodeResolver,
+                             final StatementDecorator statementDecorator,
+                             final ReplicationState replicationState)
     {
         Node node = nativeConnectionProvider.getLocalNode();
         CqlSession session = nativeConnectionProvider.getSession();
@@ -91,9 +94,10 @@ public class RepairHistoryBean
         return repairHistoryProvider;
     }
 
-    private RepairHistoryProvider createCassandraHistoryProvider(Config.GlobalRepairConfig repairConfig,
-            CqlSession session,
-            NodeResolver nodeResolver, StatementDecorator statementDecorator)
+    private RepairHistoryProvider createCassandraHistoryProvider(final Config.GlobalRepairConfig repairConfig,
+                                                                 final CqlSession session,
+                                                                 final NodeResolver nodeResolver,
+                                                                 final StatementDecorator statementDecorator)
     {
         return new RepairHistoryProviderImpl(nodeResolver, session, statementDecorator,
                 repairConfig.getHistoryLookback().getInterval(TimeUnit.MILLISECONDS));

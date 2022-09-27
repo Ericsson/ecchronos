@@ -33,7 +33,7 @@ public interface OnDemandRepairScheduler
      * @return A view of the scheduled job.
      * @throws EcChronosException Thrown when the keyspace/table doesn't exist.
      */
-    RepairJobView scheduleJob(TableReference tableReference) throws EcChronosException;
+    OnDemandRepairJobView scheduleJob(TableReference tableReference) throws EcChronosException;
 
     /**
      * Create a repair that is slated to run once for a specified table for all replicas.
@@ -43,12 +43,12 @@ public interface OnDemandRepairScheduler
      * @return Views of the scheduled job.
      * @throws EcChronosException Thrown when the keyspace/table doesn't exist.
      */
-    List<RepairJobView> scheduleClusterWideJob(TableReference tableReference) throws EcChronosException;
+    List<OnDemandRepairJobView> scheduleClusterWideJob(TableReference tableReference) throws EcChronosException;
 
-    List<RepairJobView> getAllClusterWideRepairJobs();
+    List<OnDemandRepairJobView> getAllClusterWideRepairJobs();
 
     /**
      * @return the list of all repair jobs.
      */
-    List<RepairJobView> getAllRepairJobs();
+    List<OnDemandRepairJobView> getAllRepairJobs();
 }

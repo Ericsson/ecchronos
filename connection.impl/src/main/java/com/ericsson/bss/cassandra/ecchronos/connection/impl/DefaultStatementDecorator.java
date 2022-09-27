@@ -22,7 +22,7 @@ import org.osgi.service.component.annotations.Component;
 public class DefaultStatementDecorator implements StatementDecorator
 {
     @Override
-    public Statement apply(Statement statement)
+    public final Statement apply(final Statement statement)
     {
         return statement;
     }

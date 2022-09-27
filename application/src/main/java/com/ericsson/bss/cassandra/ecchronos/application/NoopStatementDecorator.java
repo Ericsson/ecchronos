@@ -20,13 +20,13 @@ import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 
 public class NoopStatementDecorator implements StatementDecorator
 {
-    public NoopStatementDecorator(Config config) // NOPMD
+    public NoopStatementDecorator(final Config config) // NOPMD
     {
         // Nothing to do
     }
 
     @Override
-    public Statement apply(Statement statement)
+    public final Statement apply(final Statement statement)
     {
         return statement;
     }

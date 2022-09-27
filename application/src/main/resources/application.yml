@@ -42,18 +42,26 @@ springdoc:
 #server:
 #  ssl:
 #    enabled: false
-#    client-auth: <client authentication>
+#    client-auth: <client auth, any of "need", "want" or "none">
+#    enabled-protocols: <enabled protocols, for example "TLSv1.2">
+#    ciphers: <enabled cipher suites>
+#
 # SSL configuration using certificate stores
 #    key-store: <path to keystore>
 #    key-store-password: <password>
 #    key-store-type: <keystore type>
 #    key-alias: <key alias>
 #    key-password: <key password>
+#    trust-store: <path to truststore>
+#    trust-store-password: <password>
+#    trust-store-type: <keystore type>
+#
 # SSL configuration using certificates in PEM format
 # This configuration takes precedence when certificate store settings are also specified
 # Only certificates using RSA algorithm are supported
 #    certificate: <path to certificate>
 #    certificate-private-key: <path to certificate private key>
 #    trust-certificate: <path to certificate>
+#
 # Rate at which certificates are reloaded automatically
 #    refresh-rate-in-ms: 60000

@@ -53,7 +53,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 @RunWith(MockitoJUnitRunner.class)
 public class TestOnDemandRepairSchedulerImpl
 {
-    private static final TableReference TABLE_REFERENCE = tableReference("keyspace", "table");
+    private static final TableReference TABLE_REFERENCE = tableReference("keyspace1", "table1");
 
     @Mock
     private JmxProxyFactory jmxProxyFactory;
@@ -102,7 +102,7 @@ public class TestOnDemandRepairSchedulerImpl
         when(myKeyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(Optional.of(myTableMetadata));
 
         verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
-        RepairJobView repairJobView = repairScheduler.scheduleJob(TABLE_REFERENCE);
+        OnDemandRepairJobView repairJobView = repairScheduler.scheduleJob(TABLE_REFERENCE);
         verify(scheduleManager).schedule(any(ScheduledJob.class));
 
         assertTableViewExist(repairScheduler, repairJobView);
@@ -122,8 +122,8 @@ public class TestOnDemandRepairSchedulerImpl
         when(myKeyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(Optional.of(myTableMetadata));
 
         verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
-        RepairJobView repairJobView = repairScheduler.scheduleJob(TABLE_REFERENCE);
-        RepairJobView repairJobView2 = repairScheduler.scheduleJob(TABLE_REFERENCE);
+        OnDemandRepairJobView repairJobView = repairScheduler.scheduleJob(TABLE_REFERENCE);
+        OnDemandRepairJobView repairJobView2 = repairScheduler.scheduleJob(TABLE_REFERENCE);
         verify(scheduleManager, times(2)).schedule(any(ScheduledJob.class));
 
         assertTableViewExist(repairScheduler, repairJobView, repairJobView2);
@@ -198,9 +198,9 @@ public class TestOnDemandRepairSchedulerImpl
         repairScheduler.scheduleJob(null);
     }
 
-    private void assertTableViewExist(OnDemandRepairSchedulerImpl repairScheduler, RepairJobView... expectedViews)
+    private void assertTableViewExist(OnDemandRepairSchedulerImpl repairScheduler, OnDemandRepairJobView... expectedViews)
     {
-        List<RepairJobView> repairJobViews = repairScheduler.getActiveRepairJobs();
+        List<OnDemandRepairJobView> repairJobViews = repairScheduler.getActiveRepairJobs();
         assertThat(repairJobViews).containsExactlyInAnyOrder(expectedViews);
     }
 

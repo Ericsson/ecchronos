@@ -44,16 +44,22 @@ public class ScheduleManagerService implements ScheduleManager
 
     private static final long DEFAULT_SCHEDULE_INTERVAL_IN_SECONDS = 60L;
 
-    @Reference(service = RunPolicy.class, cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC, bind = "bindRunPolicy", unbind = "unbindRunPolicy")
+    @Reference(service = RunPolicy.class,
+            cardinality = ReferenceCardinality.MULTIPLE,
+            policy = ReferencePolicy.DYNAMIC,
+            bind = "bindRunPolicy",
+            unbind = "unbindRunPolicy")
     private final Set<RunPolicy> myRunPolicies = Sets.newConcurrentHashSet();
 
-    @Reference (service = LockFactory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference (service = LockFactory.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile LockFactory myLockFactory;
 
     private volatile ScheduleManagerImpl myDelegateSchedulerManager;
 
     @Activate
-    public synchronized void activate(Configuration configuration)
+    public final synchronized void activate(final Configuration configuration)
     {
         long scheduleIntervalInSeconds = configuration.scheduleIntervalInSeconds();
 
@@ -69,24 +75,24 @@ public class ScheduleManagerService implements ScheduleManager
     }
 
     @Deactivate
-    public synchronized void deactivate()
+    public final synchronized void deactivate()
     {
         myDelegateSchedulerManager.close();
     }
 
     @Override
-    public void schedule(ScheduledJob job)
+    public final void schedule(final ScheduledJob job)
     {
         myDelegateSchedulerManager.schedule(job);
     }
 
     @Override
-    public void deschedule(ScheduledJob job)
+    public final void deschedule(final ScheduledJob job)
     {
         myDelegateSchedulerManager.deschedule(job);
     }
 
-    public synchronized void bindRunPolicy(RunPolicy runPolicy)
+    public final synchronized void bindRunPolicy(final RunPolicy runPolicy)
     {
         if (myRunPolicies.add(runPolicy))
         {
@@ -102,7 +108,7 @@ public class ScheduleManagerService implements ScheduleManager
         }
     }
 
-    public synchronized void unbindRunPolicy(RunPolicy runPolicy)
+    public final synchronized void unbindRunPolicy(final RunPolicy runPolicy)
     {
         if (myRunPolicies.remove(runPolicy))
         {
@@ -121,7 +127,8 @@ public class ScheduleManagerService implements ScheduleManager
     @ObjectClassDefinition
     public @interface Configuration
     {
-        @AttributeDefinition(name = "Schedule interval in seconds", description = "The interval in which jobs will be scheduled to run")
+        @AttributeDefinition(name = "Schedule interval in seconds",
+                description = "The interval in which jobs will be scheduled to run")
         long scheduleIntervalInSeconds() default DEFAULT_SCHEDULE_INTERVAL_IN_SECONDS;
     }
 }

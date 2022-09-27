@@ -38,16 +38,20 @@ public class TableStorageStatesService implements TableStorageStates
 {
     private static final short DEFAULT_UPDATE_DELAY_IN_SECONDS = 60;
 
-    @Reference(service = ReplicatedTableProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = ReplicatedTableProvider.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile ReplicatedTableProvider myReplicatedTableProvider;
 
-    @Reference (service = JmxProxyFactory.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference (service = JmxProxyFactory.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile JmxProxyFactory myJmxProxyFactory;
 
     private volatile TableStorageStatesImpl myDelegateTableStorageStates;
 
     @Activate
-    public synchronized void activate(Configuration configuration)
+    public final synchronized void activate(final Configuration configuration)
     {
         long updateDelayInSeconds = configuration.updateStartupDelayInSeconds();
 
@@ -59,19 +63,19 @@ public class TableStorageStatesService implements TableStorageStates
     }
 
     @Deactivate
-    public synchronized void deactivate()
+    public final synchronized void deactivate()
     {
         myDelegateTableStorageStates.close();
     }
 
     @Override
-    public long getDataSize(TableReference tableReference)
+    public final long getDataSize(final TableReference tableReference)
     {
         return myDelegateTableStorageStates.getDataSize(tableReference);
     }
 
     @Override
-    public long getDataSize()
+    public final long getDataSize()
     {
         return myDelegateTableStorageStates.getDataSize();
     }
@@ -79,7 +83,8 @@ public class TableStorageStatesService implements TableStorageStates
     @ObjectClassDefinition
     public @interface Configuration
     {
-        @AttributeDefinition(name = "Startup delay of fetching storage state", description = "The interval in seconds between updates of the storage states of tables")
+        @AttributeDefinition(name = "Startup delay of fetching storage state",
+                description = "The interval in seconds between updates of the storage states of tables")
         long updateStartupDelayInSeconds() default DEFAULT_UPDATE_DELAY_IN_SECONDS;
     }
 }

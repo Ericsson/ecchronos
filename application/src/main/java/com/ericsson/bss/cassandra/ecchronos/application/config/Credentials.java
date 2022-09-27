@@ -27,58 +27,62 @@ public class Credentials
         // Default constructor
     }
 
-    public Credentials(boolean enabled, String username, String password)
+    public Credentials(final boolean enabledValue, final String aUsername, final String aPassword)
     {
-        this.enabled = enabled;
-        this.username = username;
-        this.password = password;
+        this.enabled = enabledValue;
+        this.username = aUsername;
+        this.password = aPassword;
     }
 
-    public boolean isEnabled()
+    public final boolean isEnabled()
     {
         return enabled;
     }
 
-    public void setEnabled(boolean enabled)
+    public final void setEnabled(final boolean enabledValue)
     {
-        this.enabled = enabled;
+        this.enabled = enabledValue;
     }
 
-    public String getUsername()
+    public final String getUsername()
     {
         return username;
     }
 
-    public void setUsername(String username)
+    public final void setUsername(final String aUsername)
     {
-        this.username = username;
+        this.username = aUsername;
     }
 
-    public String getPassword()
+    public final String getPassword()
     {
         return password;
     }
 
-    public void setPassword(String password)
+    public final void setPassword(final String aPassword)
     {
-        this.password = password;
+        this.password = aPassword;
     }
 
     @Override
-    public boolean equals(Object o)
+    public final boolean equals(final Object o)
     {
         if (this == o)
+        {
             return true;
+        }
         if (o == null || getClass() != o.getClass())
+        {
             return false;
+        }
         Credentials that = (Credentials) o;
-        return enabled == that.enabled &&
-                username.equals(that.username) &&
-                password.equals(that.password);
+        return enabled == that.enabled
+                && username.equals(that.username)
+                && password.equals(that.password);
     }
 
     @Override
-    public int hashCode()
+    public final int hashCode()
     {
         return Objects.hash(enabled, username, password);
     }

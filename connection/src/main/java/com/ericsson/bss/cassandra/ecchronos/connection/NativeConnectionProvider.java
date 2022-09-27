@@ -21,7 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 /**
- * Provider for native connections
+ * Provider for native connections.
  */
 public interface NativeConnectionProvider extends Closeable
 {
@@ -32,5 +32,7 @@ public interface NativeConnectionProvider extends Closeable
     boolean getRemoteRouting();
 
     @Override
-    default void close() throws IOException {}
+    default void close() throws IOException
+    {
+    }
 }

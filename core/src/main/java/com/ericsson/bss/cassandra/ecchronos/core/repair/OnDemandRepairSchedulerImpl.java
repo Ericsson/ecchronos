@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,28 +106,28 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     }
 
     @Override
-    public List<RepairJobView> scheduleClusterWideJob(TableReference tableReference) throws EcChronosException
+    public List<OnDemandRepairJobView> scheduleClusterWideJob(TableReference tableReference) throws EcChronosException
     {
-        RepairJobView currentJob = scheduleJob(tableReference, true);
+        OnDemandRepairJobView currentJob = scheduleJob(tableReference, true);
         return getAllClusterWideRepairJobs().stream()
                 .filter(j -> j.getId().equals(currentJob.getId()))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public RepairJobView scheduleJob(TableReference tableReference) throws EcChronosException
+    public OnDemandRepairJobView scheduleJob(TableReference tableReference) throws EcChronosException
     {
         return scheduleJob(tableReference, false);
     }
 
-    private RepairJobView scheduleJob(TableReference tableReference, boolean isClusterWide) throws EcChronosException
+    private OnDemandRepairJobView scheduleJob(TableReference tableReference, boolean isClusterWide) throws EcChronosException
     {
         synchronized (myLock)
         {
             if (tableReference != null)
             {
-                Optional<KeyspaceMetadata> ks = mySession.getMetadata().getKeyspace(tableReference.getKeyspace());
-                if (ks.isPresent() && ks.get().getTable(tableReference.getTable()).isPresent())
+                Optional<KeyspaceMetadata> ks = Metadata.getKeyspace(mySession, tableReference.getKeyspace());
+                if (ks.isPresent() && Metadata.getTable(ks.get(), tableReference.getTable()).isPresent())
                 {
                     OnDemandRepairJob job = getRepairJob(tableReference, isClusterWide);
                     myScheduledJobs.put(job.getId(), job);
@@ -151,7 +152,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
         }
     }
 
-    public List<RepairJobView> getActiveRepairJobs()
+    public List<OnDemandRepairJobView> getActiveRepairJobs()
     {
         synchronized (myLock)
         {
@@ -162,7 +163,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     }
 
     @Override
-    public List<RepairJobView> getAllClusterWideRepairJobs()
+    public List<OnDemandRepairJobView> getAllClusterWideRepairJobs()
     {
         return myOnDemandStatus.getAllClusterWideJobs().stream()
                 .map(job -> getOngoingRepairJob(job))
@@ -171,7 +172,7 @@ public class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Clo
     }
 
     @Override
-    public List<RepairJobView> getAllRepairJobs()
+    public List<OnDemandRepairJobView> getAllRepairJobs()
     {
         return myOnDemandStatus.getAllJobs(myReplicationState).stream()
                 .map(job -> getOngoingRepairJob(job))

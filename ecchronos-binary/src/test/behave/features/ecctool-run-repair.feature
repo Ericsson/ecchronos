@@ -21,6 +21,7 @@ Feature: ecctool run-repair
     Given we have access to ecctool
     When we run local repair
     Then the repair output should contain a valid header
+    And the repair output should contain a valid repair row for keyspaceWithCamelCase.tableWithCamelCase
     And the repair output should contain a valid repair row for test2.table2
     And the repair output should contain a valid repair row for test2.table1
     And the repair output should contain a valid repair row for test.table2
@@ -52,6 +53,8 @@ Feature: ecctool run-repair
     Given we have access to ecctool
     When we run repair
     Then the repair output should contain a valid header
+    And the repair output should contain a valid repair row for keyspaceWithCamelCase.tableWithCamelCase
+    And the repair output should contain a valid repair row for keyspaceWithCamelCase.tableWithCamelCase
     And the repair output should contain a valid repair row for test.table2
     And the repair output should contain a valid repair row for test.table2
     And the repair output should contain a valid repair row for test.table1

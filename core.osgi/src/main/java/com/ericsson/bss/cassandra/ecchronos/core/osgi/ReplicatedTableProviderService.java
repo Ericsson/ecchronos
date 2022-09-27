@@ -43,7 +43,7 @@ public class ReplicatedTableProviderService implements ReplicatedTableProvider
     private volatile TableReferenceFactory myTableReferenceFactory;
 
     @Activate
-    public void activate()
+    public final void activate()
     {
         CqlSession session = myNativeConnectionProvider.getSession();
         Node localhost = myNativeConnectionProvider.getLocalNode();
@@ -53,13 +53,13 @@ public class ReplicatedTableProviderService implements ReplicatedTableProvider
     }
 
     @Override
-    public Set<TableReference> getAll()
+    public final Set<TableReference> getAll()
     {
         return myDelegateReplicatedTableProvider.getAll();
     }
 
     @Override
-    public boolean accept(String keyspace)
+    public final boolean accept(final String keyspace)
     {
         return myDelegateReplicatedTableProvider.accept(keyspace);
     }

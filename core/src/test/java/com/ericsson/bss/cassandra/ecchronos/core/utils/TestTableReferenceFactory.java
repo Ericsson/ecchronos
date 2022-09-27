@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
+import com.datastax.oss.driver.internal.core.util.Strings;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -64,23 +65,34 @@ public class TestTableReferenceFactory
     @Test
     public void testGetKeyspaceAndTableName()
     {
-        mockTable("keyspace", "table");
+        mockTable("keyspace1", "table1");
 
-        TableReference tableReference = tableReferenceFactory.forTable("keyspace", "table");
+        TableReference tableReference = tableReferenceFactory.forTable("keyspace1", "table1");
 
-        assertThat(tableReference.getKeyspace()).isEqualTo("keyspace");
-        assertThat(tableReference.getTable()).isEqualTo("table");
+        assertThat(tableReference.getKeyspace()).isEqualTo("keyspace1");
+        assertThat(tableReference.getTable()).isEqualTo("table1");
+    }
+
+    @Test
+    public void testGetKeyspaceAndTableNameWithCamelCase()
+    {
+        mockTable("keyspaceWithCamelCase1", "tableWithCamelCase1");
+
+        TableReference tableReference = tableReferenceFactory.forTable("keyspaceWithCamelCase1", "tableWithCamelCase1");
+
+        assertThat(tableReference.getKeyspace()).isEqualTo("keyspaceWithCamelCase1");
+        assertThat(tableReference.getTable()).isEqualTo("tableWithCamelCase1");
     }
 
     @Test
     public void testNewTableIsNotEqual()
     {
-        mockTable("keyspace", "table");
+        mockTable("keyspace1", "table1");
 
-        TableReference tableReference1 = tableReferenceFactory.forTable("keyspace", "table");
+        TableReference tableReference1 = tableReferenceFactory.forTable("keyspace1", "table1");
 
-        mockTable("keyspace", "table"); // New table uuid
-        TableReference tableReference2 = tableReferenceFactory.forTable("keyspace", "table");
+        mockTable("keyspace1", "table1"); // New table uuid
+        TableReference tableReference2 = tableReferenceFactory.forTable("keyspace1", "table1");
 
         assertThat(tableReference1).isNotEqualTo(tableReference2);
     }
@@ -88,10 +100,10 @@ public class TestTableReferenceFactory
     @Test
     public void testSameTableIsEqual()
     {
-        mockTable("keyspace", "table");
+        mockTable("keyspace1", "table1");
 
-        TableReference tableReference1 = tableReferenceFactory.forTable("keyspace", "table");
-        TableReference tableReference2 = tableReferenceFactory.forTable("keyspace", "table");
+        TableReference tableReference1 = tableReferenceFactory.forTable("keyspace1", "table1");
+        TableReference tableReference2 = tableReferenceFactory.forTable("keyspace1", "table1");
 
         assertThat(tableReference1).isEqualTo(tableReference2);
     }
@@ -99,11 +111,11 @@ public class TestTableReferenceFactory
     @Test
     public void testDifferentKeyspacesNotEqual()
     {
-        mockTable("keyspace", "table");
-        mockTable("keyspace2", "table");
+        mockTable("keyspace1", "table1");
+        mockTable("keyspace2", "table1");
 
-        TableReference tableReference1 = tableReferenceFactory.forTable("keyspace", "table");
-        TableReference tableReference2 = tableReferenceFactory.forTable("keyspace2", "table");
+        TableReference tableReference1 = tableReferenceFactory.forTable("keyspace1", "table1");
+        TableReference tableReference2 = tableReferenceFactory.forTable("keyspace2", "table1");
 
         assertThat(tableReference1).isNotEqualTo(tableReference2);
         assertThat(tableReference1.hashCode()).isNotEqualTo(tableReference2.hashCode());
@@ -112,11 +124,11 @@ public class TestTableReferenceFactory
     @Test
     public void testDifferentTablesNotEqual()
     {
-        mockTable("keyspace", "table");
-        mockTable("keyspace", "table2");
+        mockTable("keyspace1", "table1");
+        mockTable("keyspace1", "table2");
 
-        TableReference tableReference1 = tableReferenceFactory.forTable("keyspace", "table");
-        TableReference tableReference2 = tableReferenceFactory.forTable("keyspace", "table2");
+        TableReference tableReference1 = tableReferenceFactory.forTable("keyspace1", "table1");
+        TableReference tableReference2 = tableReferenceFactory.forTable("keyspace1", "table2");
 
         assertThat(tableReference1).isNotEqualTo(tableReference2);
         assertThat(tableReference1.hashCode()).isNotEqualTo(tableReference2.hashCode());
@@ -138,10 +150,25 @@ public class TestTableReferenceFactory
     }
 
     @Test
+    public void testForKeyspaceKeyspaceWithCamelCase() throws EcChronosException
+    {
+        Set<String> tables = new HashSet<>();
+        tables.add("table1");
+        tables.add("table2");
+        mockKeyspace("keyspaceWithCamelCase111", tables);
+        mockKeyspace("keyspace222", Collections.singleton("table1"));
+        Set<TableReference> tableReferences = tableReferenceFactory.forKeyspace("keyspaceWithCamelCase111");
+        assertThat(tableReferences).hasSize(2);
+        assertThat(tableReferences.stream()
+                .filter(t -> t.getKeyspace().equals("keyspaceWithCamelCase111"))
+                .collect(Collectors.toList())).isNotEmpty();
+    }
+
+    @Test
     public void testForKeyspaceNoTables() throws EcChronosException
     {
-        mockEmptyKeyspace("keyspaceEmpty");
-        Set<TableReference> tableReferences = tableReferenceFactory.forKeyspace("keyspaceEmpty");
+        mockEmptyKeyspace("keyspace_empty");
+        Set<TableReference> tableReferences = tableReferenceFactory.forKeyspace("keyspace_empty");
         assertThat(tableReferences).hasSize(0);
     }
 
@@ -175,6 +202,30 @@ public class TestTableReferenceFactory
                 .collect(Collectors.toList())).hasSize(1);
     }
 
+    @Test
+    public void testForClusterWithCamelCase()
+    {
+        Set<String> firstKsTables = new HashSet<>();
+        firstKsTables.add("table1");
+        firstKsTables.add("tablEE2");
+        mockKeyspace("firstKs", firstKsTables);
+        mockKeyspace("secondks", Collections.singleton("table1"));
+        mockKeyspace("thirdKs", Collections.singleton("table1"));
+
+        when(mockMetadata.getKeyspaces()).thenReturn(mockedKeyspaces);
+        Set<TableReference> tableReferences = tableReferenceFactory.forCluster();
+        assertThat(tableReferences).isNotEmpty();
+        assertThat(tableReferences.stream()
+                .filter(t -> t.getKeyspace().equals("firstKs"))
+                .collect(Collectors.toList())).hasSize(2);
+        assertThat(tableReferences.stream()
+                .filter(t -> t.getKeyspace().equals("secondks"))
+                .collect(Collectors.toList())).hasSize(1);
+        assertThat(tableReferences.stream()
+                .filter(t -> t.getKeyspace().equals("thirdKs"))
+                .collect(Collectors.toList())).hasSize(1);
+    }
+
     private void mockKeyspace(String keyspace, Set<String> tables)
     {
         CqlIdentifier keySpaceIdentifier = CqlIdentifier.fromInternal(keyspace);
@@ -194,21 +245,28 @@ public class TestTableReferenceFactory
             when(mockedKeyspace.getTables()).thenReturn(tableMetadatas);
             return mockedKeyspace;
         });
-        when(mockMetadata.getKeyspace(eq(keyspace))).thenReturn(Optional.of(keyspaceMetadata));
+        if (Strings.needsDoubleQuotes(keyspace))
+        {
+            when(mockMetadata.getKeyspace(eq("\""+keyspace+"\""))).thenReturn(Optional.of(keyspaceMetadata));
+        }
+        else
+        {
+            when(mockMetadata.getKeyspace(eq(keyspace))).thenReturn(Optional.of(keyspaceMetadata));
+        }
     }
 
     @Test
     public void testNullWithoutKeyspace()
     {
-        assertThat(tableReferenceFactory.forTable("keyspace", "table")).isNull();
+        assertThat(tableReferenceFactory.forTable("keyspace1", "table1")).isNull();
     }
 
     @Test
     public void testNullWithoutTable()
     {
-        mockEmptyKeyspace("keyspace");
+        mockEmptyKeyspace("keyspace1");
 
-        assertThat(tableReferenceFactory.forTable("keyspace", "table")).isNull();
+        assertThat(tableReferenceFactory.forTable("keyspace1", "table1")).isNull();
     }
 
     private void mockEmptyKeyspace(String keyspace)
@@ -225,9 +283,9 @@ public class TestTableReferenceFactory
     @Test
     public void testTableDoesNotExist()
     {
-        TableMetadata tableMetadata = mockRemovedTable("keyspace", "table");
+        TableMetadata tableMetadata = mockRemovedTable("keyspace1", "table1");
 
-        assertThat(tableReferenceFactory.forTable("keyspace", "table")).isNull();
+        assertThat(tableReferenceFactory.forTable("keyspace1", "table1")).isNull();
 
         TableReference tableReference = tableReferenceFactory.forTable(tableMetadata);
         assertThat(tableReference.getKeyspace()).isEqualTo(tableMetadata.getKeyspace().asInternal());
@@ -268,7 +326,21 @@ public class TestTableReferenceFactory
         when(tableMetadata.getName()).thenReturn(CqlIdentifier.fromInternal(table));
         doReturn(keyspaceMetadata.getName()).when(tableMetadata).getKeyspace();
 
-        when(keyspaceMetadata.getTable(eq(table))).thenReturn(Optional.of(tableMetadata));
-        when(mockMetadata.getKeyspace(eq(keyspace))).thenReturn(Optional.of(keyspaceMetadata));
+        if (Strings.needsDoubleQuotes(table))
+        {
+            when(keyspaceMetadata.getTable(eq("\""+table+"\""))).thenReturn(Optional.of(tableMetadata));
+        }
+        else
+        {
+            when(keyspaceMetadata.getTable(eq(table))).thenReturn(Optional.of(tableMetadata));
+        }
+        if (Strings.needsDoubleQuotes(keyspace))
+        {
+            when(mockMetadata.getKeyspace(eq("\""+keyspace+"\""))).thenReturn(Optional.of(keyspaceMetadata));
+        }
+        else
+        {
+            when(mockMetadata.getKeyspace(eq(keyspace))).thenReturn(Optional.of(keyspaceMetadata));
+        }
     }
 }

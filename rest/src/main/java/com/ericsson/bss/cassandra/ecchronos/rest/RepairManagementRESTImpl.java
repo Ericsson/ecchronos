@@ -15,35 +15,44 @@
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.RepairInfo;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.RepairStats;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.Schedule;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.RepairStatsProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.info.License;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -57,11 +66,13 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @RestController
 @OpenAPIDefinition(info = @Info(
         title = "ecChronos REST API",
-        description = "ecChronos REST API can be used to view the status of schedules and repairs as well as run manual repairs",
+        description = "ecChronos REST API can be used to view the status of schedules and repairs as well as run"
+                + " manual repairs",
         license = @License(
                 name = "Apache 2.0",
                 url = "https://www.apache.org/licenses/LICENSE-2.0"),
         version = "1.0.0"))
+@SuppressWarnings("PMD.GodClass") // We might want to refactor
 public class RepairManagementRESTImpl implements RepairManagementREST
 {
     private static final String ROOT = "/repair-management/";
@@ -80,27 +91,34 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     @Autowired
     private final ReplicatedTableProvider myReplicatedTableProvider;
 
-    public RepairManagementRESTImpl(RepairScheduler repairScheduler, OnDemandRepairScheduler demandRepairScheduler,
-            TableReferenceFactory tableReferenceFactory, ReplicatedTableProvider replicatedTableProvider)
+    @Autowired
+    private final RepairStatsProvider myRepairStatsProvider;
+
+    public RepairManagementRESTImpl(final RepairScheduler repairScheduler,
+                                    final OnDemandRepairScheduler demandRepairScheduler,
+                                    final TableReferenceFactory tableReferenceFactory,
+                                    final ReplicatedTableProvider replicatedTableProvider,
+                                    final RepairStatsProvider repairStatsProvider)
     {
         myRepairScheduler = repairScheduler;
         myOnDemandRepairScheduler = demandRepairScheduler;
         myTableReferenceFactory = tableReferenceFactory;
         myReplicatedTableProvider = replicatedTableProvider;
+        myRepairStatsProvider = repairStatsProvider;
     }
 
     @Override
     @GetMapping(value = ENDPOINT_PREFIX + "/schedules",
                 produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "get-schedules")
-    public ResponseEntity<List<Schedule>> getSchedules(@RequestParam(required = false) String keyspace,
-                                                       @RequestParam(required = false) String table)
+    public final ResponseEntity<List<Schedule>> getSchedules(@RequestParam(required = false) final String keyspace,
+                                                       @RequestParam(required = false) final String table)
     {
         if (keyspace != null)
         {
             if (table != null)
             {
-                List<Schedule> repairJobs = getScheduledRepairJobs(forTable(keyspace, table));
+                List<Schedule> repairJobs = getScheduledRepairJobs(forTableSchedule(keyspace, table));
                 return ResponseEntity.ok(repairJobs);
             }
             List<Schedule> repairJobs = getScheduledRepairJobs(
@@ -119,7 +137,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     @GetMapping(value = ENDPOINT_PREFIX + "/schedules/{id}",
                 produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "get-schedules-by-id")
-    public ResponseEntity<Schedule> getSchedules(@PathVariable String id, @RequestParam(required = false) boolean full)
+    public final ResponseEntity<Schedule> getSchedules(@PathVariable final String id,
+                                                 @RequestParam(required = false) final boolean full)
     {
 
         UUID uuid;
@@ -131,7 +150,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         {
             throw new ResponseStatusException(BAD_REQUEST, BAD_REQUEST.getReasonPhrase(), e);
         }
-        Optional<RepairJobView> repairJobView = getScheduleView(uuid);
+        Optional<ScheduledRepairJobView> repairJobView = getScheduleView(uuid);
         if (!repairJobView.isPresent())
         {
             throw new ResponseStatusException(NOT_FOUND);
@@ -145,9 +164,9 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     @GetMapping(value = ENDPOINT_PREFIX + "/repairs",
                 produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "get-repairs")
-    public ResponseEntity<List<OnDemandRepair>> getRepairs(@RequestParam(required = false) String keyspace,
-                                                           @RequestParam(required = false) String table,
-                                                           @RequestParam(required = false) String hostId)
+    public final ResponseEntity<List<OnDemandRepair>> getRepairs(@RequestParam(required = false) final String keyspace,
+                                                           @RequestParam(required = false) final String table,
+                                                           @RequestParam(required = false) final String hostId)
     {
         if (keyspace != null)
         {
@@ -155,13 +174,14 @@ public class RepairManagementRESTImpl implements RepairManagementREST
             {
                 if (hostId == null)
                 {
-                    List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(forTable(keyspace, table));
+                    List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(forTableOnDemand(keyspace, table));
                     return ResponseEntity.ok(repairJobs);
                 }
                 UUID host = parseIdOrThrow(hostId);
-                List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> keyspace.equals(job.getTableReference().getKeyspace()) &&
-                                                                                    table.equals(job.getTableReference().getTable()) &&
-                                                                                    host.equals(job.getHostId()));
+                List<OnDemandRepair> repairJobs =
+                        getClusterWideOnDemandJobs(job -> keyspace.equals(job.getTableReference().getKeyspace())
+                                && table.equals(job.getTableReference().getTable())
+                                && host.equals(job.getHostId()));
                 return ResponseEntity.ok(repairJobs);
             }
             if (hostId == null)
@@ -172,8 +192,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
             }
             UUID host = parseIdOrThrow(hostId);
             List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(
-                    job -> keyspace.equals(job.getTableReference().getKeyspace()) &&
-                           host.equals(job.getHostId()));
+                    job -> keyspace.equals(job.getTableReference().getKeyspace())
+                            && host.equals(job.getHostId()));
             return ResponseEntity.ok(repairJobs);
         }
         else if (table == null)
@@ -194,8 +214,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     @GetMapping(value = ENDPOINT_PREFIX + "/repairs/{id}",
                 produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "get-repairs-by-id")
-    public ResponseEntity<List<OnDemandRepair>> getRepairs(@PathVariable String id,
-                                                           @RequestParam(required = false) String hostId)
+    public final ResponseEntity<List<OnDemandRepair>> getRepairs(@PathVariable final String id,
+                                                           @RequestParam(required = false) final String hostId)
     {
         UUID uuid = parseIdOrThrow(id);
         if (hostId == null)
@@ -208,7 +228,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
             return ResponseEntity.ok(repairJobs);
         }
         UUID host = parseIdOrThrow(hostId);
-        List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> uuid.equals(job.getId()) && host.equals(job.getHostId()));
+        List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> uuid.equals(job.getId())
+                && host.equals(job.getHostId()));
         if (repairJobs.isEmpty())
         {
             throw new ResponseStatusException(NOT_FOUND);
@@ -216,7 +237,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         return ResponseEntity.ok(repairJobs);
     }
 
-    private UUID parseIdOrThrow(String id)
+    private UUID parseIdOrThrow(final String id)
     {
         try
         {
@@ -234,9 +255,11 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     @PostMapping(value = ENDPOINT_PREFIX + "/repairs",
                  produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "trigger-repair")
-    public ResponseEntity<List<OnDemandRepair>> triggerRepair(@RequestParam(required = false) String keyspace,
-                                                              @RequestParam(required = false) String table,
-                                                              @RequestParam(required = false) boolean isLocal)
+    public final ResponseEntity<List<OnDemandRepair>> triggerRepair(
+            @RequestParam(required = false) final String keyspace,
+            @RequestParam(required = false) final String table,
+            @RequestParam(required = false) final boolean isLocal
+    )
     {
         try
         {
@@ -248,9 +271,11 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                     TableReference tableReference = myTableReferenceFactory.forTable(keyspace, table);
                     if (tableReference == null)
                     {
-                        throw new ResponseStatusException(NOT_FOUND, "Table " + keyspace + "." + table + " does not exist");
+                        throw new ResponseStatusException(NOT_FOUND,
+                                "Table " + keyspace + "." + table + " does not exist");
                     }
-                    onDemandRepairs = runLocalOrCluster(isLocal, Collections.singleton(myTableReferenceFactory.forTable(keyspace, table)));
+                    onDemandRepairs = runLocalOrCluster(isLocal,
+                            Collections.singleton(myTableReferenceFactory.forTable(keyspace, table)));
                 }
                 else
                 {
@@ -273,7 +298,95 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         }
     }
 
-    private List<OnDemandRepair> runLocalOrCluster(boolean isLocal, Set<TableReference> tables)
+    @Override
+    @GetMapping(value = ENDPOINT_PREFIX + "/repairInfo",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "get-repair-info")
+    public final ResponseEntity<RepairInfo> getRepairInfo(@RequestParam(required = false) final String keyspace,
+            @RequestParam(required = false) final String table,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @Parameter(
+                    description = "Since time, can be specified as ISO8601 date or as milliseconds since epoch",
+                    schema = @Schema(type = "string")) final Long since,
+            @RequestParam(required = false) @Parameter(
+            description = "Duration, can be specified as either a simple duration like"
+                    + " '30s' or as ISO8601 duration 'pt30s'",
+            schema = @Schema(type = "string")) final Duration duration,
+            @RequestParam(required = false) final boolean isLocal)
+    {
+        try
+        {
+            RepairInfo repairInfo;
+            if (keyspace != null)
+            {
+                if (table != null)
+                {
+                    TableReference tableReference = myTableReferenceFactory.forTable(keyspace, table);
+                    if (tableReference == null)
+                    {
+                        throw new ResponseStatusException(NOT_FOUND,
+                                "Table " + keyspace + "." + table + " does not exist");
+                    }
+                    repairInfo = getRepairInfo(Collections.singleton(tableReference), since, duration, isLocal);
+                }
+                else
+                {
+                    repairInfo = getRepairInfo(myTableReferenceFactory.forKeyspace(keyspace), since, duration, isLocal);
+                }
+            }
+            else
+            {
+                if (table != null)
+                {
+                    throw new ResponseStatusException(BAD_REQUEST, "Keyspace must be provided if table is provided");
+                }
+                repairInfo = getRepairInfo(myTableReferenceFactory.forCluster(), since, duration, isLocal);
+            }
+            return ResponseEntity.ok(repairInfo);
+        }
+        catch (EcChronosException e)
+        {
+            throw new ResponseStatusException(NOT_FOUND, NOT_FOUND.getReasonPhrase(), e);
+        }
+    }
+
+    private RepairInfo getRepairInfo(final Set<TableReference> tables, final Long since, final Duration duration,
+            final boolean isLocal)
+    {
+        long toTime = System.currentTimeMillis();
+        long sinceTime;
+        if (since != null)
+        {
+            sinceTime = since.longValue();
+            if (duration != null)
+            {
+                toTime = sinceTime + TimeUnit.SECONDS.toMillis(duration.getSeconds());
+            }
+        }
+        else if (duration != null)
+        {
+            sinceTime = toTime - TimeUnit.SECONDS.toMillis(duration.getSeconds());
+        }
+        else
+        {
+            throw new ResponseStatusException(BAD_REQUEST, "Since or duration or both must be specified");
+        }
+        if (toTime < sinceTime)
+        {
+            throw new ResponseStatusException(BAD_REQUEST, "'to' (" + toTime + ") is before 'since' ("
+                    + sinceTime + ")");
+        }
+        List<RepairStats> repairStats = new ArrayList<>();
+        for (TableReference table : tables)
+        {
+            if (myReplicatedTableProvider.accept(table.getKeyspace()))
+            {
+                repairStats.add(myRepairStatsProvider.getRepairStats(table, sinceTime, toTime, isLocal));
+            }
+        }
+        return new RepairInfo(sinceTime, toTime, repairStats);
+    }
+
+    private List<OnDemandRepair> runLocalOrCluster(final boolean isLocal, final Set<TableReference> tables)
             throws EcChronosException
     {
         List<OnDemandRepair> onDemandRepairs = new ArrayList<>();
@@ -290,7 +403,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
             {
                 if (myReplicatedTableProvider.accept(tableReference.getKeyspace()))
                 {
-                    List<RepairJobView> repairJobView = myOnDemandRepairScheduler.scheduleClusterWideJob(
+                    List<OnDemandRepairJobView> repairJobView = myOnDemandRepairScheduler.scheduleClusterWideJob(
                             tableReference);
                     onDemandRepairs.addAll(
                             repairJobView.stream().map(OnDemandRepair::new).collect(Collectors.toList()));
@@ -300,7 +413,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         return onDemandRepairs;
     }
 
-    private List<Schedule> getScheduledRepairJobs(Predicate<RepairJobView> filter)
+    private List<Schedule> getScheduledRepairJobs(final Predicate<ScheduledRepairJobView> filter)
     {
         return myRepairScheduler.getCurrentRepairJobs().stream()
                 .filter(filter)
@@ -308,7 +421,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                 .collect(Collectors.toList());
     }
 
-    private List<OnDemandRepair> getClusterWideOnDemandJobs(Predicate<RepairJobView> filter)
+    private List<OnDemandRepair> getClusterWideOnDemandJobs(final Predicate<OnDemandRepairJobView> filter)
     {
         return myOnDemandRepairScheduler.getAllClusterWideRepairJobs().stream()
                 .filter(filter)
@@ -316,13 +429,23 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                 .collect(Collectors.toList());
     }
 
-    private Optional<RepairJobView> getScheduleView(UUID id)
+    private Optional<ScheduledRepairJobView> getScheduleView(final UUID id)
     {
         return myRepairScheduler.getCurrentRepairJobs().stream()
                 .filter(job -> job.getId().equals(id)).findFirst();
     }
 
-    private Predicate<RepairJobView> forTable(String keyspace, String table)
+    private Predicate<ScheduledRepairJobView> forTableSchedule(final String keyspace, final String table)
+    {
+        return tableView ->
+        {
+            TableReference tableReference = tableView.getTableReference();
+            return tableReference.getKeyspace().equals(keyspace)
+                    && tableReference.getTable().equals(table);
+        };
+    }
+
+    private Predicate<OnDemandRepairJobView> forTableOnDemand(final String keyspace, final String table)
     {
         return tableView ->
         {

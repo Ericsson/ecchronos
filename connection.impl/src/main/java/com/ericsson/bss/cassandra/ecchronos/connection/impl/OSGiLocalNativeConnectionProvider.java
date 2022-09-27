@@ -45,7 +45,7 @@ public class OSGiLocalNativeConnectionProvider implements NativeConnectionProvid
     private volatile LocalNativeConnectionProvider myDelegateNativeConnectionProvider;
 
     @Activate
-    public synchronized void activate(Configuration configuration)
+    public final synchronized void activate(final Configuration configuration)
     {
         String localhost = configuration.localHost();
         int port = configuration.nativePort();
@@ -68,7 +68,8 @@ public class OSGiLocalNativeConnectionProvider implements NativeConnectionProvid
             }
             catch (IOException e)
             {
-                LOG.error("Unable to read provided credentials file {}, will not be using authentication", configuration.credentialsFile());
+                LOG.error("Unable to read provided credentials file {}, will not be using authentication",
+                        configuration.credentialsFile());
             }
         }
 
@@ -76,25 +77,25 @@ public class OSGiLocalNativeConnectionProvider implements NativeConnectionProvid
     }
 
     @Deactivate
-    public synchronized void deactivate()
+    public final synchronized void deactivate()
     {
         myDelegateNativeConnectionProvider.close();
     }
 
     @Override
-    public CqlSession getSession()
+    public final CqlSession getSession()
     {
         return myDelegateNativeConnectionProvider.getSession();
     }
 
     @Override
-    public Node getLocalNode()
+    public final Node getLocalNode()
     {
         return myDelegateNativeConnectionProvider.getLocalNode();
     }
 
     @Override
-    public boolean getRemoteRouting()
+    public final boolean getRemoteRouting()
     {
         return myDelegateNativeConnectionProvider.getRemoteRouting();
     }
@@ -102,13 +103,16 @@ public class OSGiLocalNativeConnectionProvider implements NativeConnectionProvid
     @ObjectClassDefinition
     public @interface Configuration
     {
-        @AttributeDefinition(name = "Cassandra native port", description = "The port to use for native communication with Cassandra")
+        @AttributeDefinition(name = "Cassandra native port",
+                description = "The port to use for native communication with Cassandra")
         int nativePort() default LocalNativeConnectionProvider.DEFAULT_NATIVE_PORT;
 
-        @AttributeDefinition(name = "Cassandra host", description = "The host to use for native communication with Cassandra")
+        @AttributeDefinition(name = "Cassandra host",
+                description = "The host to use for native communication with Cassandra")
         String localHost() default LocalNativeConnectionProvider.DEFAULT_LOCAL_HOST;
 
-        @AttributeDefinition(name = "Credentials file", description = "A file containing credentials for communication with Cassandra")
+        @AttributeDefinition(name = "Credentials file",
+                description = "A file containing credentials for communication with Cassandra")
         String credentialsFile() default "";
 
         @AttributeDefinition(name = "Remote routing", description = "Enables remote routing between datacenters")

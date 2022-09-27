@@ -17,14 +17,12 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +39,9 @@ import java.util.UUID;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.ignoreStubs;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestOnDemandRepairJob
@@ -54,9 +54,6 @@ public class TestOnDemandRepairJob
 
     @Mock
     private TableRepairMetrics myTableRepairMetrics;
-
-    @Mock
-    private ReplicationState myReplicationState;
 
     @Mock
     private RepairHistory myRepairHistory;
@@ -81,7 +78,7 @@ public class TestOnDemandRepairJob
     {
         when(myOngoingJob.getTableReference()).thenReturn(myTableReference);
         UUID uuid = UUID.randomUUID();
-        when(myOngoingJob.getJobId()).thenReturn(uuid );
+        when(myOngoingJob.getJobId()).thenReturn(uuid);
         when(myOngoingJob.getHostId()).thenReturn(myHostId);
     }
 
@@ -96,13 +93,11 @@ public class TestOnDemandRepairJob
     public void testJobCorrectlyReturned()
     {
         OnDemandRepairJob repairJob = createOnDemandRepairJob();
-        RepairJobView expectedView = new OnDemandRepairJobView(repairJob.getId(), myHostId, myTableReference, RepairConfiguration.DEFAULT, RepairJobView.Status.IN_QUEUE, 0, System.currentTimeMillis());
+        OnDemandRepairJobView expectedView = new OnDemandRepairJobView(repairJob.getId(), myHostId, myTableReference,
+                OnDemandRepairJobView.Status.IN_QUEUE, 0, System.currentTimeMillis());
         assertThat(repairJob.getId()).isEqualTo(repairJob.getId());
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
-        assertThat(repairJob.getRepairConfiguration()).isEqualTo(RepairConfiguration.DEFAULT);
         assertThat(repairJob.getTableReference()).isEqualTo(myTableReference);
-        assertThat(repairJob.getView().getRepairConfiguration()).isEqualTo(expectedView.getRepairConfiguration());
-        assertThat(repairJob.getView().getRepairStateSnapshot()).isNull();
         assertThat(repairJob.getView().getTableReference()).isEqualTo(expectedView.getTableReference());
         assertThat(repairJob.getView().getStatus()).isEqualTo(expectedView.getStatus());
         assertThat(repairJob.getView().getHostId()).isEqualTo(expectedView.getHostId());
@@ -114,12 +109,10 @@ public class TestOnDemandRepairJob
         OnDemandRepairJob repairJob = createOnDemandRepairJob();
         Iterator<ScheduledTask> it = repairJob.iterator();
         repairJob.postExecute(false, it.next());
-        RepairJobView expectedView = new OnDemandRepairJobView(repairJob.getId(), myHostId, myTableReference, RepairConfiguration.DEFAULT, RepairJobView.Status.ERROR, 0, System.currentTimeMillis());
+        OnDemandRepairJobView expectedView = new OnDemandRepairJobView(repairJob.getId(), myHostId, myTableReference,
+                OnDemandRepairJobView.Status.ERROR, 0, System.currentTimeMillis());
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
-        assertThat(repairJob.getRepairConfiguration()).isEqualTo(RepairConfiguration.DEFAULT);
         assertThat(repairJob.getTableReference()).isEqualTo(myTableReference);
-        assertThat(repairJob.getView().getRepairConfiguration()).isEqualTo(expectedView.getRepairConfiguration());
-        assertThat(repairJob.getView().getRepairStateSnapshot()).isNull();
         assertThat(repairJob.getView().getTableReference()).isEqualTo(expectedView.getTableReference());
         assertThat(repairJob.getView().getStatus()).isEqualTo(expectedView.getStatus());
         assertThat(repairJob.getView().getHostId()).isEqualTo(expectedView.getHostId());

@@ -43,5 +43,5 @@ public interface RepairScheduler
     /**
      * @return the list of the currently scheduled repair jobs.
      */
-    List<RepairJobView> getCurrentRepairJobs();
+    List<ScheduledRepairJobView> getCurrentRepairJobs();
 }

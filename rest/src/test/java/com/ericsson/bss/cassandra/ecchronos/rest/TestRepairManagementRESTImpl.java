@@ -16,14 +16,18 @@ package com.ericsson.bss.cassandra.ecchronos.rest;
 
 import com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TestUtils;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.RepairInfo;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.types.RepairStats;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.Schedule;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.RepairStatsProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.google.common.collect.ImmutableSet;
@@ -38,6 +42,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -46,6 +51,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -63,6 +70,9 @@ public class TestRepairManagementRESTImpl
     @Mock
     private ReplicatedTableProvider myReplicatedTableProvider;
 
+    @Mock
+    private RepairStatsProvider myRepairStatsProvider;
+
     private TableReferenceFactory myTableReferenceFactory = new MockTableReferenceFactory();
 
     private RepairManagementREST repairManagementREST;
@@ -71,7 +81,7 @@ public class TestRepairManagementRESTImpl
     public void setupMocks()
     {
         repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler,
-                myTableReferenceFactory, myReplicatedTableProvider);
+                myTableReferenceFactory, myReplicatedTableProvider, myRepairStatsProvider);
     }
 
     @Test
@@ -107,28 +117,28 @@ public class TestRepairManagementRESTImpl
     {
         UUID expectedId = UUID.randomUUID();
         UUID expectedHostId = UUID.randomUUID();
-        RepairJobView job1 = new TestUtils.OnDemandRepairJobBuilder()
+        OnDemandRepairJobView job1 = new TestUtils.OnDemandRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withHostId(expectedHostId)
                 .withId(expectedId)
                 .withCompletedAt(1234L)
                 .build();
-        RepairJobView job2 = new TestUtils.OnDemandRepairJobBuilder()
+        OnDemandRepairJobView job2 = new TestUtils.OnDemandRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb2")
                 .withId(UUID.randomUUID())
                 .withHostId(expectedHostId)
                 .withCompletedAt(2345L)
                 .build();
-        RepairJobView job3 = new TestUtils.OnDemandRepairJobBuilder()
+        OnDemandRepairJobView job3 = new TestUtils.OnDemandRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb2")
                 .withId(UUID.randomUUID())
                 .withHostId(expectedHostId)
                 .withCompletedAt(3456L)
                 .build();
-        List<RepairJobView> repairJobViews = Arrays.asList(
+        List<OnDemandRepairJobView> repairJobViews = Arrays.asList(
                 job1,
                 job2,
                 job3
@@ -186,28 +196,28 @@ public class TestRepairManagementRESTImpl
     {
         UUID expectedId = UUID.randomUUID();
         UUID expectedHostId = UUID.randomUUID();
-        RepairJobView job1 = new TestUtils.OnDemandRepairJobBuilder()
+        OnDemandRepairJobView job1 = new TestUtils.OnDemandRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withId(expectedId)
                 .withHostId(expectedHostId)
                 .withCompletedAt(1234L)
                 .build();
-        RepairJobView job2 = new TestUtils.OnDemandRepairJobBuilder()
+        OnDemandRepairJobView job2 = new TestUtils.OnDemandRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb2")
                 .withId(UUID.randomUUID())
                 .withHostId(expectedHostId)
                 .withCompletedAt(2345L)
                 .build();
-        RepairJobView job3 = new TestUtils.OnDemandRepairJobBuilder()
+        OnDemandRepairJobView job3 = new TestUtils.OnDemandRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb2")
                 .withId(UUID.randomUUID())
                 .withHostId(expectedHostId)
                 .withCompletedAt(3456L)
                 .build();
-        List<RepairJobView> repairJobViews = Arrays.asList(
+        List<OnDemandRepairJobView> repairJobViews = Arrays.asList(
                 job1,
                 job2,
                 job3
@@ -253,7 +263,7 @@ public class TestRepairManagementRESTImpl
         UUID id = UUID.randomUUID();
         UUID hostId = UUID.randomUUID();
         long completedAt = 1234L;
-        RepairJobView localRepairJobView = new TestUtils.OnDemandRepairJobBuilder()
+        OnDemandRepairJobView localRepairJobView = new TestUtils.OnDemandRepairJobBuilder()
                 .withId(id)
                 .withHostId(hostId)
                 .withKeyspace("ks")
@@ -270,7 +280,7 @@ public class TestRepairManagementRESTImpl
         assertThat(response.getBody()).isEqualTo(localExpectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        RepairJobView repairJobView = new TestUtils.OnDemandRepairJobBuilder()
+        OnDemandRepairJobView repairJobView = new TestUtils.OnDemandRepairJobBuilder()
                 .withId(id)
                 .withHostId(hostId)
                 .withKeyspace("ks")
@@ -293,21 +303,21 @@ public class TestRepairManagementRESTImpl
         UUID id = UUID.randomUUID();
         UUID hostId = UUID.randomUUID();
         long completedAt = 1234L;
-        RepairJobView repairJobView1 = new TestUtils.OnDemandRepairJobBuilder()
+        OnDemandRepairJobView repairJobView1 = new TestUtils.OnDemandRepairJobBuilder()
                 .withId(id)
                 .withHostId(hostId)
                 .withKeyspace("ks")
                 .withTable("table1")
                 .withCompletedAt(completedAt)
                 .build();
-        RepairJobView repairJobView2 = new TestUtils.OnDemandRepairJobBuilder()
+        OnDemandRepairJobView repairJobView2 = new TestUtils.OnDemandRepairJobBuilder()
                 .withId(id)
                 .withHostId(hostId)
                 .withKeyspace("ks")
                 .withTable("table2")
                 .withCompletedAt(completedAt)
                 .build();
-        RepairJobView repairJobView3 = new TestUtils.OnDemandRepairJobBuilder()
+        OnDemandRepairJobView repairJobView3 = new TestUtils.OnDemandRepairJobBuilder()
                 .withId(id)
                 .withHostId(hostId)
                 .withKeyspace("ks")
@@ -339,35 +349,35 @@ public class TestRepairManagementRESTImpl
         UUID id = UUID.randomUUID();
         UUID hostId = UUID.randomUUID();
         long completedAt = 1234L;
-        RepairJobView repairJobView1 = new TestUtils.OnDemandRepairJobBuilder()
+        OnDemandRepairJobView repairJobView1 = new TestUtils.OnDemandRepairJobBuilder()
                 .withId(id)
                 .withHostId(hostId)
                 .withKeyspace("keyspace1")
                 .withTable("table1")
                 .withCompletedAt(completedAt)
                 .build();
-        RepairJobView repairJobView2 = new TestUtils.OnDemandRepairJobBuilder()
+        OnDemandRepairJobView repairJobView2 = new TestUtils.OnDemandRepairJobBuilder()
                 .withId(id)
                 .withHostId(hostId)
                 .withKeyspace("keyspace1")
                 .withTable("table2")
                 .withCompletedAt(completedAt)
                 .build();
-        RepairJobView repairJobView3 = new TestUtils.OnDemandRepairJobBuilder()
+        OnDemandRepairJobView repairJobView3 = new TestUtils.OnDemandRepairJobBuilder()
                 .withId(id)
                 .withHostId(hostId)
                 .withKeyspace("keyspace1")
                 .withTable("table3")
                 .withCompletedAt(completedAt)
                 .build();
-        RepairJobView repairJobView4 = new TestUtils.OnDemandRepairJobBuilder()
+        OnDemandRepairJobView repairJobView4 = new TestUtils.OnDemandRepairJobBuilder()
                 .withId(id)
                 .withHostId(hostId)
                 .withKeyspace("keyspace2")
                 .withTable("table4")
                 .withCompletedAt(completedAt)
                 .build();
-        RepairJobView repairJobView5 = new TestUtils.OnDemandRepairJobBuilder()
+        OnDemandRepairJobView repairJobView5 = new TestUtils.OnDemandRepairJobBuilder()
                 .withId(id)
                 .withHostId(hostId)
                 .withKeyspace("keyspace3")
@@ -442,25 +452,25 @@ public class TestRepairManagementRESTImpl
     @Test
     public void testGetSchedules()
     {
-        RepairJobView job1 = new TestUtils.ScheduledRepairJobBuilder()
+        ScheduledRepairJobView job1 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withLastRepairedAt(1234L)
                 .withRepairInterval(11)
                 .build();
-        RepairJobView job2 = new TestUtils.ScheduledRepairJobBuilder()
+        ScheduledRepairJobView job2 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb2")
                 .withLastRepairedAt(2345L)
                 .withRepairInterval(12)
                 .build();
-        RepairJobView job3 = new TestUtils.ScheduledRepairJobBuilder()
+        ScheduledRepairJobView job3 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb2")
                 .withLastRepairedAt(3333L)
                 .withRepairInterval(15)
                 .build();
-        List<RepairJobView> repairJobViews = Arrays.asList(
+        List<ScheduledRepairJobView> repairJobViews = Arrays.asList(
                 job1,
                 job2,
                 job3
@@ -515,7 +525,7 @@ public class TestRepairManagementRESTImpl
         when(replica.getPublicAddress()).thenReturn(InetAddress.getLocalHost());
         VnodeRepairState expectedVnodeRepairState = TestUtils
                 .createVnodeRepairState(2, 3, ImmutableSet.of(replica), expectedLastRepairedAt);
-        RepairJobView job1 = new TestUtils.ScheduledRepairJobBuilder()
+        ScheduledRepairJobView job1 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb")
                 .withId(expectedId)
@@ -523,7 +533,7 @@ public class TestRepairManagementRESTImpl
                 .withVnodeRepairStateSet(ImmutableSet.of(expectedVnodeRepairState))
                 .withRepairInterval(11)
                 .build();
-        RepairJobView job2 = new TestUtils.ScheduledRepairJobBuilder()
+        ScheduledRepairJobView job2 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb2")
                 .withId(UUID.randomUUID())
@@ -531,7 +541,7 @@ public class TestRepairManagementRESTImpl
                 .withVnodeRepairStateSet(ImmutableSet.of(expectedVnodeRepairState))
                 .withRepairInterval(12)
                 .build();
-        RepairJobView job3 = new TestUtils.ScheduledRepairJobBuilder()
+        ScheduledRepairJobView job3 = new TestUtils.ScheduledRepairJobBuilder()
                 .withKeyspace("ks")
                 .withTable("tb2")
                 .withId(UUID.randomUUID())
@@ -539,7 +549,7 @@ public class TestRepairManagementRESTImpl
                 .withVnodeRepairStateSet(ImmutableSet.of(expectedVnodeRepairState))
                 .withRepairInterval(12)
                 .build();
-        List<RepairJobView> repairJobViews = Arrays.asList(
+        List<ScheduledRepairJobView> repairJobViews = Arrays.asList(
                 job1,
                 job2,
                 job3
@@ -588,5 +598,218 @@ public class TestRepairManagementRESTImpl
         assertThat(response.getBody()).isEqualTo(expectedResponseFull.get(0));
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().virtualNodeStates).isNotEmpty();
+    }
+
+    @Test
+    public void testGetRepairInfo()
+    {
+        long since = 1245L;
+        long durationInMs = 1000L;
+        Duration duration = Duration.ofMillis(durationInMs);
+        long to = since + durationInMs;
+        RepairStats repairStats1 = new RepairStats("keyspace1", "table1", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(myTableReferenceFactory.forTable("keyspace1", "table1"), since,
+                to, true)).thenReturn(repairStats1);
+        RepairStats repairStats2 = new RepairStats("keyspace1", "table2", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(myTableReferenceFactory.forTable("keyspace1", "table2"), since,
+                to, true)).thenReturn(repairStats2);
+        RepairStats repairStats3 = new RepairStats("keyspace1", "table3", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(myTableReferenceFactory.forTable("keyspace1", "table3"), since,
+                to, true)).thenReturn(repairStats3);
+        RepairStats repairStats4 = new RepairStats("keyspace2", "table4", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(myTableReferenceFactory.forTable("keyspace2", "table4"), since,
+                to, true)).thenReturn(repairStats4);
+        RepairStats repairStats5 = new RepairStats("keyspace3", "table5", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(myTableReferenceFactory.forTable("keyspace3", "table5"), since,
+                to, true)).thenReturn(repairStats5);
+        when(myReplicatedTableProvider.accept("keyspace1")).thenReturn(true);
+        when(myReplicatedTableProvider.accept("keyspace2")).thenReturn(true);
+        when(myReplicatedTableProvider.accept("keyspace3")).thenReturn(true);
+        List<RepairStats> repairStats = new ArrayList<>();
+        repairStats.add(repairStats1);
+        repairStats.add(repairStats2);
+        repairStats.add(repairStats3);
+        repairStats.add(repairStats4);
+        repairStats.add(repairStats5);
+        RepairInfo expectedResponse = new RepairInfo(since, to, repairStats);
+        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo(null, null, since, duration, true);
+
+        RepairInfo returnedRepairInfo = response.getBody();
+        assertThat(returnedRepairInfo).isEqualTo(expectedResponse);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    public void testGetRepairInfoOnlySince()
+    {
+        long since = 1245L;
+        RepairStats repairStats1 = new RepairStats("keyspace1", "table1", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace1", "table1")), eq(since),
+                any(long.class), eq(true))).thenReturn(repairStats1);
+        RepairStats repairStats2 = new RepairStats("keyspace1", "table2", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace1", "table2")), eq(since),
+                any(long.class), eq(true))).thenReturn(repairStats2);
+        RepairStats repairStats3 = new RepairStats("keyspace1", "table3", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace1", "table3")), eq(since),
+                any(long.class), eq(true))).thenReturn(repairStats3);
+        RepairStats repairStats4 = new RepairStats("keyspace2", "table4", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace2", "table4")), eq(since),
+                any(long.class), eq(true))).thenReturn(repairStats4);
+        RepairStats repairStats5 = new RepairStats("keyspace3", "table5", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace3", "table5")), eq(since),
+                any(long.class), eq(true))).thenReturn(repairStats5);
+        when(myReplicatedTableProvider.accept("keyspace1")).thenReturn(true);
+        when(myReplicatedTableProvider.accept("keyspace2")).thenReturn(true);
+        when(myReplicatedTableProvider.accept("keyspace3")).thenReturn(true);
+        List<RepairStats> repairStats = new ArrayList<>();
+        repairStats.add(repairStats1);
+        repairStats.add(repairStats2);
+        repairStats.add(repairStats3);
+        repairStats.add(repairStats4);
+        repairStats.add(repairStats5);
+        RepairInfo expectedResponse = new RepairInfo(since, 0L, repairStats);
+        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo(null, null, since, null, true);
+
+        RepairInfo returnedRepairInfo = response.getBody();
+        assertThat(returnedRepairInfo.repairStats).containsExactlyInAnyOrderElementsOf(expectedResponse.repairStats);
+        assertThat(returnedRepairInfo.sinceInMs).isEqualTo(expectedResponse.sinceInMs);
+        assertThat(returnedRepairInfo.toInMs).isGreaterThan(since);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    public void testGetRepairInfoOnlyDuration()
+    {
+        long durationInMs = 1000L;
+        Duration duration = Duration.ofMillis(durationInMs);
+        RepairStats repairStats1 = new RepairStats("keyspace1", "table1", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace1", "table1")), any(long.class),
+                any(long.class), eq(true))).thenReturn(repairStats1);
+        RepairStats repairStats2 = new RepairStats("keyspace1", "table2", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace1", "table2")), any(long.class),
+                any(long.class), eq(true))).thenReturn(repairStats2);
+        RepairStats repairStats3 = new RepairStats("keyspace1", "table3", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace1", "table3")), any(long.class),
+                any(long.class), eq(true))).thenReturn(repairStats3);
+        RepairStats repairStats4 = new RepairStats("keyspace2", "table4", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace2", "table4")), any(long.class),
+                any(long.class), eq(true))).thenReturn(repairStats4);
+        RepairStats repairStats5 = new RepairStats("keyspace3", "table5", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(eq(myTableReferenceFactory.forTable("keyspace3", "table5")), any(long.class),
+                any(long.class), eq(true))).thenReturn(repairStats5);
+        when(myReplicatedTableProvider.accept("keyspace1")).thenReturn(true);
+        when(myReplicatedTableProvider.accept("keyspace2")).thenReturn(true);
+        when(myReplicatedTableProvider.accept("keyspace3")).thenReturn(true);
+        List<RepairStats> repairStats = new ArrayList<>();
+        repairStats.add(repairStats1);
+        repairStats.add(repairStats2);
+        repairStats.add(repairStats3);
+        repairStats.add(repairStats4);
+        repairStats.add(repairStats5);
+        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo(null, null, null, duration, true);
+
+        RepairInfo returnedRepairInfo = response.getBody();
+        assertThat(returnedRepairInfo.repairStats).containsExactlyInAnyOrderElementsOf(repairStats);
+        assertThat(returnedRepairInfo.sinceInMs).isEqualTo(returnedRepairInfo.toInMs - durationInMs);
+        assertThat(returnedRepairInfo.toInMs).isEqualTo(returnedRepairInfo.sinceInMs + durationInMs);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    public void testGetRepairInfoOnlyKeyspace()
+    {
+        long since = 1245L;
+        long durationInMs = 1000L;
+        Duration duration = Duration.ofMillis(durationInMs);
+        long to = since + durationInMs;
+        RepairStats repairStats1 = new RepairStats("keyspace1", "table1", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(myTableReferenceFactory.forTable("keyspace1", "table1"), since,
+                to, true)).thenReturn(repairStats1);
+        RepairStats repairStats2 = new RepairStats("keyspace1", "table2", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(myTableReferenceFactory.forTable("keyspace1", "table2"), since,
+                to, true)).thenReturn(repairStats2);
+        RepairStats repairStats3 = new RepairStats("keyspace1", "table3", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(myTableReferenceFactory.forTable("keyspace1", "table3"), since,
+                to, true)).thenReturn(repairStats3);
+        when(myReplicatedTableProvider.accept("keyspace1")).thenReturn(true);
+        List<RepairStats> repairStats = new ArrayList<>();
+        repairStats.add(repairStats1);
+        repairStats.add(repairStats2);
+        repairStats.add(repairStats3);
+        RepairInfo expectedResponse = new RepairInfo(since, to, repairStats);
+        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo("keyspace1", null, since, duration, true);
+
+        RepairInfo returnedRepairInfo = response.getBody();
+        assertThat(returnedRepairInfo).isEqualTo(expectedResponse);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    public void testGetRepairInfoKeyspaceAndTable()
+    {
+        long since = 1245L;
+        long durationInMs = 1000L;
+        Duration duration = Duration.ofMillis(durationInMs);
+        long to = since + durationInMs;
+        RepairStats repairStats1 = new RepairStats("keyspace1", "table1", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(myTableReferenceFactory.forTable("keyspace1", "table1"), since,
+                to, true)).thenReturn(repairStats1);
+        when(myReplicatedTableProvider.accept("keyspace1")).thenReturn(true);
+        List<RepairStats> repairStats = new ArrayList<>();
+        repairStats.add(repairStats1);
+        RepairInfo expectedResponse = new RepairInfo(since, to, repairStats);
+        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo("keyspace1", "table1", since, duration, true);
+
+        RepairInfo returnedRepairInfo = response.getBody();
+        assertThat(returnedRepairInfo).isEqualTo(expectedResponse);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    public void testGetRepairInfoOnlyTable()
+    {
+        long since = 1245L;
+        long durationInMs = 1000L;
+        Duration duration = Duration.ofMillis(durationInMs);
+        ResponseEntity<RepairInfo> response = null;
+        try
+        {
+            response = repairManagementREST.getRepairInfo(null, "table1", since, duration, true);
+        }
+        catch(ResponseStatusException e)
+        {
+            assertThat(e.getRawStatusCode()).isEqualTo(BAD_REQUEST.value());
+        }
+        assertThat(response).isNull();
+    }
+
+    @Test
+    public void testGetRepairInfoNoSinceOrDuration()
+    {
+        ResponseEntity<RepairInfo> response = null;
+        try
+        {
+            response = repairManagementREST.getRepairInfo("keyspace1", "table1", null, null, true);
+        }
+        catch(ResponseStatusException e)
+        {
+            assertThat(e.getRawStatusCode()).isEqualTo(BAD_REQUEST.value());
+        }
+        assertThat(response).isNull();
+    }
+
+    @Test
+    public void testGetRepairInfoSinceBiggerThanSincePlusDuration()
+    {
+        ResponseEntity<RepairInfo> response = null;
+        try
+        {
+            response = repairManagementREST.getRepairInfo("keyspace1", "table1", 0L, Duration.ofMillis(-1000), true);
+        }
+        catch(ResponseStatusException e)
+        {
+            assertThat(e.getRawStatusCode()).isEqualTo(BAD_REQUEST.value());
+        }
+        assertThat(response).isNull();
     }
 }

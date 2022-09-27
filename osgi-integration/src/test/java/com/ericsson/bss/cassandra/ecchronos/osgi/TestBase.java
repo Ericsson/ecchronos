@@ -42,6 +42,7 @@ public class TestBase
     protected static final String CASSANDRA_HOST = System.getProperty(CASSANDRA_HOST_PROPERTY);
     protected static final String CASSANDRA_NATIVE_PORT = System.getProperty(CASSANDRA_NATIVE_PORT_PROPERTY);
     protected static final String CASSANDRA_JMX_PORT = System.getProperty(CASSANDRA_JMX_PORT_PROPERTY);
+    protected static final String IS_LOCAL = System.getProperty("it-local-cassandra");
 
     protected static final String REPAIR_METRICS_PID = "com.ericsson.bss.cassandra.ecchronos.core.osgi.TableRepairMetricsService";
 
@@ -112,11 +113,14 @@ public class TestBase
                 .put(CONFIGURATION_NATIVE_HOST, CASSANDRA_HOST)
                 .put(CONFIGURATION_NATIVE_PORT, CASSANDRA_NATIVE_PORT);
 
-        URL url = TestBase.class.getClassLoader().getResource("credentials.properties");
-
-        if (url != null)
+        if (IS_LOCAL == null)
         {
-            configurationOption = configurationOption.put(CONFIGURATION_CREDENTIALS_FILE, url.getPath());
+            URL url = TestBase.class.getClassLoader().getResource("credentials.properties");
+
+            if (url != null)
+            {
+                configurationOption = configurationOption.put(CONFIGURATION_CREDENTIALS_FILE, url.getPath());
+            }
         }
 
         return configurationOption.asOption();

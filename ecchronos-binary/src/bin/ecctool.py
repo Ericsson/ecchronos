@@ -34,7 +34,6 @@ except ImportError:
     sys.path.append(LIB_DIR)
     from ecchronoslib import rest, table_printer
 
-
 DEFAULT_PID_FILE = "ecc.pid"
 SPRINGBOOT_MAIN_CLASS = "com.ericsson.bss.cassandra.ecchronos.application.spring.SpringBooter"
 
@@ -45,6 +44,7 @@ def parse_arguments():
     add_repairs_subcommand(sub_parsers)
     add_schedules_subcommand(sub_parsers)
     add_run_repair_subcommand(sub_parsers)
+    add_repair_info_subcommand(sub_parsers)
     add_start_subcommand(sub_parsers)
     add_stop_subcommand(sub_parsers)
     add_status_subcommand(sub_parsers)
@@ -99,11 +99,40 @@ def add_run_repair_subcommand(sub_parsers):
                                        default=None)
     parser_trigger_repair.add_argument("--local", action='store_true',
                                        help='repair will run for the local node, disabled by default', default=False)
-    required_args = parser_trigger_repair.add_argument_group("required arguments")
-    required_args.add_argument("-k", "--keyspace", type=str,
-                               help="Keyspace where the repair should be triggered", required=False)
-    required_args.add_argument("-t", "--table", type=str,
-                               help="Table where the repair should be triggered", required=False)
+    parser_trigger_repair.add_argument("-k", "--keyspace", type=str,
+                                       help="Keyspace where the repair should be triggered", required=False)
+    parser_trigger_repair.add_argument("-t", "--table", type=str,
+                                       help="Table where the repair should be triggered", required=False)
+
+
+def add_repair_info_subcommand(sub_parsers):
+    parser_repair_info = sub_parsers.add_parser("repair-info",
+                                                description="Show information about repairs per table")
+    parser_repair_info.add_argument("-k", "--keyspace", type=str,
+                                    help="Print status(es) for a specific keyspace")
+    parser_repair_info.add_argument("-t", "--table", type=str,
+                                    help="Print status(es) for a specific table (Must be specified with keyspace)")
+    parser_repair_info.add_argument("-s", "--since", type=str,
+                                    help="Since date in ISO8601 format. Example: '2022-08-22T12:00:00.0+02:00'",
+                                    default=None)
+    parser_repair_info.add_argument("-d", "--duration", type=str,
+                                    help="Duration in seconds/minutes/hours/days. " +
+                                    "Can be specified in a simple or ISO8601 format without '+' and '-'. " +
+                                    "Simple format examples: '30s', '30m', '1h', '1d'. " +
+                                    "ISO8601 format examples: 'pt30s', 'pt30m', 'pt1h', 'p1d'. " +
+                                    "If '--since' is provided, the time-window will be from 'since' to " +
+                                    "'since+duration'. If only '--duration' is provided, " +
+                                    "the time-window will be from 'now-duration' to 'now'.",
+                                    default=None)
+    parser_repair_info.add_argument("--local", action='store_true',
+                                    help='Show repair info for local node or cluster wide, default is cluster wide',
+                                    default=False)
+    parser_repair_info.add_argument("-u", "--url", type=str,
+                                    help="The host to connect to with the format (http://<host>:port)",
+                                    default=None)
+    parser_repair_info.add_argument("-l", "--limit", type=int,
+                                    help="Limit the number of tables (-1 to disable)",
+                                    default=-1)
 
 
 def add_start_subcommand(sub_parsers):
@@ -131,7 +160,7 @@ def add_status_subcommand(sub_parsers):
 
 
 def schedules(arguments):
-    #pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches
     request = rest.V2RepairSchedulerRequest(base_url=arguments.url)
     full = False
     if arguments.id:
@@ -198,6 +227,29 @@ def run_repair(arguments):
     result = request.post(keyspace=arguments.keyspace, table=arguments.table, local=arguments.local)
     if result.is_successful():
         table_printer.print_repairs(result.data)
+    else:
+        print(result.format_exception())
+
+
+def repair_info(arguments):
+    request = rest.V2RepairSchedulerRequest(base_url=arguments.url)
+    if not arguments.keyspace and arguments.table:
+        print("--keyspace must be specified if table is specified")
+        sys.exit(1)
+    if not arguments.duration and not arguments.since:
+        print("Either --duration or --since or both must be provided")
+        sys.exit(1)
+    duration = None
+    if arguments.duration:
+        if arguments.duration[0] == "+" or arguments.duration[0] == "-":
+            print("'+' and '-' is not allowed in duration, check help for more information")
+            sys.exit(1)
+        duration = arguments.duration.upper()
+    result = request.get_repair_info(keyspace=arguments.keyspace, table=arguments.table,
+                                     since=arguments.since, duration=duration,
+                                     local=arguments.local)
+    if result.is_successful():
+        table_printer.print_repair_info(result.data, arguments.limit)
     else:
         print(result.format_exception())
 
@@ -284,6 +336,9 @@ def run_subcommand(arguments):
     elif arguments.subcommand == "run-repair":
         status(arguments)
         run_repair(arguments)
+    elif arguments.subcommand == "repair-info":
+        status(arguments)
+        repair_info(arguments)
     elif arguments.subcommand == "start":
         start(arguments)
     elif arguments.subcommand == "stop":

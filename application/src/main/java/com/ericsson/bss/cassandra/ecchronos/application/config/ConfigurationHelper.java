@@ -28,23 +28,23 @@ public class ConfigurationHelper
 {
     private static final String CONFIGURATION_DIRECTORY_PATH = "ecchronos.config";
 
-    public static ConfigurationHelper DEFAULT_INSTANCE = new ConfigurationHelper(CONFIGURATION_DIRECTORY_PATH);
+    public static final ConfigurationHelper DEFAULT_INSTANCE = new ConfigurationHelper(CONFIGURATION_DIRECTORY_PATH);
 
     private final String configurationDirectory;
     private final boolean usePath;
 
-    public ConfigurationHelper(String configurationDirectory)
+    public ConfigurationHelper(final String theConfigurationDirectory)
     {
-        this.configurationDirectory = configurationDirectory;
+        this.configurationDirectory = theConfigurationDirectory;
         this.usePath = System.getProperty(this.configurationDirectory) != null;
     }
 
-    public boolean usePath()
+    public final boolean usePath()
     {
         return usePath;
     }
 
-    public <T> T getConfiguration(String file, Class<T> clazz) throws ConfigurationException
+    public final <T> T getConfiguration(final String file, final Class<T> clazz) throws ConfigurationException
     {
         if (usePath())
         {
@@ -56,29 +56,34 @@ public class ConfigurationHelper
         }
     }
 
-    public File configFile(String configFile)
+    public final File configFile(final String configFile)
     {
         return new File(getConfigPath().toFile(), configFile);
     }
 
-    public Path getConfigPath()
+    public final Path getConfigPath()
     {
         return FileSystems.getDefault().getPath(System.getProperty(configurationDirectory));
     }
 
-    private <T> T getFileFromClassPath(String file, Class<T> clazz) throws ConfigurationException
+    private <T> T getFileFromClassPath(final String file, final Class<T> clazz) throws ConfigurationException
     {
         ClassLoader loader = ClassLoader.getSystemClassLoader();
         return getConfiguration(loader.getResourceAsStream(file), clazz);
     }
 
-    private <T> T getConfiguration(File configurationFile, Class<T> clazz) throws ConfigurationException
+    private <T> T getConfiguration(final File configurationFile, final Class<T> clazz) throws ConfigurationException
     {
         try
         {
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
 
-            return objectMapper.readValue(configurationFile, clazz);
+            T config = objectMapper.readValue(configurationFile, clazz);
+            if (config == null)
+            {
+                throw new IOException("parsed config is null");
+            }
+            return config;
         }
         catch (IOException e)
         {
@@ -86,13 +91,19 @@ public class ConfigurationHelper
         }
     }
 
-    private <T> T getConfiguration(InputStream configurationFile, Class<T> clazz) throws ConfigurationException
+    private <T> T getConfiguration(final InputStream configurationFile,
+                                   final Class<T> clazz) throws ConfigurationException
     {
         try
         {
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
 
-            return objectMapper.readValue(configurationFile, clazz);
+            T config = objectMapper.readValue(configurationFile, clazz);
+            if (config == null)
+            {
+                throw new IOException("parsed config is null");
+            }
+            return config;
         }
         catch (IOException e)
         {

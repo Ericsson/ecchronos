@@ -39,15 +39,15 @@ public class CassandraHealthIndicator implements HealthIndicator
     private final NativeConnectionProvider myNativeConnectionProvider;
     private final JmxConnectionProvider myJmxConnectionProvider;
 
-    public CassandraHealthIndicator(NativeConnectionProvider nativeConnectionProvider,
-            JmxConnectionProvider jmxConnectionProvider)
+    public CassandraHealthIndicator(final NativeConnectionProvider nativeConnectionProvider,
+                                    final JmxConnectionProvider jmxConnectionProvider)
     {
         myNativeConnectionProvider = nativeConnectionProvider;
         myJmxConnectionProvider = jmxConnectionProvider;
     }
 
     @Override
-    public Health health()
+    public final Health health()
     {
         Map<String, Object> details = new HashMap<>();
         boolean cqlUp = isCqlConnectionUp(details);
@@ -59,7 +59,7 @@ public class CassandraHealthIndicator implements HealthIndicator
         return Health.down().withDetails(details).build();
     }
 
-    private boolean isJmxConnectionUp(Map<String, Object> details)
+    private boolean isJmxConnectionUp(final Map<String, Object> details)
     {
         try
         {
@@ -78,7 +78,7 @@ public class CassandraHealthIndicator implements HealthIndicator
         return false;
     }
 
-    private boolean isCqlConnectionUp(Map<String, Object> details)
+    private boolean isCqlConnectionUp(final Map<String, Object> details)
     {
         try
         {

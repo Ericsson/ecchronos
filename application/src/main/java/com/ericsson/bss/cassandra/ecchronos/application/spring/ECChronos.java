@@ -17,6 +17,8 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
 import java.io.Closeable;
 import java.util.Collections;
 
+import com.ericsson.bss.cassandra.ecchronos.core.utils.RepairStatsProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.RepairStatsProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.datastax.oss.driver.api.core.CqlSession;
 import org.springframework.context.ApplicationContext;
@@ -33,7 +35,13 @@ import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.*;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairSchedulerImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandStatus;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairSchedulerImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStateFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistoryProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactoryImpl;
@@ -49,12 +57,20 @@ public class ECChronos implements Closeable
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
     private final RepairSchedulerImpl myRepairSchedulerImpl;
     private final OnDemandRepairSchedulerImpl myOnDemandRepairSchedulerImpl;
+    private final RepairStatsProvider myRepairStatsProvider;
 
-    public ECChronos(ApplicationContext applicationContext, Config configuration, // NOPMD
-            RepairFaultReporter repairFaultReporter, NativeConnectionProvider nativeConnectionProvider,
-            JmxConnectionProvider jmxConnectionProvider, StatementDecorator statementDecorator,
-            ReplicationState replicationState, RepairHistory repairHistory, RepairHistoryProvider repairHistoryProvider,
-            MetricRegistry metricRegistry, DefaultRepairConfigurationProvider defaultRepairConfigurationProvider) throws ConfigurationException
+    public ECChronos(final ApplicationContext applicationContext, // NOPMD
+                     final Config configuration,
+                     final RepairFaultReporter repairFaultReporter,
+                     final NativeConnectionProvider nativeConnectionProvider,
+                     final JmxConnectionProvider jmxConnectionProvider,
+                     final StatementDecorator statementDecorator,
+                     final ReplicationState replicationState,
+                     final RepairHistory repairHistory,
+                     final RepairHistoryProvider repairHistoryProvider,
+                     final MetricRegistry metricRegistry,
+                     final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
+            throws ConfigurationException
     {
         myECChronosInternals = new ECChronosInternals(configuration, nativeConnectionProvider, jmxConnectionProvider,
                 statementDecorator, metricRegistry);
@@ -89,7 +105,9 @@ public class ECChronos implements Closeable
                 .build();
 
         AbstractRepairConfigurationProvider repairConfigurationProvider = ReflectionUtils
-                .construct(repairConfig.getProvider(), new Class[] { ApplicationContext.class }, applicationContext);
+                .construct(repairConfig.getProvider(), new Class[] {
+                        ApplicationContext.class
+                }, applicationContext);
 
         defaultRepairConfigurationProvider.fromBuilder(DefaultRepairConfigurationProvider.newBuilder()
                 .withRepairScheduler(myRepairSchedulerImpl)
@@ -109,6 +127,9 @@ public class ECChronos implements Closeable
                 .withRepairHistory(repairHistory)
                 .withOnDemandStatus(new OnDemandStatus(nativeConnectionProvider))
                 .build();
+        myRepairStatsProvider = new RepairStatsProviderImpl(new VnodeRepairStateFactoryImpl(replicationState,
+                repairHistoryProvider,
+                true));
         myECChronosInternals.addRunPolicy(myTimeBasedRunPolicy);
     }
 
@@ -136,8 +157,14 @@ public class ECChronos implements Closeable
         return myECChronosInternals.getReplicatedTableProvider();
     }
 
+    @Bean
+    public RepairStatsProvider repairStatsProvider()
+    {
+        return myRepairStatsProvider;
+    }
+
     @Override
-    public void close()
+    public final void close()
     {
         myECChronosInternals.removeRunPolicy(myTimeBasedRunPolicy);
 

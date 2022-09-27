@@ -38,10 +38,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-public class LocalNativeConnectionProvider implements NativeConnectionProvider
+public final class LocalNativeConnectionProvider implements NativeConnectionProvider
 {
     private static final List<String> SCHEMA_REFRESHED_KEYSPACES = ImmutableList.of("/.*/", "!system",
-            "!system_distributed", "!system_schema", "!system_traces");
+            "!system_distributed", "!system_schema", "!system_traces", "!system_views", "!system_virtual_schema");
     private static final Logger LOG = LoggerFactory.getLogger(LocalNativeConnectionProvider.class);
     private static final List<String> NODE_METRICS = Arrays.asList(DefaultNodeMetric.OPEN_CONNECTIONS.getPath(),
             DefaultNodeMetric.AVAILABLE_STREAMS.getPath(), DefaultNodeMetric.IN_FLIGHT.getPath(),
@@ -71,7 +71,7 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
     private final Node myLocalNode;
     private final boolean myRemoteRouting;
 
-    private LocalNativeConnectionProvider(CqlSession session, Node node, boolean remoteRouting)
+    private LocalNativeConnectionProvider(final CqlSession session, final Node node, final boolean remoteRouting)
     {
         mySession = session;
         myLocalNode = node;
@@ -109,6 +109,8 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
 
     public static class Builder
     {
+        private static final int MAX_NODES_PER_DC = 999;
+
         private String myLocalhost = DEFAULT_LOCAL_HOST;
         private int myPort = DEFAULT_NATIVE_PORT;
         private boolean myRemoteRouting = true;
@@ -116,43 +118,43 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
         private SslEngineFactory sslEngineFactory = null;
         private SchemaChangeListener schemaChangeListener = null;
 
-        public Builder withLocalhost(String localhost)
+        public final Builder withLocalhost(final String localhost)
         {
             myLocalhost = localhost;
             return this;
         }
 
-        public Builder withPort(int port)
+        public final Builder withPort(final int port)
         {
             myPort = port;
             return this;
         }
 
-        public Builder withRemoteRouting(boolean remoteRouting)
+        public final Builder withRemoteRouting(final boolean remoteRouting)
         {
             myRemoteRouting = remoteRouting;
             return this;
         }
 
-        public Builder withAuthProvider(AuthProvider authProvider)
+        public final Builder withAuthProvider(final AuthProvider anAuthProvider)
         {
-            this.authProvider = authProvider;
+            this.authProvider = anAuthProvider;
             return this;
         }
 
-        public Builder withSslEngineFactory(SslEngineFactory sslEngineFactory)
+        public final Builder withSslEngineFactory(final SslEngineFactory anSSLEngineFactory)
         {
-            this.sslEngineFactory = sslEngineFactory;
+            this.sslEngineFactory = anSSLEngineFactory;
             return this;
         }
 
-        public Builder withSchemaChangeListener(SchemaChangeListener schemaChangeListener)
+        public final Builder withSchemaChangeListener(final SchemaChangeListener aSchemaChangeListener)
         {
-            this.schemaChangeListener = schemaChangeListener;
+            this.schemaChangeListener = aSchemaChangeListener;
             return this;
         }
 
-        public LocalNativeConnectionProvider build()
+        public final LocalNativeConnectionProvider build()
         {
             CqlSession session = createSession(this);
             Node node = resolveLocalhost(session, localEndPoint());
@@ -164,7 +166,7 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
             return new ContactEndPoint(myLocalhost, myPort);
         }
 
-        private static CqlSession createSession(Builder builder)
+        private static CqlSession createSession(final Builder builder)
         {
             EndPoint contactEndPoint = builder.localEndPoint();
 
@@ -176,25 +178,31 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
             CqlSessionBuilder sessionBuilder = fromBuilder(builder);
             sessionBuilder = sessionBuilder.withLocalDatacenter(initialContact.dataCenter);
             ProgrammaticDriverConfigLoaderBuilder loaderBuilder = DriverConfigLoader.programmaticBuilder()
-                    .withStringList(DefaultDriverOption.METRICS_NODE_ENABLED, NODE_METRICS)
-                    .withStringList(DefaultDriverOption.METRICS_SESSION_ENABLED, SESSION_METRICS)
-                    .withStringList(DefaultDriverOption.METADATA_SCHEMA_REFRESHED_KEYSPACES, SCHEMA_REFRESHED_KEYSPACES);
+                    .withStringList(DefaultDriverOption.METRICS_NODE_ENABLED,
+                            NODE_METRICS)
+                    .withStringList(DefaultDriverOption.METRICS_SESSION_ENABLED,
+                            SESSION_METRICS)
+                    .withStringList(DefaultDriverOption.METADATA_SCHEMA_REFRESHED_KEYSPACES,
+                            SCHEMA_REFRESHED_KEYSPACES);
             if (builder.myRemoteRouting)
             {
-                loaderBuilder.withString(DefaultDriverOption.LOAD_BALANCING_POLICY_CLASS, DataCenterAwarePolicy.class.getCanonicalName());
-                loaderBuilder.withInt(DefaultDriverOption.LOAD_BALANCING_DC_FAILOVER_MAX_NODES_PER_REMOTE_DC, 999);
+                loaderBuilder.withString(DefaultDriverOption.LOAD_BALANCING_POLICY_CLASS,
+                        DataCenterAwarePolicy.class.getCanonicalName());
+                loaderBuilder.withInt(DefaultDriverOption.LOAD_BALANCING_DC_FAILOVER_MAX_NODES_PER_REMOTE_DC,
+                        MAX_NODES_PER_DC);
             }
             sessionBuilder.withConfigLoader(loaderBuilder.build());
             return sessionBuilder.build();
         }
 
-        private static InitialContact resolveInitialContact(EndPoint contactEndPoint, Builder builder)
+        private static InitialContact resolveInitialContact(final EndPoint contactEndPoint, final Builder builder)
         {
             DriverConfigLoader loader = DriverConfigLoader.programmaticBuilder()
-                    .withString(DefaultDriverOption.LOAD_BALANCING_POLICY_CLASS, DcInferringLoadBalancingPolicy.class.getName())
+                    .withString(DefaultDriverOption.LOAD_BALANCING_POLICY_CLASS,
+                            DcInferringLoadBalancingPolicy.class.getName())
                     .build();
             CqlSessionBuilder cqlSessionBuilder = fromBuilder(builder).withConfigLoader(loader);
-            try(Session session = cqlSessionBuilder.build())
+            try (Session session = cqlSessionBuilder.build())
             {
                 for (Node node : session.getMetadata().getNodes().values())
                 {
@@ -208,7 +216,7 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
             throw new IllegalStateException("Unable to find local data center");
         }
 
-        private static CqlSessionBuilder fromBuilder(Builder builder)
+        private static CqlSessionBuilder fromBuilder(final Builder builder)
         {
             return CqlSession.builder()
                     .addContactEndPoint(builder.localEndPoint())
@@ -217,7 +225,7 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
                     .withSchemaChangeListener(builder.schemaChangeListener);
         }
 
-        private static Node resolveLocalhost(Session session, EndPoint localEndpoint)
+        private static Node resolveLocalhost(final Session session, final EndPoint localEndpoint)
         {
             Node tmpNode = null;
 
@@ -243,10 +251,10 @@ public class LocalNativeConnectionProvider implements NativeConnectionProvider
         private final String dataCenter;
         private final UUID hostId;
 
-        InitialContact(String dataCenter, UUID hostId)
+        InitialContact(final String aDataCenter, final UUID aHostId)
         {
-            this.dataCenter = dataCenter;
-            this.hostId = hostId;
+            this.dataCenter = aDataCenter;
+            this.hostId = aHostId;
         }
 
         String getDataCenter()

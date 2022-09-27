@@ -29,15 +29,15 @@ public class TestTLSConfig
         TLSConfig tlsConfig = new TLSConfig();
 
         tlsConfig.setCipher_suites("test");
-        assertThat(tlsConfig.getCipherSuites()).isPresent();
-        assertThat(tlsConfig.getCipherSuites().get()).containsExactly("test");
+        assertThat(tlsConfig.getCipher_suites()).isPresent();
+        assertThat(tlsConfig.getCipher_suites().get()).containsExactly("test");
 
         tlsConfig.setCipher_suites("test,test2");
-        assertThat(tlsConfig.getCipherSuites()).isPresent();
-        assertThat(tlsConfig.getCipherSuites().get()).containsExactly("test", "test2");
+        assertThat(tlsConfig.getCipher_suites()).isPresent();
+        assertThat(tlsConfig.getCipher_suites().get()).containsExactly("test", "test2");
 
         tlsConfig.setCipher_suites(null);
-        assertThat(tlsConfig.getCipherSuites()).isEmpty();
+        assertThat(tlsConfig.getCipher_suites()).isEmpty();
     }
 
     @Test

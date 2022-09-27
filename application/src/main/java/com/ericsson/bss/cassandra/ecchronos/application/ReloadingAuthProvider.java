@@ -24,14 +24,14 @@ public class ReloadingAuthProvider extends ProgrammaticPlainTextAuthProvider
     private final Supplier<com.ericsson.bss.cassandra.ecchronos.application.config.Credentials> credentialSupplier;
 
     public ReloadingAuthProvider(
-            Supplier<com.ericsson.bss.cassandra.ecchronos.application.config.Credentials> credentialSupplier)
+            final Supplier<com.ericsson.bss.cassandra.ecchronos.application.config.Credentials> aCredentialSupplier)
     {
-        super(credentialSupplier.get().getUsername(), credentialSupplier.get().getPassword());
-        this.credentialSupplier = credentialSupplier;
+        super(aCredentialSupplier.get().getUsername(), aCredentialSupplier.get().getPassword());
+        this.credentialSupplier = aCredentialSupplier;
     }
 
     @Override
-    protected Credentials getCredentials(EndPoint endPoint, String serverAuthenticator)
+    protected final Credentials getCredentials(final EndPoint endPoint, final String serverAuthenticator)
     {
         com.ericsson.bss.cassandra.ecchronos.application.config.Credentials credentials = credentialSupplier.get();
         return new Credentials(credentials.getUsername().toCharArray(), credentials.getPassword().toCharArray());

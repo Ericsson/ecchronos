@@ -129,3 +129,26 @@ def _convert_schedule(schedule):
              schedule.get_repair_percentage(), schedule.get_last_repaired_at(), schedule.get_next_repair()]
 
     return entry
+
+
+def print_repair_info(repair_info, max_lines=-1):
+    print("Time window between '{0}' and '{1}'".format(repair_info.get_since(), repair_info.get_to()))
+    print_repair_stats(repair_info.repair_stats, max_lines)
+
+
+def print_repair_stats(repair_stats, max_lines=-1):
+    repair_stats_table = [["Keyspace", "Table", "Repaired (%)",
+                           "Repair time taken"]]
+    sorted_repair_stats = sorted(repair_stats, key=lambda x: (x.repaired_ratio, x.keyspace, x.table), reverse=False)
+    if max_lines > -1:
+        sorted_repair_stats = sorted_repair_stats[:max_lines]
+
+    for repair_stat in sorted_repair_stats:
+        repair_stats_table.append(_convert_repair_stat(repair_stat))
+    table_formatter.format_table(repair_stats_table)
+
+
+def _convert_repair_stat(repair_stat):
+    entry = [repair_stat.keyspace, repair_stat.table, repair_stat.get_repaired_percentage(),
+             repair_stat.get_repair_time_taken()]
+    return entry

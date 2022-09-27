@@ -36,10 +36,14 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultNativeConnectionProvider.class);
 
+    private static final int SLEEP_TIME = 5000;
+
     private final LocalNativeConnectionProvider myLocalNativeConnectionProvider;
 
-    public DefaultNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecuritySupplier,
-            CertificateHandler certificateHandler, DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
+    public DefaultNativeConnectionProvider(final Config config,
+                                           final Supplier<Security.CqlSecurity> cqlSecuritySupplier,
+                                           final CertificateHandler certificateHandler,
+                                           final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
     {
         Config.NativeConnection nativeConfig = config.getConnectionConfig().getCql();
         String host = nativeConfig.getHost();
@@ -71,15 +75,19 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
                 host, port, nativeConfig.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS));
     }
 
-    public DefaultNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecuritySupplier,
-            DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
+    public DefaultNativeConnectionProvider(final Config config,
+                                           final Supplier<Security.CqlSecurity> cqlSecuritySupplier,
+                                           final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
     {
         this(config, cqlSecuritySupplier, new ReloadingCertificateHandler(() -> cqlSecuritySupplier.get().getTls()),
                 defaultRepairConfigurationProvider);
     }
 
-    private static LocalNativeConnectionProvider establishConnection(LocalNativeConnectionProvider.Builder builder,
-                                                                     String host, int port, long timeout)
+    private static LocalNativeConnectionProvider establishConnection(
+            final LocalNativeConnectionProvider.Builder builder,
+            final String host,
+            final int port,
+            final long timeout)
     {
         long startTime = System.currentTimeMillis();
         long endTime = startTime + timeout;
@@ -97,7 +105,7 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
                     if (timeout != 0)
                     {
                         LOG.debug("Connection failed, retrying in 5 seconds", e);
-                        Thread.sleep(5000);
+                        Thread.sleep(SLEEP_TIME);
                     }
                 }
                 catch (InterruptedException e1)
@@ -111,25 +119,25 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
     }
 
     @Override
-    public CqlSession getSession()
+    public final CqlSession getSession()
     {
         return myLocalNativeConnectionProvider.getSession();
     }
 
     @Override
-    public Node getLocalNode()
+    public final Node getLocalNode()
     {
         return myLocalNativeConnectionProvider.getLocalNode();
     }
 
     @Override
-    public boolean getRemoteRouting()
+    public final boolean getRemoteRouting()
     {
         return myLocalNativeConnectionProvider.getRemoteRouting();
     }
 
     @Override
-    public void close()
+    public final void close()
     {
         myLocalNativeConnectionProvider.close();
     }

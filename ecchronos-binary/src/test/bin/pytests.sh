@@ -54,6 +54,8 @@ sed "s/port: 7199/port: $CASSANDRA_JMX_PORT/g" -i "$CONF_DIR"/ecc.yml
 sed '/scheduler:/{n;/frequency/{n;s/time: .*/time: 1/}}' -i "$CONF_DIR"/ecc.yml
 
 ## Security
+
+if [ "${LOCAL}" != "true" ]; then
 sed '/cql:/{n;/credentials/{n;s/enabled: .*/enabled: true/}}' -i "$CONF_DIR"/security.yml
 sed '/cql:/{n;/credentials/{n;/enabled: .*/{n;s/username: .*/username: eccuser/}}}' -i "$CONF_DIR"/security.yml
 sed '/cql:/{n;/credentials/{n;/enabled: .*/{n;/username: .*/{n;s/password: .*/password: eccpassword/}}}}' -i "$CONF_DIR"/security.yml
@@ -63,6 +65,7 @@ sed "s;keystore: .*;keystore: $CERTIFICATE_DIRECTORY/.keystore;g" -i "$CONF_DIR"
 sed "s/keystore_password: .*/keystore_password: ecctest/g" -i "$CONF_DIR"/security.yml
 sed "s;truststore: .*;truststore: $CERTIFICATE_DIRECTORY/.truststore;g" -i "$CONF_DIR"/security.yml
 sed "s/truststore_password: .*/truststore_password: ecctest/g" -i "$CONF_DIR"/security.yml
+fi
 
 # Logback
 
@@ -134,7 +137,11 @@ echo "Starting behave"
 
 cd "$TEST_DIR"
 
-behave --define ecctool="$BASE_DIR"/bin/ecctool --define cassandra_address="$CASSANDRA_IP" --define cql_user="eccuser" --define cql_password="eccpassword"
+if [ "${LOCAL}" == "true" ]; then
+    behave --define ecctool="$BASE_DIR"/bin/ecctool --define cassandra_address="$CASSANDRA_IP" --define no_tls
+else
+    behave --define ecctool="$BASE_DIR"/bin/ecctool --define cassandra_address="$CASSANDRA_IP" --define cql_user="eccuser" --define cql_password="eccpassword"
+fi
 RETURN=$?
 
 echo "Fetching OpenAPI spec"

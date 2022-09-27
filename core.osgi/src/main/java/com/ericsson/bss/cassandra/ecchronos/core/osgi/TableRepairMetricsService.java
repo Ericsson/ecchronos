@@ -39,13 +39,14 @@ public final class TableRepairMetricsService implements TableRepairMetrics, Tabl
 {
     private static final long DEFAULT_STATISTICS_REPORT_INTERVAL_IN_SECONDS = 60L;
 
-    @Reference(service = TableStorageStates.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = TableStorageStates.class,
+            cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
     private volatile TableStorageStates myTableStorageStates;
 
     private volatile TableRepairMetricsImpl myDelegateTableRepairMetrics;
 
     @Activate
-    public void activate(Configuration configuration)
+    public void activate(final Configuration configuration)
     {
         String statisticsDirectory = configuration.metricsDirectory();
         long reportIntervalInSeconds = configuration.metricsReportIntervalInSeconds();
@@ -65,43 +66,46 @@ public final class TableRepairMetricsService implements TableRepairMetrics, Tabl
     }
 
     @Override
-    public void repairState(TableReference tableReference, int repairedRanges, int notRepairedRanges)
+    public void repairState(final TableReference tableReference, final int repairedRanges, final int notRepairedRanges)
     {
         myDelegateTableRepairMetrics.repairState(tableReference, repairedRanges, notRepairedRanges);
     }
 
     @Override
-    public Optional<Double> getRepairRatio(TableReference tableReference)
+    public Optional<Double> getRepairRatio(final TableReference tableReference)
     {
         return myDelegateTableRepairMetrics.getRepairRatio(tableReference);
     }
 
     @Override
-    public void lastRepairedAt(TableReference tableReference, long lastRepairedAt)
+    public void lastRepairedAt(final TableReference tableReference, final long lastRepairedAt)
     {
         myDelegateTableRepairMetrics.lastRepairedAt(tableReference, lastRepairedAt);
     }
 
     @Override
-    public void remainingRepairTime(TableReference tableReference, long remainingRepairTime)
+    public void remainingRepairTime(final TableReference tableReference, final long remainingRepairTime)
     {
         myDelegateTableRepairMetrics.remainingRepairTime(tableReference, remainingRepairTime);
     }
 
     @Override
-    public void repairTiming(TableReference tableReference, long timeTaken, TimeUnit timeUnit, boolean successful)
+    public void repairTiming(final TableReference tableReference,
+                             final long timeTaken,
+                             final TimeUnit timeUnit,
+                             final boolean successful)
     {
         myDelegateTableRepairMetrics.repairTiming(tableReference, timeTaken, timeUnit, successful);
     }
 
     @Override
-    public void failedRepairTask(TableReference tableReference)
+    public void failedRepairTask(final TableReference tableReference)
     {
         myDelegateTableRepairMetrics.failedRepairTask(tableReference);
     }
 
     @Override
-    public void succeededRepairTask(TableReference tableReference)
+    public void succeededRepairTask(final TableReference tableReference)
     {
         myDelegateTableRepairMetrics.succeededRepairTask(tableReference);
     }
@@ -109,10 +113,12 @@ public final class TableRepairMetricsService implements TableRepairMetrics, Tabl
     @ObjectClassDefinition
     public @interface Configuration
     {
-        @AttributeDefinition(name = "Metrics directory", description = "The directory which the repair metrics will be stored in")
+        @AttributeDefinition(name = "Metrics directory",
+                description = "The directory which the repair metrics will be stored in")
         String metricsDirectory();
 
-        @AttributeDefinition(name = "Report interval in seconds", description = "The interval in which the metrics will be reported")
+        @AttributeDefinition(name = "Report interval in seconds",
+                description = "The interval in which the metrics will be reported")
         long metricsReportIntervalInSeconds() default DEFAULT_STATISTICS_REPORT_INTERVAL_IN_SECONDS;
     }
 }

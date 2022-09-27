@@ -20,10 +20,10 @@ import java.time.Duration;
 import java.util.UUID;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
 import org.junit.Test;
@@ -47,13 +47,16 @@ public class TestRepairConfigCommand
     @Mock
     RepairScheduler schedulerMock;
 
+    @Mock
+    private static RepairStateSnapshot repairStateSnapshotMock;
+
     @Test
     public void testRepairConfigSortedByTableName()
     {
         // Given
-        RepairJobView job1 = mockRepairJob("ks1.tbl1", time1, 0.1, time3, time2);
-        RepairJobView job2 = mockRepairJob("ks2.tbl1", time2, 0.2, time1, time3);
-        RepairJobView job3 = mockRepairJob("ks1.tbl2", time3, 0.3, time2, time1);
+        ScheduledRepairJobView job1 = mockRepairJob("ks1.tbl1", time1, 0.1, time3, time2);
+        ScheduledRepairJobView job2 = mockRepairJob("ks2.tbl1", time2, 0.2, time1, time3);
+        ScheduledRepairJobView job3 = mockRepairJob("ks1.tbl2", time3, 0.3, time2, time1);
 
         when(schedulerMock.getCurrentRepairJobs()).thenReturn(asList(job1, job2, job3));
 
@@ -72,7 +75,7 @@ public class TestRepairConfigCommand
         assertThat(os.toString()).isEqualTo(expected);
     }
 
-    private static RepairJobView mockRepairJob(String table, long repairInterval, double unwindRatio, long warningTime, long errorTime)
+    private static ScheduledRepairJobView mockRepairJob(String table, long repairInterval, double unwindRatio, long warningTime, long errorTime)
     {
         TableReference tableReference = createTableRef(table);
 
@@ -83,6 +86,6 @@ public class TestRepairConfigCommand
         when(repairConfiguration.getRepairWarningTimeInMs()).thenReturn(warningTime);
         when(repairConfiguration.getRepairErrorTimeInMs()).thenReturn(errorTime);
 
-        return new ScheduledRepairJobView(UUID.randomUUID(), tableReference, repairConfiguration, null, RepairJobView.Status.IN_QUEUE, 0, 0);
+        return new ScheduledRepairJobView(UUID.randomUUID(), tableReference, repairConfiguration, repairStateSnapshotMock, ScheduledRepairJobView.Status.ON_TIME, 0, 0);
     }
 }

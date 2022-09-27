@@ -20,10 +20,13 @@ import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 import javax.net.ssl.SSLEngine;
 
 /**
- * SSL Context provider
+ * SSL Context provider.
  */
 public interface CertificateHandler extends SslEngineFactory
 {
     @Override
     SSLEngine newSslEngine(EndPoint remoteEndpoint);
+
+    @Override
+    void close() throws Exception;
 }

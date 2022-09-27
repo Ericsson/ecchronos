@@ -7,13 +7,6 @@ Feature: API for repairs
     Then the response is successful
     And the response matches the json repair_list_v2
 
-  Scenario: Get repair status for table test.table1 v2
-    Given I have a json schema in repair_list_v2.json
-    And I use the url http://localhost:8080/repair-management/v2/repairs?keyspace=test&table=table1
-    When I send a GET request
-    Then the response is successful
-    And the response matches the json repair_list_v2
-
   Scenario: Get repair status for all repairs
     Given I have a json schema in repair_list_v2.json
     And I use the url http://localhost:8080/repair-management/v2/repairs
@@ -28,3 +21,16 @@ Feature: API for repairs
     Then the response is successful
     And the response matches the json repair_list_v2
     And the job list contains only keyspace test
+
+  Scenario: Get repair status for table test.table1 and then get by id
+    Given I have a json schema in repair_list_v2.json
+    And I use the url http://localhost:8080/repair-management/v2/repairs?keyspace=test&table=table1
+    When I send a GET request
+    Then the response is successful
+    And the response matches the json repair_list_v2
+    And the id from response is extracted for test.table1
+    Given I have a json schema in repair_list_v2.json
+    And I fetch repairs with id
+    When I send a GET request
+    Then the response is successful
+    And the response matches the json repair_list_v2
