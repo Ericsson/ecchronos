@@ -175,9 +175,9 @@ public class ReloadingCertificateHandler implements CertificateHandler
             builder.keyManager(keyManagerFactory);
             builder.trustManager(trustManagerFactory);
         }
-        if (tlsConfig.getCipherSuites().isPresent())
+        if (tlsConfig.getCipher_suites().isPresent())
         {
-            builder.ciphers(Arrays.asList(tlsConfig.getCipherSuites().get()));
+            builder.ciphers(Arrays.asList(tlsConfig.getCipher_suites().get()));
         }
         return builder.protocols(tlsConfig.getProtocols()).build();
     }

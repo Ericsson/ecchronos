@@ -128,7 +128,7 @@ public class TLSConfig
         return protocol;
     }
 
-    public String[] getProtocols()
+    public final String[] getProtocols()
     {
         return protocol.split(",");
     }
@@ -201,7 +201,7 @@ public class TLSConfig
         }
         TLSConfig tlsConfig = (TLSConfig) o;
         return enabled == tlsConfig.enabled
-                require_endpoint_verification == tlsConfig.require_endpoint_verification
+                && require_endpoint_verification == tlsConfig.require_endpoint_verification
                 && Objects.equals(keystore, tlsConfig.keystore)
                 && Objects.equals(keystore_password, tlsConfig.keystore_password)
                 && Objects.equals(truststore, tlsConfig.truststore)
