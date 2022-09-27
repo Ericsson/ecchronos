@@ -150,7 +150,7 @@ public class OnDemandStatus
     }
 
     /**
-     * Get all jobs for the host that have the status 'started' and add them to ongoing jobs.
+     * Get all jobs for this host that have the status 'started'.
      *
      * @param replicationState The replication state.
      * @return Set of ongoing jobs
@@ -184,7 +184,7 @@ public class OnDemandStatus
     }
 
     /**
-     * Add jobs for all nodes and their token ranges to ongoing jobs and return them.
+     * Get jobs for all the nodes, independent of their status.
      *
      * @return  Set of ongoing jobs
      */
@@ -203,7 +203,7 @@ public class OnDemandStatus
     }
 
     /**
-     * Add jobs for the local node and its token ranges to ongoing jobs and return them.
+     * Get jobs for all the nodes, independent of their status.
      *
      * @param replicationState The replication state
      * @return Set of ongoing jobs
@@ -339,7 +339,7 @@ public class OnDemandStatus
     }
 
     /**
-     * Update a failed job with current time stamp.
+     * Update a job to failed status with current timestamp.
      *
      * @param jobId Id of the job to set as failed.
      */
