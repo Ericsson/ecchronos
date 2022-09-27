@@ -47,5 +47,12 @@ springdoc:
 #    key-store-type: <keystore type>
 #    key-alias: <key alias>
 #    key-password: <key password>
+#    trust-store: <path to truststore>
+#    trust-store-password: <password>
+#    trust-store-type: <keystore type>
+#    client-auth: <client auth, any of "need", "want" or "none">
+#    enabled-protocols: <enabled protocols, for example "TLSv1.2">
+#    ciphers: <enabled cipher suites>
+#
 # Rate at which certificate are reloaded automatically
 #    refresh-rate-in-ms: 60000
