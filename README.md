@@ -28,6 +28,11 @@ More information on the REST interface of ecChronos is described in [REST.md](do
 
 Installation instructions can be found in [SETUP.md](docs/SETUP.md).
 
+### Command line utility
+
+In standalone installation, a command line utility called `ecctool` is provided.
+For more information about `ecctool` refer to [ECCTOOL.md](docs/ECCTOOL.md).
+
 ### Upgrade
 
 Upgrade instructions can be found in [UPGRADE.md](docs/UPGRADE.md).

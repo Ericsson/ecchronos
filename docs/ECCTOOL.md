@@ -55,11 +55,11 @@ Looking at the example output above, the columns are:
 `Status` - the status of the manual repair.
 The possible statuses are:
 * `IN_QUEUE` - the manual repair is awaiting execution or is currently running
-* `ERROR` - the manual repair failed
-* `COMPLETED` - the manual repair is completed
+* `ERROR` - the manual repair failed, some ranges might've failed or the ranges have changed.
+* `COMPLETED` - the manual repair is completed, all ranges have been repaired.
 
 `Repaired(%)` - the number of ranges repaired vs total ranges.
-This value should never go down.
+For manual repairs this value should never go down.
 
 `Completed at` - the time when the manual repair has finished.
 
@@ -99,7 +99,11 @@ Snapshot as of 2022-09-22 14:05:12
 Summary: 5 completed, 0 on time, 0 blocked, 0 late, 0 overdue
 ```
 
-Looking at the example output above, the columns are:
+Looking at the example output above, the first line is `Snapshot as of 2022-09-22 14:05:12`.
+This means that the output is tied to a point in time,
+the output might change if the subcommand is run at a different time.
+
+Looking at the table, the columns are:
 
 `Id` - the schedule ID, this corresponds to the table id.
 
@@ -112,15 +116,17 @@ The possible statuses are:
 * `ON_TIME` - the schedule is awaiting execution or is currently running
 * `LATE` - the schedule is late, warning time specified in the configuration has passed.
 * `OVERDUE` - the schedule is overdue, error time specified in the configuration has passed.
-* `COMPLETED` - the schedule is completed
+* `COMPLETED` - the schedule is completed, all ranges have been repaired within the interval.
 
 `Repaired(%)` - the number of ranges repaired within the interval vs total ranges.
-This value can go up and down as ranges become unrepaired.
+For schedules this value can go up and down as ranges become unrepaired.
 
 `Completed at` - the time when the all ranges for the schedule are repaired.
 ecChronos assumes all ranges are repaired if there's no repair history.
 
 `Next repair` - the time when the schedule will be made ready for execution.
+This is based on the (oldest range repair time + interval) - repair time taken for the ranges.
+This is updated each time a repair group is completed.
 
 #### Arguments
 
@@ -137,6 +143,8 @@ ecChronos assumes all ranges are repaired if there's no repair history.
 ### run-repair
 
 `ecctool run-repair` subcommand is used to run a manual repair.
+The manual repair will be triggered in ecChronos, which will group sub-ranges by nodes that have them in common.
+Afterwards, each sub-range will be repaired once through Cassandra JMX interface.
 This subcommand has no mandatory parameters.
 
 #### Example
@@ -176,7 +184,8 @@ Looking at the example output above, the columns are:
 `Status` - the status of the manual repair. This will always be `IN_QUEUE` for newly run manual repairs.
 
 `Repaired(%)` - the number of ranges repaired vs total ranges.
-This value should never go down. This will always be `0` for newly run manual repairs.
+For manual repairs this value should never go down.
+This will always be `0` for newly run manual repairs.
 
 `Completed at` - the time when the manual repair has finished. This will always be `-` for newly run manual repairs.
 
@@ -223,11 +232,11 @@ Looking at the example output above, the columns are:
 
 `Table` - the table the repair information corresponds to.
 
-`Repaired (%)` - the repaired ratio of the table in %.
+`Repaired (%)` - the repaired ranges vs total ranges of the table in %.
 
 `Repair time taken` - the time taken for the Cassandra to finish the repairs.
 
-By default, repair-info fetches the information on cluster level.
+By default, repair-info fetches the information on a cluster level.
 To check the repair information for the local node use `--local` flag.
 
 #### Arguments
@@ -259,6 +268,7 @@ This subcommand has no mandatory parameters.
 ### stop
 
 `ecctool stop` subcommand is used to stop the ecChronos instance.
+Stopping of ecChronos is done by using `kill` with `SIGTERM` signal (same as kill in shell) for the pid.
 This subcommand has no mandatory parameters.
 
 #### Arguments
