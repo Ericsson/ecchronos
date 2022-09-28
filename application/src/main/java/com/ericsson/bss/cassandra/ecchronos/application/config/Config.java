@@ -73,7 +73,7 @@ public class Config
     /**
      * Set repair configuration.
      *
-     * @param repairConfig THe repair configuration.
+     * @param repairConfig The repair configuration.
      */
     public void setRepair(final GlobalRepairConfig repairConfig)
     {
