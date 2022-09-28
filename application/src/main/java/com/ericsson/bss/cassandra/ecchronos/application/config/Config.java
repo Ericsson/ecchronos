@@ -255,6 +255,7 @@ public class Config
          * Set certification handler.
          *
          * @param aCertificateHandler The certification handler.
+         * @throws NoSuchMethodException If the getDeclaredConstructor method was not found.
          */
         public void setCertificateHandler(final Class<? extends CertificateHandler> aCertificateHandler)
                 throws NoSuchMethodException
