@@ -85,5 +85,6 @@ public interface RepairManagementREST
      * @param isLocal Whether the repair information should be shown for local node only or cluster-wide
      * @return A JSON representation of {@link RepairInfo}
      */
-    ResponseEntity<RepairInfo> getRepairInfo(String keyspace, String table, Long since, Duration duration, boolean isLocal);
+    ResponseEntity<RepairInfo> getRepairInfo(String keyspace, String table, Long since, Duration duration,
+                                             boolean isLocal);
 }

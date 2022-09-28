@@ -36,9 +36,9 @@ public class VnodeRepairState
     /**
      * Constructor.
      *
-     * @param tokenRange
-     * @param replicas
-     * @param startedAt
+     * @param tokenRange The token range.
+     * @param replicas The nodes.
+     * @param startedAt Started at timetamp.
      */
     public VnodeRepairState(final LongTokenRange tokenRange,
                             final ImmutableSet<DriverNode> replicas,
@@ -50,11 +50,11 @@ public class VnodeRepairState
     /**
      * Constructor.
      *
-     * @param tokenRange
-     * @param replicas
-     * @param startedAt
-     * @param finishedAt
-     * @param repairTime
+     * @param tokenRange The token range.
+     * @param replicas The nodes.
+     * @param startedAt Started at timestamp.
+     * @param finishedAt Finished at timestamp.
+     * @param repairTime Repair time.
      */
     public VnodeRepairState(final LongTokenRange tokenRange,
                             final ImmutableSet<DriverNode> replicas,
@@ -72,10 +72,10 @@ public class VnodeRepairState
     /**
      * Constructor.
      *
-     * @param tokenRange
-     * @param replicas
-     * @param startedAt
-     * @param finishedAt
+     * @param tokenRange The token range.
+     * @param replicas The nodes.
+     * @param startedAt Started at timestamp.
+     * @param finishedAt Finished at timestamp.
      */
     public VnodeRepairState(final LongTokenRange tokenRange,
                             final ImmutableSet<DriverNode> replicas,
@@ -190,7 +190,7 @@ public class VnodeRepairState
     /**
      * Checks equality.
      *
-     * @param o
+     * @param o Object to compare to.
      * @return boolean
      */
     @Override

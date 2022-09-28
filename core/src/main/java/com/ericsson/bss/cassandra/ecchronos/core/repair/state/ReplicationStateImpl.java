@@ -131,7 +131,7 @@ public class ReplicationStateImpl implements ReplicationState
     /**
      * Get token ranges.
      *
-     * @param tableReference
+     * @param tableReference Table reference.
      * @return Nodes and their ranges
      */
     @Override

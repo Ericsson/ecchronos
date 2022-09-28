@@ -100,6 +100,8 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
     /**
      * Made available for testing.
+     *
+     * @return int Queue size.
      */
     @VisibleForTesting
     public int getQueueSize()
