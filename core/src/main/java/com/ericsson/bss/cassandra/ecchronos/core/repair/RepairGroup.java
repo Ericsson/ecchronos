@@ -138,7 +138,7 @@ public class RepairGroup extends ScheduledTask
     }
 
     /**
-     * Get lock for the table.
+     * Get lock for the keyspace and table.
      *
      * @param lockFactory The lock factory to use.
      * @return LockFactory.DistributedLock

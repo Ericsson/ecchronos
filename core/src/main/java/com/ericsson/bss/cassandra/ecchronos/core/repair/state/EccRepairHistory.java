@@ -330,9 +330,9 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
         }
 
         /**
-         * Finish with repair status.
+         * Transition to state DONE, as long as the previous status was STARTED. Set finished at to current timestamp.
          *
-         * @param repairStatus The status
+         * @param repairStatus The previous status
          */
         @Override
         public void finish(final RepairStatus repairStatus)
@@ -451,7 +451,7 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
         /**
          * Build ECC repair history with session.
          *
-         * @param aSession Session.
+         * @param aSession Session.q
          * @return Builder
          */
         public Builder withSession(final CqlSession aSession)

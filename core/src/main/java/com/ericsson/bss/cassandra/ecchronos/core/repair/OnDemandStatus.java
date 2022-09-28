@@ -203,7 +203,7 @@ public class OnDemandStatus
     }
 
     /**
-     * Get jobs for all the nodes, independent of their status.
+     * Get all jobs for this host, independent of the status.
      *
      * @param replicationState The replication state
      * @return Set of ongoing jobs
