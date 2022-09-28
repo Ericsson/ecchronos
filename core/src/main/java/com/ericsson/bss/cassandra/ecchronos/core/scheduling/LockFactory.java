@@ -41,7 +41,8 @@ public interface LockFactory
      * @throws LockException
      *             Thrown when unable to lock a resource
      */
-    DistributedLock tryLock(String dataCenter, String resource, int priority, Map<String, String> metadata) throws LockException;
+    DistributedLock tryLock(String dataCenter, String resource, int priority, Map<String, String> metadata)
+            throws LockException;
 
     /**
      * Get the metadata of a resource lock.

@@ -20,6 +20,7 @@ import javax.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.Objects;
 
+@SuppressWarnings("VisibilityModifier")
 public class RepairInfo
 {
     @NotBlank
@@ -31,25 +32,42 @@ public class RepairInfo
     @NotBlank
     public List<RepairStats> repairStats;
 
-    public RepairInfo(long since, long to, List<RepairStats> repairStats)
+    public RepairInfo(final long since, final long to, final List<RepairStats> theRepairStats)
     {
         this.sinceInMs = since;
         this.toInMs = to;
-        this.repairStats = repairStats;
+        this.repairStats = theRepairStats;
     }
 
+    /**
+     * Equality.
+     *
+     * @param o
+     * @return boolean
+     */
     @Override
-    public boolean equals(Object o)
+    public boolean equals(final Object o)
     {
         if (this == o)
+        {
             return true;
+        }
         if (o == null || getClass() != o.getClass())
+        {
             return false;
+        }
         RepairInfo that = (RepairInfo) o;
-        return sinceInMs == that.sinceInMs && toInMs == that.toInMs && repairStats.size() == that.repairStats.size() &&
-                repairStats.containsAll(that.repairStats);
+        return sinceInMs == that.sinceInMs
+                && toInMs == that.toInMs
+                && repairStats.size() == that.repairStats.size()
+                && repairStats.containsAll(that.repairStats);
     }
 
+    /**
+     * Hash representation.
+     *
+     * @return int
+     */
     @Override
     public int hashCode()
     {

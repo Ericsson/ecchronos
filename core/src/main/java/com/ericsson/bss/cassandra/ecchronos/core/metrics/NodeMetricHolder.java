@@ -40,7 +40,7 @@ public class NodeMetricHolder implements Closeable
 
     private final MetricRegistry myMetricRegistry;
 
-    public NodeMetricHolder(MetricRegistry metricRegistry, TableStorageStates tableStorageStates)
+    public NodeMetricHolder(final MetricRegistry metricRegistry, final TableStorageStates tableStorageStates)
     {
         myMetricRegistry = metricRegistry;
 
@@ -82,17 +82,36 @@ public class NodeMetricHolder implements Closeable
         });
     }
 
-    public void repairState(TableReference tableReference, double repairRatio)
+    /**
+     * Set repair state.
+     *
+     * @param tableReference Table reference
+     * @param repairRatio The repair ratio
+     */
+    public void repairState(final TableReference tableReference, final double repairRatio)
     {
         myTableRepairRatio.put(tableReference, repairRatio);
     }
 
-    public Double getRepairRatio(TableReference tableReference)
+    /**
+     * Get repair ratio.
+     *
+     * @param tableReference Table reference
+     * @return Double
+     */
+    public Double getRepairRatio(final TableReference tableReference)
     {
         return myTableRepairRatio.get(tableReference);
     }
 
-    public void repairTiming(long timeTaken, TimeUnit timeUnit, boolean successful)
+    /**
+     * Update repair timing metric.
+     *
+     * @param timeTaken Time token
+     * @param timeUnit Time unit
+     * @param successful Successful flag
+     */
+    public void repairTiming(final long timeTaken, final TimeUnit timeUnit, final boolean successful)
     {
         if (successful)
         {
@@ -104,11 +123,14 @@ public class NodeMetricHolder implements Closeable
         }
     }
 
-    private Timer timer(String name)
+    private Timer timer(final String name)
     {
         return myMetricRegistry.timer(name, Timer::new);
     }
 
+    /**
+     * Close.
+     */
     @Override
     public void close()
     {

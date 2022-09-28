@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 /**
  * ScheduleManager handles the run scheduler and update scheduler.
  */
-public class ScheduleManagerImpl implements ScheduleManager, Closeable
+public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ScheduleManagerImpl.class);
 
@@ -44,32 +44,35 @@ public class ScheduleManagerImpl implements ScheduleManager, Closeable
     private final LockFactory myLockFactory;
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor();
 
-    private ScheduleManagerImpl(Builder builder)
+    private ScheduleManagerImpl(final Builder builder)
     {
         myLockFactory = builder.myLockFactory;
-        myRunFuture = myExecutor.scheduleWithFixedDelay(myRunTask, builder.myRunIntervalInMs, builder.myRunIntervalInMs, TimeUnit.MILLISECONDS);
+        myRunFuture = myExecutor.scheduleWithFixedDelay(myRunTask,
+                builder.myRunIntervalInMs,
+                builder.myRunIntervalInMs,
+                TimeUnit.MILLISECONDS);
     }
 
-    public boolean addRunPolicy(RunPolicy runPolicy)
+    public boolean addRunPolicy(final RunPolicy runPolicy)
     {
         LOG.debug("Run policy {} added", runPolicy);
         return myRunPolicies.add(runPolicy);
     }
 
-    public boolean removeRunPolicy(RunPolicy runPolicy)
+    public boolean removeRunPolicy(final RunPolicy runPolicy)
     {
         LOG.debug("Run policy {} removed", runPolicy);
         return myRunPolicies.remove(runPolicy);
     }
 
     @Override
-    public void schedule(ScheduledJob job)
+    public void schedule(final ScheduledJob job)
     {
         myQueue.add(job);
     }
 
     @Override
-    public void deschedule(ScheduledJob job)
+    public void deschedule(final ScheduledJob job)
     {
         myQueue.remove(job);
     }
@@ -86,16 +89,25 @@ public class ScheduleManagerImpl implements ScheduleManager, Closeable
         myRunPolicies.clear();
     }
 
+    /**
+     * Made available for testing.
+     */
     @VisibleForTesting
     public void run()
     {
         myRunTask.run();
     }
 
+    /**
+     * Made available for testing.
+     */
     @VisibleForTesting
-    public int getQueueSize() { return myQueue.size(); }
+    public int getQueueSize()
+    {
+        return myQueue.size();
+    }
 
-    private Long validateJob(ScheduledJob job)
+    private Long validateJob(final ScheduledJob job)
     {
         for (RunPolicy runPolicy : myRunPolicies)
         {
@@ -142,7 +154,7 @@ public class ScheduleManagerImpl implements ScheduleManager, Closeable
             }
         }
 
-        private boolean validate(ScheduledJob job)
+        private boolean validate(final ScheduledJob job)
         {
             LOG.trace("Validating job {}", job);
             long nextRun = validateJob(job);
@@ -156,7 +168,7 @@ public class ScheduleManagerImpl implements ScheduleManager, Closeable
             return true;
         }
 
-        private boolean tryRunTasks(ScheduledJob next)
+        private boolean tryRunTasks(final ScheduledJob next)
         {
             boolean hasRun = false;
 
@@ -173,7 +185,7 @@ public class ScheduleManagerImpl implements ScheduleManager, Closeable
             return hasRun;
         }
 
-        private boolean tryRunTask(ScheduledJob job, ScheduledTask task)
+        private boolean tryRunTask(final ScheduledJob job, final ScheduledTask task)
         {
             LOG.debug("Trying to acquire lock for {}", task);
             try (LockFactory.DistributedLock lock = task.getLock(myLockFactory))
@@ -192,7 +204,7 @@ public class ScheduleManagerImpl implements ScheduleManager, Closeable
             }
         }
 
-        private boolean runTask(ScheduledTask task)
+        private boolean runTask(final ScheduledTask task)
         {
             try
             {
@@ -218,20 +230,20 @@ public class ScheduleManagerImpl implements ScheduleManager, Closeable
         private LockFactory myLockFactory;
         private long myRunIntervalInMs = DEFAULT_RUN_DELAY_IN_MS;
 
-        public Builder withLockFactory(LockFactory lockFactory)
+        public final Builder withLockFactory(final LockFactory lockFactory)
         {
             myLockFactory = lockFactory;
             return this;
         }
 
-        public Builder withRunInterval(long runInterval, TimeUnit timeUnit)
+        public final Builder withRunInterval(final long runInterval, final TimeUnit timeUnit)
         {
             myRunIntervalInMs = timeUnit.toMillis(runInterval);
             return this;
         }
 
 
-        public ScheduleManagerImpl build()
+        public final ScheduleManagerImpl build()
         {
             return new ScheduleManagerImpl(this);
         }

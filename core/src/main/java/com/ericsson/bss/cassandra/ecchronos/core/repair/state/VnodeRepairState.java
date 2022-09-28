@@ -33,12 +33,34 @@ public class VnodeRepairState
     private final long myFinishedAt;
     private final long myRepairTime;
 
-    public VnodeRepairState(LongTokenRange tokenRange, ImmutableSet<DriverNode> replicas, long startedAt)
+    /**
+     * Constructor.
+     *
+     * @param tokenRange
+     * @param replicas
+     * @param startedAt
+     */
+    public VnodeRepairState(final LongTokenRange tokenRange,
+                            final ImmutableSet<DriverNode> replicas,
+                            final long startedAt)
     {
         this(tokenRange, replicas, startedAt, UNREPAIRED);
     }
 
-    public VnodeRepairState(LongTokenRange tokenRange, ImmutableSet<DriverNode> replicas, long startedAt, long finishedAt, long repairTime)
+    /**
+     * Constructor.
+     *
+     * @param tokenRange
+     * @param replicas
+     * @param startedAt
+     * @param finishedAt
+     * @param repairTime
+     */
+    public VnodeRepairState(final LongTokenRange tokenRange,
+                            final ImmutableSet<DriverNode> replicas,
+                            final long startedAt,
+                            final long finishedAt,
+                            final long repairTime)
     {
         myTokenRange = tokenRange;
         myReplicas = replicas;
@@ -47,7 +69,18 @@ public class VnodeRepairState
         myRepairTime = repairTime;
     }
 
-    public VnodeRepairState(LongTokenRange tokenRange, ImmutableSet<DriverNode> replicas, long startedAt, long finishedAt)
+    /**
+     * Constructor.
+     *
+     * @param tokenRange
+     * @param replicas
+     * @param startedAt
+     * @param finishedAt
+     */
+    public VnodeRepairState(final LongTokenRange tokenRange,
+                            final ImmutableSet<DriverNode> replicas,
+                            final long startedAt,
+                            final long finishedAt)
     {
         myTokenRange = tokenRange;
         myReplicas = replicas;
@@ -64,31 +97,61 @@ public class VnodeRepairState
 
     }
 
+    /**
+     * Get token range.
+     *
+     * @return LongTokenRange
+     */
     public LongTokenRange getTokenRange()
     {
         return myTokenRange;
     }
 
+    /**
+     * Get replicas.
+     *
+     * @return The nodes
+     */
     public ImmutableSet<DriverNode> getReplicas()
     {
         return myReplicas;
     }
 
+    /**
+     * Get last repaired at.
+     *
+     * @return long
+     */
     public long lastRepairedAt()
     {
         return myStartedAt;
     }
 
+    /**
+     * Get finished at.
+     *
+     * @return long
+     */
     public long getFinishedAt()
     {
         return myFinishedAt;
     }
 
+    /**
+     * Get started at.
+     *
+     * @return long
+     */
     public long getStartedAt()
     {
         return myStartedAt;
     }
 
+    /**
+     * Get repair time.
+     *
+     * @return long
+     */
     public long getRepairTime()
     {
         return myRepairTime;
@@ -102,36 +165,58 @@ public class VnodeRepairState
      * @param other The vnode to compare to.
      * @return True if it represents the same vnode.
      */
-    public boolean isSameVnode(VnodeRepairState other)
+    public boolean isSameVnode(final VnodeRepairState other)
     {
         return getTokenRange().equals(other.getTokenRange()) && getReplicas().equals(other.getReplicas());
     }
 
+    /**
+     * Returns a string representation.
+     *
+     * @return String
+     */
     @Override
     public String toString()
     {
-        return "VnodeRepairState{" +
-                "myTokenRange=" + myTokenRange +
-                ", myReplicas=" + myReplicas +
-                ", myStartedAt=" + myStartedAt +
-                ", myFinishedAt=" + myFinishedAt +
-                ", myRepairTime=" + myRepairTime +
-                '}';
+        return "VnodeRepairState{"
+                + "myTokenRange=" + myTokenRange
+                + ", myReplicas=" + myReplicas
+                + ", myStartedAt=" + myStartedAt
+                + ", myFinishedAt=" + myFinishedAt
+                + ", myRepairTime=" + myRepairTime
+                + '}';
     }
 
+    /**
+     * Checks equality.
+     *
+     * @param o
+     * @return boolean
+     */
     @Override
-    public boolean equals(Object o)
+    public boolean equals(final Object o)
     {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
         VnodeRepairState that = (VnodeRepairState) o;
-        return myStartedAt == that.myStartedAt &&
-                myFinishedAt == that.myFinishedAt &&
-                myRepairTime == that.myRepairTime &&
-                Objects.equals(myTokenRange, that.myTokenRange) &&
-                Objects.equals(myReplicas, that.myReplicas);
+        return myStartedAt == that.myStartedAt
+                && myFinishedAt == that.myFinishedAt
+                && myRepairTime == that.myRepairTime
+                && Objects.equals(myTokenRange, that.myTokenRange)
+                && Objects.equals(myReplicas, that.myReplicas);
     }
 
+    /**
+     * Return a hash representation.
+     *
+     * @return int
+     */
     @Override
     public int hashCode()
     {

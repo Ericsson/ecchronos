@@ -33,7 +33,7 @@ import com.google.common.base.Preconditions;
 
 public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRepairMetricsProvider, Closeable
 {
-	private static final Logger LOG = LoggerFactory.getLogger(TableRepairMetricsImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TableRepairMetricsImpl.class);
 
     private static final String DEFAULT_STATISTICS_DIRECTORY = "/var/lib/cassandra/repair/metrics/";
     private static final long DEFAULT_STATISTICS_REPORT_INTERVAL_IN_MS = TimeUnit.SECONDS.toMillis(60);
@@ -46,17 +46,20 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
     private final MetricRegistry myMetricRegistry;
     private final NodeMetricHolder myNodeMetricHolder;
 
-    private TableRepairMetricsImpl(Builder builder)
+    private TableRepairMetricsImpl(final Builder builder)
     {
-        myMetricRegistry = Preconditions.checkNotNull(builder.myMetricRegistry, "Metric registry cannot be null");
+        myMetricRegistry = Preconditions.checkNotNull(builder.myMetricRegistry,
+                "Metric registry cannot be null");
 
         myNodeMetricHolder = new NodeMetricHolder(myMetricRegistry,
-                Preconditions.checkNotNull(builder.myTableStorageStates, "Table storage states cannot be null"));
+                Preconditions.checkNotNull(builder.myTableStorageStates,
+                        "Table storage states cannot be null"));
 
         File statisticsDirectory = new File(builder.myStatisticsDirectory);
-        if(!statisticsDirectory.exists() && !statisticsDirectory.mkdirs())
+        if (!statisticsDirectory.exists() && !statisticsDirectory.mkdirs())
         {
-            LOG.warn("Failed to create statistics directory: {}, csv files will not be generated", builder.myStatisticsDirectory);
+            LOG.warn("Failed to create statistics directory: {}, csv files will not be generated",
+                    builder.myStatisticsDirectory);
         }
 
         myTopLevelCsvReporter = CsvReporter.forRegistry(myMetricRegistry)
@@ -71,43 +74,50 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
     }
 
     @Override
-    public void repairState(TableReference tableReference, int repairedRanges, int notRepairedRanges)
+    public void repairState(final TableReference tableReference,
+                            final int repairedRanges,
+                            final int notRepairedRanges)
     {
         tableMetricHolder(tableReference).repairState(repairedRanges, notRepairedRanges);
     }
 
     @Override
-    public Optional<Double> getRepairRatio(TableReference tableReference)
+    public Optional<Double> getRepairRatio(final TableReference tableReference)
     {
         return Optional.ofNullable(myNodeMetricHolder.getRepairRatio(tableReference));
     }
 
     @Override
-    public void lastRepairedAt(TableReference tableReference, long lastRepairedAt)
+    public void lastRepairedAt(final TableReference tableReference,
+                               final long lastRepairedAt)
     {
         tableMetricHolder(tableReference).lastRepairedAt(lastRepairedAt);
     }
 
     @Override
-    public void remainingRepairTime(TableReference tableReference, long remainingRepairTime)
+    public void remainingRepairTime(final TableReference tableReference,
+                                    final long remainingRepairTime)
     {
         tableMetricHolder(tableReference).remainingRepairTime(remainingRepairTime);
     }
 
     @Override
-    public void repairTiming(TableReference tableReference, long timeTaken, TimeUnit timeUnit, boolean successful)
+    public void repairTiming(final TableReference tableReference,
+                             final long timeTaken,
+                             final TimeUnit timeUnit,
+                             final boolean successful)
     {
         tableMetricHolder(tableReference).repairTiming(timeTaken, timeUnit, successful);
     }
 
     @Override
-    public void failedRepairTask(TableReference tableReference)
+    public void failedRepairTask(final TableReference tableReference)
     {
         tableMetricHolder(tableReference).failedRepairTask();
     }
 
     @Override
-    public void succeededRepairTask(TableReference tableReference)
+    public void succeededRepairTask(final TableReference tableReference)
     {
         tableMetricHolder(tableReference).succeededRepairTask();
     }
@@ -147,37 +157,67 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         private long myReportIntervalInMs = DEFAULT_STATISTICS_REPORT_INTERVAL_IN_MS;
         private MetricRegistry myMetricRegistry;
 
-        public Builder withTableStorageStates(TableStorageStates tableStorageStates)
+        /**
+         * Build with table storage states.
+         *
+         * @param tableStorageStates Table storage states
+         * @return Builder
+         */
+        public Builder withTableStorageStates(final TableStorageStates tableStorageStates)
         {
             myTableStorageStates = tableStorageStates;
             return this;
         }
 
-        public Builder withStatisticsDirectory(String statisticsDirectory)
+        /**
+         * Build with statistics directory.
+         *
+         * @param statisticsDirectory Statistic directory
+         * @return Builder
+         */
+        public Builder withStatisticsDirectory(final String statisticsDirectory)
         {
             myStatisticsDirectory = statisticsDirectory;
             return this;
         }
 
-        public Builder withReportInterval(long reportInterval, TimeUnit timeUnit)
+        /**
+         * Build with report interval.
+         *
+         * @param reportInterval Report interval
+         * @param timeUnit The time unit
+         * @return Builder
+         */
+        public Builder withReportInterval(final long reportInterval, final TimeUnit timeUnit)
         {
             myReportIntervalInMs = timeUnit.toMillis(reportInterval);
             return this;
         }
 
-        public Builder withMetricRegistry(MetricRegistry metricRegistry)
+        /**
+         * Build with metric registry.
+         *
+         * @param metricRegistry Metric registry
+         * @return Builder
+         */
+        public Builder withMetricRegistry(final MetricRegistry metricRegistry)
         {
             myMetricRegistry = metricRegistry;
             return this;
         }
 
+        /**
+         * Build table repair metrics.
+         *
+         * @return TableRepairMetricsImpl
+         */
         public TableRepairMetricsImpl build()
         {
             return new TableRepairMetricsImpl(this);
         }
     }
 
-    private TableMetricHolder tableMetricHolder(TableReference tableReference)
+    private TableMetricHolder tableMetricHolder(final TableReference tableReference)
     {
         TableMetricHolder tableMetricHolder = myTableMetricHolders.get(tableReference);
 
@@ -185,7 +225,8 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         {
             tableMetricHolder = new TableMetricHolder(tableReference, myMetricRegistry, myNodeMetricHolder);
 
-            TableMetricHolder oldTableMetricHolder = myTableMetricHolders.putIfAbsent(tableReference, tableMetricHolder);
+            TableMetricHolder oldTableMetricHolder = myTableMetricHolders.putIfAbsent(tableReference,
+                    tableMetricHolder);
 
             if (oldTableMetricHolder != null)
             {

@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 
-public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
+public final class EccRepairHistory implements RepairHistory, RepairHistoryProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(EccRepairHistory.class);
 
@@ -80,15 +80,19 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
     private final PreparedStatement initiateStatement;
     private final PreparedStatement finishStatement;
 
-    private EccRepairHistory(Builder builder)
+    private EccRepairHistory(final Builder builder)
     {
         Preconditions.checkArgument(builder.lookbackTimeInMs > 0,
                 "Lookback time must be a positive number");
 
-        session = Preconditions.checkNotNull(builder.session, "Session cannot be null");
-        localNode = Preconditions.checkNotNull(builder.localNode, "Local node must be set");
-        statementDecorator = Preconditions.checkNotNull(builder.statementDecorator, "Statement decorator must be set");
-        replicationState = Preconditions.checkNotNull(builder.replicationState, "Replication state must be set");
+        session = Preconditions.checkNotNull(builder.session,
+                "Session cannot be null");
+        localNode = Preconditions.checkNotNull(builder.localNode,
+                "Local node must be set");
+        statementDecorator = Preconditions.checkNotNull(builder.statementDecorator,
+                "Statement decorator must be set");
+        replicationState = Preconditions.checkNotNull(builder.replicationState,
+                "Replication state must be set");
         lookbackTimeInMs = builder.lookbackTimeInMs;
 
         initiateStatement = session.prepare(QueryBuilder.insertInto(builder.keyspaceName, "repair_history")
@@ -100,7 +104,8 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
                         .value(COLUMN_RANGE_BEGIN, bindMarker())
                         .value(COLUMN_RANGE_END, bindMarker())
                         .value(COLUMN_STATUS, bindMarker())
-                        .value(COLUMN_STARTED_AT, bindMarker()).build().setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
+                        .value(COLUMN_STARTED_AT, bindMarker())
+                .build().setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
 
         finishStatement = session.prepare(QueryBuilder.update(builder.keyspaceName, "repair_history")
                         .setColumn(COLUMN_STATUS, bindMarker())
@@ -120,8 +125,10 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
     }
 
     @Override
-    public RepairSession newSession(TableReference tableReference, UUID jobId, LongTokenRange range,
-            Set<DriverNode> participants)
+    public RepairSession newSession(final TableReference tableReference,
+                                    final UUID jobId,
+                                    final LongTokenRange range,
+                                    final Set<DriverNode> participants)
     {
         Preconditions.checkArgument(participants.contains(localNode),
                 "Local node must be part of repair");
@@ -135,22 +142,29 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
     }
 
     @Override
-    public Iterator<RepairEntry> iterate(TableReference tableReference, long to, Predicate<RepairEntry> predicate)
+    public Iterator<RepairEntry> iterate(final TableReference tableReference,
+                                         final long to,
+                                         final Predicate<RepairEntry> predicate)
     {
         long from = System.currentTimeMillis() - lookbackTimeInMs;
         return iterate(tableReference, to, from, predicate);
     }
 
     @Override
-    public Iterator<RepairEntry> iterate(TableReference tableReference, long to, long from,
-            Predicate<RepairEntry> predicate)
+    public Iterator<RepairEntry> iterate(final TableReference tableReference,
+                                         final long to,
+                                         final long from,
+                                         final Predicate<RepairEntry> predicate)
     {
         return iterate(localNode.getId(), tableReference, to, from, predicate);
     }
 
     @Override
-    public Iterator<RepairEntry> iterate(UUID nodeId, TableReference tableReference, long to, long from,
-            Predicate<RepairEntry> predicate)
+    public Iterator<RepairEntry> iterate(final UUID nodeId,
+                                         final TableReference tableReference,
+                                         final long to,
+                                         final long from,
+                                         final Predicate<RepairEntry> predicate)
     {
         UUID start = Uuids.startOf(from);
         UUID finish = Uuids.endOf(to);
@@ -166,12 +180,12 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
         return new RepairEntryIterator(tableReference, resultSet, predicate, clusterWide);
     }
 
-    private ResultSet execute(Statement statement)
+    private ResultSet execute(final Statement statement)
     {
         return session.execute(statementDecorator.apply(statement));
     }
 
-    private CompletionStage<AsyncResultSet> executeAsync(Statement statement)
+    private CompletionStage<AsyncResultSet> executeAsync(final Statement statement)
     {
         return session.executeAsync(statementDecorator.apply(statement));
     }
@@ -183,12 +197,15 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
         private final Predicate<RepairEntry> predicate;
         private final boolean clusterWide;
 
-        RepairEntryIterator(TableReference tableReference, ResultSet resultSet, Predicate<RepairEntry> predicate, boolean clusterWide)
+        RepairEntryIterator(final TableReference aTableReference,
+                            final ResultSet aResultSet,
+                            final Predicate<RepairEntry> aPredicate,
+                            final boolean isClusterWide)
         {
-            this.tableReference = tableReference;
-            this.rowIterator = resultSet.iterator();
-            this.predicate = predicate;
-            this.clusterWide = clusterWide;
+            this.tableReference = aTableReference;
+            this.rowIterator = aResultSet.iterator();
+            this.predicate = aPredicate;
+            this.clusterWide = isClusterWide;
         }
 
         @Override
@@ -211,7 +228,7 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
             return endOfData();
         }
 
-        private RepairEntry buildFrom(Row row, boolean clusterWide)
+        private RepairEntry buildFrom(final Row row, final boolean isClusterWide)
         {
             long rangeBegin = Long.parseLong(row.getString(COLUMN_RANGE_BEGIN));
             long rangeEnd = Long.parseLong(row.getString(COLUMN_RANGE_END));
@@ -225,7 +242,7 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
                 finishedAt = finished.toEpochMilli();
             }
             Set<DriverNode> nodes;
-            if (clusterWide)
+            if (isClusterWide)
             {
                 nodes = replicationState.getNodesClusterWide(tableReference, tokenRange);
             }
@@ -243,12 +260,12 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
             return new RepairEntry(tokenRange, startedAt, finishedAt, nodes, status);
         }
 
-        private boolean validateFields(Row row)
+        private boolean validateFields(final Row row)
         {
-            return !row.isNull(COLUMN_RANGE_BEGIN) &&
-                    !row.isNull(COLUMN_RANGE_END) &&
-                    !row.isNull(COLUMN_STARTED_AT) &&
-                    !row.isNull(COLUMN_STATUS);
+            return !row.isNull(COLUMN_RANGE_BEGIN)
+                    && !row.isNull(COLUMN_RANGE_END)
+                    && !row.isNull(COLUMN_STARTED_AT)
+                    && !row.isNull(COLUMN_STATUS);
         }
     }
 
@@ -258,12 +275,12 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
 
         private final SessionState nextValid;
 
-        SessionState(SessionState nextValid)
+        SessionState(final SessionState theNextValid)
         {
-            this.nextValid = nextValid;
+            this.nextValid = theNextValid;
         }
 
-        public boolean canTransition(SessionState nextState)
+        public boolean canTransition(final SessionState nextState)
         {
             return nextState.equals(nextValid);
         }
@@ -279,13 +296,17 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
         private final AtomicReference<SessionState> sessionState = new AtomicReference<>(SessionState.NO_STATE);
         private final AtomicReference<UUID> repairId = new AtomicReference<>(null);
 
-        RepairSessionImpl(UUID tableId, UUID nodeId, UUID jobId, LongTokenRange range, Set<DriverNode> participants)
+        RepairSessionImpl(final UUID aTableId,
+                          final UUID aNodeId,
+                          final UUID aJobId,
+                          final LongTokenRange aRange,
+                          final Set<DriverNode> theParticipants)
         {
-            this.tableId = tableId;
-            this.nodeId = nodeId;
-            this.jobId = jobId;
-            this.range = range;
-            this.participants = participants.stream()
+            this.tableId = aTableId;
+            this.nodeId = aNodeId;
+            this.jobId = aJobId;
+            this.range = aRange;
+            this.participants = theParticipants.stream()
                     .map(DriverNode::getId)
                     .collect(Collectors.toSet());
         }
@@ -301,25 +322,30 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
         {
             repairId.compareAndSet(null, Uuids.timeBased());
             transitionTo(SessionState.STARTED);
-            String range_begin = Long.toString(range.start);
-            String range_end = Long.toString(range.end);
-            Date started_at = new Date(Uuids.unixTimestamp(repairId.get()));
+            String rangeBegin = Long.toString(range.start);
+            String rangeEnd = Long.toString(range.end);
+            Date startedAt = new Date(Uuids.unixTimestamp(repairId.get()));
 
-            insertWithRetry(participant -> insertStart(range_begin, range_end, started_at, participant));
+            insertWithRetry(participant -> insertStart(rangeBegin, rangeEnd, startedAt, participant));
         }
 
+        /**
+         * Transition to state DONE, as long as the previous status was STARTED. Set finished at to current timestamp.
+         *
+         * @param repairStatus The previous status
+         */
         @Override
-        public void finish(RepairStatus repairStatus)
+        public void finish(final RepairStatus repairStatus)
         {
             Preconditions.checkArgument(!RepairStatus.STARTED.equals(repairStatus),
                     "Repair status must change from started");
             transitionTo(SessionState.DONE);
-            Date finished_at = new Date(System.currentTimeMillis());
+            Date finishedAt = new Date(System.currentTimeMillis());
 
-            insertWithRetry(participant -> insertFinish(repairStatus, finished_at, participant));
+            insertWithRetry(participant -> insertFinish(repairStatus, finishedAt, participant));
         }
 
-        private void insertWithRetry(Function<UUID, CompletionStage<AsyncResultSet>> insertFunction)
+        private void insertWithRetry(final Function<UUID, CompletionStage<AsyncResultSet>> insertFunction)
         {
             Map<UUID, CompletableFuture> futures = new HashMap<>();
 
@@ -360,21 +386,34 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
             }
         }
 
-        private CompletionStage<AsyncResultSet> insertStart(String range_begin, String range_end, Date started_at, UUID participant)
+        private CompletionStage<AsyncResultSet> insertStart(final String rangeBegin,
+                                                            final String rangeEnd,
+                                                            final Date startedAt,
+                                                            final UUID participant)
         {
             Statement statement = initiateStatement.bind(tableId, participant, repairId.get(), jobId, nodeId,
-                    range_begin,
-                    range_end, RepairStatus.STARTED.toString(), started_at.toInstant());
+                    rangeBegin,
+                    rangeEnd, RepairStatus.STARTED.toString(), startedAt.toInstant());
             return executeAsync(statement);
         }
 
-        private CompletionStage<AsyncResultSet> insertFinish(RepairStatus repairStatus, Date finished_at, UUID participant)
+        private CompletionStage<AsyncResultSet> insertFinish(final RepairStatus repairStatus,
+                                                             final Date finishedAt,
+                                                             final UUID participant)
         {
-            Statement statement = finishStatement.bind(repairStatus.toString(), finished_at.toInstant(), tableId, participant,
+            Statement statement = finishStatement.bind(repairStatus.toString(),
+                    finishedAt.toInstant(),
+                    tableId,
+                    participant,
                     repairId.get());
             return executeAsync(statement);
         }
 
+        /**
+         * Return a string representation.
+         *
+         * @return String
+         */
         @Override
         public String toString()
         {
@@ -382,7 +421,7 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
                     jobId, range, participants);
         }
 
-        private void transitionTo(SessionState newState)
+        private void transitionTo(final SessionState newState)
         {
             SessionState currentState = sessionState.get();
             Preconditions.checkState(currentState.canTransition(newState),
@@ -409,42 +448,84 @@ public class EccRepairHistory implements RepairHistory, RepairHistoryProvider
         private long lookbackTimeInMs;
         private String keyspaceName = "ecchronos";
 
-        public Builder withSession(CqlSession session)
+        /**
+         * Build ECC repair history with session.
+         *
+         * @param aSession Session.q
+         * @return Builder
+         */
+        public Builder withSession(final CqlSession aSession)
         {
-            this.session = session;
+            this.session = aSession;
             return this;
         }
 
-        public Builder withLocalNode(DriverNode localNode)
+        /**
+         * Build ECC repair history with local node.
+         *
+         * @param aLocalNode The local node.
+         * @return Builder
+         */
+        public Builder withLocalNode(final DriverNode aLocalNode)
         {
-            this.localNode = localNode;
+            this.localNode = aLocalNode;
             return this;
         }
 
-        public Builder withStatementDecorator(StatementDecorator statementDecorator)
+        /**
+         * Build ECC repair history with statement decorator.
+         *
+         * @param aStatementDecorator The statement decorator.
+         * @return Builder
+         */
+        public Builder withStatementDecorator(final StatementDecorator aStatementDecorator)
         {
-            this.statementDecorator = statementDecorator;
+            this.statementDecorator = aStatementDecorator;
             return this;
         }
 
-        public Builder withReplicationState(ReplicationState replicationState)
+        /**
+         * Build ECC repair history with replication history.
+         *
+         * @param aReplicationState Replication state.
+         * @return Builder
+         */
+        public Builder withReplicationState(final ReplicationState aReplicationState)
         {
-            this.replicationState = replicationState;
+            this.replicationState = aReplicationState;
             return this;
         }
 
-        public Builder withLookbackTime(long lookbackTime, TimeUnit unit)
+        /**
+         * Build ECC repair history with lookback time.
+         *
+         * @param lookbackTime  Lookback time.
+         * @param unit Time unit.
+         * @return Builder
+         */
+        public Builder withLookbackTime(final long lookbackTime, final TimeUnit unit)
         {
             this.lookbackTimeInMs = TimeUnit.MILLISECONDS.convert(lookbackTime, unit);
             return this;
         }
 
-        public Builder withKeyspace(String keyspaceName)
+        /**
+         * Build ECC repair history with keyspace.
+         *
+         * @param theKeyspaceName Keyspace.
+         * @return Builder
+         */
+        public Builder withKeyspace(final String theKeyspaceName)
         {
-            this.keyspaceName = keyspaceName;
+            this.keyspaceName = theKeyspaceName;
             return this;
         }
 
+        /**
+         * Build ECC repair history.
+         *
+         * @return Builder
+         */
         public EccRepairHistory build()
         {
             return new EccRepairHistory(this);

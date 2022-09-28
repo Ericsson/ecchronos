@@ -33,11 +33,14 @@ public class LockCollection implements LockFactory.DistributedLock
 
     private final List<LockFactory.DistributedLock> myLocks;
 
-    public LockCollection(Collection<? extends LockFactory.DistributedLock> locks)
+    public LockCollection(final Collection<? extends LockFactory.DistributedLock> locks)
     {
         myLocks = new ArrayList<>(locks);
     }
 
+    /**
+     * Close.
+     */
     @Override
     public void close()
     {

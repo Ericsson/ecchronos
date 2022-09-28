@@ -48,7 +48,7 @@ import java.util.concurrent.TimeUnit;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 
 /**
- * Time based run policy
+ * Time based run policy.
  *
  * Expected keyspace/table:
  * CREATE KEYSPACE IF NOT EXISTS ecchronos WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 1};
@@ -78,7 +78,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     private final Clock myClock;
     private final LoadingCache<TableKey, TimeRejectionCollection> myTimeRejectionCache;
 
-    public TimeBasedRunPolicy(Builder builder)
+    public TimeBasedRunPolicy(final Builder builder)
     {
         mySession = builder.mySession;
         myStatementDecorator = builder.myStatementDecorator;
@@ -95,16 +95,18 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         myTimeRejectionCache = createConfigCache(builder.myCacheExpireTime);
     }
 
-    private LoadingCache<TableKey, TimeRejectionCollection> createConfigCache(long expireAfter)
+    private LoadingCache<TableKey, TimeRejectionCollection> createConfigCache(final long expireAfter)
     {
         return CacheBuilder.newBuilder()
                 .expireAfterWrite(expireAfter, TimeUnit.MILLISECONDS)
                 .build(new CacheLoader<TableKey, TimeRejectionCollection>()
                 {
                     @Override
-                    public TimeRejectionCollection load(TableKey key)
+                    public TimeRejectionCollection load(final TableKey key)
                     {
-                        Statement decoratedStatement = myStatementDecorator.apply(myGetRejectionsStatement.bind(key.getKeyspace(), key.getTable()));
+                        Statement decoratedStatement =
+                                myStatementDecorator.apply(myGetRejectionsStatement.bind(key.getKeyspace(),
+                                        key.getTable()));
 
                         ResultSet resultSet = mySession.execute(decoratedStatement);
                         Iterator<Row> iterator = resultSet.iterator();
@@ -114,7 +116,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     }
 
     @Override
-    public long validate(ScheduledJob job)
+    public final long validate(final ScheduledJob job)
     {
         if (job instanceof TableRepairJob)
         {
@@ -127,13 +129,13 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     }
 
     @Override
-    public boolean shouldRun(TableReference tableReference)
+    public final boolean shouldRun(final TableReference tableReference)
     {
         return getRejectionsForTable(tableReference) == -1L;
     }
 
     @Override
-    public void close()
+    public final void close()
     {
         myTimeRejectionCache.invalidateAll();
         myTimeRejectionCache.cleanUp();
@@ -154,39 +156,45 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         private long myCacheExpireTime = DEFAULT_CACHE_EXPIRE_TIME;
         private Clock myClock = Clock.systemDefaultZone();
 
-        public Builder withSession(CqlSession session)
+        public final Builder withSession(final CqlSession session)
         {
             mySession = session;
             return this;
         }
 
-        public Builder withStatementDecorator(StatementDecorator statementDecorator)
+        public final Builder withStatementDecorator(final StatementDecorator statementDecorator)
         {
             myStatementDecorator = statementDecorator;
             return this;
         }
 
-        public Builder withKeyspaceName(String keyspaceName)
+        public final Builder withKeyspaceName(final String keyspaceName)
         {
             myKeyspaceName = keyspaceName;
             return this;
         }
 
+        /**
+         * Also visible for testing.
+         */
         @VisibleForTesting
-        Builder withCacheExpireTime(long expireTime)
+        Builder withCacheExpireTime(final long expireTime)
         {
             myCacheExpireTime = expireTime;
             return this;
         }
 
+        /**
+         * Also visible for testing.
+         */
         @VisibleForTesting
-        Builder withClock(Clock clock)
+        Builder withClock(final Clock clock)
         {
             myClock = clock;
             return this;
         }
 
-        public TimeBasedRunPolicy build()
+        public final TimeBasedRunPolicy build()
         {
             verifySchemasExists();
             return new TimeBasedRunPolicy(this);
@@ -198,17 +206,23 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
             if (!keyspaceMetadata.isPresent())
             {
                 LOG.error("Keyspace {} does not exist, it needs to be created", myKeyspaceName);
-                throw new IllegalStateException("Keyspace " + myKeyspaceName + " does not exist, it needs to be created");
+                throw new IllegalStateException("Keyspace " + myKeyspaceName
+                        + " does not exist, it needs to be created");
             }
 
             if (!keyspaceMetadata.get().getTable(TABLE_REJECT_CONFIGURATION).isPresent())
             {
-                LOG.error("Table {}.{} does not exist, it needs to be created", myKeyspaceName, TABLE_REJECT_CONFIGURATION);
-                throw new IllegalStateException("Table " + myKeyspaceName + "." + TABLE_REJECT_CONFIGURATION + " does not exist, it needs to be created");
+                LOG.error("Table {}.{} does not exist, it needs to be created",
+                        myKeyspaceName, TABLE_REJECT_CONFIGURATION);
+                throw new IllegalStateException("Table " + myKeyspaceName + "."
+                        + TABLE_REJECT_CONFIGURATION + " does not exist, it needs to be created");
             }
         }
     }
 
+    /**
+     * Also visible for testing.
+     */
     @VisibleForTesting
     void clearCache()
     {
@@ -219,7 +233,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     {
         private final List<TimeRejection> myRejections = new ArrayList<>();
 
-        TimeRejectionCollection(Iterator<Row> iterator)
+        TimeRejectionCollection(final Iterator<Row> iterator)
         {
             while (iterator.hasNext())
             {
@@ -249,7 +263,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         private final LocalDateTime myStart;
         private final LocalDateTime myEnd;
 
-        TimeRejection(Row row)
+        TimeRejection(final Row row)
         {
             myStart = toDateTime(row.getInt("start_hour"), row.getInt("start_minute"));
             myEnd = toDateTime(row.getInt("end_hour"), row.getInt("end_minute"));
@@ -257,7 +271,8 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
 
         public long rejectionTime()
         {
-            // 00:00->00:00 means that we pause the repair scheduling, so wait DEFAULT_REJECT_TIME instead of until 00:00
+            // 00:00->00:00 means that we pause the repair scheduling,
+            // so wait DEFAULT_REJECT_TIME instead of until 00:00
             if (myStart.getHour() == 0
                     && myStart.getMinute() == 0
                     && myEnd.getHour() == 0
@@ -297,7 +312,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
             return myEnd.isBefore(myStart);
         }
 
-        private LocalDateTime toDateTime(int h, int m)
+        private LocalDateTime toDateTime(final int h, final int m)
         {
             return LocalDateTime.now(myClock)
                     .withHour(h)
@@ -306,7 +321,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         }
     }
 
-    private long getRejectionsForTable(TableReference tableReference)
+    private long getRejectionsForTable(final TableReference tableReference)
     {
         long rejectTime = -1L;
         try
@@ -337,12 +352,12 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         return new TableKey("*", "*");
     }
 
-    private TableKey allKeyspaces(String table)
+    private TableKey allKeyspaces(final String table)
     {
         return new TableKey("*", table);
     }
 
-    private TableKey forTable(TableReference tableReference)
+    private TableKey forTable(final TableReference tableReference)
     {
         return new TableKey(tableReference.getKeyspace(), tableReference.getTable());
     }
@@ -352,10 +367,10 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         private final String keyspace;
         private final String table;
 
-        TableKey(String keyspace, String table)
+        TableKey(final String aKeyspace, final String aTable)
         {
-            this.keyspace = keyspace;
-            this.table = table;
+            this.keyspace = aKeyspace;
+            this.table = aTable;
         }
 
         String getKeyspace()
@@ -369,15 +384,18 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         }
 
         @Override
-        public boolean equals(Object o)
+        public boolean equals(final Object o)
         {
             if (this == o)
+            {
                 return true;
+            }
             if (o == null || getClass() != o.getClass())
+            {
                 return false;
+            }
             TableKey tableKey = (TableKey) o;
-            return keyspace.equals(tableKey.keyspace) &&
-                    table.equals(tableKey.table);
+            return keyspace.equals(tableKey.keyspace) && table.equals(tableKey.table);
         }
 
         @Override

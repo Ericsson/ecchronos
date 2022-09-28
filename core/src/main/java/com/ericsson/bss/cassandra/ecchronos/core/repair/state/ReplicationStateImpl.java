@@ -46,22 +46,27 @@ public class ReplicationStateImpl implements ReplicationState
 {
     private static final Logger LOG = LoggerFactory.getLogger(ReplicationStateImpl.class);
 
-    private static final Map<String, ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>>> keyspaceReplicationCache = new ConcurrentHashMap<>();
-    private static final Map<String, ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>>> clusterWideKeyspaceReplicationCache = new ConcurrentHashMap<>();
+    private static final Map<String, ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>>>
+            KEYSPACE_REPLICATION_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>>>
+            CLUSTER_WIDE_KEYSPACE_REPLICATION_CACHE = new ConcurrentHashMap<>();
 
     private final NodeResolver myNodeResolver;
     private final CqlSession mySession;
     private final Node myLocalNode;
 
-    public ReplicationStateImpl(NodeResolver nodeResolver, CqlSession session, Node localNode)
+    public ReplicationStateImpl(final NodeResolver nodeResolver, final CqlSession session, final Node localNode)
     {
         myNodeResolver = nodeResolver;
         mySession = session;
         myLocalNode = localNode;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public ImmutableSet<DriverNode> getNodes(TableReference tableReference, LongTokenRange tokenRange)
+    public ImmutableSet<DriverNode> getNodes(final TableReference tableReference, final LongTokenRange tokenRange)
     {
         String keyspace = tableReference.getKeyspace();
 
@@ -69,8 +74,12 @@ public class ReplicationStateImpl implements ReplicationState
         return getNodes(replication, tokenRange);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public ImmutableSet<DriverNode> getNodesClusterWide(TableReference tableReference, LongTokenRange tokenRange)
+    public ImmutableSet<DriverNode> getNodesClusterWide(final TableReference tableReference,
+                                                        final LongTokenRange tokenRange)
     {
         String keyspace = tableReference.getKeyspace();
 
@@ -78,7 +87,8 @@ public class ReplicationStateImpl implements ReplicationState
         return getNodes(replication, tokenRange);
     }
 
-    private ImmutableSet<DriverNode> getNodes(ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> replication, LongTokenRange tokenRange)
+    private ImmutableSet<DriverNode> getNodes(final ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> replication,
+                                              final LongTokenRange tokenRange)
     {
         ImmutableSet<DriverNode> nodes = replication.get(tokenRange);
 
@@ -97,35 +107,50 @@ public class ReplicationStateImpl implements ReplicationState
         return nodes;
     }
 
+    /**
+     * Get token ranges to replicas.
+     *
+     * @param tableReference
+     *            The table used to calculate the proper replication.
+     * @return Nodes and their ranges
+     */
     @Override
-    public Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRangeToReplicas(TableReference tableReference)
+    public Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRangeToReplicas(final TableReference tableReference)
     {
         String keyspace = tableReference.getKeyspace();
         return maybeRenew(keyspace);
     }
 
-    private ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> maybeRenew(String keyspace)
+    private ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> maybeRenew(final String keyspace)
     {
         ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> replication = buildTokenMap(keyspace, false);
 
-        return keyspaceReplicationCache.compute(keyspace, (k, v) -> !replication.equals(v) ? replication : v);
+        return KEYSPACE_REPLICATION_CACHE.compute(keyspace, (k, v) -> !replication.equals(v) ? replication : v);
     }
 
+    /**
+     * Get token ranges.
+     *
+     * @param tableReference
+     * @return Nodes and their ranges
+     */
     @Override
-    public Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRanges(TableReference tableReference)
+    public Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRanges(final TableReference tableReference)
     {
         String keyspace = tableReference.getKeyspace();
         return maybeRenewClusterWide(keyspace);
     }
 
-    private ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> maybeRenewClusterWide(String keyspace)
+    private ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> maybeRenewClusterWide(final String keyspace)
     {
         ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> replication = buildTokenMap(keyspace, true);
 
-        return clusterWideKeyspaceReplicationCache.compute(keyspace, (k, v) -> !replication.equals(v) ? replication : v);
+        return CLUSTER_WIDE_KEYSPACE_REPLICATION_CACHE
+                .compute(keyspace, (k, v) -> !replication.equals(v) ? replication : v);
     }
 
-    private ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> buildTokenMap(String keyspace, boolean clusterWide)
+    private ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> buildTokenMap(final String keyspace,
+                                                                                 final boolean clusterWide)
     {
         ImmutableMap.Builder<LongTokenRange, ImmutableSet<DriverNode>> replicationBuilder = ImmutableMap.builder();
         Map<Set<Node>, ImmutableSet<DriverNode>> replicaCache = new HashMap<>();
@@ -148,8 +173,8 @@ public class ReplicationStateImpl implements ReplicationState
         for (TokenRange tokenRange : tokenRanges)
         {
             LongTokenRange longTokenRange = convert(tokenRange);
-            ImmutableSet<DriverNode> replicas = replicaCache.computeIfAbsent(tokenMap.get().getReplicas(keyspaceName, tokenRange),
-                    this::convert);
+            ImmutableSet<DriverNode> replicas
+                    = replicaCache.computeIfAbsent(tokenMap.get().getReplicas(keyspaceName, tokenRange), this::convert);
 
             replicationBuilder.put(longTokenRange, replicas);
         }
@@ -157,7 +182,7 @@ public class ReplicationStateImpl implements ReplicationState
         return replicationBuilder.build();
     }
 
-    private ImmutableSet<DriverNode> convert(Set<Node> nodes)
+    private ImmutableSet<DriverNode> convert(final Set<Node> nodes)
     {
         ImmutableSet.Builder<DriverNode> builder = new ImmutableSet.Builder<>();
         for (Node node : nodes)
@@ -183,7 +208,7 @@ public class ReplicationStateImpl implements ReplicationState
         return builder.build();
     }
 
-    private LongTokenRange convert(TokenRange range)
+    private LongTokenRange convert(final TokenRange range)
     {
         // Assuming murmur3 partitioner
         long start = ((Murmur3Token) range.getStart()).getValue();

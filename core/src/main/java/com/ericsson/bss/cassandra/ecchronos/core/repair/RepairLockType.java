@@ -26,9 +26,9 @@ public enum RepairLockType
     DATACENTER_AND_VNODE(() -> new CombinedRepairResourceFactory(new DataCenterRepairResourceFactory(),
             new VnodeRepairResourceFactory()));
 
-    final Supplier<RepairResourceFactory> myRepairLockingFactoryProvider;
+    private final Supplier<RepairResourceFactory> myRepairLockingFactoryProvider;
 
-    RepairLockType(Supplier<RepairResourceFactory> repairLockingProvider)
+    RepairLockType(final Supplier<RepairResourceFactory> repairLockingProvider)
     {
         myRepairLockingFactoryProvider = repairLockingProvider;
     }

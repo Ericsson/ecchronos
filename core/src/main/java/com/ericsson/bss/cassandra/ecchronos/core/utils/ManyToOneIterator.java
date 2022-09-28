@@ -23,7 +23,8 @@ import java.util.List;
 import com.google.common.collect.AbstractIterator;
 
 /**
- * An iterator that takes multiple iterables and merge them together into one iterator by sorting the elements based on the provided comparator.
+ * An iterator that takes multiple iterables and merge them together into one iterator by sorting the elements based on
+ * the provided comparator.
  */
 public class ManyToOneIterator<T> extends AbstractIterator<T>
 {
@@ -37,7 +38,7 @@ public class ManyToOneIterator<T> extends AbstractIterator<T>
      * @param comparator
      *            The comparator to use for comparing the elements.
      */
-    public ManyToOneIterator(Collection<? extends Iterable<T>> iterables, Comparator<T> comparator)
+    public ManyToOneIterator(final Collection<? extends Iterable<T>> iterables, final Comparator<T> comparator)
     {
         List<T> elementList = new ArrayList<>();
 
@@ -52,7 +53,7 @@ public class ManyToOneIterator<T> extends AbstractIterator<T>
     }
 
     @Override
-    protected T computeNext()
+    protected final T computeNext()
     {
         if (myIterator.hasNext())
         {

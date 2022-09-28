@@ -31,28 +31,54 @@ public class ReplicaRepairGroup implements Iterable<LongTokenRange>
     private final ImmutableSet<DriverNode> myReplicas;
     private final ImmutableList<LongTokenRange> myVnodes;
 
-    public ReplicaRepairGroup(ImmutableSet<DriverNode> replicas, ImmutableList<LongTokenRange> vnodes)
+    /**
+     * Constructor.
+     *
+     * @param replicas
+     * @param vnodes
+     */
+    public ReplicaRepairGroup(final ImmutableSet<DriverNode> replicas, final ImmutableList<LongTokenRange> vnodes)
     {
         myReplicas = replicas;
         myVnodes = vnodes;
     }
 
+    /**
+     * Get replicas.
+     *
+     * @return Replicas
+     */
     public Set<DriverNode> getReplicas()
     {
         return myReplicas;
     }
 
+    /**
+     * Get datacenters.
+     *
+     * @return Datacenters
+     */
     public Set<String> getDataCenters()
     {
         return myReplicas.stream().map(DriverNode::getDatacenter).collect(Collectors.toSet());
     }
 
+    /**
+     * Iterate.
+     *
+     * @return Token range iterator
+     */
     @Override
     public Iterator<LongTokenRange> iterator()
     {
         return myVnodes.iterator();
     }
 
+    /**
+     * String representation.
+     *
+     * @return String
+     */
     @Override
     public String toString()
     {

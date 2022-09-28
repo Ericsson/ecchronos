@@ -20,6 +20,7 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import java.util.Objects;
 
+@SuppressWarnings("VisibilityModifier")
 public class RepairStats
 {
     @NotBlank
@@ -34,27 +35,46 @@ public class RepairStats
     @Min(0)
     public long repairTimeTakenMs;
 
-    public RepairStats(String keyspace, String table, double repairedRatio, long repairTimeTakenMs)
+    public RepairStats(final String theKeyspace,
+                       final String theTable,
+                       final double theRepairedRatio,
+                       final long theRepairTimeTakenMs)
     {
-        this.keyspace = keyspace;
-        this.table = table;
-        this.repairedRatio = repairedRatio;
-        this.repairTimeTakenMs = repairTimeTakenMs;
+        this.keyspace = theKeyspace;
+        this.table = theTable;
+        this.repairedRatio = theRepairedRatio;
+        this.repairTimeTakenMs = theRepairTimeTakenMs;
     }
 
+    /**
+     * Equality.
+     *
+     * @param o
+     * @return boolean
+     */
     @Override
-    public boolean equals(Object o)
+    public boolean equals(final Object o)
     {
         if (this == o)
+        {
             return true;
+        }
         if (o == null || getClass() != o.getClass())
+        {
             return false;
+        }
         RepairStats that = (RepairStats) o;
         return Double.compare(that.repairedRatio, repairedRatio) == 0
-                && repairTimeTakenMs == that.repairTimeTakenMs && keyspace.equals(that.keyspace) && table.equals(
-                that.table);
+                && repairTimeTakenMs == that.repairTimeTakenMs
+                && keyspace.equals(that.keyspace)
+                && table.equals(that.table);
     }
 
+    /**
+     * Hash representation.
+     *
+     * @return int
+     */
     @Override
     public int hashCode()
     {

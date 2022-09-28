@@ -20,8 +20,11 @@ import java.util.concurrent.TimeUnit;
 /**
  * A scheduled job that should be managed by the {@link ScheduleManager}.
  */
+@SuppressWarnings("VisibilityModifier")
 public abstract class ScheduledJob implements Iterable<ScheduledTask>
 {
+    private static final int ONE_HOUR_IN_MILLIS = 3600000;
+
     public static final long DEFAULT_WAIT_BETWEEN_UNSUCCESSFUL_RUNS_IN_MILLISECONDS = TimeUnit.MINUTES.toMillis(30);
     private final Priority myPriority;
     protected final long myRunIntervalInMs;
@@ -31,12 +34,12 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     private volatile long myRunOffset = 0;
     private final UUID myId;
 
-    public ScheduledJob(Configuration configuration)
+    public ScheduledJob(final Configuration configuration)
     {
         this(configuration, UUID.randomUUID());
     }
 
-    public ScheduledJob(Configuration configuration, UUID id)
+    public ScheduledJob(final Configuration configuration, final UUID id)
     {
         myId = id;
         myPriority = configuration.priority;
@@ -54,7 +57,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
      * @param task
      *            Last task that has completely successful
      */
-    protected void postExecute(boolean successful, ScheduledTask task)
+    protected void postExecute(final boolean successful, final ScheduledTask task)
     {
         if (successful)
         {
@@ -70,7 +73,10 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     /**
      * This method gets run after the job is removed from the Queue. It will run whether the job fails or succeeds.
      */
-    protected void finishJob() {}
+    protected void finishJob()
+    {
+        // Do nothing
+    }
 
     /**
      * Set the job to be runnable again after the given delay has elapsed.
@@ -78,7 +84,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
      * @param delay
      *            The delay in milliseconds to wait until the job is runnable again.
      */
-    public final void setRunnableIn(long delay)
+    public final void setRunnableIn(final long delay)
     {
         myNextRunTime = System.currentTimeMillis() + delay;
     }
@@ -131,8 +137,8 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     /**
      * Get the current priority of the job.
      * <p>
-     * The current priority is calculated as the {@link #getPriority() configured priority} times the number of hours that has passed since it *could*
-     * start running.
+     * The current priority is calculated as the {@link #getPriority() configured priority} times the number of hours
+     * that has passed since it *could* start running.
      *
      * @return The current priority or -1 if the job shouldn't run now.
      * @see #getPriority()
@@ -147,11 +153,14 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
             return -1;
         }
 
-        int hours = (int) (diff / 3600000) + 1;
+        int hours = (int) (diff / ONE_HOUR_IN_MILLIS) + 1;
 
         return hours * myPriority.getValue();
     }
 
+    /**
+     * @return The offset for the job.
+     */
     public long getRunOffset()
     {
         return myRunOffset;
@@ -168,7 +177,8 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     /**
      * The different priorities a job can have.
      * <p>
-     * The higher the value a job has the more the {@link ScheduledJob#getRealPriority() current priority} is increased each hour.
+     * The higher the value a job has the more the {@link ScheduledJob#getRealPriority() current priority} is increased
+     * each hour.
      */
     public enum Priority
     {
@@ -196,9 +206,9 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
 
         private final int value;
 
-        Priority(int value)
+        Priority(final int aValue)
         {
-            this.value = value;
+            this.value = aValue;
         }
 
         public int getValue()
@@ -245,7 +255,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
          */
         public final long runIntervalInMs;
 
-        Configuration(ConfigurationBuilder builder)
+        Configuration(final ConfigurationBuilder builder)
         {
             priority = builder.priority;
             runIntervalInMs = builder.runIntervalInMs;
@@ -260,19 +270,19 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         private Priority priority = Priority.LOW;
         private long runIntervalInMs = TimeUnit.DAYS.toMillis(1);
 
-        public ConfigurationBuilder withPriority(Priority priority)
+        public final ConfigurationBuilder withPriority(final Priority aPriority)
         {
-            this.priority = priority;
+            this.priority = aPriority;
             return this;
         }
 
-        public ConfigurationBuilder withRunInterval(long runInterval, TimeUnit unit)
+        public final ConfigurationBuilder withRunInterval(final long runInterval, final TimeUnit unit)
         {
             this.runIntervalInMs = unit.toMillis(runInterval);
             return this;
         }
 
-        public Configuration build()
+        public final Configuration build()
         {
             return new Configuration(this);
         }

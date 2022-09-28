@@ -28,7 +28,7 @@ public class DefaultJobComparator implements Comparator<ScheduledJob>, Serializa
     private static final long serialVersionUID = 9107238791889095329L;
 
     @Override
-    public int compare(ScheduledJob j1, ScheduledJob j2)
+    public final int compare(final ScheduledJob j1, final ScheduledJob j2)
     {
         int result = Integer.compare(j2.getRealPriority(), j1.getRealPriority());
 

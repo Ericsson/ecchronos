@@ -31,13 +31,13 @@ public class NodeResolverImpl implements NodeResolver
 
     private final CqlSession session;
 
-    public NodeResolverImpl(CqlSession session)
+    public NodeResolverImpl(final CqlSession aSession)
     {
-        this.session = session;
+        this.session = aSession;
     }
 
     @Override
-    public Optional<DriverNode> fromIp(InetAddress inetAddress)
+    public final Optional<DriverNode> fromIp(final InetAddress inetAddress)
     {
         DriverNode node = addressToNodeMap.get(inetAddress);
 
@@ -56,12 +56,12 @@ public class NodeResolverImpl implements NodeResolver
     }
 
     @Override
-    public Optional<DriverNode> fromUUID(UUID nodeId)
+    public final Optional<DriverNode> fromUUID(final UUID nodeId)
     {
         return Optional.ofNullable(resolve(nodeId));
     }
 
-    private DriverNode resolve(UUID nodeId)
+    private DriverNode resolve(final UUID nodeId)
     {
         DriverNode node = idToNodeMap.get(nodeId);
         if (node == null)
@@ -72,7 +72,7 @@ public class NodeResolverImpl implements NodeResolver
         return node;
     }
 
-    private DriverNode lookup(UUID nodeId)
+    private DriverNode lookup(final UUID nodeId)
     {
         Metadata metadata = session.getMetadata();
         for (Node node : metadata.getNodes().values())
@@ -85,7 +85,7 @@ public class NodeResolverImpl implements NodeResolver
         return null;
     }
 
-    private DriverNode lookup(InetAddress inetAddress)
+    private DriverNode lookup(final InetAddress inetAddress)
     {
         Metadata metadata = session.getMetadata();
         for (Node node : metadata.getNodes().values())

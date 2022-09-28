@@ -34,13 +34,13 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
 {
     private final CqlSession session;
 
-    public TableReferenceFactoryImpl(CqlSession session)
+    public TableReferenceFactoryImpl(final CqlSession aSession)
     {
-        this.session = Preconditions.checkNotNull(session, "Session must be set");
+        this.session = Preconditions.checkNotNull(aSession, "Session must be set");
     }
 
     @Override
-    public TableReference forTable(String keyspace, String table)
+    public final TableReference forTable(final String keyspace, final String table)
     {
         Optional<KeyspaceMetadata> keyspaceMetadata = Metadata.getKeyspace(session, keyspace);
         if (!keyspaceMetadata.isPresent())
@@ -57,13 +57,13 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
     }
 
     @Override
-    public TableReference forTable(TableMetadata table)
+    public final TableReference forTable(final TableMetadata table)
     {
         return new UuidTableReference(table);
     }
 
     @Override
-    public Set<TableReference> forKeyspace(String keyspace) throws EcChronosException
+    public final Set<TableReference> forKeyspace(final String keyspace) throws EcChronosException
     {
         Set<TableReference> tableReferences = new HashSet<>();
         Optional<KeyspaceMetadata> keyspaceMetadata = Metadata.getKeyspace(session, keyspace);
@@ -79,7 +79,7 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
     }
 
     @Override
-    public Set<TableReference> forCluster()
+    public final Set<TableReference> forCluster()
     {
         Set<TableReference> tableReferences = new HashSet<>();
         for (KeyspaceMetadata keyspace : session.getMetadata().getKeyspaces().values())
@@ -98,7 +98,7 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
         private final String keyspace;
         private final String table;
 
-        UuidTableReference(TableMetadata tableMetadata)
+        UuidTableReference(final TableMetadata tableMetadata)
         {
             uuid = tableMetadata.getId().get();
             keyspace = tableMetadata.getKeyspace().asInternal();
@@ -130,12 +130,16 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
         }
 
         @Override
-        public boolean equals(Object o)
+        public boolean equals(final Object o)
         {
             if (this == o)
+            {
                 return true;
+            }
             if (o == null || getClass() != o.getClass())
+            {
                 return false;
+            }
             UuidTableReference that = (UuidTableReference) o;
             return uuid.equals(that.uuid) && keyspace.equals(that.keyspace) && table.equals(that.table);
         }

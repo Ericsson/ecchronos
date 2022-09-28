@@ -31,6 +31,7 @@ import java.util.Objects;
  * This is useful to avoid dealing with token ranges wrapping around
  * the end of the token range.
  */
+@SuppressWarnings("VisibilityModifier")
 public class NormalizedBaseRange
 {
     private static final BigInteger NORMALIZED_RANGE_START = BigInteger.ZERO;
@@ -38,9 +39,9 @@ public class NormalizedBaseRange
     private final VnodeRepairState baseVnode;
     final BigInteger end;
 
-    public NormalizedBaseRange(VnodeRepairState baseVnode)
+    public NormalizedBaseRange(final VnodeRepairState aBaseVnode)
     {
-        this.baseVnode = baseVnode;
+        this.baseVnode = aBaseVnode;
         this.end = baseVnode.getTokenRange().rangeSize();
     }
 
@@ -50,7 +51,7 @@ public class NormalizedBaseRange
      * @param normalizedToken The normalized token.
      * @return True if the token is in this range.
      */
-    public boolean inRange(BigInteger normalizedToken)
+    public boolean inRange(final BigInteger normalizedToken)
     {
         return normalizedToken.compareTo(NORMALIZED_RANGE_START) >= 0 && normalizedToken.compareTo(end) <= 0;
     }
@@ -60,10 +61,10 @@ public class NormalizedBaseRange
      * offset from 0 rather than the vnode start.
      *
      * @param subRange The sub range to transform.
-     * @return
+     * @return NormalizedRange
      * @throws IllegalArgumentException Thrown in case the provided sub range is not covered by this vnode.
      */
-    public NormalizedRange transform(VnodeRepairState subRange)
+    public NormalizedRange transform(final VnodeRepairState subRange)
     {
         if (!baseVnode.getTokenRange().isCovering(subRange.getTokenRange()))
         {
@@ -80,7 +81,8 @@ public class NormalizedBaseRange
 
         BigInteger normalizedEnd = normalizedStart.add(subRange.getTokenRange().rangeSize());
 
-        return new NormalizedRange(this, normalizedStart, normalizedEnd, subRange.getStartedAt(), subRange.getFinishedAt(), subRange.getRepairTime());
+        return new NormalizedRange(this, normalizedStart, normalizedEnd, subRange.getStartedAt(),
+                subRange.getFinishedAt(), subRange.getRepairTime());
     }
 
     /**
@@ -92,7 +94,7 @@ public class NormalizedBaseRange
      * @param range The normalized sub range to transform.
      * @return The traditional sub range.
      */
-    public VnodeRepairState transform(NormalizedRange range)
+    public VnodeRepairState transform(final NormalizedRange range)
     {
         BigInteger baseStart = BigInteger.valueOf(baseVnode.getTokenRange().start);
 
@@ -111,25 +113,47 @@ public class NormalizedBaseRange
             realEnd = realEnd.subtract(LongTokenRange.FULL_RANGE);
         }
 
-        return new VnodeRepairState(new LongTokenRange(realStart.longValueExact(), realEnd.longValueExact()), baseVnode.getReplicas(), range.getStartedAt(), range.getFinishedAt(), range.getRepairTime());
+        return new VnodeRepairState(new LongTokenRange(realStart.longValueExact(), realEnd.longValueExact()),
+                baseVnode.getReplicas(), range.getStartedAt(), range.getFinishedAt(), range.getRepairTime());
     }
 
+    /**
+     * Checks equality.
+     *
+     * @param o Object to test equality with.
+     * @return Boolean
+     */
     @Override
-    public boolean equals(Object o)
+    public boolean equals(final Object o)
     {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
         NormalizedBaseRange that = (NormalizedBaseRange) o;
-        return baseVnode.equals(that.baseVnode) &&
-                end.equals(that.end);
+        return baseVnode.equals(that.baseVnode) && end.equals(that.end);
     }
 
+    /**
+     * Return a hash code representation.
+     *
+     * @return int
+     */
     @Override
     public int hashCode()
     {
         return Objects.hash(baseVnode, end);
     }
 
+    /**
+     * Return a string representation.
+     *
+     * @return String
+     */
     @Override
     public String toString()
     {

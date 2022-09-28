@@ -39,6 +39,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 /**
  * A factory creating JMX proxies to Cassandra.
  */
+@SuppressWarnings("FinalClass")
 public class JmxProxyFactoryImpl implements JmxProxyFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(JmxProxyFactoryImpl.class);
@@ -52,7 +53,7 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
 
     private final JmxConnectionProvider myJmxConnectionProvider;
 
-    private JmxProxyFactoryImpl(Builder builder)
+    private JmxProxyFactoryImpl(final Builder builder)
     {
         myJmxConnectionProvider = builder.myJmxConnectionProvider;
     }
@@ -64,7 +65,9 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
         {
             JMXConnector jmxConnector = myJmxConnectionProvider.getJmxConnector();
 
-            return new InternalJmxProxy(jmxConnector, jmxConnector.getMBeanServerConnection(), new ObjectName(SS_OBJ_NAME));
+            return new InternalJmxProxy(jmxConnector,
+                    jmxConnector.getMBeanServerConnection(),
+                    new ObjectName(SS_OBJ_NAME));
         }
         catch (MalformedObjectNameException e)
         {
@@ -72,14 +75,16 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
         }
     }
 
-    private class InternalJmxProxy implements JmxProxy
+    private final class InternalJmxProxy implements JmxProxy
     {
         private final JMXConnector myJmxConnector;
         private final MBeanServerConnection myMbeanServerConnection;
 
         private final ObjectName myStorageServiceObject;
 
-        private InternalJmxProxy(JMXConnector jmxConnector, MBeanServerConnection mbeanServerConnection, ObjectName storageServiceObject)
+        private InternalJmxProxy(final JMXConnector jmxConnector,
+                                 final MBeanServerConnection mbeanServerConnection,
+                                 final ObjectName storageServiceObject)
         {
             myJmxConnector = jmxConnector;
             myMbeanServerConnection = mbeanServerConnection;
@@ -93,7 +98,7 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
         }
 
         @Override
-        public void addStorageServiceListener(NotificationListener listener)
+        public void addStorageServiceListener(final NotificationListener listener)
         {
             try
             {
@@ -112,9 +117,14 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
         {
             try
             {
-                return (List<String>) myMbeanServerConnection.getAttribute(myStorageServiceObject, LIVE_NODES_ATTRIBUTE);
+                return (List<String>) myMbeanServerConnection.getAttribute(myStorageServiceObject,
+                        LIVE_NODES_ATTRIBUTE);
             }
-            catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException | AttributeNotFoundException e)
+            catch (InstanceNotFoundException
+                   | MBeanException
+                   | ReflectionException
+                   | IOException
+                   | AttributeNotFoundException e)
             {
                 LOG.error("Unable to get live nodes", e);
             }
@@ -127,9 +137,14 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
         {
             try
             {
-                return (List<String>) myMbeanServerConnection.getAttribute(myStorageServiceObject, UNREACHABLE_NODES_ATTRIBUTE);
+                return (List<String>) myMbeanServerConnection.getAttribute(myStorageServiceObject,
+                        UNREACHABLE_NODES_ATTRIBUTE);
             }
-            catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException | AttributeNotFoundException e)
+            catch (InstanceNotFoundException
+                   | MBeanException
+                   | ReflectionException
+                   | IOException
+                   | AttributeNotFoundException e)
             {
                 LOG.error("Unable to get unreachable nodes", e);
             }
@@ -137,16 +152,20 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
         }
 
         @Override
-        public int repairAsync(String keyspace, Map<String, String> options)
+        public int repairAsync(final String keyspace, final Map<String, String> options)
         {
             try
             {
                 return (int) myMbeanServerConnection.invoke(myStorageServiceObject,
                         REPAIR_ASYNC_METHOD,
                         new Object[]
-                        { keyspace, options },
+                        {
+                                keyspace, options
+                        },
                         new String[]
-                        { String.class.getName(), Map.class.getName() });
+                        {
+                                String.class.getName(), Map.class.getName()
+                        });
             }
             catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
             {
@@ -156,6 +175,9 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
             return 0;
         }
 
+        /**
+         * Force terminate all repair sessions.
+         */
         @Override
         public void forceTerminateAllRepairSessions()
         {
@@ -171,8 +193,15 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
             }
         }
 
+        /**
+         * Remove the storage service listener.
+         *
+         * @param listener
+         *            The listener to remove.
+         *
+         */
         @Override
-        public void removeStorageServiceListener(NotificationListener listener)
+        public void removeStorageServiceListener(final NotificationListener listener)
         {
             try
             {
@@ -185,16 +214,31 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
             }
         }
 
+        /**
+         * Get the live disk space used.
+         *
+         * @param tableReference
+         *            The table to get the live disk space for.
+         * @return long
+         */
         @Override
-        public long liveDiskSpaceUsed(TableReference tableReference)
+        public long liveDiskSpaceUsed(final TableReference tableReference)
         {
             try
             {
-                ObjectName objectName = new ObjectName(String.format("org.apache.cassandra.metrics:type=Table,keyspace=%s,scope=%s,name=LiveDiskSpaceUsed", tableReference.getKeyspace(), tableReference.getTable()));
+                ObjectName objectName
+                        = new ObjectName(String
+                        .format("org.apache.cassandra.metrics:type=Table,keyspace=%s,scope=%s,name=LiveDiskSpaceUsed",
+                                tableReference.getKeyspace(), tableReference.getTable()));
 
                 return (Long) myMbeanServerConnection.getAttribute(objectName, "Count");
             }
-            catch (AttributeNotFoundException | InstanceNotFoundException | MBeanException | ReflectionException | IOException | MalformedObjectNameException e)
+            catch (AttributeNotFoundException
+                   | InstanceNotFoundException
+                   | MBeanException
+                   | ReflectionException
+                   | IOException
+                   | MalformedObjectNameException e)
             {
                 LOG.error("Unable to retrieve disk space usage for {}", tableReference, e);
             }
@@ -212,12 +256,23 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
     {
         private JmxConnectionProvider myJmxConnectionProvider;
 
-        public Builder withJmxConnectionProvider(JmxConnectionProvider jmxConnectionProvider)
+        /**
+         * Build with JMX connection provider.
+         *
+         * @param jmxConnectionProvider The JMX connection provider
+         * @return Builder
+         */
+        public Builder withJmxConnectionProvider(final JmxConnectionProvider jmxConnectionProvider)
         {
             myJmxConnectionProvider = jmxConnectionProvider;
             return this;
         }
 
+        /**
+         * Build.
+         *
+         * @return JmxProxyFactoryImpl
+         */
         public JmxProxyFactoryImpl build()
         {
             if (myJmxConnectionProvider == null)

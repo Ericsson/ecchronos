@@ -27,6 +27,7 @@ import java.util.Objects;
  *
  * Primarily used to have a type to convert to JSON.
  */
+@SuppressWarnings("VisibilityModifier")
 public class ScheduleConfig
 {
     @NotBlank
@@ -48,7 +49,7 @@ public class ScheduleConfig
     {
     }
 
-    public ScheduleConfig(ScheduledRepairJobView repairJobView)
+    public ScheduleConfig(final ScheduledRepairJobView repairJobView)
     {
         RepairConfiguration config = repairJobView.getRepairConfiguration();
 
@@ -59,21 +60,36 @@ public class ScheduleConfig
         this.parallelism = config.getRepairParallelism();
     }
 
+    /**
+     * Equality.
+     *
+     * @param o
+     * @return boolean
+     */
     @Override
-    public boolean equals(Object o)
+    public boolean equals(final Object o)
     {
         if (this == o)
+        {
             return true;
+        }
         if (o == null || getClass() != o.getClass())
+        {
             return false;
+        }
         ScheduleConfig that = (ScheduleConfig) o;
-        return  intervalInMs == that.intervalInMs &&
-                Double.compare(that.unwindRatio, unwindRatio) == 0 &&
-                warningTimeInMs == that.warningTimeInMs &&
-                errorTimeInMs == that.errorTimeInMs &&
-                parallelism == that.parallelism;
+        return  intervalInMs == that.intervalInMs
+                && Double.compare(that.unwindRatio, unwindRatio) == 0
+                && warningTimeInMs == that.warningTimeInMs
+                && errorTimeInMs == that.errorTimeInMs
+                && parallelism == that.parallelism;
     }
 
+    /**
+     * Hash representation.
+     *
+     * @return int
+     */
     @Override
     public int hashCode()
     {

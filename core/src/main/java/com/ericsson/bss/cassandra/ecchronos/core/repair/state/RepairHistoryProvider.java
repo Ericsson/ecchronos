@@ -38,8 +38,8 @@ public interface RepairHistoryProvider
     Iterator<RepairEntry> iterate(TableReference tableReference, long to, Predicate<RepairEntry> predicate);
 
     /**
-     * Iterate the repair history for the provided table starting from the {@code from} and going backwards until {@code to}.
-     * The predicate is used to decide which repair entries should be filtered out of the result.
+     * Iterate the repair history for the provided table starting from the {@code from} and going backwards until
+     * {@code to}. The predicate is used to decide which repair entries should be filtered out of the result.
      *
      * @param tableReference The table for which the history should be iterated.
      * @param to The last point in time to iterate to.
@@ -50,8 +50,8 @@ public interface RepairHistoryProvider
     Iterator<RepairEntry> iterate(TableReference tableReference, long to, long from, Predicate<RepairEntry> predicate);
 
     /**
-     * Iterate the repair history for the provided table starting from the {@code from} and going backwards until {@code to}.
-     * The predicate is used to decide which repair entries should be filtered out of the result.
+     * Iterate the repair history for the provided table starting from the {@code from} and going backwards until
+     * {@code to}. The predicate is used to decide which repair entries should be filtered out of the result.
      *
      * @param nodeId The node to iterate repair history for.
      * @param tableReference The table for which the history should be iterated.
@@ -60,5 +60,6 @@ public interface RepairHistoryProvider
      * @param predicate The predicate used to filter out entries in the iterator results.
      * @return A filtered iterator for the repair history of the table.
      */
-    Iterator<RepairEntry> iterate(UUID nodeId, TableReference tableReference, long to, long from, Predicate<RepairEntry> predicate);
+    Iterator<RepairEntry> iterate(UUID nodeId, TableReference tableReference, long to, long from,
+                                  Predicate<RepairEntry> predicate);
 }

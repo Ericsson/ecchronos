@@ -33,7 +33,9 @@ public final class VnodeRepairStateSummarizer
     private final List<NormalizedRange> mySummarizedRanges;
     private final MergeStrategy myMergeStrategy;
 
-    private VnodeRepairStateSummarizer(VnodeRepairState baseVnode, Collection<VnodeRepairState> subStates, MergeStrategy mergeStrategy)
+    private VnodeRepairStateSummarizer(final VnodeRepairState baseVnode,
+                                       final Collection<VnodeRepairState> subStates,
+                                       final MergeStrategy mergeStrategy)
     {
         this.myBaseVnode = new NormalizedBaseRange(baseVnode);
         this.mySummarizedRanges = subStates.stream()
@@ -63,7 +65,8 @@ public final class VnodeRepairStateSummarizer
      * @param partialVnodes The repaired vnodes that can be sub-ranges of the base vnodes.
      * @return The summarized virtual node states.
      */
-    public static List<VnodeRepairState> summarizePartialVnodes(List<VnodeRepairState> baseVnodes, Collection<VnodeRepairState> partialVnodes)
+    public static List<VnodeRepairState> summarizePartialVnodes(final List<VnodeRepairState> baseVnodes,
+                                                                final Collection<VnodeRepairState> partialVnodes)
     {
         return summarizePartialVnodes(baseVnodes, partialVnodes, VnodeRepairStateSummarizer::isCloseInTime);
     }
@@ -86,7 +89,9 @@ public final class VnodeRepairStateSummarizer
      * @param mergeStrategy The merge strategy to use.
      * @return The summarized virtual node states.
      */
-    public static List<VnodeRepairState> summarizePartialVnodes(List<VnodeRepairState> baseVnodes, Collection<VnodeRepairState> partialVnodes, MergeStrategy mergeStrategy)
+    public static List<VnodeRepairState> summarizePartialVnodes(final List<VnodeRepairState> baseVnodes,
+                                                                final Collection<VnodeRepairState> partialVnodes,
+                                                                final MergeStrategy mergeStrategy)
     {
         List<VnodeRepairState> vnodeRepairStates = new ArrayList<>(partialVnodes);
 
@@ -106,7 +111,8 @@ public final class VnodeRepairStateSummarizer
             }
             else
             {
-                List<VnodeRepairState> replacement = new VnodeRepairStateSummarizer(baseState, covering, mergeStrategy).summarize();
+                List<VnodeRepairState> replacement = new VnodeRepairStateSummarizer(baseState,
+                        covering, mergeStrategy).summarize();
                 vnodeRepairStates.removeAll(covering);
                 vnodeRepairStates.addAll(replacement);
             }
@@ -173,7 +179,7 @@ public final class VnodeRepairStateSummarizer
         }
     }
 
-    private void splitCoveringRange(NormalizedRange covering, NormalizedRange covered)
+    private void splitCoveringRange(final NormalizedRange covering, final NormalizedRange covered)
     {
         if (covering.getStartedAt() >= covered.getStartedAt())
         {
@@ -199,7 +205,7 @@ public final class VnodeRepairStateSummarizer
         }
     }
 
-    private static void insertSorted(NormalizedRange toInsert, List<NormalizedRange> collection)
+    private static void insertSorted(final NormalizedRange toInsert, final List<NormalizedRange> collection)
     {
         int index = Collections.binarySearch(collection, toInsert);
 
@@ -211,7 +217,7 @@ public final class VnodeRepairStateSummarizer
         collection.add(index, toInsert);
     }
 
-    private static boolean isCloseInTime(NormalizedRange v1, NormalizedRange v2)
+    private static boolean isCloseInTime(final NormalizedRange v1, final NormalizedRange v2)
     {
         return Math.abs(v1.getStartedAt() - v2.getStartedAt()) < ONE_HOUR_IN_MS;
     }

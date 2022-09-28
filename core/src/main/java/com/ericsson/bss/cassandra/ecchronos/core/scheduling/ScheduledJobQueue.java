@@ -30,7 +30,8 @@ import com.google.common.annotations.VisibleForTesting;
 /**
  * Dynamic priority queue for scheduled jobs.
  * <p>
- * This queue is divided in several smaller queues, one for each {@link ScheduledJob.Priority priority type} and are then retrieved using a
+ * This queue is divided in several smaller queues, one for each {@link ScheduledJob.Priority priority type} and are
+ * then retrieved using a
  * {@link ManyToOneIterator}.
  */
 public class ScheduledJobQueue implements Iterable<ScheduledJob>
@@ -39,7 +40,8 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
 
     private final Comparator<ScheduledJob> myComparator;
 
-    private final EnumMap<ScheduledJob.Priority, PriorityQueue<ScheduledJob>> myJobQueues = new EnumMap<>(ScheduledJob.Priority.class);
+    private final EnumMap<ScheduledJob.Priority, PriorityQueue<ScheduledJob>> myJobQueues
+            = new EnumMap<>(ScheduledJob.Priority.class);
 
     /**
      * Construct a new job queue that prioritizes the jobs based on the provided comparator.
@@ -47,7 +49,7 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
      * @param comparator
      *            The comparator used to determine the job with the highest priority.
      */
-    public ScheduledJobQueue(Comparator<ScheduledJob> comparator)
+    public ScheduledJobQueue(final Comparator<ScheduledJob> comparator)
     {
         this.myComparator = comparator;
 
@@ -63,7 +65,7 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
      * @param job
      *            The job to add.
      */
-    public synchronized void add(ScheduledJob job)
+    public synchronized void add(final ScheduledJob job)
     {
         addJobInternal(job);
     }
@@ -74,7 +76,7 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
      * @param jobs
      *            The collection of jobs.
      */
-    public synchronized void addAll(Collection<? extends ScheduledJob> jobs)
+    public synchronized void addAll(final Collection<? extends ScheduledJob> jobs)
     {
         for (ScheduledJob job : jobs)
         {
@@ -88,20 +90,20 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
      * @param job
      *            The job to remove.
      */
-    public synchronized void remove(ScheduledJob job)
+    public synchronized void remove(final ScheduledJob job)
     {
         LOG.debug("Removing job: {}", job);
         myJobQueues.get(job.getPriority()).remove(job);
     }
 
-    private void addJobInternal(ScheduledJob job)
+    private void addJobInternal(final ScheduledJob job)
     {
         LOG.debug("Adding job: {}, Priority: {}", job, job.getPriority());
         myJobQueues.get(job.getPriority()).add(job);
     }
 
     @VisibleForTesting
-    int size()
+    final int size()
     {
         int size = 0;
 
@@ -114,7 +116,7 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
     }
 
     @Override
-    public synchronized Iterator<ScheduledJob> iterator()
+    public final synchronized Iterator<ScheduledJob> iterator()
     {
         Iterator<ScheduledJob> baseIterator = new ManyToOneIterator<>(myJobQueues.values(), myComparator);
 
@@ -125,7 +127,7 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
     {
         private final Iterator<ScheduledJob> myBaseIterator;
 
-        public RunnableJobIterator(Iterator<ScheduledJob> baseIterator)
+        RunnableJobIterator(final Iterator<ScheduledJob> baseIterator)
         {
             myBaseIterator = baseIterator;
         }
@@ -133,7 +135,7 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
         @Override
         protected ScheduledJob computeNext()
         {
-            while(myBaseIterator.hasNext())
+            while (myBaseIterator.hasNext())
             {
                 ScheduledJob job = myBaseIterator.next();
 

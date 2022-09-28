@@ -26,38 +26,76 @@ public class RepairResource
     private final String myDataCenter;
     private final String myResourceName;
 
-    public RepairResource(String dataCenter, String resourceName)
+    /**
+     * Constructor.
+     *
+     * @param dataCenter The data center.
+     * @param resourceName Resource name.
+     */
+    public RepairResource(final String dataCenter, final String resourceName)
     {
         myDataCenter = dataCenter;
         myResourceName = checkNotNull(resourceName);
     }
 
+    /**
+     * Get datacenter.
+     *
+     * @return String
+     */
     public String getDataCenter()
     {
         return myDataCenter;
     }
 
-    public String getResourceName(int n)
+    /**
+     * Get resource name.
+     *
+     * @param n Resource number.
+     * @return String
+     */
+    public String getResourceName(final int n)
     {
         return String.format("RepairResource-%s-%d", myResourceName, n);
     }
 
+    /**
+     * String representation.
+     *
+     * @return String
+     */
     @Override
     public String toString()
     {
         return String.format("RepairResource(dc=%s,resource=%s)", myDataCenter, myResourceName);
     }
 
+    /**
+     * Checks equality.
+     *
+     * @param o Object to check equality with.
+     * @return boolean
+     */
     @Override
-    public boolean equals(Object o)
+    public boolean equals(final Object o)
     {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
         RepairResource that = (RepairResource) o;
-        return Objects.equals(myDataCenter, that.myDataCenter) &&
-                Objects.equals(myResourceName, that.myResourceName);
+        return Objects.equals(myDataCenter, that.myDataCenter) && Objects.equals(myResourceName, that.myResourceName);
     }
 
+    /**
+     * Hash representation.
+     *
+     * @return int
+     */
     @Override
     public int hashCode()
     {

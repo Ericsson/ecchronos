@@ -29,6 +29,7 @@ import java.util.UUID;
  *
  * Primarily used to have a type to convert to JSON.
  */
+@SuppressWarnings("VisibilityModifier")
 public class OnDemandRepair
 {
     @NotBlank
@@ -54,18 +55,25 @@ public class OnDemandRepair
     }
 
     @VisibleForTesting
-    public OnDemandRepair(UUID id, UUID hostId, String keyspace, String table, OnDemandRepairJobView.Status status, double repairedRatio, long completedAt)
+    public OnDemandRepair(final UUID theId,
+                          final UUID theHostId,
+                          final String theKeyspace,
+                          final String theTable,
+                          final OnDemandRepairJobView.Status theStatus,
+                          final double theRepairedRatio,
+                          final long wasCompletedAt)
     {
-        this.id = id;
-        this.hostId = hostId;
-        this.keyspace = keyspace;
-        this.table = table;
-        this.status = status;
-        this.repairedRatio = repairedRatio;
-        this.completedAt = completedAt;
+        this.id = theId;
+        this.hostId = theHostId;
+        this.keyspace = theKeyspace;
+        this.table = theTable;
+        this.status = theStatus;
+        this.repairedRatio = theRepairedRatio;
+        this.completedAt = wasCompletedAt;
     }
 
-    public OnDemandRepair(OnDemandRepairJobView repairJobView)
+
+    public OnDemandRepair(final OnDemandRepairJobView repairJobView)
     {
         this.id = repairJobView.getId();
         this.hostId = repairJobView.getHostId();
@@ -76,23 +84,38 @@ public class OnDemandRepair
         this.completedAt = repairJobView.getCompletionTime();
     }
 
+    /**
+     * Equality.
+     *
+     * @param o
+     * @return boolean
+     */
     @Override
-    public boolean equals(Object o)
+    public boolean equals(final Object o)
     {
         if (this == o)
+        {
             return true;
+        }
         if (o == null || getClass() != o.getClass())
+        {
             return false;
+        }
         OnDemandRepair that = (OnDemandRepair) o;
-        return  id.equals(that.id) &&
-                hostId.equals(that.hostId) &&
-                keyspace.equals(that.keyspace) &&
-                table.equals(that.table) &&
-                status == that.status &&
-                Double.compare(that.repairedRatio, repairedRatio) == 0 &&
-                completedAt == that.completedAt;
+        return  id.equals(that.id)
+                && hostId.equals(that.hostId)
+                && keyspace.equals(that.keyspace)
+                && table.equals(that.table)
+                && status == that.status
+                && Double.compare(that.repairedRatio, repairedRatio) == 0
+                && completedAt == that.completedAt;
     }
 
+    /**
+     * Hash code representation.
+     *
+     * @return int
+     */
     @Override
     public int hashCode()
     {

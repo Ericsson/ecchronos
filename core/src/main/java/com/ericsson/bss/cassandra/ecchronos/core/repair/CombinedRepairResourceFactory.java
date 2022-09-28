@@ -27,13 +27,24 @@ public class CombinedRepairResourceFactory implements RepairResourceFactory
 {
     private final ImmutableSet<RepairResourceFactory> myRepairResourceFactories;
 
-    public CombinedRepairResourceFactory(RepairResourceFactory... repairResourceFactories)
+    /**
+     * Constructor.
+     *
+     * @param repairResourceFactories Repair resource factories
+     */
+    public CombinedRepairResourceFactory(final RepairResourceFactory... repairResourceFactories)
     {
         myRepairResourceFactories = ImmutableSet.copyOf(repairResourceFactories);
     }
 
+    /**
+     * Get repair resources.
+     *
+     * @param replicaRepairGroup The replica repair group.
+     * @return Repair resources
+     */
     @Override
-    public Set<RepairResource> getRepairResources(ReplicaRepairGroup replicaRepairGroup)
+    public Set<RepairResource> getRepairResources(final ReplicaRepairGroup replicaRepairGroup)
     {
         Set<RepairResource> repairResources = new HashSet<>();
 

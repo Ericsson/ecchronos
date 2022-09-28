@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Telefonaktiebolaget LM Ericsson
+ * Copyright 2022 Telefonaktiebolaget LM Ericsson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,14 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-
-public interface RepairStateFactory
-{
-    RepairState create(TableReference tableReference,
-                       RepairConfiguration repairConfiguration,
-                       PostUpdateHook postUpdateHook);
-}
+/**
+ *
+ */
+package com.ericsson.bss.cassandra.ecchronos.core.repair.types;

@@ -20,7 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import java.util.Set;
 
 /**
- * A factory that generates table references
+ * A factory that generates table references.
  */
 public interface TableReferenceFactory
 {
@@ -42,7 +42,7 @@ public interface TableReferenceFactory
     TableReference forTable(TableMetadata table);
 
     /**
-     * Get all table references in keyspace
+     * Get all table references in keyspace.
      *
      * @param keyspace The keyspace name
      * @throws com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException if keyspace does not exist.
@@ -51,7 +51,7 @@ public interface TableReferenceFactory
     Set<TableReference> forKeyspace(String keyspace) throws EcChronosException;
 
     /**
-     * Get all table references for a cluster (all keyspaces, all tables)
+     * Get all table references for a cluster (all keyspaces, all tables).
      *
      * @return A unique set of all table references for the cluster.
      */

@@ -35,5 +35,9 @@ public interface RepairLockFactory
      * @return The collected lock for the repair resources.
      * @throws LockException Thrown in case there is an issue with taking the locks for the repair resources.
      */
-    LockFactory.DistributedLock getLock(LockFactory lockFactory, Set<RepairResource> repairResources, Map<String, String> metadata, int priority) throws LockException;
+    LockFactory.DistributedLock getLock(LockFactory lockFactory,
+                                        Set<RepairResource> repairResources,
+                                        Map<String, String> metadata,
+                                        int priority)
+            throws LockException;
 }

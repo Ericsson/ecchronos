@@ -24,41 +24,45 @@ public class LongToken implements Comparable<LongToken>
 {
     private final long value;
 
-    public LongToken(long value)
+    public LongToken(final long aValue)
     {
-        this.value = value;
+        this.value = aValue;
     }
 
-    public long getValue()
+    public final long getValue()
     {
         return value;
     }
 
     @Override
-    public String toString()
+    public final String toString()
     {
         return Long.toString(getValue());
     }
 
     @Override
-    public boolean equals(Object o)
+    public final boolean equals(final Object o)
     {
         if (this == o)
+        {
             return true;
+        }
         if (o == null || getClass() != o.getClass())
+        {
             return false;
+        }
         LongToken longToken = (LongToken) o;
         return value == longToken.value;
     }
 
     @Override
-    public int hashCode()
+    public final int hashCode()
     {
         return Objects.hash(value);
     }
 
     @Override
-    public int compareTo(LongToken other)
+    public final int compareTo(final LongToken other)
     {
         return Long.compare(getValue(), other.getValue());
     }

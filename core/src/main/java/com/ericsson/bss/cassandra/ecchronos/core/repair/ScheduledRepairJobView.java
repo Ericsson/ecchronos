@@ -36,8 +36,13 @@ public class ScheduledRepairJobView
     private final long myNextRepair;
     private final long myCompletionTime;
 
-    public ScheduledRepairJobView(UUID id, TableReference tableReference, RepairConfiguration repairConfiguration,
-            RepairStateSnapshot repairStateSnapshot, Status status, double progress, long nextRepair)
+    public ScheduledRepairJobView(final UUID id,
+                                  final TableReference tableReference,
+                                  final RepairConfiguration repairConfiguration,
+                                  final RepairStateSnapshot repairStateSnapshot,
+                                  final Status status,
+                                  final double progress,
+                                  final long nextRepair)
     {
         myId = id;
         myTableReference = tableReference;
@@ -49,48 +54,94 @@ public class ScheduledRepairJobView
         myCompletionTime = repairStateSnapshot.lastCompletedAt();
     }
 
+    /**
+     * Get id.
+     *
+     * @return UUID
+     */
     public UUID getId()
     {
         return myId;
     }
 
+    /**
+     * Get table reference.
+     *
+     * @return TableReference
+     */
     public TableReference getTableReference()
     {
         return myTableReference;
     }
 
+    /**
+     * Get repair configuration.
+     *
+     * @return RepairConfiguration
+     */
     public RepairConfiguration getRepairConfiguration()
     {
         return myRepairConfiguration;
     }
 
+    /**
+     * Get repair snapshot.
+     *
+     * @return RepairStateSnapshot
+     */
     public RepairStateSnapshot getRepairStateSnapshot()
     {
         return myRepairStateSnapshot;
     }
 
+    /**
+     * Get status.
+     *
+     * @return Status
+     */
     public Status getStatus()
     {
         return myStatus;
     }
 
+    /**
+     * Get progress.
+     *
+     * @return double
+     */
     public double getProgress()
     {
         return myProgress;
     }
 
+    /**
+     * Get next repair.
+     *
+     * @return long
+     */
     public long getNextRepair()
     {
         return myNextRepair;
     }
 
+    /**
+     * Get completion time.
+     *
+     * @return long
+     */
     public long getCompletionTime()
     {
         return myCompletionTime;
     }
 
+    /**
+     * Equality (completion time is not considered).
+     *
+     * @param o The object to compare to.
+     * @return boolean
+     */
     @Override
-    public boolean equals(Object o)
+    public boolean equals(final Object o)
     {
         if (this == o)
         {
@@ -101,12 +152,20 @@ public class ScheduledRepairJobView
             return false;
         }
         ScheduledRepairJobView that = (ScheduledRepairJobView) o;
-        return Double.compare(that.myProgress, myProgress) == 0 && myNextRepair == that.myNextRepair
-                && Objects.equals(myId, that.myId) && Objects.equals(myTableReference,
-                that.myTableReference) && Objects.equals(myRepairConfiguration, that.myRepairConfiguration)
-                && Objects.equals(myRepairStateSnapshot, that.myRepairStateSnapshot) && myStatus == that.myStatus;
+        return Double.compare(that.myProgress, myProgress) == 0
+                && myNextRepair == that.myNextRepair
+                && Objects.equals(myId, that.myId)
+                && Objects.equals(myTableReference, that.myTableReference)
+                && Objects.equals(myRepairConfiguration, that.myRepairConfiguration)
+                && Objects.equals(myRepairStateSnapshot, that.myRepairStateSnapshot)
+                && myStatus == that.myStatus;
     }
 
+    /**
+     * Hash representation.
+     *
+     * @return int
+     */
     @Override
     public int hashCode()
     {

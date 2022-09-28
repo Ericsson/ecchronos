@@ -25,13 +25,19 @@ public class FullyRepairedRepairEntryPredicate implements Predicate<RepairEntry>
 {
     private final Map<LongTokenRange, Collection<DriverNode>> myTokenToNodeMap;
 
-    public FullyRepairedRepairEntryPredicate(Map<LongTokenRange, Collection<DriverNode>> tokenToNodeMap)
+    public FullyRepairedRepairEntryPredicate(final Map<LongTokenRange, Collection<DriverNode>> tokenToNodeMap)
     {
         myTokenToNodeMap = tokenToNodeMap;
     }
 
+    /**
+     * Apply repair entry.
+     *
+     * @param repairEntry The repair entry to be applied.
+     * @return boolean
+     */
     @Override
-    public boolean apply(RepairEntry repairEntry)
+    public boolean apply(final RepairEntry repairEntry)
     {
         if (repairEntry.getStatus() == RepairStatus.SUCCESS)
         {

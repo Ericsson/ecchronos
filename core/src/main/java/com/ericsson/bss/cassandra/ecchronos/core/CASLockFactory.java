@@ -79,7 +79,7 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
  * WITH default_time_to_live = 600 AND gc_grace_seconds = 0;
  * </pre>
  */
-public class CASLockFactory implements LockFactory, Closeable
+public final class CASLockFactory implements LockFactory, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CASLockFactory.class);
 
@@ -115,7 +115,7 @@ public class CASLockFactory implements LockFactory, Closeable
     private final PreparedStatement myRemoveLockPriorityStatement;
     private final LockCache myLockCache;
 
-    private CASLockFactory(Builder builder)
+    private CASLockFactory(final Builder builder)
     {
         myStatementDecorator = builder.myStatementDecorator;
         myHostStates = builder.myHostStates;
@@ -128,9 +128,9 @@ public class CASLockFactory implements LockFactory, Closeable
 
         verifySchemasExists();
 
-        ConsistencyLevel serialConsistencyLevel = myRemoteRouting ?
-                ConsistencyLevel.LOCAL_SERIAL :
-                ConsistencyLevel.SERIAL;
+        ConsistencyLevel serialConsistencyLevel = myRemoteRouting
+                ? ConsistencyLevel.LOCAL_SERIAL
+                : ConsistencyLevel.SERIAL;
         SimpleStatement insertLockStatement = QueryBuilder.insertInto(myKeyspaceName, TABLE_LOCK)
                 .value(COLUMN_RESOURCE, bindMarker())
                 .value(COLUMN_NODE, bindMarker())
@@ -201,14 +201,17 @@ public class CASLockFactory implements LockFactory, Closeable
     }
 
     @Override
-    public DistributedLock tryLock(String dataCenter, String resource, int priority, Map<String, String> metadata)
+    public DistributedLock tryLock(final String dataCenter,
+                                   final String resource,
+                                   final int priority,
+                                   final Map<String, String> metadata)
             throws LockException
     {
         return myLockCache.getLock(dataCenter, resource, priority, metadata);
     }
 
     @Override
-    public Map<String, String> getLockMetadata(String dataCenter, String resource)
+    public Map<String, String> getLockMetadata(final String dataCenter, final String resource)
     {
         try
         {
@@ -230,7 +233,7 @@ public class CASLockFactory implements LockFactory, Closeable
     }
 
     @Override
-    public boolean sufficientNodesForLocking(String dataCenter, String resource)
+    public boolean sufficientNodesForLocking(final String dataCenter, final String resource)
     {
         try
         {
@@ -252,7 +255,7 @@ public class CASLockFactory implements LockFactory, Closeable
     }
 
     @Override
-    public Optional<LockException> getCachedFailure(String dataCenter, String resource)
+    public Optional<LockException> getCachedFailure(final String dataCenter, final String resource)
     {
         return myLockCache.getCachedFailure(dataCenter, resource);
     }
@@ -294,31 +297,31 @@ public class CASLockFactory implements LockFactory, Closeable
         private StatementDecorator myStatementDecorator;
         private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
 
-        public Builder withNativeConnectionProvider(NativeConnectionProvider nativeConnectionProvider)
+        public final Builder withNativeConnectionProvider(final NativeConnectionProvider nativeConnectionProvider)
         {
             myNativeConnectionProvider = nativeConnectionProvider;
             return this;
         }
 
-        public Builder withHostStates(HostStates hostStates)
+        public final Builder withHostStates(final HostStates hostStates)
         {
             myHostStates = hostStates;
             return this;
         }
 
-        public Builder withStatementDecorator(StatementDecorator statementDecorator)
+        public final Builder withStatementDecorator(final StatementDecorator statementDecorator)
         {
             myStatementDecorator = statementDecorator;
             return this;
         }
 
-        public Builder withKeyspaceName(String keyspaceName)
+        public final Builder withKeyspaceName(final String keyspaceName)
         {
             myKeyspaceName = keyspaceName;
             return this;
         }
 
-        public CASLockFactory build()
+        public final CASLockFactory build()
         {
             if (myNativeConnectionProvider == null)
             {
@@ -339,7 +342,10 @@ public class CASLockFactory implements LockFactory, Closeable
         }
     }
 
-    private DistributedLock doTryLock(String dataCenter, String resource, int priority, Map<String, String> metadata)
+    private DistributedLock doTryLock(final String dataCenter,
+                                      final String resource,
+                                      final int priority,
+                                      final Map<String, String> metadata)
             throws LockException
     {
         LOG.trace("Trying lock for {} - {}", dataCenter, resource);
@@ -367,7 +373,8 @@ public class CASLockFactory implements LockFactory, Closeable
         throw new LockException(String.format("Unable to lock resource %s in datacenter %s", resource, dataCenter));
     }
 
-    private Set<Node> getNodesForResource(String dataCenter, String resource) throws UnsupportedEncodingException
+    private Set<Node> getNodesForResource(final String dataCenter,
+                                          final String resource) throws UnsupportedEncodingException
     {
         Set<Node> dataCenterNodes = new HashSet<>();
 
@@ -396,7 +403,7 @@ public class CASLockFactory implements LockFactory, Closeable
         return nodes;
     }
 
-    private int liveNodes(Collection<Node> nodes)
+    private int liveNodes(final Collection<Node> nodes)
     {
         int live = 0;
         for (Node node : nodes)
@@ -409,7 +416,7 @@ public class CASLockFactory implements LockFactory, Closeable
         return live;
     }
 
-    private ResultSet execute(String dataCenter, BoundStatement statement)
+    private ResultSet execute(final String dataCenter, final BoundStatement statement)
     {
         Statement executeStatement;
 
@@ -465,7 +472,7 @@ public class CASLockFactory implements LockFactory, Closeable
         private final int myLocallyHighestPriority;
         private final int globalHighPriority;
 
-        CASLock(String dataCenter, String resource, int priority, Map<String, String> metadata)
+        CASLock(final String dataCenter, final String resource, final int priority, final Map<String, String> metadata)
         {
             myDataCenter = dataCenter;
             myResource = resource;
@@ -603,7 +610,7 @@ public class CASLockFactory implements LockFactory, Closeable
         private final UUID myNode;
         private final int myPriority;
 
-        public NodePriority(UUID node, int priority)
+        public NodePriority(final UUID node, final int priority)
         {
             myNode = node;
             myPriority = priority;

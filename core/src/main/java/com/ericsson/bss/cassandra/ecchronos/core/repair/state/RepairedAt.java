@@ -25,7 +25,7 @@ public final class RepairedAt
     private final long myMinRepairedAt;
     private final long myMaxRepairedAt;
 
-    private RepairedAt(long minRepairedAt, long maxRepairedAt)
+    private RepairedAt(final long minRepairedAt, final long maxRepairedAt)
     {
         myMinRepairedAt = minRepairedAt;
         myMaxRepairedAt = maxRepairedAt;
@@ -74,10 +74,17 @@ public final class RepairedAt
     @Override
     public String toString()
     {
-        return String.format("(min=%d,max=%d,isRepaired=%b,isPartiallyRepaired=%b)", getMinRepairedAt(), getMaxRepairedAt(), isRepaired(), isPartiallyRepaired());
+        return String.format("(min=%d,max=%d,isRepaired=%b,isPartiallyRepaired=%b)",
+                getMinRepairedAt(), getMaxRepairedAt(), isRepaired(), isPartiallyRepaired());
     }
 
-    public static RepairedAt generate(VnodeRepairStates vnodeRepairStates)
+    /**
+     * Generate a repaired at.
+     *
+     * @param vnodeRepairStates Vnode repair states.
+     * @return RepairedAt
+     */
+    public static RepairedAt generate(final VnodeRepairStates vnodeRepairStates)
     {
         long minRepairedAt = Long.MAX_VALUE;
         long maxRepairedAt = Long.MIN_VALUE;

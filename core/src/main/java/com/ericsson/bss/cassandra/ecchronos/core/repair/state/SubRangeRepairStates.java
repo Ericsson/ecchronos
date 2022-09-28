@@ -16,19 +16,23 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.google.common.collect.ImmutableList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
-import java.util.*;
-
-public class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
+public final class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
 {
     private final ImmutableList<VnodeRepairState> myVnodeRepairStatuses;
 
-    private SubRangeRepairStates(SubRangeRepairStates.Builder builder)
+    private SubRangeRepairStates(final SubRangeRepairStates.Builder builder)
     {
         List<VnodeRepairState> baseVnodes = builder.myVnodeRepairStatesBase;
         Collection<VnodeRepairState> partialVnodes = builder.myActualVnodeRepairStates.values();
 
-        List<VnodeRepairState> summarizedVnodes = VnodeRepairStateSummarizer.summarizePartialVnodes(baseVnodes, partialVnodes);
+        List<VnodeRepairState> summarizedVnodes = VnodeRepairStateSummarizer.summarizePartialVnodes(baseVnodes,
+                partialVnodes);
 
         myVnodeRepairStatuses = ImmutableList.copyOf(summarizedVnodes);
     }
@@ -40,13 +44,14 @@ public class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
     }
 
     @Override
-    public SubRangeRepairStates combineWithRepairedAt(long repairedAt)
+    public SubRangeRepairStates combineWithRepairedAt(final long repairedAt)
     {
         Builder builder = newBuilder(getVnodeRepairStates());
 
         for (VnodeRepairState vnodeRepairState : getVnodeRepairStates())
         {
-            VnodeRepairState vnodeRepairStateWithRepairedAt = new VnodeRepairState(vnodeRepairState.getTokenRange(), vnodeRepairState.getReplicas(), repairedAt);
+            VnodeRepairState vnodeRepairStateWithRepairedAt = new VnodeRepairState(vnodeRepairState.getTokenRange(),
+                    vnodeRepairState.getReplicas(), repairedAt);
             builder.updateVnodeRepairState(vnodeRepairStateWithRepairedAt);
         }
 
@@ -59,16 +64,22 @@ public class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
         return myVnodeRepairStatuses.toString();
     }
 
-    public static Builder newBuilder(Collection<VnodeRepairState> vnodeRepairStates)
+    public static Builder newBuilder(final Collection<VnodeRepairState> vnodeRepairStates)
     {
         return new Builder(vnodeRepairStates);
     }
 
     @Override
-    public boolean equals(Object o)
+    public boolean equals(final Object o)
     {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
         SubRangeRepairStates that = (SubRangeRepairStates) o;
         return Objects.equals(myVnodeRepairStatuses, that.myVnodeRepairStatuses);
     }
@@ -84,7 +95,7 @@ public class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
         private final ImmutableList<VnodeRepairState> myVnodeRepairStatesBase;
         private final Map<LongTokenRange, VnodeRepairState> myActualVnodeRepairStates = new HashMap<>();
 
-        public Builder(Collection<VnodeRepairState> vnodeRepairStates)
+        public Builder(final Collection<VnodeRepairState> vnodeRepairStates)
         {
             ImmutableList.Builder<VnodeRepairState> builder = ImmutableList.builder();
             for (VnodeRepairState vnodeRepairState : vnodeRepairStates)
@@ -94,8 +105,14 @@ public class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
             myVnodeRepairStatesBase = builder.build();
         }
 
+        /**
+         * Update vNode repair state.
+         *
+         * @param vnodeRepairState The vnode repair status to update.
+         * @return VnodeRepairStates.Builder
+         */
         @Override
-        public VnodeRepairStates.Builder updateVnodeRepairState(VnodeRepairState vnodeRepairState)
+        public VnodeRepairStates.Builder updateVnodeRepairState(final VnodeRepairState vnodeRepairState)
         {
             for (VnodeRepairState baseVnode : myVnodeRepairStatesBase)
             {
@@ -109,13 +126,18 @@ public class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
             return this;
         }
 
+        /**
+         * Build subrange repair states.
+         *
+         * @return SubRangeRepairStates
+         */
         @Override
         public SubRangeRepairStates build()
         {
             return new SubRangeRepairStates(this);
         }
 
-        private void replaceIfNewer(VnodeRepairState baseVnode, VnodeRepairState newVnode)
+        private void replaceIfNewer(final VnodeRepairState baseVnode, final VnodeRepairState newVnode)
         {
             if (baseVnode.getTokenRange().equals(newVnode.getTokenRange())) // Original vnode
             {
@@ -130,7 +152,7 @@ public class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
             }
         }
 
-        private boolean shouldReplace(VnodeRepairState baseVnode, VnodeRepairState newVnode)
+        private boolean shouldReplace(final VnodeRepairState baseVnode, final VnodeRepairState newVnode)
         {
             if (!baseVnode.isSameVnode(newVnode))
             {
@@ -140,7 +162,7 @@ public class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
             return isNewer(baseVnode, newVnode);
         }
 
-        private boolean partialVnodeIsNewer(VnodeRepairState baseVnode, VnodeRepairState newVnode)
+        private boolean partialVnodeIsNewer(final VnodeRepairState baseVnode, final VnodeRepairState newVnode)
         {
             if (!baseVnode.getReplicas().equals(newVnode.getReplicas()))
             {
@@ -150,11 +172,12 @@ public class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
             return isNewer(baseVnode, newVnode);
         }
 
-        private boolean isNewer(VnodeRepairState baseVnode, VnodeRepairState newVnode)
+        private boolean isNewer(final VnodeRepairState baseVnode, final VnodeRepairState newVnode)
         {
             VnodeRepairState oldVnode = myActualVnodeRepairStates.getOrDefault(baseVnode.getTokenRange(), baseVnode);
 
-            return oldVnode.lastRepairedAt() < newVnode.lastRepairedAt() || oldVnode.getFinishedAt() < newVnode.getFinishedAt();
+            return oldVnode.lastRepairedAt() < newVnode.lastRepairedAt()
+                    || oldVnode.getFinishedAt() < newVnode.getFinishedAt();
         }
     }
 }

@@ -18,7 +18,8 @@ import java.util.Collection;
 
 
 /**
- * A collection of {@link VnodeRepairState VnodeRepairStates} that contains utilities to easily combine with new entries.
+ * A collection of {@link VnodeRepairState VnodeRepairStates} that contains utilities to easily combine
+ * with new entries.
  */
 public interface VnodeRepairStates
 {
@@ -36,7 +37,7 @@ public interface VnodeRepairStates
     VnodeRepairStates combineWithRepairedAt(long repairedAt);
 
     /**
-     * Calculate the effective repair time (time for Cassandra to perform repair) for all the repaired vnodes
+     * Calculate the effective repair time (time for Cassandra to perform repair) for all the repaired vnodes.
      *
      * @return The repair time in milliseconds
      */

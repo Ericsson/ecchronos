@@ -31,7 +31,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 public class RepairGroup extends ScheduledTask
 {
@@ -52,22 +59,39 @@ public class RepairGroup extends ScheduledTask
     private final RepairHistory myRepairHistory;
     private final UUID myJobId;
 
-    public RepairGroup(int priority, Builder builder)
+    public RepairGroup(final int priority, final Builder builder)
     {
         super(priority);
-        myTableReference = Preconditions.checkNotNull(builder.tableReference, "Table reference must be set");
-        myRepairConfiguration = Preconditions.checkNotNull(builder.repairConfiguration, "Repair configuration must be set");
-        myReplicaRepairGroup = Preconditions.checkNotNull(builder.replicaRepairGroup, "Replica repair group must be set");
-        myJmxProxyFactory = Preconditions.checkNotNull(builder.jmxProxyFactory, "Jmx proxy factory must be set");
-        myTableRepairMetrics = Preconditions.checkNotNull(builder.tableRepairMetrics, "Table repair metrics must be set");
-        myRepairResourceFactory = Preconditions.checkNotNull(builder.repairResourceFactory, "Repair resource factory must be set");
-        myRepairLockFactory = Preconditions.checkNotNull(builder.repairLockFactory, "Repair lock factory must be set");
-        myTokensPerRepair = Preconditions.checkNotNull(builder.tokensPerRepair, "Tokens per repair must be set");
-        myRepairPolicies = new ArrayList<>(Preconditions.checkNotNull(builder.repairPolicies, "Repair policies must be set"));
-        myRepairHistory = Preconditions.checkNotNull(builder.repairHistory, "Repair history must be set");
-        myJobId = Preconditions.checkNotNull(builder.jobId, "Job id must be set");
+        myTableReference = Preconditions
+                .checkNotNull(builder.tableReference, "Table reference must be set");
+        myRepairConfiguration = Preconditions
+                .checkNotNull(builder.repairConfiguration, "Repair configuration must be set");
+        myReplicaRepairGroup = Preconditions
+                .checkNotNull(builder.replicaRepairGroup, "Replica repair group must be set");
+        myJmxProxyFactory = Preconditions
+                .checkNotNull(builder.jmxProxyFactory, "Jmx proxy factory must be set");
+        myTableRepairMetrics = Preconditions
+                .checkNotNull(builder.tableRepairMetrics, "Table repair metrics must be set");
+        myRepairResourceFactory = Preconditions
+                .checkNotNull(builder.repairResourceFactory, "Repair resource factory must be set");
+        myRepairLockFactory = Preconditions
+                .checkNotNull(builder.repairLockFactory, "Repair lock factory must be set");
+        myTokensPerRepair = Preconditions
+                .checkNotNull(builder.tokensPerRepair, "Tokens per repair must be set");
+        myRepairPolicies = new ArrayList<>(Preconditions
+                .checkNotNull(builder.repairPolicies, "Repair policies must be set"));
+        myRepairHistory = Preconditions
+                .checkNotNull(builder.repairHistory, "Repair history must be set");
+        myJobId = Preconditions
+                .checkNotNull(builder.jobId, "Job id must be set");
     }
 
+    /**
+     * Executes the repair tasks this repair group is responsible for. Repair tasks can succeed or fail. Repair
+     * tasks blocked by run policy are counted as failed.
+     *
+     * @return boolean
+     */
     @Override
     public boolean execute()
     {
@@ -113,8 +137,15 @@ public class RepairGroup extends ScheduledTask
         return myRepairPolicies.stream().allMatch(repairPolicy -> repairPolicy.shouldRun(myTableReference));
     }
 
+    /**
+     * Get lock for the keyspace and table.
+     *
+     * @param lockFactory The lock factory to use.
+     * @return LockFactory.DistributedLock
+     * @throws LockException
+     */
     @Override
-    public LockFactory.DistributedLock getLock(LockFactory lockFactory) throws LockException
+    public LockFactory.DistributedLock getLock(final LockFactory lockFactory) throws LockException
     {
         Map<String, String> metadata = new HashMap<>();
         metadata.put(LOCK_METADATA_KEYSPACE, myTableReference.getKeyspace());
@@ -124,12 +155,22 @@ public class RepairGroup extends ScheduledTask
         return myRepairLockFactory.getLock(lockFactory, repairResources, metadata, myPriority);
     }
 
+    /**
+     * String representation.
+     *
+     * @return String
+     */
     @Override
     public String toString()
     {
         return String.format("Repair job of %s", myTableReference);
     }
 
+    /**
+     * Get repair tasks.
+     *
+     * @return Collection<RepairTask>
+     */
     @VisibleForTesting
     Collection<RepairTask> getRepairTasks()
     {
@@ -176,73 +217,145 @@ public class RepairGroup extends ScheduledTask
         private RepairHistory repairHistory;
         private UUID jobId;
 
-        public Builder withTableReference(TableReference tableReference)
+        /**
+         * Build with table reference.
+         *
+         * @param theTableReference Table reference.
+         * @return Builder
+         */
+        public Builder withTableReference(final TableReference theTableReference)
         {
-            this.tableReference = tableReference;
+            this.tableReference = theTableReference;
             return this;
         }
 
-        public Builder withRepairConfiguration(RepairConfiguration repairConfiguration)
+        /**
+         * Build with repair configuration.
+         *
+         * @param theRepairConfiguration Repair configuration.
+         * @return Builder
+         */
+        public Builder withRepairConfiguration(final RepairConfiguration theRepairConfiguration)
         {
-            this.repairConfiguration = repairConfiguration;
+            this.repairConfiguration = theRepairConfiguration;
             return this;
         }
 
-        public Builder withReplicaRepairGroup(ReplicaRepairGroup replicaRepairGroup)
+        /**
+         * Build with replica repair group.
+         *
+         * @param theReplicaRepairGroup Replica repair group.
+         * @return Builder
+         */
+        public Builder withReplicaRepairGroup(final ReplicaRepairGroup theReplicaRepairGroup)
         {
-            this.replicaRepairGroup = replicaRepairGroup;
+            this.replicaRepairGroup = theReplicaRepairGroup;
             return this;
         }
 
-        public Builder withJmxProxyFactory(JmxProxyFactory jmxProxyFactory)
+        /**
+         * Build with JMX proxy factory.
+         *
+         * @param theJMXProxyFactory JMX proxy factory.
+         * @return Builder
+         */
+        public Builder withJmxProxyFactory(final JmxProxyFactory theJMXProxyFactory)
         {
-            this.jmxProxyFactory = jmxProxyFactory;
+            this.jmxProxyFactory = theJMXProxyFactory;
             return this;
         }
 
-        public Builder withTableRepairMetrics(TableRepairMetrics tableRepairMetrics)
+        /**
+         * Build with table repair metrics.
+         *
+         * @param theTableRepairMetrics Table repair metrics.
+         * @return Builder
+         */
+        public Builder withTableRepairMetrics(final TableRepairMetrics theTableRepairMetrics)
         {
-            this.tableRepairMetrics = tableRepairMetrics;
+            this.tableRepairMetrics = theTableRepairMetrics;
             return this;
         }
 
-        public Builder withRepairResourceFactory(RepairResourceFactory repairResourceFactory)
+        /**
+         * Build with repair resource factory.
+         *
+         * @param theRepairResourceFactory Repair resource factory.
+         * @return Builder
+         */
+        public Builder withRepairResourceFactory(final RepairResourceFactory theRepairResourceFactory)
         {
-            this.repairResourceFactory = repairResourceFactory;
+            this.repairResourceFactory = theRepairResourceFactory;
             return this;
         }
 
-        public Builder withRepairLockFactory(RepairLockFactory repairLockFactory)
+        /**
+         * Build with repair lock factory.
+         *
+         * @param theRepairLockFactory Repair lock factory.
+         * @return Builder
+         */
+        public Builder withRepairLockFactory(final RepairLockFactory theRepairLockFactory)
         {
-            this.repairLockFactory = repairLockFactory;
+            this.repairLockFactory = theRepairLockFactory;
             return this;
         }
 
-        public Builder withRepairPolicies(List<TableRepairPolicy> repairPolicies)
+        /**
+         * Build with repair policies.
+         *
+         * @param theRepairPolicies Repair policies.
+         * @return Builder
+         */
+        public Builder withRepairPolicies(final List<TableRepairPolicy> theRepairPolicies)
         {
-            this.repairPolicies = repairPolicies;
+            this.repairPolicies = theRepairPolicies;
             return this;
         }
 
-        public Builder withTokensPerRepair(BigInteger tokensPerRepair)
+        /**
+         * Build with tokens per repair.
+         *
+         * @param theTokensPerRepair Tokens per repair.
+         * @return Builder
+         */
+        public Builder withTokensPerRepair(final BigInteger theTokensPerRepair)
         {
-            this.tokensPerRepair = tokensPerRepair;
+            this.tokensPerRepair = theTokensPerRepair;
             return this;
         }
 
-        public Builder withRepairHistory(RepairHistory repairHistory)
+        /**
+         * Build with repair history.
+         *
+         * @param theRepairHistory Repair history.
+         * @return Builder
+         */
+        public Builder withRepairHistory(final RepairHistory theRepairHistory)
         {
-            this.repairHistory = repairHistory;
+            this.repairHistory = theRepairHistory;
             return this;
         }
 
-        public Builder withJobId(UUID jobId)
+        /**
+         * Build with job id.
+         *
+         * @param theJobId Job id.
+         * @return Builder
+         */
+        public Builder withJobId(final UUID theJobId)
         {
-            this.jobId = jobId;
+            this.jobId = theJobId;
             return this;
         }
 
-        public RepairGroup build(int priority)
+        /**
+         * Build repair group.
+         *
+         * @param priority The priority.
+         * @return RepairGroup
+         */
+        public RepairGroup build(final int priority)
         {
             return new RepairGroup(priority, this);
         }

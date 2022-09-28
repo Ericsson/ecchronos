@@ -22,15 +22,16 @@ import java.util.UUID;
 
 /**
  * An internal representation of a node.
- * This class together with {@link com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver} makes it easier to translate node IP to host ID and other way around.
+ * This class together with {@link com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver} makes it easier to
+ * translate node IP to host ID and other way around.
  */
 public class DriverNode
 {
     private final Node node;
 
-    public DriverNode(Node node)
+    public DriverNode(final Node aNode)
     {
-        this.node = node;
+        this.node = aNode;
     }
 
     /**
@@ -54,34 +55,41 @@ public class DriverNode
     }
 
     /**
-     * Get the data center the node resides in.
+     * Get the datacenter the node resides in.
      *
-     * @return The data center of the node.
+     * @return The datacenter of the node.
      */
     public String getDatacenter()
     {
         return node.getDatacenter();
     }
 
+    /**
+     * Check for equality.
+     */
     @Override
-    public boolean equals(Object o)
+    public boolean equals(final Object o)
     {
         if (this == o)
+        {
             return true;
+        }
         if (o == null || getClass() != o.getClass())
+        {
             return false;
+        }
         DriverNode that = (DriverNode) o;
         return node.equals(that.node);
     }
 
     @Override
-    public int hashCode()
+    public final int hashCode()
     {
         return Objects.hash(node);
     }
 
     @Override
-    public String toString()
+    public final String toString()
     {
         return String.format("Node(%s:%s:%s)", getId(), getDatacenter(), getPublicAddress());
     }

@@ -29,6 +29,7 @@ import java.util.List;
  *     <li>If there is a repair available - {@link #canRepair()}</li>
  * </ul>
  */
+@SuppressWarnings("FinalClass")
 public class RepairStateSnapshot
 {
     private final boolean canRepair;
@@ -37,7 +38,7 @@ public class RepairStateSnapshot
     private final VnodeRepairStates myVnodeRepairStates;
     private final long myEstimatedRepairTime;
 
-    private RepairStateSnapshot(Builder builder)
+    private RepairStateSnapshot(final Builder builder)
     {
         myLastCompletedAt = builder.myLastCompletedAt;
         myReplicaRepairGroup = builder.myReplicaRepairGroup;
@@ -46,12 +47,12 @@ public class RepairStateSnapshot
         canRepair = !myReplicaRepairGroup.isEmpty();
     }
 
-    public long getRemainingRepairTime(long now, long repairIntervalMs)
+    public long getRemainingRepairTime(final long now, final long repairIntervalMs)
     {
         long sum = 0;
         for (VnodeRepairState vnodeRepairState : myVnodeRepairStates.getVnodeRepairStates())
         {
-            if(vnodeRepairState.lastRepairedAt() + (repairIntervalMs - myEstimatedRepairTime) <= now)
+            if (vnodeRepairState.lastRepairedAt() + (repairIntervalMs - myEstimatedRepairTime) <= now)
             {
                 sum += vnodeRepairState.getRepairTime();
             }
@@ -102,12 +103,12 @@ public class RepairStateSnapshot
     @Override
     public String toString()
     {
-        return "RepairStateSnapshot{" +
-                "canRepair=" + canRepair +
-                ", myLastCompletedAt=" + myLastCompletedAt +
-                ", myReplicaRepairGroup=" + myReplicaRepairGroup +
-                ", myEstimatedRepairTime=" + myEstimatedRepairTime +
-                '}';
+        return "RepairStateSnapshot{"
+                + "canRepair=" + canRepair
+                + ", myLastCompletedAt=" + myLastCompletedAt
+                + ", myReplicaRepairGroup=" + myReplicaRepairGroup
+                + ", myEstimatedRepairTime=" + myEstimatedRepairTime
+                + '}';
     }
 
     public static Builder newBuilder()
@@ -121,24 +122,47 @@ public class RepairStateSnapshot
         private ImmutableList<ReplicaRepairGroup> myReplicaRepairGroup;
         private VnodeRepairStates myVnodeRepairStates;
 
-        public Builder withLastCompletedAt(long lastCompletedAt)
+        /**
+         * Build repair state snapshot with last completed at.
+         *
+         * @param lastCompletedAt Time stamp of last completion.
+         * @return Builder
+         */
+        public Builder withLastCompletedAt(final long lastCompletedAt)
         {
             myLastCompletedAt = lastCompletedAt;
             return this;
         }
 
-        public Builder withReplicaRepairGroups(List<ReplicaRepairGroup> replicaRepairGroup)
+        /**
+         * Build repair state snapshot with replica repair groups.
+         *
+         * @param replicaRepairGroup The repair replica group.
+         * @return Builder
+         */
+        public Builder withReplicaRepairGroups(final List<ReplicaRepairGroup> replicaRepairGroup)
         {
             myReplicaRepairGroup = ImmutableList.copyOf(replicaRepairGroup);
             return this;
         }
 
-        public Builder withVnodeRepairStates(VnodeRepairStates vnodeRepairStates)
+        /**
+         * Build repair state snapshot with vNode repair state.
+         *
+         * @param vnodeRepairStates The vnode repair states.
+         * @return Builder
+         */
+        public Builder withVnodeRepairStates(final VnodeRepairStates vnodeRepairStates)
         {
             myVnodeRepairStates = vnodeRepairStates;
             return this;
         }
 
+        /**
+         * Build repair state snapshot.
+         *
+         * @return RepairStateSnapshot
+         */
         public RepairStateSnapshot build()
         {
             return new RepairStateSnapshot(this);

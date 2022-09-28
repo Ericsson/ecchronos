@@ -42,7 +42,7 @@ public final class VnodeRepairGroupFactory implements ReplicaRepairGroupFactory
     }
 
     @Override
-    public List<ReplicaRepairGroup> generateReplicaRepairGroups(List<VnodeRepairState> availableVnodeRepairStates)
+    public List<ReplicaRepairGroup> generateReplicaRepairGroups(final List<VnodeRepairState> availableVnodeRepairStates)
     {
         List<VnodeRepairState> sortedVnodeRepairStates = availableVnodeRepairStates.stream()
                 .sorted(Comparator.comparingLong(VnodeRepairState::lastRepairedAt))

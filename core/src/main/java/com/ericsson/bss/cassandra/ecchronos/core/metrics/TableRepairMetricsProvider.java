@@ -25,7 +25,8 @@ public interface TableRepairMetricsProvider
 {
     /**
      * @param tableReference the table
-     * @return an Optional describing the repair ratio for the given table, or an empty Optional if the table was not found.
+     * @return an Optional describing the repair ratio for the given table, or an empty Optional if the table was
+     * not found.
      */
     Optional<Double> getRepairRatio(TableReference tableReference);
 }

@@ -21,17 +21,17 @@ public class ScheduledJobException extends Exception
 {
     private static final long serialVersionUID = 4099709033677299583L;
 
-    public ScheduledJobException(String message)
+    public ScheduledJobException(final String message)
     {
         super(message);
     }
 
-    public ScheduledJobException(Throwable t)
+    public ScheduledJobException(final Throwable t)
     {
         super(t);
     }
 
-    public ScheduledJobException(String message, Throwable t)
+    public ScheduledJobException(final String message, final Throwable t)
     {
         super(message, t);
     }
