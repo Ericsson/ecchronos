@@ -34,8 +34,8 @@ public class ReplicaRepairGroup implements Iterable<LongTokenRange>
     /**
      * Constructor.
      *
-     * @param replicas
-     * @param vnodes
+     * @param replicas The nodes.
+     * @param vnodes The token ranges.
      */
     public ReplicaRepairGroup(final ImmutableSet<DriverNode> replicas, final ImmutableList<LongTokenRange> vnodes)
     {

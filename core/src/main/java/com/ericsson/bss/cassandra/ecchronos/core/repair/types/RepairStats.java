@@ -49,7 +49,7 @@ public class RepairStats
     /**
      * Equality.
      *
-     * @param o
+     * @param o The object to compare to.
      * @return boolean
      */
     @Override

@@ -61,7 +61,9 @@ public class Config
     }
 
     /**
+     * Get the global repair configuration.
      *
+     * @return GlobalRepairConfig
      */
     public GlobalRepairConfig getRepair()
     {
@@ -69,7 +71,9 @@ public class Config
     }
 
     /**
+     * Set repair configuration.
      *
+     * @param repairConfig THe repair configuration.
      */
     public void setRepair(final GlobalRepairConfig repairConfig)
     {
@@ -124,7 +128,9 @@ public class Config
     }
 
     /**
+     * Set the scheduler.
      *
+     * @param aScheduler The scheduler.
      */
     public void setScheduler(final SchedulerConfig aScheduler)
     {
@@ -246,7 +252,9 @@ public class Config
         protected abstract Class<?>[] expectedConstructor();
 
         /**
+         * Set certification handler.
          *
+         * @param aCertificateHandler The certification handler.
          */
         public void setCertificateHandler(final Class<? extends CertificateHandler> aCertificateHandler)
                 throws NoSuchMethodException
@@ -257,7 +265,9 @@ public class Config
         }
 
         /**
+         * Get the expected certification handler.
          *
+         * @return CertificateHandler
          */
         protected Class<?>[] expectedCertHandlerConstructor()
         {
@@ -268,7 +278,9 @@ public class Config
         }
 
         /**
+         * String representation.
          *
+         * @return String
          */
         @Override
         public String toString()

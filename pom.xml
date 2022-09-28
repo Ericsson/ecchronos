@@ -710,7 +710,7 @@ limitations under the License.
                     <encoding>UTF-8</encoding>
                     <consoleOutput>true</consoleOutput>
                     <configLocation>check_style.xml</configLocation>
-                    <failOnViolation>false</failOnViolation> <!-- ignore violations for now, uncomment when all the code follows checkstyle -->
+                    <failOnViolation>true</failOnViolation>
                 </configuration>
                 <executions>
                     <execution>

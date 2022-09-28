@@ -60,7 +60,8 @@ public class RepairManagementRESTComponent implements RepairManagementREST
             policy = ReferencePolicy.STATIC)
     private volatile ReplicatedTableProvider myReplicatedTableProvider;
 
-    @Reference(service = RepairStatsProvider.class, cardinality = ReferenceCardinality.MANDATORY, policy = ReferencePolicy.STATIC)
+    @Reference(service = RepairStatsProvider.class, cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.STATIC)
     private volatile RepairStatsProvider myRepairStatsProvider;
 
     private volatile RepairManagementRESTImpl myDelegateRESTImpl;
@@ -107,8 +108,11 @@ public class RepairManagementRESTComponent implements RepairManagementREST
     }
 
     @Override
-    public ResponseEntity<RepairInfo> getRepairInfo(final String keyspace, final String table, final Long since,
-                                                    final Duration duration, final boolean isLocal)
+    public final ResponseEntity<RepairInfo> getRepairInfo(final String keyspace,
+                                                          final String table,
+                                                          final Long since,
+                                                          final Duration duration,
+                                                          final boolean isLocal)
     {
         return myDelegateRESTImpl.getRepairInfo(keyspace, table, since, duration, isLocal);
     }

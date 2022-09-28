@@ -142,7 +142,7 @@ public class RepairGroup extends ScheduledTask
      *
      * @param lockFactory The lock factory to use.
      * @return LockFactory.DistributedLock
-     * @throws LockException
+     * @throws LockException Lock factory unable to get a lock.
      */
     @Override
     public LockFactory.DistributedLock getLock(final LockFactory lockFactory) throws LockException
