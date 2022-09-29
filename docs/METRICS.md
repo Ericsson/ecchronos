@@ -1,7 +1,11 @@
 # Metrics
 
-The metrics for the repair scheduler are, by default, located in the directory `./statistics`.
-They are managed by logrotate and new output is generated every minute.
+The metrics are controlled by `statistics` section in `ecc.yml` file.
+The `statistics.enabled` controls if the metrics should be enabled.
+The output directory for metrics is specified by `statistics.directory`.
+
+Which metrics should be enabled is controlled by `statistics.excluded` in `ecc.yml` file.
+The `statistics.excluded` takes an array of quoted regexes to disable metrics.
 
 ## Files
 

@@ -56,6 +56,8 @@ repair:
 statistics:
   enabled: false
   directory: ./non-default-statistics
+  excluded:
+    - '.*'
 
 lock_factory:
   cas:

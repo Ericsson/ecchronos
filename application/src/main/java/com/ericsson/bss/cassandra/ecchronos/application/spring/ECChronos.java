@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
 import java.io.Closeable;
 import java.util.Collections;
 
+import com.codahale.metrics.MetricFilter;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.RepairStatsProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.RepairStatsProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
@@ -69,11 +70,12 @@ public class ECChronos implements Closeable
                      final RepairHistory repairHistory,
                      final RepairHistoryProvider repairHistoryProvider,
                      final MetricRegistry metricRegistry,
+                     final MetricFilter metricFilter,
                      final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
             throws ConfigurationException
     {
         myECChronosInternals = new ECChronosInternals(configuration, nativeConnectionProvider, jmxConnectionProvider,
-                statementDecorator, metricRegistry);
+                statementDecorator, metricRegistry, metricFilter);
 
         CqlSession session = nativeConnectionProvider.getSession();
 

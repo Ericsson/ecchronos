@@ -2,6 +2,7 @@
 
 ## Version 4.0.0
 
+* Add possibility to exclude metrics through config - Issue #367
 * Fix help for ecctool run-repair - Issue #365
 * Sort repair-info based on repaired-ratio - Issue #358
 * Support keyspaces and tables with camelCase - Issue #362

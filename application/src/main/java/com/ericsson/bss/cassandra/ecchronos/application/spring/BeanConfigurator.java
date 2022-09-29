@@ -21,8 +21,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import com.codahale.metrics.MetricFilter;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
+import com.ericsson.bss.cassandra.ecchronos.application.MetricFilterImpl;
 import com.ericsson.bss.cassandra.ecchronos.application.ReloadingCertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
@@ -214,12 +216,18 @@ public class BeanConfigurator
     }
 
     @Bean
-    ServletRegistrationBean registerMetricsServlet(final MetricRegistry metricRegistry)
+    public MetricFilter metricFilter(final Config config)
+    {
+        return new MetricFilterImpl(config.getStatistics().getExcluded());
+    }
+
+    @Bean
+    ServletRegistrationBean registerMetricsServlet(final MetricRegistry metricRegistry, final MetricFilter metricFilter)
     {
         CollectorRegistry collectorRegistry = new CollectorRegistry();
         ServletRegistrationBean servletRegistrationBean = new ServletRegistrationBean();
 
-        collectorRegistry.register(new DropwizardExports(metricRegistry));
+        collectorRegistry.register(new DropwizardExports(metricRegistry, metricFilter));
         servletRegistrationBean.setServlet(new MetricsServlet(collectorRegistry));
         servletRegistrationBean.setUrlMappings(Arrays.asList("/metrics/*"));
         return servletRegistrationBean;
