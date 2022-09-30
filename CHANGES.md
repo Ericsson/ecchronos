@@ -15,6 +15,7 @@
 * Add metric for failed and succeeded repair tasks - Issue #295
 * Remove deprecated v1 REST interface
 * Migrate to datastax driver-4.14.1 - Issue #269
+* Add PEM format support - Issue #300
 
 ## Version 3.0.0
 

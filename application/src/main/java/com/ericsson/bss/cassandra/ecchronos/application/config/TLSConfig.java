@@ -32,6 +32,10 @@ public class TLSConfig
     private String truststore;
     private String truststore_password;
 
+    private String certificate;
+    private String certificate_private_key;
+    private String trust_certificate;
+
     private String protocol;
     private String algorithm;
     private String store_type;
@@ -89,9 +93,44 @@ public class TLSConfig
         this.truststore_password = truststorePassword;
     }
 
+    public Optional<String> getCertificate()
+    {
+        return Optional.ofNullable(certificate);
+    }
+
+    public void setCertificate(String certificate)
+    {
+        this.certificate = certificate;
+    }
+
+    public Optional<String> getCertificatePrivateKey()
+    {
+        return Optional.ofNullable(certificate_private_key);
+    }
+
+    public void setCertificate_private_key(String certificate_private_key)
+    {
+        this.certificate_private_key = certificate_private_key;
+    }
+
+    public Optional<String> getTrustCertificate()
+    {
+        return Optional.ofNullable(trust_certificate);
+    }
+
+    public void setTrust_certificate(String trust_certificate)
+    {
+        this.trust_certificate = trust_certificate;
+    }
+
     public final String getProtocol()
     {
         return protocol;
+    }
+
+    public final String[] getProtocols()
+    {
+        return protocol.split(",");
     }
 
     public final void setProtocol(final String aProtocol)
@@ -167,6 +206,9 @@ public class TLSConfig
                 && Objects.equals(keystore_password, tlsConfig.keystore_password)
                 && Objects.equals(truststore, tlsConfig.truststore)
                 && Objects.equals(truststore_password, tlsConfig.truststore_password)
+                && Objects.equals(certificate, tlsConfig.certificate)
+                && Objects.equals(certificate_private_key, tlsConfig.certificate_private_key)
+                && Objects.equals(trust_certificate, tlsConfig.trust_certificate)
                 && Objects.equals(protocol, tlsConfig.protocol)
                 && Objects.equals(algorithm, tlsConfig.algorithm)
                 && Objects.equals(store_type, tlsConfig.store_type)
@@ -176,8 +218,8 @@ public class TLSConfig
     @Override
     public final int hashCode()
     {
-        int result = Objects.hash(enabled, keystore, keystore_password, truststore, truststore_password, protocol,
-                algorithm, store_type, require_endpoint_verification);
+        int result = Objects.hash(enabled, keystore, keystore_password, truststore, truststore_password, certificate,
+                certificate_private_key, trust_certificate, protocol, algorithm, store_type, require_endpoint_verification);
         result = HASH_SEED * result + Arrays.hashCode(cipher_suites);
         return result;
     }

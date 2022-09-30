@@ -115,7 +115,7 @@ cql:
     keystore_password: ecchronos
     truststore: /path/to/truststore
     truststore_password: ecchronos
-    protocol: TLSv1.2
+    protocol: TLSv1.2,TLSv1.3
     algorithm:
     store_type: JKS
     cipher_suites:
@@ -131,9 +131,31 @@ jmx:
     keystore_password: ecchronos
     truststore: /path/to/truststore
     truststore_password: ecchronos
-    protocol: TLSv1.2
+    protocol: TLSv1.2,TLSv1.3
     cipher_suites:
 ```
+
+CQL also supports certificates in PEM format.
+
+```
+cql:
+  credentials:
+    enabled: true
+    username: cassandra
+    password: cassandra
+  tls:
+    enabled: false
+    certificate: /path/to/certificate
+    certificate_key: /path/to/certificate_key
+    certificate_authorities: /path/to/certificate_authorities
+    protocol: TLSv1.2,TLSv1.3
+    cipher_suites:
+    require_endpoint_verification: false
+```
+> **Note**
+>
+> In case certificate stores and PEM certificates are declared in `conf/security.yml` for CQL,
+> PEM certificates takes precedence.
 
 The security parameters can be updated during runtime and will automatically be picked up by ecc.
 

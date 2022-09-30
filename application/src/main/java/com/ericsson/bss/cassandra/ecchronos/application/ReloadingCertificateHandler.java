@@ -17,14 +17,17 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 import com.datastax.oss.driver.api.core.metadata.EndPoint;
 import com.ericsson.bss.cassandra.ecchronos.application.config.TLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManagerFactory;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,6 +38,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -55,17 +59,18 @@ public class ReloadingCertificateHandler implements CertificateHandler
     {
         Context context = getContext();
         TLSConfig tlsConfig = context.getTlsConfig();
-        SSLContext sslContext = context.getSSLContext();
+        SslContext sslContext = context.getSSLContext();
 
         SSLEngine sslEngine;
         if (remoteEndpoint != null)
         {
             InetSocketAddress socketAddress = (InetSocketAddress) remoteEndpoint.resolve();
-            sslEngine = sslContext.createSSLEngine(socketAddress.getHostName(), socketAddress.getPort());
+            sslEngine = sslContext.newEngine(ByteBufAllocator.DEFAULT, socketAddress.getHostName(),
+                    socketAddress.getPort());
         }
         else
         {
-            sslEngine = sslContext.createSSLEngine();
+            sslEngine = sslContext.newEngine(ByteBufAllocator.DEFAULT);
         }
         sslEngine.setUseClientMode(true);
 
@@ -118,7 +123,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
     protected static final class Context
     {
         private final TLSConfig tlsConfig;
-        private final SSLContext sslContext;
+        private final SslContext sslContext;
 
         Context(final TLSConfig aTLSConfig) throws NoSuchAlgorithmException, IOException, UnrecoverableKeyException,
                 CertificateException, KeyStoreException, KeyManagementException
@@ -137,26 +142,44 @@ public class ReloadingCertificateHandler implements CertificateHandler
             return this.tlsConfig.equals(aTLSConfig);
         }
 
-        SSLContext getSSLContext()
+        SslContext getSSLContext()
         {
             return sslContext;
         }
     }
 
-    protected static SSLContext createSSLContext(final TLSConfig tlsConfig) throws IOException,
+    protected static SslContext createSSLContext(TLSConfig tlsConfig) throws IOException,
             NoSuchAlgorithmException,
             KeyStoreException,
             CertificateException,
-            UnrecoverableKeyException,
-            KeyManagementException
+            UnrecoverableKeyException
     {
-        SSLContext sslContext = SSLContext.getInstance(tlsConfig.getProtocol());
-        KeyManagerFactory keyManagerFactory = getKeyManagerFactory(tlsConfig);
-        TrustManagerFactory trustManagerFactory = getTrustManagerFactory(tlsConfig);
 
-        sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
+        SslContextBuilder builder = SslContextBuilder.forClient();
 
-        return sslContext;
+        if (tlsConfig.getCertificate().isPresent() &&
+                tlsConfig.getCertificatePrivateKey().isPresent() &&
+                tlsConfig.getTrustCertificate().isPresent())
+        {
+            File certificateFile = new File(tlsConfig.getCertificate().get());
+            File certificatePrivateKeyFile = new File(tlsConfig.getCertificatePrivateKey().get());
+            File trustCertificateFile = new File(tlsConfig.getTrustCertificate().get());
+
+            builder.keyManager(certificateFile, certificatePrivateKeyFile);
+            builder.trustManager(trustCertificateFile);
+        }
+        else
+        {
+            KeyManagerFactory keyManagerFactory = getKeyManagerFactory(tlsConfig);
+            TrustManagerFactory trustManagerFactory = getTrustManagerFactory(tlsConfig);
+            builder.keyManager(keyManagerFactory);
+            builder.trustManager(trustManagerFactory);
+        }
+        if (tlsConfig.getCipher_suites().isPresent())
+        {
+            builder.ciphers(Arrays.asList(tlsConfig.getCipher_suites().get()));
+        }
+        return builder.protocols(tlsConfig.getProtocols()).build();
     }
 
     protected static KeyManagerFactory getKeyManagerFactory(final TLSConfig tlsConfig) throws IOException,
