@@ -59,9 +59,15 @@ class RequestResult(object):
 
 class RestRequest(object):
     default_base_url = 'http://localhost:8080'
+    default_https_base_url = 'https://localhost:8080'
 
     def __init__(self, base_url=None):
-        self.base_url = base_url if base_url is not None else RestRequest.default_base_url
+        if base_url:
+            self.base_url = base_url
+        elif os.getenv("ECCTOOL_CERT_FILE") and os.getenv("ECCTOOL_KEY_FILE") and os.getenv("ECCTOOL_CA_FILE"):
+            self.base_url = RestRequest.default_https_base_url
+        else:
+            self.base_url = RestRequest.default_base_url
 
     @staticmethod
     def get_param(httpmessage, param):

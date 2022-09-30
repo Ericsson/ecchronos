@@ -172,7 +172,6 @@ def run_ecctool(context, params):
     client_ca = context.config.userdata.get("client_ca")
     env = {}
     if client_cert and client_key and client_ca:
-        cmd += ["--url", "https://localhost:8080"]
         env = {"ECCTOOL_CERT_FILE": client_cert,
                "ECCTOOL_KEY_FILE": client_key,
                "ECCTOOL_CA_FILE": client_ca}

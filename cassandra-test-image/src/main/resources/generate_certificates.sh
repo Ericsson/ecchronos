@@ -36,6 +36,7 @@
 # cert/serverkeystore - REST server keystore (PKCS12)
 # cert/servertruststore - REST server truststore (PKCS12)
 #
+# Certs for ecctool
 # cert/clientcert.crt - ecctool certificate
 # cert/clientkey.pem - ecctool private key
 # cert/client.csr
