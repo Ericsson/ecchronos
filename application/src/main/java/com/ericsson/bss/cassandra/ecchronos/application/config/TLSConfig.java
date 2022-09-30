@@ -93,34 +93,34 @@ public class TLSConfig
         this.truststore_password = truststorePassword;
     }
 
-    public Optional<String> getCertificate()
+    public final Optional<String> getCertificate()
     {
         return Optional.ofNullable(certificate);
     }
 
-    public void setCertificate(String certificate)
+    public final void setCertificate(final String aCertificate)
     {
-        this.certificate = certificate;
+        this.certificate = aCertificate;
     }
 
-    public Optional<String> getCertificatePrivateKey()
+    public final Optional<String> getCertificatePrivateKey()
     {
         return Optional.ofNullable(certificate_private_key);
     }
 
-    public void setCertificate_private_key(String certificate_private_key)
+    public final void setCertificate_private_key(final String certificatePrivateKey)
     {
-        this.certificate_private_key = certificate_private_key;
+        this.certificate_private_key = certificatePrivateKey;
     }
 
-    public Optional<String> getTrustCertificate()
+    public final Optional<String> getTrustCertificate()
     {
         return Optional.ofNullable(trust_certificate);
     }
 
-    public void setTrust_certificate(String trust_certificate)
+    public final void setTrust_certificate(final String trustCertificate)
     {
-        this.trust_certificate = trust_certificate;
+        this.trust_certificate = trustCertificate;
     }
 
     public final String getProtocol()
@@ -219,7 +219,8 @@ public class TLSConfig
     public final int hashCode()
     {
         int result = Objects.hash(enabled, keystore, keystore_password, truststore, truststore_password, certificate,
-                certificate_private_key, trust_certificate, protocol, algorithm, store_type, require_endpoint_verification);
+                certificate_private_key, trust_certificate, protocol, algorithm, store_type,
+                require_endpoint_verification);
         result = HASH_SEED * result + Arrays.hashCode(cipher_suites);
         return result;
     }

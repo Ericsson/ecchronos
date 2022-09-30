@@ -148,7 +148,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
         }
     }
 
-    protected static SslContext createSSLContext(TLSConfig tlsConfig) throws IOException,
+    protected static SslContext createSSLContext(final TLSConfig tlsConfig) throws IOException,
             NoSuchAlgorithmException,
             KeyStoreException,
             CertificateException,
@@ -157,9 +157,9 @@ public class ReloadingCertificateHandler implements CertificateHandler
 
         SslContextBuilder builder = SslContextBuilder.forClient();
 
-        if (tlsConfig.getCertificate().isPresent() &&
-                tlsConfig.getCertificatePrivateKey().isPresent() &&
-                tlsConfig.getTrustCertificate().isPresent())
+        if (tlsConfig.getCertificate().isPresent()
+                && tlsConfig.getCertificatePrivateKey().isPresent()
+                && tlsConfig.getTrustCertificate().isPresent())
         {
             File certificateFile = new File(tlsConfig.getCertificate().get());
             File certificatePrivateKeyFile = new File(tlsConfig.getCertificatePrivateKey().get());
