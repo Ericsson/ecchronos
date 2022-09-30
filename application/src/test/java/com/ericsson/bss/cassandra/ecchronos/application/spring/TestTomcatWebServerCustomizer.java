@@ -119,7 +119,7 @@ public abstract class TestTomcatWebServerCustomizer
     public void testExceptionWhenExpiredCertificate() throws IOException, GeneralSecurityException
     {
         HttpClient httpClient = configureHttpClient(CLIENT_EXPIRED_PATH);
-        assertThatExceptionOfType(SSLException.class)
+        assertThatExceptionOfType(IOException.class)
                 .isThrownBy(() -> httpClient.execute(new HttpGet(httpsUrl)));
     }
 
