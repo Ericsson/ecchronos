@@ -14,9 +14,8 @@
 #
 
 import re
-from subprocess import Popen, PIPE
 from behave import when, then  # pylint: disable=no-name-in-module
-from ecc_step_library.common_steps import match_and_remove_row, strip_and_collapse, validate_header, step_validate_list_rows_clear  # pylint: disable=line-too-long
+from ecc_step_library.common_steps import match_and_remove_row, strip_and_collapse, validate_header, step_validate_list_rows_clear, run_ecctool  # pylint: disable=line-too-long
 
 
 ID_PATTERN = r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
@@ -28,9 +27,7 @@ TABLE_SCHEDULE_ROW_FORMAT_PATTERN = r'\| .* \| {0} \| {1} \| (COMPLETED|ON_TIME|
 
 
 def run_ecc_schedule_status(context, params):
-    cmd = [context.config.userdata.get("ecctool")] + ["schedules"] + params
-    context.proc = Popen(cmd, stdout=PIPE, stderr=PIPE) # pylint: disable=consider-using-with
-    (context.out, context.err) = context.proc.communicate()
+    run_ecctool(context, ["schedules"] + params)
 
 
 def handle_schedule_output(context):

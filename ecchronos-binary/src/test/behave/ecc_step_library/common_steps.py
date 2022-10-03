@@ -13,6 +13,7 @@
 # limitations under the License.
 #
 
+from subprocess import Popen, PIPE
 import re
 import os
 import json
@@ -102,13 +103,33 @@ def step_set_url(context, url):
 @when('I send a GET request')
 def step_send_get_request(context):
     assert context.url is not None
-    context.response = requests.get(context.url)
+    assert not context.url.startswith("http"), \
+        "context.url cannot contain protocol 'http' or 'https'"
+    client_cert = context.config.userdata.get("client_cert")
+    client_key = context.config.userdata.get("client_key")
+    client_ca = context.config.userdata.get("client_ca")
+    if client_cert and client_key and client_ca:
+        url = "https://" + context.url
+        context.response = requests.get(url, cert=(client_cert, client_key), verify=client_ca)
+    else:
+        url = "http://" + context.url
+        context.response = requests.get(url)
 
 
 @when('I send a POST request')
 def step_send_post_request(context):
     assert context.url is not None
-    context.response = requests.post(context.url)
+    assert not context.url.startswith("http"), \
+        "context.url cannot contain protocol 'http' or 'https'"
+    client_cert = context.config.userdata.get("client_cert")
+    client_key = context.config.userdata.get("client_key")
+    client_ca = context.config.userdata.get("client_ca")
+    if client_cert and client_key and client_ca:
+        url = "https://" + context.url
+        context.response = requests.post(url, cert=(client_cert, client_key), verify=client_ca)
+    else:
+        url = "http://" + context.url
+        context.response = requests.post(url)
 
 
 @then('the response is successful')
@@ -142,3 +163,17 @@ def step_extract_id(context, keyspace, table):
 def step_verify_job_list(context, keyspace):
     for obj in context.json:
         assert obj["keyspace"] == keyspace
+
+
+def run_ecctool(context, params):
+    cmd = [context.config.userdata.get("ecctool")] + params
+    client_cert = context.config.userdata.get("client_cert")
+    client_key = context.config.userdata.get("client_key")
+    client_ca = context.config.userdata.get("client_ca")
+    env = {}
+    if client_cert and client_key and client_ca:
+        env = {"ECCTOOL_CERT_FILE": client_cert,
+               "ECCTOOL_KEY_FILE": client_key,
+               "ECCTOOL_CA_FILE": client_ca}
+    context.proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)  # pylint: disable=consider-using-with
+    (context.out, context.err) = context.proc.communicate()

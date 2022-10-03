@@ -21,6 +21,8 @@ except ImportError:
     from urllib2 import urlopen, Request, HTTPError, URLError
     from urllib import quote # pylint: disable=ungrouped-imports
 import json
+import os
+import ssl
 from ecchronoslib.types import FullSchedule, Repair, Schedule, RepairInfo
 
 
@@ -57,9 +59,15 @@ class RequestResult(object):
 
 class RestRequest(object):
     default_base_url = 'http://localhost:8080'
+    default_https_base_url = 'https://localhost:8080'
 
     def __init__(self, base_url=None):
-        self.base_url = base_url if base_url is not None else RestRequest.default_base_url
+        if base_url:
+            self.base_url = base_url
+        elif os.getenv("ECCTOOL_CERT_FILE") and os.getenv("ECCTOOL_KEY_FILE") and os.getenv("ECCTOOL_CA_FILE"):
+            self.base_url = RestRequest.default_https_base_url
+        else:
+            self.base_url = RestRequest.default_base_url
 
     @staticmethod
     def get_param(httpmessage, param):
@@ -77,7 +85,15 @@ class RestRequest(object):
         try:
             request = Request(request_url)
             request.get_method = lambda: method
-            response = urlopen(request)
+            cert_file = os.getenv("ECCTOOL_CERT_FILE")
+            key_file = os.getenv("ECCTOOL_KEY_FILE")
+            ca_file = os.getenv("ECCTOOL_CA_FILE")
+            if cert_file and key_file and ca_file:
+                context = ssl.create_default_context(cafile=ca_file)
+                context.load_cert_chain(cert_file, key_file)
+                response = urlopen(request, context=context)
+            else:
+                response = urlopen(request)
             json_data = json.loads(response.read().decode(RestRequest.get_charset(response)))
 
             response.close()

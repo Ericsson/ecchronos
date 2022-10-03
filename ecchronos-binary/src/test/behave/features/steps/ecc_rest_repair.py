@@ -17,6 +17,6 @@ from behave import given  # pylint: disable=no-name-in-module
 
 
 @given('I fetch repairs with id')
-def step_send_post_request(context):
+def step_fetch_repairs_with_id(context):
     assert context.id is not None
-    context.url = "http://localhost:8080/repair-management/v2/repairs/{0}".format(context.id)
+    context.url = "localhost:8080/repair-management/v2/repairs/{0}".format(context.id)
