@@ -104,6 +104,8 @@ public class TestConfig
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isFalse();
         assertThat(statisticsConfig.getDirectory()).isEqualTo(new File("./non-default-statistics"));
+        assertThat(statisticsConfig.getExcluded().size()).isEqualTo(1);
+        assertThat(statisticsConfig.getExcluded()).contains(".*");
 
         Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecc");
@@ -171,6 +173,7 @@ public class TestConfig
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isTrue();
         assertThat(statisticsConfig.getDirectory()).isEqualTo(new File("./statistics"));
+        assertThat(statisticsConfig.getExcluded()).isEmpty();
 
         Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecchronos");
@@ -237,6 +240,7 @@ public class TestConfig
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isTrue();
         assertThat(statisticsConfig.getDirectory()).isEqualTo(new File("./statistics"));
+        assertThat(statisticsConfig.getExcluded()).isEmpty();
 
         Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecchronos");

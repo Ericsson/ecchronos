@@ -168,6 +168,12 @@ repair:
 statistics:
   enabled: true
   directory: ./statistics
+  ##
+  ## The metrics can be excluded using quoted regular expressions.
+  ## By default, no metrics are excluded.
+  ## For list of available metrics refer to the documentation.
+  ##
+  excluded: []
 
 lock_factory:
   cas:

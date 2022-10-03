@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
+import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.jmx.JmxReporter;
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -71,7 +72,8 @@ public class ECChronosInternals implements Closeable
                               final NativeConnectionProvider nativeConnectionProvider,
                               final JmxConnectionProvider jmxConnectionProvider,
                               final StatementDecorator statementDecorator,
-                              final MetricRegistry metricRegistry)
+                              final MetricRegistry metricRegistry,
+                              final MetricFilter metricFilter)
     {
         myJmxProxyFactory = JmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(jmxConnectionProvider)
@@ -105,6 +107,7 @@ public class ECChronosInternals implements Closeable
             myTableRepairMetricsImpl = TableRepairMetricsImpl.builder()
                     .withTableStorageStates(myTableStorageStatesImpl)
                     .withStatisticsDirectory(configuration.getStatistics().getDirectory().toString())
+                    .withMetricFilter(metricFilter)
                     .withMetricRegistry(metricRegistry)
                     .build();
         }

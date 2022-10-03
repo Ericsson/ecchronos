@@ -15,7 +15,9 @@
 package com.ericsson.bss.cassandra.ecchronos.application.config; // NOPMD
 
 import java.io.File;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -539,6 +541,7 @@ public class Config
     {
         private boolean enabled = true;
         private File directory = new File("./statistics");
+        private Set<String> excluded = new HashSet<>();
 
         public final boolean isEnabled()
         {
@@ -550,6 +553,11 @@ public class Config
             return directory;
         }
 
+        public final Set<String> getExcluded()
+        {
+            return excluded;
+        }
+
         public final void setEnabled(final boolean enabledValue)
         {
             this.enabled = enabledValue;
@@ -558,6 +566,11 @@ public class Config
         public final void setDirectory(final String aDirectory)
         {
             this.directory = new File(aDirectory);
+        }
+
+        public final void setExcluded(final Set<String> theExcluded)
+        {
+            this.excluded = theExcluded;
         }
     }
 

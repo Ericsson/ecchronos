@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.jmx.JmxReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,8 +66,10 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         myTopLevelCsvReporter = CsvReporter.forRegistry(myMetricRegistry)
                 .convertDurationsTo(TimeUnit.MILLISECONDS)
                 .convertRatesTo(TimeUnit.SECONDS)
+                .filter(builder.myMetricFilter)
                 .build(statisticsDirectory);
         myTopLevelJmxReporter = JmxReporter.forRegistry(myMetricRegistry)
+                .filter(builder.myMetricFilter)
                 .build();
 
         myTopLevelCsvReporter.start(builder.myReportIntervalInMs, builder.myReportIntervalInMs, TimeUnit.MILLISECONDS);
@@ -156,6 +159,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         private String myStatisticsDirectory = DEFAULT_STATISTICS_DIRECTORY;
         private long myReportIntervalInMs = DEFAULT_STATISTICS_REPORT_INTERVAL_IN_MS;
         private MetricRegistry myMetricRegistry;
+        private MetricFilter myMetricFilter = MetricFilter.ALL;
 
         /**
          * Build with table storage states.
@@ -203,6 +207,18 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         public Builder withMetricRegistry(final MetricRegistry metricRegistry)
         {
             myMetricRegistry = metricRegistry;
+            return this;
+        }
+
+        /**
+         * Build with metric filter.
+         *
+         * @param metricFilter Metric filter
+         * @return Builder
+         */
+        public Builder withMetricFilter(final MetricFilter metricFilter)
+        {
+            myMetricFilter = metricFilter;
             return this;
         }
 
