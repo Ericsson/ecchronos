@@ -14,32 +14,59 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
+import com.ericsson.bss.cassandra.ecchronos.application.utils.CertUtils;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
-@RunWith (SpringRunner.class)
-@SpringBootTest (webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {
-                "server.ssl.key-store=src/test/resources/server-rsa/ks.p12",
-                "server.ssl.key-store-password=",
-                "server.ssl.key-store-type=PKCS12",
-                "server.ssl.key-alias=cert",
-                "server.ssl.key-password=",
-                "server.ssl.trust-store=src/test/resources/server-rsa/ts.p12",
-                "server.ssl.trust-store-password=",
-                "server.ssl.trust-store-type=PKCS12",
-                "metricsServer.ssl.key-store=src/test/resources/metrics-server-rsa/ks.p12",
-                "metricsServer.ssl.key-store-password=ecctest",
-                "metricsServer.ssl.key-store-type=PKCS12",
-                "metricsServer.ssl.key-alias=1",
-                "metricsServer.ssl.key-password=ecctest",
-                "metricsServer.ssl.trust-store=src/test/resources/metrics-server-rsa/ts.p12",
-                "metricsServer.ssl.trust-store-password=ecctest",
-                "metricsServer.ssl.trust-store-type=PKCS12",
-        })
-@ContextConfiguration(initializers = TestTomcatWebServerCustomizer.PropertyOverrideContextInitializer.class)
+import java.io.IOException;
+
+import static org.springframework.test.context.support.TestPropertySourceUtils.addInlinedPropertiesToEnvironment;
+
+@RunWith(SpringRunner.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ContextConfiguration(initializers = TestTomcatWebServerCustomizerKeystoreRSA.PropertyOverrideContextInitializer.class)
 public class TestTomcatWebServerCustomizerKeystoreRSA extends TestTomcatWebServerCustomizer
 {
+    @BeforeClass
+    public static void setup()
+    {
+        createCerts(CertUtils.RSA_ALGORITHM_NAME, true);
+    }
+
+    static class PropertyOverrideContextInitializer
+            extends TestTomcatWebServerCustomizer.GlobalPropertyOverrideContextInitializer
+    {
+
+        PropertyOverrideContextInitializer() throws IOException
+        {
+            super();
+        }
+
+        @Override
+        public void initialize(ConfigurableApplicationContext configurableApplicationContext)
+        {
+            super.initialize(configurableApplicationContext);
+            addInlinedPropertiesToEnvironment(configurableApplicationContext,
+                    "server.ssl.key-store=" + serverKeyStore,
+                    "server.ssl.key-store-password=" + KEYSTORE_PASSWORD,
+                    "server.ssl.key-store-type=PKCS12",
+                    "server.ssl.key-alias=cert",
+                    "server.ssl.key-password=" + KEYSTORE_PASSWORD,
+                    "server.ssl.trust-store=" + serverTrustStore,
+                    "server.ssl.trust-store-password=" + KEYSTORE_PASSWORD,
+                    "server.ssl.trust-store-type=PKCS12",
+                    "metricsServer.ssl.key-store=" + metricsServerKeyStore,
+                    "metricsServer.ssl.key-store-password=" + KEYSTORE_PASSWORD,
+                    "metricsServer.ssl.key-store-type=PKCS12",
+                    "metricsServer.ssl.key-alias=cert",
+                    "metricsServer.ssl.key-password=" + KEYSTORE_PASSWORD,
+                    "metricsServer.ssl.trust-store=" + metricsServerTrustStore,
+                    "metricsServer.ssl.trust-store-password=" + KEYSTORE_PASSWORD,
+                    "metricsServer.ssl.trust-store-type=PKCS12");
+        }
+    }
 }
