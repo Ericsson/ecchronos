@@ -159,17 +159,13 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
         }
     }
 
-    private String arrayToCommaSeparated(final String[] arr)
+    private String arrayToCommaSeparated(final String... elements)
     {
-        if (arr == null)
+        if (elements == null)
         {
             return "";
         }
-        if (arr.length == 1)
-        {
-            return arr[0];
-        }
-        return Arrays.stream(arr).collect(Collectors.joining(","));
+        return Arrays.stream(elements).collect(Collectors.joining(","));
     }
 
     private void setAndValidateClientAuth(final SSLHostConfig sslHostConfig, final String trustStoreFile,
