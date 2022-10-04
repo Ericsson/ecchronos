@@ -20,6 +20,7 @@ import org.apache.tomcat.util.net.SSLHostConfig;
 import org.apache.tomcat.util.net.jsse.PEMFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.Ssl;
@@ -33,10 +34,11 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 @Component
 @EnableScheduling
-@SuppressWarnings("PMD.TooManyFields")
 public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<TomcatServletWebServerFactory>
 {
     private static final Logger LOG = LoggerFactory.getLogger(TomcatWebServerCustomizer.class);
@@ -45,126 +47,32 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
     private Http11NioProtocol metricsServerHttp11NioProtocol;
     private SSLHostConfig defaultSSLHostConfig;
     private SSLHostConfig metricsSSLHostConfig;
+    private Ssl defaultSsl;
+    private Ssl metricsSsl;
 
     @Value("${server.ssl.enabled:false}")
     private Boolean isSslEnabled;
 
-    @Value("${server.ssl.key-store:#{null}}")
-    private String serverKeyStoreFile;
-
-    @Value("${server.ssl.key-store-password:#{null}}")
-    private String serverKeyStorePassword;
-
-    @Value("${server.ssl.key-store-type:JKS}")
-    private String serverKeyStoreType;
-
-    @Value("${server.ssl.key-alias:cert}")
-    private String serverKeyAlias;
-
-    @Value("${server.ssl.key-password:#{null}}")
-    private String serverKeyPassword;
-
-    @Value("${server.ssl.trust-store:#{null}}")
-    private String serverTrustStoreFile;
-
-    @Value("${server.ssl.trust-store-password:#{null}}")
-    private String serverTrustStorePassword;
-
-    @Value("${server.ssl.trust-store-type:JKS}")
-    private String serverTrustStoreType;
-
-    @Value("${server.ssl.certificate:#{null}}")
-    private String serverCertificate;
-
-    @Value("${server.ssl.certificate-private-key:#{null}}")
-    private String serverCertificatePrivateKey;
-
-    @Value("${server.ssl.trust-certificate:#{null}}")
-    private String serverTrustCertificate;
-
-    @Value("${server.ssl.client-auth:none}")
-    private String serverClientAuth;
-
-    @Value("${server.ssl.enabled-protocols:TLSv1.2}")
-    private String serverEnabledProtocols;
-
-    @Value("${server.ssl.ciphers:#{null}}")
-    private String serverCiphers;
-
-    @Value("${metricsServer.enabled:false}")
-    private Boolean isMetricsServerEnabled;
-
-    @Value("${metricsServer.ssl.enabled:false}")
-    private Boolean isMetricsSslEnabled;
-
-    @Value("${metricsServer.ssl.key-store:#{null}}")
-    private String metricsServerKeyStoreFile;
-
-    @Value("${metricsServer.ssl.key-store-password:#{null}}")
-    private String metricsServerKeyStorePassword;
-
-    @Value("${metricsServer.ssl.key-store-type:JKS}")
-    private String metricsServerKeyStoreType;
-
-    @Value("${metricsServer.ssl.key-alias:cert}")
-    private String metricsServerKeyAlias;
-
-    @Value("${metricsServer.ssl.key-password:#{null}}")
-    private String metricsServerKeyPassword;
-
-    @Value("${metricsServer.ssl.trust-store:#{null}}")
-    private String metricsServerTrustStoreFile;
-
-    @Value("${metricsServer.ssl.trust-store-password:#{null}}")
-    private String metricsServerTrustStorePassword;
-
-    @Value("${metricsServer.ssl.trust-store-type:JKS}")
-    private String metricsServerTrustStoreType;
-
-    @Value("${metricsServer.ssl.certificate:#{null}}")
-    private String metricsServerCertificate;
-
-    @Value("${metricsServer.ssl.certificate-private-key:#{null}}")
-    private String metricsServerCertificatePrivateKey;
-
-    @Value("${metricsServer.ssl.trust-certificate:#{null}}")
-    private String metricsServerTrustCertificate;
-
-    @Value("${metricsServer.ssl.client-auth:none}")
-    private String metricsServerClientAuth;
-
-    @Value("${metricsServer.ssl.enabled-protocols:TLSv1.2}")
-    private String metricsServerEnabledProtocols;
-
-    @Value("${metricsServer.ssl.ciphers:#{null}}")
-    private String metricsServerCiphers;
-
-    @Value("${metricsServer.port:8081}")
-    private int metricsServerPort;
+    @Autowired
+    private MetricsServerProperties metricsServerProperties;
 
     @Override
     public final void customize(final TomcatServletWebServerFactory factory)
     {
-        //Disable ssl on factory level, ssl will be configured for each connector instead.
-        Ssl ssl = factory.getSsl();
-        if (ssl != null)
-        {
-            ssl.setEnabled(false);
-        }
         if (isSslEnabled)
         {
+            //Disable ssl on factory level, ssl will be configured for each connector instead.
+            defaultSsl = factory.getSsl();
+            defaultSsl.setEnabled(false);
             factory.addConnectorCustomizers(connector ->
             {
                 defaultServerHttp11NioProtocol = (Http11NioProtocol) connector.getProtocolHandler();
-                defaultSSLHostConfig = getSslHostConfig(serverKeyStoreFile, serverKeyStorePassword, serverKeyStoreType,
-                        serverKeyAlias, serverKeyPassword, serverTrustStoreFile, serverTrustStorePassword,
-                        serverTrustStoreType, serverCertificate, serverCertificatePrivateKey, serverTrustCertificate,
-                        serverEnabledProtocols, serverCiphers, serverClientAuth);
+                defaultSSLHostConfig = getSslHostConfig(defaultSsl);
                 defaultServerHttp11NioProtocol.addSslHostConfig(defaultSSLHostConfig);
                 defaultServerHttp11NioProtocol.setSSLEnabled(true);
             });
         }
-        if (isMetricsServerEnabled)
+        if (metricsServerProperties.isEnabled())
         {
             factory.addAdditionalTomcatConnectors(metricsConnector());
         }
@@ -173,17 +81,19 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
     private Connector metricsConnector()
     {
         Connector connector = new Connector();
-        connector.setPort(metricsServerPort);
-        connector.setSecure(isMetricsSslEnabled);
-        connector.setScheme(getHttpScheme(isMetricsSslEnabled));
-        metricsServerHttp11NioProtocol = (Http11NioProtocol) connector.getProtocolHandler();
-        if (isMetricsSslEnabled)
+        metricsSsl = metricsServerProperties.getSsl();
+        boolean sslEnabled = false;
+        if (metricsSsl != null)
         {
-            metricsSSLHostConfig = getSslHostConfig(metricsServerKeyStoreFile, metricsServerKeyStorePassword,
-                    metricsServerKeyStoreType, metricsServerKeyAlias, metricsServerKeyPassword,
-                    metricsServerTrustStoreFile, metricsServerTrustStorePassword, metricsServerTrustStoreType,
-                    metricsServerCertificate, metricsServerCertificatePrivateKey, metricsServerTrustCertificate,
-                    metricsServerEnabledProtocols, metricsServerCiphers, metricsServerClientAuth);
+            sslEnabled = metricsSsl.isEnabled();
+        }
+        connector.setPort(metricsServerProperties.getPort());
+        connector.setSecure(sslEnabled);
+        connector.setScheme(getHttpScheme(sslEnabled));
+        metricsServerHttp11NioProtocol = (Http11NioProtocol) connector.getProtocolHandler();
+        if (sslEnabled)
+        {
+            metricsSSLHostConfig = getSslHostConfig(metricsSsl);
             metricsServerHttp11NioProtocol.addSslHostConfig(metricsSSLHostConfig);
             metricsServerHttp11NioProtocol.setSSLEnabled(true);
         }
@@ -195,68 +105,77 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
         return secure ? "https" : "http";
     }
 
-    @SuppressWarnings({ "PMD.ExcessiveParameterList", "checkstyle:ParameterNumber" })
-    private SSLHostConfig getSslHostConfig(
-            final String keystoreFile, final String keyStorePassword, final String keyStoreType, final String keyAlias,
-            final String keyPassword, final String trustStoreFile, final String trustStorePassword,
-            final String trustStoreType, final String certificate, final String certificatePrivateKey,
-            final String trustCertificate, final String enabledProtocols, final String ciphers, final String clientAuth)
+    private SSLHostConfig getSslHostConfig(final Ssl ssl)
     {
         SSLHostConfig sslHostConfig = new SSLHostConfig();
-        setCertificates(sslHostConfig, keystoreFile, keyStorePassword, keyStoreType, keyAlias, keyPassword, certificate,
-                certificatePrivateKey);
-        setTrustedCertificates(sslHostConfig, trustStoreFile, trustStorePassword, trustStoreType, trustCertificate);
-        sslHostConfig.setProtocols(enabledProtocols);
-        if (ciphers != null)
+        setCertificates(sslHostConfig, ssl);
+        setTrustedCertificates(sslHostConfig, ssl);
+        String[] enabledProtocols = ssl.getEnabledProtocols();
+        if (enabledProtocols != null && enabledProtocols.length != 0)
         {
-            sslHostConfig.setCiphers(ciphers);
+            sslHostConfig.setProtocols(arrayToCommaSeparated(enabledProtocols));
         }
-        setAndValidateClientAuth(sslHostConfig, trustStoreFile, trustCertificate, clientAuth);
+        String[] ciphers = ssl.getCiphers();
+        if (ciphers != null && ciphers.length != 0)
+        {
+            sslHostConfig.setCiphers(arrayToCommaSeparated(ciphers));
+        }
+        setAndValidateClientAuth(sslHostConfig, ssl.getTrustStore(), ssl.getTrustCertificate(), ssl.getClientAuth());
         return sslHostConfig;
     }
 
-    private void setCertificates(final SSLHostConfig sslHostConfig, final String keystoreFile,
-            final String keyStorePassword, final String keyStoreType, final String keyAlias, final String keyPassword,
-            final String certificate, final String certificatePrivateKey)
+    private void setCertificates(final SSLHostConfig sslHostConfig, final Ssl ssl)
     {
-        if (certificate != null && certificatePrivateKey != null)
+        if (ssl.getCertificate() != null && ssl.getCertificatePrivateKey() != null)
         {
-            sslHostConfig.setCertificateFile(getFilePath(certificate));
-            sslHostConfig.setCertificateKeyFile(getFilePath(certificatePrivateKey));
+            sslHostConfig.setCertificateFile(getFilePath(ssl.getCertificate()));
+            sslHostConfig.setCertificateKeyFile(getFilePath(ssl.getCertificatePrivateKey()));
         }
-        else if (keystoreFile != null)
+        else if (ssl.getKeyStore() != null)
         {
-            sslHostConfig.setCertificateKeystoreFile(getFilePath(keystoreFile));
-            sslHostConfig.setCertificateKeystorePassword(keyStorePassword);
-            sslHostConfig.setCertificateKeystoreType(keyStoreType);
-            sslHostConfig.setCertificateKeyAlias(keyAlias);
-            sslHostConfig.setCertificateKeyPassword(keyPassword);
+            sslHostConfig.setCertificateKeystoreFile(getFilePath(ssl.getKeyStore()));
+            sslHostConfig.setCertificateKeystorePassword(ssl.getKeyStorePassword());
+            sslHostConfig.setCertificateKeystoreType(ssl.getKeyStoreType());
+            sslHostConfig.setCertificateKeyAlias(ssl.getKeyAlias());
+            sslHostConfig.setCertificateKeyPassword(ssl.getKeyPassword());
         }
         else
         {
-            throw new IllegalStateException("key-store or certificate must be provided if using ssl.enabled 'true'");
+            throw new IllegalStateException("key-store or certificate must be provided if using ssl");
         }
     }
 
-    private void setTrustedCertificates(final SSLHostConfig sslHostConfig, final String trustStoreFile,
-            final String trustStorePassword, final String trustStoreType, final String trustCertificate)
+    private void setTrustedCertificates(final SSLHostConfig sslHostConfig, final Ssl ssl)
     {
-        if (trustCertificate != null)
+        if (ssl.getTrustCertificate() != null)
         {
-            sslHostConfig.setTrustStore(getTrustStore(getFilePath(trustCertificate)));
+            sslHostConfig.setTrustStore(getTrustStore(getFilePath(ssl.getTrustCertificate())));
         }
-        else if (trustStoreFile != null)
+        else if (ssl.getTrustStore() != null)
         {
-            sslHostConfig.setTruststoreFile(getFilePath(trustStoreFile));
-            sslHostConfig.setTruststorePassword(trustStorePassword);
-            sslHostConfig.setTruststoreType(trustStoreType);
+            sslHostConfig.setTruststoreFile(getFilePath(ssl.getTrustStore()));
+            sslHostConfig.setTruststorePassword(ssl.getTrustStorePassword());
+            sslHostConfig.setTruststoreType(ssl.getTrustStoreType());
         }
+    }
+
+    private String arrayToCommaSeparated(final String[] arr)
+    {
+        if (arr == null)
+        {
+            return "";
+        }
+        if (arr.length == 1)
+        {
+            return arr[0];
+        }
+        return Arrays.stream(arr).collect(Collectors.joining(","));
     }
 
     private void setAndValidateClientAuth(final SSLHostConfig sslHostConfig, final String trustStoreFile,
-            final String trustCertificate, final String clientAuth)
+            final String trustCertificate, final Ssl.ClientAuth clientAuth)
     {
-        if ("need".equalsIgnoreCase(clientAuth))
+        if (Ssl.ClientAuth.NEED.equals(clientAuth))
         {
             if (trustCertificate == null && trustStoreFile == null)
             {
@@ -265,7 +184,7 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
             }
             sslHostConfig.setCertificateVerification(String.valueOf(SSLHostConfig.CertificateVerification.REQUIRED));
         }
-        else if ("want".equalsIgnoreCase(clientAuth))
+        else if (Ssl.ClientAuth.WANT.equals(clientAuth))
         {
             sslHostConfig.setCertificateVerification(String.valueOf(SSLHostConfig.CertificateVerification.OPTIONAL));
         }
@@ -306,9 +225,9 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
                fixedRateString = "${server.ssl.refresh-rate-in-ms:60000}")
     public void reloadSslContext()
     {
-        if (isSslEnabled && defaultServerHttp11NioProtocol != null && defaultSSLHostConfig != null)
+        if (defaultServerHttp11NioProtocol != null && defaultSSLHostConfig != null)
         {
-            if (serverTrustCertificate != null)
+            if (defaultSsl.getTrustCertificate() != null)
             {
                 reloadDefaultTrustStore();
             }
@@ -325,9 +244,9 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
                fixedRateString = "${metricsServer.ssl.refresh-rate-in-ms:60000}")
     public void reloadMetricsServerSslContext()
     {
-        if (isMetricsSslEnabled && metricsServerHttp11NioProtocol != null && metricsSSLHostConfig != null)
+        if (metricsServerHttp11NioProtocol != null && metricsSSLHostConfig != null)
         {
-            if (metricsServerTrustCertificate != null)
+            if (metricsSsl.getTrustCertificate() != null)
             {
                 reloadMetricsTrustStore();
             }
@@ -352,7 +271,7 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
      */
     void reloadDefaultTrustStore()
     {
-        defaultSSLHostConfig.setTrustStore(getTrustStore(getFilePath(serverTrustCertificate)));
+        defaultSSLHostConfig.setTrustStore(getTrustStore(getFilePath(defaultSsl.getTrustCertificate())));
     }
 
     /**
@@ -360,6 +279,6 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
      */
     void reloadMetricsTrustStore()
     {
-        metricsSSLHostConfig.setTrustStore(getTrustStore(getFilePath(metricsServerTrustCertificate)));
+        metricsSSLHostConfig.setTrustStore(getTrustStore(getFilePath(metricsSsl.getTrustCertificate())));
     }
 }

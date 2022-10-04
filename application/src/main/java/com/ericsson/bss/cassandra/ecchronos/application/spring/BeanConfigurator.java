@@ -31,7 +31,6 @@ import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.convert.ApplicationConversionService;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -73,12 +72,6 @@ import javax.servlet.http.HttpServletResponse;
 @Configuration
 public class BeanConfigurator
 {
-    @Value("${metricsServer.port:8081}")
-    private int metricsPort;
-
-    @Value("${metricsServer.enabled:false}")
-    private Boolean isMetricsServerEnabled;
-
     private static final Logger LOG = LoggerFactory.getLogger(BeanConfigurator.class);
 
     private static final String CONFIGURATION_FILE = "ecc.yml";
@@ -151,6 +144,12 @@ public class BeanConfigurator
     public DefaultRepairConfigurationProvider defaultRepairConfigurationProvider()
     {
         return new DefaultRepairConfigurationProvider();
+    }
+
+    @Bean
+    public MetricsServerProperties metricsServerProperties()
+    {
+        return new MetricsServerProperties();
     }
 
     @Bean
@@ -258,7 +257,7 @@ public class BeanConfigurator
      * and disallows any endpoint besides /metric on metricsServer.port.
      */
     @Bean
-    public FilterRegistrationBean requestFilter()
+    public FilterRegistrationBean requestFilter(final MetricsServerProperties metricsServerProperties)
     {
         Filter filter = new OncePerRequestFilter()
         {
@@ -268,12 +267,13 @@ public class BeanConfigurator
             {
                 int requestPort = request.getLocalPort();
                 String requestURI = request.getRequestURI();
-                if (isMetricsServerEnabled && (requestURI.startsWith(METRICS_ENDPOINT) && requestPort != metricsPort))
+                if (metricsServerProperties.isEnabled() && (requestURI.startsWith(METRICS_ENDPOINT)
+                        && requestPort != metricsServerProperties.getPort()))
                 {
                     response.sendError(HttpStatus.NOT_FOUND.value());
                 }
-                else if (isMetricsServerEnabled && (!requestURI.startsWith(METRICS_ENDPOINT)
-                        && requestPort == metricsPort))
+                else if (metricsServerProperties.isEnabled() && (!requestURI.startsWith(METRICS_ENDPOINT)
+                        && requestPort == metricsServerProperties.getPort()))
                 {
                     response.sendError(HttpStatus.NOT_FOUND.value());
                 }
