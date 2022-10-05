@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import com.codahale.metrics.MetricRegistry;
 import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.auth.AuthProvider;
@@ -43,7 +44,8 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
     public DefaultNativeConnectionProvider(final Config config,
                                            final Supplier<Security.CqlSecurity> cqlSecuritySupplier,
                                            final CertificateHandler certificateHandler,
-                                           final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
+                                           final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
+                                           final MetricRegistry metricRegistry)
     {
         Config.NativeConnection nativeConfig = config.getConnectionConfig().getCql();
         String host = nativeConfig.getHost();
@@ -69,6 +71,7 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
                 .withRemoteRouting(remoteRouting)
                 .withAuthProvider(authProvider)
                 .withSslEngineFactory(sslEngineFactory)
+                .withMetricRegistry(metricRegistry)
                 .withSchemaChangeListener(defaultRepairConfigurationProvider);
 
         myLocalNativeConnectionProvider = establishConnection(nativeConnectionBuilder,
@@ -77,10 +80,11 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
 
     public DefaultNativeConnectionProvider(final Config config,
                                            final Supplier<Security.CqlSecurity> cqlSecuritySupplier,
-                                           final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
+                                           final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
+                                           final MetricRegistry metricRegistry)
     {
         this(config, cqlSecuritySupplier, new ReloadingCertificateHandler(() -> cqlSecuritySupplier.get().getTls()),
-                defaultRepairConfigurationProvider);
+                defaultRepairConfigurationProvider, metricRegistry);
     }
 
     private static LocalNativeConnectionProvider establishConnection(

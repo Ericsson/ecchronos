@@ -7,6 +7,16 @@ The output directory for metrics is specified by `statistics.directory`.
 Which metrics should be enabled is controlled by `statistics.excluded` in `ecc.yml` file.
 The `statistics.excluded` takes an array of quoted regexes to disable metrics.
 
+
+## Driver metrics
+
+The cassandra driver used by ecChronos also has metrics on its own.
+Driver metrics are exposed in the same way as ecChronos metrics and
+can be excluded in the same way as ecChronos metrics.
+
+For list of available driver metrics, refer to sections
+`session-level metrics and node-level metrics` in [datastax reference configuration](https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/configuration/reference/)
+
 ## Files
 
 There are four metric files on node-level and four metric files per table.

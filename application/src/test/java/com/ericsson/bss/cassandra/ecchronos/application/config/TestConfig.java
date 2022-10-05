@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config;
 
+import com.codahale.metrics.MetricRegistry;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.metadata.EndPoint;
@@ -259,7 +260,7 @@ public class TestConfig
     public static class TestNativeConnectionProvider implements NativeConnectionProvider
     {
         public TestNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecurity,
-                DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
+                DefaultRepairConfigurationProvider defaultRepairConfigurationProvider, MetricRegistry metricRegistry)
         {
             // Empty constructor
         }
