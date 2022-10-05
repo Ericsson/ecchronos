@@ -2,6 +2,7 @@
 
 ## Version 4.0.0
 
+* Split metrics into separate connector - Issue #369
 * Add possibility to exclude metrics through config - Issue #367
 * Fix help for ecctool run-repair - Issue #365
 * Sort repair-info based on repaired-ratio - Issue #358

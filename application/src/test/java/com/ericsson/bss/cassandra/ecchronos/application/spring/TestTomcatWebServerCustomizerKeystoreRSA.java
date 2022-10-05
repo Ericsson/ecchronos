@@ -22,14 +22,24 @@ import org.springframework.test.context.junit4.SpringRunner;
 @RunWith (SpringRunner.class)
 @SpringBootTest (webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
-                "server.ssl.key-store=src/test/resources/server/ks.p12",
+                "server.ssl.key-store=src/test/resources/server-rsa/ks.p12",
                 "server.ssl.key-store-password=",
                 "server.ssl.key-store-type=PKCS12",
                 "server.ssl.key-alias=cert",
                 "server.ssl.key-password=",
-                "server.ssl.trust-store=src/test/resources/server/ts.p12",
+                "server.ssl.trust-store=src/test/resources/server-rsa/ts.p12",
                 "server.ssl.trust-store-password=",
-                "server.ssl.trust-store-type=PKCS12"
+                "server.ssl.trust-store-type=PKCS12",
+                "metricsServer.ssl.key-store=src/test/resources/metrics-server-rsa/ks.p12",
+                "metricsServer.ssl.key-store-password=ecctest",
+                "metricsServer.ssl.key-store-type=PKCS12",
+                "metricsServer.ssl.key-alias=1",
+                "metricsServer.ssl.key-password=ecctest",
+                "metricsServer.ssl.trust-store=src/test/resources/metrics-server-rsa/ts.p12",
+                "metricsServer.ssl.trust-store-password=ecctest",
+                "metricsServer.ssl.trust-store-type=PKCS12",
         })
 @ContextConfiguration(initializers = TestTomcatWebServerCustomizer.PropertyOverrideContextInitializer.class)
-public class TestTomcatWebServerCustomizerKeystore extends TestTomcatWebServerCustomizer {}
+public class TestTomcatWebServerCustomizerKeystoreRSA extends TestTomcatWebServerCustomizer
+{
+}
