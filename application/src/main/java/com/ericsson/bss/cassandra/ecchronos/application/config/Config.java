@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import com.codahale.metrics.MetricRegistry;
 import com.ericsson.bss.cassandra.ecchronos.application.AbstractRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.DefaultJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.DefaultNativeConnectionProvider;
@@ -363,7 +364,8 @@ public class Config
         {
             return new Class<?>[]
                     {
-                            Config.class, Supplier.class, DefaultRepairConfigurationProvider.class
+                            Config.class, Supplier.class, DefaultRepairConfigurationProvider.class,
+                            MetricRegistry.class
                     };
         }
 

@@ -154,15 +154,18 @@ public class BeanConfigurator
 
     @Bean
     public NativeConnectionProvider nativeConnectionProvider(final Config config,
-            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider) throws ConfigurationException
+            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
+            final MetricRegistry metricRegistry) throws ConfigurationException
     {
-        return getNativeConnectionProvider(config, cqlSecurity::get, defaultRepairConfigurationProvider);
+        return getNativeConnectionProvider(config, cqlSecurity::get, defaultRepairConfigurationProvider,
+                metricRegistry);
     }
 
     private static NativeConnectionProvider getNativeConnectionProvider(
             final Config configuration,
             final Supplier<Security.CqlSecurity> securitySupplier,
-            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider) throws ConfigurationException
+            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
+            final MetricRegistry metricRegistry) throws ConfigurationException
     {
         Supplier tlsSupplier = () -> securitySupplier.get().getTls();
 
@@ -179,9 +182,11 @@ public class BeanConfigurator
                                     Config.class,
                                     Supplier.class,
                                     CertificateHandler.class,
-                                    DefaultRepairConfigurationProvider.class
+                                    DefaultRepairConfigurationProvider.class,
+                                    MetricRegistry.class
                             },
-                            configuration, securitySupplier, certificateHandler, defaultRepairConfigurationProvider);
+                            configuration, securitySupplier, certificateHandler, defaultRepairConfigurationProvider,
+                            metricRegistry);
         }
         catch (ConfigurationException e)
         {
@@ -199,7 +204,7 @@ public class BeanConfigurator
                         new Class<?>[]{
                                 Config.class, Supplier.class, DefaultRepairConfigurationProvider.class
                         },
-                        configuration, securitySupplier, defaultRepairConfigurationProvider);
+                        configuration, securitySupplier, defaultRepairConfigurationProvider, metricRegistry);
     }
 
     @Bean

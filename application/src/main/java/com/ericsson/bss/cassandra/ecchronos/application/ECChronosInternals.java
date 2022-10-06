@@ -16,10 +16,8 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.jmx.JmxReporter;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
-import com.datastax.oss.driver.api.core.metrics.Metrics;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
@@ -45,7 +43,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 public class ECChronosInternals implements Closeable
@@ -64,7 +61,6 @@ public class ECChronosInternals implements Closeable
 
     private final TableReferenceFactory myTableReferenceFactory;
     private final JmxProxyFactory myJmxProxyFactory;
-    private final JmxReporter myJmxReporter;
 
     private final CASLockFactory myLockFactory;
 
@@ -115,19 +111,6 @@ public class ECChronosInternals implements Closeable
         {
             myTableStorageStatesImpl = null;
             myTableRepairMetricsImpl = null;
-        }
-
-        Optional<Metrics> driverMetrics = session.getMetrics();
-        if (driverMetrics.isPresent())
-        {
-            myJmxReporter = JmxReporter.forRegistry(driverMetrics.get().getRegistry())
-                            .inDomain("com.datastax.oss.driver")
-                            .build();
-            myJmxReporter.start();
-        }
-        else
-        {
-            myJmxReporter = null;
         }
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withLockFactory(myLockFactory)
@@ -202,10 +185,6 @@ public class ECChronosInternals implements Closeable
         if (myTableStorageStatesImpl != null)
         {
             myTableStorageStatesImpl.close();
-        }
-        if (myJmxReporter != null)
-        {
-            myJmxReporter.close();
         }
 
         myLockFactory.close();

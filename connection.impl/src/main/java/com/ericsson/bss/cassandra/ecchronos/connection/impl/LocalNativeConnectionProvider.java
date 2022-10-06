@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection.impl;
 
+import com.codahale.metrics.MetricRegistry;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.auth.AuthProvider;
@@ -114,9 +115,10 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
         private String myLocalhost = DEFAULT_LOCAL_HOST;
         private int myPort = DEFAULT_NATIVE_PORT;
         private boolean myRemoteRouting = true;
-        private AuthProvider authProvider = null;
-        private SslEngineFactory sslEngineFactory = null;
-        private SchemaChangeListener schemaChangeListener = null;
+        private AuthProvider myAuthProvider = null;
+        private SslEngineFactory mySslEngineFactory = null;
+        private SchemaChangeListener mySchemaChangeListener = null;
+        private MetricRegistry myMetricRegistry = null;
 
         public final Builder withLocalhost(final String localhost)
         {
@@ -136,21 +138,27 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
             return this;
         }
 
-        public final Builder withAuthProvider(final AuthProvider anAuthProvider)
+        public final Builder withAuthProvider(final AuthProvider authProvider)
         {
-            this.authProvider = anAuthProvider;
+            this.myAuthProvider = authProvider;
             return this;
         }
 
-        public final Builder withSslEngineFactory(final SslEngineFactory anSSLEngineFactory)
+        public final Builder withSslEngineFactory(final SslEngineFactory sslEngineFactory)
         {
-            this.sslEngineFactory = anSSLEngineFactory;
+            this.mySslEngineFactory = sslEngineFactory;
             return this;
         }
 
-        public final Builder withSchemaChangeListener(final SchemaChangeListener aSchemaChangeListener)
+        public final Builder withSchemaChangeListener(final SchemaChangeListener schemaChangeListener)
         {
-            this.schemaChangeListener = aSchemaChangeListener;
+            this.mySchemaChangeListener = schemaChangeListener;
+            return this;
+        }
+
+        public final Builder withMetricRegistry(final MetricRegistry metricRegistry)
+        {
+            myMetricRegistry = metricRegistry;
             return this;
         }
 
@@ -191,6 +199,10 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
                 loaderBuilder.withInt(DefaultDriverOption.LOAD_BALANCING_DC_FAILOVER_MAX_NODES_PER_REMOTE_DC,
                         MAX_NODES_PER_DC);
             }
+            if (builder.myMetricRegistry != null)
+            {
+                sessionBuilder.withMetricRegistry(builder.myMetricRegistry);
+            }
             sessionBuilder.withConfigLoader(loaderBuilder.build());
             return sessionBuilder.build();
         }
@@ -220,9 +232,9 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
         {
             return CqlSession.builder()
                     .addContactEndPoint(builder.localEndPoint())
-                    .withAuthProvider(builder.authProvider)
-                    .withSslEngineFactory(builder.sslEngineFactory)
-                    .withSchemaChangeListener(builder.schemaChangeListener);
+                    .withAuthProvider(builder.myAuthProvider)
+                    .withSslEngineFactory(builder.mySslEngineFactory)
+                    .withSchemaChangeListener(builder.mySchemaChangeListener);
         }
 
         private static Node resolveLocalhost(final Session session, final EndPoint localEndpoint)
