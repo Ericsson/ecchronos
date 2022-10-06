@@ -15,43 +15,59 @@
 
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
-import org.junit.Before;
+import com.ericsson.bss.cassandra.ecchronos.application.utils.CertUtils;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.io.IOException;
+
+import static org.springframework.test.context.support.TestPropertySourceUtils.addInlinedPropertiesToEnvironment;
+
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {
-                "server.ssl.key-store=src/test/resources/server-ec/ks.p12",
-                "server.ssl.key-store-password=ecctest",
-                "server.ssl.key-store-type=PKCS12",
-                "server.ssl.key-alias=1",
-                "server.ssl.key-password=ecctest",
-                "server.ssl.trust-store=src/test/resources/server-ec/ts.p12",
-                "server.ssl.trust-store-password=ecctest",
-                "server.ssl.trust-store-type=PKCS12",
-                "metricsServer.ssl.key-store=src/test/resources/metrics-server-ec/ks.p12",
-                "metricsServer.ssl.key-store-password=ecctest",
-                "metricsServer.ssl.key-store-type=PKCS12",
-                "metricsServer.ssl.key-alias=1",
-                "metricsServer.ssl.key-password=ecctest",
-                "metricsServer.ssl.trust-store=src/test/resources/metrics-server-ec/ts.p12",
-                "metricsServer.ssl.trust-store-password=ecctest",
-                "metricsServer.ssl.trust-store-type=PKCS12",
-        })
-@ContextConfiguration(initializers = TestTomcatWebServerCustomizer.PropertyOverrideContextInitializer.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ContextConfiguration(initializers = TestTomcatWebServerCustomizerKeystoreEC.PropertyOverrideContextInitializer.class)
 public class TestTomcatWebServerCustomizerKeystoreEC extends TestTomcatWebServerCustomizer
 {
-        @Before
-        public void setup()
+    @BeforeClass
+    public static void setup()
+    {
+        createCerts(CertUtils.EC_ALGORITHM_NAME, true);
+    }
+
+    static class PropertyOverrideContextInitializer
+            extends TestTomcatWebServerCustomizer.GlobalPropertyOverrideContextInitializer
+    {
+
+        PropertyOverrideContextInitializer() throws IOException
         {
-                clientValidPath = "valid-ec/";
-                clientExpiredPath = "expired-ec/";
-                clientPassword = "ecctest";
-                metricsClientValidPath = "metrics-valid-ec/";
-                metricsClientExpiredPath = "metrics-expired-ec/";
-                metricsClientPassword = "ecctest";
+            super();
         }
+
+        @Override
+        public void initialize(ConfigurableApplicationContext configurableApplicationContext)
+        {
+            super.initialize(configurableApplicationContext);
+            addInlinedPropertiesToEnvironment(configurableApplicationContext,
+                    "server.ssl.key-store=" + serverKeyStore,
+                    "server.ssl.key-store-password=" + KEYSTORE_PASSWORD,
+                    "server.ssl.key-store-type=PKCS12",
+                    "server.ssl.key-alias=cert",
+                    "server.ssl.key-password=" + KEYSTORE_PASSWORD,
+                    "server.ssl.trust-store=" + serverTrustStore,
+                    "server.ssl.trust-store-password=" + KEYSTORE_PASSWORD,
+                    "server.ssl.trust-store-type=PKCS12",
+                    "metricsServer.ssl.key-store=" + metricsServerKeyStore,
+                    "metricsServer.ssl.key-store-password=" + KEYSTORE_PASSWORD,
+                    "metricsServer.ssl.key-store-type=PKCS12",
+                    "metricsServer.ssl.key-alias=cert",
+                    "metricsServer.ssl.key-password=" + KEYSTORE_PASSWORD,
+                    "metricsServer.ssl.trust-store=" + metricsServerTrustStore,
+                    "metricsServer.ssl.trust-store-password=" + KEYSTORE_PASSWORD,
+                    "metricsServer.ssl.trust-store-type=PKCS12");
+        }
+    }
 }

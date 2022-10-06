@@ -15,50 +15,65 @@
 
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
+import com.ericsson.bss.cassandra.ecchronos.application.utils.CertUtils;
 import org.awaitility.Duration;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.context.support.TestPropertySourceUtils.addInlinedPropertiesToEnvironment;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {
-                "server.ssl.certificate=src/test/resources/server-ec/cert.crt",
-                "server.ssl.certificate-private-key=src/test/resources/server-ec/key.pem",
-                "server.ssl.trust-certificate=src/test/resources/server-ec/ca.crt",
-                "metricsServer.ssl.certificate=src/test/resources/metrics-server-ec/cert.crt",
-                "metricsServer.ssl.certificate-private-key=src/test/resources/metrics-server-ec/key.pem",
-                "metricsServer.ssl.trust-certificate=src/test/resources/metrics-server-ec/ca.crt"
-        })
-@ContextConfiguration(initializers = TestTomcatWebServerCustomizer.PropertyOverrideContextInitializer.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ContextConfiguration(initializers = TestTomcatWebServerCustomizerPEMEC.PropertyOverrideContextInitializer.class)
 public class TestTomcatWebServerCustomizerPEMEC extends TestTomcatWebServerCustomizer
 {
-    @Before
-    public void setup()
+    @BeforeClass
+    public static void setup()
     {
-        clientValidPath = "valid-ec/";
-        clientExpiredPath = "expired-ec/";
-        clientPassword = "ecctest";
-        metricsClientValidPath = "metrics-valid-ec/";
-        metricsClientExpiredPath = "metrics-expired-ec/";
-        metricsClientPassword = "ecctest";
+        createCerts(CertUtils.EC_ALGORITHM_NAME, false);
     }
 
     @Test
     public void testSuccessfulCertificateReloadingWithTrustCertificate()
     {
-        await().atMost(new Duration(REFRESH_RATE * (INVOCATION_COUNT + 10), TimeUnit.MILLISECONDS))
-                .untilAsserted(() -> verify(tomcatWebServerCustomizer, atLeast(INVOCATION_COUNT)).reloadDefaultTrustStore());
+        await().atMost(new Duration(REFRESH_RATE * (INVOCATION_COUNT + 10), TimeUnit.MILLISECONDS)).untilAsserted(
+                () -> verify(tomcatWebServerCustomizer, atLeast(INVOCATION_COUNT)).reloadDefaultTrustStore());
         await().atMost(new Duration(METRICS_REFRESH_RATE * (INVOCATION_COUNT + 10), TimeUnit.MILLISECONDS))
-                .untilAsserted(() -> verify(tomcatWebServerCustomizer, atLeast(INVOCATION_COUNT)).reloadMetricsTrustStore());
+                .untilAsserted(
+                        () -> verify(tomcatWebServerCustomizer, atLeast(INVOCATION_COUNT)).reloadMetricsTrustStore());
+    }
+
+    static class PropertyOverrideContextInitializer
+            extends TestTomcatWebServerCustomizer.GlobalPropertyOverrideContextInitializer
+    {
+
+        PropertyOverrideContextInitializer() throws IOException
+        {
+            super();
+        }
+
+        @Override
+        public void initialize(ConfigurableApplicationContext configurableApplicationContext)
+        {
+            super.initialize(configurableApplicationContext);
+            addInlinedPropertiesToEnvironment(configurableApplicationContext,
+                    "server.ssl.certificate=" + serverCert,
+                    "server.ssl.certificate-private-key=" + serverCertKey,
+                    "server.ssl.trust-certificate=" + clientCaCert,
+                    "metricsServer.ssl.certificate=" + metricsServerCert,
+                    "metricsServer.ssl.certificate-private-key=" + metricsServerCertKey,
+                    "metricsServer.ssl.trust-certificate=" + metricsClientCaCert);
+        }
     }
 }
