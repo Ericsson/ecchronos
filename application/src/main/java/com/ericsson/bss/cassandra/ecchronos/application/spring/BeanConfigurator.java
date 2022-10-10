@@ -202,7 +202,8 @@ public class BeanConfigurator
         return ReflectionUtils
                 .construct(configuration.getConnectionConfig().getCql().getProviderClass(),
                         new Class<?>[]{
-                                Config.class, Supplier.class, DefaultRepairConfigurationProvider.class
+                                Config.class, Supplier.class, DefaultRepairConfigurationProvider.class,
+                                MetricRegistry.class
                         },
                         configuration, securitySupplier, defaultRepairConfigurationProvider, metricRegistry);
     }
