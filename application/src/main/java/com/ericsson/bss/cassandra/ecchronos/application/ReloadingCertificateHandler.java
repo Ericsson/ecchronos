@@ -27,18 +27,24 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManagerFactory;
+import javax.xml.bind.DatatypeConverter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -122,29 +128,72 @@ public class ReloadingCertificateHandler implements CertificateHandler
 
     protected static final class Context
     {
-        private final TLSConfig tlsConfig;
-        private final SslContext sslContext;
+        private final TLSConfig myTlsConfig;
+        private final SslContext mySslContext;
+        private final Map<String, String> myChecksums = new HashMap<>();
 
-        Context(final TLSConfig aTLSConfig) throws NoSuchAlgorithmException, IOException, UnrecoverableKeyException,
+        Context(final TLSConfig tlsConfig) throws NoSuchAlgorithmException, IOException, UnrecoverableKeyException,
                 CertificateException, KeyStoreException, KeyManagementException
         {
-            this.tlsConfig = aTLSConfig;
-            this.sslContext = createSSLContext(this.tlsConfig);
+            myTlsConfig = tlsConfig;
+            mySslContext = createSSLContext(myTlsConfig);
+            myChecksums.putAll(calculateChecksums(myTlsConfig));
         }
 
         TLSConfig getTlsConfig()
         {
-            return tlsConfig;
+            return myTlsConfig;
         }
 
-        boolean sameConfig(final TLSConfig aTLSConfig)
+        boolean sameConfig(final TLSConfig newTLSConfig) throws IOException, NoSuchAlgorithmException
         {
-            return this.tlsConfig.equals(aTLSConfig);
+            if (!myTlsConfig.equals(newTLSConfig))
+            {
+                return false;
+            }
+            return checksumSame(newTLSConfig);
+        }
+
+        private boolean checksumSame(final TLSConfig newTLSConfig) throws IOException, NoSuchAlgorithmException
+        {
+            return myChecksums.equals(calculateChecksums(newTLSConfig));
+        }
+
+        private Map<String, String> calculateChecksums(final TLSConfig tlsConfig)
+                throws IOException, NoSuchAlgorithmException
+        {
+            Map<String, String> checksums = new HashMap<>();
+            if (tlsConfig.getCertificate().isPresent()
+                    && tlsConfig.getCertificatePrivateKey().isPresent()
+                    && tlsConfig.getTrustCertificate().isPresent())
+            {
+                String certificate = tlsConfig.getCertificate().get();
+                checksums.put(certificate, getChecksum(certificate));
+                String certificatePrivateKey = tlsConfig.getCertificatePrivateKey().get();
+                checksums.put(certificatePrivateKey, getChecksum(certificatePrivateKey));
+                String trustCertificate = tlsConfig.getTrustCertificate().get();
+                checksums.put(trustCertificate, getChecksum(trustCertificate));
+            }
+            else
+            {
+                String keyStore = tlsConfig.getKeystore();
+                checksums.put(keyStore, getChecksum(keyStore));
+                String trustStore = tlsConfig.getTruststore();
+                checksums.put(trustStore, getChecksum(trustStore));
+            }
+            return checksums;
+        }
+
+        private String getChecksum(final String file) throws IOException, NoSuchAlgorithmException
+        {
+            MessageDigest md5 = MessageDigest.getInstance("MD5");
+            byte[] digestBytes = md5.digest(Files.readAllBytes(Paths.get(file)));
+            return DatatypeConverter.printHexBinary(digestBytes);
         }
 
         SslContext getSSLContext()
         {
-            return sslContext;
+            return mySslContext;
         }
     }
 
