@@ -115,6 +115,7 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
         private String myLocalhost = DEFAULT_LOCAL_HOST;
         private int myPort = DEFAULT_NATIVE_PORT;
         private boolean myRemoteRouting = true;
+        private boolean myIsMetricsEnabled = true;
         private AuthProvider myAuthProvider = null;
         private SslEngineFactory mySslEngineFactory = null;
         private SchemaChangeListener mySchemaChangeListener = null;
@@ -162,6 +163,12 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
             return this;
         }
 
+        public final Builder withMetricsEnabled(final boolean enabled)
+        {
+            myIsMetricsEnabled = enabled;
+            return this;
+        }
+
         public final LocalNativeConnectionProvider build()
         {
             CqlSession session = createSession(this);
@@ -186,12 +193,13 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
             CqlSessionBuilder sessionBuilder = fromBuilder(builder);
             sessionBuilder = sessionBuilder.withLocalDatacenter(initialContact.dataCenter);
             ProgrammaticDriverConfigLoaderBuilder loaderBuilder = DriverConfigLoader.programmaticBuilder()
-                    .withStringList(DefaultDriverOption.METRICS_NODE_ENABLED,
-                            NODE_METRICS)
-                    .withStringList(DefaultDriverOption.METRICS_SESSION_ENABLED,
-                            SESSION_METRICS)
                     .withStringList(DefaultDriverOption.METADATA_SCHEMA_REFRESHED_KEYSPACES,
                             SCHEMA_REFRESHED_KEYSPACES);
+            if (builder.myIsMetricsEnabled)
+            {
+                loaderBuilder.withStringList(DefaultDriverOption.METRICS_NODE_ENABLED, NODE_METRICS)
+                        .withStringList(DefaultDriverOption.METRICS_SESSION_ENABLED, SESSION_METRICS);
+            }
             if (builder.myRemoteRouting)
             {
                 loaderBuilder.withString(DefaultDriverOption.LOAD_BALANCING_POLICY_CLASS,

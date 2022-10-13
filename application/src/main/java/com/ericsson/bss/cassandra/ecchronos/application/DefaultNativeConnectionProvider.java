@@ -72,6 +72,7 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
                 .withAuthProvider(authProvider)
                 .withSslEngineFactory(sslEngineFactory)
                 .withMetricRegistry(metricRegistry)
+                .withMetricsEnabled(config.getStatistics().isEnabled())
                 .withSchemaChangeListener(defaultRepairConfigurationProvider);
 
         myLocalNativeConnectionProvider = establishConnection(nativeConnectionBuilder,
