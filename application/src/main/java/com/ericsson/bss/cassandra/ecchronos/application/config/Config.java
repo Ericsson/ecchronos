@@ -544,6 +544,7 @@ public class Config
         private boolean enabled = true;
         private File directory = new File("./statistics");
         private Set<String> excluded = new HashSet<>();
+        private ReportingConfig reporting = new ReportingConfig();
 
         public final boolean isEnabled()
         {
@@ -560,6 +561,11 @@ public class Config
             return excluded;
         }
 
+        public final ReportingConfig getReporting()
+        {
+            return reporting;
+        }
+
         public final void setEnabled(final boolean enabledValue)
         {
             this.enabled = enabledValue;
@@ -573,6 +579,78 @@ public class Config
         public final void setExcluded(final Set<String> theExcluded)
         {
             this.excluded = theExcluded;
+        }
+
+        public final void setReporting(final ReportingConfig theReporting)
+        {
+            this.reporting = theReporting;
+        }
+    }
+
+    public static class ReportingConfig
+    {
+        private EnabledConfig jmx = new EnabledConfig();
+        private EnabledConfig file = new EnabledConfig();
+        private EnabledConfig http = new EnabledConfig();
+
+        public final EnabledConfig getJmx()
+        {
+            return jmx;
+        }
+
+        public final EnabledConfig getFile()
+        {
+            return file;
+        }
+
+        public final EnabledConfig getHttp()
+        {
+            return http;
+        }
+
+        public final void setJmx(final EnabledConfig jmxConfig)
+        {
+            this.jmx = jmxConfig;
+        }
+
+        public final void setFile(final EnabledConfig fileConfig)
+        {
+            this.file = fileConfig;
+        }
+
+        public final void setHttp(final EnabledConfig httpConfig)
+        {
+            this.http = httpConfig;
+        }
+
+        public final boolean isHttpReportingEnabled()
+        {
+            return http != null && http.isEnabled();
+        }
+
+        public final boolean isJmxReportingEnabled()
+        {
+            return jmx != null && jmx.isEnabled();
+        }
+
+        public final boolean isFileReportingEnabled()
+        {
+            return file != null && file.isEnabled();
+        }
+    }
+
+    public static class EnabledConfig
+    {
+        private boolean enabled = true;
+
+        public final boolean isEnabled()
+        {
+            return enabled;
+        }
+
+        public final void setEnabled(final boolean enabledValue)
+        {
+            this.enabled = enabledValue;
         }
     }
 

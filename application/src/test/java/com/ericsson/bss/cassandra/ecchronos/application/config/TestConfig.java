@@ -107,6 +107,9 @@ public class TestConfig
         assertThat(statisticsConfig.getDirectory()).isEqualTo(new File("./non-default-statistics"));
         assertThat(statisticsConfig.getExcluded().size()).isEqualTo(1);
         assertThat(statisticsConfig.getExcluded()).contains(".*");
+        assertThat(statisticsConfig.getReporting().isJmxReportingEnabled()).isFalse();
+        assertThat(statisticsConfig.getReporting().isFileReportingEnabled()).isTrue();
+        assertThat(statisticsConfig.getReporting().isHttpReportingEnabled()).isTrue();
 
         Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecc");
@@ -175,6 +178,9 @@ public class TestConfig
         assertThat(statisticsConfig.isEnabled()).isTrue();
         assertThat(statisticsConfig.getDirectory()).isEqualTo(new File("./statistics"));
         assertThat(statisticsConfig.getExcluded()).isEmpty();
+        assertThat(statisticsConfig.getReporting().isJmxReportingEnabled()).isTrue();
+        assertThat(statisticsConfig.getReporting().isFileReportingEnabled()).isTrue();
+        assertThat(statisticsConfig.getReporting().isHttpReportingEnabled()).isTrue();
 
         Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecchronos");
@@ -242,6 +248,9 @@ public class TestConfig
         assertThat(statisticsConfig.isEnabled()).isTrue();
         assertThat(statisticsConfig.getDirectory()).isEqualTo(new File("./statistics"));
         assertThat(statisticsConfig.getExcluded()).isEmpty();
+        assertThat(statisticsConfig.getReporting().isJmxReportingEnabled()).isTrue();
+        assertThat(statisticsConfig.getReporting().isFileReportingEnabled()).isTrue();
+        assertThat(statisticsConfig.getReporting().isHttpReportingEnabled()).isTrue();
 
         Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecchronos");

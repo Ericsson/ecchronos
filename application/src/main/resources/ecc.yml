@@ -167,6 +167,16 @@ repair:
 
 statistics:
   enabled: true
+  ##
+  ## How metrics should be reported
+  ##
+  reporting:
+    jmx:
+      enabled: true
+    file:
+      enabled: true
+    http:
+      enabled: true
   directory: ./statistics
   ##
   ## The metrics can be excluded using quoted regular expressions.

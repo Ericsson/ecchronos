@@ -56,6 +56,13 @@ repair:
 statistics:
   enabled: false
   directory: ./non-default-statistics
+  reporting:
+    jmx:
+      enabled: false
+    file:
+      enabled: true
+    http:
+      enabled: true
   excluded:
     - '.*'
 

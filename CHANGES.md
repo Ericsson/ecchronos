@@ -2,7 +2,8 @@
 
 ## Version 4.0.0
 
-* Disable driver metrics if statistics.enabled=false - #391
+* Add possibility to decide reporting for metrics - Issue #390
+* Disable driver metrics if statistics.enabled=false - Issue #391
 * Reload sslContext for cql client if certs change - Issue #329
 * Expose java driver metrics - Issue #368
 * Split metrics into separate connector - Issue #369
