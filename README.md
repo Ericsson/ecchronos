@@ -33,6 +33,10 @@ Installation instructions can be found in [SETUP.md](docs/SETUP.md).
 In standalone installation, a command line utility called `ecctool` is provided.
 For more information about `ecctool` refer to [ECCTOOL.md](docs/ECCTOOL.md).
 
+### Getting Started
+
+Instructions on how to use ecChronos and configure it to suit your needs can be found in [GETTING_STARTED.md](docs/GETTING_STARTED.md)
+
 ### Upgrade
 
 Upgrade instructions can be found in [UPGRADE.md](docs/UPGRADE.md).
