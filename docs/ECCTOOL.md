@@ -72,7 +72,7 @@ For manual repairs this value should never go down.
 | `-t`       | `--table`    |                         | Show repairs for the specified table. Keyspace argument `-k` or `--keyspace` becomes mandatory if using this argument. This argument is mutually exclusive with `-i` and `--id`. |
 | `-u`       | `--url`      | `http://localhost:8080` | The ecChronos host to connect to, specified in the format `http://<host>:<port>`.                                                                                                |
 | `-i`       | `--id`       |                         | Show repairs matching the specified ID. This argument is mutually exclusive with `-k`, `--keyspace`, `-t` and `--table`.                                                         |
-| `-l`       | `--limit`    | -1                      | Limits the number of tables printed in the output. Specified as a number, -1 to disable limit.                                                                                   |
+| `-l`       | `--limit`    | -1                      | Limits the number of rows printed in the output. Specified as a number, -1 to disable limit.                                                                                     |
 |            | `--hostid`   |                         | Show repairs for the specified host id. The host id corresponds to the Cassandra instance ecChronos is connected to.                                                             |
 
 ### schedules
@@ -138,7 +138,7 @@ This is updated each time a repair group is completed.
 | `-u`       | `--url`      | `http://localhost:8080` | The ecChronos host to connect to, specified in the format `http://<host>:<port>`.                                                                                                  |
 | `-i`       | `--id`       |                         | Show schedules matching the specified ID. This argument is mutually exclusive with `-k`, `--keyspace`, `-t` and `--table`.                                                         |
 | `-f`       | `--full`     | False                   | Show full schedules, can only be used with `-i` or `--id`. Full schedules include schedule configuration and repair state per vnode.                                               |
-| `-l`       | `--limit`    | -1                      | Limits the number of tables printed in the output. Specified as a number, -1 to disable limit.                                                                                     |
+| `-l`       | `--limit`    | -1                      | Limits the number of rows printed in the output. Specified as a number, -1 to disable limit.                                                                                       |
 
 ### run-repair
 
@@ -250,7 +250,7 @@ To check the repair information for the local node use `--local` flag.
 | `-d`       | `--duration` |                         | Show repair information for the duration. Duration can be specified as ISO8601 format or as simple format in form: `5s`, `5m`, `5h`, `5d`. The time-window will be `now-duration` to `now`. Mandatory if `-s` and `--since` is not specified. |
 |            | `--local`    | False                   | Show repair information only for the local node.                                                                                                                                                                                              |
 | `-u`       | `--url`      | `http://localhost:8080` | The ecChronos host to connect to, specified in the format `http://<host>:<port>`.                                                                                                                                                             |
-| `-l`       | `--limit`    | -1                      | Limits the number of tables printed in the output. Specified as a number, -1 to disable limit.                                                                                                                                                |
+| `-l`       | `--limit`    | -1                      | Limits the number of rows printed in the output. Specified as a number, -1 to disable limit.                                                                                                                                                  |
 
 ### start
 
@@ -285,7 +285,7 @@ This subcommand has no mandatory parameters.
 
 #### Optional arguments
 
-| Short-form | Long-form | Default value           | Description                                                  |
-|------------|-----------|-------------------------|--------------------------------------------------------------|
-| `-h`       | `--help`  |                         | Shows the help message and exits.                            |
-| `-u`       | `--url`   | `http://localhost:8080` | Check the status of ecChronos running on the specified host. |
+| Short-form | Long-form | Default value           | Description                                                                       |
+|------------|-----------|-------------------------|-----------------------------------------------------------------------------------|
+| `-h`       | `--help`  |                         | Shows the help message and exits.                                                 |
+| `-u`       | `--url`   | `http://localhost:8080` | The ecChronos host to connect to, specified in the format `http://<host>:<port>`. |
