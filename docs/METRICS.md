@@ -7,6 +7,8 @@ The output directory for metrics is specified by `statistics.directory`.
 Which metrics should be enabled is controlled by `statistics.excluded` in `ecc.yml` file.
 The `statistics.excluded` takes an array of quoted regexes to disable metrics.
 
+Note that statistics written to file are not rotated automatically.
+
 
 ## Driver metrics
 
