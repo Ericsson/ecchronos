@@ -3,8 +3,9 @@
 ## Version 4.0.0
 
 * Don't create auth-provider if CQL credentials disabled - Issue #398
+* Add possibility to decide reporting for metrics - Issue #390
 * Update ecctool argparser descriptions - Issue #395
-* Disable driver metrics if statistics.enabled=false - #391
+* Disable driver metrics if statistics.enabled=false - Issue #391
 * Reload sslContext for cql client if certs change - Issue #329
 * Expose java driver metrics - Issue #368
 * Split metrics into separate connector - Issue #369

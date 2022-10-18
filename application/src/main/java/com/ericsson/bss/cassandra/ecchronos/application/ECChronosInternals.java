@@ -105,6 +105,8 @@ public class ECChronosInternals implements Closeable
                     .withStatisticsDirectory(configuration.getStatistics().getDirectory().toString())
                     .withMetricFilter(metricFilter)
                     .withMetricRegistry(metricRegistry)
+                    .withJmxReporting(configuration.getStatistics().getReporting().isJmxReportingEnabled())
+                    .withFileReporting(configuration.getStatistics().getReporting().isFileReportingEnabled())
                     .build();
         }
         else

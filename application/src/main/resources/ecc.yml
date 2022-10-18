@@ -167,6 +167,17 @@ repair:
 
 statistics:
   enabled: true
+  ##
+  ## Decides how statistics should be exposed.
+  ## If all reporting is disabled, the statistics will be disabled as well.
+  ##
+  reporting:
+    jmx:
+      enabled: true
+    file:
+      enabled: true
+    http:
+      enabled: true
   directory: ./statistics
   ##
   ## The metrics can be excluded using quoted regular expressions.

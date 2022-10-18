@@ -245,12 +245,15 @@ public class BeanConfigurator
     }
 
     @Bean
-    ServletRegistrationBean registerMetricsServlet(final MetricRegistry metricRegistry, final MetricFilter metricFilter)
+    ServletRegistrationBean registerMetricsServlet(final MetricRegistry metricRegistry, final MetricFilter metricFilter,
+            final Config config)
     {
         CollectorRegistry collectorRegistry = new CollectorRegistry();
         ServletRegistrationBean servletRegistrationBean = new ServletRegistrationBean();
-
-        collectorRegistry.register(new DropwizardExports(metricRegistry, metricFilter));
+        if (config.getStatistics().getReporting().isHttpReportingEnabled())
+        {
+            collectorRegistry.register(new DropwizardExports(metricRegistry, metricFilter));
+        }
         servletRegistrationBean.setServlet(new MetricsServlet(collectorRegistry));
         servletRegistrationBean.setUrlMappings(Arrays.asList(METRICS_ENDPOINT + "/*"));
         return servletRegistrationBean;

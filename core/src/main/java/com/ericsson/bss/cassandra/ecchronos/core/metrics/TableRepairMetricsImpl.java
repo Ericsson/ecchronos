@@ -14,23 +14,22 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
+import com.codahale.metrics.CsvReporter;
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.jmx.JmxReporter;
+import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.Closeable;
 import java.io.File;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.jmx.JmxReporter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.codahale.metrics.CsvReporter;
-import com.codahale.metrics.MetricRegistry;
-import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 
 public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRepairMetricsProvider, Closeable
 {
@@ -63,17 +62,31 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
                     builder.myStatisticsDirectory);
         }
 
-        myTopLevelCsvReporter = CsvReporter.forRegistry(myMetricRegistry)
-                .convertDurationsTo(TimeUnit.MILLISECONDS)
-                .convertRatesTo(TimeUnit.SECONDS)
-                .filter(builder.myMetricFilter)
-                .build(statisticsDirectory);
-        myTopLevelJmxReporter = JmxReporter.forRegistry(myMetricRegistry)
-                .filter(builder.myMetricFilter)
-                .build();
-
-        myTopLevelCsvReporter.start(builder.myReportIntervalInMs, builder.myReportIntervalInMs, TimeUnit.MILLISECONDS);
-        myTopLevelJmxReporter.start();
+        if (builder.myIsFileReporting)
+        {
+            myTopLevelCsvReporter = CsvReporter.forRegistry(myMetricRegistry)
+                    .convertDurationsTo(TimeUnit.MILLISECONDS)
+                    .convertRatesTo(TimeUnit.SECONDS)
+                    .filter(builder.myMetricFilter)
+                    .build(statisticsDirectory);
+            myTopLevelCsvReporter.start(builder.myReportIntervalInMs, builder.myReportIntervalInMs,
+                    TimeUnit.MILLISECONDS);
+        }
+        else
+        {
+            myTopLevelCsvReporter = null;
+        }
+        if (builder.myIsJmxReporting)
+        {
+            myTopLevelJmxReporter = JmxReporter.forRegistry(myMetricRegistry)
+                    .filter(builder.myMetricFilter)
+                    .build();
+            myTopLevelJmxReporter.start();
+        }
+        else
+        {
+            myTopLevelJmxReporter = null;
+        }
     }
 
     @Override
@@ -128,17 +141,26 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
     @VisibleForTesting
     void report()
     {
-        myTopLevelCsvReporter.report();
+        if (myTopLevelCsvReporter != null)
+        {
+            myTopLevelCsvReporter.report();
+        }
     }
 
     @Override
     public void close()
     {
-        myTopLevelCsvReporter.report();
-        myTopLevelCsvReporter.close();
+        if (myTopLevelCsvReporter != null)
+        {
+            myTopLevelCsvReporter.report();
+            myTopLevelCsvReporter.close();
+        }
 
-        myTopLevelJmxReporter.stop();
-        myTopLevelJmxReporter.close();
+        if (myTopLevelJmxReporter != null)
+        {
+            myTopLevelJmxReporter.stop();
+            myTopLevelJmxReporter.close();
+        }
 
         myNodeMetricHolder.close();
 
@@ -160,6 +182,8 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         private long myReportIntervalInMs = DEFAULT_STATISTICS_REPORT_INTERVAL_IN_MS;
         private MetricRegistry myMetricRegistry;
         private MetricFilter myMetricFilter = MetricFilter.ALL;
+        private boolean myIsJmxReporting = true;
+        private boolean myIsFileReporting = true;
 
         /**
          * Build with table storage states.
@@ -219,6 +243,30 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         public Builder withMetricFilter(final MetricFilter metricFilter)
         {
             myMetricFilter = metricFilter;
+            return this;
+        }
+
+        /**
+         * Build with JMX reporting.
+         *
+         * @param isJmxReporting whether to report metrics over JMX
+         * @return Builder
+         */
+        public Builder withJmxReporting(final boolean isJmxReporting)
+        {
+            myIsJmxReporting = isJmxReporting;
+            return this;
+        }
+
+        /**
+         * Build with file reporting.
+         *
+         * @param isFileReporting whether to report metrics to a file
+         * @return Builder
+         */
+        public Builder withFileReporting(final boolean isFileReporting)
+        {
+            myIsFileReporting = isFileReporting;
             return this;
         }
 
