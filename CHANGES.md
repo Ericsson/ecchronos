@@ -2,6 +2,7 @@
 
 ## Version 4.0.0
 
+* Don't create auth-provider if CQL credentials disabled - Issue #398
 * Update ecctool argparser descriptions - Issue #395
 * Disable driver metrics if statistics.enabled=false - #391
 * Reload sslContext for cql client if certs change - Issue #329
