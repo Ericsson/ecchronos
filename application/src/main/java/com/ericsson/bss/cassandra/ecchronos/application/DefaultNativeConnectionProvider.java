@@ -56,8 +56,11 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
         boolean tlsEnabled = cqlSecurity.getTls().isEnabled();
         LOG.info("Connecting through CQL using {}:{}, authentication: {}, tls: {}", host, port, authEnabled,
                 tlsEnabled);
-
-        AuthProvider authProvider = new ReloadingAuthProvider(() -> cqlSecuritySupplier.get().getCredentials());
+        AuthProvider authProvider = null;
+        if (authEnabled)
+        {
+            authProvider = new ReloadingAuthProvider(() -> cqlSecuritySupplier.get().getCredentials());
+        }
 
         SslEngineFactory sslEngineFactory = null;
         if (tlsEnabled)
