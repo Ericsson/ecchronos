@@ -168,7 +168,8 @@ repair:
 statistics:
   enabled: true
   ##
-  ## How metrics should be reported
+  ## Decides how statistics should be exposed.
+  ## If all reporting is disabled, the statistics will be disabled as well.
   ##
   reporting:
     jmx:

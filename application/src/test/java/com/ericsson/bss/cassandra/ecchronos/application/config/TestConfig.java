@@ -266,6 +266,23 @@ public class TestConfig
         assertThat(restServerConfig.getPort()).isEqualTo(8080);
     }
 
+    @Test
+    public void testStatisticsDisabledIfNoReporting() throws Exception
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("all_reporting_disabled.yml").getFile());
+
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
+        Config config = objectMapper.readValue(file, Config.class);
+
+        Config.StatisticsConfig statisticsConfig = config.getStatistics();
+        assertThat(statisticsConfig.getReporting().isJmxReportingEnabled()).isFalse();
+        assertThat(statisticsConfig.getReporting().isFileReportingEnabled()).isFalse();
+        assertThat(statisticsConfig.getReporting().isHttpReportingEnabled()).isFalse();
+        assertThat(statisticsConfig.isEnabled()).isFalse();
+    }
+
     public static class TestNativeConnectionProvider implements NativeConnectionProvider
     {
         public TestNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecurity,

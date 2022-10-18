@@ -548,7 +548,10 @@ public class Config
 
         public final boolean isEnabled()
         {
-            return enabled;
+            boolean isAnyReportingEnabled = reporting.isFileReportingEnabled()
+                    || reporting.isJmxReportingEnabled()
+                    || reporting.isHttpReportingEnabled();
+            return enabled && isAnyReportingEnabled;
         }
 
         public final File getDirectory()
