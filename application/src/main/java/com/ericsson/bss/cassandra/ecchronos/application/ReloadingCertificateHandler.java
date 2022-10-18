@@ -60,8 +60,14 @@ public class ReloadingCertificateHandler implements CertificateHandler
         this.tlsConfigSupplier = aTLSConfigSupplier;
     }
 
+    /**
+     * Create new SSL Engine.
+     *
+     * @param remoteEndpoint the remote endpoint.
+     * @return The SSLEngine.
+     */
     @Override
-    public final SSLEngine newSslEngine(final EndPoint remoteEndpoint)
+    public SSLEngine newSslEngine(final EndPoint remoteEndpoint)
     {
         Context context = getContext();
         TLSConfig tlsConfig = context.getTlsConfig();
