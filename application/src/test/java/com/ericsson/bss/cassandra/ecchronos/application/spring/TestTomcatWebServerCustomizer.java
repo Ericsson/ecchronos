@@ -72,6 +72,8 @@ public abstract class TestTomcatWebServerCustomizer
     protected static final int METRICS_REFRESH_RATE = 50;
     protected static final int INVOCATION_COUNT = 1;
 
+    private static final Duration RELOAD_TIMEOUT = Duration.TEN_SECONDS;
+
     //These must be set in @BeforeClass
     protected static String serverCaCert;
     protected static String serverCaCertKey;
@@ -236,9 +238,9 @@ public abstract class TestTomcatWebServerCustomizer
     @Test
     public void testSuccessfulCertificateReloading()
     {
-        await().atMost(new Duration(REFRESH_RATE * (INVOCATION_COUNT + 10), TimeUnit.MILLISECONDS))
+        await().atMost(RELOAD_TIMEOUT)
                 .untilAsserted(() -> verify(tomcatWebServerCustomizer, atLeast(INVOCATION_COUNT)).reloadSslContext());
-        await().atMost(new Duration(METRICS_REFRESH_RATE * (INVOCATION_COUNT + 10), TimeUnit.MILLISECONDS))
+        await().atMost(RELOAD_TIMEOUT)
                 .untilAsserted(() -> verify(tomcatWebServerCustomizer,
                         atLeast(INVOCATION_COUNT)).reloadMetricsServerSslContext());
     }
