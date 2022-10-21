@@ -15,6 +15,7 @@
 
 package com.ericsson.bss.cassandra.ecchronos.standalone;
 
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
@@ -166,13 +167,13 @@ public class ITRepairInfo extends TestBase
             stages.add(myAdminSession.executeAsync(QueryBuilder.deleteFrom("system_distributed", "repair_history")
                     .whereColumn("keyspace_name").isEqualTo(literal(tableReference.getKeyspace()))
                     .whereColumn("columnfamily_name").isEqualTo(literal(tableReference.getTable()))
-                    .build()));
+                    .build().setConsistencyLevel(ConsistencyLevel.ALL)));
             for (Node node : metadata.getNodes().values())
             {
                 stages.add(myAdminSession.executeAsync(QueryBuilder.deleteFrom("ecchronos", "repair_history")
                         .whereColumn("table_id").isEqualTo(literal(tableReference.getId()))
                         .whereColumn("node_id").isEqualTo(literal(node.getHostId()))
-                        .build()));
+                        .build().setConsistencyLevel(ConsistencyLevel.ALL)));
             }
         }
 
@@ -361,7 +362,7 @@ public class ITRepairInfo extends TestBase
                     .value("started_at", literal(Instant.ofEpochMilli(started_at)))
                     .value("finished_at", literal(Instant.ofEpochMilli(finished_at))).build();
         }
-        myAdminSession.execute(statement);
+        myAdminSession.execute(statement.setConsistencyLevel(ConsistencyLevel.ALL));
     }
 
     private Set<TokenRange> halfOfTokenRanges(TableReference tableReference)
