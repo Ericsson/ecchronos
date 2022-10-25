@@ -206,7 +206,9 @@ After running this subcommand, to check the progress of running manual repairs u
 `ecctool repair-info` subcommand is used to get information about repairs for tables.
 The repair information is based on repair history,
 meaning that both manual repairs and schedules will contribute to the repair information.
-This subcommand requires the user to provide either `--since` or `--duration`.
+This subcommand requires the user to provide either `--since` or `--duration` if `--keyspace` and `--table` is not provided.
+If repair info is fetched for a specific table using `--keyspace` and `--table`,
+the duration will default to the table GC_GRACE_SECONDS.
 
 #### Example
 
@@ -241,16 +243,16 @@ To check the repair information for the local node use `--local` flag.
 
 #### Arguments
 
-| Short-form | Long-form    | Default value           | Description                                                                                                                                                                                                                                   |
-|------------|--------------|-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `-h`       | `--help`     |                         | Shows the help message and exits.                                                                                                                                                                                                             |
-| `-k`       | `--keyspace` |                         | Show repair information for all tables in the specified keyspace.                                                                                                                                                                             |
-| `-t`       | `--table`    |                         | Show repair information for the specified table. Keyspace argument `-k` or `--keyspace` becomes mandatory if using this argument.                                                                                                             |
-| `-s`       | `--since`    |                         | Show repair information since the specified date to now. Date must be specified in ISO8601 format. The time-window will be `since` to `now`. Mandatory if `-d` and `--duration` is not specified.                                             |
-| `-d`       | `--duration` |                         | Show repair information for the duration. Duration can be specified as ISO8601 format or as simple format in form: `5s`, `5m`, `5h`, `5d`. The time-window will be `now-duration` to `now`. Mandatory if `-s` and `--since` is not specified. |
-|            | `--local`    | False                   | Show repair information only for the local node.                                                                                                                                                                                              |
-| `-u`       | `--url`      | `http://localhost:8080` | The ecChronos host to connect to, specified in the format `http://<host>:<port>`.                                                                                                                                                             |
-| `-l`       | `--limit`    | -1                      | Limits the number of rows printed in the output. Specified as a number, -1 to disable limit.                                                                                                                                                  |
+| Short-form | Long-form    | Default value           | Description                                                                                                                                                                                                                                                  |
+|------------|--------------|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `-h`       | `--help`     |                         | Shows the help message and exits.                                                                                                                                                                                                                            |
+| `-k`       | `--keyspace` |                         | Show repair information for all tables in the specified keyspace.                                                                                                                                                                                            |
+| `-t`       | `--table`    |                         | Show repair information for the specified table. Keyspace argument `-k` or `--keyspace` becomes mandatory if using this argument.                                                                                                                            |
+| `-s`       | `--since`    |                         | Show repair information since the specified date to now. Date must be specified in ISO8601 format. The time-window will be `since` to `now`. Mandatory if --duration or --keyspace and --table is not specified.                                             |
+| `-d`       | `--duration` |                         | Show repair information for the duration. Duration can be specified as ISO8601 format or as simple format in form: `5s`, `5m`, `5h`, `5d`. The time-window will be `now-duration` to `now`. Mandatory if --since or --keyspace and --table is not specified. |
+|            | `--local`    | False                   | Show repair information only for the local node.                                                                                                                                                                                                             |
+| `-u`       | `--url`      | `http://localhost:8080` | The ecChronos host to connect to, specified in the format `http://<host>:<port>`.                                                                                                                                                                            |
+| `-l`       | `--limit`    | -1                      | Limits the number of rows printed in the output. Specified as a number, -1 to disable limit.                                                                                                                                                                 |
 
 ### start
 

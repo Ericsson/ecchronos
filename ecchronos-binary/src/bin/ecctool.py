@@ -134,7 +134,11 @@ def add_repair_info_subcommand(sub_parsers):
                                                             "information is based on repair history, meaning that "
                                                             "both manual repairs and schedules will contribute to the "
                                                             "repair information. This subcommand requires the user to "
-                                                            "provide either --since or --duration.")
+                                                            "provide either --since or --duration if --keyspace and "
+                                                            "--table is not provided. If repair info is fetched for a "
+                                                            "specific table using --keyspace and --table, "
+                                                            "the duration will default to the table "
+                                                            "GC_GRACE_SECONDS.")
     parser_repair_info.add_argument("-k", "--keyspace", type=str,
                                     help="Show repair information for all tables in the specified keyspace.")
     parser_repair_info.add_argument("-t", "--table", type=str,
@@ -143,12 +147,13 @@ def add_repair_info_subcommand(sub_parsers):
     parser_repair_info.add_argument("-s", "--since", type=str,
                                     help="Show repair information since the specified date to now. Date must be "
                                          "specified in ISO8601 format. The time-window will be since to now. "
-                                         "Mandatory if -d and --duration is not specified.",
+                                         "Mandatory if --duration or --keyspace and --table is not specified.",
                                     default=None)
     parser_repair_info.add_argument("-d", "--duration", type=str,
                                     help="Show repair information for the duration. Duration can be specified as "
                                          "ISO8601 format or as simple format in form: 5s, 5m, 5h, 5d. The time-window "
-                                         "will be now-duration to now. Mandatory if -s and --since is not specified.",
+                                         "will be now-duration to now. Mandatory if --since or --keyspace and --table "
+                                         "is not specified.",
                                     default=None)
     parser_repair_info.add_argument("--local", action='store_true',
                                     help='Show repair information only for the local node.',
@@ -270,8 +275,8 @@ def repair_info(arguments):
     if not arguments.keyspace and arguments.table:
         print("--keyspace must be specified if table is specified")
         sys.exit(1)
-    if not arguments.duration and not arguments.since:
-        print("Either --duration or --since or both must be provided")
+    if not arguments.duration and not arguments.since and not arguments.table:
+        print("Either --duration or --since or both must be provided if called without --keyspace and --table")
         sys.exit(1)
     duration = None
     if arguments.duration:

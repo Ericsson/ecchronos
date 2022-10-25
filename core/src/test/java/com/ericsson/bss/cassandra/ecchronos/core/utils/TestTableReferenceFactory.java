@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
 import com.datastax.oss.driver.internal.core.util.Strings;
+import com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -239,6 +240,9 @@ public class TestTableReferenceFactory
                 when(tableMetadata.getId()).thenReturn(Optional.of(UUID.randomUUID()));
                 when(tableMetadata.getName()).thenReturn(CqlIdentifier.fromInternal(table));
                 when(tableMetadata.getKeyspace()).thenReturn(keySpaceIdentifier);
+                Map<CqlIdentifier, Object> options = new HashMap<>();
+                options.put(CqlIdentifier.fromInternal("gc_grace_seconds"), MockTableReferenceFactory.DEFAULT_GC_GRACE_SECONDS);
+                when(tableMetadata.getOptions()).thenReturn(options);
                 tableMetadatas.put(CqlIdentifier.fromInternal(table), tableMetadata);
                 when(mockedKeyspace.getTable(eq(table))).thenReturn(Optional.of(tableMetadata));
             }
@@ -305,6 +309,9 @@ public class TestTableReferenceFactory
         TableMetadata tableMetadata = mock(TableMetadata.class);
         when(tableMetadata.getId()).thenReturn(Optional.of(UUID.randomUUID()));
         when(tableMetadata.getName()).thenReturn(CqlIdentifier.fromInternal(table));
+        Map<CqlIdentifier, Object> options = new HashMap<>();
+        options.put(CqlIdentifier.fromInternal("gc_grace_seconds"), MockTableReferenceFactory.DEFAULT_GC_GRACE_SECONDS);
+        when(tableMetadata.getOptions()).thenReturn(options);
         doReturn(keyspaceMetadata.getName()).when(tableMetadata).getKeyspace();
 
         when(keyspaceMetadata.getTable(eq(table))).thenReturn(Optional.empty());
@@ -324,6 +331,9 @@ public class TestTableReferenceFactory
         TableMetadata tableMetadata = mock(TableMetadata.class);
         when(tableMetadata.getId()).thenReturn(Optional.of(UUID.randomUUID()));
         when(tableMetadata.getName()).thenReturn(CqlIdentifier.fromInternal(table));
+        Map<CqlIdentifier, Object> options = new HashMap<>();
+        options.put(CqlIdentifier.fromInternal("gc_grace_seconds"), MockTableReferenceFactory.DEFAULT_GC_GRACE_SECONDS);
+        when(tableMetadata.getOptions()).thenReturn(options);
         doReturn(keyspaceMetadata.getName()).when(tableMetadata).getKeyspace();
 
         if (Strings.needsDoubleQuotes(table))

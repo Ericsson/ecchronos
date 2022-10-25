@@ -164,14 +164,15 @@ paths:
       - name: since
         in: query
         description: "Since time, can be specified as ISO8601 date or as milliseconds\
-          \ since epoch"
+          \ since epoch. Required if keyspace and table or duration is not specified."
         required: false
         schema:
           type: string
       - name: duration
         in: query
         description: "Duration, can be specified as either a simple duration like\
-          \ '30s' or as ISO8601 duration 'pt30s'"
+          \ '30s' or as ISO8601 duration 'pt30s'. Required if keyspace and table or\
+          \ since is not specified."
         required: false
         schema:
           type: string
