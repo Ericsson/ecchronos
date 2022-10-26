@@ -543,8 +543,7 @@ public class Config
     {
         private boolean enabled = true;
         private File directory = new File("./statistics");
-        private Set<String> excluded = new HashSet<>();
-        private ReportingConfig reporting = new ReportingConfig();
+        private ReportingConfigs reporting = new ReportingConfigs();
 
         public final boolean isEnabled()
         {
@@ -559,12 +558,7 @@ public class Config
             return directory;
         }
 
-        public final Set<String> getExcluded()
-        {
-            return excluded;
-        }
-
-        public final ReportingConfig getReporting()
+        public final ReportingConfigs getReporting()
         {
             return reporting;
         }
@@ -579,49 +573,44 @@ public class Config
             this.directory = new File(aDirectory);
         }
 
-        public final void setExcluded(final Set<String> theExcluded)
+        public final void setReporting(final ReportingConfigs theReportings)
         {
-            this.excluded = theExcluded;
-        }
-
-        public final void setReporting(final ReportingConfig theReporting)
-        {
-            this.reporting = theReporting;
+            this.reporting = theReportings;
         }
     }
 
-    public static class ReportingConfig
+    public static class ReportingConfigs
     {
-        private EnabledConfig jmx = new EnabledConfig();
-        private EnabledConfig file = new EnabledConfig();
-        private EnabledConfig http = new EnabledConfig();
+        private ReportingConfig jmx = new ReportingConfig();
+        private ReportingConfig file = new ReportingConfig();
+        private ReportingConfig http = new ReportingConfig();
 
-        public final EnabledConfig getJmx()
+        public final ReportingConfig getJmx()
         {
             return jmx;
         }
 
-        public final EnabledConfig getFile()
+        public final ReportingConfig getFile()
         {
             return file;
         }
 
-        public final EnabledConfig getHttp()
+        public final ReportingConfig getHttp()
         {
             return http;
         }
 
-        public final void setJmx(final EnabledConfig jmxConfig)
+        public final void setJmx(final ReportingConfig jmxConfig)
         {
             this.jmx = jmxConfig;
         }
 
-        public final void setFile(final EnabledConfig fileConfig)
+        public final void setFile(final ReportingConfig fileConfig)
         {
             this.file = fileConfig;
         }
 
-        public final void setHttp(final EnabledConfig httpConfig)
+        public final void setHttp(final ReportingConfig httpConfig)
         {
             this.http = httpConfig;
         }
@@ -642,9 +631,10 @@ public class Config
         }
     }
 
-    public static class EnabledConfig
+    public static class ReportingConfig
     {
         private boolean enabled = true;
+        private Set<String> excludedMetrics = new HashSet<>();
 
         public final boolean isEnabled()
         {
@@ -654,6 +644,16 @@ public class Config
         public final void setEnabled(final boolean enabledValue)
         {
             this.enabled = enabledValue;
+        }
+
+        public final Set<String> getExcludedMetrics()
+        {
+            return excludedMetrics;
+        }
+
+        public final void setExcludedMetrics(final Set<String> theExcludedMetrics)
+        {
+            this.excludedMetrics = theExcludedMetrics;
         }
     }
 

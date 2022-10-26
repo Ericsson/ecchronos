@@ -69,7 +69,8 @@ public class ECChronosInternals implements Closeable
                               final JmxConnectionProvider jmxConnectionProvider,
                               final StatementDecorator statementDecorator,
                               final MetricRegistry metricRegistry,
-                              final MetricFilter metricFilter)
+                              final MetricFilter jmxMetricFilter,
+                              final MetricFilter fileMetricFilter)
     {
         myJmxProxyFactory = JmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(jmxConnectionProvider)
@@ -103,7 +104,8 @@ public class ECChronosInternals implements Closeable
             myTableRepairMetricsImpl = TableRepairMetricsImpl.builder()
                     .withTableStorageStates(myTableStorageStatesImpl)
                     .withStatisticsDirectory(configuration.getStatistics().getDirectory().toString())
-                    .withMetricFilter(metricFilter)
+                    .withJmxMetricFilter(jmxMetricFilter)
+                    .withFileMetricFilter(fileMetricFilter)
                     .withMetricRegistry(metricRegistry)
                     .withJmxReporting(configuration.getStatistics().getReporting().isJmxReportingEnabled())
                     .withFileReporting(configuration.getStatistics().getReporting().isFileReportingEnabled())
