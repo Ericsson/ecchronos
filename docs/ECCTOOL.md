@@ -208,7 +208,7 @@ The repair information is based on repair history,
 meaning that both manual repairs and schedules will contribute to the repair information.
 This subcommand requires the user to provide either `--since` or `--duration` if `--keyspace` and `--table` is not provided.
 If repair info is fetched for a specific table using `--keyspace` and `--table`,
-the duration will default to the table GC_GRACE_SECONDS.
+the duration will default to the table's GC_GRACE_SECONDS.
 
 #### Example
 

@@ -137,7 +137,7 @@ def add_repair_info_subcommand(sub_parsers):
                                                             "provide either --since or --duration if --keyspace and "
                                                             "--table is not provided. If repair info is fetched for a "
                                                             "specific table using --keyspace and --table, "
-                                                            "the duration will default to the table "
+                                                            "the duration will default to the table's "
                                                             "GC_GRACE_SECONDS.")
     parser_repair_info.add_argument("-k", "--keyspace", type=str,
                                     help="Show repair information for all tables in the specified keyspace.")
