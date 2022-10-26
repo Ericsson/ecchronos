@@ -24,6 +24,7 @@
     </parent>
     <artifactId>cassandra-test-image</artifactId>
     <description>Test image for integration tests using Apache Cassandra</description>
+    <name>ecChronos cassandra test image</name>
 
     <build>
         <plugins>
