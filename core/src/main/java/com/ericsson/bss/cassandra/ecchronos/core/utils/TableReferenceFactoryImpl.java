@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
@@ -97,12 +98,14 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
         private final UUID uuid;
         private final String keyspace;
         private final String table;
+        private final int gcGraceSeconds;
 
         UuidTableReference(final TableMetadata tableMetadata)
         {
             uuid = tableMetadata.getId().get();
             keyspace = tableMetadata.getKeyspace().asInternal();
             table = tableMetadata.getName().asInternal();
+            gcGraceSeconds = (int) tableMetadata.getOptions().get(CqlIdentifier.fromInternal("gc_grace_seconds"));
         }
 
         @Override
@@ -121,6 +124,12 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
         public String getTable()
         {
             return table;
+        }
+
+        @Override
+        public int getGcGraceSeconds()
+        {
+            return gcGraceSeconds;
         }
 
         @Override

@@ -3,6 +3,7 @@
 ## Version 4.0.0
 
 * Bump jackson-databind from 2.13.2.2 to 2.13.4.1
+* Default duration to GC grace, repairInfo for table - Issue #409
 * Don't create auth-provider if CQL credentials disabled - Issue #398
 * Add possibility to decide reporting for metrics - Issue #390
 * Update ecctool argparser descriptions - Issue #395

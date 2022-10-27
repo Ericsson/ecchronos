@@ -26,4 +26,6 @@ public interface TableReference
     String getTable();
 
     String getKeyspace();
+
+    int getGcGraceSeconds();
 }
