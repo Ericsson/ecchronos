@@ -427,16 +427,16 @@ public class TestDefaultRepairConfigurationProvider
         return mockReplicatedTable(tableReference, new HashMap<>());
     }
 
-    private TableMetadata mockNonReplicatedTable(TableReference tableReference, Map<CqlIdentifier, Object> options)
+    private TableMetadata mockNonReplicatedTable(TableReference tableReference, Map<CqlIdentifier, Object> compactionOptions)
     {
         KeyspaceMetadata keyspaceMetadata = mockKeyspace(tableReference.getKeyspace(), false);
-        return mockTable(keyspaceMetadata, tableReference, options);
+        return mockTable(keyspaceMetadata, tableReference, compactionOptions);
     }
 
-    private TableMetadata mockReplicatedTable(TableReference tableReference, Map<CqlIdentifier, Object> options)
+    private TableMetadata mockReplicatedTable(TableReference tableReference, Map<CqlIdentifier, Object> compactionOptions)
     {
         KeyspaceMetadata keyspaceMetadata = mockKeyspace(tableReference.getKeyspace(), true);
-        return mockTable(keyspaceMetadata, tableReference, options);
+        return mockTable(keyspaceMetadata, tableReference, compactionOptions);
     }
 
     private KeyspaceMetadata mockKeyspace(String name, boolean replicated)
@@ -448,7 +448,7 @@ public class TestDefaultRepairConfigurationProvider
     }
 
     private TableMetadata mockTable(KeyspaceMetadata keyspaceMetadata, TableReference tableReference,
-            Map<CqlIdentifier, Object> options)
+            Map<CqlIdentifier, Object> compactionOptions)
     {
         myKeyspaces.put(tableReference.getKeyspace(), keyspaceMetadata);
 
@@ -457,6 +457,9 @@ public class TestDefaultRepairConfigurationProvider
         doReturn(keyspaceMetadata.getName()).when(tableMetadata).getKeyspace();
         doReturn(Optional.of(tableReference.getId())).when(tableMetadata).getId();
         doReturn(Collections.singletonMap(tableMetadata.getName(), tableMetadata)).when(keyspaceMetadata).getTables();
+        Map<CqlIdentifier, Object> options = new HashMap<>();
+        options.putAll(compactionOptions);
+        options.put(CqlIdentifier.fromInternal("gc_grace_seconds"), MockTableReferenceFactory.DEFAULT_GC_GRACE_SECONDS);
         when(tableMetadata.getOptions()).thenReturn(options);
 
         Map<CqlIdentifier, KeyspaceMetadata> keyspaceMetadatas = new HashMap<>();

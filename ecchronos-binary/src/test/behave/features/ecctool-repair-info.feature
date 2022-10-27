@@ -111,16 +111,23 @@ Feature: ecctool repair-info
     And the output should contain a repair-info row for test.table1
     And the output should not contain more rows
 
-  Scenario: Get repair-info for table test.table1 with duration
+  Scenario: Get repair-info for table test.table1 with since
     Given we have access to ecctool
     When we get repair-info for table test.table1 with since 0
     Then the output should contain a valid repair-info header
     And the output should contain a repair-info row for test.table1
     And the output should not contain more rows
 
-  Scenario: Get repair-info for table test.table1 with duration and duration
+  Scenario: Get repair-info for table test.table1 with since and duration
     Given we have access to ecctool
     When we get repair-info for table test.table1 with since 0 and duration 5m
+    Then the output should contain a valid repair-info header
+    And the output should contain a repair-info row for test.table1
+    And the output should not contain more rows
+
+  Scenario: Get repair-info for table test.table1
+    Given we have access to ecctool
+    When we get repair-info for table test.table1
     Then the output should contain a valid repair-info header
     And the output should contain a repair-info row for test.table1
     And the output should not contain more rows

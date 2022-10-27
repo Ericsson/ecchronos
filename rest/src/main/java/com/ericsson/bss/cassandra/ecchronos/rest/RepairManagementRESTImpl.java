@@ -305,11 +305,13 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     public final ResponseEntity<RepairInfo> getRepairInfo(@RequestParam(required = false) final String keyspace,
             @RequestParam(required = false) final String table,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @Parameter(
-                    description = "Since time, can be specified as ISO8601 date or as milliseconds since epoch",
+                    description = "Since time, can be specified as ISO8601 date or as milliseconds since epoch."
+                    + " Required if keyspace and table or duration is not specified.",
                     schema = @Schema(type = "string")) final Long since,
             @RequestParam(required = false) @Parameter(
             description = "Duration, can be specified as either a simple duration like"
-                    + " '30s' or as ISO8601 duration 'pt30s'",
+                    + " '30s' or as ISO8601 duration 'pt30s'."
+                    + " Required if keyspace and table or since is not specified.",
             schema = @Schema(type = "string")) final Duration duration,
             @RequestParam(required = false) final boolean isLocal)
     {
@@ -326,7 +328,9 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                         throw new ResponseStatusException(NOT_FOUND,
                                 "Table " + keyspace + "." + table + " does not exist");
                     }
-                    repairInfo = getRepairInfo(Collections.singleton(tableReference), since, duration, isLocal);
+                    Duration singleTableDuration = getDefaultDurationOrProvided(tableReference, duration, since);
+                    repairInfo = getRepairInfo(Collections.singleton(tableReference), since,
+                            singleTableDuration, isLocal);
                 }
                 else
                 {
@@ -347,6 +351,17 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         {
             throw new ResponseStatusException(NOT_FOUND, NOT_FOUND.getReasonPhrase(), e);
         }
+    }
+
+    private Duration getDefaultDurationOrProvided(final TableReference tableReference, final Duration duration,
+            final Long since)
+    {
+        Duration singleTableDuration = duration;
+        if (duration == null && since == null)
+        {
+            singleTableDuration = Duration.ofSeconds(tableReference.getGcGraceSeconds());
+        }
+        return singleTableDuration;
     }
 
     private RepairInfo getRepairInfo(final Set<TableReference> tables, final Long since, final Duration duration,

@@ -108,6 +108,12 @@ def step_get_repair_info_for_table_with_since(context, keyspace, table, since):
     handle_repair_info_output(context)
 
 
+@when(u'we get repair-info for table {keyspace}.{table}')
+def step_get_repair_info_for_table(context, keyspace, table):
+    run_ecc_repair_info(context, ['--keyspace', keyspace, '--table', table])
+    handle_repair_info_output(context)
+
+
 @then(u'the output should contain a valid repair-info header')
 def step_validate_repair_info_header(context):
     validate_header(context.header, REPAIR_INFO_HEADER)

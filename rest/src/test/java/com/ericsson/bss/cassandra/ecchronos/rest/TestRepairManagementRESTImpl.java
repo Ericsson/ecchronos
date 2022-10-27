@@ -784,12 +784,32 @@ public class TestRepairManagementRESTImpl
     }
 
     @Test
-    public void testGetRepairInfoNoSinceOrDuration()
+    public void testGetRepairInfoForKeyspaceAndTableNoSinceOrDuration()
+    {
+        RepairStats repairStats1 = new RepairStats("keyspace1", "table1", 0.0, 0);
+        when(myRepairStatsProvider.getRepairStats(eq(MockTableReferenceFactory.tableReference("keyspace1", "table1")),
+                any(long.class),
+                any(long.class), eq(true))).thenReturn(repairStats1);
+        when(myReplicatedTableProvider.accept("keyspace1")).thenReturn(true);
+        List<RepairStats> repairStats = new ArrayList<>();
+        repairStats.add(repairStats1);
+        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo("keyspace1", "table1", null, null,
+                true);
+
+        RepairInfo returnedRepairInfo = response.getBody();
+        assertThat(returnedRepairInfo.repairStats).containsExactly(repairStats1);
+        assertThat(returnedRepairInfo.toInMs - returnedRepairInfo.sinceInMs).isEqualTo(
+                Duration.ofSeconds(MockTableReferenceFactory.DEFAULT_GC_GRACE_SECONDS).toMillis());
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    public void testGetRepairInfoNoKeyspaceNoTableNoSinceOrDuration()
     {
         ResponseEntity<RepairInfo> response = null;
         try
         {
-            response = repairManagementREST.getRepairInfo("keyspace1", "table1", null, null, true);
+            response = repairManagementREST.getRepairInfo(null, null, null, null, true);
         }
         catch(ResponseStatusException e)
         {
