@@ -21,6 +21,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -28,6 +29,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 
 public class MockTableReferenceFactory implements TableReferenceFactory
 {
+    public static final int DEFAULT_GC_GRACE_SECONDS = 7200;
     private static final ConcurrentMap<TableKey, TableReference> tableReferences = new ConcurrentHashMap<>();
 
     @Override
@@ -66,12 +68,17 @@ public class MockTableReferenceFactory implements TableReferenceFactory
 
     public static TableReference tableReference(String keyspace, String table)
     {
+        return tableReference(keyspace, table, DEFAULT_GC_GRACE_SECONDS);
+    }
+
+    public static TableReference tableReference(String keyspace, String table, int gcGraceSeconds)
+    {
         TableKey tableKey = new TableKey(keyspace, table);
         TableReference tableReference = tableReferences.get(tableKey);
         if (tableReference == null)
         {
             tableReference = tableReferences.computeIfAbsent(tableKey,
-                    tb -> new MockTableReference(UUID.randomUUID(), keyspace, table));
+                    tb -> new MockTableReference(UUID.randomUUID(), keyspace, table, gcGraceSeconds));
         }
 
         return tableReference;
@@ -87,19 +94,26 @@ public class MockTableReferenceFactory implements TableReferenceFactory
         private final UUID id;
         private final String keyspace;
         private final String table;
+        private final int gcGraceSeconds;
 
         MockTableReference(UUID id, String keyspace, String table)
         {
-            this.id = id;
-            this.keyspace = keyspace;
-            this.table = table;
+            this(id, keyspace, table, DEFAULT_GC_GRACE_SECONDS);
         }
 
         MockTableReference(TableMetadata tableMetadata)
         {
-            this.id = tableMetadata.getId().get();
-            this.keyspace = tableMetadata.getKeyspace().asInternal();
-            this.table = tableMetadata.getName().asInternal();
+            this(tableMetadata.getId().get(), tableMetadata.getKeyspace().asInternal(),
+                    tableMetadata.getName().asInternal(),
+                    (int) tableMetadata.getOptions().get(CqlIdentifier.fromInternal("gc_grace_seconds")));
+        }
+
+        MockTableReference(UUID id, String keyspace, String table, int gcGraceSeconds)
+        {
+            this.id = id;
+            this.keyspace = keyspace;
+            this.table = table;
+            this.gcGraceSeconds = gcGraceSeconds;
         }
 
         @Override
@@ -118,6 +132,12 @@ public class MockTableReferenceFactory implements TableReferenceFactory
         public String getKeyspace()
         {
             return keyspace;
+        }
+
+        @Override
+        public int getGcGraceSeconds()
+        {
+            return gcGraceSeconds;
         }
 
         @Override
