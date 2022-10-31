@@ -67,7 +67,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
             myTopLevelCsvReporter = CsvReporter.forRegistry(myMetricRegistry)
                     .convertDurationsTo(TimeUnit.MILLISECONDS)
                     .convertRatesTo(TimeUnit.SECONDS)
-                    .filter(builder.myMetricFilter)
+                    .filter(builder.myFileMetricFilter)
                     .build(statisticsDirectory);
             myTopLevelCsvReporter.start(builder.myReportIntervalInMs, builder.myReportIntervalInMs,
                     TimeUnit.MILLISECONDS);
@@ -79,7 +79,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         if (builder.myIsJmxReporting)
         {
             myTopLevelJmxReporter = JmxReporter.forRegistry(myMetricRegistry)
-                    .filter(builder.myMetricFilter)
+                    .filter(builder.myJmxMetricFilter)
                     .build();
             myTopLevelJmxReporter.start();
         }
@@ -181,7 +181,8 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         private String myStatisticsDirectory = DEFAULT_STATISTICS_DIRECTORY;
         private long myReportIntervalInMs = DEFAULT_STATISTICS_REPORT_INTERVAL_IN_MS;
         private MetricRegistry myMetricRegistry;
-        private MetricFilter myMetricFilter = MetricFilter.ALL;
+        private MetricFilter myJmxMetricFilter = MetricFilter.ALL;
+        private MetricFilter myFileMetricFilter = MetricFilter.ALL;
         private boolean myIsJmxReporting = true;
         private boolean myIsFileReporting = true;
 
@@ -235,14 +236,26 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         }
 
         /**
-         * Build with metric filter.
+         * Build with metric filter for jmx reporter.
          *
          * @param metricFilter Metric filter
          * @return Builder
          */
-        public Builder withMetricFilter(final MetricFilter metricFilter)
+        public Builder withJmxMetricFilter(final MetricFilter metricFilter)
         {
-            myMetricFilter = metricFilter;
+            myJmxMetricFilter = metricFilter;
+            return this;
+        }
+
+        /**
+         * Build with metric filter for file reporter.
+         *
+         * @param metricFilter Metric filter
+         * @return Builder
+         */
+        public Builder withFileMetricFilter(final MetricFilter metricFilter)
+        {
+            myFileMetricFilter = metricFilter;
             return this;
         }
 

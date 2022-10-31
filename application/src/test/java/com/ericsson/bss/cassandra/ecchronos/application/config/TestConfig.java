@@ -105,11 +105,21 @@ public class TestConfig
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isFalse();
         assertThat(statisticsConfig.getDirectory()).isEqualTo(new File("./non-default-statistics"));
-        assertThat(statisticsConfig.getExcluded().size()).isEqualTo(1);
-        assertThat(statisticsConfig.getExcluded()).contains(".*");
+
         assertThat(statisticsConfig.getReporting().isJmxReportingEnabled()).isFalse();
+        Config.ReportingConfig jmxReportingConfig = statisticsConfig.getReporting().getJmx();
+        assertThat(jmxReportingConfig.isEnabled()).isFalse();
+        assertThat(jmxReportingConfig.getExcludedMetrics()).isEmpty();
+
         assertThat(statisticsConfig.getReporting().isFileReportingEnabled()).isTrue();
+        Config.ReportingConfig fileReportingConfig = statisticsConfig.getReporting().getFile();
+        assertThat(fileReportingConfig.isEnabled()).isTrue();
+        assertThat(fileReportingConfig.getExcludedMetrics()).contains(".*fileExcluded");
+
         assertThat(statisticsConfig.getReporting().isHttpReportingEnabled()).isTrue();
+        Config.ReportingConfig httpReportingConfig = statisticsConfig.getReporting().getHttp();
+        assertThat(httpReportingConfig.isEnabled()).isTrue();
+        assertThat(httpReportingConfig.getExcludedMetrics()).contains(".*httpExcluded");
 
         Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecc");
@@ -177,10 +187,20 @@ public class TestConfig
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isTrue();
         assertThat(statisticsConfig.getDirectory()).isEqualTo(new File("./statistics"));
-        assertThat(statisticsConfig.getExcluded()).isEmpty();
         assertThat(statisticsConfig.getReporting().isJmxReportingEnabled()).isTrue();
+        Config.ReportingConfig jmxReportingConfig = statisticsConfig.getReporting().getJmx();
+        assertThat(jmxReportingConfig.isEnabled()).isTrue();
+        assertThat(jmxReportingConfig.getExcludedMetrics()).isEmpty();
+
         assertThat(statisticsConfig.getReporting().isFileReportingEnabled()).isTrue();
+        Config.ReportingConfig fileReportingConfig = statisticsConfig.getReporting().getFile();
+        assertThat(fileReportingConfig.isEnabled()).isTrue();
+        assertThat(fileReportingConfig.getExcludedMetrics()).isEmpty();
+
         assertThat(statisticsConfig.getReporting().isHttpReportingEnabled()).isTrue();
+        Config.ReportingConfig httpReportingConfig = statisticsConfig.getReporting().getHttp();
+        assertThat(httpReportingConfig.isEnabled()).isTrue();
+        assertThat(httpReportingConfig.getExcludedMetrics()).isEmpty();
 
         Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecchronos");
@@ -247,10 +267,20 @@ public class TestConfig
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isTrue();
         assertThat(statisticsConfig.getDirectory()).isEqualTo(new File("./statistics"));
-        assertThat(statisticsConfig.getExcluded()).isEmpty();
         assertThat(statisticsConfig.getReporting().isJmxReportingEnabled()).isTrue();
+        Config.ReportingConfig jmxReportingConfig = statisticsConfig.getReporting().getJmx();
+        assertThat(jmxReportingConfig.isEnabled()).isTrue();
+        assertThat(jmxReportingConfig.getExcludedMetrics()).isEmpty();
+
         assertThat(statisticsConfig.getReporting().isFileReportingEnabled()).isTrue();
+        Config.ReportingConfig fileReportingConfig = statisticsConfig.getReporting().getFile();
+        assertThat(fileReportingConfig.isEnabled()).isTrue();
+        assertThat(fileReportingConfig.getExcludedMetrics()).isEmpty();
+
         assertThat(statisticsConfig.getReporting().isHttpReportingEnabled()).isTrue();
+        Config.ReportingConfig httpReportingConfig = statisticsConfig.getReporting().getHttp();
+        assertThat(httpReportingConfig.isEnabled()).isTrue();
+        assertThat(httpReportingConfig.getExcludedMetrics()).isEmpty();
 
         Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecchronos");

@@ -60,7 +60,8 @@ public class ECChronos implements Closeable
     private final OnDemandRepairSchedulerImpl myOnDemandRepairSchedulerImpl;
     private final RepairStatsProvider myRepairStatsProvider;
 
-    public ECChronos(final ApplicationContext applicationContext, // NOPMD
+    @SuppressWarnings({"checkstyle:ParameterNumber", "PMD.ExcessiveParameterList"})
+    public ECChronos(final ApplicationContext applicationContext,
                      final Config configuration,
                      final RepairFaultReporter repairFaultReporter,
                      final NativeConnectionProvider nativeConnectionProvider,
@@ -70,12 +71,13 @@ public class ECChronos implements Closeable
                      final RepairHistory repairHistory,
                      final RepairHistoryProvider repairHistoryProvider,
                      final MetricRegistry metricRegistry,
-                     final MetricFilter metricFilter,
+                     final MetricFilter jmxMetricFilter,
+                     final MetricFilter fileMetricFilter,
                      final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
             throws ConfigurationException
     {
         myECChronosInternals = new ECChronosInternals(configuration, nativeConnectionProvider, jmxConnectionProvider,
-                statementDecorator, metricRegistry, metricFilter);
+                statementDecorator, metricRegistry, jmxMetricFilter, fileMetricFilter);
 
         CqlSession session = nativeConnectionProvider.getSession();
 

@@ -4,11 +4,15 @@ The metrics are controlled by `statistics` section in `ecc.yml` file.
 The `statistics.enabled` controls if the metrics should be enabled.
 The output directory for metrics is specified by `statistics.directory`.
 
-Which metrics should be enabled is controlled by `statistics.excluded` in `ecc.yml` file.
-The `statistics.excluded` takes an array of quoted regexes to disable metrics.
+**Note that statistics written to file are not rotated automatically.**
 
-Note that statistics written to file are not rotated automatically.
+Metrics are exposed in several ways,
+this is controlled by `statistics.reporting.jmx.enabled`, `statistics.reporting.file.enabled`
+and `statistics.reporting.http.enabled` in `ecc.yml` file.
 
+Metrics can be excluded from being reported, this is controlled by `statistics.reporting.jmx.excludedMetrics`
+`statistics.reporting.file.excludedMetrics` `statistics.reporting.http.excludedMetrics` in `ecc.yml` file.
+The `excludedMetrics` takes an array of quoted regexes, for example, `".*"` will exclude all metrics.
 
 ## Driver metrics
 

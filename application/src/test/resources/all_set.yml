@@ -59,12 +59,15 @@ statistics:
   reporting:
     jmx:
       enabled: false
+      excludedMetrics: []
     file:
       enabled: true
+      excludedMetrics:
+        - '.*fileExcluded'
     http:
       enabled: true
-  excluded:
-    - '.*'
+      excludedMetrics:
+        - '.*httpExcluded'
 
 lock_factory:
   cas:

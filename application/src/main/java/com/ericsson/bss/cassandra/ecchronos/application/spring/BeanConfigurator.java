@@ -239,20 +239,32 @@ public class BeanConfigurator
     }
 
     @Bean
-    public MetricFilter metricFilter(final Config config)
+    public MetricFilter jmxMetricFilter(final Config config)
     {
-        return new MetricFilterImpl(config.getStatistics().getExcluded());
+        return new MetricFilterImpl(config.getStatistics().getReporting().getJmx().getExcludedMetrics());
     }
 
     @Bean
-    ServletRegistrationBean registerMetricsServlet(final MetricRegistry metricRegistry, final MetricFilter metricFilter,
-            final Config config)
+    public MetricFilter fileMetricFilter(final Config config)
+    {
+        return new MetricFilterImpl(config.getStatistics().getReporting().getFile().getExcludedMetrics());
+    }
+
+    @Bean
+    public MetricFilter httpMetricFilter(final Config config)
+    {
+        return new MetricFilterImpl(config.getStatistics().getReporting().getHttp().getExcludedMetrics());
+    }
+
+    @Bean
+    ServletRegistrationBean registerMetricsServlet(final MetricRegistry metricRegistry,
+            final MetricFilter httpMetricFilter, final Config config)
     {
         CollectorRegistry collectorRegistry = new CollectorRegistry();
         ServletRegistrationBean servletRegistrationBean = new ServletRegistrationBean();
         if (config.getStatistics().getReporting().isHttpReportingEnabled())
         {
-            collectorRegistry.register(new DropwizardExports(metricRegistry, metricFilter));
+            collectorRegistry.register(new DropwizardExports(metricRegistry, httpMetricFilter));
         }
         servletRegistrationBean.setServlet(new MetricsServlet(collectorRegistry));
         servletRegistrationBean.setUrlMappings(Arrays.asList(METRICS_ENDPOINT + "/*"));
