@@ -105,6 +105,7 @@ public class TestConfig
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isFalse();
         assertThat(statisticsConfig.getDirectory()).isEqualTo(new File("./non-default-statistics"));
+        assertThat(statisticsConfig.getPrefix()).isEqualTo("unittest");
 
         assertThat(statisticsConfig.getReporting().isJmxReportingEnabled()).isFalse();
         Config.ReportingConfig jmxReportingConfig = statisticsConfig.getReporting().getJmx();
@@ -187,6 +188,8 @@ public class TestConfig
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isTrue();
         assertThat(statisticsConfig.getDirectory()).isEqualTo(new File("./statistics"));
+        assertThat(statisticsConfig.getPrefix()).isEmpty();
+
         assertThat(statisticsConfig.getReporting().isJmxReportingEnabled()).isTrue();
         Config.ReportingConfig jmxReportingConfig = statisticsConfig.getReporting().getJmx();
         assertThat(jmxReportingConfig.isEnabled()).isTrue();
@@ -267,6 +270,8 @@ public class TestConfig
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isTrue();
         assertThat(statisticsConfig.getDirectory()).isEqualTo(new File("./statistics"));
+        assertThat(statisticsConfig.getPrefix()).isEmpty();
+
         assertThat(statisticsConfig.getReporting().isJmxReportingEnabled()).isTrue();
         Config.ReportingConfig jmxReportingConfig = statisticsConfig.getReporting().getJmx();
         assertThat(jmxReportingConfig.isEnabled()).isTrue();

@@ -113,6 +113,7 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
         private static final int MAX_NODES_PER_DC = 999;
 
         private String myLocalhost = DEFAULT_LOCAL_HOST;
+        private String myPrefix = "";
         private int myPort = DEFAULT_NATIVE_PORT;
         private boolean myRemoteRouting = true;
         private boolean myIsMetricsEnabled = true;
@@ -169,6 +170,12 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
             return this;
         }
 
+        public final Builder withMetricPrefix(final String prefix)
+        {
+            myPrefix = prefix;
+            return this;
+        }
+
         public final LocalNativeConnectionProvider build()
         {
             CqlSession session = createSession(this);
@@ -199,6 +206,10 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
             {
                 loaderBuilder.withStringList(DefaultDriverOption.METRICS_NODE_ENABLED, NODE_METRICS)
                         .withStringList(DefaultDriverOption.METRICS_SESSION_ENABLED, SESSION_METRICS);
+                if (builder.myPrefix != null && !builder.myPrefix.isEmpty())
+                {
+                    loaderBuilder.withString(DefaultDriverOption.METRICS_ID_GENERATOR_PREFIX, builder.myPrefix);
+                }
             }
             if (builder.myRemoteRouting)
             {

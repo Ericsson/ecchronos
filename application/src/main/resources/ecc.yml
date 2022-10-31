@@ -197,6 +197,11 @@ statistics:
       ##
       excludedMetrics: []
   directory: ./statistics
+  ##
+  ## Prefix all metrics with below string
+  ## The prefix cannot start or end with a dot or any other path separator.
+  ##
+  prefix: ''
 
 lock_factory:
   cas:

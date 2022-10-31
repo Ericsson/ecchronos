@@ -68,6 +68,7 @@ statistics:
       enabled: true
       excludedMetrics:
         - '.*httpExcluded'
+  prefix: "unittest"
 
 lock_factory:
   cas:

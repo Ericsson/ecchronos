@@ -36,6 +36,7 @@ import static org.mockito.Mockito.doReturn;
 @RunWith(MockitoJUnitRunner.class)
 public class TestNodeMetricHolder
 {
+    private static final String NO_METRIC_PREFIX = "";
     @Mock
     private TableStorageStates myTableStorageStates;
 
@@ -46,7 +47,7 @@ public class TestNodeMetricHolder
     @Before
     public void init()
     {
-        myNodeMetricHolder = new NodeMetricHolder(myMetricRegistry, myTableStorageStates);
+        myNodeMetricHolder = new NodeMetricHolder(NO_METRIC_PREFIX, myMetricRegistry, myTableStorageStates);
     }
 
     @After
@@ -62,6 +63,18 @@ public class TestNodeMetricHolder
         assertThat(getTimer(NodeMetricHolder.REPAIR_TIMING_FAILED).getCount()).isEqualTo(0);
         assertThat(getGauge(NodeMetricHolder.REPAIRED_DATA).getValue()).isEqualTo(1.0);
         assertThat(getGauge(NodeMetricHolder.REPAIRED_TABLES).getValue()).isEqualTo(1.0);
+    }
+
+    @Test
+    public void testDefaultMetricsWithPrefix()
+    {
+        String prefix = "ecchronos";
+        MetricRegistry metricRegistry = new MetricRegistry();
+        new NodeMetricHolder(prefix, metricRegistry, myTableStorageStates);
+        assertThat(getTimer(metricRegistry, prefix + "." + NodeMetricHolder.REPAIR_TIMING_SUCCESS).getCount()).isEqualTo(0);
+        assertThat(getTimer(metricRegistry, prefix + "." + NodeMetricHolder.REPAIR_TIMING_FAILED).getCount()).isEqualTo(0);
+        assertThat(getGauge(metricRegistry, prefix + "." + NodeMetricHolder.REPAIRED_DATA).getValue()).isEqualTo(1.0);
+        assertThat(getGauge(metricRegistry, prefix + "." + NodeMetricHolder.REPAIRED_TABLES).getValue()).isEqualTo(1.0);
     }
 
     @Test
@@ -173,12 +186,22 @@ public class TestNodeMetricHolder
 
     private Timer getTimer(String name)
     {
-        return myMetricRegistry.getTimers().get(name);
+        return getTimer(myMetricRegistry, name);
     }
 
     private Gauge getGauge(String name)
     {
-        return myMetricRegistry.getGauges().get(name);
+        return getGauge(myMetricRegistry, name);
+    }
+
+    private Timer getTimer(MetricRegistry metricRegistry, String name)
+    {
+        return metricRegistry.getTimers().get(name);
+    }
+
+    private Gauge getGauge(MetricRegistry metricRegistry, String name)
+    {
+        return metricRegistry.getGauges().get(name);
     }
 
     private void givenSingleRepairedTable(long tableSize, double repairedRatio)

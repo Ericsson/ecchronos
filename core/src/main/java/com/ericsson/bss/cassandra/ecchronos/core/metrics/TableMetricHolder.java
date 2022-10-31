@@ -45,6 +45,7 @@ public class TableMetricHolder implements Closeable
     private final NodeMetricHolder myNodeMetricHolder;
 
     private final TableReference myTableReference;
+    private final String myMetricPrefix;
 
     private final AtomicReference<RangeRepairState> myRepairState = new AtomicReference<>();
     private final AtomicReference<Long> myLastRepairedAt = new AtomicReference<>(0L);
@@ -54,11 +55,13 @@ public class TableMetricHolder implements Closeable
 
     public TableMetricHolder(final TableReference tableReference,
                              final MetricRegistry metricRegistry,
-                             final NodeMetricHolder nodeMetricHolder)
+                             final NodeMetricHolder nodeMetricHolder,
+                             final String metricPrefix)
     {
         myTableReference = tableReference;
         myMetricRegistry = metricRegistry;
         myNodeMetricHolder = nodeMetricHolder;
+        myMetricPrefix = metricPrefix;
     }
 
     /**
@@ -197,8 +200,14 @@ public class TableMetricHolder implements Closeable
 
     private String metricName(final String name)
     {
-        return myTableReference.getKeyspace() + "." + myTableReference.getTable() + "-" + myTableReference.getId() + "-"
-                + name;
+        String metric = "";
+        if (myMetricPrefix != null && !myMetricPrefix.isEmpty())
+        {
+            metric = myMetricPrefix + ".";
+        }
+        metric += myTableReference.getKeyspace() + "." + myTableReference.getTable() + "-" + myTableReference.getId()
+                + "-" + name;
+        return metric;
     }
 
     private Timer timer(final String name)
