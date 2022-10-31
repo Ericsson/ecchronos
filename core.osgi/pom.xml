@@ -26,7 +26,7 @@
 
     <artifactId>core.osgi</artifactId>
     <description>OSGi service wrappers for the core classes</description>
-    <name>ecChronos core OSGi</name>
+    <name>EcChronos Core OSGi</name>
 
     <dependencies>
         <!-- Internal -->

@@ -26,7 +26,7 @@
     <artifactId>ecchronos-binary</artifactId>
     <packaging>pom</packaging>
     <description>Packaging of ecChronos as a standalone application</description>
-    <name>ecChronos binary</name>
+    <name>EcChronos Binary</name>
 
     <dependencies>
         <!-- Internal -->

@@ -25,7 +25,7 @@
     <artifactId>karaf-feature</artifactId>
     <packaging>feature</packaging>
     <description>Utility module creating a feature file for OSGi</description>
-    <name>ecChronos Karaf feature</name>
+    <name>EcChronos Karaf Feature</name>
 
     <dependencies>
         <dependency>
