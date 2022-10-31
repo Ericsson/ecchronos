@@ -2,6 +2,7 @@
 
 ## Version 4.0.0
 
+* Bump prometheus simpleclient from 0.10.0 to 0.16.0 - Issue #416
 * Move exclusion of metrics to each reporter - Issue #411
 * Bump jackson-databind from 2.13.2.2 to 2.13.4.1
 * Default duration to GC grace, repairInfo for table - Issue #409
