@@ -6,6 +6,8 @@ The output directory for metrics is specified by `statistics.directory`.
 
 **Note that statistics written to file are not rotated automatically.**
 
+## Reporting
+
 Metrics are exposed in several ways,
 this is controlled by `statistics.reporting.jmx.enabled`, `statistics.reporting.file.enabled`
 and `statistics.reporting.http.enabled` in `ecc.yml` file.
@@ -13,6 +15,26 @@ and `statistics.reporting.http.enabled` in `ecc.yml` file.
 Metrics can be excluded from being reported, this is controlled by `statistics.reporting.jmx.excludedMetrics`
 `statistics.reporting.file.excludedMetrics` `statistics.reporting.http.excludedMetrics` in `ecc.yml` file.
 The `excludedMetrics` takes an array of quoted regexes, for example, `".*"` will exclude all metrics.
+
+Metrics reported through different channels will have different names,
+for example a metric named `test2.table1-96b525b0-5459-11ed-8873-0198b38b98fa-FailedRepairTasks` will have the following
+name based on reporting channel:
+
+* jmx - `test2.table1-96b525b0-5459-11ed-8873-0198b38b98fa-FailedRepairTasks`
+* file - `test2.table1-96b525b0-5459-11ed-8873-0198b38b98fa-FailedRepairTasks`
+* http - `test2_table1_96b525b0_5459_11ed_8873_0198b38b98fa_FailedRepairTasks`
+
+## Metric prefix
+
+It's possible to define a global prefix for all metric names.
+This is done by specifying a string in `statistics.prefix` in `ecc.yml`.
+The prefix cannot start or end with a dot or any other path separator.
+
+For example if the prefix is `ecChronos` and the metric name is `RepairSuccessTime`,
+the metric name will be `ecChronos.RepairSuccessTime` for jmx and file reporters,
+for http reporter the metric name will be `ecChronos_RepairSuccessTime`.
+
+By specifying an empty string or no value at all, the metric names will not be prefixed.
 
 ## Driver metrics
 
@@ -22,17 +44,6 @@ can be excluded in the same way as ecChronos metrics.
 
 For list of available driver metrics, refer to sections
 `session-level metrics and node-level metrics` in [datastax reference configuration](https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/configuration/reference/)
-
-## Metric prefix
-
-It's possible to define a global prefix for all metric names.
-This is done by specifying a string in `statistics.prefix` in `ecc.yml`.
-The prefix cannot start or end with a dot or any other path separator.
-
-For example if the prefix is `ecChronos` and the metric name is `RepairSuccessTime`,
-the metric name will be `ecChronos.RepairSuccessTime`.
-
-By specifying an empty string or no value at all, the metric names will not be prefixed.
 
 ## Files
 
