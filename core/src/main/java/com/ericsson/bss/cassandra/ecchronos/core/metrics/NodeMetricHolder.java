@@ -38,17 +38,36 @@ public class NodeMetricHolder implements Closeable
 
     private final ConcurrentHashMap<TableReference, Double> myTableRepairRatio = new ConcurrentHashMap<>();
 
+    private final String myRepairedTablesMetricName;
+    private final String myRepairedDataMetricName;
+    private final String myRepairTimingSuccessMetricName;
+    private final String myRepairTimingFailedMetricName;
     private final MetricRegistry myMetricRegistry;
 
-    public NodeMetricHolder(final MetricRegistry metricRegistry, final TableStorageStates tableStorageStates)
+    public NodeMetricHolder(final String metricPrefix, final MetricRegistry metricRegistry,
+            final TableStorageStates tableStorageStates)
     {
         myMetricRegistry = metricRegistry;
+        if (metricPrefix != null && !metricPrefix.isEmpty())
+        {
+            myRepairedTablesMetricName = metricPrefix + "." + REPAIRED_TABLES;
+            myRepairedDataMetricName = metricPrefix + "." + REPAIRED_DATA;
+            myRepairTimingSuccessMetricName = metricPrefix + "." + REPAIR_TIMING_SUCCESS;
+            myRepairTimingFailedMetricName = metricPrefix + "." + REPAIR_TIMING_FAILED;
+        }
+        else
+        {
+            myRepairedTablesMetricName = REPAIRED_TABLES;
+            myRepairedDataMetricName = REPAIRED_DATA;
+            myRepairTimingSuccessMetricName = REPAIR_TIMING_SUCCESS;
+            myRepairTimingFailedMetricName = REPAIR_TIMING_FAILED;
+        }
 
         // Initialize metrics
-        timer(REPAIR_TIMING_SUCCESS);
-        timer(REPAIR_TIMING_FAILED);
+        timer(myRepairTimingSuccessMetricName);
+        timer(myRepairTimingFailedMetricName);
 
-        myMetricRegistry.gauge(REPAIRED_TABLES, () -> new RatioGauge()
+        myMetricRegistry.gauge(myRepairedTablesMetricName, () -> new RatioGauge()
         {
             @Override
             protected Ratio getRatio()
@@ -62,7 +81,7 @@ public class NodeMetricHolder implements Closeable
             }
         });
 
-        myMetricRegistry.gauge(REPAIRED_DATA, () -> new RatioGauge()
+        myMetricRegistry.gauge(myRepairedDataMetricName, () -> new RatioGauge()
         {
             @Override
             protected Ratio getRatio()
@@ -115,11 +134,11 @@ public class NodeMetricHolder implements Closeable
     {
         if (successful)
         {
-            timer(REPAIR_TIMING_SUCCESS).update(timeTaken, timeUnit);
+            timer(myRepairTimingSuccessMetricName).update(timeTaken, timeUnit);
         }
         else
         {
-            timer(REPAIR_TIMING_FAILED).update(timeTaken, timeUnit);
+            timer(myRepairTimingFailedMetricName).update(timeTaken, timeUnit);
         }
     }
 
@@ -134,9 +153,9 @@ public class NodeMetricHolder implements Closeable
     @Override
     public void close()
     {
-        myMetricRegistry.remove(REPAIR_TIMING_SUCCESS);
-        myMetricRegistry.remove(REPAIR_TIMING_FAILED);
-        myMetricRegistry.remove(REPAIRED_TABLES);
-        myMetricRegistry.remove(REPAIRED_DATA);
+        myMetricRegistry.remove(myRepairTimingSuccessMetricName);
+        myMetricRegistry.remove(myRepairTimingFailedMetricName);
+        myMetricRegistry.remove(myRepairedTablesMetricName);
+        myMetricRegistry.remove(myRepairedDataMetricName);
     }
 }

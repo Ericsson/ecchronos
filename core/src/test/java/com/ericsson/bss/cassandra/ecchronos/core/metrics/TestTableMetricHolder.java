@@ -36,6 +36,7 @@ import static org.mockito.Mockito.*;
 @RunWith(MockitoJUnitRunner.class)
 public class TestTableMetricHolder
 {
+    private static final String NO_METRIC_PREFIX = "";
     private final TableReference myTableReference = tableReference("keyspace", "table");
 
     private final MetricRegistry myMetricRegistry = new MetricRegistry();
@@ -48,7 +49,7 @@ public class TestTableMetricHolder
     @Before
     public void init()
     {
-        myTableMetricHolder = new TableMetricHolder(myTableReference, myMetricRegistry, myNodeMetricHolder);
+        myTableMetricHolder = new TableMetricHolder(myTableReference, myMetricRegistry, myNodeMetricHolder, NO_METRIC_PREFIX);
         myTableMetricHolder.init();
     }
 
@@ -67,7 +68,7 @@ public class TestTableMetricHolder
     {
         MetricRegistry metricRegistry = new MetricRegistry();
 
-        new TableMetricHolder(myTableReference, metricRegistry, myNodeMetricHolder);
+        new TableMetricHolder(myTableReference, metricRegistry, myNodeMetricHolder, NO_METRIC_PREFIX);
 
         assertThat(metricRegistry.getMetrics()).isEmpty();
     }
@@ -77,7 +78,8 @@ public class TestTableMetricHolder
     {
         MetricRegistry metricRegistry = new MetricRegistry();
 
-        TableMetricHolder tableMetricHolder = new TableMetricHolder(myTableReference, metricRegistry, myNodeMetricHolder);
+        TableMetricHolder tableMetricHolder = new TableMetricHolder(myTableReference, metricRegistry,
+                myNodeMetricHolder, NO_METRIC_PREFIX);
         tableMetricHolder.init();
 
         assertThat(metricRegistry.getMetrics().keySet()).containsExactlyInAnyOrder(
@@ -89,11 +91,37 @@ public class TestTableMetricHolder
                 metricName(TableMetricHolder.FAILED_REPAIR_TASKS),
                 metricName(TableMetricHolder.SUCCEEDED_REPAIR_TASKS));
 
-        assertThat(getGague(TableMetricHolder.REPAIR_STATE).getValue()).isEqualTo(Double.NaN);
-        assertThat(getGague(TableMetricHolder.LAST_REPAIRED_AT).getValue()).isEqualTo(0L);
-        assertThat(getGague(TableMetricHolder.REMAINING_REPAIR_TIME).getValue()).isEqualTo(0L);
-        assertThat(getMeter(TableMetricHolder.FAILED_REPAIR_TASKS).getCount()).isEqualTo(0L);
-        assertThat(getMeter(TableMetricHolder.SUCCEEDED_REPAIR_TASKS).getCount()).isEqualTo(0L);
+        assertThat(getGague(metricRegistry, TableMetricHolder.REPAIR_STATE).getValue()).isEqualTo(Double.NaN);
+        assertThat(getGague(metricRegistry, TableMetricHolder.LAST_REPAIRED_AT).getValue()).isEqualTo(0L);
+        assertThat(getGague(metricRegistry, TableMetricHolder.REMAINING_REPAIR_TIME).getValue()).isEqualTo(0L);
+        assertThat(getMeter(metricRegistry, TableMetricHolder.FAILED_REPAIR_TASKS).getCount()).isEqualTo(0L);
+        assertThat(getMeter(metricRegistry, TableMetricHolder.SUCCEEDED_REPAIR_TASKS).getCount()).isEqualTo(0L);
+    }
+
+    @Test
+    public void verifyMetricsAddedAfterInitWithPrefix()
+    {
+        MetricRegistry metricRegistry = new MetricRegistry();
+
+        String prefix = "ecchronos";
+        TableMetricHolder tableMetricHolder = new TableMetricHolder(myTableReference, metricRegistry,
+                myNodeMetricHolder, prefix);
+        tableMetricHolder.init();
+
+        assertThat(metricRegistry.getMetrics().keySet()).containsExactlyInAnyOrder(
+                metricName(prefix, TableMetricHolder.REMAINING_REPAIR_TIME),
+                metricName(prefix, TableMetricHolder.LAST_REPAIRED_AT),
+                metricName(prefix, TableMetricHolder.REPAIR_STATE),
+                metricName(prefix, TableMetricHolder.REPAIR_TIMING_FAILED),
+                metricName(prefix, TableMetricHolder.REPAIR_TIMING_SUCCESS),
+                metricName(prefix, TableMetricHolder.FAILED_REPAIR_TASKS),
+                metricName(prefix, TableMetricHolder.SUCCEEDED_REPAIR_TASKS));
+
+        assertThat(getGague(metricRegistry, prefix, TableMetricHolder.REPAIR_STATE).getValue()).isEqualTo(Double.NaN);
+        assertThat(getGague(metricRegistry, prefix, TableMetricHolder.LAST_REPAIRED_AT).getValue()).isEqualTo(0L);
+        assertThat(getGague(metricRegistry, prefix, TableMetricHolder.REMAINING_REPAIR_TIME).getValue()).isEqualTo(0L);
+        assertThat(getMeter(metricRegistry, prefix, TableMetricHolder.FAILED_REPAIR_TASKS).getCount()).isEqualTo(0L);
+        assertThat(getMeter(metricRegistry, prefix, TableMetricHolder.SUCCEEDED_REPAIR_TASKS).getCount()).isEqualTo(0L);
     }
 
     @Test
@@ -111,7 +139,7 @@ public class TestTableMetricHolder
         {
             myTableMetricHolder.failedRepairTask();
         }
-        assertThat(getMeter(TableMetricHolder.FAILED_REPAIR_TASKS).getCount()).isEqualTo(failedRepairTasks);
+        assertThat(getMeter(myMetricRegistry, TableMetricHolder.FAILED_REPAIR_TASKS).getCount()).isEqualTo(failedRepairTasks);
     }
 
     @Test
@@ -122,7 +150,7 @@ public class TestTableMetricHolder
         {
             myTableMetricHolder.succeededRepairTask();
         }
-        assertThat(getMeter(TableMetricHolder.SUCCEEDED_REPAIR_TASKS).getCount()).isEqualTo(succeededRepairTasks);
+        assertThat(getMeter(myMetricRegistry, TableMetricHolder.SUCCEEDED_REPAIR_TASKS).getCount()).isEqualTo(succeededRepairTasks);
     }
 
     @Test
@@ -132,7 +160,7 @@ public class TestTableMetricHolder
 
         myTableMetricHolder.lastRepairedAt(expectedLastRepaired);
 
-        assertThat(getGague(TableMetricHolder.LAST_REPAIRED_AT).getValue()).isEqualTo(expectedLastRepaired);
+        assertThat(getGague(myMetricRegistry, TableMetricHolder.LAST_REPAIRED_AT).getValue()).isEqualTo(expectedLastRepaired);
     }
 
     @Test
@@ -142,7 +170,7 @@ public class TestTableMetricHolder
 
         myTableMetricHolder.remainingRepairTime(remainingRepairTime);
 
-        assertThat(getGague(TableMetricHolder.REMAINING_REPAIR_TIME).getValue()).isEqualTo(remainingRepairTime);
+        assertThat(getGague(myMetricRegistry, TableMetricHolder.REMAINING_REPAIR_TIME).getValue()).isEqualTo(remainingRepairTime);
     }
 
     @Test
@@ -154,7 +182,7 @@ public class TestTableMetricHolder
 
         myTableMetricHolder.repairState(expectedRepaired, expectedNotRepaired);
 
-        assertThat(getGague(TableMetricHolder.REPAIR_STATE).getValue()).isEqualTo(expectedRatio);
+        assertThat(getGague(myMetricRegistry, TableMetricHolder.REPAIR_STATE).getValue()).isEqualTo(expectedRatio);
         verify(myNodeMetricHolder).repairState(eq(myTableReference), eq(expectedRatio));
     }
 
@@ -167,7 +195,7 @@ public class TestTableMetricHolder
 
         myTableMetricHolder.repairState(expectedRepaired, expectedNotRepaired);
 
-        assertThat(getGague(TableMetricHolder.REPAIR_STATE).getValue()).isEqualTo(expectedRatio);
+        assertThat(getGague(myMetricRegistry, TableMetricHolder.REPAIR_STATE).getValue()).isEqualTo(expectedRatio);
         verify(myNodeMetricHolder).repairState(eq(myTableReference), eq(expectedRatio));
     }
 
@@ -180,7 +208,7 @@ public class TestTableMetricHolder
 
         myTableMetricHolder.repairState(expectedRepaired, expectedNotRepaired);
 
-        assertThat(getGague(TableMetricHolder.REPAIR_STATE).getValue()).isEqualTo(expectedRatio);
+        assertThat(getGague(myMetricRegistry, TableMetricHolder.REPAIR_STATE).getValue()).isEqualTo(expectedRatio);
         verify(myNodeMetricHolder).repairState(eq(myTableReference), eq(expectedRatio));
     }
 
@@ -192,11 +220,11 @@ public class TestTableMetricHolder
 
         myTableMetricHolder.repairTiming(timeTaken, TimeUnit.NANOSECONDS, successful);
 
-        assertThat(getTimer(TableMetricHolder.REPAIR_TIMING_SUCCESS).getCount()).isEqualTo(1);
-        assertThat(getTimer(TableMetricHolder.REPAIR_TIMING_SUCCESS).getSnapshot().getMean()).isEqualTo(timeTaken);
+        assertThat(getTimer(myMetricRegistry, TableMetricHolder.REPAIR_TIMING_SUCCESS).getCount()).isEqualTo(1);
+        assertThat(getTimer(myMetricRegistry, TableMetricHolder.REPAIR_TIMING_SUCCESS).getSnapshot().getMean()).isEqualTo(timeTaken);
 
-        assertThat(getTimer(TableMetricHolder.REPAIR_TIMING_FAILED).getCount()).isEqualTo(0);
-        assertThat(getTimer(TableMetricHolder.REPAIR_TIMING_FAILED).getSnapshot().getMean()).isEqualTo(0);
+        assertThat(getTimer(myMetricRegistry, TableMetricHolder.REPAIR_TIMING_FAILED).getCount()).isEqualTo(0);
+        assertThat(getTimer(myMetricRegistry, TableMetricHolder.REPAIR_TIMING_FAILED).getSnapshot().getMean()).isEqualTo(0);
 
         verify(myNodeMetricHolder).repairTiming(eq(timeTaken), eq(TimeUnit.NANOSECONDS), eq(successful));
     }
@@ -209,32 +237,54 @@ public class TestTableMetricHolder
 
         myTableMetricHolder.repairTiming(timeTaken, TimeUnit.NANOSECONDS, successful);
 
-        assertThat(getTimer(TableMetricHolder.REPAIR_TIMING_FAILED).getCount()).isEqualTo(1);
-        assertThat(getTimer(TableMetricHolder.REPAIR_TIMING_FAILED).getSnapshot().getMean()).isEqualTo(timeTaken);
+        assertThat(getTimer(myMetricRegistry, TableMetricHolder.REPAIR_TIMING_FAILED).getCount()).isEqualTo(1);
+        assertThat(getTimer(myMetricRegistry, TableMetricHolder.REPAIR_TIMING_FAILED).getSnapshot().getMean()).isEqualTo(timeTaken);
 
-        assertThat(getTimer(TableMetricHolder.REPAIR_TIMING_SUCCESS).getCount()).isEqualTo(0);
-        assertThat(getTimer(TableMetricHolder.REPAIR_TIMING_SUCCESS).getSnapshot().getMean()).isEqualTo(0);
+        assertThat(getTimer(myMetricRegistry, TableMetricHolder.REPAIR_TIMING_SUCCESS).getCount()).isEqualTo(0);
+        assertThat(getTimer(myMetricRegistry, TableMetricHolder.REPAIR_TIMING_SUCCESS).getSnapshot().getMean()).isEqualTo(0);
 
         verify(myNodeMetricHolder).repairTiming(eq(timeTaken), eq(TimeUnit.NANOSECONDS), eq(successful));
     }
 
-    private Timer getTimer(String name)
+    private Timer getTimer(MetricRegistry metricRegistry, String prefix, String name)
     {
-        return myMetricRegistry.getTimers().get(metricName(name));
+        return metricRegistry.getTimers().get(metricName(prefix, name));
     }
 
-    private Meter getMeter(String name)
+    private Meter getMeter(MetricRegistry metricRegistry, String prefix, String name)
     {
-        return myMetricRegistry.getMeters().get(metricName(name));
+        return metricRegistry.getMeters().get(metricName(prefix, name));
     }
 
-    private Gauge getGague(String name)
+    private Gauge getGague(MetricRegistry metricRegistry, String prefix, String name)
     {
-        return myMetricRegistry.getGauges().get(metricName(name));
+        return metricRegistry.getGauges().get(metricName(prefix, name));
+    }
+
+    private Timer getTimer(MetricRegistry metricRegistry, String name)
+    {
+        return metricRegistry.getTimers().get(metricName(name));
+    }
+
+    private Meter getMeter(MetricRegistry metricRegistry, String name)
+    {
+        return metricRegistry.getMeters().get(metricName(name));
+    }
+
+    private Gauge getGague(MetricRegistry metricRegistry, String name)
+    {
+        return metricRegistry.getGauges().get(metricName(name));
     }
 
     private String metricName(String name)
     {
-        return myTableReference.getKeyspace() + "." + myTableReference.getTable() + "-" + myTableReference.getId() + "-" + name;
+        return myTableReference.getKeyspace() + "." + myTableReference.getTable() + "-" + myTableReference.getId()
+                + "-" + name;
+    }
+
+    private String metricName(String prefix, String name)
+    {
+        return prefix + "." + myTableReference.getKeyspace() + "." + myTableReference.getTable() + "-"
+                + myTableReference.getId() + "-" + name;
     }
 }

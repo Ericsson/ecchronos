@@ -45,13 +45,15 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
 
     private final MetricRegistry myMetricRegistry;
     private final NodeMetricHolder myNodeMetricHolder;
+    private final String myMetricPrefix;
 
     private TableRepairMetricsImpl(final Builder builder)
     {
         myMetricRegistry = Preconditions.checkNotNull(builder.myMetricRegistry,
                 "Metric registry cannot be null");
+        myMetricPrefix = builder.myMetricPrefix;
 
-        myNodeMetricHolder = new NodeMetricHolder(myMetricRegistry,
+        myNodeMetricHolder = new NodeMetricHolder(myMetricPrefix, myMetricRegistry,
                 Preconditions.checkNotNull(builder.myTableStorageStates,
                         "Table storage states cannot be null"));
 
@@ -179,6 +181,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
     {
         private TableStorageStates myTableStorageStates;
         private String myStatisticsDirectory = DEFAULT_STATISTICS_DIRECTORY;
+        private String myMetricPrefix = "";
         private long myReportIntervalInMs = DEFAULT_STATISTICS_REPORT_INTERVAL_IN_MS;
         private MetricRegistry myMetricRegistry;
         private MetricFilter myJmxMetricFilter = MetricFilter.ALL;
@@ -284,6 +287,18 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         }
 
         /**
+         * Build with metric prefix.
+         *
+         * @param metricPrefix prefix to prepend all metrics with
+         * @return Builder
+         */
+        public Builder withMetricPrefix(final String metricPrefix)
+        {
+            myMetricPrefix = metricPrefix;
+            return this;
+        }
+
+        /**
          * Build table repair metrics.
          *
          * @return TableRepairMetricsImpl
@@ -300,7 +315,8 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
 
         if (tableMetricHolder == null)
         {
-            tableMetricHolder = new TableMetricHolder(tableReference, myMetricRegistry, myNodeMetricHolder);
+            tableMetricHolder = new TableMetricHolder(tableReference, myMetricRegistry, myNodeMetricHolder,
+                    myMetricPrefix);
 
             TableMetricHolder oldTableMetricHolder = myTableMetricHolders.putIfAbsent(tableReference,
                     tableMetricHolder);

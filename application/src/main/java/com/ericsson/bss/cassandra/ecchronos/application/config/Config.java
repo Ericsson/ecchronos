@@ -544,6 +544,7 @@ public class Config
         private boolean enabled = true;
         private File directory = new File("./statistics");
         private ReportingConfigs reporting = new ReportingConfigs();
+        private String prefix = "";
 
         public final boolean isEnabled()
         {
@@ -563,6 +564,11 @@ public class Config
             return reporting;
         }
 
+        public final String getPrefix()
+        {
+            return prefix;
+        }
+
         public final void setEnabled(final boolean enabledValue)
         {
             this.enabled = enabledValue;
@@ -576,6 +582,11 @@ public class Config
         public final void setReporting(final ReportingConfigs theReportings)
         {
             this.reporting = theReportings;
+        }
+
+        public final void setPrefix(final String aPrefix)
+        {
+            this.prefix = aPrefix;
         }
     }
 

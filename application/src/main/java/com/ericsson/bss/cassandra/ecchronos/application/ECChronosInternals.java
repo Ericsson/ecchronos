@@ -109,6 +109,7 @@ public class ECChronosInternals implements Closeable
                     .withMetricRegistry(metricRegistry)
                     .withJmxReporting(configuration.getStatistics().getReporting().isJmxReportingEnabled())
                     .withFileReporting(configuration.getStatistics().getReporting().isFileReportingEnabled())
+                    .withMetricPrefix(configuration.getStatistics().getPrefix())
                     .build();
         }
         else
