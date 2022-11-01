@@ -6,7 +6,7 @@ It first calculates all the ranges that need to be repaired per table and then g
 One repair is run against a Cassandra node per range as if running repair with -st and -et flags.
 
 A lock table within Cassandra ensures that nodes do not run repairs at the same time. How the locking mechanism behaves
-can be configured in [ecc.yml](application/src/main/resources/ecc.yml).
+can be configured in [ecc.yml](../application/src/main/resources/ecc.yml).
 
 ecChronos uses repair history saved in Cassandra to know what is and isn't repaired. It ensures that the same thing
 will not need to be repaired multiple times per interval by keeping track of the latest repaired time. If a range fails,
@@ -21,17 +21,17 @@ priority with time.
 The default settings assume a GC Grace Second setting of 10 days. Repair will be run once on every table every interval which
 defaults to 7 days. If 8 days have passed on a range without a repair then a warning will be logged. If 10 days have passed an ERROR is logged.
 
-Tune these parameters to fit your use case in [ecc.yml](application/src/main/resources/ecc.yml)
+Tune these parameters to fit your use case in [ecc.yml](../application/src/main/resources/ecc.yml)
 
 ## Starting ecChronos
 
-Installation information can be found in [SETUP.md](docs/SETUP.md).
+Installation information can be found in [SETUP.md](SETUP.md).
 
 When ecChronos is started, it will assume that a table is repaired if no repair history exists.
 If no repair history is found, it will wait the interval and then begin repairing each table.
 
 If more fine grained control is required over which tables and keyspaces will be repaired,
-this can be configured in [schedule.yml](application/src/main/resources/schedule.yml)
+this can be configured in [schedule.yml](../application/src/main/resources/schedule.yml)
 
 If repair history exists, ecChronos will take the last time repair was run and add the interval for the next repair time.
 
@@ -75,20 +75,20 @@ ecctool repairs shows an overview of all manually triggered repairs
 ecctool repair-info gives you an idea of what has been repaired. Giving your interval can help you determine how many of your ranges have been
 repaired during the given time.
 
-For more information on the different commands, see [ECCTOOL.md](docs/ECCTOOL.md).
+For more information on the different commands, see [ECCTOOL.md](ECCTOOL.md).
 
 
 ## Web Server
 
-By default ecChronos starts a web server that can be configured in [application.yml](application/src/main/resources/application.yml).
-The server is based on springboot and most features springboot has are exposed here. More information on the API can be found in [REST.md](docs/REST.md).
+By default ecChronos starts a web server that can be configured in [application.yml](../application/src/main/resources/application.yml).
+The server is based on springboot and most features springboot has are exposed here. More information on the API can be found in [REST.md](REST.md).
 
 
 ## Security
 
 If your use case requires security, the three interfaces ecChronos provides can be secured.
-For CQL and JMX, the security options can be found in [security.yml](application/src/main/resources/security.yml).
-For the web server these options can be found in the [application.yml](application/src/main/resources/application.yml).
+For CQL and JMX, the security options can be found in [security.yml](../application/src/main/resources/security.yml).
+For the web server these options can be found in the [application.yml](../application/src/main/resources/application.yml).
 
 | Feature        	| JMX 	| CQL 	| Web 	|
 |----------------	|-----	|-----	|-----	|
@@ -99,6 +99,6 @@ For the web server these options can be found in the [application.yml](applicati
 
 ## Statistics
 
-Statistics are enabled by default but can be disabled in [ecc.yaml](application/src/main/resources/ecc.yml). More information on
-what metrics to expect can be found in [METRICS.md](docs/METRICS.md). Statistics can also be excluded for more fine grained control on what to save.
+Statistics are enabled by default but can be disabled in [ecc.yaml](../application/src/main/resources/ecc.yml). More information on
+what metrics to expect can be found in [METRICS.md](METRICS.md). Statistics can also be excluded for more fine grained control on what to save.
 Note that something like logrotate is needed to archieve/delete old files.
