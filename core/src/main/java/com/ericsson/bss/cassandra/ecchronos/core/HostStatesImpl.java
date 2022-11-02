@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +33,7 @@ import org.slf4j.LoggerFactory;
 public final class HostStatesImpl implements HostStates, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HostStatesImpl.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 1, TimeUnit.MINUTES);
 
     private static final long DEFAULT_REFRESH_INTERVAL_IN_MS = TimeUnit.SECONDS.toMillis(10);
 
@@ -129,7 +131,7 @@ public final class HostStatesImpl implements HostStates, Closeable
         }
         catch (IOException e)
         {
-            LOG.warn("Unable to retrieve host states", e);
+            THROTTLED_LOGGER.warn("Unable to retrieve host states", e);
         }
 
         return false;
