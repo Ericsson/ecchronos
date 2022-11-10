@@ -59,6 +59,7 @@
 
         <!-- Dependency versions -->
         <io.netty.version>4.1.69.Final</io.netty.version>
+        <io.micrometer.version>1.9.2</io.micrometer.version>
         <io.dropwizard.metrics.version>4.2.10</io.dropwizard.metrics.version>
         <cassandra.driver.core.version>4.14.1</cassandra.driver.core.version>
         <guava.version>18.0</guava.version>
@@ -109,7 +110,7 @@
         <com.mycila.license-maven-plugin.version>3.0</com.mycila.license-maven-plugin.version>
         <io.fabric8.docker-maven-plugin.version>0.35.0</io.fabric8.docker-maven-plugin.version>
         <org.apache.servicemix.tooling.depends-maven-plugin.version>1.2</org.apache.servicemix.tooling.depends-maven-plugin.version>
-        <org.apache.karaf.tooling.karaf-maven-plugin.version>3.0.3</org.apache.karaf.tooling.karaf-maven-plugin.version>
+        <org.apache.karaf.tooling.karaf-maven-plugin.version>4.2.7</org.apache.karaf.tooling.karaf-maven-plugin.version>
         <org.jacoco.jacoco-maven-plugin.version>0.8.4</org.jacoco.jacoco-maven-plugin.version>
         <org.codehaus.mojo.exec-maven-plugin.version>3.0.0</org.codehaus.mojo.exec-maven-plugin.version>
         <org.codehaus.mojo.license-maven-plugin.version>1.19</org.codehaus.mojo.license-maven-plugin.version>
@@ -198,13 +199,23 @@
 
             <!-- Metrics -->
             <dependency>
-                <groupId>io.dropwizard.metrics</groupId>
-                <artifactId>metrics-core</artifactId>
-                <version>${io.dropwizard.metrics.version}</version>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-core</artifactId>
+                <version>${io.micrometer.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-prometheus</artifactId>
+                <version>${io.micrometer.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-jmx</artifactId>
+                <version>${io.micrometer.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
-                <artifactId>metrics-jmx</artifactId>
+                <artifactId>metrics-core</artifactId>
                 <version>${io.dropwizard.metrics.version}</version>
             </dependency>
 
@@ -230,7 +241,20 @@
                         <groupId>com.github.spotbugs</groupId>
                         <artifactId>spotbugs-annotations</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>io.dropwizard.metrics</groupId>
+                        <artifactId>metrics-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.hdrhistogram</groupId>
+                        <artifactId>HdrHistogram</artifactId>
+                    </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>com.datastax.oss</groupId>
+                <artifactId>java-driver-metrics-micrometer</artifactId>
+                <version>${cassandra.driver.core.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.datastax.oss</groupId>
@@ -351,12 +375,6 @@
             <dependency>
                 <groupId>io.prometheus</groupId>
                 <artifactId>simpleclient_servlet</artifactId>
-                <version>${io.prometheus.simpleclient}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.prometheus</groupId>
-                <artifactId>simpleclient_dropwizard</artifactId>
                 <version>${io.prometheus.simpleclient}</version>
             </dependency>
 

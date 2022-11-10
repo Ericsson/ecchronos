@@ -14,27 +14,22 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
-import com.codahale.metrics.MetricRegistry;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
@@ -46,31 +41,34 @@ import static org.mockito.Mockito.doReturn;
 @RunWith(MockitoJUnitRunner.class)
 public class TestTableRepairMetricsImpl
 {
-    private static final String METRIC_TIMER_TYPE = "timers";
-    private static final String METRIC_GAUGE_TYPE = "gauges";
-    private static MBeanServer PLATFORM_MBEAN_SERVER = ManagementFactory.getPlatformMBeanServer();
-
-    @Rule
-    public TemporaryFolder metricsFolder = new TemporaryFolder();
+    private static final String TEST_KEYSPACE = "test_keyspace";
+    private static final String TEST_TABLE1 = "test_table1";
+    private static final String TEST_TABLE2 = "test_table2";
 
     @Mock
     private TableStorageStates myTableStorageStates;
 
     private TableRepairMetricsImpl myTableRepairMetricsImpl;
+    private MeterRegistry myMeterRegistry;
 
     @Before
     public void init()
     {
+        // Use composite registry here to simulate real world scenario where we have multiple registries
+        CompositeMeterRegistry compositeMeterRegistry = new CompositeMeterRegistry();
+        // Need at least one registry present in composite to record metrics
+        compositeMeterRegistry.add(new SimpleMeterRegistry());
+        myMeterRegistry = compositeMeterRegistry;
         myTableRepairMetricsImpl = TableRepairMetricsImpl.builder()
                 .withTableStorageStates(myTableStorageStates)
-                .withStatisticsDirectory(metricsFolder.getRoot().getAbsolutePath())
-                .withMetricRegistry(new MetricRegistry())
+                .withMeterRegistry(myMeterRegistry)
                 .build();
     }
 
     @After
     public void cleanup()
     {
+        myMeterRegistry.close();
         myTableRepairMetricsImpl.close();
     }
 
@@ -84,249 +82,255 @@ public class TestTableRepairMetricsImpl
     }
 
     @Test
-    public void testFullRepairedSingleTable() throws Exception
+    public void testFullRepairedSingleTable()
     {
-        TableReference tableReference = tableReference("keyspace", "table");
-
-        doReturn(1000L).when(myTableStorageStates).getDataSize();
+        TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         doReturn(1000L).when(myTableStorageStates).getDataSize(eq(tableReference));
 
         myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
-        myTableRepairMetricsImpl.report();
+        Gauge repairRatio = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_RATIO)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
+                .gauge();
+        assertThat(repairRatio).isNotNull();
+        assertThat(repairRatio.value()).isEqualTo(1.0);
 
-        double tablesRepaired = getMetricValue("TableRepairState", METRIC_GAUGE_TYPE);
-        double dataRepaired = getMetricValue("DataRepairState", METRIC_GAUGE_TYPE);
-
-        assertThat(tablesRepaired).isEqualTo(1.0);
-        assertThat(dataRepaired).isEqualTo(1.0);
+        Gauge dataRepairRatio = myMeterRegistry.find(TableRepairMetricsImpl.DATA_REPAIR_RATIO)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
+                .gauge();
+        assertThat(dataRepairRatio).isNotNull();
+        assertThat(dataRepairRatio.value()).isEqualTo(1.0);
     }
 
     @Test
-    public void testHalfRepairedSingleTable() throws Exception
+    public void testHalfRepairedSingleTable()
     {
-        TableReference tableReference = tableReference("keyspace", "table");
-
-        doReturn(1000L).when(myTableStorageStates).getDataSize();
+        TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         doReturn(1000L).when(myTableStorageStates).getDataSize(eq(tableReference));
 
         myTableRepairMetricsImpl.repairState(tableReference, 1, 1);
-        myTableRepairMetricsImpl.report();
 
-        double tablesRepaired = getMetricValue("TableRepairState", METRIC_GAUGE_TYPE);
-        double dataRepaired = getMetricValue("DataRepairState", METRIC_GAUGE_TYPE);
+        Gauge repairRatio = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_RATIO)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
+                .gauge();
+        assertThat(repairRatio).isNotNull();
+        assertThat(repairRatio.value()).isEqualTo(0.5);
 
-        assertThat(tablesRepaired).isEqualTo(0.5);
-        assertThat(dataRepaired).isEqualTo(0.5);
+        Gauge dataRepairRatio = myMeterRegistry.find(TableRepairMetricsImpl.DATA_REPAIR_RATIO)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
+                .gauge();
+        assertThat(dataRepairRatio).isNotNull();
+        assertThat(dataRepairRatio.value()).isEqualTo(0.5);
     }
 
     @Test
-    public void testFullRepairedTwoTables() throws Exception
+    public void testFullRepairedTwoTables()
     {
-        TableReference tableReference = tableReference("keyspace", "table");
-        TableReference tableReference2 = tableReference("keyspace", "table2");
-
-        doReturn(2000L).when(myTableStorageStates).getDataSize();
+        TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
+        TableReference tableReference2 = tableReference(TEST_KEYSPACE, TEST_TABLE2);
         doReturn(1000L).when(myTableStorageStates).getDataSize(eq(tableReference));
         doReturn(1000L).when(myTableStorageStates).getDataSize(eq(tableReference2));
 
         myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
         myTableRepairMetricsImpl.repairState(tableReference2, 1, 0);
-        myTableRepairMetricsImpl.report();
 
-        double tablesRepaired = getMetricValue("TableRepairState", METRIC_GAUGE_TYPE);
-        double dataRepaired = getMetricValue("DataRepairState", METRIC_GAUGE_TYPE);
+        Gauge repairRatioTable1 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_RATIO)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
+                .gauge();
+        assertThat(repairRatioTable1).isNotNull();
+        assertThat(repairRatioTable1.value()).isEqualTo(1.0);
 
-        assertThat(tablesRepaired).isEqualTo(1.0);
-        assertThat(dataRepaired).isEqualTo(1.0);
+        Gauge dataRepairRatioTable1 = myMeterRegistry.find(TableRepairMetricsImpl.DATA_REPAIR_RATIO)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
+                .gauge();
+        assertThat(dataRepairRatioTable1).isNotNull();
+        assertThat(dataRepairRatioTable1.value()).isEqualTo(1.0);
+
+        Gauge repairRatioTable2 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_RATIO)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2)
+                .gauge();
+        assertThat(repairRatioTable2).isNotNull();
+        assertThat(repairRatioTable2.value()).isEqualTo(1.0);
+
+        Gauge dataRepairRatioTable2 = myMeterRegistry.find(TableRepairMetricsImpl.DATA_REPAIR_RATIO)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2)
+                .gauge();
+        assertThat(dataRepairRatioTable2).isNotNull();
+        assertThat(dataRepairRatioTable2.value()).isEqualTo(1.0);
     }
 
     @Test
-    public void testHalfRepairedTwoTables() throws Exception
+    public void testHalfRepairedTwoTables()
     {
-        TableReference tableReference = tableReference("keyspace", "table");
-        TableReference tableReference2 = tableReference("keyspace", "table2");
-
-        doReturn(2000L).when(myTableStorageStates).getDataSize();
+        TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
+        TableReference tableReference2 = tableReference(TEST_KEYSPACE, TEST_TABLE2);
         doReturn(1000L).when(myTableStorageStates).getDataSize(eq(tableReference));
         doReturn(1000L).when(myTableStorageStates).getDataSize(eq(tableReference2));
 
         myTableRepairMetricsImpl.repairState(tableReference, 1, 1);
         myTableRepairMetricsImpl.repairState(tableReference2, 1, 1);
-        myTableRepairMetricsImpl.report();
 
-        double tablesRepaired = getMetricValue("TableRepairState", METRIC_GAUGE_TYPE);
-        double dataRepaired = getMetricValue("DataRepairState", METRIC_GAUGE_TYPE);
+        Gauge repairRatioTable1 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_RATIO)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
+                .gauge();
+        assertThat(repairRatioTable1).isNotNull();
+        assertThat(repairRatioTable1.value()).isEqualTo(0.5);
 
-        assertThat(tablesRepaired).isEqualTo(0.5);
-        assertThat(dataRepaired).isEqualTo(0.5);
-    }
+        Gauge dataRepairRatioTable1 = myMeterRegistry.find(TableRepairMetricsImpl.DATA_REPAIR_RATIO)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
+                .gauge();
+        assertThat(dataRepairRatioTable1).isNotNull();
+        assertThat(dataRepairRatioTable1.value()).isEqualTo(0.5);
 
-    /**
-     * A test case where there are two tables with different data sizes
-     * and 75% of the data and 50% of the tables have been repaired.
-     */
-    @Test
-    public void testOneRepairedOneNotRepairedTable() throws Exception
-    {
-        TableReference tableReference = tableReference("keyspace", "table");
-        TableReference tableReference2 = tableReference("keyspace", "table2");
+        Gauge repairRatioTable2 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_RATIO)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2)
+                .gauge();
+        assertThat(repairRatioTable2).isNotNull();
+        assertThat(repairRatioTable2.value()).isEqualTo(0.5);
 
-        doReturn(1500L).when(myTableStorageStates).getDataSize();
-        doReturn(1125L).when(myTableStorageStates).getDataSize(eq(tableReference)); // 75%
-        doReturn(375L).when(myTableStorageStates).getDataSize(eq(tableReference2)); // 25%
-
-        myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
-        myTableRepairMetricsImpl.repairState(tableReference2, 0, 1);
-        myTableRepairMetricsImpl.report();
-
-        double tablesRepaired = getMetricValue("TableRepairState", METRIC_GAUGE_TYPE);
-        double dataRepaired = getMetricValue("DataRepairState", METRIC_GAUGE_TYPE);
-
-        assertThat(tablesRepaired).isEqualTo(0.5);
-        assertThat(dataRepaired).isEqualTo(0.75);
+        Gauge dataRepairRatioTable2 = myMeterRegistry.find(TableRepairMetricsImpl.DATA_REPAIR_RATIO)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2)
+                .gauge();
+        assertThat(dataRepairRatioTable2).isNotNull();
+        assertThat(dataRepairRatioTable2.value()).isEqualTo(0.5);
     }
 
     @Test
-    public void testLastRepairedAt() throws Exception
+    public void testLastRepairedAt()
     {
-        TableReference tableReference = tableReference("keyspace", "table");
-        TableReference tableReference2 = tableReference("keyspace", "table2");
+        TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
+        TableReference tableReference2 = tableReference(TEST_KEYSPACE, TEST_TABLE2);
         long expectedLastRepaired = 1234567890L;
         long expectedLastRepaired2 = 9876543210L;
 
         myTableRepairMetricsImpl.lastRepairedAt(tableReference, expectedLastRepaired);
         myTableRepairMetricsImpl.lastRepairedAt(tableReference2, expectedLastRepaired2);
-        myTableRepairMetricsImpl.report();
 
-        double lastRepaired = getMetricValue(metricName(tableReference, "LastRepairedAt"), METRIC_GAUGE_TYPE);
-        double lastRepaired2 = getMetricValue(metricName(tableReference2, "LastRepairedAt"), METRIC_GAUGE_TYPE);
+        Gauge lastRepairedAtTable1 = myMeterRegistry.find(TableRepairMetricsImpl.LAST_REPAIRED_AT)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
+                .gauge();
+        assertThat(lastRepairedAtTable1).isNotNull();
+        assertThat(lastRepairedAtTable1.value()).isEqualTo((double) expectedLastRepaired/1000); // Based on metric registry this is converted to seconds/ms/etc.
 
-        assertThat(lastRepaired).isEqualTo(expectedLastRepaired);
-        assertThat(lastRepaired2).isEqualTo(expectedLastRepaired2);
+        Gauge lastRepairedAtTable2 = myMeterRegistry.find(TableRepairMetricsImpl.LAST_REPAIRED_AT)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2)
+                .gauge();
+        assertThat(lastRepairedAtTable2).isNotNull();
+        assertThat(lastRepairedAtTable2.value()).isEqualTo((double) expectedLastRepaired2/1000); // Based on metric registry this is converted to seconds/ms/etc.
     }
 
     @Test
-    public void testRemainingRepairTime() throws Exception
+    public void testRemainingRepairTime()
     {
-        TableReference tableReference = tableReference("keyspace", "table");
-        TableReference tableReference2 = tableReference("keyspace", "table2");
+        TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
+        TableReference tableReference2 = tableReference(TEST_KEYSPACE, TEST_TABLE2);
         long expectedRemainingRepairTime = 10L;
         long expectedRemainingRepairTime2 = 20L;
 
         myTableRepairMetricsImpl.remainingRepairTime(tableReference, expectedRemainingRepairTime);
         myTableRepairMetricsImpl.remainingRepairTime(tableReference2, expectedRemainingRepairTime2);
-        myTableRepairMetricsImpl.report();
 
-        double remainingRepairTime = getMetricValue(metricName(tableReference, "RemainingRepairTime"), METRIC_GAUGE_TYPE);
-        double remainingRepairTime2 = getMetricValue(metricName(tableReference2, "RemainingRepairTime"), METRIC_GAUGE_TYPE);
+        Gauge remainingRepairTimeTable1 = myMeterRegistry.find(TableRepairMetricsImpl.REMAINING_REPAIR_TIME)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
+                .gauge();
+        assertThat(remainingRepairTimeTable1).isNotNull();
+        assertThat(remainingRepairTimeTable1.value()).isEqualTo((double) expectedRemainingRepairTime/1000); // Based on metric registry this is converted to seconds/ms/etc.
 
-        assertThat(remainingRepairTime).isEqualTo(expectedRemainingRepairTime);
-        assertThat(remainingRepairTime2).isEqualTo(expectedRemainingRepairTime2);
+        Gauge remainingRepairTimeTable2 = myMeterRegistry.find(TableRepairMetricsImpl.REMAINING_REPAIR_TIME)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2)
+                .gauge();
+        assertThat(remainingRepairTimeTable2).isNotNull();
+        assertThat(remainingRepairTimeTable2.value()).isEqualTo((double) expectedRemainingRepairTime2/1000); // Based on metric registry this is converted to seconds/ms/etc.
     }
 
     @Test
-    public void testSuccessfulRepairTiming() throws Exception
+    public void testSuccessfulRepairTiming()
     {
-        TableReference tableReference = tableReference("keyspace", "table");
+        TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         long expectedRepairTime = 1234L;
 
         myTableRepairMetricsImpl.repairTiming(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, true);
-        myTableRepairMetricsImpl.report();
 
-        String metric = metricName(tableReference, "RepairSuccessTime");
+        Timer repairTime = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_TIME_TAKEN)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1, "successful", "true")
+                .timer();
+        assertThat(repairTime).isNotNull();
+        assertThat(repairTime.count()).isEqualTo(1);
+        assertThat(repairTime.max(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
+        assertThat(repairTime.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
 
-        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 1, "Count")).isEqualTo(1);
+        /*assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 1, "Count")).isEqualTo(1);
         assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 2, "Max")).isEqualTo(expectedRepairTime);
         assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 3, "Mean")).isEqualTo(expectedRepairTime);
         assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 4, "Min")).isEqualTo(expectedRepairTime);
         assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 5, "StdDev")).isEqualTo(0);
 
-        assertPercentiles(metric, expectedRepairTime);
+        assertPercentiles(metric, expectedRepairTime);*/
     }
 
     @Test
     public void testFailedRepairTiming() throws Exception
     {
-        TableReference tableReference = tableReference("keyspace", "table");
+        TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         long expectedRepairTime = 12345L;
 
         myTableRepairMetricsImpl.repairTiming(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
-        myTableRepairMetricsImpl.report();
 
-        String metric = metricName(tableReference, "RepairFailedTime");
+        Timer repairTime = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_TIME_TAKEN)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1, "successful", "false")
+                .timer();
+        assertThat(repairTime).isNotNull();
+        assertThat(repairTime.count()).isEqualTo(1);
+        assertThat(repairTime.max(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
+        assertThat(repairTime.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
 
-        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 1, "Count")).isEqualTo(1);
+        //TODO ASSERT MORE?
+        /*assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 1, "Count")).isEqualTo(1);
         assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 2, "Max")).isEqualTo(expectedRepairTime);
         assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 3, "Mean")).isEqualTo(expectedRepairTime);
         assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 4, "Min")).isEqualTo(expectedRepairTime);
         assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 5, "StdDev")).isEqualTo(0);
 
-        assertPercentiles(metric, expectedRepairTime);
+        assertPercentiles(metric, expectedRepairTime);*/
     }
 
+    /**
+     * Test that marks repair for one table as succesful and failed for other table.
+     */
     @Test
-    public void testGetRepairRatio()
+    public void testRepairTimingOneFailedAndOneSuccessful()
     {
-        TableReference tableReference = tableReference("keyspace", "table");
-        TableReference nonExistingRef = tableReference("non", "existing");
-        myTableRepairMetricsImpl.repairState(tableReference, 4, 1);
+        TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
+        TableReference tableReference2 = tableReference(TEST_KEYSPACE, TEST_TABLE2);
+        long successfulRepairTime = 12345L;
+        long failedRepairTime = 123456L;
 
-        assertThat(myTableRepairMetricsImpl.getRepairRatio(tableReference)).contains(0.8);
-        assertThat(myTableRepairMetricsImpl.getRepairRatio(nonExistingRef)).isEmpty();
+        myTableRepairMetricsImpl.repairTiming(tableReference, successfulRepairTime, TimeUnit.MILLISECONDS, true);
+        myTableRepairMetricsImpl.repairTiming(tableReference2, failedRepairTime, TimeUnit.MILLISECONDS, false);
+
+        Timer repairTime1 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_TIME_TAKEN)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1, "successful", "true")
+                .timer();
+        assertThat(repairTime1).isNotNull();
+        assertThat(repairTime1.count()).isEqualTo(1);
+        assertThat(repairTime1.max(TimeUnit.MILLISECONDS)).isEqualTo(successfulRepairTime);
+        assertThat(repairTime1.mean(TimeUnit.MILLISECONDS)).isEqualTo(successfulRepairTime);
+
+        Timer repairTime2 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_TIME_TAKEN)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2, "successful", "false")
+                .timer();
+        assertThat(repairTime2).isNotNull();
+        assertThat(repairTime2.count()).isEqualTo(1);
+        assertThat(repairTime2.max(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTime);
+        assertThat(repairTime2.mean(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTime);
+
+        /*assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 1, "Count")).isEqualTo(1);
+        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 2, "Max")).isEqualTo(expectedRepairTime);
+        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 3, "Mean")).isEqualTo(expectedRepairTime);
+        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 4, "Min")).isEqualTo(expectedRepairTime);
+        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 5, "StdDev")).isEqualTo(0);
+
+        assertPercentiles(metric, expectedRepairTime);*/
     }
 
-    private void assertPercentiles(String metric, long expectedRepairTime) throws Exception
-    {
-        int csvPos = 6; // start csv position for percentiles
 
-        List<String> percentiles = Arrays.asList("50", "75", "95", "98", "99", "999");
-
-        for (String percentile : percentiles)
-        {
-            String percentileAttribute = percentile + "thPercentile";
-            assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, csvPos, percentileAttribute)).isEqualTo(expectedRepairTime);
-            csvPos++;
-        }
-    }
-
-    private double getMetricValue(String metric, String type) throws Exception
-    {
-        return getMetricValue(metric, type, 1, "Value");
-    }
-
-    private double getMetricValue(String metric, String type, int csvPos, String mBeanAttribute) throws Exception
-    {
-        double csvValue = getCsvMetricValue(metric, csvPos);
-        Number mBeanValue = getMBeanValue(metric, type, mBeanAttribute);
-
-        assertThat(csvValue).isEqualTo(mBeanValue.doubleValue());
-
-        return csvValue;
-    }
-
-    private String metricName(TableReference tableReference, String metric)
-    {
-        return tableReference.getKeyspace() + "." + tableReference.getTable() + "-" + tableReference.getId() + "-" + metric;
-    }
-
-    private Number getMBeanValue(String metric, String type, String mBeanAttribute) throws Exception
-    {
-        ObjectName mBeanMetricName = new ObjectName("metrics:name=" + metric + ",type=" + type);
-
-        return (Number) PLATFORM_MBEAN_SERVER.getAttribute(mBeanMetricName, mBeanAttribute);
-    }
-
-    private double getCsvMetricValue(String metric, int csvPos) throws IOException
-    {
-        String metricFile = metric + ".csv";
-        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(new File(metricsFolder.getRoot(), metricFile))))
-        {
-            bufferedReader.readLine(); // CSV header
-            String line = bufferedReader.readLine();
-
-            String[] splits = line.split(",");
-
-            return Double.parseDouble(splits[csvPos]);
-        }
-    }
 }

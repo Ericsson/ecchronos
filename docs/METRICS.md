@@ -6,33 +6,14 @@ The output directory for metrics is specified by `statistics.directory`.
 
 **Note that statistics written to file are not rotated automatically.**
 
-## Reporting
-
-Metrics are exposed in several ways,
-this is controlled by `statistics.reporting.jmx.enabled`, `statistics.reporting.file.enabled`
-and `statistics.reporting.http.enabled` in `ecc.yml` file.
-
-Metrics can be excluded from being reported, this is controlled by `statistics.reporting.jmx.excludedMetrics`
-`statistics.reporting.file.excludedMetrics` `statistics.reporting.http.excludedMetrics` in `ecc.yml` file.
-The `excludedMetrics` takes an array of quoted regexes, for example, `".*"` will exclude all metrics.
-
-Metrics reported through different channels will have different names,
-for example a metric named `test2.table1-96b525b0-5459-11ed-8873-0198b38b98fa-FailedRepairTasks` will have the following
-name based on reporting channel:
-
-* jmx - `test2.table1-96b525b0-5459-11ed-8873-0198b38b98fa-FailedRepairTasks`
-* file - `test2.table1-96b525b0-5459-11ed-8873-0198b38b98fa-FailedRepairTasks`
-* http - `test2_table1_96b525b0_5459_11ed_8873_0198b38b98fa_FailedRepairTasks`
-
 ## Metric prefix
 
-It's possible to define a global prefix for all metric names.
+It's possible to define a global prefix for metrics produced by ecChronos and cassandra driver.
 This is done by specifying a string in `statistics.prefix` in `ecc.yml`.
 The prefix cannot start or end with a dot or any other path separator.
 
-For example if the prefix is `ecChronos` and the metric name is `RepairSuccessTime`,
-the metric name will be `ecChronos.RepairSuccessTime` for jmx and file reporters,
-for http reporter the metric name will be `ecChronos_RepairSuccessTime`.
+For example if the prefix is `ecChronos` and the metric name is `repaired.ratio`,
+the metric name will be `ecChronos.repaired.ratio`.
 
 By specifying an empty string or no value at all, the metric names will not be prefixed.
 
@@ -45,223 +26,143 @@ can be excluded in the same way as ecChronos metrics.
 For list of available driver metrics, refer to sections
 `session-level metrics and node-level metrics` in [datastax reference configuration](https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/configuration/reference/)
 
-## Files
+## Reporting formats
 
-There are four metric files on node-level and four metric files per table.
+Metrics are exposed in several ways,
+this is controlled by `statistics.reporting.jmx.enabled`, `statistics.reporting.file.enabled`
+and `statistics.reporting.http.enabled` in `ecc.yml` file.
+Metrics reported using `file` will be written in CSV format.
 
-### Node-level
+Metrics can be excluded from being reported, this is controlled by `statistics.reporting.jmx.excludedMetrics`
+`statistics.reporting.file.excludedMetrics` `statistics.reporting.http.excludedMetrics` in `ecc.yml` file.
+The `excludedMetrics` takes an array of quoted regexes, for example, `".*"` will exclude all metrics.
 
-* TableRepairState
+Metrics reported through different channels will look differently.
 
-    The percentage of tables that have been repaired within the run interval (0-1).
+For example, assume we hava a metric `repaired.ratio` with tags `keyspace=ks1` and `table=tbl1`.
+The metric name will be `repaired.ratio.keyspace.ks1.table.tbl1` for jmx and file reporters,
+while for http reporter the metric name will be `repaired_ratio` with tags `keyspace=ks1` and `table=tbl1`.
 
-* DataRepairState
+## ecChronos metrics
 
-    The percentage of data(estimate) that has been repaired within the run interval (0-1).
+The following metrics are available:
 
-* RepairSuccessTime
+| Metric name           | Description                              | Tags                        |
+|-----------------------|------------------------------------------|-----------------------------|
+| repaired.ratio        | Ratio of repaired ranges vs total ranges | keyspace, table             |
+| data.repaired.ratio   | Ratio of repaired data vs total data     | keyspace, table             |
+| last.repaired.at      | Timestamp of last repair                 | keyspace, table             |
+| remaining.repair.time | Estimated remaining repair time          | keyspace, table             |
+| repair.time.taken     | Time taken to repair one range           | keyspace, table, successful |
+| repair.tasks.run      | Number of repair tasks run               | keyspace, table, successful |
 
-    Timers for the repair tasks that were successful.
-    A repair task is the repair of one virtual node (or token range).
-    This is a metric that will show latencies and rates (repair tasks/s).
-    The latency values are decayed over time and will roughly display the last five minutes of data. (See Exponentially Decaying Reservoirs in Dropwizard metrics)
+### File metrics examples
 
-* RepairFailedTime
+In the examples below we will be using keyspace `test` and table `table1`.
 
-    Timers for the repair tasks that were not successful.
-    A repair task is the repair of one virtual node (or token range).
-    This is a metric that will show latencies and rates (repair tasks/s).
-    The latency values are decayed over time and will roughly display the last five minutes of data.
-
-#### Examples
-
-| t          | value  |
-|------------|--------|
-| 1524472602 | 0.033  |
-
-TableRepairState
-
-| t          | value  |
-|------------|--------|
-| 1524472602 | 0.1535 |
-
-DataRepairState
-
-In the CSV format the column t is the timestamp in seconds (UNIX Epoch time).
-The values above shows that `3.3%` of tables and `15%` of the total data on the node have been repaired.
-Whether or not table/data is deemed repaired in this case is based on the defined repair interval.
-
-When all tables have been repaired within the defined repair interval a value of `1.0` should be observed for the two metrics.
-Whenever a table passes the interval and becomes eligible for repair the metrics will be reduced accordingly based on the weight of the table.
-If all tables exceed the interval both the metrics would drop down to `0.0`.
-
-So these values does not represent if repair has passed the `gc_grace_seconds`.
-If we are not able to manage that,
-an alarm should be raised.
-Instead this value shows that there is a repair backlog of `96.7%` of the tables and `85%` of the node data.
-
-
-| t          | count | max | mean | min | stddev | p50 | p75 | p95 | p98 | p99 | p999 | mean_rate | m1_rate | m5_rate | m15_rate | rate_unit    | duration_unit |
-|------------|-------|-----|------|-----|--------|-----|-----|-----|-----|-----|------|-----------|---------|---------|----------|--------------|---------------|
-| 1524473322 | 102   | 933 | 218  | 51  | 206    | 105 | 282 | 701 | 769 | 845 | 933  | 0.065     | 1.4     | 0.32    | 0.11     | calls/second | milliseconds  |
-
-RepairSuccessTime
-
-| t          | count | max | mean | min | stddev | p50 | p75 | p95 | p98 | p99 | p999 | mean_rate | m1_rate | m5_rate | m15_rate | rate_unit    | duration_unit |
-|------------|-------|-----|------|-----|--------|-----|-----|-----|-----|-----|------|-----------|---------|---------|----------|--------------|---------------|
-| 1524473322 | 0     | 0   | 0    | 0   | 0      | 0   | 0   | 0   | 0   | 0   | 0    | 0         | 0       | 0       | 0        | calls/second | milliseconds  |
-
-RepairFailedTime
-
-Same as for DataRepairState and TableRepairState the t column is the timestamp.
-The two CSV files described above contains the same type of metrics but have a slightly different meaning.
-The RepairSuccessTime reports repair rate and timing for repair tasks that succeeds,
-while the RepairFailedTime reports the same but for repair tasks that fail.
-Usually the RepairFailedTime should be all zeros but if it's not the reason can usually be found in the system.log.
-
-* T
-
-    The timestamp in seconds (UNIX Epoch time)
-
-* Count
-
-    The number of repair tasks
-
-* Max
-
-    Maximum time taken for repair tasks to complete/fail
-
-* Mean
-
-    Mean time taken for repair tasks to complete/fail
-
-* Min
-
-    Minimum time taken for repair tasks to complete/fail
-
-* Stddev
-
-    Standard deviation for repair tasks to complete/fail
-
-* p50
-
-    50 percentile (median) time taken for repair tasks to complete/fail
-
-* p75->p999
-
-    75->99.9 percentile time taken for repair tasks to complete/fail
-
-* mean_rate
-
-    The mean rate for repair tasks to complete/fail per second
-
-* m1_rate
-
-    The last minutes rate for repair tasks to complete/fail per second
-
-* m5_rate
-
-    The last five minutes rate for repair tasks to complete/fail per second
-
-* m15_rate
-
-    The last fifteen minutes rate for repair tasks to complete/fail per second
-
-
-### Table level
-
-  These metric files will be prefixed by the keyspace name, table name and table id they represent.
-
-* RepairState
-
-    The percentage of tables that have been repaired within the run interval (0-1).
-
-* LastRepairedAt
-
-    The time the table was last completely repaired according to the local node (milliseconds since epoch).
-
-* RepairSuccessTime
-
-    Timers for the repair sessions that were successful.
-
-* RepairFailedTime
-
-    Timers for the repair session that were not successful.
-
-* RemainingRepairTime
-
-    The effective remaining repair time (in milliseconds) for the table to be fully repaired (time ecChronos waits for cassandra to perform repair).
-
-* FailedRepairTasks
-
-    The counter for the repair tasks that have failed for the table.
-    A repair task is the repair of one vnode (or token range).
-
-* SucceededRepairTasks
-
-    The counter for the repair tasks that have succeeded for the table.
-    A repair task is the repair of one vnode (or token range).
-
-#### Examples
+#### repairedRatio.keyspace.test.table.table1
 
 | t          | value  |
 |------------|--------|
 | 1524472602 | 0.33   |
 
-\[\<metric prefix\>\]\<keyspace\>.\<table\>-\<table-id\>-RepairState
+This metric shows the ratio of repaired ranges vs total ranges for the table.
+In this case, the table has been `33%` repaired within the run interval.
 
-Similar to the value presented in TableRepairState and DataRepairState this value shows the percentage of ranges repaired for a specific table.
-In this case the table has been `33%` repaired within the run interval.
-If the local node initiated the repair this value should go to `1.0`.
-If another node initiates the repair this value could differ as shown above.
+#### data.repaired.ratio.keyspace.test.table.table1
 
+| t          | value |
+|------------|-------|
+| 1524472602 | 0.5   |
+
+This metric shows the ratio of repaired data vs total data for the table.
+In this case, `50%` of the table data has been repaired within the run interval.
+
+#### lastRepairedAt.keyspace.test.table.table1
 
 | t          | value          |
 |------------|----------------|
 | 1524472602 | 1524395220751  |
 
-\[\<metric prefix\>\]\<keyspace\>.\<table\>-\<table-id\>-LastRepairedAt
-
-This value represents the last time the node perceived all of this tables ranges to be repaired.
+The value represents the last time the node perceived all of this tables ranges to be repaired.
 The value is in milliseconds since UNIX epoch time.
 If this value is beyond the alarm intervals an alarm should have been sent.
+
+#### remainingRepairTime.keyspace.test.table.table1
 
 | t          | value    |
 |------------|----------|
 | 1647956237 | 55740    |
-
-\[\<metric prefix\>\]\<keyspace\>.\<table\>-\<table-id\>-RemainingRepairTime
 
 The value represents the effective remaining repair time for the table to be fully repaired in milliseconds.
 This is the time ecChronos will have to wait for Cassandra to perform repair,
 this is an estimation based on the last repair of the table.
 The value should be `0` if there is no repair ongoing for this table.
 
-| t          | count | mean_rate | m1_rate  | m5_rate  | m15_rate | rate_unit     |
-|------------|-------|-----------|----------|----------|----------|---------------|
-| 1660042648 | 0     | 0.000000  | 0.000000 | 0.000000 | 0.000000 | events/second |
+#### repairTimeTaken.keyspace.test.successful.true.table.table1
 
-\[\<metric prefix\>\]\<keyspace\>.\<table\>-\<table-id\>-FailedRepairTasks
+| t          | count | max | mean | min | stddev | p50 | p75 | p95 | p98 | p99 | p999 | mean_rate | m1_rate | m5_rate | m15_rate | rate_unit    | duration_unit |
+|------------|-------|-----|------|-----|--------|-----|-----|-----|-----|-----|------|-----------|---------|---------|----------|--------------|---------------|
+| 1524473322 | 102   | 933 | 218  | 51  | 206    | 105 | 282 | 701 | 769 | 845 | 933  | 0.065     | 1.4     | 0.32    | 0.11     | calls/second | milliseconds  |
 
+This metric reports repair rate and timing for successful repair tasks.
+
+* T
+
+  The timestamp in seconds (UNIX Epoch time)
+
+* Count
+
+  The number of repair tasks
+
+* Max
+
+  Maximum time taken for repair tasks to complete/fail
+
+* Mean
+
+  Mean time taken for repair tasks to complete/fail
+
+* Min
+
+  Minimum time taken for repair tasks to complete/fail
+
+* Stddev
+
+  Standard deviation for repair tasks to complete/fail
+
+* p50
+
+  50 percentile (median) time taken for repair tasks to complete/fail
+
+* p75->p999
+
+  75->99.9 percentile time taken for repair tasks to complete/fail
+
+* mean_rate
+
+  The mean rate for repair tasks to complete/fail per second
+
+* m1_rate
+
+  The last minutes rate for repair tasks to complete/fail per second
+
+* m5_rate
+
+  The last five minutes rate for repair tasks to complete/fail per second
+
+* m15_rate
+
+  The last fifteen minutes rate for repair tasks to complete/fail per second
+
+#### repairTasksRun.keyspace.test.successful.true.table.table1
 
 | t          | count | mean_rate | m1_rate  | m5_rate   | m15_rate  | rate_unit     |
 |------------|-------|-----------|----------|-----------|-----------|---------------|
 | 1660213991 | 102   | 0.044732  | 3.000000 | 14.000000 | 42.000000 | events/second |
-
-\[\<metric prefix\>\]\<keyspace\>.\<table\>-\<table-id\>-SucceededRepairTasks
 
 The count represents the total amount of failed/succeeded repair tasks for the table.
 The mean rate is the rate at which events have occurred since the beginning.
 The `m1_rate`, `m5_rate` and `m_15_rate` are the rates at which events have occurred for the past 1 minute,
 5 minutes and 15 minutes.
 For example an `m1_rate` of `15` would mean that 15 events have occurred in the past minute.
-
-For `\[\<metric prefix\>\]\<keyspace\>.\<table\>-\<table-id\>-FailedRepairTasks`, `m1_rate`, `m5_rate` and `m15_rate` should be close to `0`
-in healthy clusters. A positive rate might indicate a problem and warrant a look into the logs.
-If repairs are not running, the `m1_rate`, `m5_rate` and `m15_rate` will show `0`.
-
-For `\[\<metric prefix\>\]\<keyspace\>.\<table\>-\<table-id\>-SucceededRepairTasks`, `m1_rate`, `m5_rate` and `m15_rate` should always be
-a positive number.
-If the `m1_rate`, `m5_rate` or `m15_rate` report `0`, that means that no repairs have succeeded or no repairs have run.
-
-These 2 metrics could be viewed together to view the ratio between failed and succeeded repair tasks as well as total repair tasks.

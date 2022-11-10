@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<features xmlns="http://karaf.apache.org/xmlns/features/v1.2.1" name="karaf-feature">
+<features xmlns="http://karaf.apache.org/xmlns/features/v1.4.0" name="karaf-feature">
     <feature name="karaf-feature" description="karaf-feature" version="${project.version}">
+        <feature prerequisite="true">wrap</feature>
         <details>Utility module creating a feature file for OSGi</details>
         <bundle>mvn:com.ericsson.bss.cassandra.ecchronos/fm/${project.version}</bundle>
         <bundle>mvn:com.ericsson.bss.cassandra.ecchronos/connection/${project.version}</bundle>
@@ -12,8 +13,8 @@
         <bundle>mvn:io.netty/netty-handler/${io.netty.version}</bundle>
         <bundle>mvn:io.netty/netty-codec/${io.netty.version}</bundle>
         <bundle>mvn:io.netty/netty-resolver/${io.netty.version}</bundle>
+        <bundle>wrap:mvn:io.micrometer/micrometer-core/${io.micrometer.version}</bundle>
         <bundle>mvn:io.dropwizard.metrics/metrics-core/${io.dropwizard.metrics.version}</bundle>
-        <bundle>mvn:io.dropwizard.metrics/metrics-jmx/${io.dropwizard.metrics.version}</bundle>
         <bundle>mvn:com.datastax.oss/java-driver-core/${cassandra.driver.core.version}</bundle>
         <bundle>mvn:com.datastax.oss/java-driver-query-builder/${cassandra.driver.core.version}</bundle>
         <bundle>mvn:com.google.guava/guava/${guava.version}</bundle>

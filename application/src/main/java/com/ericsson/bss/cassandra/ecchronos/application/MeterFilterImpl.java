@@ -15,19 +15,20 @@
 
 package com.ericsson.bss.cassandra.ecchronos.application;
 
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricFilter;
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.config.MeterFilter;
+import io.micrometer.core.instrument.config.MeterFilterReply;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
-public final class MetricFilterImpl implements MetricFilter
+public class MeterFilterImpl implements MeterFilter
 {
-    private static final Logger LOG = LoggerFactory.getLogger(MetricFilterImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MeterFilterImpl.class);
     private final Set<String> myExcludedMetrics;
 
-    public MetricFilterImpl(final Set<String> excludedMetrics)
+    public MeterFilterImpl(final Set<String> excludedMetrics)
     {
         myExcludedMetrics = excludedMetrics;
     }
@@ -35,21 +36,21 @@ public final class MetricFilterImpl implements MetricFilter
     /**
      * Checks if metric with provided name should be reported or not.
      *
-     * @param name   The metric name
-     * @param metric The metric
-     * @return false if metric should be excluded, true if it should be included.
+     * @param id The meter id
+     * @return MeterFilterReply.DENY if metric should be excluded, MeterFilterReply.NEUTRAL if it should be included.
      */
     @Override
-    public boolean matches(final String name, final Metric metric)
+    public MeterFilterReply accept(final Meter.Id id)
     {
-        if (myExcludedMetrics == null)
+        String name = id.getName();
+        if (myExcludedMetrics == null || name == null)
         {
-            return true;
+            return MeterFilterReply.NEUTRAL;
         }
-        if (myExcludedMetrics.contains(name))
+        if (myExcludedMetrics.contains(id.getName()))
         {
             LOG.trace("Metric with name '{}' matches excluded metrics, will filter this metric out.", name);
-            return false;
+            return MeterFilterReply.DENY;
         }
         for (String excludeMetricRegex : myExcludedMetrics)
         {
@@ -57,9 +58,9 @@ public final class MetricFilterImpl implements MetricFilter
             {
                 LOG.trace("Metric with name '{}' matches excluded metric regex '{}', will filter this metric out.",
                         name, excludeMetricRegex);
-                return false;
+                return MeterFilterReply.DENY;
             }
         }
-        return true;
+        return MeterFilterReply.NEUTRAL;
     }
 }

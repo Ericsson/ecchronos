@@ -14,7 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection.impl;
 
-import com.codahale.metrics.MetricRegistry;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.auth.AuthProvider;
@@ -32,6 +31,7 @@ import com.datastax.oss.driver.internal.core.loadbalancing.DcInferringLoadBalanc
 import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.google.common.collect.ImmutableList;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,7 +120,7 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
         private AuthProvider myAuthProvider = null;
         private SslEngineFactory mySslEngineFactory = null;
         private SchemaChangeListener mySchemaChangeListener = null;
-        private MetricRegistry myMetricRegistry = null;
+        private MeterRegistry myMeterRegistry = null;
 
         public final Builder withLocalhost(final String localhost)
         {
@@ -158,12 +158,6 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
             return this;
         }
 
-        public final Builder withMetricRegistry(final MetricRegistry metricRegistry)
-        {
-            myMetricRegistry = metricRegistry;
-            return this;
-        }
-
         public final Builder withMetricsEnabled(final boolean enabled)
         {
             myIsMetricsEnabled = enabled;
@@ -173,6 +167,12 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
         public final Builder withMetricPrefix(final String prefix)
         {
             myPrefix = prefix;
+            return this;
+        }
+
+        public final Builder withMeterRegistry(final MeterRegistry meterRegistry)
+        {
+            myMeterRegistry = meterRegistry;
             return this;
         }
 
@@ -206,6 +206,8 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
             {
                 loaderBuilder.withStringList(DefaultDriverOption.METRICS_NODE_ENABLED, NODE_METRICS)
                         .withStringList(DefaultDriverOption.METRICS_SESSION_ENABLED, SESSION_METRICS);
+                loaderBuilder.withString(DefaultDriverOption.METRICS_FACTORY_CLASS, "MicrometerMetricsFactory");
+                loaderBuilder.withString(DefaultDriverOption.METRICS_ID_GENERATOR_CLASS, "TaggingMetricIdGenerator");
                 if (builder.myPrefix != null && !builder.myPrefix.isEmpty())
                 {
                     loaderBuilder.withString(DefaultDriverOption.METRICS_ID_GENERATOR_PREFIX, builder.myPrefix);
@@ -218,9 +220,9 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
                 loaderBuilder.withInt(DefaultDriverOption.LOAD_BALANCING_DC_FAILOVER_MAX_NODES_PER_REMOTE_DC,
                         MAX_NODES_PER_DC);
             }
-            if (builder.myMetricRegistry != null)
+            if (builder.myMeterRegistry != null)
             {
-                sessionBuilder.withMetricRegistry(builder.myMetricRegistry);
+                sessionBuilder.withMetricRegistry(builder.myMeterRegistry);
             }
             sessionBuilder.withConfigLoader(loaderBuilder.build());
             return sessionBuilder.build();

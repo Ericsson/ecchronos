@@ -3,6 +3,7 @@ META-INF/
 OSGI-INF/
 build.properties
 pom.xml.versionsBackup
+dependency-reduced-pom.xml
 *~
 *.bak
 .checkstyle

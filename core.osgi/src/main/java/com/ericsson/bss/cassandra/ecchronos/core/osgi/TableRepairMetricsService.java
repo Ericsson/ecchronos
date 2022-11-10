@@ -17,12 +17,12 @@ package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import com.codahale.metrics.MetricRegistry;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetricsImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetricsProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import io.micrometer.core.instrument.Metrics;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -48,14 +48,9 @@ public final class TableRepairMetricsService implements TableRepairMetrics, Tabl
     @Activate
     public void activate(final Configuration configuration)
     {
-        String statisticsDirectory = configuration.metricsDirectory();
-        long reportIntervalInSeconds = configuration.metricsReportIntervalInSeconds();
-
         myDelegateTableRepairMetrics = TableRepairMetricsImpl.builder()
                 .withTableStorageStates(myTableStorageStates)
-                .withStatisticsDirectory(statisticsDirectory)
-                .withMetricRegistry(new MetricRegistry())
-                .withReportInterval(reportIntervalInSeconds, TimeUnit.SECONDS)
+                .withMeterRegistry(Metrics.globalRegistry)
                 .build();
     }
 

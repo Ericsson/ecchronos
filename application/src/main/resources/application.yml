@@ -31,6 +31,10 @@ management:
           include: "readinessState,cassandra"
         liveness:
           include: "livenessState"
+  metrics:
+    export:
+      defaults:
+        enabled: false
 
 #Springdoc config, change springdoc.api-docs.enabled=true to enable swagger ui at <ecchronos:port>/swagger-ui/index.html
 # and API doc at <ecchronos:port>/v3/api-docs.yaml

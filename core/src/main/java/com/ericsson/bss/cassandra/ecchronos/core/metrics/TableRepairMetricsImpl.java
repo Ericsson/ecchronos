@@ -14,80 +14,65 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
-import com.codahale.metrics.CsvReporter;
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.jmx.JmxReporter;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.TimeGauge;
+import io.micrometer.core.instrument.Timer;
 
 import java.io.Closeable;
-import java.io.File;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRepairMetricsProvider, Closeable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(TableRepairMetricsImpl.class);
+    private static final String KEYSPACE_TAG = "keyspace";
+    private static final String TABLE_TAG = "table";
 
-    private static final String DEFAULT_STATISTICS_DIRECTORY = "/var/lib/cassandra/repair/metrics/";
-    private static final long DEFAULT_STATISTICS_REPORT_INTERVAL_IN_MS = TimeUnit.SECONDS.toMillis(60);
+    static final String REPAIR_RATIO = "repaired.ratio";
+    static final String DATA_REPAIR_RATIO = "data.repaired.ratio";
+    static final String LAST_REPAIRED_AT = "last.repaired.at";
+    static final String REMAINING_REPAIR_TIME = "remaining.repair.time";
+    static final String REPAIR_TIME_TAKEN = "repair.time.taken";
+    static final String REPAIR_TASKS_RUN = "repair.tasks.run";
 
-    private final CsvReporter myTopLevelCsvReporter;
-    private final JmxReporter myTopLevelJmxReporter;
+    private final String myRepairRatioMetricName;
+    private final String myDataRepairRatioMetricName;
+    private final String myLastRepairedAtMetricName;
+    private final String myRemainingRepairTimeMetricName;
+    private final String myRepairTimeTakenMetricName;
+    private final String myRepairTasksRunMetricName;
 
-    private final ConcurrentHashMap<TableReference, TableMetricHolder> myTableMetricHolders = new ConcurrentHashMap<>();
-
-    private final MetricRegistry myMetricRegistry;
-    private final NodeMetricHolder myNodeMetricHolder;
-    private final String myMetricPrefix;
+    private final ConcurrentHashMap<TableReference, TableGauges> myTableGauges = new ConcurrentHashMap<>();
+    private final TableStorageStates myTableStorageStates;
+    private final MeterRegistry myMeterRegistry;
 
     private TableRepairMetricsImpl(final Builder builder)
     {
-        myMetricRegistry = Preconditions.checkNotNull(builder.myMetricRegistry,
-                "Metric registry cannot be null");
-        myMetricPrefix = builder.myMetricPrefix;
-
-        myNodeMetricHolder = new NodeMetricHolder(myMetricPrefix, myMetricRegistry,
-                Preconditions.checkNotNull(builder.myTableStorageStates,
-                        "Table storage states cannot be null"));
-
-        File statisticsDirectory = new File(builder.myStatisticsDirectory);
-        if (!statisticsDirectory.exists() && !statisticsDirectory.mkdirs())
+        myTableStorageStates = Preconditions.checkNotNull(builder.myTableStorageStates,
+                "Table storage states cannot be null");
+        myMeterRegistry = Preconditions.checkNotNull(builder.myMeterRegistry, "Meter registry cannot be null");
+        if (builder.myMetricPrefix != null && !builder.myMetricPrefix.isEmpty())
         {
-            LOG.warn("Failed to create statistics directory: {}, csv files will not be generated",
-                    builder.myStatisticsDirectory);
-        }
-
-        if (builder.myIsFileReporting)
-        {
-            myTopLevelCsvReporter = CsvReporter.forRegistry(myMetricRegistry)
-                    .convertDurationsTo(TimeUnit.MILLISECONDS)
-                    .convertRatesTo(TimeUnit.SECONDS)
-                    .filter(builder.myFileMetricFilter)
-                    .build(statisticsDirectory);
-            myTopLevelCsvReporter.start(builder.myReportIntervalInMs, builder.myReportIntervalInMs,
-                    TimeUnit.MILLISECONDS);
+            myRepairRatioMetricName = builder.myMetricPrefix + "." + REPAIR_RATIO;
+            myDataRepairRatioMetricName = builder.myMetricPrefix + "." + DATA_REPAIR_RATIO;
+            myLastRepairedAtMetricName = builder.myMetricPrefix + "." + LAST_REPAIRED_AT;
+            myRemainingRepairTimeMetricName = builder.myMetricPrefix + "." + REMAINING_REPAIR_TIME;
+            myRepairTimeTakenMetricName = builder.myMetricPrefix + "." + REPAIR_TIME_TAKEN;
+            myRepairTasksRunMetricName = builder.myMetricPrefix + "." + REPAIR_TASKS_RUN;
         }
         else
         {
-            myTopLevelCsvReporter = null;
-        }
-        if (builder.myIsJmxReporting)
-        {
-            myTopLevelJmxReporter = JmxReporter.forRegistry(myMetricRegistry)
-                    .filter(builder.myJmxMetricFilter)
-                    .build();
-            myTopLevelJmxReporter.start();
-        }
-        else
-        {
-            myTopLevelJmxReporter = null;
+            myRepairRatioMetricName = REPAIR_RATIO;
+            myDataRepairRatioMetricName = DATA_REPAIR_RATIO;
+            myLastRepairedAtMetricName = LAST_REPAIRED_AT;
+            myRemainingRepairTimeMetricName = REMAINING_REPAIR_TIME;
+            myRepairTimeTakenMetricName = REPAIR_TIME_TAKEN;
+            myRepairTasksRunMetricName = REPAIR_TASKS_RUN;
         }
     }
 
@@ -96,27 +81,49 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
                             final int repairedRanges,
                             final int notRepairedRanges)
     {
-        tableMetricHolder(tableReference).repairState(repairedRanges, notRepairedRanges);
+        createOrGetTableGauges(tableReference).repairRatio(repairedRanges, notRepairedRanges);
+        Gauge.builder(myRepairRatioMetricName, myTableGauges,
+                        (tableGauges) -> tableGauges.get(tableReference).getRepairRatio())
+                .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
+                .register(myMeterRegistry);
+
+        createOrGetTableGauges(tableReference).dataRepairRatio();
+        Gauge.builder(myDataRepairRatioMetricName, myTableGauges,
+                        (tableGauges) -> tableGauges.get(tableReference).getDataRepairRatio())
+                .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
+                .register(myMeterRegistry);
     }
 
     @Override
     public Optional<Double> getRepairRatio(final TableReference tableReference)
     {
-        return Optional.ofNullable(myNodeMetricHolder.getRepairRatio(tableReference));
+        if (myTableGauges.get(tableReference) == null)
+        {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(myTableGauges.get(tableReference).getRepairRatio());
     }
 
     @Override
     public void lastRepairedAt(final TableReference tableReference,
                                final long lastRepairedAt)
     {
-        tableMetricHolder(tableReference).lastRepairedAt(lastRepairedAt);
+        createOrGetTableGauges(tableReference).lastRepairedAt(lastRepairedAt);
+        TimeGauge.builder(myLastRepairedAtMetricName, myTableGauges, TimeUnit.MILLISECONDS,
+                        (tableGauges) -> tableGauges.get(tableReference).getLastRepairedAt())
+                .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
+                .register(myMeterRegistry);
     }
 
     @Override
     public void remainingRepairTime(final TableReference tableReference,
                                     final long remainingRepairTime)
     {
-        tableMetricHolder(tableReference).remainingRepairTime(remainingRepairTime);
+        createOrGetTableGauges(tableReference).remainingRepairTime(remainingRepairTime);
+        TimeGauge.builder(myRemainingRepairTimeMetricName, myTableGauges, TimeUnit.MILLISECONDS,
+                        (tableGauges) -> tableGauges.get(tableReference).getRemainingRepairTime())
+                .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
+                .register(myMeterRegistry);
     }
 
     @Override
@@ -125,50 +132,40 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
                              final TimeUnit timeUnit,
                              final boolean successful)
     {
-        tableMetricHolder(tableReference).repairTiming(timeTaken, timeUnit, successful);
+        Timer.builder(myRepairTimeTakenMetricName)
+                .tags(KEYSPACE_TAG, tableReference.getKeyspace(),
+                      TABLE_TAG, tableReference.getTable(),
+                      "successful", Boolean.toString(successful))
+                .register(myMeterRegistry)
+                .record(timeTaken, timeUnit);
     }
 
     @Override
     public void failedRepairTask(final TableReference tableReference)
     {
-        tableMetricHolder(tableReference).failedRepairTask();
+        Counter.builder(myRepairTasksRunMetricName)
+                .tags(KEYSPACE_TAG, tableReference.getKeyspace(),
+                        TABLE_TAG, tableReference.getTable(),
+                        "successful", Boolean.toString(false))
+                .register(myMeterRegistry).increment();
     }
 
     @Override
     public void succeededRepairTask(final TableReference tableReference)
     {
-        tableMetricHolder(tableReference).succeededRepairTask();
-    }
-
-    @VisibleForTesting
-    void report()
-    {
-        if (myTopLevelCsvReporter != null)
-        {
-            myTopLevelCsvReporter.report();
-        }
+        Counter.builder(myRepairTasksRunMetricName)
+                .tags(KEYSPACE_TAG, tableReference.getKeyspace(),
+                      TABLE_TAG, tableReference.getTable(),
+                      "successful", Boolean.toString(true))
+                .register(myMeterRegistry).increment();
     }
 
     @Override
     public void close()
     {
-        if (myTopLevelCsvReporter != null)
+        for (TableGauges tableGauges : myTableGauges.values())
         {
-            myTopLevelCsvReporter.report();
-            myTopLevelCsvReporter.close();
-        }
-
-        if (myTopLevelJmxReporter != null)
-        {
-            myTopLevelJmxReporter.stop();
-            myTopLevelJmxReporter.close();
-        }
-
-        myNodeMetricHolder.close();
-
-        for (TableMetricHolder tableMetricHolder : myTableMetricHolders.values())
-        {
-            tableMetricHolder.close();
+            tableGauges.close();
         }
     }
 
@@ -180,14 +177,8 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
     public static class Builder
     {
         private TableStorageStates myTableStorageStates;
-        private String myStatisticsDirectory = DEFAULT_STATISTICS_DIRECTORY;
         private String myMetricPrefix = "";
-        private long myReportIntervalInMs = DEFAULT_STATISTICS_REPORT_INTERVAL_IN_MS;
-        private MetricRegistry myMetricRegistry;
-        private MetricFilter myJmxMetricFilter = MetricFilter.ALL;
-        private MetricFilter myFileMetricFilter = MetricFilter.ALL;
-        private boolean myIsJmxReporting = true;
-        private boolean myIsFileReporting = true;
+        private MeterRegistry myMeterRegistry;
 
         /**
          * Build with table storage states.
@@ -198,91 +189,6 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         public Builder withTableStorageStates(final TableStorageStates tableStorageStates)
         {
             myTableStorageStates = tableStorageStates;
-            return this;
-        }
-
-        /**
-         * Build with statistics directory.
-         *
-         * @param statisticsDirectory Statistic directory
-         * @return Builder
-         */
-        public Builder withStatisticsDirectory(final String statisticsDirectory)
-        {
-            myStatisticsDirectory = statisticsDirectory;
-            return this;
-        }
-
-        /**
-         * Build with report interval.
-         *
-         * @param reportInterval Report interval
-         * @param timeUnit The time unit
-         * @return Builder
-         */
-        public Builder withReportInterval(final long reportInterval, final TimeUnit timeUnit)
-        {
-            myReportIntervalInMs = timeUnit.toMillis(reportInterval);
-            return this;
-        }
-
-        /**
-         * Build with metric registry.
-         *
-         * @param metricRegistry Metric registry
-         * @return Builder
-         */
-        public Builder withMetricRegistry(final MetricRegistry metricRegistry)
-        {
-            myMetricRegistry = metricRegistry;
-            return this;
-        }
-
-        /**
-         * Build with metric filter for jmx reporter.
-         *
-         * @param metricFilter Metric filter
-         * @return Builder
-         */
-        public Builder withJmxMetricFilter(final MetricFilter metricFilter)
-        {
-            myJmxMetricFilter = metricFilter;
-            return this;
-        }
-
-        /**
-         * Build with metric filter for file reporter.
-         *
-         * @param metricFilter Metric filter
-         * @return Builder
-         */
-        public Builder withFileMetricFilter(final MetricFilter metricFilter)
-        {
-            myFileMetricFilter = metricFilter;
-            return this;
-        }
-
-        /**
-         * Build with JMX reporting.
-         *
-         * @param isJmxReporting whether to report metrics over JMX
-         * @return Builder
-         */
-        public Builder withJmxReporting(final boolean isJmxReporting)
-        {
-            myIsJmxReporting = isJmxReporting;
-            return this;
-        }
-
-        /**
-         * Build with file reporting.
-         *
-         * @param isFileReporting whether to report metrics to a file
-         * @return Builder
-         */
-        public Builder withFileReporting(final boolean isFileReporting)
-        {
-            myIsFileReporting = isFileReporting;
             return this;
         }
 
@@ -299,6 +205,18 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         }
 
         /**
+         * Build with meter registry.
+         *
+         * @param meterRegistry meter registry to register all metrics towards
+         * @return Builder
+         */
+        public Builder withMeterRegistry(final MeterRegistry meterRegistry)
+        {
+            myMeterRegistry = meterRegistry;
+            return this;
+        }
+
+        /**
          * Build table repair metrics.
          *
          * @return TableRepairMetricsImpl
@@ -309,26 +227,23 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         }
     }
 
-    private TableMetricHolder tableMetricHolder(final TableReference tableReference)
+    private TableGauges createOrGetTableGauges(final TableReference tableReference)
     {
-        TableMetricHolder tableMetricHolder = myTableMetricHolders.get(tableReference);
+        TableGauges tableGauges = myTableGauges.get(tableReference);
 
-        if (tableMetricHolder == null)
+        if (tableGauges == null)
         {
-            tableMetricHolder = new TableMetricHolder(tableReference, myMetricRegistry, myNodeMetricHolder,
-                    myMetricPrefix);
+            tableGauges = new TableGauges(tableReference, myTableStorageStates);
 
-            TableMetricHolder oldTableMetricHolder = myTableMetricHolders.putIfAbsent(tableReference,
-                    tableMetricHolder);
+            TableGauges oldTableGauges = myTableGauges.putIfAbsent(tableReference,
+                    tableGauges);
 
-            if (oldTableMetricHolder != null)
+            if (oldTableGauges != null)
             {
-                tableMetricHolder = oldTableMetricHolder;
+                tableGauges = oldTableGauges;
             }
-
-            tableMetricHolder.init();
         }
 
-        return tableMetricHolder;
+        return tableGauges;
     }
 }

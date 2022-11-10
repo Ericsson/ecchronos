@@ -14,7 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config;
 
-import com.codahale.metrics.MetricRegistry;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.metadata.EndPoint;
@@ -39,6 +38,7 @@ import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.Test;
 import org.springframework.context.ApplicationContext;
 
@@ -321,7 +321,7 @@ public class TestConfig
     public static class TestNativeConnectionProvider implements NativeConnectionProvider
     {
         public TestNativeConnectionProvider(Config config, Supplier<Security.CqlSecurity> cqlSecurity,
-                DefaultRepairConfigurationProvider defaultRepairConfigurationProvider, MetricRegistry metricRegistry)
+                DefaultRepairConfigurationProvider defaultRepairConfigurationProvider, MeterRegistry meterRegistry)
         {
             // Empty constructor
         }
