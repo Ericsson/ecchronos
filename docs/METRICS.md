@@ -50,7 +50,6 @@ The following metrics are available:
 | Metric name           | Description                              | Tags                        |
 |-----------------------|------------------------------------------|-----------------------------|
 | repaired.ratio        | Ratio of repaired ranges vs total ranges | keyspace, table             |
-| data.repaired.ratio   | Ratio of repaired data vs total data     | keyspace, table             |
 | last.repaired.at      | Timestamp of last repair                 | keyspace, table             |
 | remaining.repair.time | Estimated remaining repair time          | keyspace, table             |
 | repair.time.taken     | Time taken to repair one range           | keyspace, table, successful |
@@ -68,15 +67,6 @@ In the examples below we will be using keyspace `test` and table `table1`.
 
 This metric shows the ratio of repaired ranges vs total ranges for the table.
 In this case, the table has been `33%` repaired within the run interval.
-
-#### data.repaired.ratio.keyspace.test.table.table1
-
-| t          | value |
-|------------|-------|
-| 1524472602 | 0.5   |
-
-This metric shows the ratio of repaired data vs total data for the table.
-In this case, `50%` of the table data has been repaired within the run interval.
 
 #### lastRepairedAt.keyspace.test.table.table1
 

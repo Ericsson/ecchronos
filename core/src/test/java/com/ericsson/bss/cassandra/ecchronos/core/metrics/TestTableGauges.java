@@ -14,33 +14,22 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
-import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestTableGauges
 {
-    private final TableReference myTableReference = tableReference("keyspace", "table");
-
     private TableGauges myTableGauges;
-
-    @Mock
-    TableStorageStates myTableStorageStates;
 
     @Before
     public void init()
     {
-        myTableGauges = new TableGauges(myTableReference, myTableStorageStates);
+        myTableGauges = new TableGauges();
     }
 
     @Test
@@ -97,61 +86,5 @@ public class TestTableGauges
         myTableGauges.repairRatio(expectedRepaired, expectedNotRepaired);
 
         assertThat(myTableGauges.getRepairRatio()).isEqualTo(expectedRatio);
-    }
-
-    @Test
-    public void testUpdateDataRepairRatioAllRepaired()
-    {
-        int expectedRepaired = 1;
-        int expectedNotRepaired = 0;
-        double expectedRatio = 1;
-
-        when(myTableStorageStates.getDataSize(eq(myTableReference))).thenReturn(100L);
-        myTableGauges.repairRatio(expectedRepaired, expectedNotRepaired);
-        myTableGauges.dataRepairRatio();
-
-        assertThat(myTableGauges.getDataRepairRatio()).isEqualTo(expectedRatio);
-    }
-
-    @Test
-    public void testUpdateDataRepairRatioHalfRepaired()
-    {
-        int expectedRepaired = 1;
-        int expectedNotRepaired = 1;
-        double expectedRatio = 0.5;
-
-        when(myTableStorageStates.getDataSize(eq(myTableReference))).thenReturn(100L);
-        myTableGauges.repairRatio(expectedRepaired, expectedNotRepaired);
-        myTableGauges.dataRepairRatio();
-
-        assertThat(myTableGauges.getDataRepairRatio()).isEqualTo(expectedRatio);
-    }
-
-    @Test
-    public void testUpdateDataRepairRatioNothingRepaired()
-    {
-        int expectedRepaired = 0;
-        int expectedNotRepaired = 1;
-        double expectedRatio = 0;
-
-        when(myTableStorageStates.getDataSize(eq(myTableReference))).thenReturn(100L);
-        myTableGauges.repairRatio(expectedRepaired, expectedNotRepaired);
-        myTableGauges.dataRepairRatio();
-
-        assertThat(myTableGauges.getDataRepairRatio()).isEqualTo(expectedRatio);
-    }
-
-    @Test
-    public void testUpdateDataRepairRatioNoData()
-    {
-        int expectedRepaired = 0;
-        int expectedNotRepaired = 0;
-        double expectedRatio = 1;
-
-        when(myTableStorageStates.getDataSize(eq(myTableReference))).thenReturn(0L);
-        myTableGauges.repairRatio(expectedRepaired, expectedNotRepaired);
-        myTableGauges.dataRepairRatio();
-
-        assertThat(myTableGauges.getDataRepairRatio()).isEqualTo(expectedRatio);
     }
 }

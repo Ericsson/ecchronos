@@ -33,15 +33,13 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
     private static final String KEYSPACE_TAG = "keyspace";
     private static final String TABLE_TAG = "table";
 
-    static final String REPAIR_RATIO = "repaired.ratio";
-    static final String DATA_REPAIR_RATIO = "data.repaired.ratio";
+    static final String REPAIRED_RATIO = "repaired.ratio";
     static final String LAST_REPAIRED_AT = "last.repaired.at";
     static final String REMAINING_REPAIR_TIME = "remaining.repair.time";
     static final String REPAIR_TIME_TAKEN = "repair.time.taken";
     static final String REPAIR_TASKS_RUN = "repair.tasks.run";
 
-    private final String myRepairRatioMetricName;
-    private final String myDataRepairRatioMetricName;
+    private final String myRepairedRatioMetricName;
     private final String myLastRepairedAtMetricName;
     private final String myRemainingRepairTimeMetricName;
     private final String myRepairTimeTakenMetricName;
@@ -58,8 +56,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         myMeterRegistry = Preconditions.checkNotNull(builder.myMeterRegistry, "Meter registry cannot be null");
         if (builder.myMetricPrefix != null && !builder.myMetricPrefix.isEmpty())
         {
-            myRepairRatioMetricName = builder.myMetricPrefix + "." + REPAIR_RATIO;
-            myDataRepairRatioMetricName = builder.myMetricPrefix + "." + DATA_REPAIR_RATIO;
+            myRepairedRatioMetricName = builder.myMetricPrefix + "." + REPAIRED_RATIO;
             myLastRepairedAtMetricName = builder.myMetricPrefix + "." + LAST_REPAIRED_AT;
             myRemainingRepairTimeMetricName = builder.myMetricPrefix + "." + REMAINING_REPAIR_TIME;
             myRepairTimeTakenMetricName = builder.myMetricPrefix + "." + REPAIR_TIME_TAKEN;
@@ -67,8 +64,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         }
         else
         {
-            myRepairRatioMetricName = REPAIR_RATIO;
-            myDataRepairRatioMetricName = DATA_REPAIR_RATIO;
+            myRepairedRatioMetricName = REPAIRED_RATIO;
             myLastRepairedAtMetricName = LAST_REPAIRED_AT;
             myRemainingRepairTimeMetricName = REMAINING_REPAIR_TIME;
             myRepairTimeTakenMetricName = REPAIR_TIME_TAKEN;
@@ -82,14 +78,8 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
                             final int notRepairedRanges)
     {
         createOrGetTableGauges(tableReference).repairRatio(repairedRanges, notRepairedRanges);
-        Gauge.builder(myRepairRatioMetricName, myTableGauges,
+        Gauge.builder(myRepairedRatioMetricName, myTableGauges,
                         (tableGauges) -> tableGauges.get(tableReference).getRepairRatio())
-                .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
-                .register(myMeterRegistry);
-
-        createOrGetTableGauges(tableReference).dataRepairRatio();
-        Gauge.builder(myDataRepairRatioMetricName, myTableGauges,
-                        (tableGauges) -> tableGauges.get(tableReference).getDataRepairRatio())
                 .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
                 .register(myMeterRegistry);
     }
@@ -233,7 +223,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
 
         if (tableGauges == null)
         {
-            tableGauges = new TableGauges(tableReference, myTableStorageStates);
+            tableGauges = new TableGauges();
 
             TableGauges oldTableGauges = myTableGauges.putIfAbsent(tableReference,
                     tableGauges);

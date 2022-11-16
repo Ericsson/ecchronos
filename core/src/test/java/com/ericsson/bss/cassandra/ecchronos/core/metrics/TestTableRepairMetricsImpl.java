@@ -17,9 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -88,17 +86,11 @@ public class TestTableRepairMetricsImpl
         doReturn(1000L).when(myTableStorageStates).getDataSize(eq(tableReference));
 
         myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
-        Gauge repairRatio = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_RATIO)
+        Gauge repairRatio = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
                 .gauge();
         assertThat(repairRatio).isNotNull();
         assertThat(repairRatio.value()).isEqualTo(1.0);
-
-        Gauge dataRepairRatio = myMeterRegistry.find(TableRepairMetricsImpl.DATA_REPAIR_RATIO)
-                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
-                .gauge();
-        assertThat(dataRepairRatio).isNotNull();
-        assertThat(dataRepairRatio.value()).isEqualTo(1.0);
     }
 
     @Test
@@ -109,17 +101,11 @@ public class TestTableRepairMetricsImpl
 
         myTableRepairMetricsImpl.repairState(tableReference, 1, 1);
 
-        Gauge repairRatio = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_RATIO)
+        Gauge repairRatio = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
                 .gauge();
         assertThat(repairRatio).isNotNull();
         assertThat(repairRatio.value()).isEqualTo(0.5);
-
-        Gauge dataRepairRatio = myMeterRegistry.find(TableRepairMetricsImpl.DATA_REPAIR_RATIO)
-                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
-                .gauge();
-        assertThat(dataRepairRatio).isNotNull();
-        assertThat(dataRepairRatio.value()).isEqualTo(0.5);
     }
 
     @Test
@@ -133,29 +119,17 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
         myTableRepairMetricsImpl.repairState(tableReference2, 1, 0);
 
-        Gauge repairRatioTable1 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_RATIO)
+        Gauge repairRatioTable1 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
                 .gauge();
         assertThat(repairRatioTable1).isNotNull();
         assertThat(repairRatioTable1.value()).isEqualTo(1.0);
 
-        Gauge dataRepairRatioTable1 = myMeterRegistry.find(TableRepairMetricsImpl.DATA_REPAIR_RATIO)
-                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
-                .gauge();
-        assertThat(dataRepairRatioTable1).isNotNull();
-        assertThat(dataRepairRatioTable1.value()).isEqualTo(1.0);
-
-        Gauge repairRatioTable2 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_RATIO)
+        Gauge repairRatioTable2 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2)
                 .gauge();
         assertThat(repairRatioTable2).isNotNull();
         assertThat(repairRatioTable2.value()).isEqualTo(1.0);
-
-        Gauge dataRepairRatioTable2 = myMeterRegistry.find(TableRepairMetricsImpl.DATA_REPAIR_RATIO)
-                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2)
-                .gauge();
-        assertThat(dataRepairRatioTable2).isNotNull();
-        assertThat(dataRepairRatioTable2.value()).isEqualTo(1.0);
     }
 
     @Test
@@ -169,29 +143,17 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.repairState(tableReference, 1, 1);
         myTableRepairMetricsImpl.repairState(tableReference2, 1, 1);
 
-        Gauge repairRatioTable1 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_RATIO)
+        Gauge repairRatioTable1 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
                 .gauge();
         assertThat(repairRatioTable1).isNotNull();
         assertThat(repairRatioTable1.value()).isEqualTo(0.5);
 
-        Gauge dataRepairRatioTable1 = myMeterRegistry.find(TableRepairMetricsImpl.DATA_REPAIR_RATIO)
-                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
-                .gauge();
-        assertThat(dataRepairRatioTable1).isNotNull();
-        assertThat(dataRepairRatioTable1.value()).isEqualTo(0.5);
-
-        Gauge repairRatioTable2 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_RATIO)
+        Gauge repairRatioTable2 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2)
                 .gauge();
         assertThat(repairRatioTable2).isNotNull();
         assertThat(repairRatioTable2.value()).isEqualTo(0.5);
-
-        Gauge dataRepairRatioTable2 = myMeterRegistry.find(TableRepairMetricsImpl.DATA_REPAIR_RATIO)
-                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2)
-                .gauge();
-        assertThat(dataRepairRatioTable2).isNotNull();
-        assertThat(dataRepairRatioTable2.value()).isEqualTo(0.5);
     }
 
     @Test
@@ -257,18 +219,10 @@ public class TestTableRepairMetricsImpl
         assertThat(repairTime.count()).isEqualTo(1);
         assertThat(repairTime.max(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
         assertThat(repairTime.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
-
-        /*assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 1, "Count")).isEqualTo(1);
-        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 2, "Max")).isEqualTo(expectedRepairTime);
-        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 3, "Mean")).isEqualTo(expectedRepairTime);
-        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 4, "Min")).isEqualTo(expectedRepairTime);
-        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 5, "StdDev")).isEqualTo(0);
-
-        assertPercentiles(metric, expectedRepairTime);*/
     }
 
     @Test
-    public void testFailedRepairTiming() throws Exception
+    public void testFailedRepairTiming()
     {
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         long expectedRepairTime = 12345L;
@@ -282,19 +236,10 @@ public class TestTableRepairMetricsImpl
         assertThat(repairTime.count()).isEqualTo(1);
         assertThat(repairTime.max(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
         assertThat(repairTime.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
-
-        //TODO ASSERT MORE?
-        /*assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 1, "Count")).isEqualTo(1);
-        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 2, "Max")).isEqualTo(expectedRepairTime);
-        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 3, "Mean")).isEqualTo(expectedRepairTime);
-        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 4, "Min")).isEqualTo(expectedRepairTime);
-        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 5, "StdDev")).isEqualTo(0);
-
-        assertPercentiles(metric, expectedRepairTime);*/
     }
 
     /**
-     * Test that marks repair for one table as succesful and failed for other table.
+     * Test that marks repair for one table as successful and failed for other table.
      */
     @Test
     public void testRepairTimingOneFailedAndOneSuccessful()
@@ -322,15 +267,5 @@ public class TestTableRepairMetricsImpl
         assertThat(repairTime2.count()).isEqualTo(1);
         assertThat(repairTime2.max(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTime);
         assertThat(repairTime2.mean(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTime);
-
-        /*assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 1, "Count")).isEqualTo(1);
-        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 2, "Max")).isEqualTo(expectedRepairTime);
-        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 3, "Mean")).isEqualTo(expectedRepairTime);
-        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 4, "Min")).isEqualTo(expectedRepairTime);
-        assertThat(getMetricValue(metric, METRIC_TIMER_TYPE, 5, "StdDev")).isEqualTo(0);
-
-        assertPercentiles(metric, expectedRepairTime);*/
     }
-
-
 }

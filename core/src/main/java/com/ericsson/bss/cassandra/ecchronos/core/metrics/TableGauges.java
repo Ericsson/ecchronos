@@ -14,9 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
-import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-
 import java.io.Closeable;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -26,18 +23,8 @@ import java.util.concurrent.atomic.AtomicReference;
 public class TableGauges implements Closeable
 {
     private final AtomicReference<Double> myRepairRatio = new AtomicReference<>(0.0);
-    private final AtomicReference<Double> myDataRepairRatio = new AtomicReference<>(0.0);
     private final AtomicReference<Long> myLastRepairedAt = new AtomicReference<>(0L);
     private final AtomicReference<Long> myRemainingRepairTime = new AtomicReference<>(0L);
-
-    private final TableStorageStates myTableStorageStates;
-    private final TableReference myTableReference;
-
-    public TableGauges(final TableReference tableReference, final TableStorageStates tableStorageStates)
-    {
-        myTableReference = tableReference;
-        myTableStorageStates = tableStorageStates;
-    }
 
     /**
      * Update repair ratio.
@@ -64,31 +51,6 @@ public class TableGauges implements Closeable
     Double getRepairRatio()
     {
         return myRepairRatio.get();
-    }
-
-    /**
-     * Update repair ratio of data.
-     */
-    void dataRepairRatio()
-    {
-        double dataRepairRatio = 1.0; // 100% when no data to repair
-        long totalDataSize = myTableStorageStates.getDataSize(myTableReference);
-        if (totalDataSize != 0)
-        {
-            double repairedDataSize = myRepairRatio.get() * totalDataSize;
-            dataRepairRatio = repairedDataSize / totalDataSize;
-        }
-        myDataRepairRatio.set(dataRepairRatio);
-    }
-
-    /**
-     * Get repair ratio of data.
-     *
-     * @return ratio of repaired data
-     */
-    Double getDataRepairRatio()
-    {
-        return myDataRepairRatio.get();
     }
 
     /**
