@@ -25,6 +25,7 @@
 
     <artifactId>application</artifactId>
     <description>Standalone application of ecChronos</description>
+    <name>EcChronos Application</name>
 
     <dependencies>
         <!-- Internal -->

@@ -25,6 +25,7 @@
     <artifactId>fm</artifactId>
     <packaging>bundle</packaging>
     <description>Interfaces that ecChronos rely on for fault reporting</description>
+    <name>EcChronos Fault Management</name>
 
     <build>
         <plugins>

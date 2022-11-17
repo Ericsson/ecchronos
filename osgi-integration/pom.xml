@@ -24,6 +24,7 @@
     </parent>
     <artifactId>osgi-integration</artifactId>
     <description>Integration tests for an OSGi environment</description>
+    <name>EcChronos OSGi Integration</name>
 
     <dependencies>
         <!-- Internal dependencies -->

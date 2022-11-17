@@ -26,6 +26,7 @@
     <packaging>bundle</packaging>
     <artifactId>rest.osgi</artifactId>
     <description>OSGi service wrappers for the REST classes</description>
+    <name>EcChronos REST OSGi</name>
 
     <dependencies>
         <!-- Internal -->

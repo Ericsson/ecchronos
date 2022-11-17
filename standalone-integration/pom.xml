@@ -24,6 +24,7 @@
     </parent>
     <artifactId>standalone-integration</artifactId>
     <description>Integration tests for a standalone environment</description>
+    <name>EcChronos Standalone Integration</name>
 
     <dependencies>
         <!-- Internal -->
