@@ -1,3 +1,25 @@
+# Upgrade to 4.x
+
+Version 4.x has revamped metrics produced by ecChronos.
+The following 2 major changes have been made:
+
+* Aggregated metrics are removed (TableRepairState, DataRepairState, RepairSuccessTime and RepairFailedTime).
+* Metric names no longer contain keyspace and table, keyspace and table are used as tags instead.
+
+The following metrics are available per table:
+
+| Metric pre 4.x       | Metric in 4.x         |
+|----------------------|-----------------------|
+| RepairSuccessTime    | repair.time.taken     |
+| RepairFailedTime     | repair.time.taken     |
+| LastRepairedAt       | last.repaired.at      |
+| RepairState          | repaired.ratio        |
+| RemainingRepairTime  | remaining.repair.time |
+| SucceededRepairTasks | repair.tasks.run      |
+| FailedRepairTasks    | repair.tasks.run      |
+
+For more information about new metrics, see [metrics documentation](METRICS.md).
+
 # Upgrade to 3.x
 
 ## From versions 2.x
