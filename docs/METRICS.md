@@ -47,13 +47,12 @@ while for http reporter the metric name will be `repaired_ratio` with tags `keys
 
 The following metrics are available:
 
-| Metric name           | Description                              | Tags                        |
-|-----------------------|------------------------------------------|-----------------------------|
-| repaired.ratio        | Ratio of repaired ranges vs total ranges | keyspace, table             |
-| last.repaired.at      | Timestamp of last repair                 | keyspace, table             |
-| remaining.repair.time | Estimated remaining repair time          | keyspace, table             |
-| repair.time.taken     | Time taken to repair one range           | keyspace, table, successful |
-| repair.tasks.run      | Number of repair tasks run               | keyspace, table, successful |
+| Metric name           | Description                                       | Tags                        |
+|-----------------------|---------------------------------------------------|-----------------------------|
+| repaired.ratio        | Ratio of repaired ranges vs total ranges          | keyspace, table             |
+| last.repaired.at      | Timestamp of last repair                          | keyspace, table             |
+| remaining.repair.time | Estimated remaining repair time                   | keyspace, table             |
+| repair.sessions       | Time taken for repair sessions to succeed or fail | keyspace, table, successful |
 
 ### File metrics examples
 
@@ -89,13 +88,14 @@ This is the time ecChronos will have to wait for Cassandra to perform repair,
 this is an estimation based on the last repair of the table.
 The value should be `0` if there is no repair ongoing for this table.
 
-#### repairTimeTaken.keyspace.test.successful.true.table.table1
+#### repairSessions.keyspace.test.successful.true.table.table1
 
 | t          | count | max | mean | min | stddev | p50 | p75 | p95 | p98 | p99 | p999 | mean_rate | m1_rate | m5_rate | m15_rate | rate_unit    | duration_unit |
 |------------|-------|-----|------|-----|--------|-----|-----|-----|-----|-----|------|-----------|---------|---------|----------|--------------|---------------|
 | 1524473322 | 102   | 933 | 218  | 51  | 206    | 105 | 282 | 701 | 769 | 845 | 933  | 0.065     | 1.4     | 0.32    | 0.11     | calls/second | milliseconds  |
 
-This metric reports repair rate and timing for successful repair tasks.
+This metric reports repair rate and timing for successful repair sessions.
+There will be a similar metric called `repairSessions.keyspace.test.successful.false.table.table1` if any repair sessions have failed.
 
 * T
 
@@ -103,56 +103,44 @@ This metric reports repair rate and timing for successful repair tasks.
 
 * Count
 
-  The number of repair tasks
+  The number of repair sessions that succeeded
 
 * Max
 
-  Maximum time taken for repair tasks to complete/fail
+  Maximum time taken for a repair session to succeed
 
 * Mean
 
-  Mean time taken for repair tasks to complete/fail
+  Mean time taken for repair sessions to succeed
 
 * Min
 
-  Minimum time taken for repair tasks to complete/fail
+  Minimum time taken for a repair session to succeed
 
 * Stddev
 
-  Standard deviation for repair tasks to complete/fail
+  Standard deviation for repair sessions to succeed
 
 * p50
 
-  50 percentile (median) time taken for repair tasks to complete/fail
+  50 percentile (median) time taken for repair sessions to succeed
 
 * p75->p999
 
-  75->99.9 percentile time taken for repair tasks to complete/fail
+  75->99.9 percentile time taken for repair sessions to succeed
 
 * mean_rate
 
-  The mean rate for repair tasks to complete/fail per second
+  The mean rate for repair sessions to succeed per second
 
 * m1_rate
 
-  The last minutes rate for repair tasks to complete/fail per second
+  The last minutes rate for repair sessions to succeed per second
 
 * m5_rate
 
-  The last five minutes rate for repair tasks to complete/fail per second
+  The last five minutes rate for repair sessions to succeed per second
 
 * m15_rate
 
-  The last fifteen minutes rate for repair tasks to complete/fail per second
-
-#### repairTasksRun.keyspace.test.successful.true.table.table1
-
-| t          | count | mean_rate | m1_rate  | m5_rate   | m15_rate  | rate_unit     |
-|------------|-------|-----------|----------|-----------|-----------|---------------|
-| 1660213991 | 102   | 0.044732  | 3.000000 | 14.000000 | 42.000000 | events/second |
-
-The count represents the total amount of failed/succeeded repair tasks for the table.
-The mean rate is the rate at which events have occurred since the beginning.
-The `m1_rate`, `m5_rate` and `m_15_rate` are the rates at which events have occurred for the past 1 minute,
-5 minutes and 15 minutes.
-For example an `m1_rate` of `15` would mean that 15 events have occurred in the past minute.
+  The last fifteen minutes rate for repair sessions to succeed per second

@@ -214,7 +214,7 @@ public class ECChronosInternals implements Closeable
         }
 
         @Override
-        public void repairTiming(final TableReference tableReference,
+        public void repairSession(final TableReference tableReference,
                                  final long timeTaken,
                                  final TimeUnit timeUnit,
                                  final boolean successful)
@@ -224,18 +224,6 @@ public class ECChronosInternals implements Closeable
                 LOG.trace("Repair timing for table {} {}ms, it was {}", tableReference,
                         timeUnit.toMillis(timeTaken), successful ? "successful" : "not successful");
             }
-        }
-
-        @Override
-        public void failedRepairTask(final TableReference tableReference)
-        {
-            LOG.debug("Table {} failed repair task", tableReference);
-        }
-
-        @Override
-        public void succeededRepairTask(final TableReference tableReference)
-        {
-            LOG.debug("Table {} succeeded repair task", tableReference);
         }
     }
 

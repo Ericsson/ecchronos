@@ -199,14 +199,14 @@ public class TestTableRepairMetricsImpl
     }
 
     @Test
-    public void testSuccessfulRepairTiming()
+    public void testSuccessfulRepairSession()
     {
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         long expectedRepairTime = 1234L;
 
-        myTableRepairMetricsImpl.repairTiming(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, true);
+        myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, true);
 
-        Timer repairTime = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_TIME_TAKEN)
+        Timer repairTime = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1, "successful", "true")
                 .timer();
         assertThat(repairTime).isNotNull();
@@ -216,14 +216,34 @@ public class TestTableRepairMetricsImpl
     }
 
     @Test
-    public void testFailedRepairTiming()
+    public void testMultipleSuccessfulRepairSessions()
+    {
+        TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
+        long expectedRepairTime1 = 1000L;
+        long expectedRepairTime2 = 2000L;
+        long expectedMeanRepairTime = (expectedRepairTime1 + expectedRepairTime2) / 2;
+
+        myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime1, TimeUnit.MILLISECONDS, true);
+        myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime2, TimeUnit.MILLISECONDS, true);
+
+        Timer repairTime = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1, "successful", "true")
+                .timer();
+        assertThat(repairTime).isNotNull();
+        assertThat(repairTime.count()).isEqualTo(2);
+        assertThat(repairTime.max(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime2);
+        assertThat(repairTime.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedMeanRepairTime);
+    }
+
+    @Test
+    public void testFailedRepairSession()
     {
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         long expectedRepairTime = 12345L;
 
-        myTableRepairMetricsImpl.repairTiming(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
+        myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
 
-        Timer repairTime = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_TIME_TAKEN)
+        Timer repairTime = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1, "successful", "false")
                 .timer();
         assertThat(repairTime).isNotNull();
@@ -232,21 +252,74 @@ public class TestTableRepairMetricsImpl
         assertThat(repairTime.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
     }
 
+    @Test
+    public void testMultipleFailedRepairSessions()
+    {
+        TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
+        long expectedRepairTime1 = 1000L;
+        long expectedRepairTime2 = 2000L;
+        long expectedMeanRepairTime = (expectedRepairTime1 + expectedRepairTime2) / 2;
+
+        myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime1, TimeUnit.MILLISECONDS, false);
+        myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime2, TimeUnit.MILLISECONDS, false);
+
+        Timer repairTime = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1, "successful", "false")
+                .timer();
+        assertThat(repairTime).isNotNull();
+        assertThat(repairTime.count()).isEqualTo(2);
+        assertThat(repairTime.max(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime2);
+        assertThat(repairTime.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedMeanRepairTime);
+    }
+
+    @Test
+    public void testMultipleFailedAndSuccessfulRepairSessions()
+    {
+        TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
+        long successfulRepairTime1 = 1000L;
+        long successfulRepairTime2 = 1000L;
+        long meanSuccessfulRepairTime = (successfulRepairTime1 + successfulRepairTime2) / 2;
+        long failedRepairTime1 = 500L;
+        long failedRepairTime2 = 500L;
+        long meanFailedRepairTime = (failedRepairTime1 + failedRepairTime2) / 2;
+
+        myTableRepairMetricsImpl.repairSession(tableReference, successfulRepairTime1, TimeUnit.MILLISECONDS, true);
+        myTableRepairMetricsImpl.repairSession(tableReference, successfulRepairTime2, TimeUnit.MILLISECONDS, true);
+        myTableRepairMetricsImpl.repairSession(tableReference, failedRepairTime1, TimeUnit.MILLISECONDS, false);
+        myTableRepairMetricsImpl.repairSession(tableReference, failedRepairTime2, TimeUnit.MILLISECONDS, false);
+
+        Timer successfulRepairTimer = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1, "successful", "true")
+                .timer();
+        assertThat(successfulRepairTimer).isNotNull();
+        assertThat(successfulRepairTimer.count()).isEqualTo(2);
+        assertThat(successfulRepairTimer.max(TimeUnit.MILLISECONDS)).isEqualTo(successfulRepairTime1);
+        assertThat(successfulRepairTimer.mean(TimeUnit.MILLISECONDS)).isEqualTo(meanSuccessfulRepairTime);
+
+        Timer failedRepairTimer = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1, "successful", "false")
+                .timer();
+        assertThat(failedRepairTimer).isNotNull();
+        assertThat(failedRepairTimer.count()).isEqualTo(2);
+        assertThat(failedRepairTimer.max(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTime1);
+        assertThat(failedRepairTimer.mean(TimeUnit.MILLISECONDS)).isEqualTo(meanFailedRepairTime);
+    }
+
     /**
      * Test that marks repair for one table as successful and failed for other table.
      */
     @Test
-    public void testRepairTimingOneFailedAndOneSuccessful()
+    public void testRepairSessionOneFailedAndOneSuccessful()
     {
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         TableReference tableReference2 = tableReference(TEST_KEYSPACE, TEST_TABLE2);
         long successfulRepairTime = 12345L;
         long failedRepairTime = 123456L;
 
-        myTableRepairMetricsImpl.repairTiming(tableReference, successfulRepairTime, TimeUnit.MILLISECONDS, true);
-        myTableRepairMetricsImpl.repairTiming(tableReference2, failedRepairTime, TimeUnit.MILLISECONDS, false);
+        myTableRepairMetricsImpl.repairSession(tableReference, successfulRepairTime, TimeUnit.MILLISECONDS, true);
+        myTableRepairMetricsImpl.repairSession(tableReference2, failedRepairTime, TimeUnit.MILLISECONDS, false);
 
-        Timer repairTime1 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_TIME_TAKEN)
+        Timer repairTime1 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1, "successful", "true")
                 .timer();
         assertThat(repairTime1).isNotNull();
@@ -254,7 +327,7 @@ public class TestTableRepairMetricsImpl
         assertThat(repairTime1.max(TimeUnit.MILLISECONDS)).isEqualTo(successfulRepairTime);
         assertThat(repairTime1.mean(TimeUnit.MILLISECONDS)).isEqualTo(successfulRepairTime);
 
-        Timer repairTime2 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_TIME_TAKEN)
+        Timer repairTime2 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2, "successful", "false")
                 .timer();
         assertThat(repairTime2).isNotNull();

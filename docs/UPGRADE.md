@@ -5,18 +5,20 @@ The following 2 major changes have been made:
 
 * Aggregated metrics are removed (TableRepairState, DataRepairState, RepairSuccessTime and RepairFailedTime).
 * Metric names no longer contain keyspace and table, keyspace and table are used as tags instead.
+* Metrics that were split based on success/failure are now merged into one metric,
+the success/failure is indicated by a tag.
 
 The following metrics are available per table:
 
 | Metric pre 4.x       | Metric in 4.x         |
 |----------------------|-----------------------|
-| RepairSuccessTime    | repair.time.taken     |
-| RepairFailedTime     | repair.time.taken     |
+| RepairSuccessTime    | repair.sessions       |
+| RepairFailedTime     | repair.sessions       |
 | LastRepairedAt       | last.repaired.at      |
 | RepairState          | repaired.ratio        |
 | RemainingRepairTime  | remaining.repair.time |
-| SucceededRepairTasks | repair.tasks.run      |
-| FailedRepairTasks    | repair.tasks.run      |
+| SucceededRepairTasks | repair.sessions       |
+| FailedRepairTasks    | repair.sessions       |
 
 For more information about new metrics, see [metrics documentation](METRICS.md).
 

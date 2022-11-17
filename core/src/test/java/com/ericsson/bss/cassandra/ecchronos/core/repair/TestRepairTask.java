@@ -152,7 +152,7 @@ public class TestRepairTask
         assertThat(repairTask.getCompletedRanges()).containsExactlyInAnyOrderElementsOf(ranges);
         assertThat(proxy.myOptions.get(RepairOptions.RANGES_KEY)).isNotEmpty();
 
-        verify(myTableRepairMetrics).repairTiming(eq(TABLE_REFERENCE), anyLong(), any(TimeUnit.class), eq(true));
+        verify(myTableRepairMetrics).repairSession(eq(TABLE_REFERENCE), anyLong(), any(TimeUnit.class), eq(true));
         verify(repairSessions.get(range1)).start();
         verify(repairSessions.get(range2)).start();
         verify(repairSessions.get(range1)).finish(eq(RepairStatus.SUCCESS));
@@ -193,7 +193,7 @@ public class TestRepairTask
         assertThat(repairTask.getCompletedRanges()).containsExactlyElementsOf(ranges);
         assertThat(proxy.myOptions.get(RepairOptions.RANGES_KEY)).isNotEmpty();
 
-        verify(myTableRepairMetrics).repairTiming(eq(TABLE_REFERENCE), anyLong(), any(TimeUnit.class), eq(true));
+        verify(myTableRepairMetrics).repairSession(eq(TABLE_REFERENCE), anyLong(), any(TimeUnit.class), eq(true));
         verify(repairSessions.get(range)).start();
         verify(repairSessions.get(range)).finish(eq(RepairStatus.SUCCESS));
     }
@@ -233,7 +233,7 @@ public class TestRepairTask
         assertThat(repairTask.getCompletedRanges()).containsExactly(range1);
         assertThat(proxy.myOptions.get(RepairOptions.RANGES_KEY)).isNotEmpty();
 
-        verify(myTableRepairMetrics).repairTiming(eq(TABLE_REFERENCE), anyLong(), any(TimeUnit.class), eq(false));
+        verify(myTableRepairMetrics).repairSession(eq(TABLE_REFERENCE), anyLong(), any(TimeUnit.class), eq(false));
         verify(repairSessions.get(range1)).start();
         verify(repairSessions.get(range2)).start();
         verify(repairSessions.get(range1)).finish(eq(RepairStatus.SUCCESS));
@@ -280,7 +280,7 @@ public class TestRepairTask
         assertThat(repairTask.getCompletedRanges()).containsExactly(range1);
         assertThat(proxy.myOptions.get(RepairOptions.RANGES_KEY)).isNotEmpty();
 
-        verify(myTableRepairMetrics).repairTiming(eq(TABLE_REFERENCE), anyLong(), any(TimeUnit.class), eq(false));
+        verify(myTableRepairMetrics).repairSession(eq(TABLE_REFERENCE), anyLong(), any(TimeUnit.class), eq(false));
         verify(repairSessions.get(range1)).start();
         verify(repairSessions.get(range2)).start();
         verify(repairSessions.get(range1)).finish(eq(RepairStatus.SUCCESS));
@@ -327,7 +327,7 @@ public class TestRepairTask
         assertThat(repairTask.getCompletedRanges()).containsExactlyInAnyOrderElementsOf(ranges);
         assertThat(proxy.myOptions.get(RepairOptions.RANGES_KEY)).isNotEmpty();
 
-        verify(myTableRepairMetrics).repairTiming(eq(TABLE_REFERENCE), anyLong(), any(TimeUnit.class), eq(true));
+        verify(myTableRepairMetrics).repairSession(eq(TABLE_REFERENCE), anyLong(), any(TimeUnit.class), eq(true));
         verify(repairSessions.get(range1)).start();
         verify(repairSessions.get(range2)).start();
         verify(repairSessions.get(range1)).finish(eq(RepairStatus.SUCCESS));

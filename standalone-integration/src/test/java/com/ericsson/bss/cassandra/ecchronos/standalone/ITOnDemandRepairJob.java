@@ -286,7 +286,7 @@ public class ITOnDemandRepairJob extends TestBase
         OptionalLong repairedAtWithEccHistory = lastRepairedSince(tableReference, repairedSince, myEccRepairHistory);
         assertThat(repairedAtWithEccHistory.isPresent()).isTrue();
 
-        verify(mockTableRepairMetrics, times(expectedTokenRanges)).repairTiming(eq(tableReference), anyLong(),
+        verify(mockTableRepairMetrics, times(expectedTokenRanges)).repairSession(eq(tableReference), anyLong(),
                 any(TimeUnit.class), eq(true));
     }
 

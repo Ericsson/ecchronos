@@ -17,7 +17,6 @@ package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.base.Preconditions;
-import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.TimeGauge;
@@ -36,14 +35,12 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
     static final String REPAIRED_RATIO = "repaired.ratio";
     static final String LAST_REPAIRED_AT = "last.repaired.at";
     static final String REMAINING_REPAIR_TIME = "remaining.repair.time";
-    static final String REPAIR_TIME_TAKEN = "repair.time.taken";
-    static final String REPAIR_TASKS_RUN = "repair.tasks.run";
+    static final String REPAIR_SESSIONS = "repair.sessions";
 
     private final String myRepairedRatioMetricName;
     private final String myLastRepairedAtMetricName;
     private final String myRemainingRepairTimeMetricName;
-    private final String myRepairTimeTakenMetricName;
-    private final String myRepairTasksRunMetricName;
+    private final String myRepairSessionsMetricName;
 
     private final ConcurrentHashMap<TableReference, TableGauges> myTableGauges = new ConcurrentHashMap<>();
     private final TableStorageStates myTableStorageStates;
@@ -59,16 +56,14 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
             myRepairedRatioMetricName = builder.myMetricPrefix + "." + REPAIRED_RATIO;
             myLastRepairedAtMetricName = builder.myMetricPrefix + "." + LAST_REPAIRED_AT;
             myRemainingRepairTimeMetricName = builder.myMetricPrefix + "." + REMAINING_REPAIR_TIME;
-            myRepairTimeTakenMetricName = builder.myMetricPrefix + "." + REPAIR_TIME_TAKEN;
-            myRepairTasksRunMetricName = builder.myMetricPrefix + "." + REPAIR_TASKS_RUN;
+            myRepairSessionsMetricName = builder.myMetricPrefix + "." + REPAIR_SESSIONS;
         }
         else
         {
             myRepairedRatioMetricName = REPAIRED_RATIO;
             myLastRepairedAtMetricName = LAST_REPAIRED_AT;
             myRemainingRepairTimeMetricName = REMAINING_REPAIR_TIME;
-            myRepairTimeTakenMetricName = REPAIR_TIME_TAKEN;
-            myRepairTasksRunMetricName = REPAIR_TASKS_RUN;
+            myRepairSessionsMetricName = REPAIR_SESSIONS;
         }
     }
 
@@ -117,37 +112,17 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
     }
 
     @Override
-    public void repairTiming(final TableReference tableReference,
-                             final long timeTaken,
-                             final TimeUnit timeUnit,
-                             final boolean successful)
+    public void repairSession(final TableReference tableReference,
+                              final long timeTaken,
+                              final TimeUnit timeUnit,
+                              final boolean successful)
     {
-        Timer.builder(myRepairTimeTakenMetricName)
+        Timer.builder(myRepairSessionsMetricName)
                 .tags(KEYSPACE_TAG, tableReference.getKeyspace(),
                       TABLE_TAG, tableReference.getTable(),
                       "successful", Boolean.toString(successful))
                 .register(myMeterRegistry)
                 .record(timeTaken, timeUnit);
-    }
-
-    @Override
-    public void failedRepairTask(final TableReference tableReference)
-    {
-        Counter.builder(myRepairTasksRunMetricName)
-                .tags(KEYSPACE_TAG, tableReference.getKeyspace(),
-                        TABLE_TAG, tableReference.getTable(),
-                        "successful", Boolean.toString(false))
-                .register(myMeterRegistry).increment();
-    }
-
-    @Override
-    public void succeededRepairTask(final TableReference tableReference)
-    {
-        Counter.builder(myRepairTasksRunMetricName)
-                .tags(KEYSPACE_TAG, tableReference.getKeyspace(),
-                      TABLE_TAG, tableReference.getTable(),
-                      "successful", Boolean.toString(true))
-                .register(myMeterRegistry).increment();
     }
 
     @Override
