@@ -83,7 +83,6 @@ public class TestTableRepairMetricsImpl
     public void testFullRepairedSingleTable()
     {
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
-        doReturn(1000L).when(myTableStorageStates).getDataSize(eq(tableReference));
 
         myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
         Gauge repairRatio = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
@@ -97,7 +96,6 @@ public class TestTableRepairMetricsImpl
     public void testHalfRepairedSingleTable()
     {
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
-        doReturn(1000L).when(myTableStorageStates).getDataSize(eq(tableReference));
 
         myTableRepairMetricsImpl.repairState(tableReference, 1, 1);
 
@@ -113,8 +111,6 @@ public class TestTableRepairMetricsImpl
     {
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         TableReference tableReference2 = tableReference(TEST_KEYSPACE, TEST_TABLE2);
-        doReturn(1000L).when(myTableStorageStates).getDataSize(eq(tableReference));
-        doReturn(1000L).when(myTableStorageStates).getDataSize(eq(tableReference2));
 
         myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
         myTableRepairMetricsImpl.repairState(tableReference2, 1, 0);
@@ -137,8 +133,6 @@ public class TestTableRepairMetricsImpl
     {
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         TableReference tableReference2 = tableReference(TEST_KEYSPACE, TEST_TABLE2);
-        doReturn(1000L).when(myTableStorageStates).getDataSize(eq(tableReference));
-        doReturn(1000L).when(myTableStorageStates).getDataSize(eq(tableReference2));
 
         myTableRepairMetricsImpl.repairState(tableReference, 1, 1);
         myTableRepairMetricsImpl.repairState(tableReference2, 1, 1);
