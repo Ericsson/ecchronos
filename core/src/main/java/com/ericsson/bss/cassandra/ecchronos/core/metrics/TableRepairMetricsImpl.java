@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -33,12 +34,22 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
     private static final String TABLE_TAG = "table";
 
     static final String REPAIRED_RATIO = "repaired.ratio";
-    static final String LAST_REPAIRED_AT = "last.repaired.at";
+    static final String TIME_SINCE_LAST_REPAIRED = "time.since.last.repaired";
     static final String REMAINING_REPAIR_TIME = "remaining.repair.time";
     static final String REPAIR_SESSIONS = "repair.sessions";
 
+    @VisibleForTesting
+    interface Clock
+    {
+        long timeNow();
+    }
+
+    @VisibleForTesting
+    static Clock clock = () -> System.currentTimeMillis();
+
+
     private final String myRepairedRatioMetricName;
-    private final String myLastRepairedAtMetricName;
+    private final String myTimeSinceLastRepairedMetricName;
     private final String myRemainingRepairTimeMetricName;
     private final String myRepairSessionsMetricName;
 
@@ -54,14 +65,14 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         if (builder.myMetricPrefix != null && !builder.myMetricPrefix.isEmpty())
         {
             myRepairedRatioMetricName = builder.myMetricPrefix + "." + REPAIRED_RATIO;
-            myLastRepairedAtMetricName = builder.myMetricPrefix + "." + LAST_REPAIRED_AT;
+            myTimeSinceLastRepairedMetricName = builder.myMetricPrefix + "." + TIME_SINCE_LAST_REPAIRED;
             myRemainingRepairTimeMetricName = builder.myMetricPrefix + "." + REMAINING_REPAIR_TIME;
             myRepairSessionsMetricName = builder.myMetricPrefix + "." + REPAIR_SESSIONS;
         }
         else
         {
             myRepairedRatioMetricName = REPAIRED_RATIO;
-            myLastRepairedAtMetricName = LAST_REPAIRED_AT;
+            myTimeSinceLastRepairedMetricName = TIME_SINCE_LAST_REPAIRED;
             myRemainingRepairTimeMetricName = REMAINING_REPAIR_TIME;
             myRepairSessionsMetricName = REPAIR_SESSIONS;
         }
@@ -94,8 +105,8 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
                                final long lastRepairedAt)
     {
         createOrGetTableGauges(tableReference).lastRepairedAt(lastRepairedAt);
-        TimeGauge.builder(myLastRepairedAtMetricName, myTableGauges, TimeUnit.MILLISECONDS,
-                        (tableGauges) -> tableGauges.get(tableReference).getLastRepairedAt())
+        TimeGauge.builder(myTimeSinceLastRepairedMetricName, myTableGauges, TimeUnit.MILLISECONDS,
+                        (tableGauges) -> clock.timeNow() - tableGauges.get(tableReference).getLastRepairedAt())
                 .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
                 .register(myMeterRegistry);
     }

@@ -47,12 +47,12 @@ while for http reporter the metric name will be `repaired_ratio` with tags `keys
 
 The following metrics are available:
 
-| Metric name           | Description                                       | Tags                        |
-|-----------------------|---------------------------------------------------|-----------------------------|
-| repaired.ratio        | Ratio of repaired ranges vs total ranges          | keyspace, table             |
-| last.repaired.at      | Timestamp of last repair                          | keyspace, table             |
-| remaining.repair.time | Estimated remaining repair time                   | keyspace, table             |
-| repair.sessions       | Time taken for repair sessions to succeed or fail | keyspace, table, successful |
+| Metric name              | Description                                       | Tags                        |
+|--------------------------|---------------------------------------------------|-----------------------------|
+| repaired.ratio           | Ratio of repaired ranges vs total ranges          | keyspace, table             |
+| time.since.last.repaired | The amount of time since table was fully repaired | keyspace, table             |
+| remaining.repair.time    | Estimated remaining repair time                   | keyspace, table             |
+| repair.sessions          | Time taken for repair sessions to succeed or fail | keyspace, table, successful |
 
 ### File metrics examples
 
@@ -67,15 +67,14 @@ In the examples below we will be using keyspace `test` and table `table1`.
 This metric shows the ratio of repaired ranges vs total ranges for the table.
 In this case, the table has been `33%` repaired within the run interval.
 
-#### lastRepairedAt.keyspace.test.table.table1
+#### timeSinceLastRepaired.keyspace.test.table.table1
 
-| t          | value          |
-|------------|----------------|
-| 1524472602 | 1524395220751  |
+| t          | value |
+|------------|-------|
+| 1524472602 | 10000 |
 
-The value represents the last time the node perceived all of this tables ranges to be repaired.
-The value is in milliseconds since UNIX epoch time.
-If this value is beyond the alarm intervals an alarm should have been sent.
+The value represents the duration in milliseconds since the table was fully repaired.
+In this case, the table was fully repaired 10 seconds ago.
 
 #### remainingRepairTime.keyspace.test.table.table1
 

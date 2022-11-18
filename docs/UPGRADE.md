@@ -10,15 +10,15 @@ the success/failure is indicated by a tag.
 
 The following metrics are available per table:
 
-| Metric pre 4.x       | Metric in 4.x         |
-|----------------------|-----------------------|
-| RepairSuccessTime    | repair.sessions       |
-| RepairFailedTime     | repair.sessions       |
-| LastRepairedAt       | last.repaired.at      |
-| RepairState          | repaired.ratio        |
-| RemainingRepairTime  | remaining.repair.time |
-| SucceededRepairTasks | repair.sessions       |
-| FailedRepairTasks    | repair.sessions       |
+| Metric pre 4.x       | Metric in 4.x            |
+|----------------------|--------------------------|
+| RepairSuccessTime    | repair.sessions          |
+| RepairFailedTime     | repair.sessions          |
+| LastRepairedAt       | time.since.last.repaired |
+| RepairState          | repaired.ratio           |
+| RemainingRepairTime  | remaining.repair.time    |
+| SucceededRepairTasks | repair.sessions          |
+| FailedRepairTasks    | repair.sessions          |
 
 For more information about new metrics, see [metrics documentation](METRICS.md).
 
