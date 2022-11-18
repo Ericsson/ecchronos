@@ -95,12 +95,12 @@
 
         <!-- Metrics -->
         <dependency>
-            <groupId>io.dropwizard.metrics</groupId>
-            <artifactId>metrics-core</artifactId>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
-            <artifactId>metrics-jmx</artifactId>
+            <artifactId>metrics-core</artifactId>
         </dependency>
 
         <!-- Cassandra driver -->

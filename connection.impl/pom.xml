@@ -41,6 +41,11 @@
             <artifactId>java-driver-core</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.datastax.oss</groupId>
+            <artifactId>java-driver-metrics-micrometer</artifactId>
+        </dependency>
+
         <!-- OSGi -->
         <dependency>
             <groupId>org.osgi</groupId>
@@ -81,6 +86,26 @@
 
     <build>
         <plugins>
+            <!-- We shade com.datastax.oss:java-driver-metrics-micrometer to make it work in OSGi -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <artifactSet>
+                                <includes>
+                                    <include>com.datastax.oss:java-driver-metrics-micrometer</include>
+                                </includes>
+                            </artifactSet>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
@@ -89,11 +114,15 @@
                     <manifestLocation>META-INF</manifestLocation>
                     <instructions>
                         <Import-Package><![CDATA[
-                            com.datastax.driver.core.*;version="${cassandra.driver.core.version}",
+                            com.datastax.oss.driver.core.*;version="${cassandra.driver.core.version}",
+                            net.jcip.annotations;resolution:=optional,
                             *
                             ]]>
                         </Import-Package>
-                        <Export-Package>com.ericsson.bss.cassandra.ecchronos.connection.impl.*</Export-Package>
+                        <Export-Package>
+                            com.ericsson.bss.cassandra.ecchronos.connection.impl.*,
+                            com.datastax.oss.driver.internal.metrics.micrometer.*
+                        </Export-Package>
                     </instructions>
                 </configuration>
             </plugin>

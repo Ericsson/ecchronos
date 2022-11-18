@@ -2,6 +2,7 @@
 
 ## Version 4.0.0
 
+* Use micrometer as metric framework - Issue #422
 * Allow global prefix for metrics - Issue #417
 * Bump prometheus simpleclient from 0.10.0 to 0.16.0 - Issue #416
 * Move exclusion of metrics to each reporter - Issue #411

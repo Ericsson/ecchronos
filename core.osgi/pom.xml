@@ -120,7 +120,7 @@
                     <manifestLocation>META-INF</manifestLocation>
                     <instructions>
                         <Import-Package><![CDATA[
-                            com.datastax.driver.core.*;version="${cassandra.driver.core.version}",
+                            com.datastax.oss.driver.core.*;version="${cassandra.driver.core.version}",
                             com.google.common.*;version="[16.0.1,20)",
                             *
                             ]]>

@@ -14,8 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
@@ -39,6 +37,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProviderIm
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactoryImpl;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,9 +67,7 @@ public class ECChronosInternals implements Closeable
                               final NativeConnectionProvider nativeConnectionProvider,
                               final JmxConnectionProvider jmxConnectionProvider,
                               final StatementDecorator statementDecorator,
-                              final MetricRegistry metricRegistry,
-                              final MetricFilter jmxMetricFilter,
-                              final MetricFilter fileMetricFilter)
+                              final MeterRegistry meterRegistry)
     {
         myJmxProxyFactory = JmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(jmxConnectionProvider)
@@ -103,13 +100,8 @@ public class ECChronosInternals implements Closeable
 
             myTableRepairMetricsImpl = TableRepairMetricsImpl.builder()
                     .withTableStorageStates(myTableStorageStatesImpl)
-                    .withStatisticsDirectory(configuration.getStatistics().getDirectory().toString())
-                    .withJmxMetricFilter(jmxMetricFilter)
-                    .withFileMetricFilter(fileMetricFilter)
-                    .withMetricRegistry(metricRegistry)
-                    .withJmxReporting(configuration.getStatistics().getReporting().isJmxReportingEnabled())
-                    .withFileReporting(configuration.getStatistics().getReporting().isFileReportingEnabled())
                     .withMetricPrefix(configuration.getStatistics().getPrefix())
+                    .withMeterRegistry(meterRegistry)
                     .build();
         }
         else
@@ -222,7 +214,7 @@ public class ECChronosInternals implements Closeable
         }
 
         @Override
-        public void repairTiming(final TableReference tableReference,
+        public void repairSession(final TableReference tableReference,
                                  final long timeTaken,
                                  final TimeUnit timeUnit,
                                  final boolean successful)
@@ -232,18 +224,6 @@ public class ECChronosInternals implements Closeable
                 LOG.trace("Repair timing for table {} {}ms, it was {}", tableReference,
                         timeUnit.toMillis(timeTaken), successful ? "successful" : "not successful");
             }
-        }
-
-        @Override
-        public void failedRepairTask(final TableReference tableReference)
-        {
-            LOG.debug("Table {} failed repair task", tableReference);
-        }
-
-        @Override
-        public void succeededRepairTask(final TableReference tableReference)
-        {
-            LOG.debug("Table {} succeeded repair task", tableReference);
         }
     }
 

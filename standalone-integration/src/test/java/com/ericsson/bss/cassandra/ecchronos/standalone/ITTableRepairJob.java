@@ -446,7 +446,7 @@ public class ITTableRepairJob extends TestBase
 
         int expectedTokenRanges = expectedRepaired.size();
         verify(mockTableRepairMetrics, times(expectedTokenRanges))
-                .repairTiming(eq(tableReference), anyLong(), any(TimeUnit.class), eq(true));
+                .repairSession(eq(tableReference), anyLong(), any(TimeUnit.class), eq(true));
     }
 
     private void verifyTableRepairedSince(TableReference tableReference, long repairedSince,
@@ -459,7 +459,7 @@ public class ITTableRepairJob extends TestBase
 
         int expectedTokenRanges = expectedRepaired.size();
         verify(mockTableRepairMetrics, times(expectedTokenRanges))
-                .repairTiming(eq(tableReference), anyLong(), any(TimeUnit.class), eq(true));
+                .repairSession(eq(tableReference), anyLong(), any(TimeUnit.class), eq(true));
     }
 
     private boolean isRepairedSince(TableReference tableReference, long repairedSince)

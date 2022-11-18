@@ -17,7 +17,6 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import com.codahale.metrics.MetricRegistry;
 import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.auth.AuthProvider;
@@ -25,6 +24,7 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +45,7 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
                                            final Supplier<Security.CqlSecurity> cqlSecuritySupplier,
                                            final CertificateHandler certificateHandler,
                                            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
-                                           final MetricRegistry metricRegistry)
+                                           final MeterRegistry meterRegistry)
     {
         Config.NativeConnection nativeConfig = config.getConnectionConfig().getCql();
         String host = nativeConfig.getHost();
@@ -74,9 +74,9 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
                 .withRemoteRouting(remoteRouting)
                 .withAuthProvider(authProvider)
                 .withSslEngineFactory(sslEngineFactory)
-                .withMetricRegistry(metricRegistry)
                 .withMetricsEnabled(config.getStatistics().isEnabled())
                 .withMetricPrefix(config.getStatistics().getPrefix())
+                .withMeterRegistry(meterRegistry)
                 .withSchemaChangeListener(defaultRepairConfigurationProvider);
 
         myLocalNativeConnectionProvider = establishConnection(nativeConnectionBuilder,
@@ -86,10 +86,10 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
     public DefaultNativeConnectionProvider(final Config config,
                                            final Supplier<Security.CqlSecurity> cqlSecuritySupplier,
                                            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
-                                           final MetricRegistry metricRegistry)
+                                           final MeterRegistry meterRegistry)
     {
         this(config, cqlSecuritySupplier, new ReloadingCertificateHandler(() -> cqlSecuritySupplier.get().getTls()),
-                defaultRepairConfigurationProvider, metricRegistry);
+                defaultRepairConfigurationProvider, meterRegistry);
     }
 
     private static LocalNativeConnectionProvider establishConnection(

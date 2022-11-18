@@ -14,32 +14,26 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import com.codahale.metrics.MetricFilter;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
-import com.ericsson.bss.cassandra.ecchronos.application.MetricFilterImpl;
 import com.ericsson.bss.cassandra.ecchronos.application.ReloadingCertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.convert.ApplicationConversionService;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.codahale.metrics.MetricRegistry;
 import com.ericsson.bss.cassandra.ecchronos.application.ConfigurationException;
 import com.ericsson.bss.cassandra.ecchronos.application.ReflectionUtils;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
@@ -55,19 +49,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 
-import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.dropwizard.DropwizardExports;
-import io.prometheus.client.exporter.MetricsServlet;
 import org.springframework.format.FormatterRegistry;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 @Configuration
 public class BeanConfigurator
@@ -76,7 +59,6 @@ public class BeanConfigurator
 
     private static final String CONFIGURATION_FILE = "ecc.yml";
     private static final String SECURITY_FILE = "security.yml";
-    private static final String METRICS_ENDPOINT = "/metrics";
 
     private final AtomicReference<Security.CqlSecurity> cqlSecurity = new AtomicReference<>();
     private final AtomicReference<Security.JmxSecurity> jmxSecurity = new AtomicReference<>();
@@ -147,25 +129,19 @@ public class BeanConfigurator
     }
 
     @Bean
-    public MetricsServerProperties metricsServerProperties()
-    {
-        return new MetricsServerProperties();
-    }
-
-    @Bean
     public NativeConnectionProvider nativeConnectionProvider(final Config config,
             final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
-            final MetricRegistry metricRegistry) throws ConfigurationException
+            final MeterRegistry eccCompositeMeterRegistry) throws ConfigurationException
     {
         return getNativeConnectionProvider(config, cqlSecurity::get, defaultRepairConfigurationProvider,
-                metricRegistry);
+                eccCompositeMeterRegistry);
     }
 
     private static NativeConnectionProvider getNativeConnectionProvider(
             final Config configuration,
             final Supplier<Security.CqlSecurity> securitySupplier,
             final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
-            final MetricRegistry metricRegistry) throws ConfigurationException
+            final MeterRegistry meterRegistry) throws ConfigurationException
     {
         Supplier tlsSupplier = () -> securitySupplier.get().getTls();
 
@@ -183,10 +159,10 @@ public class BeanConfigurator
                                     Supplier.class,
                                     CertificateHandler.class,
                                     DefaultRepairConfigurationProvider.class,
-                                    MetricRegistry.class
+                                    MeterRegistry.class
                             },
                             configuration, securitySupplier, certificateHandler, defaultRepairConfigurationProvider,
-                            metricRegistry);
+                            meterRegistry);
         }
         catch (ConfigurationException e)
         {
@@ -203,9 +179,9 @@ public class BeanConfigurator
                 .construct(configuration.getConnectionConfig().getCql().getProviderClass(),
                         new Class<?>[]{
                                 Config.class, Supplier.class, DefaultRepairConfigurationProvider.class,
-                                MetricRegistry.class
+                                MeterRegistry.class
                         },
-                        configuration, securitySupplier, defaultRepairConfigurationProvider, metricRegistry);
+                        configuration, securitySupplier, defaultRepairConfigurationProvider, meterRegistry);
     }
 
     @Bean
@@ -230,84 +206,6 @@ public class BeanConfigurator
     public StatementDecorator statementDecorator(final Config config) throws ConfigurationException
     {
         return getStatementDecorator(config);
-    }
-
-    @Bean
-    public MetricRegistry metricRegistry()
-    {
-        return new MetricRegistry();
-    }
-
-    @Bean
-    public MetricFilter jmxMetricFilter(final Config config)
-    {
-        return new MetricFilterImpl(config.getStatistics().getReporting().getJmx().getExcludedMetrics());
-    }
-
-    @Bean
-    public MetricFilter fileMetricFilter(final Config config)
-    {
-        return new MetricFilterImpl(config.getStatistics().getReporting().getFile().getExcludedMetrics());
-    }
-
-    @Bean
-    public MetricFilter httpMetricFilter(final Config config)
-    {
-        return new MetricFilterImpl(config.getStatistics().getReporting().getHttp().getExcludedMetrics());
-    }
-
-    @Bean
-    ServletRegistrationBean registerMetricsServlet(final MetricRegistry metricRegistry,
-            final MetricFilter httpMetricFilter, final Config config)
-    {
-        CollectorRegistry collectorRegistry = new CollectorRegistry();
-        ServletRegistrationBean servletRegistrationBean = new ServletRegistrationBean();
-        if (config.getStatistics().getReporting().isHttpReportingEnabled())
-        {
-            collectorRegistry.register(new DropwizardExports(metricRegistry, httpMetricFilter));
-        }
-        servletRegistrationBean.setServlet(new MetricsServlet(collectorRegistry));
-        servletRegistrationBean.setUrlMappings(Arrays.asList(METRICS_ENDPOINT + "/*"));
-        return servletRegistrationBean;
-    }
-
-    /**
-     * Creates a bean that filters requests based on URI and port.
-     *
-     * @return the filter that disallows /metric on any other port than metricsServer.port
-     * and disallows any endpoint besides /metric on metricsServer.port.
-     */
-    @Bean
-    public FilterRegistrationBean requestFilter(final MetricsServerProperties metricsServerProperties)
-    {
-        Filter filter = new OncePerRequestFilter()
-        {
-            @Override
-            protected void doFilterInternal(final HttpServletRequest request, final HttpServletResponse response,
-                    final FilterChain filterChain) throws ServletException, IOException
-            {
-                int requestPort = request.getLocalPort();
-                String requestURI = request.getRequestURI();
-                if (metricsServerProperties.isEnabled() && (requestURI.startsWith(METRICS_ENDPOINT)
-                        && requestPort != metricsServerProperties.getPort()))
-                {
-                    response.sendError(HttpStatus.NOT_FOUND.value());
-                }
-                else if (metricsServerProperties.isEnabled() && (!requestURI.startsWith(METRICS_ENDPOINT)
-                        && requestPort == metricsServerProperties.getPort()))
-                {
-                    response.sendError(HttpStatus.NOT_FOUND.value());
-                }
-                else
-                {
-                    filterChain.doFilter(request, response);
-                }
-            }
-        };
-        FilterRegistrationBean filterRegistrationBean = new FilterRegistrationBean();
-        filterRegistrationBean.setFilter(filter);
-        filterRegistrationBean.addUrlPatterns("/*");
-        return filterRegistrationBean;
     }
 
     private static StatementDecorator getStatementDecorator(final Config configuration) throws ConfigurationException

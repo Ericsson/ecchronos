@@ -21,7 +21,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import com.codahale.metrics.MetricRegistry;
 import com.ericsson.bss.cassandra.ecchronos.application.AbstractRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.DefaultJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.DefaultNativeConnectionProvider;
@@ -32,6 +31,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.ApplicationContext;
 
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
@@ -364,8 +364,7 @@ public class Config
         {
             return new Class<?>[]
                     {
-                            Config.class, Supplier.class, DefaultRepairConfigurationProvider.class,
-                            MetricRegistry.class
+                            Config.class, Supplier.class, DefaultRepairConfigurationProvider.class, MeterRegistry.class
                     };
         }
 

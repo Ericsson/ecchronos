@@ -17,16 +17,15 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
 import java.io.Closeable;
 import java.util.Collections;
 
-import com.codahale.metrics.MetricFilter;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.RepairStatsProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.RepairStatsProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.datastax.oss.driver.api.core.CqlSession;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.codahale.metrics.MetricRegistry;
 import com.ericsson.bss.cassandra.ecchronos.application.AbstractRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.ConfigurationException;
 import com.ericsson.bss.cassandra.ecchronos.application.ECChronosInternals;
@@ -70,14 +69,12 @@ public class ECChronos implements Closeable
                      final ReplicationState replicationState,
                      final RepairHistory repairHistory,
                      final RepairHistoryProvider repairHistoryProvider,
-                     final MetricRegistry metricRegistry,
-                     final MetricFilter jmxMetricFilter,
-                     final MetricFilter fileMetricFilter,
-                     final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
+                     final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
+                     final MeterRegistry eccCompositeMeterRegistry)
             throws ConfigurationException
     {
         myECChronosInternals = new ECChronosInternals(configuration, nativeConnectionProvider, jmxConnectionProvider,
-                statementDecorator, metricRegistry, jmxMetricFilter, fileMetricFilter);
+                statementDecorator, eccCompositeMeterRegistry);
 
         CqlSession session = nativeConnectionProvider.getSession();
 

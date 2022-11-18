@@ -146,7 +146,7 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
             end = System.nanoTime();
             executionNanos = end - start;
 
-            myTableRepairMetrics.repairTiming(myTableReference, executionNanos, TimeUnit.NANOSECONDS, successful);
+            myTableRepairMetrics.repairSession(myTableReference, executionNanos, TimeUnit.NANOSECONDS, successful);
         }
 
         lazySleep(executionNanos);

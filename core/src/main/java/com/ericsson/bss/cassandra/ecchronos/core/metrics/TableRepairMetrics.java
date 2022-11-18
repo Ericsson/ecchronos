@@ -56,19 +56,5 @@ public interface TableRepairMetrics
      * @param timeUnit The {@link TimeUnit} used for the time taken.
      * @param successful If the repair was successful or not.
      */
-    void repairTiming(TableReference tableReference, long timeTaken, TimeUnit timeUnit, boolean successful);
-
-    /**
-     * Report that repair task has failed.
-     *
-     * @param tableReference The table the repair was performed on.
-     */
-    void failedRepairTask(TableReference tableReference);
-
-    /**
-     * Report that repair task has succeeded.
-     *
-     * @param tableReference The table the repair was performed on.
-     */
-    void succeededRepairTask(TableReference tableReference);
+    void repairSession(TableReference tableReference, long timeTaken, TimeUnit timeUnit, boolean successful);
 }
