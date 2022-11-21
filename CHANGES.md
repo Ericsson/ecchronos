@@ -3,6 +3,7 @@
 ## Version 4.0.0
 
 * Add time.since.last.repaired metric - Issue #423
+* Bump springboot from 2.7.2 to 2.7.5 - Issue #427
 * Use micrometer as metric framework - Issue #422
 * Allow global prefix for metrics - Issue #417
 * Bump prometheus simpleclient from 0.10.0 to 0.16.0 - Issue #416
