@@ -151,27 +151,32 @@ public class TestTableRepairMetricsImpl
     }
 
     @Test
-    public void testLastRepairedAt()
+    public void testTimeSinceLastRepaired()
     {
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         TableReference tableReference2 = tableReference(TEST_KEYSPACE, TEST_TABLE2);
-        long expectedLastRepaired = 1234567890L;
-        long expectedLastRepaired2 = 9876543210L;
+        long timeNow = System.currentTimeMillis();
+        TableRepairMetricsImpl.clock = () -> timeNow;
+
+        long timeDiff = 1000L;
+        long expectedLastRepaired = timeNow - timeDiff;
+        long timeDiff2 = 5000L;
+        long expectedLastRepaired2 = timeNow - timeDiff2;
 
         myTableRepairMetricsImpl.lastRepairedAt(tableReference, expectedLastRepaired);
         myTableRepairMetricsImpl.lastRepairedAt(tableReference2, expectedLastRepaired2);
 
-        Gauge lastRepairedAtTable1 = myMeterRegistry.find(TableRepairMetricsImpl.LAST_REPAIRED_AT)
+        Gauge lastRepairedAtTable1 = myMeterRegistry.find(TableRepairMetricsImpl.TIME_SINCE_LAST_REPAIRED)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
                 .gauge();
         assertThat(lastRepairedAtTable1).isNotNull();
-        assertThat(lastRepairedAtTable1.value()).isEqualTo((double) expectedLastRepaired/1000); // Based on metric registry this is converted to seconds/ms/etc.
+        assertThat(lastRepairedAtTable1.value()).isEqualTo((double)timeDiff/1000); // Based on metric registry this is converted to seconds/ms/etc.
 
-        Gauge lastRepairedAtTable2 = myMeterRegistry.find(TableRepairMetricsImpl.LAST_REPAIRED_AT)
+        Gauge lastRepairedAtTable2 = myMeterRegistry.find(TableRepairMetricsImpl.TIME_SINCE_LAST_REPAIRED)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2)
                 .gauge();
         assertThat(lastRepairedAtTable2).isNotNull();
-        assertThat(lastRepairedAtTable2.value()).isEqualTo((double) expectedLastRepaired2/1000); // Based on metric registry this is converted to seconds/ms/etc.
+        assertThat(lastRepairedAtTable2.value()).isEqualTo((double)timeDiff2/1000); // Based on metric registry this is converted to seconds/ms/etc.
     }
 
     @Test
