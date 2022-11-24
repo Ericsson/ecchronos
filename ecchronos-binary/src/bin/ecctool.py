@@ -316,7 +316,7 @@ def get_jvm_opts(conf_dir):
     with open(os.path.join(conf_dir, "jvm.options"), "r", encoding="utf-8") as options_file:
         for line in options_file.readlines():
             if line.startswith("-"):
-                jvm_opts += "{0} ".format(line)
+                jvm_opts += "{0} ".format(line.rstrip())
     return jvm_opts + "-Decchronos.config={0}".format(conf_dir)
 
 
