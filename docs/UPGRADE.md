@@ -1,24 +1,32 @@
 # Upgrade to 4.x
 
 Version 4.x has revamped metrics produced by ecChronos.
-The following 2 major changes have been made:
+The following major changes have been made:
 
-* Aggregated metrics are removed (TableRepairState, DataRepairState, RepairSuccessTime and RepairFailedTime).
 * Metric names no longer contain keyspace and table, keyspace and table are used as tags instead.
 * Metrics that were split based on success/failure are now merged into one metric,
 the success/failure is indicated by a tag.
 
-The following metrics are available per table:
+The following table metrics are available:
 
-| Metric pre 4.x       | Metric in 4.x            |
-|----------------------|--------------------------|
-| RepairSuccessTime    | repair.sessions          |
-| RepairFailedTime     | repair.sessions          |
-| LastRepairedAt       | time.since.last.repaired |
-| RepairState          | repaired.ratio           |
-| RemainingRepairTime  | remaining.repair.time    |
-| SucceededRepairTasks | repair.sessions          |
-| FailedRepairTasks    | repair.sessions          |
+| Metric pre 4.x                          | Metric in 4.x              |
+|-----------------------------------------|----------------------------|
+| RepairSuccessTime                       | repair.sessions            |
+| RepairFailedTime                        | repair.sessions            |
+| LastRepairedAt                          | time.since.last.repaired   |
+| RepairState                             | repaired.ratio             |
+| RemainingRepairTime                     | remaining.repair.time      |
+| SucceededRepairTasks                    | repair.sessions            |
+| FailedRepairTasks                       | repair.sessions            |
+
+The following aggregated metrics are available:
+
+| Metric pre 4.x      | Metric in 4.x              |
+|---------------------|----------------------------|
+| RemainingRepairTime | node.remaining.repair.time |
+| TableRepairState    | node.repaired.ratio        |
+| RepairSuccessTime   | node.repair.sessions       |
+| RepairFailedTime    | node.repair.sessions       |
 
 For more information about new metrics, see [metrics documentation](METRICS.md).
 
