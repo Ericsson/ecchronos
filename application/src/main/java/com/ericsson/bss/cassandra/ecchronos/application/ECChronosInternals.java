@@ -100,7 +100,6 @@ public class ECChronosInternals implements Closeable
 
             myTableRepairMetricsImpl = TableRepairMetricsImpl.builder()
                     .withTableStorageStates(myTableStorageStatesImpl)
-                    .withMetricPrefix(configuration.getStatistics().getPrefix())
                     .withMeterRegistry(meterRegistry)
                     .build();
         }

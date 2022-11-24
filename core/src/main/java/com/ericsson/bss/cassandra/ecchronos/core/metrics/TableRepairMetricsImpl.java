@@ -47,12 +47,6 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
     @VisibleForTesting
     static Clock clock = () -> System.currentTimeMillis();
 
-
-    private final String myRepairedRatioMetricName;
-    private final String myTimeSinceLastRepairedMetricName;
-    private final String myRemainingRepairTimeMetricName;
-    private final String myRepairSessionsMetricName;
-
     private final ConcurrentHashMap<TableReference, TableGauges> myTableGauges = new ConcurrentHashMap<>();
     private final TableStorageStates myTableStorageStates;
     private final MeterRegistry myMeterRegistry;
@@ -62,20 +56,6 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         myTableStorageStates = Preconditions.checkNotNull(builder.myTableStorageStates,
                 "Table storage states cannot be null");
         myMeterRegistry = Preconditions.checkNotNull(builder.myMeterRegistry, "Meter registry cannot be null");
-        if (builder.myMetricPrefix != null && !builder.myMetricPrefix.isEmpty())
-        {
-            myRepairedRatioMetricName = builder.myMetricPrefix + "." + REPAIRED_RATIO;
-            myTimeSinceLastRepairedMetricName = builder.myMetricPrefix + "." + TIME_SINCE_LAST_REPAIRED;
-            myRemainingRepairTimeMetricName = builder.myMetricPrefix + "." + REMAINING_REPAIR_TIME;
-            myRepairSessionsMetricName = builder.myMetricPrefix + "." + REPAIR_SESSIONS;
-        }
-        else
-        {
-            myRepairedRatioMetricName = REPAIRED_RATIO;
-            myTimeSinceLastRepairedMetricName = TIME_SINCE_LAST_REPAIRED;
-            myRemainingRepairTimeMetricName = REMAINING_REPAIR_TIME;
-            myRepairSessionsMetricName = REPAIR_SESSIONS;
-        }
     }
 
     @Override
@@ -84,7 +64,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
                             final int notRepairedRanges)
     {
         createOrGetTableGauges(tableReference).repairRatio(repairedRanges, notRepairedRanges);
-        Gauge.builder(myRepairedRatioMetricName, myTableGauges,
+        Gauge.builder(REPAIRED_RATIO, myTableGauges,
                         (tableGauges) -> tableGauges.get(tableReference).getRepairRatio())
                 .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
                 .register(myMeterRegistry);
@@ -105,7 +85,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
                                final long lastRepairedAt)
     {
         createOrGetTableGauges(tableReference).lastRepairedAt(lastRepairedAt);
-        TimeGauge.builder(myTimeSinceLastRepairedMetricName, myTableGauges, TimeUnit.MILLISECONDS,
+        TimeGauge.builder(TIME_SINCE_LAST_REPAIRED, myTableGauges, TimeUnit.MILLISECONDS,
                         (tableGauges) -> clock.timeNow() - tableGauges.get(tableReference).getLastRepairedAt())
                 .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
                 .register(myMeterRegistry);
@@ -116,7 +96,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
                                     final long remainingRepairTime)
     {
         createOrGetTableGauges(tableReference).remainingRepairTime(remainingRepairTime);
-        TimeGauge.builder(myRemainingRepairTimeMetricName, myTableGauges, TimeUnit.MILLISECONDS,
+        TimeGauge.builder(REMAINING_REPAIR_TIME, myTableGauges, TimeUnit.MILLISECONDS,
                         (tableGauges) -> tableGauges.get(tableReference).getRemainingRepairTime())
                 .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
                 .register(myMeterRegistry);
@@ -128,7 +108,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
                               final TimeUnit timeUnit,
                               final boolean successful)
     {
-        Timer.builder(myRepairSessionsMetricName)
+        Timer.builder(REPAIR_SESSIONS)
                 .tags(KEYSPACE_TAG, tableReference.getKeyspace(),
                       TABLE_TAG, tableReference.getTable(),
                       "successful", Boolean.toString(successful))
@@ -153,7 +133,6 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
     public static class Builder
     {
         private TableStorageStates myTableStorageStates;
-        private String myMetricPrefix = "";
         private MeterRegistry myMeterRegistry;
 
         /**
@@ -165,18 +144,6 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         public Builder withTableStorageStates(final TableStorageStates tableStorageStates)
         {
             myTableStorageStates = tableStorageStates;
-            return this;
-        }
-
-        /**
-         * Build with metric prefix.
-         *
-         * @param metricPrefix prefix to prepend all metrics with
-         * @return Builder
-         */
-        public Builder withMetricPrefix(final String metricPrefix)
-        {
-            myMetricPrefix = metricPrefix;
             return this;
         }
 

@@ -26,10 +26,12 @@ import java.util.Set;
 public class MeterFilterImpl implements MeterFilter
 {
     private static final Logger LOG = LoggerFactory.getLogger(MeterFilterImpl.class);
+    private final String myPrefix;
     private final Set<String> myExcludedMetrics;
 
-    public MeterFilterImpl(final Set<String> excludedMetrics)
+    public MeterFilterImpl(final String prefix, final Set<String> excludedMetrics)
     {
+        myPrefix = prefix;
         myExcludedMetrics = excludedMetrics;
     }
 
@@ -62,5 +64,20 @@ public class MeterFilterImpl implements MeterFilter
             }
         }
         return MeterFilterReply.NEUTRAL;
+    }
+
+    /**
+     * Applies a prefix to a metric if prefix is configured and not already present in id name.
+     * @param id The meter id
+     * @return The meter id with prefix applied
+     */
+    @Override
+    public Meter.Id map(final Meter.Id id)
+    {
+        if (myPrefix == null || myPrefix.isEmpty() || id.getName().startsWith(myPrefix))
+        {
+            return id;
+        }
+        return id.withName(myPrefix + "." + id.getName());
     }
 }
