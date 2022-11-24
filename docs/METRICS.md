@@ -8,7 +8,7 @@ The output directory for metrics is specified by `statistics.directory`.
 
 ## Metric prefix
 
-It's possible to define a global prefix for metrics produced by ecChronos and Cassandra driver.
+It's possible to define a global prefix for all metrics produced by ecChronos.
 This is done by specifying a string in `statistics.prefix` in `ecc.yml`.
 The prefix cannot start or end with a dot or any other path separator.
 

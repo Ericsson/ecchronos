@@ -73,7 +73,7 @@ public class MetricBeans
 
     private void createJmxMeterRegistry(final Config.StatisticsConfig metricConfig)
     {
-        MeterFilter meterFilter = new MeterFilterImpl(metricConfig
+        MeterFilter meterFilter = new MeterFilterImpl(metricConfig.getPrefix(), metricConfig
                 .getReporting()
                 .getJmx()
                 .getExcludedMetrics());
@@ -84,7 +84,7 @@ public class MetricBeans
 
     private void createCsvMeterRegistry(final Config.StatisticsConfig metricConfig)
     {
-        MeterFilter meterFilter = new MeterFilterImpl(metricConfig
+        MeterFilter meterFilter = new MeterFilterImpl(metricConfig.getPrefix(), metricConfig
                 .getReporting()
                 .getFile()
                 .getExcludedMetrics());
@@ -97,7 +97,7 @@ public class MetricBeans
 
     private void createPrometheusMeterRegistry(final Config.StatisticsConfig metricConfig)
     {
-        MeterFilter meterFilter = new MeterFilterImpl(metricConfig
+        MeterFilter meterFilter = new MeterFilterImpl(metricConfig.getPrefix(), metricConfig
                 .getReporting()
                 .getHttp()
                 .getExcludedMetrics());
