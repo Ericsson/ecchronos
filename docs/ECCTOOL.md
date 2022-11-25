@@ -117,6 +117,8 @@ The possible statuses are:
 * `LATE` - the schedule is late, warning time specified in the configuration has passed.
 * `OVERDUE` - the schedule is overdue, error time specified in the configuration has passed.
 * `COMPLETED` - the schedule is completed, all ranges have been repaired within the interval.
+* `BLOCKED` - the schedule is blocked, occurs if a schedule should be executing but
+is blocked by a run-policy or if a repair task has failed and triggered a backoff (30 minutes).
 
 `Repaired(%)` - the number of ranges repaired within the interval vs total ranges.
 For schedules this value can go up and down as ranges become unrepaired.
