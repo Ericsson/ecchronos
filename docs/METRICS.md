@@ -26,6 +26,15 @@ can be excluded in the same way as ecChronos metrics.
 For list of available driver metrics, refer to sections
 `session-level metrics and node-level metrics` in [datastax reference configuration](https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/configuration/reference/)
 
+## Spring Boot metrics
+
+Spring Boot metrics are provided as well.
+The metrics are exposed in the same way as ecChronos metrics and
+can be excluded in the same way as ecChronos metrics.
+
+For supported Spring Boot metrics, refer to section
+`Supported Metrics and Meters` in [Spring Boot documentation](https://docs.spring.io/spring-boot/docs/2.7.5/reference/html/actuator.html#actuator.metrics.supported)
+
 ## Reporting formats
 
 Metrics are exposed in several ways,
