@@ -46,6 +46,11 @@ def before_all(context):
         cluster = Cluster([cassandra_address], auth_provider=auth_provider)
     else:
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        ssl_context.load_verify_locations(context.config.userdata.get("cql_client_ca"))
+        ssl_context.verify_mode = ssl.CERT_REQUIRED
+        ssl_context.load_cert_chain(
+            certfile=context.config.userdata.get("cql_client_cert"),
+            keyfile=context.config.userdata.get("cql_client_key"))
         cluster = Cluster([cassandra_address], ssl_context=ssl_context, auth_provider=auth_provider)
     context.environment = Environment()
     context.environment.cluster = cluster
