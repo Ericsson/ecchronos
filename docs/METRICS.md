@@ -44,14 +44,61 @@ for more information refer to the sections below.
 
 ## ecChronos metrics
 
-| Metric name              | Description                                       | Tags                        |
-|--------------------------|---------------------------------------------------|-----------------------------|
-| repaired.ratio           | Ratio of repaired ranges vs total ranges          | keyspace, table             |
-| time.since.last.repaired | The amount of time since table was fully repaired | keyspace, table             |
-| remaining.repair.time    | Estimated remaining repair time                   | keyspace, table             |
-| repair.sessions          | Time taken for repair sessions to succeed or fail | keyspace, table, successful |
+| Metric name                   | Description                                                                                     | Tags                        |
+|-------------------------------|-------------------------------------------------------------------------------------------------|-----------------------------|
+| node.repaired.ratio           | Average repair ratio for all tables, aggregation of repaired.ratio                              |                             |
+| repaired.ratio                | Ratio of repaired ranges vs total ranges                                                        | keyspace, table             |
+| node.time.since.last.repaired | The longest time since a table has been fully repaired, aggregation of time.since.last.repaired |                             |
+| time.since.last.repaired      | The amount of time since table was fully repaired                                               | keyspace, table             |
+| node.remaining.repair.time    | A sum of remaining repair time for all tables, aggregation of remaining.repair.time             |                             |
+| remaining.repair.time         | Estimated remaining repair time                                                                 | keyspace, table             |
+| node.repair.sessions          | Time taken for all repair sessions for all tables to succeed or fail                            | successful                  |
+| repair.sessions               | Time taken for repair sessions to succeed or fail                                               | keyspace, table, successful |
 
 **All examples below assume keyspace `ks1` and table `tbl1`.**
+
+### node.repaired.ratio
+
+`node.repaired.ratio` metric represents the average repair ratio of all tables.
+The value is a double between 0 and 1.
+
+| Reporter type | Metric name(s)      |
+|---------------|---------------------|
+| jmx           | nodeRepairedRatio   |
+| file          | nodeRepairedRatio   |
+| http          | node_repaired_ratio |
+
+#### Examples
+
+In this example, the tables are on average `33%` repaired.
+
+##### jmx
+
+Object name: `metrics:name=nodeRepairedRatio,type=gauges`
+
+```
+Number: 0.33
+Value: 0.33
+```
+
+##### file
+
+File name: `nodeRepairedRatio.csv`
+
+```
+t,value
+1669033092,0.33
+```
+
+* t - The timestamp in milliseconds when the metric was reported
+
+* value - The average repaired ratio for all tables
+
+##### http
+
+```
+node_repaired_ratio 0.33
+```
 
 ### repaired.ratio
 
@@ -96,6 +143,49 @@ t,value
 repaired_ratio{keyspace="ks1",table="tbl1",} 0.33
 ```
 
+### node.time.since.last.repaired
+
+`nodetime.since.last.repaired` metric represents the longest time since a table has been fully repaired
+For `jmx` and `file` the time unit is milliseconds, while for `http` the time unit is seconds.
+
+| Reporter type | Metric name(s)                        |
+|---------------|---------------------------------------|
+| jmx           | nodeTimeSinceLastRepaired             |
+| file          | nodeTimeSinceLastRepaired             |
+| http          | node_time_since_last_repaired_seconds |
+
+#### Examples
+
+In this example, the table that was repaired the longest time ago has been repaired `10 seconds` ago.
+
+##### jmx
+
+Object name: `metrics:name=nodeTimeSinceLastRepaired,type=gauges`
+
+```
+Number: 10000.0
+Value: 10000.0
+```
+
+##### file
+
+File name: `nodeTimeSinceLastRepaired.csv`
+
+```
+t,value
+1669033092,10000.0
+```
+
+* t - The timestamp in milliseconds when the metric was reported
+
+* value - The longest time ago a table was fully repaired in milliseconds
+
+##### http
+
+```
+node_time_since_last_repaired_seconds 10.0
+```
+
 ### time.since.last.repaired
 
 `time.since.last.repaired` metric represents the duration since the table was fully repaired.
@@ -137,6 +227,52 @@ t,value
 
 ```
 time_since_last_repaired_seconds{keyspace="ks1",table="tbl1",} 10.0
+```
+
+### node.remaining.repair.time
+
+`node.remaining.repair.time` metric represents a sum of remaining repair time for all tables to be fully repaired.
+This is the time ecChronos will have to wait for Cassandra to perform repair,
+this is an estimation based on the last repair of each table.
+The value should be 0 if there are no repairs ongoing.
+For `jmx` and `file` the time unit is milliseconds, while for `http` the time unit is seconds.
+
+| Reporter type | Metric name(s)                     |
+|---------------|------------------------------------|
+| jmx           | nodeRemainingRepairTime            |
+| file          | nodeRemainingRepairTime            |
+| http          | node_remaining_repair_time_seconds |
+
+#### Examples
+
+In this example, the remaining repair time for all ongoing repairs is `10 seconds`.
+
+##### jmx
+
+Object name: `metrics:name=nodeRemainingRepairTime,type=gauges`
+
+```
+Number: 10000.0
+Value: 10000.0
+```
+
+##### file
+
+File name: `nodeRemainingRepairTime.csv`
+
+```
+t,value
+1669033092,10000.0
+```
+
+* t - The timestamp in milliseconds when the metric was reported
+
+* value - The remaining repair time in milliseconds for all repairs to finish
+
+##### http
+
+```
+remaining_repair_time_seconds 10.0
 ```
 
 ### remaining.repair.time
@@ -183,6 +319,151 @@ t,value
 
 ```
 remaining_repair_time_seconds{keyspace="ks1",table="tbl1",} 10.0
+```
+
+### node.repair.sessions
+
+`node.repair.sessions` metric represents the time taken for all repair sessions for all tables to succeed or fail.
+For `jmx` and `file` the time unit is milliseconds, while for `http` the time unit is seconds.
+
+| Reporter type | Metric name(s)                                                                                       |
+|---------------|------------------------------------------------------------------------------------------------------|
+| jmx           | nodeRepairSessions.successful.true,repairSessions.successful.false                                   |
+| file          | nodeRepairSessions.successful.true,repairSessions.successful.false                                   |
+| http          | node_repair_sessions_seconds_count,node_repair_sessions_seconds_sum,node_repair_sessions_seconds_max |
+
+#### Examples
+
+In this example, we have run repair for all tables where there were `793` successful sessions and `793` failed sessions.
+
+##### jmx
+
+Object name: `metrics:name=nodeRepairSessions.successful.true,type=timers`
+
+```
+50thPercentile: 6.26
+75thPercentile: 6.94
+95thPercentile: 8.30
+98thPercentile: 9.64
+999thPercentile: 56.27
+99thPercentile: 10.47
+Count: 793
+DurationUnit: milliseconds
+FifteenMinuteRate: 12.04
+FiveMinuteRate: 0.08
+Max: 56.27
+Mean: 6.69
+MeanRate: 0.35
+Min: 5.52
+OneMinuteRate: 8.93E-15
+RateUnit: events/second
+StdDev: 2.15
+```
+
+Object name: `metrics:name=nodeRepairSessions.successful.false,type=timers`
+
+```
+50thPercentile: 6.26
+75thPercentile: 6.94
+95thPercentile: 8.30
+98thPercentile: 9.64
+999thPercentile: 56.27
+99thPercentile: 10.47
+Count: 793
+DurationUnit: milliseconds
+FifteenMinuteRate: 12.04
+FiveMinuteRate: 0.08
+Max: 56.27
+Mean: 6.69
+MeanRate: 0.35
+Min: 5.52
+OneMinuteRate: 8.93E-15
+RateUnit: events/second
+StdDev: 2.15
+```
+
+##### file
+
+File name: `nodeRepairSessions.successful.true.csv`
+
+```
+t,count,max,mean,min,stddev,p50,p75,p95,p98,p99,p999,mean_rate,m1_rate,m5_rate,m15_rate,rate_unit,duration_unit
+1669036333,793,56.272057,6.693952,5.523480,2.153694,6.261243,6.945218,8.306778,9.646926,10.477962,56.272057,0.358667,0.000000,0.093323,12.519108,calls/second,milliseconds
+```
+
+* t - The timestamp in milliseconds when the metric was reported
+
+* count - The number of repair sessions that succeeded
+
+* max - Maximum time taken for a repair session to succeed
+
+* mean - Mean time taken for a repair sessions to succeed
+
+* min - Minimum time taken for a repair session to succeed
+
+* stddev - Standard deviation for repair sessions to succeed
+
+* p50 - 50 percentile (median) time taken for a repair session to succeed
+
+* p75->p999 - 75->99.9 percentile time taken for repair sessions to succeed
+
+* mean_rate - The mean rate for repair sessions to succeed per second
+
+* m1_rate - The last minutes rate for repair sessions to succeed per second
+
+* m5_rate - The last five minutes rate for repair sessions to succeed per second
+
+* m15_rate - The last fifteen minutes rate for repair sessions to succeed per second
+
+* rate_unit - The rate unit for the metric
+
+* duration_unit - The duration unit for the metric
+
+File name: `nodeRepairSessions.successful.false.csv`
+
+```
+t,count,max,mean,min,stddev,p50,p75,p95,p98,p99,p999,mean_rate,m1_rate,m5_rate,m15_rate,rate_unit,duration_unit
+1669036333,793,56.272057,6.693952,5.523480,2.153694,6.261243,6.945218,8.306778,9.646926,10.477962,56.272057,0.358667,0.000000,0.093323,12.519108,calls/second,milliseconds
+```
+
+* t - The timestamp in milliseconds when the metric was reported
+
+* count - The number of repair sessions that failed
+
+* max - Maximum time taken for a repair session to fail
+
+* mean - Mean time taken for a repair sessions to fail
+
+* min - Minimum time taken for a repair session to fail
+
+* stddev - Standard deviation for repair sessions to fail
+
+* p50 - 50 percentile (median) time taken for a repair session to fail
+
+* p75->p999 - 75->99.9 percentile time taken for repair sessions to fail
+
+* mean_rate - The mean rate for repair sessions to fail per second
+
+* m1_rate - The last minutes rate for repair sessions to fail per second
+
+* m5_rate - The last five minutes rate for repair sessions to fail per second
+
+* m15_rate - The last fifteen minutes rate for repair sessions to fail per second
+
+* rate_unit - The rate unit for the metric
+
+* duration_unit - The duration unit for the metric
+
+##### http
+
+```
+node_repair_sessions_seconds_count{successful="true",} 793.0
+node_repair_sessions_seconds_sum{successful="true",} 5.317104685
+node_repair_sessions_seconds_max{successful="true",} 0.0
+
+node_repair_sessions_seconds_count{successful="false",} 793.0
+node_repair_sessions_seconds_sum{successful="false",} 5.317104685
+node_repair_sessions_seconds_max{successful="false",} 0.0
 ```
 
 ### repair.sessions

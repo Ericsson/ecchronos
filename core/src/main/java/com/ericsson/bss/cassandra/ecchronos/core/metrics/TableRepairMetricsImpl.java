@@ -37,6 +37,10 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
     static final String TIME_SINCE_LAST_REPAIRED = "time.since.last.repaired";
     static final String REMAINING_REPAIR_TIME = "remaining.repair.time";
     static final String REPAIR_SESSIONS = "repair.sessions";
+    static final String NODE_REPAIRED_RATIO = "node.repaired.ratio";
+    static final String NODE_TIME_SINCE_LAST_REPAIRED = "node.time.since.last.repaired";
+    static final String NODE_REMAINING_REPAIR_TIME = "node.remaining.repair.time";
+    static final String NODE_REPAIR_SESSIONS = "node.repair.sessions";
 
     @VisibleForTesting
     interface Clock
@@ -68,6 +72,10 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
                         (tableGauges) -> tableGauges.get(tableReference).getRepairRatio())
                 .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
                 .register(myMeterRegistry);
+        Gauge.builder(NODE_REPAIRED_RATIO, myTableGauges,
+                        (tableGauges) -> tableGauges.values().stream().mapToDouble(TableGauges::getRepairRatio)
+                                .average().orElse(0))
+                .register(myMeterRegistry);
     }
 
     @Override
@@ -89,6 +97,11 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
                         (tableGauges) -> clock.timeNow() - tableGauges.get(tableReference).getLastRepairedAt())
                 .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
                 .register(myMeterRegistry);
+        TimeGauge.builder(NODE_TIME_SINCE_LAST_REPAIRED, myTableGauges, TimeUnit.MILLISECONDS,
+                        (tableGauges) ->
+                                clock.timeNow() - tableGauges.values().stream()
+                                        .mapToDouble(TableGauges::getLastRepairedAt).min().orElse(0))
+                .register(myMeterRegistry);
     }
 
     @Override
@@ -99,6 +112,10 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
         TimeGauge.builder(REMAINING_REPAIR_TIME, myTableGauges, TimeUnit.MILLISECONDS,
                         (tableGauges) -> tableGauges.get(tableReference).getRemainingRepairTime())
                 .tags(KEYSPACE_TAG, tableReference.getKeyspace(), TABLE_TAG, tableReference.getTable())
+                .register(myMeterRegistry);
+        TimeGauge.builder(NODE_REMAINING_REPAIR_TIME, myTableGauges, TimeUnit.MILLISECONDS,
+                        (tableGauges) ->
+                                tableGauges.values().stream().mapToDouble(TableGauges::getRemainingRepairTime).sum())
                 .register(myMeterRegistry);
     }
 
@@ -112,6 +129,10 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
                 .tags(KEYSPACE_TAG, tableReference.getKeyspace(),
                       TABLE_TAG, tableReference.getTable(),
                       "successful", Boolean.toString(successful))
+                .register(myMeterRegistry)
+                .record(timeTaken, timeUnit);
+        Timer.builder(NODE_REPAIR_SESSIONS)
+                .tags("successful", Boolean.toString(successful))
                 .register(myMeterRegistry)
                 .record(timeTaken, timeUnit);
     }

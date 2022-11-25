@@ -83,11 +83,16 @@ public class TestTableRepairMetricsImpl
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
 
         myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
-        Gauge repairRatio = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
+        Gauge repairedRatio = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
                 .gauge();
-        assertThat(repairRatio).isNotNull();
-        assertThat(repairRatio.value()).isEqualTo(1.0);
+        assertThat(repairedRatio).isNotNull();
+        assertThat(repairedRatio.value()).isEqualTo(1.0);
+
+        Gauge nodeRepairedRatio = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REPAIRED_RATIO)
+                .gauge();
+        assertThat(nodeRepairedRatio).isNotNull();
+        assertThat(nodeRepairedRatio.value()).isEqualTo(1.0);
     }
 
     @Test
@@ -97,11 +102,16 @@ public class TestTableRepairMetricsImpl
 
         myTableRepairMetricsImpl.repairState(tableReference, 1, 1);
 
-        Gauge repairRatio = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
+        Gauge repairedRatio = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
                 .gauge();
-        assertThat(repairRatio).isNotNull();
-        assertThat(repairRatio.value()).isEqualTo(0.5);
+        assertThat(repairedRatio).isNotNull();
+        assertThat(repairedRatio.value()).isEqualTo(0.5);
+
+        Gauge nodeRepairedRatio = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REPAIRED_RATIO)
+                .gauge();
+        assertThat(nodeRepairedRatio).isNotNull();
+        assertThat(nodeRepairedRatio.value()).isEqualTo(0.5);
     }
 
     @Test
@@ -113,17 +123,22 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
         myTableRepairMetricsImpl.repairState(tableReference2, 1, 0);
 
-        Gauge repairRatioTable1 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
+        Gauge repairedRatioTable1 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
                 .gauge();
-        assertThat(repairRatioTable1).isNotNull();
-        assertThat(repairRatioTable1.value()).isEqualTo(1.0);
+        assertThat(repairedRatioTable1).isNotNull();
+        assertThat(repairedRatioTable1.value()).isEqualTo(1.0);
 
-        Gauge repairRatioTable2 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
+        Gauge repairedRatioTable2 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2)
                 .gauge();
-        assertThat(repairRatioTable2).isNotNull();
-        assertThat(repairRatioTable2.value()).isEqualTo(1.0);
+        assertThat(repairedRatioTable2).isNotNull();
+        assertThat(repairedRatioTable2.value()).isEqualTo(1.0);
+
+        Gauge nodeRepairedRatio = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REPAIRED_RATIO)
+                .gauge();
+        assertThat(nodeRepairedRatio).isNotNull();
+        assertThat(nodeRepairedRatio.value()).isEqualTo(1.0);
     }
 
     @Test
@@ -135,17 +150,49 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.repairState(tableReference, 1, 1);
         myTableRepairMetricsImpl.repairState(tableReference2, 1, 1);
 
-        Gauge repairRatioTable1 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
+        Gauge repairedRatioTable1 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
                 .gauge();
-        assertThat(repairRatioTable1).isNotNull();
-        assertThat(repairRatioTable1.value()).isEqualTo(0.5);
+        assertThat(repairedRatioTable1).isNotNull();
+        assertThat(repairedRatioTable1.value()).isEqualTo(0.5);
 
-        Gauge repairRatioTable2 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
+        Gauge repairedRatioTable2 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2)
                 .gauge();
-        assertThat(repairRatioTable2).isNotNull();
-        assertThat(repairRatioTable2.value()).isEqualTo(0.5);
+        assertThat(repairedRatioTable2).isNotNull();
+        assertThat(repairedRatioTable2.value()).isEqualTo(0.5);
+
+        Gauge nodeRepairedRatio = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REPAIRED_RATIO)
+                .gauge();
+        assertThat(nodeRepairedRatio).isNotNull();
+        assertThat(nodeRepairedRatio.value()).isEqualTo(0.5);
+    }
+
+    @Test
+    public void testOneRepairedAndOneHalfRepaired()
+    {
+        TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
+        TableReference tableReference2 = tableReference(TEST_KEYSPACE, TEST_TABLE2);
+
+        myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
+        myTableRepairMetricsImpl.repairState(tableReference2, 1, 1);
+
+        Gauge repairedRatioTable1 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
+                .gauge();
+        assertThat(repairedRatioTable1).isNotNull();
+        assertThat(repairedRatioTable1.value()).isEqualTo(1.0);
+
+        Gauge repairedRatioTable2 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIRED_RATIO)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2)
+                .gauge();
+        assertThat(repairedRatioTable2).isNotNull();
+        assertThat(repairedRatioTable2.value()).isEqualTo(0.5);
+
+        Gauge nodeRepairedRatio = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REPAIRED_RATIO)
+                .gauge();
+        assertThat(nodeRepairedRatio).isNotNull();
+        assertThat(nodeRepairedRatio.value()).isEqualTo(0.75);
     }
 
     @Test
@@ -164,17 +211,22 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.lastRepairedAt(tableReference, expectedLastRepaired);
         myTableRepairMetricsImpl.lastRepairedAt(tableReference2, expectedLastRepaired2);
 
-        Gauge lastRepairedAtTable1 = myMeterRegistry.find(TableRepairMetricsImpl.TIME_SINCE_LAST_REPAIRED)
+        Gauge timeSinceLastRepairedTable1 = myMeterRegistry.find(TableRepairMetricsImpl.TIME_SINCE_LAST_REPAIRED)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1)
                 .gauge();
-        assertThat(lastRepairedAtTable1).isNotNull();
-        assertThat(lastRepairedAtTable1.value()).isEqualTo((double)timeDiff/1000); // Based on metric registry this is converted to seconds/ms/etc.
+        assertThat(timeSinceLastRepairedTable1).isNotNull();
+        assertThat(timeSinceLastRepairedTable1.value()).isEqualTo((double)timeDiff/1000); // Based on metric registry this is converted to seconds/ms/etc.
 
-        Gauge lastRepairedAtTable2 = myMeterRegistry.find(TableRepairMetricsImpl.TIME_SINCE_LAST_REPAIRED)
+        Gauge timeSinceLastRepairedTable2 = myMeterRegistry.find(TableRepairMetricsImpl.TIME_SINCE_LAST_REPAIRED)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2)
                 .gauge();
-        assertThat(lastRepairedAtTable2).isNotNull();
-        assertThat(lastRepairedAtTable2.value()).isEqualTo((double)timeDiff2/1000); // Based on metric registry this is converted to seconds/ms/etc.
+        assertThat(timeSinceLastRepairedTable2).isNotNull();
+        assertThat(timeSinceLastRepairedTable2.value()).isEqualTo((double)timeDiff2/1000); // Based on metric registry this is converted to seconds/ms/etc.
+
+        Gauge nodeTimeSinceLastRepaired = myMeterRegistry.find(TableRepairMetricsImpl.NODE_TIME_SINCE_LAST_REPAIRED)
+                .gauge();
+        assertThat(nodeTimeSinceLastRepaired).isNotNull();
+        assertThat(nodeTimeSinceLastRepaired.value()).isEqualTo((double)timeDiff2/1000); // Based on metric registry this is converted to seconds/ms/etc.
     }
 
     @Test
@@ -199,6 +251,11 @@ public class TestTableRepairMetricsImpl
                 .gauge();
         assertThat(remainingRepairTimeTable2).isNotNull();
         assertThat(remainingRepairTimeTable2.value()).isEqualTo((double) expectedRemainingRepairTime2/1000); // Based on metric registry this is converted to seconds/ms/etc.
+
+        Gauge nodeRemainingRepairTime = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REMAINING_REPAIR_TIME)
+                .gauge();
+        assertThat(nodeRemainingRepairTime).isNotNull();
+        assertThat(nodeRemainingRepairTime.value()).isEqualTo((double) (expectedRemainingRepairTime+expectedRemainingRepairTime2)/1000); // Based on metric registry this is converted to seconds/ms/etc.
     }
 
     @Test
@@ -209,13 +266,21 @@ public class TestTableRepairMetricsImpl
 
         myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, true);
 
-        Timer repairTime = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
+        Timer repairSessions = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1, "successful", "true")
                 .timer();
-        assertThat(repairTime).isNotNull();
-        assertThat(repairTime.count()).isEqualTo(1);
-        assertThat(repairTime.max(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
-        assertThat(repairTime.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
+        assertThat(repairSessions).isNotNull();
+        assertThat(repairSessions.count()).isEqualTo(1);
+        assertThat(repairSessions.max(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
+        assertThat(repairSessions.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
+
+        Timer nodeRepairSessions = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REPAIR_SESSIONS)
+                .tags("successful", "true")
+                .timer();
+        assertThat(nodeRepairSessions).isNotNull();
+        assertThat(nodeRepairSessions.count()).isEqualTo(1);
+        assertThat(nodeRepairSessions.max(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
+        assertThat(nodeRepairSessions.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
     }
 
     @Test
@@ -229,13 +294,21 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime1, TimeUnit.MILLISECONDS, true);
         myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime2, TimeUnit.MILLISECONDS, true);
 
-        Timer repairTime = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
+        Timer repairSessions = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1, "successful", "true")
                 .timer();
-        assertThat(repairTime).isNotNull();
-        assertThat(repairTime.count()).isEqualTo(2);
-        assertThat(repairTime.max(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime2);
-        assertThat(repairTime.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedMeanRepairTime);
+        assertThat(repairSessions).isNotNull();
+        assertThat(repairSessions.count()).isEqualTo(2);
+        assertThat(repairSessions.max(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime2);
+        assertThat(repairSessions.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedMeanRepairTime);
+
+        Timer nodeRepairSessions = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REPAIR_SESSIONS)
+                .tags("successful", "true")
+                .timer();
+        assertThat(nodeRepairSessions).isNotNull();
+        assertThat(nodeRepairSessions.count()).isEqualTo(2);
+        assertThat(nodeRepairSessions.max(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime2);
+        assertThat(nodeRepairSessions.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedMeanRepairTime);
     }
 
     @Test
@@ -246,13 +319,21 @@ public class TestTableRepairMetricsImpl
 
         myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
 
-        Timer repairTime = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
+        Timer repairSessions = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1, "successful", "false")
                 .timer();
-        assertThat(repairTime).isNotNull();
-        assertThat(repairTime.count()).isEqualTo(1);
-        assertThat(repairTime.max(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
-        assertThat(repairTime.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
+        assertThat(repairSessions).isNotNull();
+        assertThat(repairSessions.count()).isEqualTo(1);
+        assertThat(repairSessions.max(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
+        assertThat(repairSessions.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
+
+        Timer nodeRepairSessions = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REPAIR_SESSIONS)
+                .tags("successful", "false")
+                .timer();
+        assertThat(nodeRepairSessions).isNotNull();
+        assertThat(nodeRepairSessions.count()).isEqualTo(1);
+        assertThat(nodeRepairSessions.max(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
+        assertThat(nodeRepairSessions.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime);
     }
 
     @Test
@@ -266,13 +347,21 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime1, TimeUnit.MILLISECONDS, false);
         myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime2, TimeUnit.MILLISECONDS, false);
 
-        Timer repairTime = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
+        Timer repairSessions = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1, "successful", "false")
                 .timer();
-        assertThat(repairTime).isNotNull();
-        assertThat(repairTime.count()).isEqualTo(2);
-        assertThat(repairTime.max(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime2);
-        assertThat(repairTime.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedMeanRepairTime);
+        assertThat(repairSessions).isNotNull();
+        assertThat(repairSessions.count()).isEqualTo(2);
+        assertThat(repairSessions.max(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime2);
+        assertThat(repairSessions.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedMeanRepairTime);
+
+        Timer nodeRepairSessions = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REPAIR_SESSIONS)
+                .tags("successful", "false")
+                .timer();
+        assertThat(nodeRepairSessions).isNotNull();
+        assertThat(nodeRepairSessions.count()).isEqualTo(2);
+        assertThat(nodeRepairSessions.max(TimeUnit.MILLISECONDS)).isEqualTo(expectedRepairTime2);
+        assertThat(nodeRepairSessions.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedMeanRepairTime);
     }
 
     @Test
@@ -291,21 +380,37 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.repairSession(tableReference, failedRepairTime1, TimeUnit.MILLISECONDS, false);
         myTableRepairMetricsImpl.repairSession(tableReference, failedRepairTime2, TimeUnit.MILLISECONDS, false);
 
-        Timer successfulRepairTimer = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
+        Timer successfulRepairSessions = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1, "successful", "true")
                 .timer();
-        assertThat(successfulRepairTimer).isNotNull();
-        assertThat(successfulRepairTimer.count()).isEqualTo(2);
-        assertThat(successfulRepairTimer.max(TimeUnit.MILLISECONDS)).isEqualTo(successfulRepairTime1);
-        assertThat(successfulRepairTimer.mean(TimeUnit.MILLISECONDS)).isEqualTo(meanSuccessfulRepairTime);
+        assertThat(successfulRepairSessions).isNotNull();
+        assertThat(successfulRepairSessions.count()).isEqualTo(2);
+        assertThat(successfulRepairSessions.max(TimeUnit.MILLISECONDS)).isEqualTo(successfulRepairTime1);
+        assertThat(successfulRepairSessions.mean(TimeUnit.MILLISECONDS)).isEqualTo(meanSuccessfulRepairTime);
 
-        Timer failedRepairTimer = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
+        Timer nodeSuccessfulRepairSessions = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REPAIR_SESSIONS)
+                .tags("successful", "true")
+                .timer();
+        assertThat(nodeSuccessfulRepairSessions).isNotNull();
+        assertThat(nodeSuccessfulRepairSessions.count()).isEqualTo(2);
+        assertThat(nodeSuccessfulRepairSessions.max(TimeUnit.MILLISECONDS)).isEqualTo(successfulRepairTime1);
+        assertThat(nodeSuccessfulRepairSessions.mean(TimeUnit.MILLISECONDS)).isEqualTo(meanSuccessfulRepairTime);
+
+        Timer failedRepairSessions = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1, "successful", "false")
                 .timer();
-        assertThat(failedRepairTimer).isNotNull();
-        assertThat(failedRepairTimer.count()).isEqualTo(2);
-        assertThat(failedRepairTimer.max(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTime1);
-        assertThat(failedRepairTimer.mean(TimeUnit.MILLISECONDS)).isEqualTo(meanFailedRepairTime);
+        assertThat(failedRepairSessions).isNotNull();
+        assertThat(failedRepairSessions.count()).isEqualTo(2);
+        assertThat(failedRepairSessions.max(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTime1);
+        assertThat(failedRepairSessions.mean(TimeUnit.MILLISECONDS)).isEqualTo(meanFailedRepairTime);
+
+        Timer nodeFailedRepairSessions = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REPAIR_SESSIONS)
+                .tags("successful", "false")
+                .timer();
+        assertThat(nodeFailedRepairSessions).isNotNull();
+        assertThat(nodeFailedRepairSessions.count()).isEqualTo(2);
+        assertThat(nodeFailedRepairSessions.max(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTime1);
+        assertThat(nodeFailedRepairSessions.mean(TimeUnit.MILLISECONDS)).isEqualTo(meanFailedRepairTime);
     }
 
     /**
@@ -322,20 +427,113 @@ public class TestTableRepairMetricsImpl
         myTableRepairMetricsImpl.repairSession(tableReference, successfulRepairTime, TimeUnit.MILLISECONDS, true);
         myTableRepairMetricsImpl.repairSession(tableReference2, failedRepairTime, TimeUnit.MILLISECONDS, false);
 
-        Timer repairTime1 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
+        Timer successfulRepairSessions = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1, "successful", "true")
                 .timer();
-        assertThat(repairTime1).isNotNull();
-        assertThat(repairTime1.count()).isEqualTo(1);
-        assertThat(repairTime1.max(TimeUnit.MILLISECONDS)).isEqualTo(successfulRepairTime);
-        assertThat(repairTime1.mean(TimeUnit.MILLISECONDS)).isEqualTo(successfulRepairTime);
+        assertThat(successfulRepairSessions).isNotNull();
+        assertThat(successfulRepairSessions.count()).isEqualTo(1);
+        assertThat(successfulRepairSessions.max(TimeUnit.MILLISECONDS)).isEqualTo(successfulRepairTime);
+        assertThat(successfulRepairSessions.mean(TimeUnit.MILLISECONDS)).isEqualTo(successfulRepairTime);
 
-        Timer repairTime2 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
+        Timer failedRepairSessions = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
                 .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2, "successful", "false")
                 .timer();
-        assertThat(repairTime2).isNotNull();
-        assertThat(repairTime2.count()).isEqualTo(1);
-        assertThat(repairTime2.max(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTime);
-        assertThat(repairTime2.mean(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTime);
+        assertThat(failedRepairSessions).isNotNull();
+        assertThat(failedRepairSessions.count()).isEqualTo(1);
+        assertThat(failedRepairSessions.max(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTime);
+        assertThat(failedRepairSessions.mean(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTime);
+
+        Timer nodeSuccessfulRepairSessions = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REPAIR_SESSIONS)
+                .tags("successful", "true")
+                .timer();
+        assertThat(nodeSuccessfulRepairSessions).isNotNull();
+        assertThat(nodeSuccessfulRepairSessions.count()).isEqualTo(1);
+        assertThat(nodeSuccessfulRepairSessions.max(TimeUnit.MILLISECONDS)).isEqualTo(successfulRepairTime);
+        assertThat(nodeSuccessfulRepairSessions.mean(TimeUnit.MILLISECONDS)).isEqualTo(successfulRepairTime);
+
+        Timer nodeFailedRepairSessions = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REPAIR_SESSIONS)
+                .tags("successful", "false")
+                .timer();
+        assertThat(nodeFailedRepairSessions).isNotNull();
+        assertThat(nodeFailedRepairSessions.count()).isEqualTo(1);
+        assertThat(nodeFailedRepairSessions.max(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTime);
+        assertThat(nodeFailedRepairSessions.mean(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTime);
+    }
+
+    @Test
+    public void testRepairSessionSomeFailedAndSomeSuccessfulForTwoTables()
+    {
+        long successfulRepairTimeTable1 = 295L;
+        long successfulRepairTimeTable2 = 495L;
+
+        long failedRepairTimeTable1 = 89L;
+        long failedRepairTimeTable2 = 34L;
+
+        TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
+        TableReference tableReference2 = tableReference(TEST_KEYSPACE, TEST_TABLE2);
+
+        myTableRepairMetricsImpl.repairSession(tableReference, successfulRepairTimeTable1, TimeUnit.MILLISECONDS, true);
+        myTableRepairMetricsImpl.repairSession(tableReference, successfulRepairTimeTable1, TimeUnit.MILLISECONDS, true);
+        myTableRepairMetricsImpl.repairSession(tableReference, successfulRepairTimeTable1, TimeUnit.MILLISECONDS, true);
+        myTableRepairMetricsImpl.repairSession(tableReference, failedRepairTimeTable1, TimeUnit.MILLISECONDS, false);
+        myTableRepairMetricsImpl.repairSession(tableReference, failedRepairTimeTable1, TimeUnit.MILLISECONDS, false);
+        myTableRepairMetricsImpl.repairSession(tableReference, failedRepairTimeTable1, TimeUnit.MILLISECONDS, false);
+
+        myTableRepairMetricsImpl.repairSession(tableReference2, successfulRepairTimeTable2, TimeUnit.MILLISECONDS, true);
+        myTableRepairMetricsImpl.repairSession(tableReference2, successfulRepairTimeTable2, TimeUnit.MILLISECONDS, true);
+        myTableRepairMetricsImpl.repairSession(tableReference2, successfulRepairTimeTable2, TimeUnit.MILLISECONDS, true);
+        myTableRepairMetricsImpl.repairSession(tableReference2, failedRepairTimeTable2, TimeUnit.MILLISECONDS, false);
+        myTableRepairMetricsImpl.repairSession(tableReference2, failedRepairTimeTable2, TimeUnit.MILLISECONDS, false);
+        myTableRepairMetricsImpl.repairSession(tableReference2, failedRepairTimeTable2, TimeUnit.MILLISECONDS, false);
+
+        Timer successfulRepairSessionsTable1 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1, "successful", "true")
+                .timer();
+        assertThat(successfulRepairSessionsTable1).isNotNull();
+        assertThat(successfulRepairSessionsTable1.count()).isEqualTo(3);
+        assertThat(successfulRepairSessionsTable1.max(TimeUnit.MILLISECONDS)).isEqualTo(successfulRepairTimeTable1);
+        assertThat(successfulRepairSessionsTable1.mean(TimeUnit.MILLISECONDS)).isEqualTo(successfulRepairTimeTable1);
+
+        Timer successfulRepairSessionsTable2 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2, "successful", "true")
+                .timer();
+        assertThat(successfulRepairSessionsTable2).isNotNull();
+        assertThat(successfulRepairSessionsTable2.count()).isEqualTo(3);
+        assertThat(successfulRepairSessionsTable2.max(TimeUnit.MILLISECONDS)).isEqualTo(successfulRepairTimeTable2);
+        assertThat(successfulRepairSessionsTable2.mean(TimeUnit.MILLISECONDS)).isEqualTo(successfulRepairTimeTable2);
+
+        Timer failedRepairSessionsTable1 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE1, "successful", "false")
+                .timer();
+        assertThat(failedRepairSessionsTable1).isNotNull();
+        assertThat(failedRepairSessionsTable1.count()).isEqualTo(3);
+        assertThat(failedRepairSessionsTable1.max(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTimeTable1);
+        assertThat(failedRepairSessionsTable1.mean(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTimeTable1);
+
+        Timer failedRepairSessionsTable2 = myMeterRegistry.find(TableRepairMetricsImpl.REPAIR_SESSIONS)
+                .tags("keyspace", TEST_KEYSPACE, "table", TEST_TABLE2, "successful", "false")
+                .timer();
+        assertThat(failedRepairSessionsTable2).isNotNull();
+        assertThat(failedRepairSessionsTable2.count()).isEqualTo(3);
+        assertThat(failedRepairSessionsTable2.max(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTimeTable2);
+        assertThat(failedRepairSessionsTable2.mean(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTimeTable2);
+
+        double expectedNodeMeanSuccessfulTime = (double) (successfulRepairTimeTable1 * 3 + successfulRepairTimeTable2 * 3) / 6;
+        Timer nodeSuccessfulRepairSessions = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REPAIR_SESSIONS)
+                .tags("successful", "true")
+                .timer();
+        assertThat(nodeSuccessfulRepairSessions).isNotNull();
+        assertThat(nodeSuccessfulRepairSessions.count()).isEqualTo(6);
+        assertThat(nodeSuccessfulRepairSessions.max(TimeUnit.MILLISECONDS)).isEqualTo(successfulRepairTimeTable2);
+        assertThat(nodeSuccessfulRepairSessions.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedNodeMeanSuccessfulTime);
+
+        double expectedNodeMeanFailedTime = (double) (failedRepairTimeTable1 * 3 + failedRepairTimeTable2 * 3) / 6;
+        Timer nodeFailedRepairSessions = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REPAIR_SESSIONS)
+                .tags("successful", "false")
+                .timer();
+        assertThat(nodeFailedRepairSessions).isNotNull();
+        assertThat(nodeFailedRepairSessions.count()).isEqualTo(6);
+        assertThat(nodeFailedRepairSessions.max(TimeUnit.MILLISECONDS)).isEqualTo(failedRepairTimeTable1);
+        assertThat(nodeFailedRepairSessions.mean(TimeUnit.MILLISECONDS)).isEqualTo(expectedNodeMeanFailedTime);
     }
 }
