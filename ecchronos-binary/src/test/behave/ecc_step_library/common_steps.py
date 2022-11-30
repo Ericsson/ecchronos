@@ -105,9 +105,9 @@ def step_send_get_request(context):
     assert context.url is not None
     assert not context.url.startswith("http"), \
         "context.url cannot contain protocol 'http' or 'https'"
-    client_cert = context.config.userdata.get("client_cert")
-    client_key = context.config.userdata.get("client_key")
-    client_ca = context.config.userdata.get("client_ca")
+    client_cert = context.config.userdata.get("ecc_client_cert")
+    client_key = context.config.userdata.get("ecc_client_key")
+    client_ca = context.config.userdata.get("ecc_client_ca")
     if client_cert and client_key and client_ca:
         url = "https://" + context.url
         context.response = requests.get(url, cert=(client_cert, client_key), verify=client_ca)
@@ -121,9 +121,9 @@ def step_send_post_request(context):
     assert context.url is not None
     assert not context.url.startswith("http"), \
         "context.url cannot contain protocol 'http' or 'https'"
-    client_cert = context.config.userdata.get("client_cert")
-    client_key = context.config.userdata.get("client_key")
-    client_ca = context.config.userdata.get("client_ca")
+    client_cert = context.config.userdata.get("ecc_client_cert")
+    client_key = context.config.userdata.get("ecc_client_key")
+    client_ca = context.config.userdata.get("ecc_client_ca")
     if client_cert and client_key and client_ca:
         url = "https://" + context.url
         context.response = requests.post(url, cert=(client_cert, client_key), verify=client_ca)
@@ -167,9 +167,9 @@ def step_verify_job_list(context, keyspace):
 
 def run_ecctool(context, params):
     cmd = [context.config.userdata.get("ecctool")] + params
-    client_cert = context.config.userdata.get("client_cert")
-    client_key = context.config.userdata.get("client_key")
-    client_ca = context.config.userdata.get("client_ca")
+    client_cert = context.config.userdata.get("ecc_client_cert")
+    client_key = context.config.userdata.get("ecc_client_key")
+    client_ca = context.config.userdata.get("ecc_client_ca")
     env = {}
     if client_cert and client_key and client_ca:
         env = {"ECCTOOL_CERT_FILE": client_cert,

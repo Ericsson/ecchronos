@@ -159,10 +159,13 @@ if [ "${LOCAL}" == "true" ]; then
     behave --define ecctool="$BASE_DIR"/bin/ecctool --define cassandra_address="$CASSANDRA_IP" --define no_tls
 else
     behave --define ecctool="$BASE_DIR"/bin/ecctool --define cassandra_address="$CASSANDRA_IP" \
+           --define ecc_client_cert="$CERTIFICATE_DIRECTORY/clientcert.crt" \
+           --define ecc_client_key="$CERTIFICATE_DIRECTORY/clientkey.pem" \
+           --define ecc_client_ca="$CERTIFICATE_DIRECTORY/serverca.crt" \
            --define cql_user="eccuser" --define cql_password="eccpassword" \
-           --define client_cert="$CERTIFICATE_DIRECTORY/clientcert.crt" \
-           --define client_key="$CERTIFICATE_DIRECTORY/clientkey.pem" \
-           --define client_ca="$CERTIFICATE_DIRECTORY/serverca.crt"
+           --define cql_client_cert="$CERTIFICATE_DIRECTORY/cert.crt" \
+           --define cql_client_key="$CERTIFICATE_DIRECTORY/key.pem" \
+           --define cql_client_ca="$CERTIFICATE_DIRECTORY/ca.crt"
 fi
 RETURN=$?
 

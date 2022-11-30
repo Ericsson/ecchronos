@@ -40,11 +40,11 @@ if [ -f /etc/certificates/.keystore ]; then
   sed -i "s;keystore: .*;keystore: /etc/certificates/.keystore;g" "$CASSANDRA_CONF"/cassandra.yaml
   sed -i "s/keystore_password: .*/keystore_password: ecctest/g" "$CASSANDRA_CONF"/cassandra.yaml
 
-  sed -i "s;(# )?truststore: .*;truststore: /etc/certificates/.truststore;g" "$CASSANDRA_CONF"/cassandra.yaml
-  sed -i "s/(# )?truststore_password: .*/truststore_password: ecctest/g" "$CASSANDRA_CONF"/cassandra.yaml
+  sed -ri "s;(# )?truststore: .*;truststore: /etc/certificates/.truststore;g" "$CASSANDRA_CONF"/cassandra.yaml
+  sed -ri "s/(# )?truststore_password: .*/truststore_password: ecctest/g" "$CASSANDRA_CONF"/cassandra.yaml
 
-  sed -i "s/(# )?require_client_auth: false/require_client_auth: true/g" "$CASSANDRA_CONF"/cassandra.yaml
-  sed -i "s/(# )?protocol: TLS/protocol: TLSv1.2/g" "$CASSANDRA_CONF"/cassandra.yaml
+  sed -ri "s/(# )?require_client_auth: false/require_client_auth: true/g" "$CASSANDRA_CONF"/cassandra.yaml
+  sed -ri "s/(# )?protocol: TLS/protocol: TLSv1.2/g" "$CASSANDRA_CONF"/cassandra.yaml
 
   cat <<EOF >> ~/.cassandra/cqlshrc
 [connection]
