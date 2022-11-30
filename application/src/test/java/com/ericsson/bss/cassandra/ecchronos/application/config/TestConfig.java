@@ -45,6 +45,7 @@ import org.springframework.context.ApplicationContext;
 import javax.management.remote.JMXConnector;
 import javax.net.ssl.SSLEngine;
 import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -114,13 +115,23 @@ public class TestConfig
 
         assertThat(statisticsConfig.getReporting().isFileReportingEnabled()).isTrue();
         Config.ReportingConfig fileReportingConfig = statisticsConfig.getReporting().getFile();
+        Config.ExcludedMetric expectedFileExcludedMetric = new Config.ExcludedMetric();
+        expectedFileExcludedMetric.setName(".*fileExcluded");
+        Map<String, String> excludedFileTags = new HashMap<>();
+        excludedFileTags.put("keyspace", "filekeyspace");
+        excludedFileTags.put("table", ".*table");
+        expectedFileExcludedMetric.setTags(excludedFileTags);
         assertThat(fileReportingConfig.isEnabled()).isTrue();
-        assertThat(fileReportingConfig.getExcludedMetrics()).contains(".*fileExcluded");
+        assertThat(fileReportingConfig.getExcludedMetrics()).hasSize(1);
+        assertThat(fileReportingConfig.getExcludedMetrics()).contains(expectedFileExcludedMetric);
 
         assertThat(statisticsConfig.getReporting().isHttpReportingEnabled()).isTrue();
         Config.ReportingConfig httpReportingConfig = statisticsConfig.getReporting().getHttp();
         assertThat(httpReportingConfig.isEnabled()).isTrue();
-        assertThat(httpReportingConfig.getExcludedMetrics()).contains(".*httpExcluded");
+        Config.ExcludedMetric expectedHttpExcludedMetric = new Config.ExcludedMetric();
+        expectedHttpExcludedMetric.setName(".*httpExcluded");
+        assertThat(httpReportingConfig.getExcludedMetrics()).hasSize(1);
+        assertThat(httpReportingConfig.getExcludedMetrics()).contains(expectedHttpExcludedMetric);
 
         Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecc");

@@ -15,8 +15,11 @@
 package com.ericsson.bss.cassandra.ecchronos.application.config; // NOPMD
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -644,7 +647,7 @@ public class Config
     public static class ReportingConfig
     {
         private boolean enabled = true;
-        private Set<String> excludedMetrics = new HashSet<>();
+        private Set<ExcludedMetric> excludedMetrics = new HashSet<>();
 
         public final boolean isEnabled()
         {
@@ -656,14 +659,61 @@ public class Config
             this.enabled = enabledValue;
         }
 
-        public final Set<String> getExcludedMetrics()
+        public final Set<ExcludedMetric> getExcludedMetrics()
         {
             return excludedMetrics;
         }
 
-        public final void setExcludedMetrics(final Set<String> theExcludedMetrics)
+        public final void setExcludedMetrics(final Set<ExcludedMetric> theExcludedMetrics)
         {
             this.excludedMetrics = theExcludedMetrics;
+        }
+    }
+
+    public static class ExcludedMetric
+    {
+        private String name;
+        private Map<String, String> tags = new HashMap<>();
+
+        public final String getName()
+        {
+            return name;
+        }
+
+        public final void setName(final String aName)
+        {
+            this.name = aName;
+        }
+
+        public final Map<String, String> getTags()
+        {
+            return tags;
+        }
+
+        public final void setTags(final Map<String, String> theTags)
+        {
+            this.tags = theTags;
+        }
+
+        @Override
+        public final boolean equals(final Object o)
+        {
+            if (this == o)
+            {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass())
+            {
+                return false;
+            }
+            ExcludedMetric that = (ExcludedMetric) o;
+            return Objects.equals(name, that.name) && Objects.equals(tags, that.tags);
+        }
+
+        @Override
+        public final int hashCode()
+        {
+            return Objects.hash(name, tags);
         }
     }
 

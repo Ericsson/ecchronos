@@ -175,25 +175,37 @@ statistics:
     jmx:
       enabled: true
       ##
-      ## The metrics can be excluded using quoted regular expressions.
+      ## The metrics can be excluded on name and on tag values using quoted regular expressions.
+      ## Exclusion on name should be done without the prefix.
+      ## If an exclusion is without tags, then metric matching the name will be excluded.
+      ## If both name and tags are specified, then the metric must match both to be excluded.
+      ## If multiple tags are specified, the metric must match all tags to be excluded.
       ## By default, no metrics are excluded.
-      ## For list of available metrics refer to the documentation.
+      ## For list of available metrics and tags refer to the documentation.
       ##
       excludedMetrics: []
     file:
       enabled: true
       ##
-      ## The metrics can be excluded using quoted regular expressions.
+      ## The metrics can be excluded on name and on tag values using quoted regular expressions.
+      ## Exclusion on name should be done without the prefix.
+      ## If an exclusion is without tags, then metric matching the name will be excluded.
+      ## If both name and tags are specified, then the metric must match both to be excluded.
+      ## If multiple tags are specified, the metric must match all tags to be excluded.
       ## By default, no metrics are excluded.
-      ## For list of available metrics refer to the documentation.
+      ## For list of available metrics and tags refer to the documentation.
       ##
       excludedMetrics: []
     http:
       enabled: true
       ##
-      ## The metrics can be excluded using quoted regular expressions.
+      ## The metrics can be excluded on name and on tag values using quoted regular expressions.
+      ## Exclusion on name should be done without the prefix.
+      ## If an exclusion is without tags, then metric matching the name will be excluded.
+      ## If both name and tags are specified, then the metric must match both to be excluded.
+      ## If multiple tags are specified, the metric must match all tags to be excluded.
       ## By default, no metrics are excluded.
-      ## For list of available metrics refer to the documentation.
+      ## For list of available metrics and tags refer to the documentation.
       ##
       excludedMetrics: []
   directory: ./statistics

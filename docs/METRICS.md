@@ -42,14 +42,105 @@ this is controlled by `statistics.reporting.jmx.enabled`, `statistics.reporting.
 and `statistics.reporting.http.enabled` in `ecc.yml` file.
 Metrics reported using `file` will be written in CSV format.
 
+## Metric exclusion
 Metrics can be excluded from being reported, this is controlled by `statistics.reporting.jmx.excludedMetrics`
 `statistics.reporting.file.excludedMetrics` `statistics.reporting.http.excludedMetrics` in `ecc.yml` file.
-The `excludedMetrics` takes an array of quoted regexes, for example, `".*"` will exclude all metrics.
-It's also possible to exclude metrics with exact names,
-for this use the original metric name and not metric name specific to a reporter.
+Exclusion can be performed based on the metric name (prefix is ignored) and optionally on tags.
+The exclusion is performed using regular expressions.
+If no tags are specified for exclusion, all metrics matching the name will be excluded.
+If multiple tags are specified, all tags must match for the metric to be excluded.
 
-Metrics reported through different channels will look differently,
-for more information refer to the sections below.
+### Examples
+
+In this example we will be excluding metrics only for http reporting.
+The same examples can be used for any reporter.
+
+#### Exclude a metric on exact name
+
+In this example `repaired.ratio` metric will be excluded for all tags.
+
+```yaml
+statistics:
+  reporting:
+    http:
+      enabled: true
+      excludedMetrics:
+        - name: "repaired\\.ratio"
+```
+
+#### Exclude metrics on name with regexp
+
+In this example all metrics starting with `node.` will be excluded.
+
+```yaml
+statistics:
+  reporting:
+    http:
+      enabled: true
+      excludedMetrics:
+        - name: "node\\..*"
+```
+
+#### Exclude metrics on exact name and tag
+
+In this example `repaired.ratio` metric will be excluded for all tables in keyspace `ecchronos`.
+
+```yaml
+statistics:
+  reporting:
+    http:
+      enabled: true
+      excludedMetrics:
+        - name: "repaired\\.ratio"
+          tags:
+            keyspace: "ecchronos"
+```
+
+#### Exclude metrics with name regexp and exact tag
+
+In this example `node.*` metric will be excluded with tag `successful=true`.
+
+```yaml
+statistics:
+  reporting:
+    http:
+      enabled: true
+      excludedMetrics:
+        - name: "node\\..*"
+          tags:
+            successful: "true"
+```
+
+#### Exclude metrics with exact name and tag regexp
+
+In this example `remaining.repair.time` metric will be excluded with tag keyspace matching value `test.*`.
+
+```yaml
+statistics:
+  reporting:
+    http:
+      enabled: true
+      excludedMetrics:
+        - name: "remaining\\.repair\\.time"
+          tags:
+            keyspace: "test.*"
+```
+
+#### Exclude metric with exact name and multiple exact tags
+
+In this example `time.since.last.repaired` metric will be excluded with tag `keyspace=test` and tag `table=table1`.
+
+```yaml
+statistics:
+  reporting:
+    http:
+      enabled: true
+      excludedMetrics:
+        - name: "time\\.since\\.last\\.repaired"
+          tags:
+            keyspace: "test"
+            table: "table1"
+```
 
 ## ecChronos metrics
 
