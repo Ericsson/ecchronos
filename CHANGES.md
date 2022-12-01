@@ -2,6 +2,7 @@
 
 ## Version 4.0.0
 
+* Add support for excluding metrics on tags - Issue #446
 * Fix ecctool start with jvm.options - Issue #433
 * Add time.since.last.repaired metric - Issue #423
 * Bump springboot from 2.7.2 to 2.7.5 - Issue #427

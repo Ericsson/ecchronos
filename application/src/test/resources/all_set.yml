@@ -63,11 +63,14 @@ statistics:
     file:
       enabled: true
       excludedMetrics:
-        - '.*fileExcluded'
+        - name: '.*fileExcluded'
+          tags:
+            keyspace: "filekeyspace"
+            table: ".*table"
     http:
       enabled: true
       excludedMetrics:
-        - '.*httpExcluded'
+        - name: '.*httpExcluded'
   prefix: "unittest"
 
 lock_factory:

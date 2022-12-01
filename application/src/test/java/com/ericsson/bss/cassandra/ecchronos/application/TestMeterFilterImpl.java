@@ -15,6 +15,7 @@
 
 package com.ericsson.bss.cassandra.ecchronos.application;
 
+import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.config.MeterFilter;
@@ -23,7 +24,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,11 +39,20 @@ public class TestMeterFilterImpl
     private static final String PREFIX = "ecc";
     private static final String FIRST_METRIC_NAME = "fooMetricName";
     private static final String SECOND_METRIC_NAME = "barMetricName";
-    private static final Tags FIRST_METRIC_TAGS = Tags.of("fooTag", "fooTagValue");
-    private static final Tags SECOND_METRIC_TAGS = Tags.of("barTag", "barTagValue");
+    private static final String FIRST_METRIC_NAME_WITH_PREFIX = PREFIX + ".fooMetricName";
+    private static final String SECOND_METRIC_NAME_WITH_PREFIX = PREFIX + ".barMetricName";
+    private static final String COMMON_TAG_KEY = "commonTag";
+    private static final String COMMON_TAG_VALUE = "commonTagValue";
+    private static final String TAG_KEY = "keyspace";
+    private static final String FIRST_METRIC_TAG_VALUE = "fooKeyspace";
+    private static final String SECOND_METRIC_TAG_VALUE = "barKeyspace";
+    private static final Tags FIRST_METRIC_TAGS = Tags.of(TAG_KEY, FIRST_METRIC_TAG_VALUE,
+            COMMON_TAG_KEY, COMMON_TAG_VALUE);
+    private static final Tags SECOND_METRIC_TAGS = Tags.of(TAG_KEY, SECOND_METRIC_TAG_VALUE,
+            COMMON_TAG_KEY, COMMON_TAG_VALUE);
 
     @Test
-    public void testMatchesNullNotExcluded()
+    public void testAcceptNullExcluded()
     {
         MeterFilter meterFilter = new MeterFilterImpl(null, null);
 
@@ -49,7 +61,7 @@ public class TestMeterFilterImpl
     }
 
     @Test
-    public void testMatchesEmptySetNotExcluded()
+    public void testAcceptEmptySet()
     {
         MeterFilter meterFilter = new MeterFilterImpl(null, new HashSet<>());
         Meter.Id firstMeterId = createMeterId(FIRST_METRIC_NAME, FIRST_METRIC_TAGS);
@@ -57,10 +69,10 @@ public class TestMeterFilterImpl
     }
 
     @Test
-    public void testMatchesExcludedExact()
+    public void testAcceptExcludedExactNameNullTags()
     {
-        Set<String> excluded = new HashSet<>();
-        excluded.add(FIRST_METRIC_NAME);
+        Set<Config.ExcludedMetric> excluded = new HashSet<>();
+        excluded.add(createExcludedMetric(FIRST_METRIC_NAME, null));
         MeterFilter meterFilter = new MeterFilterImpl(null, excluded);
 
         Meter.Id firstMeterId = createMeterId(FIRST_METRIC_NAME, FIRST_METRIC_TAGS);
@@ -68,10 +80,21 @@ public class TestMeterFilterImpl
     }
 
     @Test
-    public void testMatchesExcludedRegex()
+    public void testAcceptExcludedExactNameNullTagsPrefixed()
     {
-        Set<String> excluded = new HashSet<>();
-        excluded.add("foo.*");
+        Set<Config.ExcludedMetric> excluded = new HashSet<>();
+        excluded.add(createExcludedMetric(FIRST_METRIC_NAME, null));
+        MeterFilter meterFilter = new MeterFilterImpl(PREFIX, excluded);
+
+        Meter.Id firstMeterId = createMeterId(FIRST_METRIC_NAME_WITH_PREFIX, FIRST_METRIC_TAGS);
+        assertThat(meterFilter.accept(firstMeterId)).isEqualTo(MeterFilterReply.DENY);
+    }
+
+    @Test
+    public void testAcceptExcludedRegexNameNullTags()
+    {
+        Set<Config.ExcludedMetric> excluded = new HashSet<>();
+        excluded.add(createExcludedMetric("foo.*", null));
         MeterFilter meterFilter = new MeterFilterImpl(null, excluded);
 
         Meter.Id firstMeterId = createMeterId(FIRST_METRIC_NAME, FIRST_METRIC_TAGS);
@@ -82,10 +105,24 @@ public class TestMeterFilterImpl
     }
 
     @Test
-    public void testMatchesMultipleMetricsExcludedWildcardRegex()
+    public void testAcceptExcludedRegexNameNullTagsPrefixed()
     {
-        Set<String> excluded = new HashSet<>();
-        excluded.add(".*");
+        Set<Config.ExcludedMetric> excluded = new HashSet<>();
+        excluded.add(createExcludedMetric("foo.*", null));
+        MeterFilter meterFilter = new MeterFilterImpl(PREFIX, excluded);
+
+        Meter.Id firstMeterId = createMeterId(FIRST_METRIC_NAME_WITH_PREFIX, FIRST_METRIC_TAGS);
+        assertThat(meterFilter.accept(firstMeterId)).isEqualTo(MeterFilterReply.DENY);
+
+        Meter.Id secondMeterId = createMeterId(SECOND_METRIC_NAME_WITH_PREFIX, SECOND_METRIC_TAGS);
+        assertThat(meterFilter.accept(secondMeterId)).isEqualTo(MeterFilterReply.NEUTRAL);
+    }
+
+    @Test
+    public void testAcceptMultipleExcludedWildcardRegexNameNullTags()
+    {
+        Set<Config.ExcludedMetric> excluded = new HashSet<>();
+        excluded.add(createExcludedMetric(".*", null));
         MeterFilter meterFilter = new MeterFilterImpl(null, excluded);
 
         Meter.Id firstMeterId = createMeterId(FIRST_METRIC_NAME, FIRST_METRIC_TAGS);
@@ -93,6 +130,87 @@ public class TestMeterFilterImpl
 
         Meter.Id secondMeterId = createMeterId(SECOND_METRIC_NAME, SECOND_METRIC_TAGS);
         assertThat(meterFilter.accept(secondMeterId)).isEqualTo(MeterFilterReply.DENY);
+    }
+
+    @Test
+    public void testAcceptMultipleExcludedWildcardRegexNameNullTagsPrefixed()
+    {
+        Set<Config.ExcludedMetric> excluded = new HashSet<>();
+        excluded.add(createExcludedMetric(".*", null));
+        MeterFilter meterFilter = new MeterFilterImpl(PREFIX, excluded);
+
+        Meter.Id firstMeterId = createMeterId(FIRST_METRIC_NAME_WITH_PREFIX, FIRST_METRIC_TAGS);
+        assertThat(meterFilter.accept(firstMeterId)).isEqualTo(MeterFilterReply.DENY);
+
+        Meter.Id secondMeterId = createMeterId(SECOND_METRIC_NAME_WITH_PREFIX, SECOND_METRIC_TAGS);
+        assertThat(meterFilter.accept(secondMeterId)).isEqualTo(MeterFilterReply.DENY);
+    }
+
+    @Test
+    public void testAcceptWithTags()
+    {
+        Set<Config.ExcludedMetric> excluded = new HashSet<>();
+        Map<String, String> commonExcludedTags = new HashMap<>();
+        commonExcludedTags.put(COMMON_TAG_KEY, COMMON_TAG_VALUE);
+        excluded.add(createExcludedMetric(".*", commonExcludedTags));
+        Map<String, String> firstMetricExcludedTags = new HashMap<>();
+        firstMetricExcludedTags.put(TAG_KEY, FIRST_METRIC_TAG_VALUE);
+        excluded.add(createExcludedMetric(FIRST_METRIC_NAME, firstMetricExcludedTags));
+        MeterFilter meterFilter = new MeterFilterImpl(null, excluded);
+
+        // Test all having excluded tags are excluded
+        Meter.Id firstMeterId = createMeterId(FIRST_METRIC_NAME, Tags.of(COMMON_TAG_KEY, COMMON_TAG_VALUE));
+        assertThat(meterFilter.accept(firstMeterId)).isEqualTo(MeterFilterReply.DENY);
+        Meter.Id secondMeterId = createMeterId(SECOND_METRIC_NAME, Tags.of(COMMON_TAG_KEY, COMMON_TAG_VALUE));
+        assertThat(meterFilter.accept(secondMeterId)).isEqualTo(MeterFilterReply.DENY);
+
+        // Even though the metric name is excluded, the tags are not, so the metric should be accepted
+        Meter.Id thirdMeterId = createMeterId(SECOND_METRIC_NAME, Tags.of("foo", "bar"));
+        assertThat(meterFilter.accept(thirdMeterId)).isEqualTo(MeterFilterReply.NEUTRAL);
+
+        // test only some having excluded tags are excluded
+        Meter.Id fourthMeterId = createMeterId(FIRST_METRIC_NAME, Tags.of(TAG_KEY, FIRST_METRIC_TAG_VALUE));
+        assertThat(meterFilter.accept(fourthMeterId)).isEqualTo(MeterFilterReply.DENY);
+        Meter.Id fifthMeterId = createMeterId(FIRST_METRIC_NAME, Tags.of(TAG_KEY, SECOND_METRIC_TAG_VALUE));
+        assertThat(meterFilter.accept(fifthMeterId)).isEqualTo(MeterFilterReply.NEUTRAL);
+        Meter.Id sixthMeterId = createMeterId(SECOND_METRIC_NAME, Tags.of(TAG_KEY, FIRST_METRIC_TAG_VALUE));
+        assertThat(meterFilter.accept(sixthMeterId)).isEqualTo(MeterFilterReply.NEUTRAL);
+        Meter.Id seventhMeterId = createMeterId(SECOND_METRIC_NAME, Tags.of(TAG_KEY, FIRST_METRIC_TAG_VALUE, COMMON_TAG_KEY, COMMON_TAG_VALUE));
+        assertThat(meterFilter.accept(seventhMeterId)).isEqualTo(MeterFilterReply.DENY);
+    }
+
+    @Test
+    public void testAcceptWithTagsPrefixed()
+    {
+        Set<Config.ExcludedMetric> excluded = new HashSet<>();
+        Map<String, String> commonExcludedTags = new HashMap<>();
+        commonExcludedTags.put(COMMON_TAG_KEY, COMMON_TAG_VALUE);
+        excluded.add(createExcludedMetric(".*", commonExcludedTags));
+        Map<String, String> firstMetricExcludedTags = new HashMap<>();
+        firstMetricExcludedTags.put(TAG_KEY, FIRST_METRIC_TAG_VALUE);
+        excluded.add(createExcludedMetric(FIRST_METRIC_NAME, firstMetricExcludedTags));
+        MeterFilter meterFilter = new MeterFilterImpl(PREFIX, excluded);
+
+        // Test all having excluded tags are excluded
+        Meter.Id firstMeterId = createMeterId(FIRST_METRIC_NAME_WITH_PREFIX, Tags.of(COMMON_TAG_KEY, COMMON_TAG_VALUE));
+        assertThat(meterFilter.accept(firstMeterId)).isEqualTo(MeterFilterReply.DENY);
+        Meter.Id secondMeterId = createMeterId(SECOND_METRIC_NAME_WITH_PREFIX, Tags.of(COMMON_TAG_KEY, COMMON_TAG_VALUE));
+        assertThat(meterFilter.accept(secondMeterId)).isEqualTo(MeterFilterReply.DENY);
+
+        // Even though the metric name is excluded, the tags are not, so the metric should be accepted
+        Meter.Id thirdMeterId = createMeterId(SECOND_METRIC_NAME_WITH_PREFIX, Tags.of("foo", "bar"));
+        assertThat(meterFilter.accept(thirdMeterId)).isEqualTo(MeterFilterReply.NEUTRAL);
+
+        // test only some having excluded tags are excluded
+        Meter.Id fourthMeterId = createMeterId(FIRST_METRIC_NAME_WITH_PREFIX, Tags.of(TAG_KEY, FIRST_METRIC_TAG_VALUE));
+        assertThat(meterFilter.accept(fourthMeterId)).isEqualTo(MeterFilterReply.DENY);
+        Meter.Id fifthMeterId = createMeterId(FIRST_METRIC_NAME_WITH_PREFIX, Tags.of(TAG_KEY, SECOND_METRIC_TAG_VALUE));
+        assertThat(meterFilter.accept(fifthMeterId)).isEqualTo(MeterFilterReply.NEUTRAL);
+        Meter.Id sixthMeterId = createMeterId(SECOND_METRIC_NAME_WITH_PREFIX, Tags.of(TAG_KEY, FIRST_METRIC_TAG_VALUE));
+        assertThat(meterFilter.accept(sixthMeterId)).isEqualTo(MeterFilterReply.NEUTRAL);
+        Meter.Id seventhMeterId = createMeterId(SECOND_METRIC_NAME_WITH_PREFIX,
+                Tags.of(TAG_KEY, FIRST_METRIC_TAG_VALUE, COMMON_TAG_KEY, COMMON_TAG_VALUE));
+        assertThat(meterFilter.accept(seventhMeterId)).isEqualTo(MeterFilterReply.DENY);
     }
 
     @Test
@@ -124,11 +242,11 @@ public class TestMeterFilterImpl
         Meter.Id secondMeterId = createMeterId(SECOND_METRIC_NAME, SECOND_METRIC_TAGS);
 
         Meter.Id firstMappedMeterId = meterFilter.map(firstMeterId);
-        assertThat(firstMappedMeterId.getName()).isEqualTo(PREFIX + "." + FIRST_METRIC_NAME);
+        assertThat(firstMappedMeterId.getName()).isEqualTo(FIRST_METRIC_NAME_WITH_PREFIX);
         assertThat(firstMappedMeterId.getTags()).isEqualTo(firstMappedMeterId.getTags());
 
         Meter.Id secondMappedMeterId = meterFilter.map(secondMeterId);
-        assertThat(secondMappedMeterId.getName()).isEqualTo(PREFIX + "." + SECOND_METRIC_NAME);
+        assertThat(secondMappedMeterId.getName()).isEqualTo(SECOND_METRIC_NAME_WITH_PREFIX);
         assertThat(secondMappedMeterId.getTags()).isEqualTo(secondMeterId.getTags());
     }
 
@@ -137,16 +255,27 @@ public class TestMeterFilterImpl
     {
         MeterFilter meterFilter = new MeterFilterImpl(PREFIX, null);
 
-        Meter.Id firstMeterId = createMeterId(PREFIX + "." + FIRST_METRIC_NAME, FIRST_METRIC_TAGS);
+        Meter.Id firstMeterId = createMeterId(FIRST_METRIC_NAME_WITH_PREFIX, FIRST_METRIC_TAGS);
         Meter.Id secondMeterId = createMeterId(SECOND_METRIC_NAME, SECOND_METRIC_TAGS);
 
         Meter.Id firstMappedMeterId = meterFilter.map(firstMeterId);
-        assertThat(firstMappedMeterId.getName()).isEqualTo(PREFIX + "." + FIRST_METRIC_NAME);
+        assertThat(firstMappedMeterId.getName()).isEqualTo(FIRST_METRIC_NAME_WITH_PREFIX);
         assertThat(firstMappedMeterId.getTags()).isEqualTo(firstMappedMeterId.getTags());
 
         Meter.Id secondMappedMeterId = meterFilter.map(secondMeterId);
-        assertThat(secondMappedMeterId.getName()).isEqualTo(PREFIX + "." + SECOND_METRIC_NAME);
+        assertThat(secondMappedMeterId.getName()).isEqualTo(SECOND_METRIC_NAME_WITH_PREFIX);
         assertThat(secondMappedMeterId.getTags()).isEqualTo(secondMeterId.getTags());
+    }
+
+    private Config.ExcludedMetric createExcludedMetric(String name, Map<String, String> tags)
+    {
+        Config.ExcludedMetric excludedMetric = new Config.ExcludedMetric();
+        excludedMetric.setName(name);
+        if (tags != null)
+        {
+            excludedMetric.setTags(tags);
+        }
+        return excludedMetric;
     }
 
     private Meter.Id createMeterId(String name, Tags tags)
