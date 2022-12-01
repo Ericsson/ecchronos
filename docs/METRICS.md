@@ -17,35 +17,19 @@ the metric name will be `ecChronos.repaired.ratio`.
 
 By specifying an empty string or no value at all, the metric names will not be prefixed.
 
-## Driver metrics
-
-The Cassandra driver used by ecChronos also has metrics on its own.
-Driver metrics are exposed in the same way as ecChronos metrics and
-can be excluded in the same way as ecChronos metrics.
-
-For list of available driver metrics, refer to sections
-`session-level metrics and node-level metrics` in [datastax reference configuration](https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/configuration/reference/)
-
-## Spring Boot metrics
-
-Spring Boot metrics are provided as well.
-The metrics are exposed in the same way as ecChronos metrics and
-can be excluded in the same way as ecChronos metrics.
-
-For supported Spring Boot metrics, refer to section
-`Supported Metrics and Meters` in [Spring Boot documentation](https://docs.spring.io/spring-boot/docs/2.7.5/reference/html/actuator.html#actuator.metrics.supported)
-
 ## Reporting formats
 
 Metrics are exposed in several ways,
 this is controlled by `statistics.reporting.jmx.enabled`, `statistics.reporting.file.enabled`
 and `statistics.reporting.http.enabled` in `ecc.yml` file.
+Metrics reported using different formats may look differently,
+for reference please refer to ecChronos metrics section below.
 Metrics reported using `file` will be written in CSV format.
 
 ## Metric exclusion
 Metrics can be excluded from being reported, this is controlled by `statistics.reporting.jmx.excludedMetrics`
 `statistics.reporting.file.excludedMetrics` `statistics.reporting.http.excludedMetrics` in `ecc.yml` file.
-Exclusion can be performed based on the metric name (prefix is ignored) and optionally on tags.
+Exclusion can be performed based on the metric name (without the prefix) and optionally on tags.
 The exclusion is performed using regular expressions.
 If no tags are specified for exclusion, all metrics matching the name will be excluded.
 If multiple tags are specified, all tags must match for the metric to be excluded.
@@ -140,6 +124,55 @@ statistics:
           tags:
             keyspace: "test"
             table: "table1"
+```
+
+## Driver metrics
+
+The Cassandra driver used by ecChronos also has metrics on its own.
+Driver metrics are exposed in the same way as ecChronos metrics and
+can be excluded in the same way as ecChronos metrics.
+
+For list of available driver metrics, refer to sections
+`session-level metrics and node-level metrics` in [datastax reference configuration](https://docs.datastax.com/en/developer/java-driver/4.14/manual/core/configuration/reference/)
+
+### Exclude all Driver metrics example
+
+```yaml
+statistics:
+  reporting:
+    http:
+      enabled: true
+      excludedMetrics:
+        - name: "nodes\\..*"
+        - name: "session\\..*"
+```
+
+## Spring Boot metrics
+
+Spring Boot metrics are provided as well.
+The metrics are exposed in the same way as ecChronos metrics and
+can be excluded in the same way as ecChronos metrics.
+
+For supported Spring Boot metrics, refer to section
+`Supported Metrics and Meters` in [Spring Boot documentation](https://docs.spring.io/spring-boot/docs/2.7.5/reference/html/actuator.html#actuator.metrics.supported)
+
+### Exclude all Spring Boot metrics example
+
+```yaml
+statistics:
+  reporting:
+    http:
+      enabled: true
+      excludedMetrics:
+        - name: "jvm\\..*"
+        - name: "logback\\..*"
+        - name: "executor\\..*"
+        - name: "application\\..*"
+        - name: "process\\..*"
+        - name: "tomcat\\..*"
+        - name: "disk\\..*"
+        - name: "system\\..*"
+        - name: "http\\..*"
 ```
 
 ## ecChronos metrics
