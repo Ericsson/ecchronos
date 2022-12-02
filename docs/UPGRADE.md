@@ -1,5 +1,6 @@
 # Upgrade to 4.x
 
+## Metrics
 Version 4.x has revamped metrics produced by ecChronos.
 The following major changes have been made:
 
@@ -29,6 +30,30 @@ The following aggregated metrics are available:
 | RepairFailedTime    | node.repair.sessions       |
 
 For more information about new metrics, see [metrics documentation](METRICS.md).
+
+## V1 REST API
+
+The v1 REST API deprecated in 3.x version of ecChronos have been removed in 4.x.
+
+The following REST API endpoints have been removed:
+* /repair-management/v1/status
+* /repair-management/v1/status/ids
+* /repair-management/v1/status/keyspaces/&lt;keyspace&gt;/tables/&lt;table&gt;
+* /repair-management/v1/config
+* /repair-management/v1/schedule/keyspaces/&lt;keyspace&gt;
+
+For more information about current REST interface, refer to [REST documentation](REST.md).
+
+## ecctool
+
+The ecctool subcommands deprecated in 3.x version of ecChronos have been removed in 4.x.
+
+The following ecctool subcommands have been removed:
+* repair-status
+* repair-config
+* trigger-repair
+
+For more information about current ecctool subcommands, refer to [ecctool documentation](ECCTOOL.md).
 
 # Upgrade to 3.x
 
