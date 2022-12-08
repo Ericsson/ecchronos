@@ -17,8 +17,6 @@ The following table metrics are available:
 | LastRepairedAt                          | time.since.last.repaired   |
 | RepairState                             | repaired.ratio             |
 | RemainingRepairTime                     | remaining.repair.time      |
-| SucceededRepairTasks                    | repair.sessions            |
-| FailedRepairTasks                       | repair.sessions            |
 
 The following aggregated metrics are available:
 
