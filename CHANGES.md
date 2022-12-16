@@ -1,6 +1,8 @@
 # Changes
 
-## Version 4.0.0
+## Version 4.0.3
+
+## Version 4.0.2
 
 * Add support for excluding metrics on tags - Issue #446
 * Fix ecctool start with jvm.options - Issue #433
