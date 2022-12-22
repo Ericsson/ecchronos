@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +43,8 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
     private final JobRunTask myRunTask = new JobRunTask();
     private final LockFactory myLockFactory;
-    private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
+            new ThreadFactoryBuilder().setNameFormat("TaskExecutor-%d").build());
 
     private ScheduleManagerImpl(final Builder builder)
     {

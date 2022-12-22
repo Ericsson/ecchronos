@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,8 @@ public class ConfigRefresher implements Closeable
     private final Path baseDirectory;
     private final WatchService watcher;
 
-    private final ExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    private final ExecutorService executor = Executors.newSingleThreadScheduledExecutor(
+            new ThreadFactoryBuilder().setNameFormat("ConfigRefresher-%d").build());
 
     public ConfigRefresher(final Path theBaseDirectory)
     {

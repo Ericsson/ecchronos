@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +49,8 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
         myReplicatedTableProvider = builder.myReplicatedTableProvider;
         myJmxProxyFactory = builder.myJmxProxyFactory;
 
-        myScheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+        myScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
+                new ThreadFactoryBuilder().setNameFormat("TableStateUpdater-%d").build());
         myScheduledExecutorService.scheduleAtFixedRate(this::updateTableStates,
                 builder.myInitialDelayInMs,
                 builder.myUpdateDelayInMs,

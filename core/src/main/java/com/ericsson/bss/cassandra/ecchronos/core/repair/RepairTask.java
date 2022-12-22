@@ -26,6 +26,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +69,8 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
 
     private static final long HANG_PREVENT_TIME_IN_MINUTES = 30;
 
-    private final ScheduledExecutorService myExecutor = Executors.newScheduledThreadPool(1);
+    private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
+            new ThreadFactoryBuilder().setNameFormat("HangPreventingTask-%d").build());
 
     private final Set<LongTokenRange> completedRanges = Collections.synchronizedSet(new HashSet<>());
     private final CountDownLatch myLatch = new CountDownLatch(1);
