@@ -2,6 +2,8 @@
 
 ## Version 4.0.3
 
+* Bump apache-karaf from 4.3.6 to 4.3.8 (CVE-2022-40145)
+
 ## Version 4.0.2
 
 * Add support for excluding metrics on tags - Issue #446

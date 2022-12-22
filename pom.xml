@@ -80,7 +80,7 @@
 
         <pax-exam.version>4.13.1</pax-exam.version>
         <pax-logging-logback.version>1.8.4</pax-logging-logback.version>
-        <apache.karaf.version>4.3.6</apache.karaf.version>
+        <apache.karaf.version>4.3.8</apache.karaf.version>
         <org.apache.felix.scr.version>2.1.14</org.apache.felix.scr.version>
         <pax-url.version>2.4.7</pax-url.version>
         <javax.inject.version>1</javax.inject.version>
