@@ -26,6 +26,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +67,8 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
     private RepairSchedulerImpl(final Builder builder)
     {
-        myExecutor = Executors.newSingleThreadScheduledExecutor();
+        myExecutor = Executors.newSingleThreadScheduledExecutor(
+                new ThreadFactoryBuilder().setNameFormat("RepairScheduler-%d").build());
         myFaultReporter = builder.myFaultReporter;
         myJmxProxyFactory = builder.myJmxProxyFactory;
         myTableRepairMetrics = builder.myTableRepairMetrics;

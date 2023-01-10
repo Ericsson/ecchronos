@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Metadata;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +62,8 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
     private final RepairConfiguration myRepairConfiguration;
     private final RepairHistory myRepairHistory;
     private final OnDemandStatus myOnDemandStatus;
-    private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
+            new ThreadFactoryBuilder().setNameFormat("OngoingJobsScheduler-%d").build());
 
     private OnDemandRepairSchedulerImpl(final Builder builder)
     {

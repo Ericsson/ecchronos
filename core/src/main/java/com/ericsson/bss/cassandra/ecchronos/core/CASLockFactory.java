@@ -33,6 +33,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,7 +122,8 @@ public final class CASLockFactory implements LockFactory, Closeable
         myHostStates = builder.myHostStates;
         myKeyspaceName = builder.myKeyspaceName;
 
-        myExecutor = Executors.newSingleThreadScheduledExecutor();
+        myExecutor = Executors.newSingleThreadScheduledExecutor(
+                new ThreadFactoryBuilder().setNameFormat("LockRefresher-%d").build());
 
         mySession = builder.myNativeConnectionProvider.getSession();
         myRemoteRouting = builder.myNativeConnectionProvider.getRemoteRouting();
