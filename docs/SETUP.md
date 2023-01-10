@@ -56,6 +56,23 @@ CREATE TABLE IF NOT EXISTS ecchronos.on_demand_repair_status (
     PRIMARY KEY(host_id, job_id))
     WITH default_time_to_live = 2592000
     AND gc_grace_seconds = 0;
+
+CREATE TABLE IF NOT EXISTS ecchronos.repair_history(
+    table_id uuid,
+    node_id uuid,
+    repair_id timeuuid,
+    job_id uuid,
+    coordinator_id uuid,
+    range_begin text,
+    range_end text,
+    participants set<uuid>,
+    status text,
+    started_at timestamp,
+    finished_at timestamp,
+    PRIMARY KEY((table_id,node_id), repair_id))
+    WITH compaction = {'class': 'TimeWindowCompactionStrategy'}
+    AND default_time_to_live = 2592000
+    AND CLUSTERING ORDER BY (repair_id DESC);
 ```
 
 A sample file is located in `conf/create_keyspace_sample.cql` which can be executed by running `cqlsh -f conf/create_keyspace_sample.cql`.
