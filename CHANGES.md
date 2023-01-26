@@ -2,6 +2,7 @@
 
 ## Version 4.0.3
 
+* Improve logging in repairState - Issue #463
 * Set name for all threads - Issue #459
 * Bump apache-karaf from 4.3.6 to 4.3.8 (CVE-2022-40145)
 

@@ -170,17 +170,15 @@ public class RepairStateImpl implements RepairState
 
     private long repairedTableRepairedAt(final long repairedAt, final RepairStateSnapshot old)
     {
-        if (LOG.isInfoEnabled())
+        if (LOG.isDebugEnabled())
         {
             long next = repairedAt + myRepairConfiguration.getRepairIntervalInMs();
             if (old != null)
             {
                 next -= old.getEstimatedRepairTime();
             }
-            LOG.info("Table {} last repaired at {}, next repair {}",
-                    myTableReference,
-                    MY_DATE_FORMAT.get().format(new Date(repairedAt)),
-                    MY_DATE_FORMAT.get().format(new Date(next)));
+            LOG.debug("Table {} fully repaired at {}, next repair at/after {}", myTableReference,
+                    MY_DATE_FORMAT.get().format(new Date(repairedAt)), MY_DATE_FORMAT.get().format(new Date(next)));
         }
         return repairedAt;
     }
@@ -194,10 +192,9 @@ public class RepairStateImpl implements RepairState
         {
             next -= old.getEstimatedRepairTime();
         }
-        if (LOG.isInfoEnabled())
+        if (LOG.isDebugEnabled())
         {
-            LOG.info("Table {} has been partially repaired, next repair {}",
-                    myTableReference,
+            LOG.debug("Table {} has been partially repaired, next repair at/after {}", myTableReference,
                     MY_DATE_FORMAT.get().format(new Date(next)));
         }
 
