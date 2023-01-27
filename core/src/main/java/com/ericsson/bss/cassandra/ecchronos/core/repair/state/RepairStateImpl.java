@@ -187,15 +187,15 @@ public class RepairStateImpl implements RepairState
     {
         long runIntervalInMs = myRepairConfiguration.getRepairIntervalInMs();
         long repairedAt = Math.min(System.currentTimeMillis() - runIntervalInMs, maxRepairedAt);
-        long next = repairedAt + runIntervalInMs;
-        if (old != null)
-        {
-            next -= old.getEstimatedRepairTime();
-        }
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Table {} has been partially repaired, next repair at/after {}", myTableReference,
-                    MY_DATE_FORMAT.get().format(new Date(next)));
+            long next = repairedAt + runIntervalInMs;
+            if (old != null)
+            {
+                next -= old.getEstimatedRepairTime();
+            }
+            LOG.debug("Table {} partially repaired at {}, next repair at/after {}", myTableReference,
+                    MY_DATE_FORMAT.get().format(new Date(repairedAt)), MY_DATE_FORMAT.get().format(new Date(next)));
         }
 
         return repairedAt;
