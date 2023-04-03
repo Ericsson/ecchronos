@@ -163,8 +163,8 @@ cql:
   tls:
     enabled: false
     certificate: /path/to/certificate
-    certificate_key: /path/to/certificate_key
-    certificate_authorities: /path/to/certificate_authorities
+    certificate_private_key: /path/to/certificate_key
+    trust_certificate: /path/to/certificate_authorities
     protocol: TLSv1.2,TLSv1.3
     cipher_suites:
     require_endpoint_verification: false
