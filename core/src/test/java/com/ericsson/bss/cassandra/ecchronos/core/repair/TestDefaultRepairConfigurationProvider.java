@@ -135,7 +135,7 @@ public class TestDefaultRepairConfigurationProvider
         verify(myRepairScheduler, never()).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
 
         defaultRepairConfigurationProvider.onTableDropped(tableMetadata);
-        verify(myRepairScheduler, never()).removeConfiguration(eq(TABLE_REFERENCE));
+        verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
 
         verifyNoMoreInteractions(myRepairScheduler);
         defaultRepairConfigurationProvider.close();
@@ -170,6 +170,25 @@ public class TestDefaultRepairConfigurationProvider
         verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
 
         defaultRepairConfigurationProvider.onTableDropped(tableMetadata);
+        verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
+
+        verifyNoMoreInteractions(myRepairScheduler);
+        defaultRepairConfigurationProvider.close();
+    }
+
+    @Test
+    public void testOnKeyspaceDropped()
+    {
+        DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
+                .build();
+        KeyspaceMetadata keyspaceMetadata = mockKeyspace(TABLE_REFERENCE.getKeyspace(), true);
+        mockTable(keyspaceMetadata, TABLE_REFERENCE, new HashMap<>());
+
+        defaultRepairConfigurationProvider.onKeyspaceCreated(keyspaceMetadata);
+
+        verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+
+        defaultRepairConfigurationProvider.onKeyspaceDropped(keyspaceMetadata);
         verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
 
         verifyNoMoreInteractions(myRepairScheduler);

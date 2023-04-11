@@ -1,5 +1,9 @@
 # Changes
 
+## Version 4.0.4
+
+* Add support for dropping keyspace(s) - Issue #469
+
 ## Version 4.0.3
 
 * Bump jackson-databind from 2.13.4.1 to 2.13.4.2
