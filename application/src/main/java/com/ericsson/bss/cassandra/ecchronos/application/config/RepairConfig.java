@@ -31,6 +31,9 @@ public class RepairConfig
             new Config.Interval(DAYS_ERROR, TimeUnit.DAYS));
     private double unwind_ratio = 0.0d;
     private long size_target = RepairConfiguration.FULL_REPAIR_SIZE;
+
+    @SuppressWarnings("checkstyle:MagicNumber")
+    private Config.Interval backoff = new Config.Interval(30, TimeUnit.MINUTES);
     private boolean ignore_twcs_tables = false;
 
     public final Config.Alarm getAlarm()
@@ -75,6 +78,16 @@ public class RepairConfig
         return ignore_twcs_tables;
     }
 
+    public final void setBackoff(final Config.Interval theBackoff)
+    {
+        this.backoff = theBackoff;
+    }
+
+    public final Config.Interval getBackoff()
+    {
+        return this.backoff;
+    }
+
     @SuppressWarnings("checkstyle:designforextension")
     public RepairConfiguration asRepairConfiguration()
     {
@@ -88,6 +101,7 @@ public class RepairConfig
                 .withIgnoreTWCSTables(ignore_twcs_tables)
                 .withRepairUnwindRatio(unwind_ratio)
                 .withTargetRepairSizeInBytes(size_target)
+                .withBackoff(backoff.getInterval(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .build();
     }
 }

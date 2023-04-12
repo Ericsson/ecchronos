@@ -52,6 +52,9 @@ repair:
     provider: cassandra
     keyspace: customkeyspace
   ignore_twcs_tables: true
+  backoff:
+    time: 13
+    unit: seconds
 
 statistics:
   enabled: false

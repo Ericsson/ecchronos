@@ -33,6 +33,8 @@ public class RepairConfiguration
             = RepairOptions.RepairParallelism.PARALLEL;
     private static final double DEFAULT_UNWIND_RATIO = NO_UNWIND;
     private static final long DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES = FULL_REPAIR_SIZE;
+
+    private static final long DEFAULT_BACKOFF_IN_MS = TimeUnit.MINUTES.toMillis(30);
     private static final boolean DEFAULT_IGNORE_TWCS_TABLES = false;
 
     public static final RepairConfiguration DEFAULT = newBuilder().build();
@@ -46,6 +48,7 @@ public class RepairConfiguration
     private final double myRepairUnwindRatio;
     private final long myTargetRepairSizeInBytes;
     private final boolean myIgnoreTWCSTables;
+    private final long myBackoffInMs;
 
     private RepairConfiguration(final Builder builder)
     {
@@ -56,6 +59,7 @@ public class RepairConfiguration
         myRepairUnwindRatio = builder.myRepairUnwindRatio;
         myTargetRepairSizeInBytes = builder.myTargetRepairSizeInBytes;
         myIgnoreTWCSTables = builder.myIgnoreTWCSTables;
+        myBackoffInMs = builder.myBackoffInMs;
     }
 
     public RepairOptions.RepairParallelism getRepairParallelism()
@@ -88,6 +92,11 @@ public class RepairConfiguration
         return myTargetRepairSizeInBytes;
     }
 
+    public long getBackoffInMs()
+    {
+        return myBackoffInMs;
+    }
+
     public boolean getIgnoreTWCSTables()
     {
         return myIgnoreTWCSTables;
@@ -106,13 +115,11 @@ public class RepairConfiguration
     @Override
     public String toString()
     {
-        return String
-                .format("RepairConfiguration(interval=%dms,warning=%dms,error=%dms,parallelism=%s,unwindRatio=%.2f)",
-                myRepairIntervalInMs,
-                myRepairWarningTimeInMs,
-                myRepairErrorTimeInMs,
-                myRepairParallelism,
-                myRepairUnwindRatio);
+        return String.format(
+                "RepairConfiguration(interval=%dms,warning=%dms,error=%dms,parallelism=%s,unwindRatio=%.2f"
+                + ",ignoreTWCS=%b,backoff=%dms)",
+                myRepairIntervalInMs, myRepairWarningTimeInMs, myRepairErrorTimeInMs, myRepairParallelism,
+                myRepairUnwindRatio, myIgnoreTWCSTables, myBackoffInMs);
     }
 
     @Override
@@ -133,14 +140,16 @@ public class RepairConfiguration
                 && Double.compare(that.myRepairUnwindRatio, myRepairUnwindRatio) == 0
                 && myTargetRepairSizeInBytes == that.myTargetRepairSizeInBytes
                 && myRepairParallelism == that.myRepairParallelism
-                && myIgnoreTWCSTables == that.myIgnoreTWCSTables;
+                && myIgnoreTWCSTables == that.myIgnoreTWCSTables
+                && myBackoffInMs == that.myBackoffInMs;
     }
 
     @Override
     public int hashCode()
     {
         return Objects.hash(myRepairParallelism, myRepairIntervalInMs, myRepairWarningTimeInMs,
-                myRepairErrorTimeInMs, myRepairUnwindRatio, myTargetRepairSizeInBytes, myIgnoreTWCSTables);
+                myRepairErrorTimeInMs, myRepairUnwindRatio, myTargetRepairSizeInBytes, myIgnoreTWCSTables,
+                myBackoffInMs);
     }
 
     public static class Builder
@@ -151,6 +160,7 @@ public class RepairConfiguration
         private long myRepairErrorTimeInMs = DEFAULT_REPAIR_ERROR_TIME_IN_MS;
         private double myRepairUnwindRatio = DEFAULT_UNWIND_RATIO;
         private long myTargetRepairSizeInBytes = DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES;
+        private long myBackoffInMs = DEFAULT_BACKOFF_IN_MS;
         private boolean myIgnoreTWCSTables = DEFAULT_IGNORE_TWCS_TABLES;
 
         /**
@@ -173,6 +183,7 @@ public class RepairConfiguration
             myRepairWarningTimeInMs = from.getRepairWarningTimeInMs();
             myRepairErrorTimeInMs = from.getRepairErrorTimeInMs();
             myRepairUnwindRatio = from.getRepairUnwindRatio();
+            myBackoffInMs = from.getBackoffInMs();
         }
 
         /**
@@ -265,7 +276,7 @@ public class RepairConfiguration
         }
 
         /**
-         * Buiild with ignore TWCS tables.
+         * Build with ignore TWCS tables.
          *
          * @param ignore Ignore flag.
          * @return Builder
@@ -277,9 +288,22 @@ public class RepairConfiguration
         }
 
         /**
+         * Build with backoff.
+         *
+         * @param backoff The backoff
+         * @param timeUnit The timeunit for the backoff
+         * @return Builder
+         */
+        public Builder withBackoff(final long backoff, final TimeUnit timeUnit)
+        {
+            myBackoffInMs = timeUnit.toMillis(backoff);
+            return this;
+        }
+
+        /**
          * Build repair configuration.
          *
-         * @return RepairCOnfiguration
+         * @return RepairConfiguration
          */
         public RepairConfiguration build()
         {

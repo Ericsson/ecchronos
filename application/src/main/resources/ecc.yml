@@ -164,6 +164,13 @@ repair:
   ## Specifies if tables with TWCS (TimeWindowCompactionStrategy) should be ignored for repair
   ##
   ignore_twcs_tables: false
+  ##
+  ## Specifies the backoff time for a job.
+  ## This is the time that the job will wait before trying to run again after failing.
+  ##
+  backoff:
+    time: 30
+    unit: MINUTES
 
 statistics:
   enabled: true

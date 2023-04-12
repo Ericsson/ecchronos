@@ -204,6 +204,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         ScheduledJob.Configuration configuration = new ScheduledJob.ConfigurationBuilder()
                 .withPriority(ScheduledJob.Priority.LOW)
                 .withRunInterval(repairIntervalInMs, TimeUnit.MILLISECONDS)
+                .withBackoff(repairConfiguration.getBackoffInMs(), TimeUnit.MILLISECONDS)
                 .build();
         AlarmPostUpdateHook alarmPostUpdateHook = new AlarmPostUpdateHook(tableReference,
                 repairConfiguration, myFaultReporter);

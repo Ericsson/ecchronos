@@ -24,9 +24,10 @@ import java.util.concurrent.TimeUnit;
 public abstract class ScheduledJob implements Iterable<ScheduledTask>
 {
     private static final int ONE_HOUR_IN_MILLIS = 3600000;
+    private static final long DEFAULT_BACKOFF_IN_MINUTES = 30;
 
-    public static final long DEFAULT_WAIT_BETWEEN_UNSUCCESSFUL_RUNS_IN_MILLISECONDS = TimeUnit.MINUTES.toMillis(30);
     private final Priority myPriority;
+    private final long myBackoffInMs;
     protected final long myRunIntervalInMs;
 
     protected volatile long myLastSuccessfulRun = -1;
@@ -44,6 +45,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         myId = id;
         myPriority = configuration.priority;
         myRunIntervalInMs = configuration.runIntervalInMs;
+        myBackoffInMs = configuration.backoffInMs;
         myLastSuccessfulRun = System.currentTimeMillis() - myRunIntervalInMs;
     }
 
@@ -66,7 +68,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         }
         else
         {
-            myNextRunTime = System.currentTimeMillis() + DEFAULT_WAIT_BETWEEN_UNSUCCESSFUL_RUNS_IN_MILLISECONDS;
+            myNextRunTime = System.currentTimeMillis() + myBackoffInMs;
         }
     }
 
@@ -255,10 +257,16 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
          */
         public final long runIntervalInMs;
 
+        /**
+         * The amount of time to wait before marking job as runnable after failing.
+         */
+        public final long backoffInMs;
+
         Configuration(final ConfigurationBuilder builder)
         {
             priority = builder.priority;
             runIntervalInMs = builder.runIntervalInMs;
+            backoffInMs = builder.backoffInMs;
         }
     }
 
@@ -269,6 +277,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     {
         private Priority priority = Priority.LOW;
         private long runIntervalInMs = TimeUnit.DAYS.toMillis(1);
+        private long backoffInMs = TimeUnit.MINUTES.toMillis(DEFAULT_BACKOFF_IN_MINUTES);
 
         public final ConfigurationBuilder withPriority(final Priority aPriority)
         {
@@ -279,6 +288,12 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         public final ConfigurationBuilder withRunInterval(final long runInterval, final TimeUnit unit)
         {
             this.runIntervalInMs = unit.toMillis(runInterval);
+            return this;
+        }
+
+        public final ConfigurationBuilder withBackoff(final long backoff, final TimeUnit unit)
+        {
+            this.backoffInMs = unit.toMillis(backoff);
             return this;
         }
 

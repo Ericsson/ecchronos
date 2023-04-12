@@ -1,5 +1,9 @@
 # Changes
 
+## Version 4.0.4
+
+* Support configuring backoff for failed jobs - Issue #475
+
 ## Version 4.0.3
 
 * Bump jackson-databind from 2.13.4.1 to 2.13.4.2
