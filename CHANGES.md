@@ -3,6 +3,7 @@
 ## Version 4.0.4
 
 * Support configuring backoff for failed jobs - Issue #475
+* Dropping keyspaces does not clean up schedules - Issue #469
 
 ## Version 4.0.3
 

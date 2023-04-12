@@ -127,6 +127,20 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     }
 
     /**
+     * Called when keyspace is dropped.
+     *
+     * @param keyspace Keyspace metadata
+     */
+    @Override
+    public void onKeyspaceDropped(final KeyspaceMetadata keyspace)
+    {
+        for (TableMetadata table : keyspace.getTables().values())
+        {
+            onTableDropped(table);
+        }
+    }
+
+    /**
      * Called when table is created.
      *
      * @param table Table metadata
@@ -150,11 +164,8 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     @Override
     public void onTableDropped(final TableMetadata table)
     {
-        if (myReplicatedTableProvider.accept(table.getKeyspace().asInternal()))
-        {
-            TableReference tableReference = myTableReferenceFactory.forTable(table);
-            myRepairScheduler.removeConfiguration(tableReference);
-        }
+        TableReference tableReference = myTableReferenceFactory.forTable(table);
+        myRepairScheduler.removeConfiguration(tableReference);
     }
 
     /**
@@ -238,17 +249,6 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     public static Builder newBuilder()
     {
         return new Builder();
-    }
-
-    /**
-     * Called when keyspace is dropped.
-     *
-     * @param keyspace Keyspace metadata
-     */
-    @Override
-    public void onKeyspaceDropped(final KeyspaceMetadata keyspace)
-    {
-        // NOOP
     }
 
     /**
