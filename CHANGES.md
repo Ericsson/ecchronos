@@ -1,5 +1,9 @@
 # Changes
 
+## Version 4.0.4
+
+* Dropping keyspaces does not clean up schedules - Issue #469
+
 ## Version 4.0.3
 
 * Bump jackson-databind from 2.13.4.1 to 2.13.4.2
