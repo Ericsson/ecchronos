@@ -2,7 +2,7 @@
 
 ## Version 4.0.4
 
-* Add support for dropping keyspace(s) - Issue #469
+* Dropping keyspaces does not clean up schedules - Issue #469
 
 ## Version 4.0.3
 
