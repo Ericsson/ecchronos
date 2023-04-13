@@ -30,6 +30,8 @@ public class TestRepairConfiguration
     private static final double DEFAULT_REPAIR_UNWIND_RATIO = 0.0d;
     private static final long DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES = Long.MAX_VALUE;
 
+    private static final long DEFAULT_BACKOFF_IN_MS = TimeUnit.MINUTES.toMillis(30);
+
     @Test
     public void testDefaultValues()
     {
@@ -43,6 +45,7 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairErrorTimeInMs()).isEqualTo(DEFAULT_REPAIR_ERROR_TIME_IN_MS);
         assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
         assertThat(repairConfiguration.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
+        assertThat(repairConfiguration.getBackoffInMs()).isEqualTo(DEFAULT_BACKOFF_IN_MS);
     }
 
     @Test
@@ -58,6 +61,7 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairErrorTimeInMs()).isEqualTo(DEFAULT_REPAIR_ERROR_TIME_IN_MS);
         assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
         assertThat(repairConfiguration.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
+        assertThat(repairConfiguration.getBackoffInMs()).isEqualTo(DEFAULT_BACKOFF_IN_MS);
     }
 
     @Test
@@ -73,6 +77,7 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairErrorTimeInMs()).isEqualTo(DEFAULT_REPAIR_ERROR_TIME_IN_MS);
         assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
         assertThat(repairConfiguration.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
+        assertThat(repairConfiguration.getBackoffInMs()).isEqualTo(DEFAULT_BACKOFF_IN_MS);
     }
 
     @Test
@@ -88,6 +93,7 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairErrorTimeInMs()).isEqualTo(1000L);
         assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
         assertThat(repairConfiguration.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
+        assertThat(repairConfiguration.getBackoffInMs()).isEqualTo(DEFAULT_BACKOFF_IN_MS);
     }
 
     @Test
@@ -103,6 +109,7 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairErrorTimeInMs()).isEqualTo(DEFAULT_REPAIR_ERROR_TIME_IN_MS);
         assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(1.0d);
         assertThat(repairConfiguration.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
+        assertThat(repairConfiguration.getBackoffInMs()).isEqualTo(DEFAULT_BACKOFF_IN_MS);
     }
 
     @Test
@@ -118,6 +125,23 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairErrorTimeInMs()).isEqualTo(DEFAULT_REPAIR_ERROR_TIME_IN_MS);
         assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
         assertThat(repairConfiguration.getTargetRepairSizeInBytes()).isEqualTo(1024L);
+        assertThat(repairConfiguration.getBackoffInMs()).isEqualTo(DEFAULT_BACKOFF_IN_MS);
+    }
+
+    @Test
+    public void testSetBackoff()
+    {
+        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
+                .withBackoff(1, TimeUnit.SECONDS)
+                .build();
+
+        assertThat(repairConfiguration.getRepairParallelism()).isEqualTo(DEFAULT_REPAIR_PARALLELISM);
+        assertThat(repairConfiguration.getRepairIntervalInMs()).isEqualTo(DEFAULT_REPAIR_INTERVAL_IN_MS);
+        assertThat(repairConfiguration.getRepairWarningTimeInMs()).isEqualTo(DEFAULT_REPAIR_WARNING_TIME_IN_MS);
+        assertThat(repairConfiguration.getRepairErrorTimeInMs()).isEqualTo(DEFAULT_REPAIR_ERROR_TIME_IN_MS);
+        assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
+        assertThat(repairConfiguration.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
+        assertThat(repairConfiguration.getBackoffInMs()).isEqualTo(1000L);
     }
 
     @Test

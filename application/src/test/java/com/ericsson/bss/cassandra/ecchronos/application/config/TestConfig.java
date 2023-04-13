@@ -88,6 +88,7 @@ public class TestConfig
                 .withRepairErrorTime(72, TimeUnit.HOURS)
                 .withRepairUnwindRatio(0.5d)
                 .withIgnoreTWCSTables(true)
+                .withBackoff(13, TimeUnit.SECONDS)
                 .withTargetRepairSizeInBytes(UnitConverter.toBytes("5m"))
                 .build();
 
@@ -102,6 +103,7 @@ public class TestConfig
         assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("customkeyspace");
         assertThat(repairConfig.getAlarm().getFaultReporter()).isEqualTo(TestFaultReporter.class);
         assertThat(repairConfig.getIgnoreTWCSTables()).isTrue();
+        assertThat(repairConfig.getBackoff().getInterval(TimeUnit.SECONDS)).isEqualTo(13);
 
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isFalse();
@@ -180,6 +182,7 @@ public class TestConfig
                 .withRepairErrorTime(10, TimeUnit.DAYS)
                 .withRepairUnwindRatio(0.0d)
                 .withIgnoreTWCSTables(false)
+                .withBackoff(30, TimeUnit.MINUTES)
                 .withTargetRepairSizeInBytes(RepairConfiguration.FULL_REPAIR_SIZE)
                 .build();
 
@@ -195,6 +198,7 @@ public class TestConfig
         assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("ecchronos");
         assertThat(repairConfig.getAlarm().getFaultReporter()).isEqualTo(LoggingFaultReporter.class);
         assertThat(repairConfig.getIgnoreTWCSTables()).isFalse();
+        assertThat(repairConfig.getBackoff().getInterval(TimeUnit.MINUTES)).isEqualTo(30);
 
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isTrue();
@@ -262,6 +266,7 @@ public class TestConfig
                 .withRepairWarningTime(8, TimeUnit.DAYS)
                 .withRepairErrorTime(10, TimeUnit.DAYS)
                 .withRepairUnwindRatio(0.0d)
+                .withBackoff(30, TimeUnit.MINUTES)
                 .withTargetRepairSizeInBytes(RepairConfiguration.FULL_REPAIR_SIZE)
                 .build();
 
@@ -277,6 +282,7 @@ public class TestConfig
         assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("ecchronos");
         assertThat(repairConfig.getAlarm().getFaultReporter()).isEqualTo(LoggingFaultReporter.class);
         assertThat(repairConfig.getIgnoreTWCSTables()).isFalse();
+        assertThat(repairConfig.getBackoff().getInterval(TimeUnit.MINUTES)).isEqualTo(30);
 
         Config.StatisticsConfig statisticsConfig = config.getStatistics();
         assertThat(statisticsConfig.isEnabled()).isTrue();
