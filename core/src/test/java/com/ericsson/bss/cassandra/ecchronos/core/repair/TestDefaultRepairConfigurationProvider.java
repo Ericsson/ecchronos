@@ -38,6 +38,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
@@ -116,7 +117,7 @@ public class TestDefaultRepairConfigurationProvider
         DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
                 .build();
 
-        verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairScheduler).putConfigurations(eq(TABLE_REFERENCE), eq(Collections.singleton(RepairConfiguration.DEFAULT)));
 
         defaultRepairConfigurationProvider.onTableDropped(tableMetadata);
         verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
@@ -133,7 +134,7 @@ public class TestDefaultRepairConfigurationProvider
         DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
                 .build();
 
-        verify(myRepairScheduler, never()).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairScheduler, never()).putConfigurations(eq(TABLE_REFERENCE), any());
 
         defaultRepairConfigurationProvider.onTableDropped(tableMetadata);
         verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
@@ -151,7 +152,7 @@ public class TestDefaultRepairConfigurationProvider
 
         defaultRepairConfigurationProvider.onTableCreated(tableMetadata);
 
-        verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairScheduler).putConfigurations(eq(TABLE_REFERENCE), eq(Collections.singleton(RepairConfiguration.DEFAULT)));
 
         defaultRepairConfigurationProvider.close();
         verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
@@ -168,7 +169,7 @@ public class TestDefaultRepairConfigurationProvider
 
         defaultRepairConfigurationProvider.onTableCreated(tableMetadata);
 
-        verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairScheduler).putConfigurations(eq(TABLE_REFERENCE), eq(Collections.singleton(RepairConfiguration.DEFAULT)));
 
         defaultRepairConfigurationProvider.onTableDropped(tableMetadata);
         verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
@@ -187,7 +188,7 @@ public class TestDefaultRepairConfigurationProvider
 
         defaultRepairConfigurationProvider.onKeyspaceCreated(keyspaceMetadata);
 
-        verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairScheduler).putConfigurations(eq(TABLE_REFERENCE), eq(Collections.singleton(RepairConfiguration.DEFAULT)));
 
         defaultRepairConfigurationProvider.onKeyspaceDropped(keyspaceMetadata);
         verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
@@ -206,7 +207,7 @@ public class TestDefaultRepairConfigurationProvider
 
         defaultRepairConfigurationProvider.onKeyspaceCreated(keyspaceMetadata);
 
-        verify(myRepairScheduler, never()).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairScheduler, never()).putConfigurations(eq(TABLE_REFERENCE), any());
         verify(myRepairScheduler, times(1)).removeConfiguration(eq(TABLE_REFERENCE));
 
         verifyNoMoreInteractions(myRepairScheduler);
@@ -223,7 +224,7 @@ public class TestDefaultRepairConfigurationProvider
 
         defaultRepairConfigurationProvider.onKeyspaceCreated(keyspaceMetadata);
 
-        verify(myRepairScheduler, times(1)).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairScheduler).putConfigurations(eq(TABLE_REFERENCE), eq(Collections.singleton(RepairConfiguration.DEFAULT)));
         verify(myRepairScheduler, never()).removeConfiguration(eq(TABLE_REFERENCE));
 
         verifyNoMoreInteractions(myRepairScheduler);
@@ -239,7 +240,7 @@ public class TestDefaultRepairConfigurationProvider
 
         defaultRepairConfigurationProvider.onTableCreated(tableMetadata);
 
-        verify(myRepairScheduler, never()).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairScheduler, never()).putConfigurations(eq(TABLE_REFERENCE), any());
         verify(myRepairScheduler, never()).removeConfiguration(eq(TABLE_REFERENCE));
 
         verifyNoMoreInteractions(myRepairScheduler);
@@ -255,7 +256,7 @@ public class TestDefaultRepairConfigurationProvider
 
         defaultRepairConfigurationProvider.onTableCreated(tableMetadata);
 
-        verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairScheduler).putConfigurations(eq(TABLE_REFERENCE), eq(Collections.singleton(RepairConfiguration.DEFAULT)));
 
         // Keyspace is no longer replicated
         when(myReplicatedTableProviderMock.accept(eq(TABLE_REFERENCE.getKeyspace()))).thenReturn(false);
@@ -277,7 +278,7 @@ public class TestDefaultRepairConfigurationProvider
 
         defaultRepairConfigurationProvider.onTableCreated(tableMetadata);
 
-        verify(myRepairScheduler, never()).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairScheduler, never()).putConfigurations(eq(TABLE_REFERENCE), any());
 
         // Keyspace is now replicated
         when(myReplicatedTableProviderMock.accept(eq(TABLE_REFERENCE.getKeyspace()))).thenReturn(true);
@@ -285,7 +286,7 @@ public class TestDefaultRepairConfigurationProvider
         defaultRepairConfigurationProvider.onKeyspaceUpdated(keyspaceMetadata, keyspaceMetadata);
 
         verify(myRepairScheduler, never()).removeConfiguration(eq(TABLE_REFERENCE));
-        verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
+        verify(myRepairScheduler).putConfigurations(eq(TABLE_REFERENCE), eq(Collections.singleton(RepairConfiguration.DEFAULT)));
 
         verifyNoMoreInteractions(myRepairScheduler);
         defaultRepairConfigurationProvider.close();
@@ -309,15 +310,15 @@ public class TestDefaultRepairConfigurationProvider
                 {
                     if (tb.equals(tableReference2))
                     {
-                        return customConfig;
+                        return Collections.singleton(customConfig);
                     }
 
-                    return RepairConfiguration.DEFAULT;
+                    return Collections.singleton(RepairConfiguration.DEFAULT);
                 })
                 .build();
 
-        verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(RepairConfiguration.DEFAULT));
-        verify(myRepairScheduler).putConfiguration(eq(tableReference2), eq(customConfig));
+        verify(myRepairScheduler).putConfigurations(eq(TABLE_REFERENCE), eq(Collections.singleton(RepairConfiguration.DEFAULT)));
+        verify(myRepairScheduler).putConfigurations(eq(tableReference2), eq(Collections.singleton(customConfig)));
 
         defaultRepairConfigurationProvider.onTableDropped(tableMetadata);
         verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
@@ -335,13 +336,13 @@ public class TestDefaultRepairConfigurationProvider
         // Create the table metadata before creating the repair configuration provider
         TableMetadata tableMetadata = mockReplicatedTable(TABLE_REFERENCE);
         DefaultRepairConfigurationProvider defaultRepairConfigurationProvider = defaultRepairConfigurationProviderBuilder()
-                .withRepairConfiguration(tb -> RepairConfiguration.DISABLED)
+                .withRepairConfiguration(tb -> Collections.singleton(RepairConfiguration.DISABLED))
                 .build();
 
-        verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
+        verify(myRepairScheduler).putConfigurations(eq(TABLE_REFERENCE), eq(Collections.emptySet()));
 
         defaultRepairConfigurationProvider.onTableDropped(tableMetadata);
-        verify(myRepairScheduler, times(2)).removeConfiguration(eq(TABLE_REFERENCE));
+        verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
 
         verifyNoMoreInteractions(myRepairScheduler);
         defaultRepairConfigurationProvider.close();
@@ -361,10 +362,10 @@ public class TestDefaultRepairConfigurationProvider
                 .withDefaultRepairConfiguration(repairConfiguration)
                 .build();
 
-        verify(myRepairScheduler, never()).putConfiguration(eq(TABLE_REFERENCE), eq(repairConfiguration));
+        verify(myRepairScheduler).putConfigurations(eq(TABLE_REFERENCE), eq(Collections.emptySet()));
 
         defaultRepairConfigurationProvider.onTableDropped(tableMetadata);
-        verify(myRepairScheduler, times(2)).removeConfiguration(eq(TABLE_REFERENCE));
+        verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
 
         verifyNoMoreInteractions(myRepairScheduler);
         defaultRepairConfigurationProvider.close();
@@ -384,8 +385,7 @@ public class TestDefaultRepairConfigurationProvider
                 .build();
 
         defaultRepairConfigurationProvider.onTableCreated(tableMetadata);
-        verify(myRepairScheduler, never()).putConfiguration(eq(TABLE_REFERENCE), eq(repairConfiguration));
-        verify(myRepairScheduler, times(2)).removeConfiguration(eq(TABLE_REFERENCE));
+        verify(myRepairScheduler, times(2)).putConfigurations(eq(TABLE_REFERENCE), eq(Collections.emptySet()));
 
         Map<String, String> updatedCompaction = new HashMap<>();
         updatedCompaction.put("class", "org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy");
@@ -393,7 +393,7 @@ public class TestDefaultRepairConfigurationProvider
         TableMetadata updatedTableMetadata = mockReplicatedTable(TABLE_REFERENCE, tableOptions);
 
         defaultRepairConfigurationProvider.onTableUpdated(updatedTableMetadata, tableMetadata);
-        verify(myRepairScheduler).putConfiguration(eq(TABLE_REFERENCE), eq(repairConfiguration));
+        verify(myRepairScheduler).putConfigurations(eq(TABLE_REFERENCE), eq(Collections.singleton(repairConfiguration)));
 
         verifyNoMoreInteractions(myRepairScheduler);
         defaultRepairConfigurationProvider.close();
@@ -413,7 +413,7 @@ public class TestDefaultRepairConfigurationProvider
                 .build();
 
         defaultRepairConfigurationProvider.onTableCreated(tableMetadata);
-        verify(myRepairScheduler, times(2)).putConfiguration(eq(TABLE_REFERENCE), eq(repairConfiguration));
+        verify(myRepairScheduler, times(2)).putConfigurations(eq(TABLE_REFERENCE), eq(Collections.singleton(repairConfiguration)));
 
         Map<String, String> updatedCompaction = new HashMap<>();
         updatedCompaction.put("class", "org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy");
@@ -421,7 +421,7 @@ public class TestDefaultRepairConfigurationProvider
         TableMetadata updatedTableMetadata = mockReplicatedTable(TABLE_REFERENCE, tableOptions);
 
         defaultRepairConfigurationProvider.onTableUpdated(updatedTableMetadata, tableMetadata);
-        verify(myRepairScheduler).removeConfiguration(eq(TABLE_REFERENCE));
+        verify(myRepairScheduler).putConfigurations(eq(TABLE_REFERENCE), eq(Collections.emptySet()));
 
         verifyNoMoreInteractions(myRepairScheduler);
         defaultRepairConfigurationProvider.close();

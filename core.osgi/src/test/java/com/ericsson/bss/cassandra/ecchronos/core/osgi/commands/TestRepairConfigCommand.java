@@ -86,6 +86,6 @@ public class TestRepairConfigCommand
         when(repairConfiguration.getRepairWarningTimeInMs()).thenReturn(warningTime);
         when(repairConfiguration.getRepairErrorTimeInMs()).thenReturn(errorTime);
 
-        return new ScheduledRepairJobView(UUID.randomUUID(), tableReference, repairConfiguration, repairStateSnapshotMock, ScheduledRepairJobView.Status.ON_TIME, 0, 0);
+        return new ScheduledRepairJobView(UUID.randomUUID(), tableReference, repairConfiguration, repairStateSnapshotMock, ScheduledRepairJobView.Status.ON_TIME, 0, 0, RepairOptions.RepairType.VNODE);
     }
 }

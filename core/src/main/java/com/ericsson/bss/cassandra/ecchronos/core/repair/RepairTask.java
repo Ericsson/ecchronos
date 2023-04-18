@@ -31,7 +31,9 @@ import javax.management.Notification;
 import javax.management.NotificationListener;
 import javax.management.remote.JMXConnectionNotification;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -42,11 +44,9 @@ import java.util.regex.Pattern;
 
 public abstract class RepairTask implements NotificationListener
 {
-    private static final double PROGRESS_FACTOR = 100.0d;
     private static final Logger LOG = LoggerFactory.getLogger(RepairTask.class);
-    private static final Pattern REPAIR_PATTERN = Pattern.compile("\\((-?[0-9]+),(-?[0-9]+)\\]");
+    private static final Pattern RANGE_PATTERN = Pattern.compile("\\((-?[0-9]+),(-?[0-9]+)\\]");
     private static final long HANG_PREVENT_TIME_IN_MINUTES = 30;
-
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
             new ThreadFactoryBuilder().setNameFormat("HangPreventingTask-%d").build());
     private final CountDownLatch myLatch = new CountDownLatch(1);
@@ -58,6 +58,8 @@ public abstract class RepairTask implements NotificationListener
     private volatile ScheduledJobException myLastError;
     private volatile boolean hasLostNotification = false;
     private volatile int myCommand;
+    private volatile Set<LongTokenRange> myFailedRanges = new HashSet<>();
+    private volatile Set<LongTokenRange> mySuccessfulRanges = new HashSet<>();
 
     RepairTask(final JmxProxyFactory jmxProxyFactory, final TableReference tableReference,
             final RepairConfiguration repairConfiguration, final TableRepairMetrics tableRepairMetrics)
@@ -155,8 +157,7 @@ public abstract class RepairTask implements NotificationListener
     protected abstract Map<String, String> getOptions();
 
     /**
-     * Method is called once a repair is completed, default implementation is NOOP. The implementation of this method
-     * should evaluate if the repair was a success or failure.
+     * Method is called once a repair is completed.
      *
      * @param proxy
      *         The jmx proxy
@@ -165,19 +166,20 @@ public abstract class RepairTask implements NotificationListener
      */
     protected void verifyRepair(final JmxProxy proxy) throws ScheduledJobException
     {
-        // NOOP
+        if (!myFailedRanges.isEmpty())
+        {
+            proxy.forceTerminateAllRepairSessions();
+            throw new ScheduledJobException("Repair has failed ranges '" + myFailedRanges + "'");
+        }
     }
 
     /**
-     * Method called when a task is finished, default implementation is NOOP.
+     * Method called when the task is finished.
      *
      * @param repairStatus
      *         The status of the finished task.
      */
-    protected void onFinish(final RepairStatus repairStatus)
-    {
-        // NOOP
-    }
+    protected abstract void onFinish(RepairStatus repairStatus);
 
     private void lazySleep(final long executionNanos) throws ScheduledJobException
     {
@@ -230,10 +232,8 @@ public abstract class RepairTask implements NotificationListener
 
                 String message = notification.getMessage();
                 ProgressEventType type = ProgressEventType.values()[progress.get("type")];
-                int progressCount = progress.get("progressCount");
-                int total = progress.get("total");
 
-                this.progress(type, progressCount, total, message);
+                this.progress(type, message);
             }
             break;
 
@@ -243,7 +243,9 @@ public abstract class RepairTask implements NotificationListener
 
         case JMXConnectionNotification.FAILED:
         case JMXConnectionNotification.CLOSED:
-            handleConnectionFailed(notification.getType());
+            myLastError = new ScheduledJobException(
+                    String.format("Unable to repair %s, error: %s", myTableReference, notification.getType()));
+            myLatch.countDown();
             break;
         default:
             LOG.debug("Unknown JMXConnectionNotification type: {}", notification.getType());
@@ -261,61 +263,39 @@ public abstract class RepairTask implements NotificationListener
                 TimeUnit.MINUTES);
     }
 
-    private void handleConnectionFailed(final String reason)
-    {
-        myLastError = new ScheduledJobException(
-                String.format("Unable to repair %s, error: %s", myTableReference, reason));
-        myLatch.countDown();
-    }
-
-    /**
-     * String representation.
-     *
-     * @return String
-     */
-    @Override
-    public String toString()
-    {
-        return String.format("RepairTask of %s", myTableReference);
-    }
-
     /**
      * Update progress.
      *
      * @param type
      *         Progress event type.
-     * @param progressCount
-     *         Progress count.
-     * @param total
-     *         The total.
      * @param message
      *         The message.
      */
     @VisibleForTesting
-    void progress(final ProgressEventType type, final int progressCount, final int total, final String message)
+    void progress(final ProgressEventType type, final String message)
     {
-        if (type == ProgressEventType.PROGRESS)
+        if (type == ProgressEventType.PROGRESS || type == ProgressEventType.ERROR)
         {
-            if (message.contains("finished"))
+            if (message.contains("finished") || message.contains("failed"))
             {
-                Matcher rangeMatcher = REPAIR_PATTERN.matcher(message);
+                RepairStatus repairStatus = RepairStatus.SUCCESS;
+                if (message.contains("failed"))
+                {
+                    repairStatus = RepairStatus.FAILED;
+                }
+                Matcher rangeMatcher = RANGE_PATTERN.matcher(message);
                 while (rangeMatcher.find())
                 {
                     long start = Long.parseLong(rangeMatcher.group(1));
                     long end = Long.parseLong(rangeMatcher.group(2));
 
                     LongTokenRange completedRange = new LongTokenRange(start, end);
-                    onRangeFinished(completedRange, RepairStatus.SUCCESS);
+                    onRangeFinished(completedRange, repairStatus);
                 }
             }
             else
             {
                 LOG.warn("{} - Unknown progress message received: {}", this, message);
-            }
-            if (LOG.isTraceEnabled())
-            {
-                int currentProgress = (int) calculateProgress(progressCount, total);
-                LOG.trace("{} (progress: {}%)", message, currentProgress);
             }
         }
         if (type == ProgressEventType.COMPLETE)
@@ -325,26 +305,22 @@ public abstract class RepairTask implements NotificationListener
     }
 
     /**
-     * Method called once a range is finished. In case of multiple ranges being repaired this will be called once per
-     * range.
+     * Method called once a range is finished successfully. In case of multiple ranges being repaired this will be
+     * called once per range. If this method is overriden make sure to call the super method.
      *
-     * @param range
-     *         The range
-     * @param repairStatus
-     *         The status
+     * @param range The range
+     * @param repairStatus The status of the range
      */
     protected void onRangeFinished(final LongTokenRange range, final RepairStatus repairStatus)
     {
-        // NOOP
-    }
-
-    private double calculateProgress(final int progressCount, final int total)
-    {
-        if (total == 0)
+        if (repairStatus.equals(RepairStatus.FAILED))
         {
-            return 0.0d;
+            myFailedRanges.add(range);
         }
-        return (progressCount * PROGRESS_FACTOR) / total;
+        else
+        {
+            mySuccessfulRanges.add(range);
+        }
     }
 
     public enum ProgressEventType
@@ -401,6 +377,18 @@ public abstract class RepairTask implements NotificationListener
             }
             myLatch.countDown();
         }
+    }
+
+    @VisibleForTesting
+    final Set<LongTokenRange> getFailedRanges()
+    {
+        return myFailedRanges;
+    }
+
+    @VisibleForTesting
+    final Set<LongTokenRange> getSuccessfulRanges()
+    {
+        return mySuccessfulRanges;
     }
 
     /**

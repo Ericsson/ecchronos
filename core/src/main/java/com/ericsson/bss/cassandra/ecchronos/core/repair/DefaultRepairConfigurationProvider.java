@@ -14,7 +14,10 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -50,7 +53,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     private CqlSession mySession;
     private ReplicatedTableProvider myReplicatedTableProvider;
     private RepairScheduler myRepairScheduler;
-    private Function<TableReference, RepairConfiguration> myRepairConfigurationFunction;
+    private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
     private TableReferenceFactory myTableReferenceFactory;
 
     public DefaultRepairConfigurationProvider()
@@ -212,17 +215,17 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
 
     private void updateConfiguration(final TableReference tableReference, final TableMetadata table)
     {
-        RepairConfiguration repairConfiguration = myRepairConfigurationFunction.apply(tableReference);
-
-        if (RepairConfiguration.DISABLED.equals(repairConfiguration)
-                || isTableIgnored(table, repairConfiguration.getIgnoreTWCSTables()))
+        Set<RepairConfiguration> repairConfigurations = myRepairConfigurationFunction.apply(tableReference);
+        Set<RepairConfiguration> enabledRepairConfigurations = new HashSet<>();
+        for (RepairConfiguration repairConfiguration: repairConfigurations)
         {
-            myRepairScheduler.removeConfiguration(tableReference);
+            if (!RepairConfiguration.DISABLED.equals(repairConfiguration)
+                    && !isTableIgnored(table, repairConfiguration.getIgnoreTWCSTables()))
+            {
+                enabledRepairConfigurations.add(repairConfiguration);
+            }
         }
-        else
-        {
-            myRepairScheduler.putConfiguration(tableReference, myRepairConfigurationFunction.apply(tableReference));
-        }
+        myRepairScheduler.putConfigurations(tableReference, enabledRepairConfigurations);
     }
 
     private boolean isTableIgnored(final TableMetadata table, final boolean ignore)
@@ -445,7 +448,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         private CqlSession mySession;
         private ReplicatedTableProvider myReplicatedTableProvider;
         private RepairScheduler myRepairScheduler;
-        private Function<TableReference, RepairConfiguration> myRepairConfigurationFunction;
+        private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
         private TableReferenceFactory myTableReferenceFactory;
 
         /**
@@ -461,14 +464,14 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         }
 
         /**
-         * Buiild with default repair configuration.
+         * Build with default repair configuration.
          *
          * @param defaultRepairConfiguration The default repair configuration
          * @return Builder
          */
         public Builder withDefaultRepairConfiguration(final RepairConfiguration defaultRepairConfiguration)
         {
-            myRepairConfigurationFunction = (tableReference) -> defaultRepairConfiguration;
+            myRepairConfigurationFunction = (tableReference) -> Collections.singleton(defaultRepairConfiguration);
             return this;
         }
 
@@ -478,7 +481,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
          * @param defaultRepairConfiguration The default repair configuration
          * @return Builder
          */
-        public Builder withRepairConfiguration(final Function<TableReference, RepairConfiguration>
+        public Builder withRepairConfiguration(final Function<TableReference, Set<RepairConfiguration>>
                                                        defaultRepairConfiguration)
         {
             myRepairConfigurationFunction = defaultRepairConfiguration;

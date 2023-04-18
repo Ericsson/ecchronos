@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.scheduling;
 
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -174,6 +175,40 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     public final UUID getId()
     {
         return myId;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean equals(final Object o)
+    {
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+        ScheduledJob that = (ScheduledJob) o;
+        return myBackoffInMs == that.myBackoffInMs
+                && myRunIntervalInMs == that.myRunIntervalInMs
+                && myLastSuccessfulRun == that.myLastSuccessfulRun
+                && myNextRunTime == that.myNextRunTime
+                && myRunOffset == that.myRunOffset
+                && myPriority == that.myPriority
+                && Objects.equals(myId, that.myId);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(myPriority, myBackoffInMs, myRunIntervalInMs, myLastSuccessfulRun,
+                myNextRunTime, myRunOffset, myId);
     }
 
     /**

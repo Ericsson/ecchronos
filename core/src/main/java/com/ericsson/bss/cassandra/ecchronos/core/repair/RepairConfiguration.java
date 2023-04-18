@@ -31,6 +31,7 @@ public class RepairConfiguration
     private static final long DEFAULT_REPAIR_ERROR_TIME_IN_MS = TimeUnit.DAYS.toMillis(10);
     private static final RepairOptions.RepairParallelism DEFAULT_REPAIR_PARALLELISM
             = RepairOptions.RepairParallelism.PARALLEL;
+    private static final RepairOptions.RepairType DEFAULT_REPAIR_TYPE = RepairOptions.RepairType.VNODE;
     private static final double DEFAULT_UNWIND_RATIO = NO_UNWIND;
     private static final long DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES = FULL_REPAIR_SIZE;
 
@@ -50,6 +51,8 @@ public class RepairConfiguration
     private final boolean myIgnoreTWCSTables;
     private final long myBackoffInMs;
 
+    private final RepairOptions.RepairType myRepairType;
+
     private RepairConfiguration(final Builder builder)
     {
         myRepairParallelism = builder.myRepairParallelism;
@@ -60,6 +63,7 @@ public class RepairConfiguration
         myTargetRepairSizeInBytes = builder.myTargetRepairSizeInBytes;
         myIgnoreTWCSTables = builder.myIgnoreTWCSTables;
         myBackoffInMs = builder.myBackoffInMs;
+        myRepairType = builder.myRepairType;
     }
 
     public RepairOptions.RepairParallelism getRepairParallelism()
@@ -102,6 +106,11 @@ public class RepairConfiguration
         return myIgnoreTWCSTables;
     }
 
+    public RepairOptions.RepairType getRepairType()
+    {
+        return myRepairType;
+    }
+
     public static Builder newBuilder(final RepairConfiguration from)
     {
         return new Builder(from);
@@ -117,9 +126,9 @@ public class RepairConfiguration
     {
         return String.format(
                 "RepairConfiguration(interval=%dms,warning=%dms,error=%dms,parallelism=%s,unwindRatio=%.2f"
-                + ",ignoreTWCS=%b,backoff=%dms)",
+                + ",ignoreTWCS=%b,backoff=%dms,repairType=%s)",
                 myRepairIntervalInMs, myRepairWarningTimeInMs, myRepairErrorTimeInMs, myRepairParallelism,
-                myRepairUnwindRatio, myIgnoreTWCSTables, myBackoffInMs);
+                myRepairUnwindRatio, myIgnoreTWCSTables, myBackoffInMs, myRepairType);
     }
 
     @Override
@@ -141,7 +150,8 @@ public class RepairConfiguration
                 && myTargetRepairSizeInBytes == that.myTargetRepairSizeInBytes
                 && myRepairParallelism == that.myRepairParallelism
                 && myIgnoreTWCSTables == that.myIgnoreTWCSTables
-                && myBackoffInMs == that.myBackoffInMs;
+                && myBackoffInMs == that.myBackoffInMs
+                && myRepairType == that.myRepairType;
     }
 
     @Override
@@ -149,12 +159,13 @@ public class RepairConfiguration
     {
         return Objects.hash(myRepairParallelism, myRepairIntervalInMs, myRepairWarningTimeInMs,
                 myRepairErrorTimeInMs, myRepairUnwindRatio, myTargetRepairSizeInBytes, myIgnoreTWCSTables,
-                myBackoffInMs);
+                myBackoffInMs, myRepairType);
     }
 
     public static class Builder
     {
         private RepairOptions.RepairParallelism myRepairParallelism = DEFAULT_REPAIR_PARALLELISM;
+        private RepairOptions.RepairType myRepairType = DEFAULT_REPAIR_TYPE;
         private long myRepairIntervalInMs = DEFAULT_REPAIR_INTERVAL_IN_MS;
         private long myRepairWarningTimeInMs = DEFAULT_REPAIR_WARNING_TIME_IN_MS;
         private long myRepairErrorTimeInMs = DEFAULT_REPAIR_ERROR_TIME_IN_MS;
@@ -179,6 +190,7 @@ public class RepairConfiguration
         public Builder(final RepairConfiguration from)
         {
             myRepairParallelism = from.getRepairParallelism();
+            myRepairType = from.getRepairType();
             myRepairIntervalInMs = from.getRepairIntervalInMs();
             myRepairWarningTimeInMs = from.getRepairWarningTimeInMs();
             myRepairErrorTimeInMs = from.getRepairErrorTimeInMs();
@@ -195,6 +207,18 @@ public class RepairConfiguration
         public Builder withParallelism(final RepairOptions.RepairParallelism parallelism)
         {
             myRepairParallelism = parallelism;
+            return this;
+        }
+
+        /**
+         * Build with repairType.
+         *
+         * @param repairType The type of repair.
+         * @return Builder
+         */
+        public Builder withRepairType(final RepairOptions.RepairType repairType)
+        {
+            myRepairType = repairType;
             return this;
         }
 

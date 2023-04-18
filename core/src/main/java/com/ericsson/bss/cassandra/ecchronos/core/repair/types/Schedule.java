@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 import com.google.common.annotations.VisibleForTesting;
@@ -53,6 +54,8 @@ public class Schedule
     public long nextRepairInMs;
     @NotBlank
     public ScheduleConfig config;
+    @NotBlank
+    public RepairOptions.RepairType repairType;
     public List<VirtualNodeState> virtualNodeStates;
 
     public Schedule()
@@ -67,7 +70,8 @@ public class Schedule
                     final double theRepairedRatio,
                     final long theLastRepairedAtInMs,
                     final long theNextRepairInMs,
-                    final ScheduleConfig theConfig)
+                    final ScheduleConfig theConfig,
+                    final RepairOptions.RepairType theRepairType)
     {
         this.id = theId;
         this.keyspace = theKeyspace;
@@ -78,6 +82,7 @@ public class Schedule
         this.nextRepairInMs = theNextRepairInMs;
         this.config = theConfig;
         this.virtualNodeStates = Collections.emptyList();
+        this.repairType = theRepairType;
     }
 
     public Schedule(final ScheduledRepairJobView repairJobView)
@@ -91,6 +96,7 @@ public class Schedule
         this.nextRepairInMs = repairJobView.getNextRepair();
         this.config = new ScheduleConfig(repairJobView);
         this.virtualNodeStates = Collections.emptyList();
+        this.repairType = repairJobView.getRepairType();
     }
 
     public Schedule(final ScheduledRepairJobView repairJobView, final boolean full)
@@ -134,7 +140,8 @@ public class Schedule
                 && status == that.status
                 && id.equals(that.id)
                 && config.equals(that.config)
-                && virtualNodeStates.equals(that.virtualNodeStates);
+                && virtualNodeStates.equals(that.virtualNodeStates)
+                && repairType.equals(that.repairType);
     }
 
     /**
@@ -146,6 +153,6 @@ public class Schedule
     public int hashCode()
     {
         return Objects.hash(id, keyspace, table, lastRepairedAtInMs, repairedRatio,
-                status, nextRepairInMs, config, virtualNodeStates);
+                status, nextRepairInMs, config, virtualNodeStates, repairType);
     }
 }

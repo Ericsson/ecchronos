@@ -30,19 +30,31 @@ public class ScheduledRepairJobView
     private final UUID myId;
     private final TableReference myTableReference;
     private final RepairConfiguration myRepairConfiguration;
-    private final RepairStateSnapshot myRepairStateSnapshot;
+    private RepairStateSnapshot myRepairStateSnapshot;
     private final Status myStatus;
     private final double myProgress;
     private final long myNextRepair;
     private final long myCompletionTime;
+    private final RepairOptions.RepairType myRepairType;
 
-    public ScheduledRepairJobView(final UUID id,
-                                  final TableReference tableReference,
-                                  final RepairConfiguration repairConfiguration,
-                                  final RepairStateSnapshot repairStateSnapshot,
-                                  final Status status,
-                                  final double progress,
-                                  final long nextRepair)
+    public ScheduledRepairJobView(final UUID id, final TableReference tableReference,
+            final RepairConfiguration repairConfiguration, final Status status, final double progress,
+            final long nextRepair, final long completionTime, final RepairOptions.RepairType repairType)
+    {
+        myId = id;
+        myTableReference = tableReference;
+        myRepairConfiguration = repairConfiguration;
+        myStatus = status;
+        myProgress = progress;
+        myNextRepair = nextRepair;
+        myCompletionTime = completionTime;
+        myRepairType = repairType;
+    }
+
+    public ScheduledRepairJobView(final UUID id, final TableReference tableReference,
+            final RepairConfiguration repairConfiguration, final RepairStateSnapshot repairStateSnapshot,
+            final Status status, final double progress, final long nextRepair,
+            final RepairOptions.RepairType repairType)
     {
         myId = id;
         myTableReference = tableReference;
@@ -52,6 +64,7 @@ public class ScheduledRepairJobView
         myProgress = progress;
         myNextRepair = nextRepair;
         myCompletionTime = repairStateSnapshot.lastCompletedAt();
+        myRepairType = repairType;
     }
 
     /**
@@ -135,6 +148,16 @@ public class ScheduledRepairJobView
     }
 
     /**
+     * Get repair type.
+     *
+     * @return RepairType
+     */
+    public RepairOptions.RepairType getRepairType()
+    {
+        return myRepairType;
+    }
+
+    /**
      * Equality (completion time is not considered).
      *
      * @param o The object to compare to.
@@ -158,7 +181,8 @@ public class ScheduledRepairJobView
                 && Objects.equals(myTableReference, that.myTableReference)
                 && Objects.equals(myRepairConfiguration, that.myRepairConfiguration)
                 && Objects.equals(myRepairStateSnapshot, that.myRepairStateSnapshot)
-                && myStatus == that.myStatus;
+                && Objects.equals(myStatus, that.myStatus)
+                && Objects.equals(myRepairType, that.myRepairType);
     }
 
     /**
@@ -170,6 +194,6 @@ public class ScheduledRepairJobView
     public int hashCode()
     {
         return Objects.hash(myId, myTableReference, myRepairConfiguration, myRepairStateSnapshot, myStatus, myProgress,
-                myNextRepair);
+                myNextRepair, myRepairType);
     }
 }

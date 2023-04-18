@@ -37,9 +37,8 @@ check with run policies if a job should run and also to acquire the leases for t
 
 The work a node needs to perform is split into different jobs.
 The most common example of a job is to keep a single table repaired from the local nodes point of view.
-The priority of the job is calculated based on the repair history in `system_distributed.repair_history`.
-The history is used to determine when the repair should run.
-This also has the effect that repairs performed outside of the local ecChronos instance would be included towards the progress.
+The priority of a job is calculated based on the last time the table was repaired.
+Repairs performed outside of the local ecChronos instance would be included towards the progress.
 
 When the job is executed the work is split into one or more tasks.
 In the case of repairs one task could correspond to the repair of one virtual node.
@@ -59,16 +58,20 @@ For more information about time based run policy refer to [Time based run policy
 ### Repair scheduling
 
 The repair scheduling begins by providing a [RepairConfiguration](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/RepairConfiguration.java) to the [RepairScheduler](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/RepairSchedulerImpl.java).
-The repair scheduler then creates a [TableRepairJob](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/TableRepairJob.java) and schedules it using the [ScheduleManager](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/scheduling/ScheduleManagerImpl.java).
+The repair scheduler then creates a [TableRepairJob](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/TableRepairJob.java)
+or [IncrementalRepairJob](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/IncrementalRepairJob.java)
+and schedules it using the [ScheduleManager](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/scheduling/ScheduleManagerImpl.java).
 
-Each table keeps a representation of the repair history in the [RepairState](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/state/RepairStateImpl.java).
-This information is used to determine when the table is eligable for the next repair and when to send alarms if necessary.
+#### Vnode repairs
+
+Each TableRepairJob keeps a representation of the repair history in the [RepairState](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/state/RepairStateImpl.java).
+This information is used to determine when the table is eligible for the next repair and when to send alarms if necessary.
 
 When a table is able to run repair the RepairState calculates the next tokens to repair and collects it in an ordered list of [ReplicaRepairGroups](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/state/ReplicaRepairGroup.java).
 The calculation is performed by the [VnodeRepairGroupFactory](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/state/VnodeRepairGroupFactory.java) by default.
 The TableRepairJob then generates [RepairGroups](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/RepairGroup.java) which are snapshots from how the state was when it was calculated.
-When the RepairGroup is executed it will generate one [RepairTask](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/RepairTask.java) per token range to repair.
-The RepairTask is the class that will perform the repair.
+When the RepairGroup is executed it will generate one [VnodeRepairTask](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/VnodeRepairTask.java) per token range to repair.
+The VnodeRepairTask is the class that will perform the repair.
 
 ## Sub-range repairs
 
@@ -110,5 +113,19 @@ Assuming that X is more than one hour before Y this will produce three sub range
 * (0, 15] repaired at X.
 * (15, 20] repaired at Y
 * (20, 30] repaired at X
+
+## Incremental repairs
+
+**Incremental repairs do not use ecchronos repair history**
+
+Each IncrementalRepairJob uses metrics from Cassandra `maxRepairedAt` and `percentRepaired`.
+This information is used to determine when the job is eligible for the next repair and when to send alarms if necessary.
+The job jumps over intervals if there's nothing to repair, i.e `percentRepaired` is 100%.
+
+When the job runs, it calculates the replicas that might be involved in the repair using
+[ReplicationStateImpl](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/state/ReplicationStateImpl.java).
+Afterwards a single [RepairGroups](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/RepairGroup.java) is created.
+When the RepairGroup is executed it will generate one [IncrementalRepairTask](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/IncrementalRepairTask.java).
+The IncrementalRepairTask is the class that will perform the incremental repair.
 
 [i96]: https://github.com/Ericsson/ecchronos/issues/96

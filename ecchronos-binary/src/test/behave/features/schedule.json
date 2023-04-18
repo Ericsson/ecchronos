@@ -26,6 +26,10 @@
       "type": "integer",
       "description": "When the table is scheduled for the next repair in millis since epoch"
     },
+    "repairType": {
+      "type": "string",
+      "description": "The type of repair for the schedule"
+    },
     "config": {
       "type": "object",
       "properties": {
@@ -61,6 +65,7 @@
     "config",
     "repairedRatio",
     "lastRepairedAtInMs",
-    "nextRepairInMs"
+    "nextRepairInMs",
+    "repairType"
   ]
 }

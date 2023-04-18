@@ -62,6 +62,12 @@ public class ReplicationStateService implements ReplicationState
     }
 
     @Override
+    public final ImmutableSet<DriverNode> getReplicas(final TableReference tableReference)
+    {
+        return delegateReplicationState.getReplicas(tableReference);
+    }
+
+    @Override
     public final ImmutableSet<DriverNode> getNodesClusterWide(final TableReference tableReference,
                                                               final LongTokenRange tokenRange)
     {

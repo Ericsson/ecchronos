@@ -102,9 +102,10 @@ public class RepairManagementRESTComponent implements RepairManagementREST
     @Override
     public final ResponseEntity<List<OnDemandRepair>> triggerRepair(final String keyspace,
                                                                     final String table,
-                                                                    final boolean isLocal)
+                                                                    final boolean isLocal,
+                                                                    final boolean isIncremental)
     {
-        return myDelegateRESTImpl.triggerRepair(keyspace, table, isLocal);
+        return myDelegateRESTImpl.triggerRepair(keyspace, table, isLocal, isIncremental);
     }
 
     @Override

@@ -171,6 +171,11 @@ repair:
   backoff:
     time: 30
     unit: MINUTES
+  ##
+  ## Specifies the default repair_type
+  ## Possible values are: vnode, incremental
+  ##
+  repair_type: vnode
 
 statistics:
   enabled: true

@@ -14,22 +14,35 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import com.ericsson.bss.cassandra.ecchronos.core.JmxProxy;
+import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 import org.assertj.core.util.Preconditions;
 import org.mockito.internal.util.collections.Sets;
 
+import javax.management.Notification;
+import javax.management.NotificationListener;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 public class TestUtils
 {
@@ -69,9 +82,9 @@ public class TestUtils
         private LongTokenRange longTokenRange = new LongTokenRange(1, 2);
         private Collection<VnodeRepairState> vnodeRepairStateSet;
         private RepairConfiguration repairConfiguration;
-
         private double progress = 0;
         private ScheduledRepairJobView.Status status = ScheduledRepairJobView.Status.ON_TIME;
+        private RepairOptions.RepairType repairType = RepairOptions.RepairType.VNODE;
 
         public ScheduledRepairJobBuilder withId(UUID id)
         {
@@ -127,6 +140,12 @@ public class TestUtils
             return this;
         }
 
+        public ScheduledRepairJobBuilder withRepairType(RepairOptions.RepairType repairType)
+        {
+            this.repairType = repairType;
+            return this;
+        }
+
 
         public ScheduledRepairJobView build()
         {
@@ -150,7 +169,7 @@ public class TestUtils
                 this.repairConfiguration = generateRepairConfiguration(repairInterval);
             }
             return new ScheduledRepairJobView(id, tableReference(keyspace, table), repairConfiguration,
-                    generateRepairStateSnapshot(lastRepairedAt, vnodeRepairStates), status,progress, lastRepairedAt + repairInterval);
+                    generateRepairStateSnapshot(lastRepairedAt, vnodeRepairStates), status,progress, lastRepairedAt + repairInterval, repairType);
         }
     }
 
@@ -165,6 +184,7 @@ public class TestUtils
         private double progress = 0;
         private OnDemandRepairJobView.Status status = OnDemandRepairJobView.Status.IN_QUEUE;
 		private RepairConfiguration repairConfiguration = RepairConfiguration.DEFAULT;
+        private RepairOptions.RepairType repairType = RepairOptions.RepairType.VNODE;
 
         public OnDemandRepairJobBuilder withId(UUID id)
         {
@@ -202,6 +222,12 @@ public class TestUtils
             return this;
         }
 
+        public OnDemandRepairJobBuilder withRepairType(RepairOptions.RepairType repairType)
+        {
+            this.repairType = repairType;
+            return this;
+        }
+
         public OnDemandRepairJobBuilder withStatus(OnDemandRepairJobView.Status status)
         {
             this.status = status;
@@ -220,7 +246,8 @@ public class TestUtils
             Preconditions.checkNotNull(table, "Table cannot be null");
             Preconditions.checkArgument(completedAt > 0 || completedAt == -1, "Last repaired not set");
 
-            return new OnDemandRepairJobView(id, hostId, tableReference(keyspace, table), status, progress, completedAt);
+            return new OnDemandRepairJobView(id, hostId, tableReference(keyspace, table), status, progress, completedAt,
+                    repairType);
         }
     }
 
@@ -234,5 +261,139 @@ public class TestUtils
             long lastRepairedAt)
     {
         return new VnodeRepairState(longTokenRange, replicas, lastRepairedAt);
+    }
+
+    public static class MockedJmxProxy implements JmxProxy
+    {
+        public final String myKeyspace;
+        public final String myTable;
+
+        public volatile NotificationListener myListener;
+
+        public volatile Map<String, String> myOptions;
+
+        public MockedJmxProxy(String keyspace, String table)
+        {
+            myKeyspace = keyspace;
+            myTable = table;
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            // Intentionally left empty
+        }
+
+        @Override
+        public void addStorageServiceListener(NotificationListener listener)
+        {
+            myListener = listener;
+        }
+
+        @Override
+        public int repairAsync(String keyspace, Map<String, String> options)
+        {
+            myOptions = options;
+            return 1;
+        }
+
+        @Override
+        public void forceTerminateAllRepairSessions()
+        {
+            // NOOP
+        }
+
+        @Override
+        public void removeStorageServiceListener(NotificationListener listener)
+        {
+            myListener = null;
+        }
+
+        @Override
+        public long liveDiskSpaceUsed(TableReference tableReference)
+        {
+            return 0;
+        }
+
+        @Override
+        public long getMaxRepairedAt(TableReference tableReference)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public double getPercentRepaired(TableReference tableReference)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        public void notify(Notification notification)
+        {
+            myListener.handleNotification(notification, null);
+        }
+
+        @Override
+        public List<String> getLiveNodes()
+        {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public List<String> getUnreachableNodes()
+        {
+            return Collections.emptyList();
+        }
+
+    }
+
+    public static CountDownLatch startRepair(final RepairTask repairTask, final boolean assertFailed, final MockedJmxProxy proxy)
+    {
+        final CountDownLatch cdl = new CountDownLatch(1);
+
+        new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    repairTask.execute();
+                    assertThat(assertFailed).isFalse();
+                }
+                catch (ScheduledJobException e)
+                {
+                    // Intentionally left empty
+                }
+                finally
+                {
+                    cdl.countDown();
+                }
+            }
+        }.start();
+
+        await().pollInterval(10, TimeUnit.MILLISECONDS).atMost(1, TimeUnit.SECONDS).until(() -> proxy.myListener != null);
+
+        return cdl;
+    }
+
+    public static String getFailedRepairMessage(LongTokenRange... ranges)
+    {
+        Collection<LongTokenRange> rangeCollection = Arrays.asList(ranges);
+        return String.format("Repair session RepairSession for range %s failed with error ...", rangeCollection);
+    }
+
+    public static String getRepairMessage(LongTokenRange... ranges)
+    {
+        Collection<LongTokenRange> rangeCollection = Arrays.asList(ranges);
+        return String.format("Repair session RepairSession for range %s finished", rangeCollection);
+    }
+
+    public static Map<String, Integer> getNotificationData(int type, int progressCount, int total)
+    {
+        Map<String, Integer> data = new HashMap<>();
+        data.put("type", type);
+        data.put("progressCount", progressCount);
+        data.put("total", total);
+        return data;
     }
 }

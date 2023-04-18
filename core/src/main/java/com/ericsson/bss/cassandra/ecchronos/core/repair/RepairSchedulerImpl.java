@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import com.ericsson.bss.cassandra.ecchronos.core.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
@@ -21,11 +22,11 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.AlarmPostUpdateHoo
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
-import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,12 +35,13 @@ import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * A factory creating {@link TableRepairJob}'s for tables based on the provided repair configuration.
@@ -50,7 +52,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
     private static final Logger LOG = LoggerFactory.getLogger(RepairSchedulerImpl.class);
 
-    private final Map<TableReference, TableRepairJob> myScheduledJobs = new HashMap<>();
+    private final Map<TableReference, Set<ScheduledRepairJob>> myScheduledJobs = new HashMap<>();
     private final Object myLock = new Object();
 
     private final ExecutorService myExecutor;
@@ -60,10 +62,12 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     private final TableRepairMetrics myTableRepairMetrics;
     private final ScheduleManager myScheduleManager;
     private final RepairStateFactory myRepairStateFactory;
+    private final ReplicationState myReplicationState;
     private final RepairLockType myRepairLockType;
     private final TableStorageStates myTableStorageStates;
     private final List<TableRepairPolicy> myRepairPolicies;
     private final RepairHistory myRepairHistory;
+    private final CassandraMetrics myCassandraMetrics;
 
     private RepairSchedulerImpl(final Builder builder)
     {
@@ -74,10 +78,12 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         myTableRepairMetrics = builder.myTableRepairMetrics;
         myScheduleManager = builder.myScheduleManager;
         myRepairStateFactory = builder.myRepairStateFactory;
+        myReplicationState = builder.myReplicationState;
         myRepairLockType = builder.myRepairLockType;
         myTableStorageStates = builder.myTableStorageStates;
         myRepairPolicies = new ArrayList<>(builder.myRepairPolicies);
-        myRepairHistory = Preconditions.checkNotNull(builder.myRepairHistory, "Repair history must be set");
+        myCassandraMetrics = builder.myCassandraMetrics;
+        myRepairHistory = builder.myRepairHistory;
     }
 
     @Override
@@ -101,8 +107,11 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         {
             for (TableReference tableReference : myScheduledJobs.keySet())
             {
-                ScheduledJob job = myScheduledJobs.get(tableReference);
-                descheduleTableJob(job);
+                Set<ScheduledRepairJob> jobs = myScheduledJobs.get(tableReference);
+                for (ScheduledRepairJob job : jobs)
+                {
+                    descheduleTableJob(job);
+                }
             }
 
             myScheduledJobs.clear();
@@ -110,8 +119,8 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     }
 
     @Override
-    public void putConfiguration(final TableReference tableReference,
-                                 final RepairConfiguration repairConfiguration)
+    public void putConfigurations(final TableReference tableReference,
+                                  final Set<RepairConfiguration> repairConfiguration)
     {
         myExecutor.execute(() -> handleTableConfigurationChange(tableReference, repairConfiguration));
     }
@@ -127,22 +136,28 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     {
         synchronized (myLock)
         {
-            return myScheduledJobs.values().stream()
-                    .map(TableRepairJob::getView)
-                    .collect(Collectors.toList());
+            List<ScheduledRepairJobView> views = new ArrayList<>();
+            for (Set<ScheduledRepairJob> jobs : myScheduledJobs.values())
+            {
+                for (ScheduledRepairJob job: jobs)
+                {
+                    views.add(job.getView());
+                }
+            }
+            return views;
         }
     }
 
     private void handleTableConfigurationChange(final TableReference tableReference,
-                                                final RepairConfiguration repairConfiguration)
+                                                final Set<RepairConfiguration> repairConfigurations)
     {
         synchronized (myLock)
         {
             try
             {
-                if (configurationHasChanged(tableReference, repairConfiguration))
+                if (configurationHasChanged(tableReference, repairConfigurations))
                 {
-                    createTableSchedule(tableReference, repairConfiguration);
+                    createTableSchedule(tableReference, repairConfigurations);
                 }
             }
             catch (Exception e)
@@ -153,23 +168,46 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     }
 
     private boolean configurationHasChanged(final TableReference tableReference,
-                                            final RepairConfiguration repairConfiguration)
+                                            final Set<RepairConfiguration> repairConfigurations)
     {
-        TableRepairJob tableRepairJob = myScheduledJobs.get(tableReference);
-
-        return tableRepairJob == null || !repairConfiguration.equals(tableRepairJob.getRepairConfiguration());
+        Set<ScheduledRepairJob> jobs = myScheduledJobs.get(tableReference);
+        if (jobs == null || jobs.isEmpty())
+        {
+            return true;
+        }
+        int matching = 0;
+        for (ScheduledRepairJob job : jobs)
+        {
+            for (RepairConfiguration repairConfiguration : repairConfigurations)
+            {
+                if (job.getRepairConfiguration().equals(repairConfiguration))
+                {
+                    matching++;
+                }
+            }
+        }
+        return matching != repairConfigurations.size();
     }
 
     private void createTableSchedule(final TableReference tableReference,
-                                     final RepairConfiguration repairConfiguration)
+                                     final Set<RepairConfiguration> repairConfigurations)
     {
-        TableRepairJob oldTableRepairJob = myScheduledJobs.get(tableReference);
-
-        descheduleTableJob(oldTableRepairJob);
-
-        TableRepairJob job = getRepairJob(tableReference, repairConfiguration);
-        myScheduledJobs.put(tableReference, job);
-        myScheduleManager.schedule(job);
+        Set<ScheduledRepairJob> jobs = myScheduledJobs.get(tableReference);
+        if (jobs != null)
+        {
+            for (ScheduledRepairJob job : jobs)
+            {
+                descheduleTableJob(job);
+            }
+        }
+        Set<ScheduledRepairJob> newJobs = new HashSet<>();
+        for (RepairConfiguration repairConfiguration : repairConfigurations)
+        {
+            ScheduledRepairJob job = createScheduledRepairJob(tableReference, repairConfiguration);
+            newJobs.add(job);
+            myScheduleManager.schedule(job);
+        }
+        myScheduledJobs.put(tableReference, newJobs);
     }
 
     private void handleTableConfigurationRemoved(final TableReference tableReference)
@@ -178,8 +216,11 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         {
             try
             {
-                ScheduledJob job = myScheduledJobs.remove(tableReference);
-                descheduleTableJob(job);
+                Set<ScheduledRepairJob> jobs = myScheduledJobs.remove(tableReference);
+                for (ScheduledRepairJob job : jobs)
+                {
+                    descheduleTableJob(job);
+                }
             }
             catch (Exception e)
             {
@@ -196,35 +237,50 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         }
     }
 
-    private TableRepairJob getRepairJob(final TableReference tableReference,
-                                        final RepairConfiguration repairConfiguration)
+    private ScheduledRepairJob createScheduledRepairJob(final TableReference tableReference,
+            final RepairConfiguration repairConfiguration)
     {
-        long repairIntervalInMs = repairConfiguration.getRepairIntervalInMs();
-
         ScheduledJob.Configuration configuration = new ScheduledJob.ConfigurationBuilder()
                 .withPriority(ScheduledJob.Priority.LOW)
-                .withRunInterval(repairIntervalInMs, TimeUnit.MILLISECONDS)
+                .withRunInterval(repairConfiguration.getRepairIntervalInMs(), TimeUnit.MILLISECONDS)
                 .withBackoff(repairConfiguration.getBackoffInMs(), TimeUnit.MILLISECONDS)
                 .build();
-        AlarmPostUpdateHook alarmPostUpdateHook = new AlarmPostUpdateHook(tableReference,
-                repairConfiguration, myFaultReporter);
-        RepairState repairState = myRepairStateFactory.create(tableReference, repairConfiguration, alarmPostUpdateHook);
+        ScheduledRepairJob job;
+        if (repairConfiguration.getRepairType().equals(RepairOptions.RepairType.INCREMENTAL))
+        {
+            job = new IncrementalRepairJob.Builder()
+                    .withConfiguration(configuration)
+                    .withJmxProxyFactory(myJmxProxyFactory)
+                    .withTableReference(tableReference)
+                    .withTableRepairMetrics(myTableRepairMetrics)
+                    .withRepairConfiguration(repairConfiguration)
+                    .withRepairLockType(myRepairLockType)
+                    .withReplicationState(myReplicationState)
+                    .withRepairPolices(myRepairPolicies)
+                    .withCassandraMetrics(myCassandraMetrics)
+                    .build();
+        }
+        else
+        {
+            AlarmPostUpdateHook alarmPostUpdateHook = new AlarmPostUpdateHook(tableReference, repairConfiguration,
+                    myFaultReporter);
+            RepairState repairState = myRepairStateFactory.create(tableReference, repairConfiguration,
+                    alarmPostUpdateHook);
+            job = new TableRepairJob.Builder()
+                    .withConfiguration(configuration)
+                    .withJmxProxyFactory(myJmxProxyFactory)
+                    .withTableReference(tableReference)
+                    .withRepairState(repairState)
+                    .withTableRepairMetrics(myTableRepairMetrics)
+                    .withRepairConfiguration(repairConfiguration)
+                    .withRepairLockType(myRepairLockType)
+                    .withTableStorageStates(myTableStorageStates)
+                    .withRepairPolices(myRepairPolicies)
+                    .withRepairHistory(myRepairHistory)
+                    .build();
 
-        TableRepairJob job = new TableRepairJob.Builder()
-                .withConfiguration(configuration)
-                .withJmxProxyFactory(myJmxProxyFactory)
-                .withTableReference(tableReference)
-                .withRepairState(repairState)
-                .withTableRepairMetrics(myTableRepairMetrics)
-                .withRepairConfiguration(repairConfiguration)
-                .withRepairLockType(myRepairLockType)
-                .withTableStorageStates(myTableStorageStates)
-                .withRepairPolices(myRepairPolicies)
-                .withRepairHistory(myRepairHistory)
-                .build();
-
+        }
         job.runnable();
-
         return job;
     }
 
@@ -240,9 +296,11 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         private TableRepairMetrics myTableRepairMetrics;
         private ScheduleManager myScheduleManager;
         private RepairStateFactory myRepairStateFactory;
+        private ReplicationState myReplicationState;
         private RepairLockType myRepairLockType;
         private TableStorageStates myTableStorageStates;
         private RepairHistory myRepairHistory;
+        private CassandraMetrics myCassandraMetrics;
         private final List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
 
         /**
@@ -306,6 +364,18 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         }
 
         /**
+         * RepairSchedulerImpl build with replication state.
+         *
+         * @param theReplicationState Replication state.
+         * @return Builder
+         */
+        public Builder withReplicationState(final ReplicationState theReplicationState)
+        {
+            myReplicationState = theReplicationState;
+            return this;
+        }
+
+        /**
          * RepairSchedulerImpl build with repair lock type.
          *
          * @param repairLockType Repair lock type.
@@ -350,6 +420,18 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         public Builder withRepairHistory(final RepairHistory repairHistory)
         {
             myRepairHistory = repairHistory;
+            return this;
+        }
+
+        /**
+         * Build with cassandra metrics.
+         *
+         * @param cassandraMetrics Cassandra metrics.
+         * @return Builder
+         */
+        public Builder withCassandraMetrics(final CassandraMetrics cassandraMetrics)
+        {
+            myCassandraMetrics = cassandraMetrics;
             return this;
         }
 

@@ -258,7 +258,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     public final ResponseEntity<List<OnDemandRepair>> triggerRepair(
             @RequestParam(required = false) final String keyspace,
             @RequestParam(required = false) final String table,
-            @RequestParam(required = false) final boolean isLocal
+            @RequestParam(required = false) final boolean isLocal,
+            @RequestParam(required = false) final boolean isIncremental
     )
     {
         try
@@ -274,12 +275,13 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                         throw new ResponseStatusException(NOT_FOUND,
                                 "Table " + keyspace + "." + table + " does not exist");
                     }
-                    onDemandRepairs = runLocalOrCluster(isLocal,
+                    onDemandRepairs = runLocalOrCluster(isLocal, isIncremental,
                             Collections.singleton(myTableReferenceFactory.forTable(keyspace, table)));
                 }
                 else
                 {
-                    onDemandRepairs = runLocalOrCluster(isLocal, myTableReferenceFactory.forKeyspace(keyspace));
+                    onDemandRepairs = runLocalOrCluster(
+                            isLocal, isIncremental, myTableReferenceFactory.forKeyspace(keyspace));
                 }
             }
             else
@@ -288,7 +290,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                 {
                     throw new ResponseStatusException(BAD_REQUEST, "Keyspace must be provided if table is provided");
                 }
-                onDemandRepairs = runLocalOrCluster(isLocal, myTableReferenceFactory.forCluster());
+                onDemandRepairs = runLocalOrCluster(isLocal, isIncremental, myTableReferenceFactory.forCluster());
             }
             return ResponseEntity.ok(onDemandRepairs);
         }
@@ -401,8 +403,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         return new RepairInfo(sinceTime, toTime, repairStats);
     }
 
-    private List<OnDemandRepair> runLocalOrCluster(final boolean isLocal, final Set<TableReference> tables)
-            throws EcChronosException
+    private List<OnDemandRepair> runLocalOrCluster(final boolean isLocal, final boolean isIncremental,
+            final Set<TableReference> tables) throws EcChronosException
     {
         List<OnDemandRepair> onDemandRepairs = new ArrayList<>();
         for (TableReference tableReference : tables)
@@ -411,7 +413,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
             {
                 if (myReplicatedTableProvider.accept(tableReference.getKeyspace()))
                 {
-                    onDemandRepairs.add(new OnDemandRepair(myOnDemandRepairScheduler.scheduleJob(tableReference)));
+                    onDemandRepairs.add(new OnDemandRepair(
+                            myOnDemandRepairScheduler.scheduleJob(tableReference, isIncremental)));
                 }
             }
             else
@@ -419,7 +422,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                 if (myReplicatedTableProvider.accept(tableReference.getKeyspace()))
                 {
                     List<OnDemandRepairJobView> repairJobView = myOnDemandRepairScheduler.scheduleClusterWideJob(
-                            tableReference);
+                            tableReference, isIncremental);
                     onDemandRepairs.addAll(
                             repairJobView.stream().map(OnDemandRepair::new).collect(Collectors.toList()));
                 }

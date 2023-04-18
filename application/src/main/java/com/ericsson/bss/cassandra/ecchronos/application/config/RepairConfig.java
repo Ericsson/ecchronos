@@ -14,9 +14,11 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config;
 
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
 
 @SuppressWarnings({"checkstyle:membername", "checkstyle:methodname"})
@@ -35,6 +37,8 @@ public class RepairConfig
     @SuppressWarnings("checkstyle:MagicNumber")
     private Config.Interval backoff = new Config.Interval(30, TimeUnit.MINUTES);
     private boolean ignore_twcs_tables = false;
+
+    private RepairOptions.RepairType repair_type = RepairOptions.RepairType.VNODE;
 
     public final Config.Alarm getAlarm()
     {
@@ -73,6 +77,16 @@ public class RepairConfig
         this.ignore_twcs_tables = ignoreTWCSTables;
     }
 
+    public final RepairOptions.RepairType getRepairType()
+    {
+        return repair_type;
+    }
+
+    public final void setRepair_type(final String repairType)
+    {
+        this.repair_type = RepairOptions.RepairType.valueOf(repairType.toUpperCase(Locale.US));
+    }
+
     public final boolean getIgnoreTWCSTables()
     {
         return ignore_twcs_tables;
@@ -102,6 +116,7 @@ public class RepairConfig
                 .withRepairUnwindRatio(unwind_ratio)
                 .withTargetRepairSizeInBytes(size_target)
                 .withBackoff(backoff.getInterval(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
+                .withRepairType(repair_type)
                 .build();
     }
 }

@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import org.junit.Test;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
@@ -38,7 +39,7 @@ public class TestRepairSchedule
 
         RepairSchedule schedule = objectMapper.readValue(file, RepairSchedule.class);
 
-        assertThat(schedule.getRepairConfiguration("nonexisting", "keyspace")).isEmpty();
+        assertThat(schedule.getRepairConfigurations("nonexisting", "keyspace")).isEmpty();
     }
 
     @Test
@@ -71,10 +72,10 @@ public class TestRepairSchedule
                 .withTargetRepairSizeInBytes(UnitConverter.toBytes("100m"))
                 .build();
 
-        assertThat(schedule.getRepairConfiguration("ks1", "tb1")).contains(ks1tb1);
-        assertThat(schedule.getRepairConfiguration("ks1", "tb2")).contains(ks1tb2);
-        assertThat(schedule.getRepairConfiguration("ks2", "tb1")).contains(ks2tb1);
-        assertThat(schedule.getRepairConfiguration("ks2", "tb2")).contains(RepairConfiguration.DISABLED);
+        assertThat(schedule.getRepairConfigurations("ks1", "tb1")).containsExactly(ks1tb1);
+        assertThat(schedule.getRepairConfigurations("ks1", "tb2")).containsExactly(ks1tb2);
+        assertThat(schedule.getRepairConfigurations("ks2", "tb1")).containsExactly(ks2tb1);
+        assertThat(schedule.getRepairConfigurations("ks2", "tb2")).containsExactly(RepairConfiguration.DISABLED);
     }
 
     @Test
@@ -102,16 +103,63 @@ public class TestRepairSchedule
                 .withRepairInterval(2, TimeUnit.DAYS)
                 .build();
 
-        assertThat(schedule.getRepairConfiguration("any", "nonexisting")).isEmpty();
+        assertThat(schedule.getRepairConfigurations("any", "nonexisting")).isEmpty();
 
-        assertThat(schedule.getRepairConfiguration("any", "table_abc")).contains(allKeyspacesPattern);
-        assertThat(schedule.getRepairConfiguration("ks2", "table_abc")).contains(allKeyspacesPattern);
+        assertThat(schedule.getRepairConfigurations("any", "table_abc")).containsExactly(allKeyspacesPattern);
+        assertThat(schedule.getRepairConfigurations("ks2", "table_abc")).containsExactly(allKeyspacesPattern);
 
-        assertThat(schedule.getRepairConfiguration("any", "tb2")).contains(allKeyspacesTb2);
+        assertThat(schedule.getRepairConfigurations("any", "tb2")).containsExactly(allKeyspacesTb2);
 
-        assertThat(schedule.getRepairConfiguration("ks2", "tb1")).contains(ks2Tb1);
-        assertThat(schedule.getRepairConfiguration("ks2", "tb2")).contains(ks2Tb2);
+        assertThat(schedule.getRepairConfigurations("ks2", "tb1")).containsExactly(ks2Tb1);
+        assertThat(schedule.getRepairConfigurations("ks2", "tb2")).containsExactly(ks2Tb2);
 
-        assertThat(schedule.getRepairConfiguration("ks2", "tb23")).isEmpty();
+        assertThat(schedule.getRepairConfigurations("ks2", "tb23")).isEmpty();
+    }
+
+    @Test
+    public void testMultipleSchedulesForSameTable() throws Exception
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("multiple_schedules.yml").getFile());
+
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
+        RepairSchedule schedule = objectMapper.readValue(file, RepairSchedule.class);
+
+        RepairConfiguration vnodeKs1tb1 = RepairConfiguration.newBuilder()
+                .withRepairInterval(44, TimeUnit.DAYS)
+                .withRepairType(RepairOptions.RepairType.VNODE)
+                .build();
+
+        RepairConfiguration incrementalKs1tb1 = RepairConfiguration.newBuilder()
+                .withRepairInterval(1, TimeUnit.DAYS)
+                .withRepairType(RepairOptions.RepairType.INCREMENTAL)
+                .build();
+
+        assertThat(schedule.getRepairConfigurations("ks1", "tb1")).containsExactlyInAnyOrder(vnodeKs1tb1, incrementalKs1tb1);
+    }
+
+    @Test
+    public void testMultipleSchedulesForSameTableRegex() throws Exception
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("multiple_schedules_regex.yml").getFile());
+
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
+        RepairSchedule schedule = objectMapper.readValue(file, RepairSchedule.class);
+
+        RepairConfiguration vnodeRegexTable = RepairConfiguration.newBuilder()
+                .withRepairInterval(44, TimeUnit.DAYS)
+                .withRepairType(RepairOptions.RepairType.VNODE)
+                .build();
+
+        RepairConfiguration incrementalRegexTable = RepairConfiguration.newBuilder()
+                .withRepairInterval(1, TimeUnit.DAYS)
+                .withRepairType(RepairOptions.RepairType.INCREMENTAL)
+                .build();
+
+        assertThat(schedule.getRepairConfigurations("ks1", "tb1")).containsExactlyInAnyOrder(vnodeRegexTable, incrementalRegexTable);
+        assertThat(schedule.getRepairConfigurations("ks1", "tb2")).containsExactlyInAnyOrder(vnodeRegexTable, incrementalRegexTable);
     }
 }

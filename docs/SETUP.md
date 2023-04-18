@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS ecchronos.on_demand_repair_status (
     repaired_tokens frozen<set<frozen<token_range>>>,
     status text,
     completed_time timestamp,
+    repair_type text,
     PRIMARY KEY(host_id, job_id))
     WITH default_time_to_live = 2592000
     AND gc_grace_seconds = 0;

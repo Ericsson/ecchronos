@@ -66,6 +66,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -94,7 +95,7 @@ import static org.mockito.Mockito.when;
 
 @RunWith(Parameterized.class)
 @NotThreadSafe
-public class ITTableRepairJob extends TestBase
+public class ITSchedules extends TestBase
 {
     enum RepairHistoryType
     {
@@ -427,7 +428,7 @@ public class ITTableRepairJob extends TestBase
     {
         if (myRepairs.add(tableReference))
         {
-            myRepairSchedulerImpl.putConfiguration(tableReference, myRepairConfiguration);
+            myRepairSchedulerImpl.putConfigurations(tableReference, Collections.singleton(myRepairConfiguration));
         }
     }
 

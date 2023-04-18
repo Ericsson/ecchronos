@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairJobView;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TestUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
@@ -42,6 +43,7 @@ public class TestOnDemandRepair
                 .withCompletedAt(completedAt)
                 .withStatus(Status.COMPLETED)
                 .withProgress(1.0d)
+                .withRepairType(RepairOptions.RepairType.VNODE)
                 .build();
 
         OnDemandRepair onDemandRepair = new OnDemandRepair(repairJobView);
@@ -53,6 +55,7 @@ public class TestOnDemandRepair
         assertThat(onDemandRepair.repairedRatio).isEqualTo(1.0d);
         assertThat(onDemandRepair.status).isEqualTo(Status.COMPLETED);
         assertThat(onDemandRepair.completedAt).isEqualTo(completedAt);
+        assertThat(onDemandRepair.repairType).isEqualTo(RepairOptions.RepairType.VNODE);
     }
 
     @Test
@@ -70,6 +73,7 @@ public class TestOnDemandRepair
                 .withCompletedAt(completedAt)
                 .withStatus(Status.ERROR)
                 .withProgress(0.5d)
+                .withRepairType(RepairOptions.RepairType.INCREMENTAL)
                 .build();
         OnDemandRepair onDemandRepair = new OnDemandRepair(repairJobView);
 
@@ -80,6 +84,7 @@ public class TestOnDemandRepair
         assertThat(onDemandRepair.repairedRatio).isEqualTo(0.5d);
         assertThat(onDemandRepair.completedAt).isEqualTo(completedAt);
         assertThat(onDemandRepair.status).isEqualTo(Status.ERROR);
+        assertThat(onDemandRepair.repairType).isEqualTo(RepairOptions.RepairType.INCREMENTAL);
     }
 
     @Test
@@ -102,7 +107,7 @@ public class TestOnDemandRepair
     public void testEqualsContract()
     {
         EqualsVerifier.simple().forClass(OnDemandRepair.class).usingGetClass()
-                .withNonnullFields("id", "hostId", "keyspace", "table")
+                .withNonnullFields("id", "hostId", "keyspace", "table", "repairType")
                 .verify();
     }
 }

@@ -68,6 +68,7 @@ class Repair(Job):
         Job.__init__(self, data)
         self.completed_at = int(data["completedAt"] if "completedAt" in data else -1)
         self.host_id = data["hostId"] if "hostId" in data else "<UNKNOWN>"
+        self.repair_type = data["repairType"] if "repairType" in data else "VNODE"
 
     def get_completed_at(self):
         if self.completed_at == -1:
@@ -83,6 +84,7 @@ class Schedule(Job):
         self.status = data["status"] if "status" in data else "<UNKNOWN>"
         self.next_repair_in_ms = int(data["nextRepairInMs"] if "nextRepairInMs" in data else -1)
         self.config = data["config"] if "config" in data else "<UNKNOWN>"
+        self.repair_type = data["repairType"] if "repairType" in data else "VNODE"
 
     def get_config(self):
         return json.dumps(self.config).strip('{}')

@@ -55,7 +55,7 @@ public class TestFileBasedRepairConfiguration
     {
         AbstractRepairConfigurationProvider repairConfigProvider = withSchedule("schedule.yml");
 
-        assertThat(repairConfigProvider.get(tableReference("any", "table"))).isEqualTo(RepairConfiguration.DEFAULT);
+        assertThat(repairConfigProvider.get(tableReference("any", "table"))).containsExactly(RepairConfiguration.DEFAULT);
     }
 
     @Test
@@ -102,7 +102,7 @@ public class TestFileBasedRepairConfiguration
     private void assertConfig(AbstractRepairConfigurationProvider repairConfigProvider, String keyspace, String table,
             RepairConfiguration repairConfiguration)
     {
-        assertThat(repairConfigProvider.get(tableReference(keyspace, table))).isEqualTo(repairConfiguration);
+        assertThat(repairConfigProvider.get(tableReference(keyspace, table))).containsExactly(repairConfiguration);
     }
 
     private AbstractRepairConfigurationProvider withSchedule(String schedule) throws Exception

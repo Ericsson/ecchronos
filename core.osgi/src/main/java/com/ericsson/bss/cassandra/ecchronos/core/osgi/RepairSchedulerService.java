@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.osgi;
 
 import java.util.List;
+import java.util.Set;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
@@ -108,10 +109,10 @@ public class RepairSchedulerService implements RepairScheduler
     }
 
     @Override
-    public final void putConfiguration(final TableReference tableReference,
-                                       final RepairConfiguration repairConfiguration)
+    public final void putConfigurations(final TableReference tableReference,
+            final Set<RepairConfiguration> repairConfigurations)
     {
-        myDelegateRepairSchedulerImpl.putConfiguration(tableReference, repairConfiguration);
+        myDelegateRepairSchedulerImpl.putConfigurations(tableReference, repairConfigurations);
     }
 
     @Override

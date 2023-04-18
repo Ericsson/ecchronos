@@ -160,6 +160,26 @@ public class TestReplicationStateImpl
     }
 
     @Test
+    public void testGetReplicas() throws Exception
+    {
+        TableReference tableReference = tableReference("ks", "tb");
+
+        TokenRange tokenRange1 = TokenUtil.getRange(1, 2);
+        TokenRange tokenRange2 = TokenUtil.getRange(2, 3);
+
+        doReturn(Sets.newHashSet(tokenRange1, tokenRange2)).when(mockTokenMap)
+                .getTokenRanges(eq("ks"), eq(mockReplica1));
+        doReturn(Sets.newHashSet(mockReplica1, mockReplica2)).when(mockTokenMap).getReplicas(eq("ks"), eq(tokenRange1));
+        doReturn(Sets.newHashSet(mockReplica1, mockReplica3)).when(mockTokenMap).getReplicas(eq("ks"), eq(tokenRange2));
+
+        ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockSession, mockReplica1);
+
+        ImmutableSet<DriverNode> replicas = replicationState.getReplicas(tableReference);
+
+        assertThat(replicas).containsExactlyInAnyOrder(mockNode1, mockNode2, mockNode3);
+    }
+
+    @Test
     public void testGetTokenRangeToReplicaSetReuse() throws Exception
     {
         LongTokenRange range1 = new LongTokenRange(1, 2);

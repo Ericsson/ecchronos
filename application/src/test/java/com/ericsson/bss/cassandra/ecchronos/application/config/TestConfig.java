@@ -45,9 +45,10 @@ import org.springframework.context.ApplicationContext;
 import javax.management.remote.JMXConnector;
 import javax.net.ssl.SSLEngine;
 import java.io.File;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -418,9 +419,9 @@ public class TestConfig
         }
 
         @Override
-        public Optional<RepairConfiguration> forTable(TableReference tableReference)
+        public Set<RepairConfiguration> forTable(TableReference tableReference)
         {
-            return Optional.empty();
+            return Collections.emptySet();
         }
     }
 
