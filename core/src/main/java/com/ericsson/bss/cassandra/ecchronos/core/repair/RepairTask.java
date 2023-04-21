@@ -245,7 +245,7 @@ public class RepairTask implements NotificationListener //NOPMD Possible god cla
                 hasLostNotification = true;
                 break;
 
-            case JMXConnectionNotification.FAILED: // NOPMD
+            case JMXConnectionNotification.FAILED:
             case JMXConnectionNotification.CLOSED:
                 handleConnectionFailed();
                 break;
