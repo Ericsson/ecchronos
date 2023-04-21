@@ -118,8 +118,7 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
                 }
                 catch (InterruptedException e1)
                 {
-                    // Should never occur
-                    LOG.error("Unexpected Interrupt", e1);
+                    LOG.error("Unexpected interrupt while trying to connect to Cassandra", e1);
                     throw e;
                 }
             }
