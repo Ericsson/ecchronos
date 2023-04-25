@@ -21,12 +21,15 @@ import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.schema.AggregateMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.FunctionMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.ViewMetadata;
+import com.datastax.oss.driver.api.core.metadata.NodeStateListener;
+import com.datastax.oss.driver.api.core.session.Session;
 import com.datastax.oss.driver.api.core.type.UserDefinedType;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
@@ -38,7 +41,7 @@ import com.google.common.base.Preconditions;
  * A repair configuration provider that adds configuration to {@link RepairScheduler} based on whether or not the table
  * is replicated locally using the default repair configuration provided during construction of this object.
  */
-public class DefaultRepairConfigurationProvider implements SchemaChangeListener
+public class DefaultRepairConfigurationProvider implements SchemaChangeListener, NodeStateListener
 {
     private CqlSession mySession;
     private ReplicatedTableProvider myReplicatedTableProvider;
@@ -49,6 +52,18 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     public DefaultRepairConfigurationProvider()
     {
         //NOOP
+    }
+
+    private DefaultRepairConfigurationProvider(final Builder builder)
+    {
+        mySession = builder.mySession;
+        myReplicatedTableProvider = builder.myReplicatedTableProvider;
+        myRepairScheduler = builder.myRepairScheduler;
+        myRepairConfigurationFunction = builder.myRepairConfigurationFunction;
+        myTableReferenceFactory = Preconditions.checkNotNull(builder.myTableReferenceFactory,
+                "Table reference factory must be set");
+
+        setupConfiguration();
     }
 
     /**
@@ -65,33 +80,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         myTableReferenceFactory = Preconditions.checkNotNull(builder.myTableReferenceFactory,
                 "Table reference factory must be set");
 
-        for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
-        {
-            String keyspaceName = keyspaceMetadata.getName().asInternal();
-            if (myReplicatedTableProvider.accept(keyspaceName))
-            {
-                allTableOperation(keyspaceName, this::updateConfiguration);
-            }
-        }
-    }
-
-    private DefaultRepairConfigurationProvider(final Builder builder)
-    {
-        mySession = builder.mySession;
-        myReplicatedTableProvider = builder.myReplicatedTableProvider;
-        myRepairScheduler = builder.myRepairScheduler;
-        myRepairConfigurationFunction = builder.myRepairConfigurationFunction;
-        myTableReferenceFactory = Preconditions.checkNotNull(builder.myTableReferenceFactory,
-                "Table reference factory must be set");
-
-        for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
-        {
-            String keyspaceName = keyspaceMetadata.getName().asInternal();
-            if (myReplicatedTableProvider.accept(keyspaceName))
-            {
-                allTableOperation(keyspaceName, this::updateConfiguration);
-            }
-        }
+        setupConfiguration();
     }
 
     /**
@@ -385,6 +374,84 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     public void onViewUpdated(final ViewMetadata current, final ViewMetadata previous)
     {
         // NOOP
+    }
+
+    /**
+     * Called when the session is up and ready. Will invoke the listeners' onSessionReady methods.
+     *
+     * @param session The session
+     */
+    @Override
+    public void onSessionReady(final Session session)
+    {
+        SchemaChangeListener.super.onSessionReady(session);
+        // prepare the NodeStateListener
+        NodeStateListener.super.onSessionReady(session);
+    }
+
+    /**
+     * Callback for when a node is added to the cluster.
+     *
+     * @param node
+     */
+    @Override
+    public void onAdd(final Node node)
+    {
+        setupConfiguration();
+    }
+
+    /**
+     * Callback for when a node is considered to be up.
+     *
+     * @param node
+     */
+    @Override
+    public void onUp(final Node node)
+    {
+        setupConfiguration();
+    }
+
+    /**
+     * Callback for when a node is considered to be down.
+     *
+     * @param node
+     */
+    @Override
+    public void onDown(final Node node)
+    {
+        setupConfiguration();
+    }
+
+    /**
+     * Callback for when a node is considered to be removed from the cluster.
+     *
+     * @param node
+     */
+    @Override
+    public void onRemove(final Node node)
+    {
+        setupConfiguration();
+    }
+
+    /**
+     * This will go through all the configuration, given mySession is set, otherwise it will just silently
+     * return.
+     */
+    private void setupConfiguration()
+    {
+        if (mySession == null)
+        {
+            return;
+        }
+
+        for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
+        {
+            String keyspaceName = keyspaceMetadata.getName().asInternal();
+            if (myReplicatedTableProvider.accept(keyspaceName))
+            {
+                allTableOperation(keyspaceName, this::updateConfiguration);
+            }
+        }
     }
 
     public static class Builder

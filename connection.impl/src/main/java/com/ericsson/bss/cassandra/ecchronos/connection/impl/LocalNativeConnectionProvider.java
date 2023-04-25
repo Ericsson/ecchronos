@@ -22,6 +22,7 @@ import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.config.ProgrammaticDriverConfigLoaderBuilder;
 import com.datastax.oss.driver.api.core.metadata.EndPoint;
 import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metadata.NodeStateListener;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import com.datastax.oss.driver.api.core.metrics.DefaultNodeMetric;
 import com.datastax.oss.driver.api.core.metrics.DefaultSessionMetric;
@@ -119,6 +120,7 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
         private AuthProvider myAuthProvider = null;
         private SslEngineFactory mySslEngineFactory = null;
         private SchemaChangeListener mySchemaChangeListener = null;
+        private NodeStateListener myNodeStateListener = null;
         private MeterRegistry myMeterRegistry = null;
 
         public final Builder withLocalhost(final String localhost)
@@ -154,6 +156,12 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
         public final Builder withSchemaChangeListener(final SchemaChangeListener schemaChangeListener)
         {
             this.mySchemaChangeListener = schemaChangeListener;
+            return this;
+        }
+
+        public final Builder withNodeStateListener(final NodeStateListener nodeStateListener)
+        {
+            this.myNodeStateListener = nodeStateListener;
             return this;
         }
 
@@ -244,7 +252,8 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
                     .addContactEndPoint(builder.localEndPoint())
                     .withAuthProvider(builder.myAuthProvider)
                     .withSslEngineFactory(builder.mySslEngineFactory)
-                    .withSchemaChangeListener(builder.mySchemaChangeListener);
+                    .withSchemaChangeListener(builder.mySchemaChangeListener)
+                    .withNodeStateListener(builder.myNodeStateListener);
         }
 
         private static Node resolveLocalhost(final Session session, final EndPoint localEndpoint)
