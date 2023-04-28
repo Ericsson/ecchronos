@@ -178,7 +178,7 @@ public class TestRepairGroup
         Collection<RepairTask> repairTasks = repairGroup.getRepairTasks();
 
         assertThat(repairTasks).hasSize(1);
-        RepairTask repairTask = repairTasks.iterator().next();
+        SubrangeRepairTask repairTask = (SubrangeRepairTask) repairTasks.iterator().next();
 
         assertThat(repairTask.getReplicas()).containsExactlyInAnyOrderElementsOf(nodes);
         assertThat(repairTask.getTokenRanges()).containsExactly(range);
@@ -219,7 +219,7 @@ public class TestRepairGroup
         for (LongTokenRange expectedRange : expectedTokenRanges)
         {
             assertThat(iterator.hasNext()).isTrue();
-            RepairTask repairTask = iterator.next();
+            SubrangeRepairTask repairTask = (SubrangeRepairTask) iterator.next();
 
             assertThat(repairTask.getReplicas()).containsExactlyInAnyOrderElementsOf(nodes);
             assertThat(repairTask.getTokenRanges()).containsExactly(expectedRange);
@@ -250,8 +250,9 @@ public class TestRepairGroup
 
         Set<LongTokenRange> repairTaskRanges = new HashSet<>();
 
-        for (RepairTask repairTask : tasks)
+        for (RepairTask task : tasks)
         {
+            SubrangeRepairTask repairTask = (SubrangeRepairTask) task;
             assertThat(repairTask.getTokenRanges().size()).isEqualTo(1);
             LongTokenRange range = repairTask.getTokenRanges().iterator().next();
             repairTaskRanges.add(range);
