@@ -175,9 +175,12 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
     @Override
     public void close()
     {
-        for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
+        if (mySession != null)
         {
-            allTableOperation(keyspaceMetadata.getName().asInternal(), myRepairScheduler::removeConfiguration);
+            for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
+            {
+                allTableOperation(keyspaceMetadata.getName().asInternal(), myRepairScheduler::removeConfiguration);
+            }
         }
     }
 

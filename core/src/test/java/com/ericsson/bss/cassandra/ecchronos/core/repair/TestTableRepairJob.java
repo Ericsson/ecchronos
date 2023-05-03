@@ -325,7 +325,7 @@ public class TestTableRepairJob
         Collection<RepairTask> repairTasks = ((RepairGroup) task).getRepairTasks();
 
         assertThat(repairTasks).hasSize(1);
-        RepairTask repairTask = repairTasks.iterator().next();
+        SubrangeRepairTask repairTask = (SubrangeRepairTask) repairTasks.iterator().next();
         assertThat(repairTask.getReplicas()).containsExactlyInAnyOrderElementsOf(replicas);
         assertThat(repairTask.getTokenRanges()).containsExactly(tokenRange);
         assertThat(repairTask.getRepairConfiguration()).isEqualTo(myRepairConfiguration);
@@ -377,7 +377,7 @@ public class TestTableRepairJob
         for (LongTokenRange expectedRange : expectedTokenRanges)
         {
             assertThat(repairTaskIterator.hasNext()).isTrue();
-            RepairTask repairTask = repairTaskIterator.next();
+            SubrangeRepairTask repairTask = (SubrangeRepairTask) repairTaskIterator.next();
             assertThat(repairTask.getReplicas()).containsExactlyInAnyOrderElementsOf(replicas);
             assertThat(repairTask.getRepairConfiguration()).isEqualTo(myRepairConfiguration);
             assertThat(repairTask.getTableReference()).isEqualTo(myTableReference);

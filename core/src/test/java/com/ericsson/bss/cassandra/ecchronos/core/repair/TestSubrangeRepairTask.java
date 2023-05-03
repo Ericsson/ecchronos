@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -66,7 +67,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.Sets;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
-public class TestRepairTask
+public class TestSubrangeRepairTask
 {
     private static final String KEYSPACE_NAME = "keyspace";
     private static final String TABLE_NAME = "table";
@@ -81,6 +82,8 @@ public class TestRepairTask
 
     @Mock
     private RepairHistory repairHistory;
+
+    private RepairConfiguration myRepairConfiguration = RepairConfiguration.DEFAULT;
 
     private UUID jobId = UUID.randomUUID();
 
@@ -115,22 +118,16 @@ public class TestRepairTask
     @Test
     public void testRepairSuccessfully() throws InterruptedException
     {
-        Collection<LongTokenRange> ranges = new ArrayList<>();
+        Set<LongTokenRange> ranges = new HashSet<>();
         LongTokenRange range1 = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(3, 4);
 
         ranges.add(range1);
         ranges.add(range2);
 
-        final RepairTask repairTask = new RepairTask.Builder()
-                .withJMXProxyFactory(jmxProxyFactory)
-                .withTableReference(myTableReference)
-                .withTokenRanges(ranges)
-                .withTableRepairMetrics(myTableRepairMetrics)
-                .withRepairHistory(repairHistory)
-                .withJobId(jobId)
-                .withReplicas(participants)
-                .build();
+
+        final SubrangeRepairTask repairTask = new SubrangeRepairTask(jmxProxyFactory, myTableReference, myRepairConfiguration,
+                myTableRepairMetrics, repairHistory, ranges, participants, jobId);
 
         CountDownLatch cdl = startRepair(repairTask, false);
 
@@ -162,20 +159,13 @@ public class TestRepairTask
     @Test
     public void testRepairSingleRangeSuccessfully() throws InterruptedException
     {
-        Collection<LongTokenRange> ranges = new ArrayList<>();
+        Set<LongTokenRange> ranges = new HashSet<>();
         LongTokenRange range = new LongTokenRange(1, 2);
 
         ranges.add(range);
 
-        final RepairTask repairTask = new RepairTask.Builder()
-                .withJMXProxyFactory(jmxProxyFactory)
-                .withTableReference(myTableReference)
-                .withTokenRanges(ranges)
-                .withTableRepairMetrics(myTableRepairMetrics)
-                .withRepairHistory(repairHistory)
-                .withJobId(jobId)
-                .withReplicas(participants)
-                .build();
+        final SubrangeRepairTask repairTask = new SubrangeRepairTask(jmxProxyFactory, myTableReference, myRepairConfiguration,
+                myTableRepairMetrics, repairHistory, ranges, participants, jobId);
 
         CountDownLatch cdl = startRepair(repairTask, false);
 
@@ -201,22 +191,15 @@ public class TestRepairTask
     @Test
     public void testRepairHalf() throws InterruptedException
     {
-        Collection<LongTokenRange> ranges = new ArrayList<>();
+        Set<LongTokenRange> ranges = new HashSet<>();
         LongTokenRange range1 = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(3, 4);
 
         ranges.add(range1);
         ranges.add(range2);
 
-        final RepairTask repairTask = new RepairTask.Builder()
-                .withJMXProxyFactory(jmxProxyFactory)
-                .withTableReference(myTableReference)
-                .withTokenRanges(ranges)
-                .withTableRepairMetrics(myTableRepairMetrics)
-                .withRepairHistory(repairHistory)
-                .withJobId(jobId)
-                .withReplicas(participants)
-                .build();
+        final SubrangeRepairTask repairTask = new SubrangeRepairTask(jmxProxyFactory, myTableReference, myRepairConfiguration,
+                myTableRepairMetrics, repairHistory, ranges, participants, jobId);
 
         CountDownLatch cdl = startRepair(repairTask, true);
 
@@ -243,22 +226,15 @@ public class TestRepairTask
     @Test
     public void testPartialFailedRepair() throws InterruptedException
     {
-        Collection<LongTokenRange> ranges = new ArrayList<>();
+        Set<LongTokenRange> ranges = new HashSet<>();
         LongTokenRange range1 = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(3, 4);
 
         ranges.add(range1);
         ranges.add(range2);
 
-        final RepairTask repairTask = new RepairTask.Builder()
-                .withJMXProxyFactory(jmxProxyFactory)
-                .withTableReference(myTableReference)
-                .withTokenRanges(ranges)
-                .withTableRepairMetrics(myTableRepairMetrics)
-                .withRepairHistory(repairHistory)
-                .withJobId(jobId)
-                .withReplicas(participants)
-                .build();
+        final SubrangeRepairTask repairTask = new SubrangeRepairTask(jmxProxyFactory, myTableReference, myRepairConfiguration,
+                myTableRepairMetrics, repairHistory, ranges, participants, jobId);
 
         CountDownLatch cdl = startRepair(repairTask, true);
 
@@ -290,22 +266,15 @@ public class TestRepairTask
     @Test
     public void testPartialRepair() throws InterruptedException
     {
-        Collection<LongTokenRange> ranges = new ArrayList<>();
+        Set<LongTokenRange> ranges = new HashSet<>();
         LongTokenRange range1 = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(3, 4);
 
         ranges.add(range1);
         ranges.add(range2);
 
-        final RepairTask repairTask = new RepairTask.Builder()
-                .withJMXProxyFactory(jmxProxyFactory)
-                .withTableReference(myTableReference)
-                .withTokenRanges(ranges)
-                .withTableRepairMetrics(myTableRepairMetrics)
-                .withRepairHistory(repairHistory)
-                .withJobId(jobId)
-                .withReplicas(participants)
-                .build();
+        final SubrangeRepairTask repairTask = new SubrangeRepairTask(jmxProxyFactory, myTableReference, myRepairConfiguration,
+                myTableRepairMetrics, repairHistory, ranges, participants, jobId);
 
         CountDownLatch cdl = startRepair(repairTask, false);
 
@@ -337,17 +306,12 @@ public class TestRepairTask
     @Test
     public void testShouldMatchProgressNotificationPattern()
     {
+        Set<LongTokenRange> ranges = new HashSet<>();
         LongTokenRange range = new LongTokenRange(1, 2);
+        ranges.add(range);
 
-        final RepairTask repairTask = new RepairTask.Builder()
-                .withJMXProxyFactory(jmxProxyFactory)
-                .withTableReference(myTableReference)
-                .withTokenRanges(Arrays.asList(range))
-                .withTableRepairMetrics(myTableRepairMetrics)
-                .withRepairHistory(repairHistory)
-                .withJobId(jobId)
-                .withReplicas(participants)
-                .build();
+        final SubrangeRepairTask repairTask = new SubrangeRepairTask(jmxProxyFactory, myTableReference, myRepairConfiguration,
+                myTableRepairMetrics, repairHistory, ranges, participants, jobId);
 
         repairTask.progress(ProgressEventType.PROGRESS, 1, 1, getRepairMessage(range));
 

@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -173,22 +174,13 @@ public class RepairGroup extends ScheduledTask
     Collection<RepairTask> getRepairTasks()
     {
         Collection<RepairTask> tasks = new ArrayList<>();
-
-        RepairTask.Builder builder = new RepairTask.Builder()
-                .withJMXProxyFactory(myJmxProxyFactory)
-                .withTableReference(myTableReference)
-                .withTableRepairMetrics(myTableRepairMetrics)
-                .withRepairConfiguration(myRepairConfiguration)
-                .withReplicas(myReplicaRepairGroup.getReplicas())
-                .withRepairHistory(myRepairHistory)
-                .withJobId(myJobId);
-
         for (LongTokenRange range : myReplicaRepairGroup)
         {
             for (LongTokenRange subRange : new TokenSubRangeUtil(range).generateSubRanges(myTokensPerRepair))
             {
-                builder.withTokenRanges(Collections.singletonList(subRange));
-                tasks.add(builder.build());
+                tasks.add(new SubrangeRepairTask(myJmxProxyFactory, myTableReference, myRepairConfiguration,
+                        myTableRepairMetrics, myRepairHistory, Collections.singleton(subRange),
+                        new HashSet<>(myReplicaRepairGroup.getReplicas()), myJobId));
             }
         }
 
