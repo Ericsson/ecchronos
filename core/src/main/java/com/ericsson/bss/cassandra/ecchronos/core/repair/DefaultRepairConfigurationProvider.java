@@ -397,11 +397,11 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
     @Override
     public void onAdd(final Node node)
     {
-        setupConfiguration();
+        // NOOP
     }
 
     /**
-     * Callback for when a node is considered to be up.
+     * Callback for when a node switches state to UP.
      *
      * @param node
      */
@@ -412,7 +412,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
     }
 
     /**
-     * Callback for when a node is considered to be down.
+     * Callback for when a node switches state to DOWN.
      *
      * @param node
      */
@@ -423,14 +423,14 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener,
     }
 
     /**
-     * Callback for when a node is considered to be removed from the cluster.
+     * Callback for when a node is removed from the cluster.
      *
      * @param node
      */
     @Override
     public void onRemove(final Node node)
     {
-        setupConfiguration();
+        // NOOP
     }
 
     /**

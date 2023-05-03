@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -424,6 +425,54 @@ public class TestDefaultRepairConfigurationProvider
 
         verifyNoMoreInteractions(myRepairScheduler);
         defaultRepairConfigurationProvider.close();
+    }
+
+    @Test
+    public void testNodeUp() {
+        // Mock a node for the callback (not interested in any particular node)
+        Node anyNode = mock(Node.class);
+
+        // Mock necessary keyspace metadata
+        KeyspaceMetadata keyspaceMetadata = mock(KeyspaceMetadata.class);
+
+        CqlIdentifier cqlId = mock(CqlIdentifier.class);
+        when(cqlId.asInternal()).thenReturn("keyspace_metadata_up");
+        when(keyspaceMetadata.getName()).thenReturn(cqlId);
+
+        Map<CqlIdentifier, KeyspaceMetadata> keyspacesMap = new HashMap<CqlIdentifier, KeyspaceMetadata>();
+        keyspacesMap.put(cqlId, keyspaceMetadata);
+        when(session.getMetadata().getKeyspaces()).thenReturn(keyspacesMap);
+
+        // Make the callback (node is going UP)
+        DefaultRepairConfigurationProvider drcp = defaultRepairConfigurationProviderBuilder().build();
+        drcp.onUp(anyNode);
+
+        // Verify some keyspace metadata was actually read back
+        verify(myReplicatedTableProviderMock, atLeastOnce()).accept("keyspace_metadata_up");
+    }
+
+    @Test
+    public void testNodeDown() {
+        // Mock a node for the callback (not interested in any particular node)
+        Node anyNode = mock(Node.class);
+
+        // Mock necessary keyspace metadata
+        KeyspaceMetadata keyspaceMetadata = mock(KeyspaceMetadata.class);
+
+        CqlIdentifier cqlId = mock(CqlIdentifier.class);
+        when(cqlId.asInternal()).thenReturn("keyspace_metadata_down");
+        when(keyspaceMetadata.getName()).thenReturn(cqlId);
+
+        Map<CqlIdentifier, KeyspaceMetadata> keyspacesMap = new HashMap<CqlIdentifier, KeyspaceMetadata>();
+        keyspacesMap.put(cqlId, keyspaceMetadata);
+        when(session.getMetadata().getKeyspaces()).thenReturn(keyspacesMap);
+
+        // Make the callback (node is going DOWN)
+        DefaultRepairConfigurationProvider drcp = defaultRepairConfigurationProviderBuilder().build();
+        drcp.onDown(anyNode);
+
+        // Verify some keyspace metadata was actually read back
+        verify(myReplicatedTableProviderMock, atLeastOnce()).accept("keyspace_metadata_down");
     }
 
     private DefaultRepairConfigurationProvider.Builder defaultRepairConfigurationProviderBuilder()
