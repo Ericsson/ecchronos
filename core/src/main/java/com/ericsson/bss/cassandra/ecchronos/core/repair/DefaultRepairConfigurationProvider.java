@@ -41,7 +41,7 @@ import com.google.common.base.Preconditions;
  * A repair configuration provider that adds configuration to {@link RepairScheduler} based on whether or not the table
  * is replicated locally using the default repair configuration provided during construction of this object.
  */
-public class DefaultRepairConfigurationProvider implements SchemaChangeListener, NodeStateListener
+public class DefaultRepairConfigurationProvider implements SchemaChangeListener, NodeStateListener // NOPMD
 {
     private CqlSession mySession;
     private ReplicatedTableProvider myReplicatedTableProvider;
