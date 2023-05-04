@@ -2,7 +2,7 @@
 
 ## Version 4.0.4
 
-* Reread repair configuration when a connection is established - Issues #470 and #478
+* Reread repair configuration when a node state changes - Issues #470 and #478
 * Support configuring backoff for failed jobs - Issue #475
 * Dropping keyspaces does not clean up schedules - Issue #469
 
