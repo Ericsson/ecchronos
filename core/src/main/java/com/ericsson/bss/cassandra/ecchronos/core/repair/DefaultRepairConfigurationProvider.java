@@ -21,25 +21,32 @@ import java.util.function.Function;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metadata.NodeStateListenerBase;
 import com.datastax.oss.driver.api.core.metadata.schema.AggregateMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.FunctionMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.ViewMetadata;
+import com.datastax.oss.driver.api.core.session.Session;
 import com.datastax.oss.driver.api.core.type.UserDefinedType;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.google.common.base.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * A repair configuration provider that adds configuration to {@link RepairScheduler} based on whether or not the table
+ * A repair configuration provider that adds configuration to {@link RepairScheduler} based on whether the table
  * is replicated locally using the default repair configuration provided during construction of this object.
  */
-public class DefaultRepairConfigurationProvider implements SchemaChangeListener
+public class DefaultRepairConfigurationProvider extends NodeStateListenerBase implements SchemaChangeListener
 {
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultRepairConfigurationProvider.class);
+
     private CqlSession mySession;
     private ReplicatedTableProvider myReplicatedTableProvider;
     private RepairScheduler myRepairScheduler;
@@ -49,6 +56,18 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     public DefaultRepairConfigurationProvider()
     {
         //NOOP
+    }
+
+    private DefaultRepairConfigurationProvider(final Builder builder)
+    {
+        mySession = builder.mySession;
+        myReplicatedTableProvider = builder.myReplicatedTableProvider;
+        myRepairScheduler = builder.myRepairScheduler;
+        myRepairConfigurationFunction = builder.myRepairConfigurationFunction;
+        myTableReferenceFactory = Preconditions.checkNotNull(builder.myTableReferenceFactory,
+                "Table reference factory must be set");
+
+        setupConfiguration();
     }
 
     /**
@@ -65,33 +84,7 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
         myTableReferenceFactory = Preconditions.checkNotNull(builder.myTableReferenceFactory,
                 "Table reference factory must be set");
 
-        for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
-        {
-            String keyspaceName = keyspaceMetadata.getName().asInternal();
-            if (myReplicatedTableProvider.accept(keyspaceName))
-            {
-                allTableOperation(keyspaceName, this::updateConfiguration);
-            }
-        }
-    }
-
-    private DefaultRepairConfigurationProvider(final Builder builder)
-    {
-        mySession = builder.mySession;
-        myReplicatedTableProvider = builder.myReplicatedTableProvider;
-        myRepairScheduler = builder.myRepairScheduler;
-        myRepairConfigurationFunction = builder.myRepairConfigurationFunction;
-        myTableReferenceFactory = Preconditions.checkNotNull(builder.myTableReferenceFactory,
-                "Table reference factory must be set");
-
-        for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
-        {
-            String keyspaceName = keyspaceMetadata.getName().asInternal();
-            if (myReplicatedTableProvider.accept(keyspaceName))
-            {
-                allTableOperation(keyspaceName, this::updateConfiguration);
-            }
-        }
+        setupConfiguration();
     }
 
     /**
@@ -388,6 +381,63 @@ public class DefaultRepairConfigurationProvider implements SchemaChangeListener
     public void onViewUpdated(final ViewMetadata current, final ViewMetadata previous)
     {
         // NOOP
+    }
+
+    /**
+     * Called when the session is up and ready. Will invoke the listeners' onSessionReady methods.
+     *
+     * @param session The session
+     */
+    @Override
+    public void onSessionReady(final Session session)
+    {
+        SchemaChangeListener.super.onSessionReady(session);
+    }
+
+    /**
+     * Callback for when a node switches state to UP.
+     *
+     * @param node The node switching state to UP
+     */
+    @Override
+    public void onUp(final Node node)
+    {
+        LOG.debug("{} switched state to UP.", node);
+        setupConfiguration();
+    }
+
+    /**
+     * Callback for when a node switches state to DOWN.
+     *
+     * @param node The node switching state to DOWN
+     */
+    @Override
+    public void onDown(final Node node)
+    {
+        LOG.debug("{} switched state to DOWN.", node);
+        setupConfiguration();
+    }
+
+    /**
+     * This will go through all the configuration, given mySession is set, otherwise it will just silently
+     * return.
+     */
+    private void setupConfiguration()
+    {
+        if (mySession == null)
+        {
+            LOG.debug("Session during setupConfiguration call was null.");
+            return;
+        }
+
+        for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
+        {
+            String keyspaceName = keyspaceMetadata.getName().asInternal();
+            if (myReplicatedTableProvider.accept(keyspaceName))
+            {
+                allTableOperation(keyspaceName, this::updateConfiguration);
+            }
+        }
     }
 
     public static class Builder
