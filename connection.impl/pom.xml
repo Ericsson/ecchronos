@@ -114,7 +114,6 @@
                     <manifestLocation>META-INF</manifestLocation>
                     <instructions>
                         <Import-Package><![CDATA[
-                            com.datastax.oss.driver.core.*;version="${cassandra.driver.core.version}",
                             net.jcip.annotations;resolution:=optional,
                             *
                             ]]>
