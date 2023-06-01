@@ -108,7 +108,7 @@
         <org.apache.maven.plugins-maven-dependency-plugin.version>3.1.1</org.apache.maven.plugins-maven-dependency-plugin.version>
         <org.apache.maven.plugins-maven-jar-plugin.version>2.6</org.apache.maven.plugins-maven-jar-plugin.version>
         <org.apache.maven.plugins-maven-shade-plugin.version>3.4.1</org.apache.maven.plugins-maven-shade-plugin.version>
-        <org.apache.felix.maven-bundle-plugin.version>3.2.0</org.apache.felix.maven-bundle-plugin.version>
+        <org.apache.felix.maven-bundle-plugin.version>5.1.8</org.apache.felix.maven-bundle-plugin.version>
         <com.mycila.license-maven-plugin.version>3.0</com.mycila.license-maven-plugin.version>
         <io.fabric8.docker-maven-plugin.version>0.35.0</io.fabric8.docker-maven-plugin.version>
         <org.apache.servicemix.tooling.depends-maven-plugin.version>1.2</org.apache.servicemix.tooling.depends-maven-plugin.version>
@@ -552,6 +552,24 @@
                     <version>${org.apache.maven.plugins.maven-surefire-plugin.version}</version>
                     <configuration>
                         <skipTests>${skipUTs}</skipTests>
+                        <argLine>
+                            -Djdk.attach.allowAttachSelf=true
+                            --add-exports java.base/jdk.internal.misc=ALL-UNNAMED
+                            --add-exports java.base/jdk.internal.ref=ALL-UNNAMED
+                            --add-exports java.base/sun.nio.ch=ALL-UNNAMED
+                            --add-exports java.management.rmi/com.sun.jmx.remote.internal.rmi=ALL-UNNAMED
+                            --add-exports java.rmi/sun.rmi.registry=ALL-UNNAMED
+                            --add-exports java.rmi/sun.rmi.server=ALL-UNNAMED
+                            --add-exports java.sql/java.sql=ALL-UNNAMED
+                            --add-opens java.base/java.lang.module=ALL-UNNAMED
+                            --add-opens java.base/jdk.internal.loader=ALL-UNNAMED
+                            --add-opens java.base/jdk.internal.ref=ALL-UNNAMED
+                            --add-opens java.base/jdk.internal.reflect=ALL-UNNAMED
+                            --add-opens java.base/jdk.internal.math=ALL-UNNAMED
+                            --add-opens java.base/jdk.internal.module=ALL-UNNAMED
+                            --add-opens java.base/jdk.internal.util.jar=ALL-UNNAMED
+                            --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED
+                        </argLine>
                     </configuration>
                 </plugin>
 
@@ -564,8 +582,8 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${org.apache.maven.plugins.maven-compiler-plugin.version}</version>
                     <configuration>
-                        <source>1.8</source>
-                        <target>1.8</target>
+                        <source>11</source>
+                        <target>11</target>
                     </configuration>
                 </plugin>
 

@@ -2,6 +2,7 @@
 
 ## Version 4.0.4
 
+* Drop support for Java 8 - Issue #493
 * Bump guava from 18.0 to 31.1 - Issue #491
 * Reread repair configuration when a node state changes - Issues #470 and #478
 * Support configuring backoff for failed jobs - Issue #475
