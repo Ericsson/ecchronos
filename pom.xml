@@ -131,7 +131,7 @@
         <!-- Integration tests -->
         <it.cassandra.memory>1073741824</it.cassandra.memory>
         <it.cassandra.heap>256M</it.cassandra.heap>
-        <it.cassandra.version>3.11</it.cassandra.version>
+        <it.cassandra.version>4.0</it.cassandra.version>
     </properties>
 
     <dependencyManagement>

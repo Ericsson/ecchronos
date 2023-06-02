@@ -24,15 +24,15 @@ jobs:
            python: 3.6
            java: 11
          - name: "OSGi integration 4.0 (Java 11)"
-           test_suite: 'install -P docker-integration-test,osgi-integration-tests -Dit.cassandra.version=3.0 -DskipUTs'
+           test_suite: 'install -P docker-integration-test,osgi-integration-tests -DskipUTs'
            python: 3.6
            java: 11
          - name: "Standalone integration 4.0 (Java 11)"
-           test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=4.0 -DskipUTs'
+           test_suite: 'verify -P docker-integration-test,standalone-integration-tests -DskipUTs'
            python: 3.6
            java: 11
-         - name: "Python 3.6 integration (Cassandra 4.0, Java 11)"
-           test_suite: 'verify -P docker-integration-test,python-integration-tests -Dit.cassandra.version=4.0 -DskipUTs'
+         - name: "Python integration (Cassandra 4.0, Java 11)"
+           test_suite: 'verify -P docker-integration-test,python-integration-tests -DskipUTs'
            python: 3.6
            java: 11
 
