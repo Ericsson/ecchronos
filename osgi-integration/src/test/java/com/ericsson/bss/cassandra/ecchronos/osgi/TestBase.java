@@ -83,6 +83,18 @@ public class TestBase
                 .versionAsInProject();
 
         return options(
+                vmOption("--add-opens=java.base/java.net=ALL-UNNAMED"),
+                vmOption("--add-opens=java.rmi/sun.rmi.transport.tcp=ALL-UNNAMED"),
+                vmOption("--patch-module"),
+                vmOption(
+                        "java.base=lib/endorsed/org.apache.karaf.specs.locator-"
+                                + System.getProperty("karafVersion", "4.3.8")
+                                + ".jar"),
+                vmOption("--patch-module"),
+                vmOption(
+                        "java.xml=lib/endorsed/org.apache.karaf.specs.java.xml-"
+                                + System.getProperty("karafVersion", "4.3.8")
+                                + ".jar"),
                 karafDistributionConfiguration()
                         .frameworkUrl(karafArtifactUrl)
                         .unpackDirectory(topDirectory)
