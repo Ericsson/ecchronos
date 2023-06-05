@@ -63,13 +63,13 @@ def validate_last_table_row(rows):
     assert len(rows) == 1, "{0} not empty".format(rows)
 
 
-@given(u'we have access to ecctool')
+@given('we have access to ecctool')
 def step_init(context):
     assert context.config.userdata.get("ecctool") is not False
     assert os.path.isfile(context.config.userdata.get("ecctool"))
 
 
-@then(u'the output should contain a valid repair summary')
+@then('the output should contain a valid repair summary')
 def step_validate_list_repairs_contains_summary(context):
     assert len(context.summary) == 1, "Expecting only 1 row summary"
 
@@ -77,7 +77,7 @@ def step_validate_list_repairs_contains_summary(context):
     assert re.match(REPAIR_SUMMARY_PATTERN, summary), "Faulty summary '{0}'".format(summary)
 
 
-@then(u'the output should not contain more rows')
+@then('the output should not contain more rows')
 def step_validate_list_rows_clear(context):
     validate_last_table_row(context.rows)
 
@@ -87,7 +87,7 @@ def get_behave_dir():
     return os.path.abspath(os.path.join(current_dir, '../features'))
 
 
-@given(u'I have a json schema in {schema_name}.json')
+@given('I have a json schema in {schema_name}.json')
 def step_import_schema(context, schema_name):
     schema_file = os.path.join(get_behave_dir(), "{0}.json".format(schema_name))
 
@@ -110,10 +110,10 @@ def step_send_get_request(context):
     client_ca = context.config.userdata.get("ecc_client_ca")
     if client_cert and client_key and client_ca:
         url = "https://" + context.url
-        context.response = requests.get(url, cert=(client_cert, client_key), verify=client_ca)
+        context.response = requests.get(url, cert=(client_cert, client_key), verify=client_ca, timeout=10)
     else:
         url = "http://" + context.url
-        context.response = requests.get(url)
+        context.response = requests.get(url, timeout=10)
 
 
 @when('I send a POST request')
@@ -126,10 +126,10 @@ def step_send_post_request(context):
     client_ca = context.config.userdata.get("ecc_client_ca")
     if client_cert and client_key and client_ca:
         url = "https://" + context.url
-        context.response = requests.post(url, cert=(client_cert, client_key), verify=client_ca)
+        context.response = requests.post(url, cert=(client_cert, client_key), verify=client_ca, timeout=10)
     else:
         url = "http://" + context.url
-        context.response = requests.post(url)
+        context.response = requests.post(url, timeout=10)
 
 
 @then('the response is successful')

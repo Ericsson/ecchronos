@@ -125,6 +125,7 @@ openssl req -newkey rsa:2048 -nodes -subj "/C=TE/ST=TEST/L=TEST/O=TEST/OU=TEST/C
 # Sign server certificate
 openssl x509 -req -sha256 -days 1\
  -in "$SERVER_CSR" -out "$SERVER_CERT"\
+ -extfile <(printf "subjectAltName=DNS:localhost")\
  -CA "$SERVER_CA" -CAkey "$SERVER_CA_KEY" -CAcreateserial
 
 ## Convert server key/certificate to PKCS12 format

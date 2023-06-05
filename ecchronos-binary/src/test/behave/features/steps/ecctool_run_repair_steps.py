@@ -29,37 +29,37 @@ def repair_row(keyspace, table):
     return TABLE_ROW_FORMAT_PATTERN.format(keyspace, table)
 
 
-@when(u'we run repair for keyspace {keyspace} and table {table}')
+@when('we run repair for keyspace {keyspace} and table {table}')
 def step_run_repair(context, keyspace, table):
     run_ecc_run_repair(context, ['--keyspace', keyspace, '--table', table])
     split_output(context)
 
 
-@when(u'we run repair for keyspace {keyspace}')
+@when('we run repair for keyspace {keyspace}')
 def step_run_repair_keyspace(context, keyspace):
     run_ecc_run_repair(context, ['--keyspace', keyspace])
     split_output(context)
 
 
-@when(u'we run repair')
+@when('we run repair')
 def step_run_repair_cluster(context):
     run_ecc_run_repair(context, [])
     split_output(context)
 
 
-@when(u'we run local repair for keyspace {keyspace} and table {table}')
+@when('we run local repair for keyspace {keyspace} and table {table}')
 def step_run_local_repair(context, keyspace, table):
     run_ecc_run_repair(context, ['--keyspace', keyspace, '--table', table, '--local'])
     split_output(context)
 
 
-@when(u'we run local repair for keyspace {keyspace}')
+@when('we run local repair for keyspace {keyspace}')
 def step_run_local_repair_for_keyspace(context, keyspace):
     run_ecc_run_repair(context, ['--keyspace', keyspace, '--local'])
     split_output(context)
 
 
-@when(u'we run local repair')
+@when('we run local repair')
 def step_run_local_repair_cluster(context):
     run_ecc_run_repair(context, ['--local'])
     split_output(context)
@@ -72,17 +72,17 @@ def split_output(context):
     context.summary = output_data[-1:]
 
 
-@then(u'the repair output should contain a valid header')
+@then('the repair output should contain a valid header')
 def step_validate_tables_header(context):
     validate_header(context.header, TABLE_HEADER)
 
 
-@then(u'the repair output should contain a valid repair row for {keyspace}.{table}')
+@then('the repair output should contain a valid repair row for {keyspace}.{table}')
 def step_validate_repair_row(context, keyspace, table):
     expected_row = repair_row(keyspace, table)
     match_and_remove_row(context.rows, expected_row)
 
 
-@then(u'the repair output should not contain more rows')
+@then('the repair output should not contain more rows')
 def step_validate_list_rows_clear(context):
     validate_last_table_row(context.rows)

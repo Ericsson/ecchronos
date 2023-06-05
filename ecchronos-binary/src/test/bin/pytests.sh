@@ -16,12 +16,11 @@
 
 source variables.sh
 
-echo "Installing virtualenv"
-
 # Install virtualenv and behave
 if [ -z "${CI}" ]; then
+  echo "Installing virtualenv"
   pip install --user virtualenv
-  virtualenv "$VENV_DIR"
+  virtualenv "$VENV_DIR" --python=python3
   source "$VENV_DIR"/bin/activate
 fi
 
@@ -30,7 +29,7 @@ echo "Installing behave"
 pip install behave
 pip install requests
 pip install jsonschema
-pip install cassandra-driver==3.26.0
+pip install cassandra-driver
 
 BASE_DIR="$TEST_DIR"/ecchronos-binary-${project.version}
 CONF_DIR="$BASE_DIR"/conf
