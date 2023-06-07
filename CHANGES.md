@@ -1,6 +1,6 @@
 # Changes
 
-## Version 4.0.4
+## Version 5.0.0
 
 * Drop support for Python < 3.8 - Issue #474
 * Drop support for Java 8 and Cassandra < 4 - Issue #493
