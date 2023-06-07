@@ -22,7 +22,7 @@ More information on the REST interface of ecChronos is described in [REST.md](do
 
 ### Prerequisites
 
-* JDK8
+* JDK11
 
 ### Installation
 

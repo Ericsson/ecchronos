@@ -52,7 +52,7 @@ it's recommended to run all the tests using `mvn clean verify -Dprecommit.tests`
 1. Setup local ccm cluster
 
 ```
-ccm create test -n 4 -v 3.11 --vnodes; ccm updateconf "num_tokens: 16"; ccm start;
+ccm create test -n 4 -v 4.0 --vnodes; ccm updateconf "num_tokens: 16"; ccm start;
 ```
 
 2. Prepare keyspaces and tables:
