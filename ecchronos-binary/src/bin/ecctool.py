@@ -38,8 +38,11 @@ DEFAULT_PID_FILE = "ecc.pid"
 SPRINGBOOT_MAIN_CLASS = "com.ericsson.bss.cassandra.ecchronos.application.spring.SpringBooter"
 
 
-def parse_arguments():
-    parser = ArgumentParser(description="ecChronos utility command")
+def get_parser():
+    parser = ArgumentParser(description="ecctool is a command line utility which can be used to perform actions "
+                                        "towards a local ecChronos instance. The actions are implemented in form of "
+                                        "subcommands with arguments. All visualization is displayed in form of "
+                                        "human-readable tables.")
     sub_parsers = parser.add_subparsers(dest="subcommand")
     add_repairs_subcommand(sub_parsers)
     add_schedules_subcommand(sub_parsers)
@@ -49,7 +52,7 @@ def parse_arguments():
     add_stop_subcommand(sub_parsers)
     add_status_subcommand(sub_parsers)
 
-    return parser.parse_args()
+    return parser
 
 
 def add_repairs_subcommand(sub_parsers):
@@ -387,7 +390,8 @@ def run_subcommand(arguments):
 
 
 def main():
-    run_subcommand(parse_arguments())
+    parser = get_parser()
+    run_subcommand(parser.parse_args())
 
 
 if __name__ == "__main__":
