@@ -21,8 +21,10 @@ jobs:
            test_suite: 'compile com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
          - name: "OSGi integration"
            test_suite: 'install -P docker-integration-test,osgi-integration-tests -DskipUTs'
-         - name: "Standalone integration"
+         - name: "Standalone integration 4.0"
            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -DskipUTs'
+         - name: "Standalone integration 4.1"
+           test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=4.1 -DskipUTs'
          - name: "Python integration"
            test_suite: 'verify -P docker-integration-test,python-integration-tests -DskipUTs'
 
