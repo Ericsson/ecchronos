@@ -18,6 +18,7 @@
         <bundle>mvn:com.datastax.oss/java-driver-core/${cassandra.driver.core.version}</bundle>
         <bundle>mvn:com.datastax.oss/java-driver-query-builder/${cassandra.driver.core.version}</bundle>
         <bundle>mvn:com.google.guava/guava/${guava.version}</bundle>
+        <bundle>mvn:com.google.guava/failureaccess/${failureaccess.version}</bundle>
         <bundle>mvn:com.datastax.oss/native-protocol/${cassandra.driver.protocol.version}</bundle>
         <bundle>mvn:com.datastax.oss/java-driver-shaded-guava/${cassandra.driver.shaded.guava.version}</bundle>
         <bundle>mvn:com.typesafe/config/${com.typesafe.config.version}</bundle>

@@ -9,7 +9,7 @@ For keeping track of the history it is recommended that most communication is pe
 ### Prerequisites
 
 * Maven
-* JDK8
+* JDK11
 * Docker (for test setup)
 * Python
 

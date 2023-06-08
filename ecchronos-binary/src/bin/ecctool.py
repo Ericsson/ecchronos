@@ -333,7 +333,7 @@ def run_ecc(cwd, command, arguments):
     if arguments.pidfile:
         pid_file = arguments.pidfile
     with open(pid_file, "w", encoding="utf-8") as p_file:
-        p_file.write(u"{0}".format(pid))
+        p_file.write("{0}".format(pid))
     if arguments.foreground:
         while True:
             line = proc.stdout.readline()

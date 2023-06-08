@@ -1,8 +1,11 @@
 # Changes
 
-## Version 4.0.4
+## Version 5.0.0
 
 * Add support for incremental repairs - Issue #31
+* Drop support for Python < 3.8 - Issue #474
+* Drop support for Java 8 and Cassandra < 4 - Issue #493
+* Bump guava from 18.0 to 31.1 - Issue #491
 * Reread repair configuration when a node state changes - Issues #470 and #478
 * Support configuring backoff for failed jobs - Issue #475
 * Dropping keyspaces does not clean up schedules - Issue #469

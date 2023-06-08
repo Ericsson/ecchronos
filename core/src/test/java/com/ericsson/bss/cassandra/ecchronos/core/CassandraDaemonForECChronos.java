@@ -49,18 +49,15 @@ import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.metrics.DefaultNodeMetric;
-import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 import com.datastax.oss.driver.internal.core.connection.ConstantReconnectionPolicy;
-import com.datastax.oss.driver.internal.core.loadbalancing.DcInferringLoadBalancingPolicy;
-import com.datastax.oss.driver.internal.core.ssl.DefaultSslEngineFactory;
 import com.google.common.io.Files;
+import org.apache.cassandra.config.EncryptionOptions;
 import org.apache.cassandra.service.CassandraDaemon;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.cassandra.config.DatabaseDescriptor;
-import org.apache.cassandra.config.EncryptionOptions.ClientEncryptionOptions;
 
 import static org.awaitility.Awaitility.await;
 
@@ -253,7 +250,7 @@ public class CassandraDaemonForECChronos implements Runnable
      */
     public boolean isSSLEnabled()
     {
-        return DatabaseDescriptor.getClientEncryptionOptions().enabled;
+        return DatabaseDescriptor.getNativeProtocolEncryptionOptions().isEnabled();
     }
 
     /**
@@ -356,7 +353,7 @@ public class CassandraDaemonForECChronos implements Runnable
         }
         catch (NoSuchAlgorithmException e)
         {
-            LOG.error("Environment does support {} - Proceeding without SSL/TLS", DatabaseDescriptor.getClientEncryptionOptions().protocol);
+            LOG.error("Environment does support {} - Proceeding without SSL/TLS", DatabaseDescriptor.getNativeProtocolEncryptionOptions().acceptedProtocols());
         }
         catch (KeyManagementException e)
         {
@@ -373,7 +370,7 @@ public class CassandraDaemonForECChronos implements Runnable
      */
     private KeyManager[] getKeyManagers()
     {
-        ClientEncryptionOptions encryptionOptions = DatabaseDescriptor.getClientEncryptionOptions();
+        EncryptionOptions encryptionOptions = DatabaseDescriptor.getNativeProtocolEncryptionOptions();
         KeyStore keystore = null;
         try (FileInputStream keystoreFile = new FileInputStream(encryptionOptions.keystore))
         {

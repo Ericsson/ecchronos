@@ -83,7 +83,10 @@ public abstract class AbstractCassandraTest
     @AfterClass
     public static void cleanupCassandra()
     {
-        mySession.close();
+        if (mySession != null)
+        {
+            mySession.close();
+        }
     }
 
     public static NativeConnectionProvider getNativeConnectionProvider()

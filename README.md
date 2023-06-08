@@ -22,7 +22,8 @@ More information on the REST interface of ecChronos is described in [REST.md](do
 
 ### Prerequisites
 
-* JDK8
+* JDK 11
+* Python 3.8
 
 ### Installation
 
