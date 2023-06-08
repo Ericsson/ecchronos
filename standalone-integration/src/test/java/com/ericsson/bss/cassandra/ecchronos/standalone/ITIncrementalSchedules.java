@@ -108,7 +108,6 @@ public class ITIncrementalSchedules extends TestBase
         initialize();
 
         Node localNode = getNativeConnectionProvider().getLocalNode();
-        skipIfCassandraVersionLessThan4(localNode);
 
         mockFaultReporter = mock(RepairFaultReporter.class);
         mockTableRepairMetrics = mock(TableRepairMetrics.class);

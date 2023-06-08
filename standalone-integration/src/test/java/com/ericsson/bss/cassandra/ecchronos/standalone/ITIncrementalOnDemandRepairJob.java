@@ -107,7 +107,6 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
         mockTableRepairMetrics = mock(TableRepairMetrics.class);
 
         Node localNode = getNativeConnectionProvider().getLocalNode();
-        skipIfCassandraVersionLessThan4(localNode);
 
         CqlSession session = getNativeConnectionProvider().getSession();
         myMetadata = session.getMetadata();

@@ -15,11 +15,9 @@
 package com.ericsson.bss.cassandra.ecchronos.standalone;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.Version;
 import com.datastax.oss.driver.api.core.auth.AuthProvider;
 import com.datastax.oss.driver.api.core.auth.ProgrammaticPlainTextAuthProvider;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalNativeConnectionProvider;
@@ -27,9 +25,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import net.jcip.annotations.NotThreadSafe;
 import org.junit.AfterClass;
-import org.junit.Assume;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanException;
@@ -45,7 +40,6 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
 @NotThreadSafe
 public class TestBase
 {
-    private static final Logger LOG = LoggerFactory.getLogger(TestBase.class);
     private static final String CASSANDRA_HOST = System.getProperty("it-cassandra.ip");
     private static final int CASSANDRA_NATIVE_PORT = Integer.parseInt(System.getProperty("it-cassandra.native.port"));
     private static final int CASSANDRA_JMX_PORT = Integer.parseInt(System.getProperty("it-cassandra.jmx.port"));
@@ -83,17 +77,6 @@ public class TestBase
         myJmxProxyFactory = JmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(myJmxConnectionProvider)
                 .build();
-    }
-
-    protected static void skipIfCassandraVersionLessThan4(Node node)
-    {
-        Version cassandraVersion = node.getCassandraVersion();
-        boolean shouldSkip = cassandraVersion.getMajor() < 4;
-        if (shouldSkip)
-        {
-            LOG.info("Skipping because Cassandra version < 4");
-        }
-        Assume.assumeFalse(shouldSkip);
     }
 
     @AfterClass
