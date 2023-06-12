@@ -92,10 +92,11 @@ Show repairs for the specified host id. The host id corresponds to the Cassandra
 
 ## ecctool run-repair
 
-Run a manual repair. The manual repair will be triggered in ecChronos, which will group sub-ranges by nodes that have them in common. Afterwards, each sub-range will be repaired once through Cassandra JMX interface. This subcommand has no mandatory parameters.
+Run a manual repair. The manual repair will be triggered in ecChronos. EcChronos will perform repair through Cassandra JMX interface. This subcommand has no mandatory parameters.
 
 ```console
-usage: ecctool run-repair [-h] [-u URL] [--local] [-k KEYSPACE] [-t TABLE]
+usage: ecctool run-repair [-h] [-u URL] [--local] [--incremental]
+                          [-k KEYSPACE] [-t TABLE]
 ```
 
 
@@ -109,6 +110,10 @@ The ecChronos host to connect to, specified in the format [http:/](http:/)/&lt;h
 
 ### --local
 Run repair for the local node only, i.e repair will only be performed for the ranges that the local node is a replica for.
+
+
+### --incremental
+Run the repair as an incremental repair
 
 
 ### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;

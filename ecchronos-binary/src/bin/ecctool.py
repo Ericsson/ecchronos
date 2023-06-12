@@ -122,7 +122,7 @@ def add_run_repair_subcommand(sub_parsers):
                                    help='Run repair for the local node only, i.e repair will only be performed for '
                                         'the ranges that the local node is a replica for.', default=False)
     parser_run_repair.add_argument("--incremental", action='store_true',
-                                   help='Run incremental repair', default=False)
+                                   help='Run the repair as an incremental repair', default=False)
     parser_run_repair.add_argument("-k", "--keyspace", type=str,
                                    help="Run repair for the specified keyspace. Repair will be run for all tables "
                                         "within the keyspace with replication factor higher than 1.", required=False)
