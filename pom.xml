@@ -76,7 +76,7 @@
         <assertj.version>3.16.1</assertj.version>
         <junit.version>5.7.0</junit.version>
         <org.apache.commons.io.version>2.7</org.apache.commons.io.version>
-        <com.fasterxml.jackson.version>2.13.2</com.fasterxml.jackson.version>
+        <com.fasterxml.jackson.version>2.15.2</com.fasterxml.jackson.version>
         <com.fasterxml.jackson-databind.version>2.13.4.2</com.fasterxml.jackson-databind.version>
 
         <pax-exam.version>4.13.4</pax-exam.version>
@@ -89,11 +89,11 @@
         <jcip.version>1.0</jcip.version>
         <junitparams.version>1.1.1</junitparams.version>
         <equalsverifier.version>3.5</equalsverifier.version>
-        <org.springframework.boot.version>2.7.5</org.springframework.boot.version>
-        <org.springdoc.openapi-ui.version>1.6.8</org.springdoc.openapi-ui.version>
+        <org.springframework.boot.version>2.7.12</org.springframework.boot.version>
+        <org.springdoc.openapi-ui.version>1.7.0</org.springdoc.openapi-ui.version>
         <io.prometheus.simpleclient>0.16.0</io.prometheus.simpleclient>
         <jakarta.validation-api.version>2.0.2</jakarta.validation-api.version>
-        <swagger-annotations.version>2.2.0</swagger-annotations.version>
+        <swagger-annotations.version>2.2.11</swagger-annotations.version>
 
         <!-- Plugin versions -->
         <org.apache.maven.plugins.maven-compiler-plugin.version>3.8.0</org.apache.maven.plugins.maven-compiler-plugin.version>
