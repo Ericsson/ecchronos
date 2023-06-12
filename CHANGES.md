@@ -3,7 +3,7 @@
 ## Version 5.0.0
 
 * Fix shebang in ecctool - Issue #504
-* Bump springboot from 2.7.5 to 2.7.12
+* Bump springboot from 2.7.5 to 2.7.12 - Issue #500
 * Drop support for Python < 3.8 - Issue #474
 * Drop support for Java 8 and Cassandra < 4 - Issue #493
 * Bump guava from 18.0 to 31.1 - Issue #491
