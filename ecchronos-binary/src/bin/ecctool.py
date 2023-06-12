@@ -1,5 +1,4 @@
-#!/bin/sh
-""""exec python -B -- "$0" ${1+"$@"} # """
+#!/usr/bin/env python3
 # vi: syntax=python
 #
 # Copyright 2022 Telefonaktiebolaget LM Ericsson
