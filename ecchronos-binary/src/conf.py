@@ -1,7 +1,6 @@
-#!/usr/bin/env python3
 # vi: syntax=python
 #
-# Copyright 2019 Telefonaktiebolaget LM Ericsson
+# Copyright 2023 Telefonaktiebolaget LM Ericsson
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,13 +14,11 @@
 # limitations under the License.
 #
 
-from distutils.core import setup
+project = 'ecChronos'
+copyright = '2023, Telefonaktiebolaget LM Ericsson'
+author = 'masokol'
 
-setup(name='ecChronos library',
-      version='1.0',
-      description='ecChronos REST library',
-      author='Marcus Olsson',
-      author_email='marcus.olsson@ericsson.com',
-      url='https://github.com/Ericsson/ecchronos',
-      license='Apache License, Version 2.0',
-      packages=['ecchronoslib'])
+extensions = ['sphinxcontrib.autoprogram', 'sphinx_markdown_builder']
+
+templates_path = ['_templates']
+exclude_patterns = []

@@ -10,8 +10,6 @@ info:
 servers:
 - url: https://localhost:8080
   description: Generated server url
-tags:
-- name: repair-management
 paths:
   /repair-management/v2/repairs:
     get:
