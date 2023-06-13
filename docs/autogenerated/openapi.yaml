@@ -9,6 +9,8 @@ servers:
 - url: https://localhost:8080
   description: Generated server url
 tags:
+- name: Metrics
+  description: Retrieve metrics about ecChronos
 - name: Repair-Management
   description: View the status of schedules and repairs as well as run manual repairs
 - name: Actuator
@@ -228,6 +230,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RepairInfo'
+  /metrics:
+    get:
+      tags:
+      - Metrics
+      summary: Get metrics
+      description: Get metrics in the specified format
+      operationId: metrics
+      parameters:
+      - name: Accept
+        in: header
+        required: false
+        schema:
+          type: string
+          default: text/plain; version=0.0.4; charset=utf-8
+      - name: "name[]"
+        in: query
+        description: Filter metrics based on these names.
+        required: false
+        schema:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+          default: []
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain;version=0.0.4;charset=utf-8:
+              schema:
+                type: string
+            application/openmetrics-text;version=1.0.0;charset=utf-8:
+              schema:
+                type: string
   /actuator:
     get:
       tags:
