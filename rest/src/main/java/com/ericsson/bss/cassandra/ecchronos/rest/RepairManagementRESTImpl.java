@@ -62,12 +62,10 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 /**
  * When updating the path it should also be updated in the OSGi component.
  */
-@Tag(name = "repair-management")
+@Tag(name = "Repair-Management", description = "View the status of schedules and repairs as well as run manual repairs")
 @RestController
 @OpenAPIDefinition(info = @Info(
-        title = "ecChronos REST API",
-        description = "ecChronos REST API can be used to view the status of schedules and repairs as well as run"
-                + " manual repairs",
+        title = "REST API",
         license = @License(
                 name = "Apache 2.0",
                 url = "https://www.apache.org/licenses/LICENSE-2.0"),
@@ -108,11 +106,15 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
-    @GetMapping(value = ENDPOINT_PREFIX + "/schedules",
-                produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(operationId = "get-schedules")
-    public final ResponseEntity<List<Schedule>> getSchedules(@RequestParam(required = false) final String keyspace,
-                                                       @RequestParam(required = false) final String table)
+    @GetMapping(value = ENDPOINT_PREFIX + "/schedules", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "get-schedules", description = "Get schedules", summary = "Get schedules")
+    public final ResponseEntity<List<Schedule>> getSchedules(
+            @RequestParam(required = false)
+            @Parameter(description = "Filter schedules based on this keyspace, mandatory if 'table' is provided.")
+            final String keyspace,
+            @RequestParam(required = false)
+            @Parameter(description = "Filter schedules based on this table.")
+            final String table)
     {
         if (keyspace != null)
         {
@@ -134,11 +136,16 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
-    @GetMapping(value = ENDPOINT_PREFIX + "/schedules/{id}",
-                produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(operationId = "get-schedules-by-id")
-    public final ResponseEntity<Schedule> getSchedules(@PathVariable final String id,
-                                                 @RequestParam(required = false) final boolean full)
+    @GetMapping(value = ENDPOINT_PREFIX + "/schedules/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "get-schedules-by-id", description = "Get schedules matching the id.",
+            summary = "Get schedules matching the id.")
+    public final ResponseEntity<Schedule> getSchedules(
+            @PathVariable
+            @Parameter(description = "The id of the schedule.")
+            final String id,
+            @RequestParam(required = false)
+            @Parameter(description = "Decides if a 'full schedule' should be returned.")
+            final boolean full)
     {
 
         UUID uuid;
@@ -159,14 +166,20 @@ public class RepairManagementRESTImpl implements RepairManagementREST
 
     }
 
-
     @Override
-    @GetMapping(value = ENDPOINT_PREFIX + "/repairs",
-                produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(operationId = "get-repairs")
-    public final ResponseEntity<List<OnDemandRepair>> getRepairs(@RequestParam(required = false) final String keyspace,
-                                                           @RequestParam(required = false) final String table,
-                                                           @RequestParam(required = false) final String hostId)
+    @GetMapping(value = ENDPOINT_PREFIX + "/repairs", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "get-repairs", description = "Get manual repairs which are running/completed/failed.",
+            summary = "Get manual repairs.")
+    public final ResponseEntity<List<OnDemandRepair>> getRepairs(
+            @RequestParam(required = false)
+            @Parameter(description = "Only return repairs matching the keyspace, mandatory if 'table' is provided.")
+            final String keyspace,
+            @RequestParam(required = false)
+            @Parameter(description = "Only return repairs matching the table.")
+            final String table,
+            @RequestParam(required = false)
+            @Parameter(description = "Only return repairs matching the hostId.")
+            final String hostId)
     {
         if (keyspace != null)
         {
@@ -211,11 +224,17 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
-    @GetMapping(value = ENDPOINT_PREFIX + "/repairs/{id}",
-                produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(operationId = "get-repairs-by-id")
-    public final ResponseEntity<List<OnDemandRepair>> getRepairs(@PathVariable final String id,
-                                                           @RequestParam(required = false) final String hostId)
+    @GetMapping(value = ENDPOINT_PREFIX + "/repairs/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "get-repairs-by-id",
+            description = "Get manual repairs matching the id which are running/completed/failed.",
+            summary = "Get manual repairs matching the id.")
+    public final ResponseEntity<List<OnDemandRepair>> getRepairs(
+            @PathVariable
+            @Parameter(description = "Only return repairs matching the id.")
+            final String id,
+            @RequestParam(required = false)
+            @Parameter(description = "Only return repairs matching the hostId.")
+            final String hostId)
     {
         UUID uuid = parseIdOrThrow(id);
         if (hostId == null)
@@ -250,16 +269,21 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         }
     }
 
-
     @Override
-    @PostMapping(value = ENDPOINT_PREFIX + "/repairs",
-                 produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(operationId = "trigger-repair")
+    @PostMapping(value = ENDPOINT_PREFIX + "/repairs", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "trigger-repair",
+            description = "Run a manual repair, if 'isLocal' is not provided this will trigger a cluster-wide repair.",
+            summary = "Run a manual repair.")
     public final ResponseEntity<List<OnDemandRepair>> triggerRepair(
-            @RequestParam(required = false) final String keyspace,
-            @RequestParam(required = false) final String table,
-            @RequestParam(required = false) final boolean isLocal
-    )
+            @RequestParam(required = false)
+            @Parameter(description = "The keyspace to run repair for, mandatory if 'table' is provided.")
+            final String keyspace,
+            @RequestParam(required = false)
+            @Parameter(description = "The table to run repair for.")
+            final String table,
+            @RequestParam(required = false)
+            @Parameter(description = "Decides if the repair should be only for the local node, i.e not cluster-wide.")
+            final boolean isLocal)
     {
         try
         {
@@ -299,21 +323,35 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
-    @GetMapping(value = ENDPOINT_PREFIX + "/repairInfo",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(operationId = "get-repair-info")
-    public final ResponseEntity<RepairInfo> getRepairInfo(@RequestParam(required = false) final String keyspace,
-            @RequestParam(required = false) final String table,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @Parameter(
-                    description = "Since time, can be specified as ISO8601 date or as milliseconds since epoch."
+    @GetMapping(value = ENDPOINT_PREFIX + "/repairInfo", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "get-repair-info",
+            description = "Get repair information, if keyspace and table are provided while duration and since are"
+                    + " not, the duration will default to GC_GRACE_SECONDS of the table. "
+                    + "This operation might take time depending on the provided params since it's based on "
+                    + "the repair history.",
+            summary = "Get repair information")
+    public final ResponseEntity<RepairInfo> getRepairInfo(
+            @RequestParam(required = false)
+            @Parameter(description = "Only return repair-info matching the keyspace, mandatory if 'table' is provided.")
+            final String keyspace,
+            @RequestParam(required = false)
+            @Parameter(description = "Only return repair-info matching the table.")
+            final String table,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            @Parameter(description = "Since time, can be specified as ISO8601 date or as milliseconds since epoch."
                     + " Required if keyspace and table or duration is not specified.",
-                    schema = @Schema(type = "string")) final Long since,
-            @RequestParam(required = false) @Parameter(
-            description = "Duration, can be specified as either a simple duration like"
+                    schema = @Schema(type = "string"))
+            final Long since,
+            @RequestParam(required = false)
+            @Parameter(description = "Duration, can be specified as either a simple duration like"
                     + " '30s' or as ISO8601 duration 'pt30s'."
                     + " Required if keyspace and table or since is not specified.",
-            schema = @Schema(type = "string")) final Duration duration,
-            @RequestParam(required = false) final boolean isLocal)
+                    schema = @Schema(type = "string"))
+            final Duration duration,
+            @RequestParam(required = false)
+            @Parameter(description = "Decides if the repair-info should be calculated for the local node only.")
+            final boolean isLocal)
     {
         try
         {
