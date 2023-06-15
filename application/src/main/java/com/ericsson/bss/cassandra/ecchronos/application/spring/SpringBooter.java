@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
+import com.ericsson.bss.cassandra.ecchronos.rest.MetricsREST;
 import com.ericsson.bss.cassandra.ecchronos.rest.RepairManagementRESTImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +24,7 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.context.annotation.Import;
 
 @SpringBootApplication
-@Import(value = {RepairManagementRESTImpl.class})
+@Import(value = {RepairManagementRESTImpl.class, MetricsREST.class})
 public class SpringBooter extends SpringBootServletInitializer
 {
     private static final Logger LOG = LoggerFactory.getLogger(SpringBooter.class);

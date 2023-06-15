@@ -26,10 +26,7 @@ import io.micrometer.jmx.JmxConfig;
 import io.micrometer.jmx.JmxMeterRegistry;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
-import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.exporter.MetricsServlet;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -41,7 +38,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Arrays;
 
 @Configuration
 public class MetricBeans
@@ -107,6 +103,12 @@ public class MetricBeans
     }
 
     @Bean
+    public PrometheusMeterRegistry prometheusMeterRegistry()
+    {
+        return myPrometheusMeterRegistry;
+    }
+
+    @Bean
     public CompositeMeterRegistry eccCompositeMeterRegistry()
     {
         return myCompositeMeterRegistry;
@@ -116,20 +118,6 @@ public class MetricBeans
     public MetricsServerProperties metricsServerProperties()
     {
         return new MetricsServerProperties();
-    }
-
-    @Bean
-    public ServletRegistrationBean registerMetricsServlet()
-    {
-        CollectorRegistry collectorRegistry = new CollectorRegistry();
-        ServletRegistrationBean servletRegistrationBean = new ServletRegistrationBean();
-        if (myPrometheusMeterRegistry != null)
-        {
-            collectorRegistry = myPrometheusMeterRegistry.getPrometheusRegistry();
-        }
-        servletRegistrationBean.setServlet(new MetricsServlet(collectorRegistry));
-        servletRegistrationBean.setUrlMappings(Arrays.asList(METRICS_ENDPOINT + "/*"));
-        return servletRegistrationBean;
     }
 
     /**

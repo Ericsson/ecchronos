@@ -87,6 +87,7 @@ sed 's;^\(\s*\)\(<appender-ref ref="STDOUT" />\)\s*$;\1<!-- \2 -->;g' -i "$CONF_
 # springdoc
 
 sed '/springdoc:/{n;/api-docs/{n;s/enabled: .*/enabled: true/}}' -i "$CONF_DIR"/application.yml
+sed '/springdoc:/{n;/api-docs/{n;/enabled: true/{n;s/.*/  show-actuator: true\n/}}}' -i "$CONF_DIR"/application.yml
 
 ## Special config for test.table1
 

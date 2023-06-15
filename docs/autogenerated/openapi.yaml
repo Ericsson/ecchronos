@@ -1,8 +1,6 @@
 openapi: 3.0.1
 info:
-  title: ecChronos REST API
-  description: ecChronos REST API can be used to view the status of schedules and
-    repairs as well as run manual repairs
+  title: REST API
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
@@ -10,25 +8,41 @@ info:
 servers:
 - url: https://localhost:8080
   description: Generated server url
+tags:
+- name: Metrics
+  description: Retrieve metrics about ecChronos
+- name: Repair-Management
+  description: View the status of schedules and repairs as well as run manual repairs
+- name: Actuator
+  description: Monitor and interact
+  externalDocs:
+    description: Spring Boot Actuator Web API Documentation
+    url: https://docs.spring.io/spring-boot/docs/current/actuator-api/html/
 paths:
   /repair-management/v2/repairs:
     get:
       tags:
-      - repair-management
+      - Repair-Management
+      summary: Get manual repairs.
+      description: Get manual repairs which are running/completed/failed.
       operationId: get-repairs
       parameters:
       - name: keyspace
         in: query
+        description: "Only return repairs matching the keyspace, mandatory if 'table'\
+          \ is provided."
         required: false
         schema:
           type: string
       - name: table
         in: query
+        description: Only return repairs matching the table.
         required: false
         schema:
           type: string
       - name: hostId
         in: query
+        description: Only return repairs matching the hostId.
         required: false
         schema:
           type: string
@@ -43,21 +57,28 @@ paths:
                   $ref: '#/components/schemas/OnDemandRepair'
     post:
       tags:
-      - repair-management
+      - Repair-Management
+      summary: Run a manual repair.
+      description: "Run a manual repair, if 'isLocal' is not provided this will trigger\
+        \ a cluster-wide repair."
       operationId: trigger-repair
       parameters:
       - name: keyspace
         in: query
+        description: "The keyspace to run repair for, mandatory if 'table' is provided."
         required: false
         schema:
           type: string
       - name: table
         in: query
+        description: The table to run repair for.
         required: false
         schema:
           type: string
       - name: isLocal
         in: query
+        description: "Decides if the repair should be only for the local node, i.e\
+          \ not cluster-wide."
         required: false
         schema:
           type: boolean
@@ -78,16 +99,21 @@ paths:
   /repair-management/v2/schedules:
     get:
       tags:
-      - repair-management
+      - Repair-Management
+      summary: Get schedules
+      description: Get schedules
       operationId: get-schedules
       parameters:
       - name: keyspace
         in: query
+        description: "Filter schedules based on this keyspace, mandatory if 'table'\
+          \ is provided."
         required: false
         schema:
           type: string
       - name: table
         in: query
+        description: Filter schedules based on this table.
         required: false
         schema:
           type: string
@@ -103,16 +129,20 @@ paths:
   /repair-management/v2/schedules/{id}:
     get:
       tags:
-      - repair-management
+      - Repair-Management
+      summary: Get schedules matching the id.
+      description: Get schedules matching the id.
       operationId: get-schedules-by-id
       parameters:
       - name: id
         in: path
+        description: The id of the schedule.
         required: true
         schema:
           type: string
       - name: full
         in: query
+        description: Decides if a 'full schedule' should be returned.
         required: false
         schema:
           type: boolean
@@ -126,16 +156,20 @@ paths:
   /repair-management/v2/repairs/{id}:
     get:
       tags:
-      - repair-management
+      - Repair-Management
+      summary: Get manual repairs matching the id.
+      description: Get manual repairs matching the id which are running/completed/failed.
       operationId: get-repairs-by-id
       parameters:
       - name: id
         in: path
+        description: Only return repairs matching the id.
         required: true
         schema:
           type: string
       - name: hostId
         in: query
+        description: Only return repairs matching the hostId.
         required: false
         schema:
           type: string
@@ -151,16 +185,24 @@ paths:
   /repair-management/v2/repairInfo:
     get:
       tags:
-      - repair-management
+      - Repair-Management
+      summary: Get repair information
+      description: "Get repair information, if keyspace and table are provided while\
+        \ duration and since are not, the duration will default to GC_GRACE_SECONDS\
+        \ of the table. This operation might take time depending on the provided params\
+        \ since it's based on the repair history."
       operationId: get-repair-info
       parameters:
       - name: keyspace
         in: query
+        description: "Only return repair-info matching the keyspace, mandatory if\
+          \ 'table' is provided."
         required: false
         schema:
           type: string
       - name: table
         in: query
+        description: Only return repair-info matching the table.
         required: false
         schema:
           type: string
@@ -181,6 +223,8 @@ paths:
           type: string
       - name: isLocal
         in: query
+        description: Decides if the repair-info should be calculated for the local
+          node only.
         required: false
         schema:
           type: boolean
@@ -191,6 +235,109 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RepairInfo'
+  /metrics:
+    get:
+      tags:
+      - Metrics
+      summary: Get metrics
+      description: Get metrics in the specified format
+      operationId: metrics
+      parameters:
+      - name: Accept
+        in: header
+        required: false
+        schema:
+          type: string
+          default: text/plain; version=0.0.4; charset=utf-8
+      - name: "name[]"
+        in: query
+        description: Filter metrics based on these names.
+        required: false
+        schema:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+          default: []
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain;version=0.0.4;charset=utf-8:
+              schema:
+                type: string
+            application/openmetrics-text;version=1.0.0;charset=utf-8:
+              schema:
+                type: string
+  /actuator:
+    get:
+      tags:
+      - Actuator
+      summary: Actuator root web endpoint
+      operationId: links
+      responses:
+        "200":
+          description: OK
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  additionalProperties:
+                    $ref: '#/components/schemas/Link'
+            application/vnd.spring-boot.actuator.v2+json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  additionalProperties:
+                    $ref: '#/components/schemas/Link'
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  additionalProperties:
+                    $ref: '#/components/schemas/Link'
+  /actuator/health:
+    get:
+      tags:
+      - Actuator
+      summary: Actuator web endpoint 'health'
+      operationId: health
+      responses:
+        "200":
+          description: OK
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                type: object
+            application/vnd.spring-boot.actuator.v2+json:
+              schema:
+                type: object
+            application/json:
+              schema:
+                type: object
+  /actuator/health/**:
+    get:
+      tags:
+      - Actuator
+      summary: Actuator web endpoint 'health-path'
+      operationId: health-path
+      responses:
+        "200":
+          description: OK
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                type: object
+            application/vnd.spring-boot.actuator.v2+json:
+              schema:
+                type: object
+            application/json:
+              schema:
+                type: object
 components:
   schemas:
     OnDemandRepair:
@@ -384,3 +531,10 @@ components:
           minimum: 0
           type: integer
           format: int64
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+        templated:
+          type: boolean
