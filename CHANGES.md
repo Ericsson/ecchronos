@@ -2,6 +2,7 @@
 
 ## Version 5.0.0
 
+* Bump guava from 31.1 to 32.0.1 (CVE-2023-2976)
 * Fix shebang in ecctool - Issue #504
 * Bump springboot from 2.7.5 to 2.7.12 - Issue #500
 * Drop support for Python < 3.8 - Issue #474

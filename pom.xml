@@ -62,7 +62,7 @@
         <io.micrometer.version>1.9.2</io.micrometer.version>
         <io.dropwizard.metrics.version>4.2.10</io.dropwizard.metrics.version>
         <cassandra.driver.core.version>4.14.1</cassandra.driver.core.version>
-        <guava.version>31.1-jre</guava.version>
+        <guava.version>32.0.1-jre</guava.version>
         <failureaccess.version>1.0.1</failureaccess.version>
         <cassandra.driver.protocol.version>1.5.0</cassandra.driver.protocol.version>
         <cassandra.driver.shaded.guava.version>25.1-jre</cassandra.driver.shaded.guava.version>
