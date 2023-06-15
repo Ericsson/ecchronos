@@ -339,7 +339,7 @@ def run_ecc(cwd, command, arguments):
             line = proc.stdout.readline()
             if not line:
                 break
-            sys.stdout.write(line)
+            sys.stdout.write(line.decode("utf-8"))
         proc.wait()
 
 
