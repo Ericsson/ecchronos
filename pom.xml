@@ -374,12 +374,6 @@
                 <version>${io.prometheus.simpleclient}</version>
             </dependency>
 
-            <dependency>
-                <groupId>io.prometheus</groupId>
-                <artifactId>simpleclient_servlet</artifactId>
-                <version>${io.prometheus.simpleclient}</version>
-            </dependency>
-
             <!-- OSGi -->
             <dependency>
                 <groupId>org.osgi</groupId>

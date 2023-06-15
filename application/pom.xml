@@ -117,14 +117,6 @@
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-jmx</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.prometheus</groupId>
-            <artifactId>simpleclient</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.prometheus</groupId>
-            <artifactId>simpleclient_servlet</artifactId>
-        </dependency>
 
         <!-- Jackson -->
         <dependency>
