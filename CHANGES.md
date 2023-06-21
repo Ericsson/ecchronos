@@ -1,5 +1,11 @@
 # Changes
 
+## Version 1.1.4
+
+#### Merged from 1.0
+
+* Fix malformed IPv6 for JMX - Issue #306
+
 ## Version 1.1.3
 
 * Step karaf to 4.2.8
