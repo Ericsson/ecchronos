@@ -57,12 +57,15 @@ public final class VnodeRepairGroupFactory implements ReplicaRepairGroupFactory
 
             if (countedReplicaGroups.add(replicas))
             {
-                List<LongTokenRange> commonVnodes = availableVnodeRepairStates.stream()
-                        .filter(v -> v.getReplicas().equals(replicas))
+                List<VnodeRepairState> vnodesForReplicas = availableVnodeRepairStates.stream()
+                        .filter(v -> v.getReplicas().equals(replicas)).collect(Collectors.toList());
+                RepairedAt repairedAt = RepairedAt.generate(vnodesForReplicas);
+                List<LongTokenRange> commonVnodes = vnodesForReplicas.stream()
                         .map(VnodeRepairState::getTokenRange)
                         .collect(Collectors.toList());
 
-                sortedRepairGroups.add(new ReplicaRepairGroup(replicas, ImmutableList.copyOf(commonVnodes)));
+                sortedRepairGroups.add(new ReplicaRepairGroup(replicas, ImmutableList.copyOf(commonVnodes),
+                        repairedAt.getMinRepairedAt()));
             }
         }
 

@@ -62,7 +62,7 @@ public class TestVnodeRepairResourceFactory
     private ReplicaRepairGroup generateReplicaRepairGroup(Host... hosts)
     {
         LongTokenRange range = new LongTokenRange(1, 2);
-        return new ReplicaRepairGroup(ImmutableSet.copyOf(hosts), ImmutableList.of(range));
+        return new ReplicaRepairGroup(ImmutableSet.copyOf(hosts), ImmutableList.of(range), System.currentTimeMillis());
     }
 
     private Host mockHost(String dataCenter, UUID hostId)
