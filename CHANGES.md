@@ -6,6 +6,7 @@
 
 ### Merged from 1.0
 
+* Fix malformed IPv6 for JMX - Issue #306
 * Step karaf to 4.2.8
 * Improve Alarm logging - Issue #191
 
