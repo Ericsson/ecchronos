@@ -69,7 +69,13 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
 
     private void reconnect() throws IOException
     {
-        JMXServiceURL jmxUrl = new JMXServiceURL(String.format("service:jmx:rmi:///jndi/rmi://[%s]:%d/jmxrmi", myLocalhost, myPort));
+        String host = myLocalhost;
+        if (host.contains(":"))
+        {
+            // Use square brackets to surround IPv6 addresses
+            host = "[" + host + "]";
+        }
+        JMXServiceURL jmxUrl = new JMXServiceURL(String.format("service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi", host, myPort));
         Map<String, Object> env = new HashMap<>();
 
         LOG.debug("Connecting JMX through {}", jmxUrl);
