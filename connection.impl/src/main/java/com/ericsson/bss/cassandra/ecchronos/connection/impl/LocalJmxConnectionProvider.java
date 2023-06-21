@@ -34,7 +34,7 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(LocalJmxConnectionProvider.class);
 
-    private static final String JMX_FORMAT_URL = "service:jmx:rmi:///jndi/rmi://[%s]:%d/jmxrmi";
+    private static final String JMX_FORMAT_URL = "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi";
 
     public static final int DEFAULT_PORT = 7199;
     public static final String DEFAULT_HOST = "localhost";
@@ -84,7 +84,13 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
 
     private void reconnect() throws IOException
     {
-        JMXServiceURL jmxUrl = new JMXServiceURL(String.format(JMX_FORMAT_URL, myLocalhost, myPort));
+        String host = myLocalhost;
+        if (host.contains(":"))
+        {
+            // Use square brackets to surround IPv6 addresses
+            host = "[" + host + "]";
+        }
+        JMXServiceURL jmxUrl = new JMXServiceURL(String.format(JMX_FORMAT_URL, host, myPort));
         Map<String, Object> env = new HashMap<>();
         String[] credentials = this.credentialsSupplier.get();
         if (credentials != null)

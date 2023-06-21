@@ -1,5 +1,11 @@
 # Changes
 
+## Version 2.0.7
+
+### Merged from 1.0
+
+* Fix malformed IPv6 for JMX - Issue #306
+
 ## Version 2.0.6
 
 * Add ecc-schedule command - Issue #158
