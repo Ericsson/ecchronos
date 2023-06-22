@@ -34,7 +34,7 @@ echo "Installing behave dependencies"
 pip install behave
 pip install requests
 pip install jsonschema
-pip install cassandra-driver
+pip install cassandra-driver==3.26.0
 
 for directory in "$@"
 do
