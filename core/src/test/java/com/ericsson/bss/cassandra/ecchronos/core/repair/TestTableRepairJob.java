@@ -512,13 +512,69 @@ public class TestTableRepairJob
         verify(myFaultReporter, times(0)).raise(any(FaultCode.class), anyMapOf(String.class, Object.class));
     }
 
+    @Test
+    public void testGetRealPriority()
+    {
+        long lastRepaired = System.currentTimeMillis();
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(false).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
+        assertThat(myRepairJob.getRealPriority()).isEqualTo(-1);
+
+        lastRepaired = System.currentTimeMillis() - (TimeUnit.DAYS.toMillis(RUN_INTERVAL_IN_DAYS) - TimeUnit.HOURS.toMillis(1));
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
+        assertThat(myRepairJob.getRealPriority()).isEqualTo(-1);
+
+        lastRepaired = System.currentTimeMillis() - (TimeUnit.DAYS.toMillis(RUN_INTERVAL_IN_DAYS));
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
+        assertThat(myRepairJob.getRealPriority()).isEqualTo(1);
+
+        lastRepaired = System.currentTimeMillis() - (TimeUnit.DAYS.toMillis(RUN_INTERVAL_IN_DAYS) + TimeUnit.HOURS.toMillis(1));
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
+        assertThat(myRepairJob.getRealPriority()).isEqualTo(2);
+    }
+
+    @Test
+    public void testGetRealPrioritySnapshotLastRepairedAtLowerThanRepairGroups()
+    {
+        long lastRepairedAtSnapshot = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(14);
+        doReturn(lastRepairedAtSnapshot).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
+        long firstRepairGroupLastRepairedAt = System.currentTimeMillis() - (TimeUnit.DAYS.toMillis(RUN_INTERVAL_IN_DAYS));
+        ReplicaRepairGroup firstReplicaRepairGroup = getRepairGroup(new LongTokenRange(1, 2), firstRepairGroupLastRepairedAt);
+        mockRepairGroup(firstReplicaRepairGroup);
+        assertThat(myRepairJob.getRealPriority()).isEqualTo(1);
+
+        long secondRepairGroupLastRepairedAt = System.currentTimeMillis() - (TimeUnit.DAYS.toMillis(RUN_INTERVAL_IN_DAYS) + TimeUnit.HOURS.toMillis(1));
+        ReplicaRepairGroup secondReplicaRepairGroup = getRepairGroup(new LongTokenRange(2, 3), secondRepairGroupLastRepairedAt);
+        mockRepairGroup(secondReplicaRepairGroup, firstReplicaRepairGroup);
+        assertThat(myRepairJob.getRealPriority()).isEqualTo(2);
+    }
+
     private void mockRepairGroup(long lastRepairedAt)
     {
-        ImmutableSet<Host> replicas = ImmutableSet.of(mock(Host.class), mock(Host.class));
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(replicas,
-                ImmutableList.of(new LongTokenRange(1, 2)), lastRepairedAt);
+        mockRepairGroup(getRepairGroup(new LongTokenRange(1, 2), lastRepairedAt));
+    }
+
+    private void mockRepairGroup(ReplicaRepairGroup ...replicaRepairGroups)
+    {
         List<ReplicaRepairGroup> repairGroups = new ArrayList<>();
-        repairGroups.add(replicaRepairGroup);
+        for (ReplicaRepairGroup replicaRepairGroup : replicaRepairGroups)
+        {
+            repairGroups.add(replicaRepairGroup);
+        }
         when(myRepairStateSnapshot.getRepairGroups()).thenReturn(repairGroups);
+    }
+
+    private ReplicaRepairGroup getRepairGroup(LongTokenRange range, long lastRepairedAt)
+    {
+        ImmutableSet<Host> replicas = ImmutableSet.of(mock(Host.class), mock(Host.class));
+        return new ReplicaRepairGroup(replicas, ImmutableList.of(range), lastRepairedAt);
     }
 }

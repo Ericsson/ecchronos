@@ -222,7 +222,6 @@ public class TableRepairJob extends ScheduledJob
             }
             priority = getRealPriority(minRepairedAt);
         }
-        LOG.info("Job {}, priority {}", this, priority);
         return priority;
     }
 
