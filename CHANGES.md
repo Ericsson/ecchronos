@@ -3,7 +3,7 @@
 ## Version 2.0.7
 
 ### Merged from 1.0
-
+* Fix repair job priority - Issue #515
 * Fix malformed IPv6 for JMX - Issue #306
 
 ## Version 2.0.6

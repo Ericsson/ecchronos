@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.Node;
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,12 +83,18 @@ public class HostStatesImpl implements HostStates, Closeable
         {
             synchronized (myRefreshLock)
             {
-                if (shouldRefreshNodeStatus())
+                if (shouldRefreshNodeStatus() && !tryRefreshHostStates())
                 {
-                    tryRefreshHostStates();
+                    myHostStates.clear();
                 }
             }
         }
+    }
+
+    @VisibleForTesting
+    void resetLastRefresh()
+    {
+        myLastRefresh = -1;
     }
 
     private boolean shouldRefreshNodeStatus()

@@ -188,18 +188,39 @@ public class TableRepairJob extends ScheduledJob
     @Override
     public boolean runnable()
     {
-        if (super.runnable())
+        try
         {
-            try
-            {
-                myRepairState.update();
-            } catch (Exception e)
-            {
-                LOG.warn("Unable to check repair history, {}", this, e);
-            }
+            myRepairState.update();
+        } catch (Exception e)
+        {
+            LOG.warn("Unable to check repair history, {}", this, e);
         }
 
         return myRepairState.getSnapshot().canRepair() && super.runnable();
+    }
+
+    /**
+     * Calculate real priority based on available tasks.
+     */
+    @Override
+    public final int getRealPriority()
+    {
+        RepairStateSnapshot repairStateSnapshot = myRepairState.getSnapshot();
+        int priority = -1;
+        if (repairStateSnapshot.canRepair())
+        {
+            long minRepairedAt = System.currentTimeMillis();
+            for (ReplicaRepairGroup replicaRepairGroup : repairStateSnapshot.getRepairGroups())
+            {
+                long replicaGroupCompletedAt = replicaRepairGroup.getLastCompletedAt();
+                if (replicaGroupCompletedAt < minRepairedAt)
+                {
+                    minRepairedAt = replicaGroupCompletedAt;
+                }
+            }
+            priority = getRealPriority(minRepairedAt);
+        }
+        return priority;
     }
 
     @Override

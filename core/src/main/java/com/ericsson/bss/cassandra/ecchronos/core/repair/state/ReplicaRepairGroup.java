@@ -30,11 +30,14 @@ public class ReplicaRepairGroup implements Iterable<LongTokenRange>
 {
     private final ImmutableSet<Node> myReplicas;
     private final ImmutableList<LongTokenRange> myVnodes;
+    private final long myLastCompletedAt;
 
-    public ReplicaRepairGroup(ImmutableSet<Node> replicas, ImmutableList<LongTokenRange> vnodes)
+    public ReplicaRepairGroup(ImmutableSet<Node> replicas, ImmutableList<LongTokenRange> vnodes,
+            final long lastCompletedAt)
     {
         myReplicas = replicas;
         myVnodes = vnodes;
+        myLastCompletedAt = lastCompletedAt;
     }
 
     public Set<Node> getReplicas()
@@ -45,6 +48,16 @@ public class ReplicaRepairGroup implements Iterable<LongTokenRange>
     public Set<String> getDataCenters()
     {
         return myReplicas.stream().map(Node::getDatacenter).collect(Collectors.toSet());
+    }
+
+    /**
+     * Get last completed at.
+     *
+     * @return Last completed at for this repair group.
+     */
+    public long getLastCompletedAt()
+    {
+        return myLastCompletedAt;
     }
 
     @Override

@@ -62,7 +62,7 @@ public class TestVnodeRepairResourceFactory
     private ReplicaRepairGroup generateReplicaRepairGroup(Node... nodes)
     {
         LongTokenRange range = new LongTokenRange(1, 2);
-        return new ReplicaRepairGroup(ImmutableSet.copyOf(nodes), ImmutableList.of(range));
+        return new ReplicaRepairGroup(ImmutableSet.copyOf(nodes), ImmutableList.of(range), System.currentTimeMillis());
     }
 
     private Node mockNode(String dataCenter, UUID id)
