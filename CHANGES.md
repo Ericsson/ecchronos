@@ -4,6 +4,7 @@
 
 #### Merged from 1.0
 
+* Fix repair job priority - Issue #515
 * Fix malformed IPv6 for JMX - Issue #306
 
 ## Version 1.1.3
