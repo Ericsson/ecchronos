@@ -14,6 +14,9 @@
 * Remove deprecated scripts (ecc-schedule, ecc-status, ecc-config)
 * Add blocked status - Issue #284
 
+### Merged from 1.0
+* Fix repair job priority - Issue #515
+
 ## Version 2.0.6
 
 * Add ecc-schedule command - Issue #158
