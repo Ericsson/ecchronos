@@ -1,0 +1,62 @@
+/*
+ * Copyright 2023 Telefonaktiebolaget LM Ericsson
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.ericsson.bss.cassandra.ecchronos.rest;
+
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.Duration;
+import java.util.UUID;
+
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+
+/**
+ * Helper class that contains methods to parse Rest information.
+ */
+public final class RestUtils
+{
+    public static final String ROOT = "/repair-management/";
+    public static final String PROTOCOL_VERSION = "v2";
+    public static final String ENDPOINT_PREFIX = ROOT + PROTOCOL_VERSION;
+
+    private RestUtils()
+    {
+        // Utility Class
+    }
+
+    public static UUID parseIdOrThrow(final String id)
+    {
+        try
+        {
+            UUID uuid = UUID.fromString(id);
+            return uuid;
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new ResponseStatusException(BAD_REQUEST, BAD_REQUEST.getReasonPhrase(), e);
+        }
+    }
+
+    public static Duration getDefaultDurationOrProvided(final TableReference tableReference, final Duration duration,
+            final Long since)
+    {
+        Duration singleTableDuration = duration;
+        if (duration == null && since == null)
+        {
+            singleTableDuration = Duration.ofSeconds(tableReference.getGcGraceSeconds());
+        }
+        return singleTableDuration;
+    }
+}

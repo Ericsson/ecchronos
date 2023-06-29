@@ -15,25 +15,12 @@
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairJobView;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.RepairInfo;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.RepairStats;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.types.Schedule;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.RepairStatsProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
-import com.google.common.collect.ImmutableSet;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,17 +30,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -61,17 +42,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class TestRepairManagementRESTImpl
 {
-    private static final int DEFAULT_GC_GRACE_SECONDS = 7200;
-    @Mock
-    private RepairScheduler myRepairScheduler;
-
-    @Mock
-    private OnDemandRepairScheduler myOnDemandRepairScheduler;
+    public static final int DEFAULT_GC_GRACE_SECONDS = 7200;
 
     @Mock
     private ReplicatedTableProvider myReplicatedTableProvider;
@@ -82,432 +57,13 @@ public class TestRepairManagementRESTImpl
     @Mock
     private TableReferenceFactory myTableReferenceFactory;
 
-    private RepairManagementREST repairManagementREST;
+    private RepairManagementREST managementREST;
 
     @Before
     public void setupMocks()
     {
-        repairManagementREST = new RepairManagementRESTImpl(myRepairScheduler, myOnDemandRepairScheduler,
-                myTableReferenceFactory, myReplicatedTableProvider, myRepairStatsProvider);
-    }
-
-    @Test
-    public void testGetNoRepairs()
-    {
-        when(myOnDemandRepairScheduler.getAllClusterWideRepairJobs()).thenReturn(new ArrayList<>());
-
-        ResponseEntity<List<OnDemandRepair>> response;
-
-        response = repairManagementREST.getRepairs(null, null, null);
-
-        assertThat(response.getBody()).isEmpty();
-        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
-
-        response = repairManagementREST.getRepairs("ks", null, null);
-
-        assertThat(response.getBody()).isEmpty();
-        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
-
-        response = repairManagementREST.getRepairs("ks", "tb", null);
-
-        assertThat(response.getBody()).isEmpty();
-        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
-
-        response = repairManagementREST.getRepairs("ks", "tb", UUID.randomUUID().toString());
-
-        assertThat(response.getBody()).isEmpty();
-        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
-    }
-
-    @Test
-    public void testGetRepairs()
-    {
-        UUID expectedId = UUID.randomUUID();
-        UUID expectedHostId = UUID.randomUUID();
-        TableReference tableReference1 = mockTableReference("ks", "tb");
-        OnDemandRepairJobView job1 = mockOnDemandRepairJobView(expectedId, expectedHostId, tableReference1, 1234L);
-        TableReference tableReference2 = mockTableReference("ks", "tb2");
-        OnDemandRepairJobView job2 = mockOnDemandRepairJobView(UUID.randomUUID(), expectedHostId, tableReference2,
-                2345L);
-        OnDemandRepairJobView job3 = mockOnDemandRepairJobView(UUID.randomUUID(), expectedHostId, tableReference2,
-                3456L);
-        List<OnDemandRepairJobView> repairJobViews = Arrays.asList(job1, job2, job3);
-
-        List<OnDemandRepair> expectedResponse = repairJobViews.stream().map(OnDemandRepair::new)
-                .collect(Collectors.toList());
-
-        when(myOnDemandRepairScheduler.getAllClusterWideRepairJobs()).thenReturn(repairJobViews);
-
-        ResponseEntity<List<OnDemandRepair>> response = repairManagementREST.getRepairs(null, null, null);
-        assertThat(response.getBody()).containsAll(expectedResponse);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        response = repairManagementREST.getRepairs(null, null, expectedHostId.toString());
-        assertThat(response.getBody()).containsAll(expectedResponse);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        response = repairManagementREST.getRepairs("ks", null, null);
-        assertThat(response.getBody()).containsAll(expectedResponse);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        response = repairManagementREST.getRepairs("ks", null, expectedHostId.toString());
-        assertThat(response.getBody()).containsAll(expectedResponse);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        response = repairManagementREST.getRepairs("ks", "tb", null);
-        assertThat(response.getBody()).containsExactly(expectedResponse.get(0));
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        response = repairManagementREST.getRepairs("ks", "tb", expectedHostId.toString());
-        assertThat(response.getBody()).containsExactly(expectedResponse.get(0));
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        response = repairManagementREST.getRepairs("ks", "tb", UUID.randomUUID().toString());
-        assertThat(response.getBody()).isEmpty();
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        response = repairManagementREST.getRepairs("wrong", "tb", null);
-        assertThat(response.getBody()).isEmpty();
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        response = repairManagementREST.getRepairs("ks", "wrong", null);
-        assertThat(response.getBody()).isEmpty();
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        response = repairManagementREST.getRepairs("wrong", "wrong", null);
-        assertThat(response.getBody()).isEmpty();
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
-
-    @Test
-    public void testGetRepairWithId()
-    {
-        UUID expectedId = UUID.randomUUID();
-        UUID expectedHostId = UUID.randomUUID();
-        TableReference tableReference1 = mockTableReference("ks", "tb");
-        OnDemandRepairJobView job1 = mockOnDemandRepairJobView(expectedId, expectedHostId, tableReference1, 1234L);
-        TableReference tableReference2 = mockTableReference("ks", "tb2");
-        OnDemandRepairJobView job2 = mockOnDemandRepairJobView(UUID.randomUUID(), expectedHostId, tableReference2,
-                2345L);
-        OnDemandRepairJobView job3 = mockOnDemandRepairJobView(UUID.randomUUID(), expectedHostId, tableReference2,
-                3456L);
-        List<OnDemandRepairJobView> repairJobViews = Arrays.asList(job1, job2, job3);
-
-        List<OnDemandRepair> expectedResponse = repairJobViews.stream().map(OnDemandRepair::new)
-                .collect(Collectors.toList());
-
-        when(myOnDemandRepairScheduler.getAllClusterWideRepairJobs()).thenReturn(repairJobViews);
-        ResponseEntity<List<OnDemandRepair>> response = null;
-        try
-        {
-            response = repairManagementREST.getRepairs(UUID.randomUUID().toString(), expectedHostId.toString());
-        }
-        catch (ResponseStatusException e)
-        {
-            assertThat(e.getRawStatusCode()).isEqualTo(NOT_FOUND.value());
-        }
-        assertThat(response).isNull();
-        response = repairManagementREST.getRepairs(expectedId.toString(), expectedHostId.toString());
-        assertThat(response.getBody()).containsExactly(expectedResponse.get(0));
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        response = null;
-        try
-        {
-            response = repairManagementREST.getRepairs(UUID.randomUUID().toString(), null);
-        }
-        catch (ResponseStatusException e)
-        {
-            assertThat(e.getRawStatusCode()).isEqualTo(NOT_FOUND.value());
-        }
-        assertThat(response).isNull();
-        response = repairManagementREST.getRepairs(expectedId.toString(), null);
-        assertThat(response.getBody()).containsExactly(expectedResponse.get(0));
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
-
-    @Test
-    public void testTriggerRepair() throws EcChronosException
-    {
-        UUID id = UUID.randomUUID();
-        UUID hostId = UUID.randomUUID();
-        long completedAt = 1234L;
-        TableReference tableReference = mockTableReference("ks", "tb");
-        OnDemandRepairJobView localRepairJobView = mockOnDemandRepairJobView(id, hostId, tableReference, completedAt);
-        List<OnDemandRepair> localExpectedResponse = Collections.singletonList(new OnDemandRepair(localRepairJobView));
-
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference)).thenReturn(localRepairJobView);
-        when(myReplicatedTableProvider.accept("ks")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = repairManagementREST.triggerRepair("ks", "tb", true);
-
-        assertThat(response.getBody()).isEqualTo(localExpectedResponse);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        OnDemandRepairJobView repairJobView = mockOnDemandRepairJobView(id, hostId, tableReference, completedAt);
-        List<OnDemandRepair> expectedResponse = Collections.singletonList(new OnDemandRepair(repairJobView));
-
-        when(myOnDemandRepairScheduler.scheduleClusterWideJob(tableReference)).thenReturn(
-                Collections.singletonList(repairJobView));
-        response = repairManagementREST.triggerRepair("ks", "tb", false);
-
-        assertThat(response.getBody()).isEqualTo(expectedResponse);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
-
-    @Test
-    public void testTriggerRepairOnlyKeyspace() throws EcChronosException
-    {
-        UUID id = UUID.randomUUID();
-        UUID hostId = UUID.randomUUID();
-        long completedAt = 1234L;
-        TableReference tableReference1 = mockTableReference("ks", "table1");
-        OnDemandRepairJobView repairJobView1 = mockOnDemandRepairJobView(id, hostId, tableReference1, completedAt);
-        TableReference tableReference2 = mockTableReference("ks", "table2");
-        OnDemandRepairJobView repairJobView2 = mockOnDemandRepairJobView(id, hostId, tableReference2, completedAt);
-        TableReference tableReference3 = mockTableReference("ks", "table3");
-        OnDemandRepairJobView repairJobView3 = mockOnDemandRepairJobView(id, hostId, tableReference3, completedAt);
-
-        Set<TableReference> tableReferencesForKeyspace = new HashSet<>();
-        tableReferencesForKeyspace.add(tableReference1);
-        tableReferencesForKeyspace.add(tableReference2);
-        tableReferencesForKeyspace.add(tableReference3);
-        when(myTableReferenceFactory.forKeyspace("ks")).thenReturn(tableReferencesForKeyspace);
-        List<OnDemandRepair> expectedResponse = new ArrayList<>();
-        expectedResponse.add(new OnDemandRepair(repairJobView1));
-        expectedResponse.add(new OnDemandRepair(repairJobView2));
-        expectedResponse.add(new OnDemandRepair(repairJobView3));
-
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference1)).thenReturn(repairJobView1);
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference2)).thenReturn(repairJobView2);
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference3)).thenReturn(repairJobView3);
-        when(myReplicatedTableProvider.accept("ks")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = repairManagementREST.triggerRepair("ks", null, true);
-
-        assertThat(response.getBody()).containsAll(expectedResponse);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
-
-    @Test
-    public void testTriggerRepairNoKeyspaceNoTable() throws EcChronosException
-    {
-        UUID id = UUID.randomUUID();
-        UUID hostId = UUID.randomUUID();
-        long completedAt = 1234L;
-        TableReference tableReference1 = mockTableReference("keyspace1", "table1");
-        OnDemandRepairJobView repairJobView1 = mockOnDemandRepairJobView(id, hostId, tableReference1, completedAt);
-        TableReference tableReference2 = mockTableReference("keyspace1", "table2");
-        OnDemandRepairJobView repairJobView2 = mockOnDemandRepairJobView(id, hostId, tableReference2, completedAt);
-        TableReference tableReference3 = mockTableReference("keyspace1", "table3");
-        OnDemandRepairJobView repairJobView3 = mockOnDemandRepairJobView(id, hostId, tableReference3, completedAt);
-        TableReference tableReference4 = mockTableReference("keyspace2", "table4");
-        OnDemandRepairJobView repairJobView4 = mockOnDemandRepairJobView(id, hostId, tableReference4, completedAt);
-        TableReference tableReference5 = mockTableReference("keyspace3", "table5");
-        OnDemandRepairJobView repairJobView5 = mockOnDemandRepairJobView(id, hostId, tableReference5, completedAt);
-        Set<TableReference> tableReferencesForCluster = new HashSet<>();
-        tableReferencesForCluster.add(tableReference1);
-        tableReferencesForCluster.add(tableReference2);
-        tableReferencesForCluster.add(tableReference3);
-        tableReferencesForCluster.add(tableReference4);
-        tableReferencesForCluster.add(tableReference5);
-        when(myTableReferenceFactory.forCluster()).thenReturn(tableReferencesForCluster);
-
-        List<OnDemandRepair> expectedResponse = new ArrayList<>();
-        expectedResponse.add(new OnDemandRepair(repairJobView1));
-        expectedResponse.add(new OnDemandRepair(repairJobView2));
-        expectedResponse.add(new OnDemandRepair(repairJobView3));
-        expectedResponse.add(new OnDemandRepair(repairJobView4));
-        expectedResponse.add(new OnDemandRepair(repairJobView5));
-
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference1)).thenReturn(repairJobView1);
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference2)).thenReturn(repairJobView2);
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference3)).thenReturn(repairJobView3);
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference4)).thenReturn(repairJobView4);
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference5)).thenReturn(repairJobView5);
-        when(myReplicatedTableProvider.accept("keyspace1")).thenReturn(true);
-        when(myReplicatedTableProvider.accept("keyspace2")).thenReturn(true);
-        when(myReplicatedTableProvider.accept("keyspace3")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = repairManagementREST.triggerRepair(null, null, true);
-
-        assertThat(response.getBody()).containsAll(expectedResponse);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
-
-    private OnDemandRepairJobView mockOnDemandRepairJobView(UUID id, UUID hostId, TableReference tableReference,
-            Long completedAt)
-    {
-        return new OnDemandRepairJobView(id, hostId, tableReference, OnDemandRepairJobView.Status.IN_QUEUE, 0.0,
-                completedAt);
-    }
-
-    @Test
-    public void testTriggerRepairNoKeyspaceWithTable()
-    {
-        ResponseEntity<List<OnDemandRepair>> response = null;
-        try
-        {
-            response = repairManagementREST.triggerRepair(null, "table1", true);
-        }
-        catch (ResponseStatusException e)
-        {
-            assertThat(e.getRawStatusCode()).isEqualTo(BAD_REQUEST.value());
-        }
-        assertThat(response).isNull();
-    }
-
-    @Test
-    public void testGetNoSchedules()
-    {
-        when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(new ArrayList<>());
-
-        ResponseEntity<List<Schedule>> response;
-
-        response = repairManagementREST.getSchedules(null, null);
-
-        assertThat(response.getBody()).isEmpty();
-        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
-
-        response = repairManagementREST.getSchedules("ks", null);
-
-        assertThat(response.getBody()).isEmpty();
-        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
-
-        response = repairManagementREST.getSchedules("ks", "tb");
-
-        assertThat(response.getBody()).isEmpty();
-        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
-    }
-
-    @Test
-    public void testGetSchedules() throws UnknownHostException
-    {
-        DriverNode replica = mock(DriverNode.class);
-        when(replica.getPublicAddress()).thenReturn(InetAddress.getLocalHost());
-        VnodeRepairState expectedVnodeRepairState1 = new VnodeRepairState(new LongTokenRange(2, 3),
-                ImmutableSet.of(replica), 1234L);
-        TableReference tableReference1 = mockTableReference("ks", "tb");
-        ScheduledRepairJobView job1 = mockScheduledRepairJobView(tableReference1, UUID.randomUUID(), 1234L, 11L,
-                ImmutableSet.of(expectedVnodeRepairState1));
-        VnodeRepairState expectedVnodeRepairState2 = new VnodeRepairState(new LongTokenRange(2, 3),
-                ImmutableSet.of(replica), 2345L);
-        TableReference tableReference2 = mockTableReference("ks", "tb2");
-        ScheduledRepairJobView job2 = mockScheduledRepairJobView(tableReference2, UUID.randomUUID(), 2345L, 12L,
-                ImmutableSet.of(expectedVnodeRepairState2));
-        VnodeRepairState expectedVnodeRepairState3 = new VnodeRepairState(new LongTokenRange(2, 3),
-                ImmutableSet.of(replica), 3333L);
-        ScheduledRepairJobView job3 = mockScheduledRepairJobView(tableReference2, UUID.randomUUID(), 3333L, 15L,
-                ImmutableSet.of(expectedVnodeRepairState3));
-        List<ScheduledRepairJobView> repairJobViews = Arrays.asList(job1, job2, job3);
-
-        List<Schedule> expectedResponse = repairJobViews.stream().map(Schedule::new).collect(Collectors.toList());
-
-        when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(repairJobViews);
-
-        ResponseEntity<List<Schedule>> response;
-
-        response = repairManagementREST.getSchedules(null, null);
-
-        assertThat(response.getBody()).isEqualTo(expectedResponse);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        response = repairManagementREST.getSchedules("ks", null);
-
-        assertThat(response.getBody()).containsAll(expectedResponse);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        response = repairManagementREST.getSchedules("ks", "tb");
-
-        assertThat(response.getBody()).containsExactly(expectedResponse.get(0));
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        response = repairManagementREST.getSchedules("wrong", "tb");
-
-        assertThat(response.getBody()).isEmpty();
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        response = repairManagementREST.getSchedules("ks", "wrong");
-
-        assertThat(response.getBody()).isEmpty();
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        response = repairManagementREST.getSchedules("wrong", "wrong");
-
-        assertThat(response.getBody()).isEmpty();
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    }
-
-    @Test
-    public void testGetScheduleWithId() throws UnknownHostException
-    {
-        UUID expectedId = UUID.randomUUID();
-        long expectedLastRepairedAt = 234;
-        DriverNode replica = mock(DriverNode.class);
-        when(replica.getPublicAddress()).thenReturn(InetAddress.getLocalHost());
-        VnodeRepairState expectedVnodeRepairState = new VnodeRepairState(new LongTokenRange(2, 3),
-                ImmutableSet.of(replica), expectedLastRepairedAt);
-        TableReference tableReference1 = mockTableReference("ks", "tb");
-        ScheduledRepairJobView job1 = mockScheduledRepairJobView(tableReference1, expectedId, 1234L, 11L,
-                ImmutableSet.of(expectedVnodeRepairState));
-        TableReference tableReference2 = mockTableReference("ks", "tb2");
-        ScheduledRepairJobView job2 = mockScheduledRepairJobView(tableReference2, UUID.randomUUID(), 2345L, 12L,
-                ImmutableSet.of(expectedVnodeRepairState));
-        ScheduledRepairJobView job3 = mockScheduledRepairJobView(tableReference2, expectedId, 2365L, 12L,
-                ImmutableSet.of(expectedVnodeRepairState));
-        List<ScheduledRepairJobView> repairJobViews = Arrays.asList(job1, job2, job3);
-
-        List<Schedule> expectedResponse = repairJobViews.stream().map(view -> new Schedule(view, false))
-                .collect(Collectors.toList());
-
-        when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(repairJobViews);
-        ResponseEntity<Schedule> response = null;
-
-        try
-        {
-            response = repairManagementREST.getSchedules(UUID.randomUUID().toString(), false);
-        }
-        catch (ResponseStatusException e)
-        {
-            assertThat(e.getRawStatusCode()).isEqualTo(NOT_FOUND.value());
-        }
-
-        assertThat(response).isNull();
-
-        response = repairManagementREST.getSchedules(expectedId.toString(), false);
-
-        assertThat(response.getBody()).isEqualTo(expectedResponse.get(0));
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        List<Schedule> expectedResponseFull = repairJobViews.stream().map(view -> new Schedule(view, true))
-                .collect(Collectors.toList());
-
-        response = null;
-        try
-        {
-            response = repairManagementREST.getSchedules(UUID.randomUUID().toString(), true);
-        }
-        catch (ResponseStatusException e)
-        {
-            assertThat(e.getRawStatusCode()).isEqualTo(NOT_FOUND.value());
-        }
-        assertThat(response).isNull();
-
-        response = repairManagementREST.getSchedules(expectedId.toString(), true);
-
-        assertThat(response.getBody()).isEqualTo(expectedResponseFull.get(0));
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().virtualNodeStates).isNotEmpty();
-    }
-
-    private ScheduledRepairJobView mockScheduledRepairJobView(TableReference tableReference, UUID id,
-            long lastRepairedAt, long repairInterval, Set<VnodeRepairState> vnodeRepairState)
-    {
-        RepairConfiguration repairConfigurationMock = mock(RepairConfiguration.class);
-        when(repairConfigurationMock.getRepairIntervalInMs()).thenReturn(repairInterval);
-        VnodeRepairStates vnodeRepairStatesMock = mock(VnodeRepairStates.class);
-        when(vnodeRepairStatesMock.getVnodeRepairStates()).thenReturn(vnodeRepairState);
-        RepairStateSnapshot repairStateSnapshotMock = mock(RepairStateSnapshot.class);
-        when(repairStateSnapshotMock.getVnodeRepairStates()).thenReturn(vnodeRepairStatesMock);
-        return new ScheduledRepairJobView(id, tableReference, repairConfigurationMock, repairStateSnapshotMock,
-                ScheduledRepairJobView.Status.ON_TIME, 0.0, lastRepairedAt + repairInterval);
+        managementREST = new RepairManagementRESTImpl(myTableReferenceFactory, myReplicatedTableProvider,
+                myRepairStatsProvider);
     }
 
     @Test
@@ -549,7 +105,7 @@ public class TestRepairManagementRESTImpl
         repairStats.add(repairStats4);
         repairStats.add(repairStats5);
         RepairInfo expectedResponse = new RepairInfo(since, to, repairStats);
-        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo(null, null, since, duration, true);
+        ResponseEntity<RepairInfo> response = managementREST.getRepairInfo(null, null, since, duration, true);
 
         RepairInfo returnedRepairInfo = response.getBody();
         assertThat(returnedRepairInfo).isEqualTo(expectedResponse);
@@ -597,7 +153,7 @@ public class TestRepairManagementRESTImpl
         repairStats.add(repairStats4);
         repairStats.add(repairStats5);
         RepairInfo expectedResponse = new RepairInfo(since, 0L, repairStats);
-        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo(null, null, since, null, true);
+        ResponseEntity<RepairInfo> response = managementREST.getRepairInfo(null, null, since, null, true);
 
         RepairInfo returnedRepairInfo = response.getBody();
         assertThat(returnedRepairInfo.repairStats).containsExactlyInAnyOrderElementsOf(expectedResponse.repairStats);
@@ -647,7 +203,7 @@ public class TestRepairManagementRESTImpl
         repairStats.add(repairStats3);
         repairStats.add(repairStats4);
         repairStats.add(repairStats5);
-        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo(null, null, null, duration, true);
+        ResponseEntity<RepairInfo> response = managementREST.getRepairInfo(null, null, null, duration, true);
 
         RepairInfo returnedRepairInfo = response.getBody();
         assertThat(returnedRepairInfo.repairStats).containsExactlyInAnyOrderElementsOf(repairStats);
@@ -683,7 +239,7 @@ public class TestRepairManagementRESTImpl
         repairStats.add(repairStats2);
         repairStats.add(repairStats3);
         RepairInfo expectedResponse = new RepairInfo(since, to, repairStats);
-        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo("keyspace1", null, since, duration,
+        ResponseEntity<RepairInfo> response = managementREST.getRepairInfo("keyspace1", null, since, duration,
                 true);
 
         RepairInfo returnedRepairInfo = response.getBody();
@@ -705,7 +261,7 @@ public class TestRepairManagementRESTImpl
         List<RepairStats> repairStats = new ArrayList<>();
         repairStats.add(repairStats1);
         RepairInfo expectedResponse = new RepairInfo(since, to, repairStats);
-        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo("keyspace1", "table1", since, duration,
+        ResponseEntity<RepairInfo> response = managementREST.getRepairInfo("keyspace1", "table1", since, duration,
                 true);
 
         RepairInfo returnedRepairInfo = response.getBody();
@@ -722,7 +278,7 @@ public class TestRepairManagementRESTImpl
         ResponseEntity<RepairInfo> response = null;
         try
         {
-            response = repairManagementREST.getRepairInfo(null, "table1", since, duration, true);
+            response = managementREST.getRepairInfo(null, "table1", since, duration, true);
         }
         catch (ResponseStatusException e)
         {
@@ -741,7 +297,7 @@ public class TestRepairManagementRESTImpl
         when(myReplicatedTableProvider.accept("keyspace1")).thenReturn(true);
         List<RepairStats> repairStats = new ArrayList<>();
         repairStats.add(repairStats1);
-        ResponseEntity<RepairInfo> response = repairManagementREST.getRepairInfo("keyspace1", "table1", null, null,
+        ResponseEntity<RepairInfo> response = managementREST.getRepairInfo("keyspace1", "table1", null, null,
                 true);
 
         RepairInfo returnedRepairInfo = response.getBody();
@@ -757,7 +313,7 @@ public class TestRepairManagementRESTImpl
         ResponseEntity<RepairInfo> response = null;
         try
         {
-            response = repairManagementREST.getRepairInfo(null, null, null, null, true);
+            response = managementREST.getRepairInfo(null, null, null, null, true);
         }
         catch (ResponseStatusException e)
         {
@@ -773,7 +329,7 @@ public class TestRepairManagementRESTImpl
         ResponseEntity<RepairInfo> response = null;
         try
         {
-            response = repairManagementREST.getRepairInfo("keyspace1", "table1", 0L, Duration.ofMillis(-1000), true);
+            response = managementREST.getRepairInfo("keyspace1", "table1", 0L, Duration.ofMillis(-1000), true);
         }
         catch (ResponseStatusException e)
         {
@@ -782,7 +338,7 @@ public class TestRepairManagementRESTImpl
         assertThat(response).isNull();
     }
 
-    private TableReference mockTableReference(String keyspace, String table)
+    public TableReference mockTableReference(String keyspace, String table)
     {
         TableReference tableReference = mock(TableReference.class);
         when(tableReference.getKeyspace()).thenReturn(keyspace);
