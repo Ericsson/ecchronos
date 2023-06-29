@@ -2,6 +2,7 @@
 
 ## Version 1.0.8
 
+* Fix repair job priority - Issue #515
 * Fix malformed IPv6 for JMX - Issue #306
 * Step karaf to 4.2.8
 * Improve Alarm logging - Issue #191
