@@ -22,28 +22,34 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.ignoreStubs;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.datastax.driver.core.Host;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.MockedClock;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -187,11 +193,11 @@ public class TestTableRepairJob
     {
         // mock
         doReturn(true).when(myRepairStateSnapshot).canRepair();
-
+        mockRepairGroup(0L);
         assertThat(myRepairJob.runnable()).isTrue();
 
         verify(myRepairState, times(1)).update();
-        verify(myRepairStateSnapshot, times(1)).canRepair();
+        verify(myRepairStateSnapshot, times(2)).canRepair();
     }
 
     @Test
@@ -199,12 +205,12 @@ public class TestTableRepairJob
     {
         // mock
         doReturn(false).doReturn(true).when(myRepairStateSnapshot).canRepair();
-
+        mockRepairGroup(0L);
         assertThat(myRepairJob.runnable()).isFalse();
         assertThat(myRepairJob.runnable()).isTrue();
 
         verify(myRepairState, times(2)).update();
-        verify(myRepairStateSnapshot, times(2)).canRepair();
+        verify(myRepairStateSnapshot, times(3)).canRepair();
     }
 
     @Test
@@ -315,6 +321,7 @@ public class TestTableRepairJob
         // mock - not repaired
         doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
         doReturn(true).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
         myClock.setTime(start);
 
         assertThat(myRepairJob.runnable()).isTrue();
@@ -329,6 +336,7 @@ public class TestTableRepairJob
         // mock - repaired
         doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
         doReturn(false).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
         myClock.setTime(start);
 
         myRepairJob.runnable();
@@ -358,6 +366,7 @@ public class TestTableRepairJob
         // mock - not repaired
         doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
         doReturn(true).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
         myClock.setTime(start);
 
         assertThat(myRepairJob.runnable()).isTrue();
@@ -372,6 +381,7 @@ public class TestTableRepairJob
         // mock - repaired
         doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
         doReturn(false).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
         myClock.setTime(start);
 
         assertThat(myRepairJob.runnable()).isFalse();
@@ -395,6 +405,7 @@ public class TestTableRepairJob
         // mock - not repaired
         doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
         doReturn(true).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
         myClock.setTime(start);
 
         assertThat(myRepairJob.runnable()).isTrue();
@@ -409,6 +420,7 @@ public class TestTableRepairJob
         // mock - repaired
         doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
         doReturn(false).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
         myClock.setTime(start);
 
         myRepairJob.postExecute(true);
@@ -432,6 +444,7 @@ public class TestTableRepairJob
         // mock - not repaired
         doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
         doReturn(true).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
         myClock.setTime(start);
 
         assertThat(myRepairJob.runnable()).isTrue();
@@ -446,6 +459,7 @@ public class TestTableRepairJob
         // mock - repaired
         doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
         doReturn(false).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
         myClock.setTime(start);
 
         myRepairJob.runnable();
@@ -488,6 +502,7 @@ public class TestTableRepairJob
         // We have waited 2 days to repair, send alarm and run repair
         doReturn(lastRepairedAtWarning).when(myRepairStateSnapshot).lastRepairedAt();
         doReturn(true).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepairedAtWarning);
 
         assertThat(myRepairJob.runnable()).isTrue();
 
@@ -499,6 +514,7 @@ public class TestTableRepairJob
         // Repair has been completed
         doReturn(lastRepairedAtAfterRepair).when(myRepairStateSnapshot).lastRepairedAt();
         doReturn(false).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepairedAtAfterRepair);
 
         myRepairJob.postExecute(true);
 
@@ -514,7 +530,6 @@ public class TestTableRepairJob
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(lastRepairedAtAfterRepair);
         verify(myFaultReporter, times(0)).raise(any(FaultCode.class), anyMapOf(String.class, Object.class));
     }
-
 
     @Test
     public void testGetView()
@@ -536,7 +551,7 @@ public class TestTableRepairJob
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl
                 .newBuilder(ImmutableList.of(new VnodeRepairState(tokenRange, replicas, 1234L)))
                 .build();
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(replicas, vnodes);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(replicas, vnodes, System.currentTimeMillis());
 
         RepairStateSnapshot repairStateSnapshot = RepairStateSnapshot.newBuilder()
                 .withReplicaRepairGroups(Collections.singletonList(replicaRepairGroup))
@@ -580,7 +595,7 @@ public class TestTableRepairJob
         ImmutableList<LongTokenRange> vnodes = ImmutableList.of(tokenRange);
 
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(ImmutableList.of(new VnodeRepairState(tokenRange, replicas, 1234L))).build();
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(replicas, vnodes);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(replicas, vnodes, System.currentTimeMillis());
 
         RepairStateSnapshot repairStateSnapshot = RepairStateSnapshot.newBuilder()
                 .withReplicaRepairGroups(Collections.singletonList(replicaRepairGroup))
@@ -610,5 +625,70 @@ public class TestTableRepairJob
 
             assertThat(repairTask.getTokenRanges()).containsExactly(expectedRange);
         }
+    }
+
+    public void testGetRealPriority()
+    {
+        long lastRepaired = System.currentTimeMillis();
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(false).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
+        assertThat(myRepairJob.getRealPriority()).isEqualTo(-1);
+
+        lastRepaired = System.currentTimeMillis() - (TimeUnit.DAYS.toMillis(RUN_INTERVAL_IN_DAYS) - TimeUnit.HOURS.toMillis(1));
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
+        assertThat(myRepairJob.getRealPriority()).isEqualTo(-1);
+
+        lastRepaired = System.currentTimeMillis() - (TimeUnit.DAYS.toMillis(RUN_INTERVAL_IN_DAYS));
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
+        assertThat(myRepairJob.getRealPriority()).isEqualTo(1);
+
+        lastRepaired = System.currentTimeMillis() - (TimeUnit.DAYS.toMillis(RUN_INTERVAL_IN_DAYS) + TimeUnit.HOURS.toMillis(1));
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
+        assertThat(myRepairJob.getRealPriority()).isEqualTo(2);
+    }
+
+    @Test
+    public void testGetRealPrioritySnapshotLastRepairedAtLowerThanRepairGroups()
+    {
+        long lastRepairedAtSnapshot = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(14);
+        doReturn(lastRepairedAtSnapshot).when(myRepairStateSnapshot).lastRepairedAt();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
+        long firstRepairGroupLastRepairedAt = System.currentTimeMillis() - (TimeUnit.DAYS.toMillis(RUN_INTERVAL_IN_DAYS));
+        ReplicaRepairGroup firstReplicaRepairGroup = getRepairGroup(new LongTokenRange(1, 2), firstRepairGroupLastRepairedAt);
+        mockRepairGroup(firstReplicaRepairGroup);
+        assertThat(myRepairJob.getRealPriority()).isEqualTo(1);
+
+        long secondRepairGroupLastRepairedAt = System.currentTimeMillis() - (TimeUnit.DAYS.toMillis(RUN_INTERVAL_IN_DAYS) + TimeUnit.HOURS.toMillis(1));
+        ReplicaRepairGroup secondReplicaRepairGroup = getRepairGroup(new LongTokenRange(2, 3), secondRepairGroupLastRepairedAt);
+        mockRepairGroup(secondReplicaRepairGroup, firstReplicaRepairGroup);
+        assertThat(myRepairJob.getRealPriority()).isEqualTo(2);
+    }
+
+    private void mockRepairGroup(long lastRepairedAt)
+    {
+        mockRepairGroup(getRepairGroup(new LongTokenRange(1, 2), lastRepairedAt));
+    }
+
+    private void mockRepairGroup(ReplicaRepairGroup ...replicaRepairGroups)
+    {
+        List<ReplicaRepairGroup> repairGroups = new ArrayList<>();
+        for (ReplicaRepairGroup replicaRepairGroup : replicaRepairGroups)
+        {
+            repairGroups.add(replicaRepairGroup);
+        }
+        when(myRepairStateSnapshot.getRepairGroups()).thenReturn(repairGroups);
+    }
+
+    private ReplicaRepairGroup getRepairGroup(LongTokenRange range, long lastRepairedAt)
+    {
+        ImmutableSet<Host> replicas = ImmutableSet.of(mock(Host.class), mock(Host.class));
+        return new ReplicaRepairGroup(replicas, ImmutableList.of(range), lastRepairedAt);
     }
 }

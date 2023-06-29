@@ -106,7 +106,7 @@ public class TestRepairGroup
         Map<String, String> metadata = new HashMap<>();
         metadata.put("keyspace", keyspaceName);
         metadata.put("table", tableName);
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(), ImmutableList.of());
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(), ImmutableList.of(), System.currentTimeMillis());
         Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1", "my-resource"));
 
         doReturn(repairResources).when(myRepairResourceFactory).getRepairResources(eq(replicaRepairGroup));
@@ -128,7 +128,7 @@ public class TestRepairGroup
         Map<String, String> metadata = new HashMap<>();
         metadata.put("keyspace", keyspaceName);
         metadata.put("table", tableName);
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(), ImmutableList.of());
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(), ImmutableList.of(), System.currentTimeMillis());
         Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1", "my-resource"));
 
         doReturn(repairResources).when(myRepairResourceFactory).getRepairResources(eq(replicaRepairGroup));
@@ -153,7 +153,10 @@ public class TestRepairGroup
 
         ImmutableSet<Host> hosts = ImmutableSet.of(host);
 
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(hosts, ImmutableList.of(range));
+        Set<LongTokenRange> ranges = new HashSet<>();
+        ranges.add(range);
+
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(hosts, ImmutableList.of(range), System.currentTimeMillis());
 
         RepairGroup repairGroup = new RepairGroup(priority, tableReference,
                 repairConfiguration, replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
@@ -189,7 +192,7 @@ public class TestRepairGroup
 
         ImmutableSet<Host> hosts = ImmutableSet.of(host);
 
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(hosts, ImmutableList.of(vnode));
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(hosts, ImmutableList.of(vnode), System.currentTimeMillis());
 
         RepairGroup repairGroup = new RepairGroup(priority, tableReference,
                 repairConfiguration, replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
@@ -225,7 +228,7 @@ public class TestRepairGroup
                 new LongTokenRange(2, 3),
                 new LongTokenRange(4, 5));
 
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(host, host2), vnodes);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(host, host2), vnodes, System.currentTimeMillis());
 
         RepairGroup repairGroup = new RepairGroup(priority, tableReference,
                 repairConfiguration, replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,

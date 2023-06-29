@@ -89,7 +89,7 @@ public class TestHostStatesImpl
     }
 
     @Test
-    public void testIsHostUp() throws UnknownHostException
+    public void testIsHostUp() throws IOException
     {
         InetAddress expectedAddress = InetAddress.getLocalHost();
         Host expectedHost = mock(Host.class);
@@ -103,6 +103,10 @@ public class TestHostStatesImpl
         when(expectedHost.getBroadcastAddress()).thenReturn(expectedAddress);
 
         assertThat(myHostStates.isUp(expectedHost)).isTrue();
+
+        myHostStates.resetLastRefresh();
+        when(myJmxProxyFactory.connect()).thenThrow(new IOException("Unittest"));
+        assertThat(myHostStates.isUp(expectedHost)).isFalse();
     }
 
     @Test
