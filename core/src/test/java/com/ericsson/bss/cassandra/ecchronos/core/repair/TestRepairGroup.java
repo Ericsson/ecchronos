@@ -128,7 +128,7 @@ public class TestRepairGroup
         Map<String, String> metadata = new HashMap<>();
         metadata.put("keyspace", keyspaceName);
         metadata.put("table", tableName);
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(), ImmutableList.of());
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(), ImmutableList.of(), System.currentTimeMillis());
         Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1", "my-resource"));
 
         doReturn(repairResources).when(myRepairResourceFactory).getRepairResources(eq(replicaRepairGroup));
@@ -148,7 +148,7 @@ public class TestRepairGroup
         Map<String, String> metadata = new HashMap<>();
         metadata.put("keyspace", keyspaceName);
         metadata.put("table", tableName);
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(), ImmutableList.of());
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(), ImmutableList.of(), System.currentTimeMillis());
         Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1", "my-resource"));
 
         doReturn(repairResources).when(myRepairResourceFactory).getRepairResources(eq(replicaRepairGroup));
@@ -171,7 +171,10 @@ public class TestRepairGroup
 
         ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
 
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range));
+        Set<LongTokenRange> ranges = new HashSet<>();
+        ranges.add(range);
+
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range), System.currentTimeMillis());
 
         RepairGroup repairGroup = builderFor(replicaRepairGroup).build(priority);
 
@@ -205,7 +208,7 @@ public class TestRepairGroup
 
         ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
 
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(vnode));
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(vnode), System.currentTimeMillis());
 
         RepairGroup repairGroup = builderFor(replicaRepairGroup)
                 .withTokensPerRepair(tokensPerRange)
@@ -240,7 +243,7 @@ public class TestRepairGroup
                 new LongTokenRange(2, 3),
                 new LongTokenRange(4, 5));
 
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(node, node2), vnodes);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(node, node2), vnodes, System.currentTimeMillis());
 
         RepairGroup repairGroup = builderFor(replicaRepairGroup).build(priority);
 
@@ -270,7 +273,7 @@ public class TestRepairGroup
         DriverNode node = mockNode("DC1");
         LongTokenRange range = new LongTokenRange(1, 2);
         ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range));
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range), System.currentTimeMillis());
 
         RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).build(priority));
         RepairTask repairTask1 = mock(RepairTask.class);
@@ -295,7 +298,7 @@ public class TestRepairGroup
         DriverNode node = mockNode("DC1");
         LongTokenRange range = new LongTokenRange(1, 2);
         ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range));
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range), System.currentTimeMillis());
 
         RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).build(priority));
         RepairTask repairTask1 = mock(RepairTask.class);
@@ -320,7 +323,7 @@ public class TestRepairGroup
         DriverNode node = mockNode("DC1");
         LongTokenRange range = new LongTokenRange(1, 2);
         ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range));
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range), System.currentTimeMillis());
 
         RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).build(priority));
         RepairTask repairTask1 = mock(RepairTask.class);

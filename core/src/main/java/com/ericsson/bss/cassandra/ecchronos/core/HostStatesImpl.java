@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,12 +85,18 @@ public final class HostStatesImpl implements HostStates, Closeable
         {
             synchronized (myRefreshLock)
             {
-                if (shouldRefreshNodeStatus())
+                if (shouldRefreshNodeStatus() && !tryRefreshHostStates())
                 {
-                    tryRefreshHostStates();
+                    myHostStates.clear();
                 }
             }
         }
+    }
+
+    @VisibleForTesting
+    void resetLastRefresh()
+    {
+        myLastRefresh = -1;
     }
 
     private boolean shouldRefreshNodeStatus()

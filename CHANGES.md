@@ -7,6 +7,9 @@
 * Set name for all threads - Issue #459
 * Bump apache-karaf from 4.3.6 to 4.3.8 (CVE-2022-40145)
 
+### Merged from 1.0
+* Fix repair job priority - Issue #515
+
 ## Version 4.0.2
 
 * Add support for excluding metrics on tags - Issue #446
