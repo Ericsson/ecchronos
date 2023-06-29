@@ -34,7 +34,7 @@ public class TestReplicaRepairGroup
         DriverNode node4 = mockNode("DC1");
         LongTokenRange range = new LongTokenRange(1, 2);
 
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(node1, node2, node3, node4), ImmutableList.of(range));
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(node1, node2, node3, node4), ImmutableList.of(range), System.currentTimeMillis());
 
         assertThat(replicaRepairGroup.getDataCenters()).containsExactlyInAnyOrder("DC1", "DC2", "DC3");
         assertThat(replicaRepairGroup.getReplicas()).containsExactlyInAnyOrder(node1, node2, node3, node4);
@@ -51,7 +51,7 @@ public class TestReplicaRepairGroup
         LongTokenRange range2 = new LongTokenRange(3, 4);
         LongTokenRange range3 = new LongTokenRange(5, 6);
 
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(node1, node2, node3), ImmutableList.of(range, range2, range3));
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(node1, node2, node3), ImmutableList.of(range, range2, range3), System.currentTimeMillis());
 
         assertThat(replicaRepairGroup.getDataCenters()).containsExactlyInAnyOrder("DC1");
         assertThat(replicaRepairGroup.getReplicas()).containsExactlyInAnyOrder(node1, node2, node3);

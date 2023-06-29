@@ -14,6 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
+import java.util.Collection;
+
 /**
  * Utility class to determine collective repaired at information for {@link VnodeRepairStates}.
  *
@@ -86,10 +88,15 @@ public final class RepairedAt
      */
     public static RepairedAt generate(final VnodeRepairStates vnodeRepairStates)
     {
+        return RepairedAt.generate(vnodeRepairStates.getVnodeRepairStates());
+    }
+
+    public static RepairedAt generate(final Collection<VnodeRepairState> vnodeRepairStates)
+    {
         long minRepairedAt = Long.MAX_VALUE;
         long maxRepairedAt = Long.MIN_VALUE;
 
-        for (VnodeRepairState vnodeRepairState : vnodeRepairStates.getVnodeRepairStates())
+        for (VnodeRepairState vnodeRepairState : vnodeRepairStates)
         {
             long repairedAt = vnodeRepairState.lastRepairedAt();
 

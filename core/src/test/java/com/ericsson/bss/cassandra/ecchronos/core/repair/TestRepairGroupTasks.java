@@ -121,8 +121,8 @@ public class TestRepairGroupTasks
         Map<String, String> metadata = new HashMap<>();
         metadata.put("keyspace", keyspaceName);
         metadata.put("table", tableName);
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(withNode("127.0.0.1")),
-                ImmutableList.of(range(1, 2)));
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(withNode("127.0.0.1")), ImmutableList.of(range(1, 2)),
+                System.currentTimeMillis());
         Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1", "my-resource"));
 
         when(mockJmxProxyFactory.connect()).thenReturn(new CustomJmxProxy((notificationListener, i) -> progressAndComplete(notificationListener, range(1, 2))));
@@ -144,8 +144,7 @@ public class TestRepairGroupTasks
         Map<String, String> metadata = new HashMap<>();
         metadata.put("keyspace", keyspaceName);
         metadata.put("table", tableName);
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(withNode("127.0.0.1")),
-                ImmutableList.of(range(1, 2), range(2, 3)));
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(withNode("127.0.0.1")), ImmutableList.of(range(1, 2), range(2, 3)), System.currentTimeMillis());
         Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1", "my-resource"));
         final AtomicBoolean shouldRun = new AtomicBoolean(true);
 
