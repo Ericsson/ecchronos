@@ -1,14 +1,16 @@
 # Changes
 
+## Version 4.0.4
+
+### Merged from 1.0
+* Fix repair job priority - Issue #515
+
 ## Version 4.0.3
 
 * Bump jackson-databind from 2.13.4.1 to 2.13.4.2
 * Improve logging in repairState - Issue #463
 * Set name for all threads - Issue #459
 * Bump apache-karaf from 4.3.6 to 4.3.8 (CVE-2022-40145)
-
-### Merged from 1.0
-* Fix repair job priority - Issue #515
 
 ## Version 4.0.2
 
