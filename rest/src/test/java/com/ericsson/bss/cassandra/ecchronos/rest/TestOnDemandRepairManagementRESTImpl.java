@@ -204,7 +204,7 @@ public class TestOnDemandRepairManagementRESTImpl
     }
 
     @Test
-    public void testTriggerRepair() throws EcChronosException
+    public void testRunRepair() throws EcChronosException
     {
         UUID id = UUID.randomUUID();
         UUID hostId = UUID.randomUUID();
@@ -215,7 +215,7 @@ public class TestOnDemandRepairManagementRESTImpl
 
         when(myOnDemandRepairScheduler.scheduleJob(tableReference)).thenReturn(localRepairJobView);
         when(myReplicatedTableProvider.accept("ks")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.triggerRepair("ks", "tb", true);
+        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair("ks", "tb", true);
 
         assertThat(response.getBody()).isEqualTo(localExpectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -225,14 +225,14 @@ public class TestOnDemandRepairManagementRESTImpl
 
         when(myOnDemandRepairScheduler.scheduleClusterWideJob(tableReference)).thenReturn(
                 Collections.singletonList(repairJobView));
-        response = OnDemandRest.triggerRepair("ks", "tb", false);
+        response = OnDemandRest.runRepair("ks", "tb", false);
 
         assertThat(response.getBody()).isEqualTo(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Test
-    public void testTriggerRepairOnlyKeyspace() throws EcChronosException
+    public void testRunRepairOnlyKeyspace() throws EcChronosException
     {
         UUID id = UUID.randomUUID();
         UUID hostId = UUID.randomUUID();
@@ -258,14 +258,14 @@ public class TestOnDemandRepairManagementRESTImpl
         when(myOnDemandRepairScheduler.scheduleJob(tableReference2)).thenReturn(repairJobView2);
         when(myOnDemandRepairScheduler.scheduleJob(tableReference3)).thenReturn(repairJobView3);
         when(myReplicatedTableProvider.accept("ks")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.triggerRepair("ks", null, true);
+        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair("ks", null, true);
 
         assertThat(response.getBody()).containsAll(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Test
-    public void testTriggerRepairNoKeyspaceNoTable() throws EcChronosException
+    public void testRunRepairNoKeyspaceNoTable() throws EcChronosException
     {
         UUID id = UUID.randomUUID();
         UUID hostId = UUID.randomUUID();
@@ -303,7 +303,7 @@ public class TestOnDemandRepairManagementRESTImpl
         when(myReplicatedTableProvider.accept("keyspace1")).thenReturn(true);
         when(myReplicatedTableProvider.accept("keyspace2")).thenReturn(true);
         when(myReplicatedTableProvider.accept("keyspace3")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.triggerRepair(null, null, true);
+        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(null, null, true);
 
         assertThat(response.getBody()).containsAll(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -317,12 +317,12 @@ public class TestOnDemandRepairManagementRESTImpl
     }
 
     @Test
-    public void testTriggerRepairNoKeyspaceWithTable()
+    public void testRunRepairNoKeyspaceWithTable()
     {
         ResponseEntity<List<OnDemandRepair>> response = null;
         try
         {
-            response = OnDemandRest.triggerRepair(null, "table1", true);
+            response = OnDemandRest.runRepair(null, "table1", true);
         }
         catch (ResponseStatusException e)
         {

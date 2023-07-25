@@ -44,7 +44,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.ENDPOINT_PREFIX;
+import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.REPAIR_MANAGEMENT_ENDPOINT_PREFIX;
 import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.getDefaultDurationOrProvided;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -52,7 +52,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 /**
  * When updating the path it should also be updated in the OSGi component.
  */
-@Tag(name = "Repair-Management", description = "Fetch repair information")
+@Tag(name = "Repair-Management", description = "Management of repairs")
 @RestController
 @OpenAPIDefinition(info = @Info(
         title = "REST API",
@@ -81,7 +81,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
-    @GetMapping(value = ENDPOINT_PREFIX + "/repairInfo", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/repairInfo", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "get-repair-info",
             description = "Get repair information, if keyspace and table are provided while duration and since are"
                     + " not, the duration will default to GC_GRACE_SECONDS of the table. "

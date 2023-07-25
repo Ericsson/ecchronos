@@ -29,7 +29,7 @@ public final class RestUtils
 {
     public static final String ROOT = "/repair-management/";
     public static final String PROTOCOL_VERSION = "v2";
-    public static final String ENDPOINT_PREFIX = ROOT + PROTOCOL_VERSION;
+    public static final String REPAIR_MANAGEMENT_ENDPOINT_PREFIX = ROOT + PROTOCOL_VERSION;
 
     private RestUtils()
     {
@@ -49,6 +49,15 @@ public final class RestUtils
         }
     }
 
+    /**
+     * Fetches duration provided.
+     * if no duration and since are provided, it will fetch the table default
+     *
+     * @param tableReference the table to fetch the default from
+     * @param duration provided duration
+     * @param since provided since
+     * @return the duration
+     */
     public static Duration getDefaultDurationOrProvided(final TableReference tableReference, final Duration duration,
             final Long since)
     {

@@ -21,11 +21,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.info.Info;
-import io.swagger.v3.oas.annotations.info.License;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -44,7 +41,7 @@ import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.ENDPOINT_PREFIX;
+import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.REPAIR_MANAGEMENT_ENDPOINT_PREFIX;
 import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.parseIdOrThrow;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -52,14 +49,8 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 /**
  * When updating the path it should also be updated in the OSGi component.
  */
-@Tag(name = "Repair-Management", description = "View the status of repairs as well as run manual repairs")
+@Tag(name = "Repair-Management", description = "Management of repairs")
 @RestController
-@OpenAPIDefinition(info = @Info(
-        title = "REST API",
-        license = @License(
-                name = "Apache 2.0",
-                url = "https://www.apache.org/licenses/LICENSE-2.0"),
-        version = "1.0.0"))
 public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagementREST
 {
     private final OnDemandRepairScheduler myOnDemandRepairScheduler;
@@ -78,7 +69,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
     }
 
     @Override
-    @GetMapping(value = ENDPOINT_PREFIX + "/repairs", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/repairs", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "get-repairs", description = "Get manual repairs which are running/completed/failed.",
             summary = "Get manual repairs.")
     public final ResponseEntity<List<OnDemandRepair>> getRepairs(
@@ -96,7 +87,8 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
     }
 
     @Override
-    @GetMapping(value = ENDPOINT_PREFIX + "/repairs/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/repairs/{id}",
+            produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "get-repairs-by-id",
             description = "Get manual repairs matching the id which are running/completed/failed.",
             summary = "Get manual repairs matching the id.")
@@ -112,11 +104,11 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
     }
 
     @Override
-    @PostMapping(value = ENDPOINT_PREFIX + "/repairs", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(operationId = "trigger-repair",
-            description = "Run a manual repair, if 'isLocal' is not provided this will trigger a cluster-wide repair.",
+    @PostMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/repairs", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "run-repair",
+            description = "Run a manual repair, if 'isLocal' is not provided this will run a cluster-wide repair.",
             summary = "Run a manual repair.")
-    public final ResponseEntity<List<OnDemandRepair>> triggerRepair(
+    public final ResponseEntity<List<OnDemandRepair>> runRepair(
             @RequestParam(required = false)
             @Parameter(description = "The keyspace to run repair for, mandatory if 'table' is provided.")
             final String keyspace,

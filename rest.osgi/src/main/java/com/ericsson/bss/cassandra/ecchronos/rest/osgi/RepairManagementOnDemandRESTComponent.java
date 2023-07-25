@@ -74,10 +74,10 @@ public class RepairManagementOnDemandRESTComponent implements OnDemandRepairMana
     }
 
     @Override
-    public final ResponseEntity<List<OnDemandRepair>> triggerRepair(final String keyspace,
+    public final ResponseEntity<List<OnDemandRepair>> runRepair(final String keyspace,
             final String table,
             final boolean isLocal)
     {
-        return myDelegateOnDemandRESTImpl.triggerRepair(keyspace, table, isLocal);
+        return myDelegateOnDemandRESTImpl.runRepair(keyspace, table, isLocal);
     }
 }

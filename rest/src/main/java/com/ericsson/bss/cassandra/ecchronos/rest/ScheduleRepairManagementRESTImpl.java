@@ -18,11 +18,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.Schedule;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.info.Info;
-import io.swagger.v3.oas.annotations.info.License;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -39,7 +36,7 @@ import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.ENDPOINT_PREFIX;
+import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.REPAIR_MANAGEMENT_ENDPOINT_PREFIX;
 import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.parseIdOrThrow;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -47,14 +44,8 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 /**
  * When updating the path it should also be updated in the OSGi component.
  */
-@Tag(name = "Repair-Management", description = "View the status of schedules")
+@Tag(name = "Repair-Management", description = "Management of repairs")
 @RestController
-@OpenAPIDefinition(info = @Info(
-        title = "REST API",
-        license = @License(
-                name = "Apache 2.0",
-                url = "https://www.apache.org/licenses/LICENSE-2.0"),
-        version = "1.0.0"))
 public class ScheduleRepairManagementRESTImpl implements ScheduleRepairManagementREST
 {
     @Autowired
@@ -67,7 +58,7 @@ public class ScheduleRepairManagementRESTImpl implements ScheduleRepairManagemen
 
 
     @Override
-    @GetMapping(value = ENDPOINT_PREFIX + "/schedules", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/schedules", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "get-schedules", description = "Get schedules", summary = "Get schedules")
     public final ResponseEntity<List<Schedule>> getSchedules(
             @RequestParam(required = false)
@@ -82,7 +73,8 @@ public class ScheduleRepairManagementRESTImpl implements ScheduleRepairManagemen
 
 
     @Override
-    @GetMapping(value = ENDPOINT_PREFIX + "/schedules/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/schedules/{id}",
+            produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "get-schedules-by-id", description = "Get schedules matching the id.",
             summary = "Get schedules matching the id.")
     public final ResponseEntity<Schedule> getSchedules(

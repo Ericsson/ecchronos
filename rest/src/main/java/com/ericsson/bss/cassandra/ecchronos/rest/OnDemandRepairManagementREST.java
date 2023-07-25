@@ -20,7 +20,7 @@ import org.springframework.http.ResponseEntity;
 import java.util.List;
 
 /**
- * On Demand Repair rest interface.
+ * On Demand Repair REST interface.
  *
  * Whenever the interface is changed it must be reflected in docs.
  */
@@ -36,7 +36,7 @@ public interface OnDemandRepairManagementREST
      */
     ResponseEntity<List<OnDemandRepair>> getRepairs(String keyspace, String table, String hostId);
     /**
-     * Get a list of on demand repairs associate with a specific id.
+     * Get a list of on demand repairs associated with a specific id.
      *
      * @param id The id of the on demand repair
      * @param hostId The hostId of the on demand repair (optional)
@@ -52,5 +52,5 @@ public interface OnDemandRepairManagementREST
      * @param isLocal If repair should be only run for the local node (optional)
      * @return A JSON representation of {@link OnDemandRepair}
      */
-    ResponseEntity<List<OnDemandRepair>> triggerRepair(String keyspace, String table, boolean isLocal);
+    ResponseEntity<List<OnDemandRepair>> runRepair(String keyspace, String table, boolean isLocal);
 }
