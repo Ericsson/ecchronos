@@ -52,7 +52,7 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
     {
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(
                 myReplicationState.getReplicas(getTableReference()),
-                ImmutableList.of());
+                ImmutableList.of(), -1L);
         RepairGroup.Builder builder = RepairGroup.newBuilder()
                 .withTableReference(getTableReference())
                 .withRepairConfiguration(getRepairConfiguration())

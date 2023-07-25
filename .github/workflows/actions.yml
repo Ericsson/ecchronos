@@ -27,7 +27,6 @@ jobs:
            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=4.1 -DskipUTs'
          - name: "Python integration"
            test_suite: 'verify -P docker-integration-test,python-integration-tests -DskipUTs'
-
     steps:
       - uses: actions/checkout@v3
       - name: Cache local Maven repository

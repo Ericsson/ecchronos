@@ -13,6 +13,9 @@
 * Support configuring backoff for failed jobs - Issue #475
 * Dropping keyspaces does not clean up schedules - Issue #469
 
+### Merged from 1.0
+* Fix repair job priority - Issue #515
+
 ## Version 4.0.3
 
 * Bump jackson-databind from 2.13.4.1 to 2.13.4.2

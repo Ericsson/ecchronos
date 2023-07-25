@@ -146,10 +146,16 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
      * @return The current priority or -1 if the job shouldn't run now.
      * @see #getPriority()
      */
-    public final int getRealPriority()
+    public int getRealPriority()
+    {
+        return getRealPriority(getLastSuccessfulRun());
+    }
+
+    public final int getRealPriority(final long lastSuccessfulRun)
     {
         long now = System.currentTimeMillis();
-        long diff = now - (getLastSuccessfulRun() + myRunIntervalInMs - getRunOffset());
+
+        long diff = now - (lastSuccessfulRun + myRunIntervalInMs - getRunOffset());
 
         if (diff < 0)
         {

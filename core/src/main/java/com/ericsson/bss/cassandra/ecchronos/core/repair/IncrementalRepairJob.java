@@ -112,7 +112,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
     {
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(
                 myReplicationState.getReplicas(getTableReference()),
-                ImmutableList.of());
+                ImmutableList.of(), myLastSuccessfulRun);
         RepairGroup.Builder builder = RepairGroup.newBuilder()
                 .withTableReference(getTableReference())
                 .withRepairConfiguration(getRepairConfiguration())
