@@ -15,6 +15,11 @@
 ### Merged from 1.0
 * Fix repair job priority - Issue #515
 
+## Version 4.0.4
+
+### Merged from 1.0
+* Fix repair job priority - Issue #515
+
 ## Version 4.0.3
 
 * Bump jackson-databind from 2.13.4.1 to 2.13.4.2
