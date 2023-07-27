@@ -20,7 +20,7 @@ import org.springframework.http.ResponseEntity;
 import java.util.List;
 
 /**
- * Schedule rest interface.
+ * Schedule REST interface.
  *
  * Whenever the interface is changed it must be reflected in docs.
  */

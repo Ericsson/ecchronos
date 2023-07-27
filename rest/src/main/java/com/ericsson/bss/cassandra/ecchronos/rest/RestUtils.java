@@ -23,7 +23,7 @@ import java.util.UUID;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 /**
- * Helper class that contains methods to parse Rest information.
+ * Helper class that contains methods to parse REST information.
  */
 public final class RestUtils
 {

@@ -20,7 +20,7 @@ import org.springframework.http.ResponseEntity;
 import java.time.Duration;
 
 /**
- * Repair rest interface.
+ * Repair REST interface.
  *
  * Whenever the interface is changed it must be reflected in docs.
  */
