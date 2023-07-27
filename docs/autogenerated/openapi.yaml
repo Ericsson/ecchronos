@@ -9,10 +9,10 @@ servers:
 - url: https://localhost:8080
   description: Generated server url
 tags:
+- name: Repair-Management
+  description: Management of repairs
 - name: Metrics
   description: Retrieve metrics about ecChronos
-- name: Repair-Management
-  description: View the status of schedules and repairs as well as run manual repairs
 - name: Actuator
   description: Monitor and interact
   externalDocs:
@@ -59,9 +59,9 @@ paths:
       tags:
       - Repair-Management
       summary: Run a manual repair.
-      description: "Run a manual repair, if 'isLocal' is not provided this will trigger\
+      description: "Run a manual repair, if 'isLocal' is not provided this will run\
         \ a cluster-wide repair."
-      operationId: trigger-repair
+      operationId: run-repair
       parameters:
       - name: keyspace
         in: query
