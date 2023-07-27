@@ -1,6 +1,6 @@
 # Changes
 
-## Version 1.0.8
+## Version 1.0.8 (Not yet released)
 
 * Fix repair job priority - Issue #515
 * Fix malformed IPv6 for JMX - Issue #306
