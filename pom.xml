@@ -58,10 +58,10 @@
         <bundle.namespace>${project.groupId}.${project.artifactId}</bundle.namespace>
 
         <!-- Dependency versions -->
-        <io.netty.version>4.1.69.Final</io.netty.version>
+        <io.netty.version>4.1.94.Final</io.netty.version>
         <io.micrometer.version>1.9.2</io.micrometer.version>
         <io.dropwizard.metrics.version>4.2.10</io.dropwizard.metrics.version>
-        <cassandra.driver.core.version>4.14.1</cassandra.driver.core.version>
+        <cassandra.driver.core.version>4.17.0</cassandra.driver.core.version>
         <guava.version>32.0.1-jre</guava.version>
         <failureaccess.version>1.0.1</failureaccess.version>
         <cassandra.driver.protocol.version>1.5.0</cassandra.driver.protocol.version>
@@ -146,6 +146,12 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-transport</artifactId>
+                <version>${io.netty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-transport-native-unix-common</artifactId>
                 <version>${io.netty.version}</version>
             </dependency>
 

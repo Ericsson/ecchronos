@@ -124,7 +124,7 @@ class V2RepairSchedulerRequest(RestRequest):
     v2_repair_status_url = REPAIRS
     v2_repair_id_status_url = REPAIRS + '/{0}'
 
-    v2_repair_trigger_url = REPAIRS
+    v2_repair_run_url = REPAIRS
 
     repair_info_url = PROTOCOL + 'repairInfo'
 
@@ -187,7 +187,7 @@ class V2RepairSchedulerRequest(RestRequest):
         return result
 
     def post(self, keyspace=None, table=None, local=False, incremental=False):
-        request_url = V2RepairSchedulerRequest.v2_repair_trigger_url
+        request_url = V2RepairSchedulerRequest.v2_repair_run_url
         if keyspace:
             request_url += "?keyspace=" + keyspace
             if table:

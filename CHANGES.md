@@ -3,6 +3,7 @@
 ## Version 5.0.0
 
 * Add support for incremental repairs - Issue #31
+* Bump java driver from 4.14.1 to 4.17.0
 * Bump guava from 31.1 to 32.0.1 (CVE-2023-2976)
 * Fix shebang in ecctool - Issue #504
 * Bump springboot from 2.7.5 to 2.7.12 - Issue #500
@@ -12,6 +13,11 @@
 * Reread repair configuration when a node state changes - Issues #470 and #478
 * Support configuring backoff for failed jobs - Issue #475
 * Dropping keyspaces does not clean up schedules - Issue #469
+
+### Merged from 1.0
+* Fix repair job priority - Issue #515
+
+## Version 4.0.4
 
 ### Merged from 1.0
 * Fix repair job priority - Issue #515
