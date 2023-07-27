@@ -9,6 +9,7 @@
         <bundle>mvn:com.ericsson.bss.cassandra.ecchronos/core.osgi/${project.version}</bundle>
         <bundle>mvn:io.netty/netty-common/${io.netty.version}</bundle>
         <bundle>mvn:io.netty/netty-transport/${io.netty.version}</bundle>
+        <bundle>mvn:io.netty/netty-transport-native-unix-common/${io.netty.version}</bundle>
         <bundle>mvn:io.netty/netty-buffer/${io.netty.version}</bundle>
         <bundle>mvn:io.netty/netty-handler/${io.netty.version}</bundle>
         <bundle>mvn:io.netty/netty-codec/${io.netty.version}</bundle>

@@ -75,6 +75,11 @@
 
         <dependency>
             <groupId>io.netty</groupId>
+            <artifactId>netty-transport-native-unix-common</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
             <artifactId>netty-resolver</artifactId>
         </dependency>
 
