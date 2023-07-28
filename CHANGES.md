@@ -1,6 +1,6 @@
 # Changes
 
-## Version 1.1.4
+## Version 1.1.4 (Not yet released)
 
 #### Merged from 1.0
 
@@ -36,6 +36,30 @@
 * Add Karaf commands that exposes repair status
 
 ### Merged from 1.0
+
+* Fix slow query of repair_history at start-up #86
+
+## Version 1.0.8 (Not yet released)
+
+* Fix repair job priority - Issue #515
+* Fix malformed IPv6 for JMX - Issue #306
+* Step karaf to 4.2.8
+* Improve Alarm logging - Issue #191
+* Locks get stuck when unexpected exception occurs - Issue #177
+
+## Version 1.0.7
+
+* Avoid concurrent modification exception in RSI#close - Issue #99
+* Support symlink of ecc binary - PR #114
+* Close file descriptors in background mode - PR #115
+* Add JVM options file
+* Make policy changes quicker - Issue #117
+
+## Version 1.0.6
+
+* Reduce cache refresh time in TimeBasedRunPolicy to quicker react to configuration changes
+
+## Version 1.0.5
 
 * Fix slow query of repair_history at start-up #86
 
