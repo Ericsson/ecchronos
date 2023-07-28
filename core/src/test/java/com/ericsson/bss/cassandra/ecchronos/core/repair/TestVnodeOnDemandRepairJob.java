@@ -44,7 +44,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class TestOnDemandRepairJob
+public class TestVnodeOnDemandRepairJob
 {
     private static final String keyspaceName = "keyspace";
     private static final String tableName = "table";
@@ -92,9 +92,9 @@ public class TestOnDemandRepairJob
     @Test
     public void testJobCorrectlyReturned()
     {
-        OnDemandRepairJob repairJob = createOnDemandRepairJob();
+        VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob();
         OnDemandRepairJobView expectedView = new OnDemandRepairJobView(repairJob.getId(), myHostId, myTableReference,
-                OnDemandRepairJobView.Status.IN_QUEUE, 0, System.currentTimeMillis());
+                OnDemandRepairJobView.Status.IN_QUEUE, 0, System.currentTimeMillis(), RepairOptions.RepairType.VNODE);
         assertThat(repairJob.getId()).isEqualTo(repairJob.getId());
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
         assertThat(repairJob.getTableReference()).isEqualTo(myTableReference);
@@ -106,11 +106,11 @@ public class TestOnDemandRepairJob
     @Test
     public void testFailedJobCorrectlyReturned()
     {
-        OnDemandRepairJob repairJob = createOnDemandRepairJob();
+        VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob();
         Iterator<ScheduledTask> it = repairJob.iterator();
         repairJob.postExecute(false, it.next());
         OnDemandRepairJobView expectedView = new OnDemandRepairJobView(repairJob.getId(), myHostId, myTableReference,
-                OnDemandRepairJobView.Status.ERROR, 0, System.currentTimeMillis());
+                OnDemandRepairJobView.Status.ERROR, 0, System.currentTimeMillis(), RepairOptions.RepairType.VNODE);
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
         assertThat(repairJob.getTableReference()).isEqualTo(myTableReference);
         assertThat(repairJob.getView().getTableReference()).isEqualTo(expectedView.getTableReference());
@@ -121,7 +121,7 @@ public class TestOnDemandRepairJob
     @Test
     public void testJobFinishedAfterExecution()
     {
-        OnDemandRepairJob repairJob = createOnDemandRepairJob();
+        VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob();
         Iterator<ScheduledTask> it = repairJob.iterator();
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
         repairJob.postExecute(true, it.next());
@@ -133,7 +133,7 @@ public class TestOnDemandRepairJob
     @Test
     public void testJobFinishedAfterRestart()
     {
-        OnDemandRepairJob repairJob = createRestartedOnDemandRepairJob();
+        VnodeOnDemandRepairJob repairJob = createRestartedOnDemandRepairJob();
         Iterator<ScheduledTask> it = repairJob.iterator();
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
         repairJob.postExecute(true, it.next());
@@ -143,7 +143,7 @@ public class TestOnDemandRepairJob
     @Test
     public void testJobFailedWhenTopologyChange()
     {
-        OnDemandRepairJob repairJob = createOnDemandRepairJob();
+        VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob();
         when(myOngoingJob.hasTopologyChanged()).thenReturn(true);
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FAILED);
     }
@@ -151,7 +151,7 @@ public class TestOnDemandRepairJob
     @Test
     public void testJobUnsuccessful()
     {
-        OnDemandRepairJob repairJob = createOnDemandRepairJob();
+        VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob();
         Iterator<ScheduledTask> it = repairJob.iterator();
         repairJob.postExecute(true, it.next());
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
@@ -162,7 +162,7 @@ public class TestOnDemandRepairJob
     @Test
     public void testGetProgress()
     {
-        OnDemandRepairJob repairJob = createOnDemandRepairJob();
+        VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob();
         assertThat(repairJob.getProgress()).isEqualTo(0);
         Iterator<ScheduledTask> it = repairJob.iterator();
         repairJob.postExecute(true, it.next());
@@ -171,7 +171,7 @@ public class TestOnDemandRepairJob
         assertThat(repairJob.getProgress()).isEqualTo(1);
     }
 
-    private OnDemandRepairJob createOnDemandRepairJob()
+    private VnodeOnDemandRepairJob createVnodeOnDemandRepairJob()
     {
         LongTokenRange range1 = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(1, 3);
@@ -182,7 +182,7 @@ public class TestOnDemandRepairJob
                 ImmutableSet.of(mockReplica1, mockReplica2));
         when(myOngoingJob.getTokens()).thenReturn(tokenRangeToReplicas);
 
-        return new OnDemandRepairJob.Builder()
+        return new VnodeOnDemandRepairJob.Builder()
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairLockType(RepairLockType.VNODE)
@@ -191,7 +191,7 @@ public class TestOnDemandRepairJob
                 .build();
     }
 
-    private OnDemandRepairJob createRestartedOnDemandRepairJob()
+    private VnodeOnDemandRepairJob createRestartedOnDemandRepairJob()
     {
         LongTokenRange range1 = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(1, 3);
@@ -206,7 +206,7 @@ public class TestOnDemandRepairJob
         repairedTokens.add(range1);
         when(myOngoingJob.getRepairedTokens()).thenReturn(repairedTokens);
 
-        return new OnDemandRepairJob.Builder()
+        return new VnodeOnDemandRepairJob.Builder()
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairLockType(RepairLockType.VNODE)

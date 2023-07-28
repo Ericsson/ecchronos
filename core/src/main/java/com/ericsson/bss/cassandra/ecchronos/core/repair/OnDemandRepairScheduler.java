@@ -30,20 +30,24 @@ public interface OnDemandRepairScheduler
      *
      * @param tableReference
      *            The table to schedule a job on.
+     * @param isIncremental If the repair should be incremental.
      * @return A view of the scheduled job.
      * @throws EcChronosException Thrown when the keyspace/table doesn't exist.
      */
-    OnDemandRepairJobView scheduleJob(TableReference tableReference) throws EcChronosException;
+    OnDemandRepairJobView scheduleJob(TableReference tableReference,
+            boolean isIncremental) throws EcChronosException;
 
     /**
      * Create a repair that is slated to run once for a specified table for all replicas.
      *
      * @param tableReference
      *            The table to schedule a job on.
+     * @param isIncremental If the repair should be incremental.
      * @return Views of the scheduled job.
      * @throws EcChronosException Thrown when the keyspace/table doesn't exist.
      */
-    List<OnDemandRepairJobView> scheduleClusterWideJob(TableReference tableReference) throws EcChronosException;
+    List<OnDemandRepairJobView> scheduleClusterWideJob(TableReference tableReference,
+            boolean isIncremental) throws EcChronosException;
 
     List<OnDemandRepairJobView> getAllClusterWideRepairJobs();
 

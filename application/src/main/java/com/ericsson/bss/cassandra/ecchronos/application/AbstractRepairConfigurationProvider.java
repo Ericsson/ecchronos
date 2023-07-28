@@ -14,7 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
-import java.util.Optional;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.springframework.context.ApplicationContext;
 
@@ -41,10 +42,16 @@ public abstract class AbstractRepairConfigurationProvider
         this.defaultRepairConfiguration = config.getRepair().asRepairConfiguration();
     }
 
-    public final RepairConfiguration get(final TableReference tableReference)
+    public final Set<RepairConfiguration> get(final TableReference tableReference)
     {
-        return forTable(tableReference).orElse(defaultRepairConfiguration);
+        Set<RepairConfiguration> repairConfigurations = new HashSet<>();
+        repairConfigurations.addAll(forTable(tableReference));
+        if (repairConfigurations.isEmpty())
+        {
+            repairConfigurations.add(defaultRepairConfiguration);
+        }
+        return repairConfigurations;
     }
 
-    public abstract Optional<RepairConfiguration> forTable(TableReference tableReference);
+    public abstract Set<RepairConfiguration> forTable(TableReference tableReference);
 }

@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
@@ -95,16 +96,16 @@ public class TestScheduleRepairManagementRESTImpl
                 ImmutableSet.of(replica), 1234L);
         TableReference tableReference1 = mockTableReference("ks", "tb");
         ScheduledRepairJobView job1 = mockScheduledRepairJobView(tableReference1, UUID.randomUUID(), 1234L, 11L,
-                ImmutableSet.of(expectedVnodeRepairState1));
+                ImmutableSet.of(expectedVnodeRepairState1), RepairOptions.RepairType.VNODE);
         VnodeRepairState expectedVnodeRepairState2 = new VnodeRepairState(new LongTokenRange(2, 3),
                 ImmutableSet.of(replica), 2345L);
         TableReference tableReference2 = mockTableReference("ks", "tb2");
         ScheduledRepairJobView job2 = mockScheduledRepairJobView(tableReference2, UUID.randomUUID(), 2345L, 12L,
-                ImmutableSet.of(expectedVnodeRepairState2));
+                ImmutableSet.of(expectedVnodeRepairState2), RepairOptions.RepairType.VNODE);
         VnodeRepairState expectedVnodeRepairState3 = new VnodeRepairState(new LongTokenRange(2, 3),
                 ImmutableSet.of(replica), 3333L);
         ScheduledRepairJobView job3 = mockScheduledRepairJobView(tableReference2, UUID.randomUUID(), 3333L, 15L,
-                ImmutableSet.of(expectedVnodeRepairState3));
+                ImmutableSet.of(expectedVnodeRepairState3), RepairOptions.RepairType.VNODE);
         List<ScheduledRepairJobView> repairJobViews = Arrays.asList(job1, job2, job3);
 
         List<Schedule> expectedResponse = repairJobViews.stream().map(Schedule::new).collect(Collectors.toList());
@@ -155,12 +156,12 @@ public class TestScheduleRepairManagementRESTImpl
                 ImmutableSet.of(replica), expectedLastRepairedAt);
         TableReference tableReference1 = mockTableReference("ks", "tb");
         ScheduledRepairJobView job1 = mockScheduledRepairJobView(tableReference1, expectedId, 1234L, 11L,
-                ImmutableSet.of(expectedVnodeRepairState));
+                ImmutableSet.of(expectedVnodeRepairState), RepairOptions.RepairType.VNODE);
         TableReference tableReference2 = mockTableReference("ks", "tb2");
         ScheduledRepairJobView job2 = mockScheduledRepairJobView(tableReference2, UUID.randomUUID(), 2345L, 12L,
-                ImmutableSet.of(expectedVnodeRepairState));
+                ImmutableSet.of(expectedVnodeRepairState), RepairOptions.RepairType.VNODE);
         ScheduledRepairJobView job3 = mockScheduledRepairJobView(tableReference2, expectedId, 2365L, 12L,
-                ImmutableSet.of(expectedVnodeRepairState));
+                ImmutableSet.of(expectedVnodeRepairState), RepairOptions.RepairType.VNODE);
         List<ScheduledRepairJobView> repairJobViews = Arrays.asList(job1, job2, job3);
 
         List<Schedule> expectedResponse = repairJobViews.stream().map(view -> new Schedule(view, false))
@@ -207,7 +208,8 @@ public class TestScheduleRepairManagementRESTImpl
     }
 
     private ScheduledRepairJobView mockScheduledRepairJobView(TableReference tableReference, UUID id,
-            long lastRepairedAt, long repairInterval, Set<VnodeRepairState> vnodeRepairState)
+            long lastRepairedAt, long repairInterval, Set<VnodeRepairState> vnodeRepairState,
+            RepairOptions.RepairType repairType)
     {
         RepairConfiguration repairConfigurationMock = mock(RepairConfiguration.class);
         when(repairConfigurationMock.getRepairIntervalInMs()).thenReturn(repairInterval);
@@ -216,7 +218,8 @@ public class TestScheduleRepairManagementRESTImpl
         RepairStateSnapshot repairStateSnapshotMock = mock(RepairStateSnapshot.class);
         when(repairStateSnapshotMock.getVnodeRepairStates()).thenReturn(vnodeRepairStatesMock);
         return new ScheduledRepairJobView(id, tableReference, repairConfigurationMock, repairStateSnapshotMock,
-                ScheduledRepairJobView.Status.ON_TIME, 0.0, lastRepairedAt + repairInterval);
+                ScheduledRepairJobView.Status.ON_TIME, 0.0, lastRepairedAt + repairInterval,
+                repairType);
     }
 
     public TableReference mockTableReference(String keyspace, String table)

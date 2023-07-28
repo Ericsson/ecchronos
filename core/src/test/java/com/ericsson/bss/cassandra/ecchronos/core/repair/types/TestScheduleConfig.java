@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions.RepairParallelism;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TestUtils;
@@ -39,7 +40,7 @@ public class TestScheduleConfig
         RepairStateSnapshot repairStateSnapshotMock = mock(RepairStateSnapshot.class);
         when(repairStateSnapshotMock.lastCompletedAt()).thenReturn(100L);
         ScheduledRepairJobView repairJobView = new ScheduledRepairJobView(id, tableReference("ks", "tbl"), repairConfig,
-                repairStateSnapshotMock, ScheduledRepairJobView.Status.COMPLETED, 0, 0);
+                repairStateSnapshotMock, ScheduledRepairJobView.Status.COMPLETED, 0, 0, RepairOptions.RepairType.VNODE);
 
         ScheduleConfig config = new ScheduleConfig(repairJobView);
 

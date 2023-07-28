@@ -290,6 +290,18 @@ public class TestRepairGroupTasks
         }
 
         @Override
+        public long getMaxRepairedAt(TableReference tableReference)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public double getPercentRepaired(TableReference tableReference)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void close()
         {
         }

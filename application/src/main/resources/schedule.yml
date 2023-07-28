@@ -75,3 +75,8 @@ keyspaces:
 ## 12g (12 GiB)
 ##
 #      size_target:
+##
+## Specifies the repair_type
+## Possible values are: vnode or incremental
+##
+#      repair_type: vnode

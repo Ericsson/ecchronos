@@ -29,6 +29,10 @@
     "id": {
       "type": "string",
       "description": "A unique identifier for the job"
+    },
+    "repairType": {
+      "type": "string",
+      "description": "The type of repair for the schedule"
     }
   },
   "required": [
@@ -38,6 +42,7 @@
     "status",
     "repairedRatio",
     "lastRepairedAtInMs",
-    "nextRepairInMs"
+    "nextRepairInMs",
+    "repairType"
   ]
 }

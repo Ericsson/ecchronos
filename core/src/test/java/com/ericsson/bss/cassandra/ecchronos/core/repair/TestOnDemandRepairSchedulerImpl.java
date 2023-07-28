@@ -16,7 +16,6 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.metadata.EndPoint;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
@@ -28,8 +27,10 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
+import com.google.common.collect.ImmutableSet;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,12 +38,12 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -92,110 +93,221 @@ public class TestOnDemandRepairSchedulerImpl
     public void setup()
     {
         when(session.getMetadata()).thenReturn(metadata);
+        when(myOngingJob.getTableReference()).thenReturn(TABLE_REFERENCE);
+        when(myOngingJob.getJobId()).thenReturn(UUID.randomUUID());
     }
 
     @Test
-    public void testScheduleRepairOnTable() throws EcChronosException
+    public void testScheduleVnodeRepairOnTable() throws EcChronosException
     {
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
         when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(Optional.of(myKeyspaceMetadata));
         when(myKeyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(Optional.of(myTableMetadata));
 
-        verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
-        OnDemandRepairJobView repairJobView = repairScheduler.scheduleJob(TABLE_REFERENCE);
-        verify(scheduleManager).schedule(any(ScheduledJob.class));
+        verify(scheduleManager, never()).schedule(any(VnodeOnDemandRepairJob.class));
+        OnDemandRepairJobView repairJobView = repairScheduler.scheduleJob(TABLE_REFERENCE, false);
+        verify(scheduleManager).schedule(any(VnodeOnDemandRepairJob.class));
 
         assertTableViewExist(repairScheduler, repairJobView);
 
         repairScheduler.close();
-        verify(scheduleManager).deschedule(any(ScheduledJob.class));
+        verify(scheduleManager).deschedule(any(VnodeOnDemandRepairJob.class));
 
         verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
         verifyNoMoreInteractions(scheduleManager);
     }
 
     @Test
-    public void testScheduleTwoRepairOnTable() throws EcChronosException
+    public void testScheduleIncrementalRepairOnTable() throws EcChronosException
     {
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
         when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(Optional.of(myKeyspaceMetadata));
         when(myKeyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(Optional.of(myTableMetadata));
 
-        verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
-        OnDemandRepairJobView repairJobView = repairScheduler.scheduleJob(TABLE_REFERENCE);
-        OnDemandRepairJobView repairJobView2 = repairScheduler.scheduleJob(TABLE_REFERENCE);
-        verify(scheduleManager, times(2)).schedule(any(ScheduledJob.class));
+        verify(scheduleManager, never()).schedule(any(IncrementalOnDemandRepairJob.class));
+        OnDemandRepairJobView repairJobView = repairScheduler.scheduleJob(TABLE_REFERENCE, true);
+        verify(scheduleManager).schedule(any(IncrementalOnDemandRepairJob.class));
+
+        assertTableViewExist(repairScheduler, repairJobView);
+
+        repairScheduler.close();
+        verify(scheduleManager).deschedule(any(IncrementalOnDemandRepairJob.class));
+
+        verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
+        verifyNoMoreInteractions(scheduleManager);
+    }
+
+    @Test
+    public void testScheduleTwoVnodeRepairOnTable() throws EcChronosException
+    {
+        OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
+        when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(Optional.of(myKeyspaceMetadata));
+        when(myKeyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(Optional.of(myTableMetadata));
+
+        verify(scheduleManager, never()).schedule(any(VnodeOnDemandRepairJob.class));
+        OnDemandRepairJobView repairJobView = repairScheduler.scheduleJob(TABLE_REFERENCE, false);
+        OnDemandRepairJobView repairJobView2 = repairScheduler.scheduleJob(TABLE_REFERENCE, false);
+        verify(scheduleManager, times(2)).schedule(any(VnodeOnDemandRepairJob.class));
 
         assertTableViewExist(repairScheduler, repairJobView, repairJobView2);
 
         repairScheduler.close();
-        verify(scheduleManager, times(2)).deschedule(any(ScheduledJob.class));
+        verify(scheduleManager, times(2)).deschedule(any(VnodeOnDemandRepairJob.class));
 
         verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
         verifyNoMoreInteractions(scheduleManager);
     }
 
     @Test
-    public void testRestartRepairOnTable() throws EcChronosException
+    public void testScheduleTwoIncrementalRepairOnTable() throws EcChronosException
+    {
+        OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
+        when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(Optional.of(myKeyspaceMetadata));
+        when(myKeyspaceMetadata.getTable(TABLE_REFERENCE.getTable())).thenReturn(Optional.of(myTableMetadata));
+
+        verify(scheduleManager, never()).schedule(any(IncrementalOnDemandRepairJob.class));
+        OnDemandRepairJobView repairJobView = repairScheduler.scheduleJob(TABLE_REFERENCE, true);
+        OnDemandRepairJobView repairJobView2 = repairScheduler.scheduleJob(TABLE_REFERENCE, true);
+        verify(scheduleManager, times(2)).schedule(any(IncrementalOnDemandRepairJob.class));
+
+        assertTableViewExist(repairScheduler, repairJobView, repairJobView2);
+
+        repairScheduler.close();
+        verify(scheduleManager, times(2)).deschedule(any(IncrementalOnDemandRepairJob.class));
+
+        verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
+        verifyNoMoreInteractions(scheduleManager);
+    }
+
+    @Test
+    public void testRestartVnodeRepairOnTable()
     {
         Set<OngoingJob> ongoingJobs = new HashSet<>();
         ongoingJobs.add(myOngingJob);
+        when(myOngingJob.getRepairType()).thenReturn(RepairOptions.RepairType.VNODE);
         when(myOnDemandStatus.getOngoingJobs(replicationState)).thenReturn(ongoingJobs);
 
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
 
-        verify(scheduleManager, timeout(1000)).schedule(any(ScheduledJob.class));
+        verify(scheduleManager, timeout(1000)).schedule(any(VnodeOnDemandRepairJob.class));
 
         repairScheduler.close();
-        verify(scheduleManager).deschedule(any(ScheduledJob.class));
+        verify(scheduleManager).deschedule(any(VnodeOnDemandRepairJob.class));
 
         verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
         verifyNoMoreInteractions(scheduleManager);
     }
 
     @Test
-    public void testRestartRepairOnTableWithException()
+    public void testRestartIncrementalRepairOnTable()
+    {
+        Set<OngoingJob> ongoingJobs = new HashSet<>();
+        ongoingJobs.add(myOngingJob);
+        when(myOngingJob.getRepairType()).thenReturn(RepairOptions.RepairType.INCREMENTAL);
+        when(myOnDemandStatus.getOngoingJobs(replicationState)).thenReturn(ongoingJobs);
+        when(replicationState.getReplicas(TABLE_REFERENCE)).thenReturn(ImmutableSet.of(mock(DriverNode.class)));
+
+        OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
+
+        verify(scheduleManager, timeout(1000)).schedule(any(IncrementalOnDemandRepairJob.class));
+
+        repairScheduler.close();
+        verify(scheduleManager).deschedule(any(IncrementalOnDemandRepairJob.class));
+
+        verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
+        verifyNoMoreInteractions(scheduleManager);
+    }
+
+    @Test
+    public void testRestartVnodeRepairOnTableWithException()
     {
         Set<OngoingJob> ongoingJobs = new HashSet<>();
         ongoingJobs.add(myOngingJob);
         List<Map.Entry<Node, Throwable>> errors = new ArrayList<>();
+        when(myOngingJob.getRepairType()).thenReturn(RepairOptions.RepairType.VNODE);
         when(myOnDemandStatus.getOngoingJobs(replicationState)).thenThrow(AllNodesFailedException.fromErrors(errors)).thenReturn(ongoingJobs);
 
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
 
-        verify(scheduleManager, timeout(15000)).schedule(any(ScheduledJob.class));
+        verify(scheduleManager, timeout(15000)).schedule(any(VnodeOnDemandRepairJob.class));
 
         repairScheduler.close();
-        verify(scheduleManager).deschedule(any(ScheduledJob.class));
+        verify(scheduleManager).deschedule(any(VnodeOnDemandRepairJob.class));
+
+        verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
+        verifyNoMoreInteractions(scheduleManager);
+    }
+
+    @Test
+    public void testRestartIncrementalRepairOnTableWithException()
+    {
+        Set<OngoingJob> ongoingJobs = new HashSet<>();
+        ongoingJobs.add(myOngingJob);
+        List<Map.Entry<Node, Throwable>> errors = new ArrayList<>();
+        when(myOngingJob.getRepairType()).thenReturn(RepairOptions.RepairType.INCREMENTAL);
+        when(myOnDemandStatus.getOngoingJobs(replicationState)).thenThrow(AllNodesFailedException.fromErrors(errors)).thenReturn(ongoingJobs);
+
+        OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
+
+        verify(scheduleManager, timeout(15000)).schedule(any(IncrementalOnDemandRepairJob.class));
+
+        repairScheduler.close();
+        verify(scheduleManager).deschedule(any(IncrementalOnDemandRepairJob.class));
 
         verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
         verifyNoMoreInteractions(scheduleManager);
     }
 
     @Test (expected = EcChronosException.class)
-    public void testScheduleRepairOnNonExistentKeyspaceTable() throws EcChronosException
+    public void testScheduleVnodeRepairOnNonExistentKeyspaceTable() throws EcChronosException
     {
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
 
         verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
-        repairScheduler.scheduleJob(TABLE_REFERENCE);
+        repairScheduler.scheduleJob(TABLE_REFERENCE, false);
     }
 
     @Test (expected = EcChronosException.class)
-    public void testScheduleRepairOnNonExistentTable() throws EcChronosException
+    public void testScheduleIncrementalRepairOnNonExistentKeyspaceTable() throws EcChronosException
+    {
+        OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
+
+        verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
+        repairScheduler.scheduleJob(TABLE_REFERENCE, true);
+    }
+
+    @Test (expected = EcChronosException.class)
+    public void testScheduleVnodeRepairOnNonExistentTable() throws EcChronosException
     {
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
         when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(Optional.of(myKeyspaceMetadata));
         verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
-        repairScheduler.scheduleJob(TABLE_REFERENCE);
+        repairScheduler.scheduleJob(TABLE_REFERENCE, false);
     }
 
     @Test (expected = EcChronosException.class)
-    public void testScheduleRepairOnNull() throws EcChronosException
+    public void testScheduleIncrementalRepairOnNonExistentTable() throws EcChronosException
+    {
+        OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
+        when(metadata.getKeyspace(TABLE_REFERENCE.getKeyspace())).thenReturn(Optional.of(myKeyspaceMetadata));
+        verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
+        repairScheduler.scheduleJob(TABLE_REFERENCE, true);
+    }
+
+    @Test (expected = EcChronosException.class)
+    public void testScheduleVnodeRepairOnNull() throws EcChronosException
     {
         OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
         verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
-        repairScheduler.scheduleJob(null);
+        repairScheduler.scheduleJob(null, false);
+    }
+
+    @Test (expected = EcChronosException.class)
+    public void testScheduleIncrementalRepairOnNull() throws EcChronosException
+    {
+        OnDemandRepairSchedulerImpl repairScheduler = defaultOnDemandRepairSchedulerImplBuilder().build();
+        verify(scheduleManager, never()).schedule(any(ScheduledJob.class));
+        repairScheduler.scheduleJob(null, true);
     }
 
     private void assertTableViewExist(OnDemandRepairSchedulerImpl repairScheduler, OnDemandRepairJobView... expectedViews)

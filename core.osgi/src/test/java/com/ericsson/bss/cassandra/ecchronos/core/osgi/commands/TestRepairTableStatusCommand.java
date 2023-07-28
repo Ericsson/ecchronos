@@ -25,6 +25,7 @@ import java.util.TimeZone;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStateSnapshot;
@@ -185,7 +186,7 @@ public class TestRepairTableStatusCommand
         TableReference tableReference = createTableRef("ks1.tbl1");
         RepairStateSnapshot state = mock(RepairStateSnapshot.class);
         when(state.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
-        return new ScheduledRepairJobView(UUID.randomUUID(), tableReference, null, state, ScheduledRepairJobView.Status.ON_TIME, 0, 0);
+        return new ScheduledRepairJobView(UUID.randomUUID(), tableReference, null, state, ScheduledRepairJobView.Status.ON_TIME, 0, 0, RepairOptions.RepairType.VNODE);
     }
 
     private RepairTableStatusCommand mockCommand(String tableRef)

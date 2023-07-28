@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairJobView;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.google.common.annotations.VisibleForTesting;
 
 import javax.validation.constraints.Max;
@@ -49,6 +50,8 @@ public class OnDemandRepair
     @NotBlank
     @Min(-1)
     public long completedAt;
+    @NotBlank
+    public RepairOptions.RepairType repairType;
 
     public OnDemandRepair()
     {
@@ -61,7 +64,8 @@ public class OnDemandRepair
                           final String theTable,
                           final OnDemandRepairJobView.Status theStatus,
                           final double theRepairedRatio,
-                          final long wasCompletedAt)
+                          final long wasCompletedAt,
+                          final RepairOptions.RepairType theRepairType)
     {
         this.id = theId;
         this.hostId = theHostId;
@@ -70,6 +74,7 @@ public class OnDemandRepair
         this.status = theStatus;
         this.repairedRatio = theRepairedRatio;
         this.completedAt = wasCompletedAt;
+        this.repairType = theRepairType;
     }
 
 
@@ -82,6 +87,7 @@ public class OnDemandRepair
         this.status = repairJobView.getStatus();
         this.repairedRatio = repairJobView.getProgress();
         this.completedAt = repairJobView.getCompletionTime();
+        this.repairType = repairJobView.getRepairType();
     }
 
     /**
@@ -108,7 +114,8 @@ public class OnDemandRepair
                 && table.equals(that.table)
                 && status == that.status
                 && Double.compare(that.repairedRatio, repairedRatio) == 0
-                && completedAt == that.completedAt;
+                && completedAt == that.completedAt
+                && repairType.equals(that.repairType);
     }
 
     /**
@@ -119,6 +126,6 @@ public class OnDemandRepair
     @Override
     public int hashCode()
     {
-        return Objects.hash(id, hostId, keyspace, table, repairedRatio, status, completedAt);
+        return Objects.hash(id, hostId, keyspace, table, repairedRatio, status, completedAt, repairType);
     }
 }

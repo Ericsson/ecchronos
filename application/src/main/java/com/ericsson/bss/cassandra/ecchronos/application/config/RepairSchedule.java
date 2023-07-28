@@ -14,10 +14,12 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -35,7 +37,7 @@ public class RepairSchedule
         }
     }
 
-    public final Optional<RepairConfiguration> getRepairConfiguration(final String keyspace, final String table)
+    public final Set<RepairConfiguration> getRepairConfigurations(final String keyspace, final String table)
     {
         return findMatching(keyspace, keyspaces, keyspaceSchedule -> keyspaceSchedule.get(table));
     }
@@ -43,7 +45,7 @@ public class RepairSchedule
     static class KeyspaceSchedule
     {
         private String name;
-        private Map<String, TableRepairConfig> tables = new HashMap<>();
+        private Map<String, Set<TableRepairConfig>> tables = new HashMap<>();
 
         public String getName()
         {
@@ -55,16 +57,24 @@ public class RepairSchedule
             this.name = nameValue;
         }
 
-        Optional<RepairConfiguration> get(final String table)
+        Set<RepairConfiguration> get(final String table)
         {
-            return findMatching(table, tables, repairConfig -> Optional.of(repairConfig.asRepairConfiguration()));
+            return findMatching(table, tables, repairConfig -> repairConfig.stream()
+                    .map(TableRepairConfig::asRepairConfiguration).collect(Collectors.toSet()));
         }
 
         void setTables(final List<TableRepairConfig> theTables)
         {
             if (theTables != null)
             {
-                this.tables = theTables.stream().collect(Collectors.toMap(TableRepairConfig::getName, tb -> tb));
+                Map<String, Set<TableRepairConfig>> tableConfigs = new HashMap<>();
+                for (TableRepairConfig table : theTables)
+                {
+                    Set<TableRepairConfig> repairConfigs = tableConfigs.getOrDefault(table.getName(), new HashSet<>());
+                    repairConfigs.add(table);
+                    tableConfigs.put(table.getName(), repairConfigs);
+                }
+                this.tables = tableConfigs;
             }
         }
     }
@@ -106,17 +116,17 @@ public class RepairSchedule
         }
     }
 
-    private static <T, V> Optional<V> findMatching(final String searchTerm,
+    private static <T, V> Set<V> findMatching(final String searchTerm,
                                                    final Map<String, T> map,
-                                                   final Function<T, Optional<V>> function)
+                                                   final Function<T, Set<V>> function)
     {
         T exactMatch = map.get(searchTerm);
         if (exactMatch != null)
         {
-            Optional<V> optionalValue = function.apply(exactMatch);
-            if (optionalValue.isPresent())
+            Set<V> set = function.apply(exactMatch);
+            if (!set.isEmpty())
             {
-                return optionalValue;
+                return set;
             }
         }
 
@@ -125,14 +135,14 @@ public class RepairSchedule
             String regex = entry.getKey();
             if (searchTerm.matches(regex))
             {
-                Optional<V> optionalValue = function.apply(entry.getValue());
-                if (optionalValue.isPresent())
+                Set<V> set = function.apply(entry.getValue());
+                if (!set.isEmpty())
                 {
-                    return optionalValue;
+                    return set;
                 }
             }
         }
 
-        return Optional.empty();
+        return Collections.EMPTY_SET;
     }
 }

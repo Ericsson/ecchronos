@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -45,23 +46,25 @@ public class OngoingJob
     private final Integer myTokenHash;
     private final Status myStatus;
     private final long myCompletedTime;
+    private final RepairOptions.RepairType myRepairType;
 
     private OngoingJob(final Builder builder)
     {
-        myOnDemandStatus = builder.onDemandStatus;
-        myJobId = builder.jobId == null ? UUID.randomUUID() : builder.jobId;
-        myHostId = builder.hostId;
-        myTableReference = builder.tableReference;
-        myReplicationState = builder.replicationState;
+        myOnDemandStatus = builder.myOnDemandStatus;
+        myJobId = builder.myJobId == null ? UUID.randomUUID() : builder.myJobId;
+        myHostId = builder.myHostId;
+        myTableReference = builder.myTableReference;
+        myReplicationState = builder.myReplicationState;
         myTokens = myReplicationState.getTokenRangeToReplicas(myTableReference);
-        myRepairedTokens = builder.repairedTokens;
-        myTokenHash = builder.tokenMapHash;
-        myStatus = builder.status;
-        myCompletedTime = builder.completedTime;
+        myRepairedTokens = builder.myRepairedTokens;
+        myTokenHash = builder.myTokenMapHash;
+        myStatus = builder.myStatus;
+        myCompletedTime = builder.myCompletedTime;
+        myRepairType = builder.myRepairType;
 
         if (myTokenHash == null)
         {
-            myOnDemandStatus.addNewJob(myJobId, myTableReference, myTokens.keySet().hashCode());
+            myOnDemandStatus.addNewJob(myJobId, myTableReference, myTokens.keySet().hashCode(), myRepairType);
         }
     }
 
@@ -88,6 +91,11 @@ public class OngoingJob
     public TableReference getTableReference()
     {
         return myTableReference;
+    }
+
+    public RepairOptions.RepairType getRepairType()
+    {
+        return myRepairType;
     }
 
     public Set<LongTokenRange> getRepairedTokens()
@@ -117,7 +125,7 @@ public class OngoingJob
                 && myTokenHash != myTokens.hashCode()));
     }
 
-    public void startClusterWideJob()
+    public void startClusterWideJob(final boolean isIncremental)
     {
         Map<LongTokenRange, ImmutableSet<DriverNode>> allTokenRanges = myReplicationState
                 .getTokenRanges(myTableReference);
@@ -155,11 +163,22 @@ public class OngoingJob
             {
                 allTokensForNode.addAll(repairedRanges);
             }
-            myOnDemandStatus.addNewJob(node.getId(),
-                    myJobId,
-                    myTableReference,
-                    allTokensForNode.hashCode(),
-                    repairedRanges);
+            if (isIncremental)
+            {
+                myOnDemandStatus.addNewJob(node.getId(),
+                        myJobId,
+                        myTableReference,
+                        0,
+                        Collections.emptySet(), RepairOptions.RepairType.INCREMENTAL);
+            }
+            else
+            {
+                myOnDemandStatus.addNewJob(node.getId(),
+                        myJobId,
+                        myTableReference,
+                        allTokensForNode.hashCode(),
+                        repairedRanges, RepairOptions.RepairType.VNODE);
+            }
         }
     }
 
@@ -175,39 +194,44 @@ public class OngoingJob
 
     public static class Builder
     {
-        private UUID jobId = null;
-        private UUID hostId;
-        private TableReference tableReference;
-        private Set<UdtValue> repairedTokens = new HashSet<>();
-        private OnDemandStatus onDemandStatus;
-        private ReplicationState replicationState;
-        private Integer tokenMapHash = null;
-        private Status status = Status.started;
-        private long completedTime = -1;
+        private UUID myJobId = null;
+        private UUID myHostId;
+        private TableReference myTableReference;
+        private Set<UdtValue> myRepairedTokens = new HashSet<>();
+        private OnDemandStatus myOnDemandStatus;
+        private ReplicationState myReplicationState;
+        private Integer myTokenMapHash = null;
+        private Status myStatus = Status.started;
+        private long myCompletedTime = -1;
+        private RepairOptions.RepairType myRepairType = RepairOptions.RepairType.VNODE;
 
         /**
          * Ongoing job build with ongoing job info.
          *
          * @param theJobId The job id.
-         * @param theCompletedTime Completion time.
-         * @param theRepairedTokens Repaired tokens.
          * @param theTokenMapHash Token map hash.
+         * @param theRepairedTokens Repaired tokens.
          * @param theStatus Status.
+         * @param theCompletedTime Completion time.
          * @return The builder
          */
         public Builder withOngoingJobInfo(final UUID theJobId,
                                           final int theTokenMapHash,
                                           final Set<UdtValue> theRepairedTokens,
                                           final Status theStatus,
-                                          final Long theCompletedTime)
+                                          final Long theCompletedTime, final RepairOptions.RepairType repairType)
         {
-            this.jobId = theJobId;
-            this.tokenMapHash  = theTokenMapHash;
-            this.repairedTokens = theRepairedTokens;
-            this.status = theStatus;
+            this.myJobId = theJobId;
+            this.myTokenMapHash = theTokenMapHash;
+            this.myRepairedTokens = theRepairedTokens;
+            this.myStatus = theStatus;
             if (theCompletedTime != null)
             {
-                this.completedTime = theCompletedTime;
+                this.myCompletedTime = theCompletedTime;
+            }
+            if (repairType != null)
+            {
+                this.myRepairType = repairType;
             }
             return this;
         }
@@ -220,7 +244,7 @@ public class OngoingJob
          */
         public Builder withTableReference(final TableReference aTableReference)
         {
-            this.tableReference = aTableReference;
+            this.myTableReference = aTableReference;
             return this;
         }
 
@@ -232,7 +256,7 @@ public class OngoingJob
          */
         public Builder withOnDemandStatus(final OnDemandStatus theOnDemandStatus)
         {
-            this.onDemandStatus = theOnDemandStatus;
+            this.myOnDemandStatus = theOnDemandStatus;
             return this;
         }
 
@@ -244,7 +268,7 @@ public class OngoingJob
          */
         public Builder withReplicationState(final ReplicationState aReplicationState)
         {
-            this.replicationState = aReplicationState;
+            this.myReplicationState = aReplicationState;
             return this;
         }
 
@@ -256,7 +280,19 @@ public class OngoingJob
          */
         public Builder withHostId(final UUID aHostId)
         {
-            this.hostId = aHostId;
+            this.myHostId = aHostId;
+            return this;
+        }
+
+        /**
+         * Ongoing job with repairType.
+         *
+         * @param repairType The repair type.
+         * @return The builder
+         */
+        public Builder withRepairType(final RepairOptions.RepairType repairType)
+        {
+            this.myRepairType = repairType;
             return this;
         }
 

@@ -8,12 +8,13 @@ In this example, we will use `ecctool repairs` to check the status of manual rep
 The output shows all manual repairs for all ecChronos instances.
 
 ```bash
----------------------------------------------------------------------------------------------------------------------------------------------------
-| Id                                   | Host Id                              | Keyspace | Table  | Status    | Repaired(%) | Completed at        |
----------------------------------------------------------------------------------------------------------------------------------------------------
-| f4fb2b38-b9d0-4390-97ca-eeb284391f80 | ee32d9c7-1a4e-40c2-9b28-1000544011ae | test     | table1 | IN_QUEUE  | 0.00        | -                   |
-| f4fb2b38-b9d0-4390-97ca-eeb284391f80 | ba7665b2-5a7b-42b5-9f38-037f2da1e80a | test     | table1 | COMPLETED | 100.00      | 2022-09-22 13:40:07 |
----------------------------------------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+| Id                                   | Host Id                              | Keyspace | Table  | Status    | Repaired(%) | Completed at        | Repair type |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+| f4fb2b38-b9d0-4390-97ca-eeb284391f80 | ee32d9c7-1a4e-40c2-9b28-1000544011ae | test     | table1 | IN_QUEUE  | 0.00        | -                   | VNODE       |
+| f4fb2b38-b9d0-4390-97ca-eeb284391f80 | ba7665b2-5a7b-42b5-9f38-037f2da1e80a | test     | table1 | COMPLETED | 100.00      | 2022-09-22 13:40:07 | VNODE       |
+| 9c86aa0e-b4af-4f3c-a89c-1596f8d1dd2a | ba7665b2-5a7b-42b5-9f38-037f2da1e80a | test     | table2 | COMPLETED | 100.00      | 2023-09-21 15:26:58 | INCREMENTAL |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
 Summary: 1 completed, 1 in queue, 0 blocked, 0 warning, 0 error
 ```
 
@@ -38,23 +39,27 @@ For manual repairs this value should never go down.
 
 `Completed at` - the time when the manual repair has finished.
 
+`Repair type` - the type of the repair, can be either `VNODE` or `INCREMENTAL`. All repairs pre ecChronos 5.0 were `VNODE`.
+
 ## schedules
 
 In this example we will use `ecctool schedules` to check the status of schedules.
 The output shows all schedules the local ecChronos instance has.
 
 ```bash
-Snapshot as of 2022-09-22 14:05:12
------------------------------------------------------------------------------------------------------------------------------------------------------------
-| Id                                   | Keyspace              | Table              | Status    | Repaired(%) | Completed at        | Next repair         |
------------------------------------------------------------------------------------------------------------------------------------------------------------
-| f7bf2960-3a6d-11ed-b3c3-4d376b8456cd | test                  | table1             | COMPLETED | 100.00      | 2022-09-16 14:05:10 | 2022-09-23 14:05:10 |
-| f8ec37b0-3a6d-11ed-b3c3-4d376b8456cd | test                  | table2             | COMPLETED | 100.00      | 2022-09-16 14:05:10 | 2022-09-23 14:05:10 |
-| fbe5efb0-3a6d-11ed-b3c3-4d376b8456cd | keyspaceWithCamelCase | tableWithCamelCase | COMPLETED | 100.00      | 2022-09-16 14:05:10 | 2022-09-23 14:05:10 |
-| fa060c20-3a6d-11ed-b3c3-4d376b8456cd | test2                 | table1             | COMPLETED | 100.00      | 2022-09-16 14:05:10 | 2022-09-23 14:05:10 |
-| fab2edf0-3a6d-11ed-b3c3-4d376b8456cd | test2                 | table2             | COMPLETED | 100.00      | 2022-09-16 14:05:10 | 2022-09-23 14:05:10 |
------------------------------------------------------------------------------------------------------------------------------------------------------------
-Summary: 5 completed, 0 on time, 0 blocked, 0 late, 0 overdue
+Snapshot as of 2023-06-12 15:33:25
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| Id                                   | Keyspace              | Table              | Status    | Repaired(%) | Completed at        | Next repair         | Repair type |
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| 51a64d70-0924-11ee-9173-1f4a33dd583b | test                  | table2             | COMPLETED | 100.00      | 2023-06-06 15:33:19 | 2023-06-13 15:33:19 | VNODE       |
+| 552d5150-0924-11ee-9173-1f4a33dd583b | keyspaceWithCamelCase | tableWithCamelCase | COMPLETED | 100.00      | 2023-06-06 15:33:19 | 2023-06-13 15:33:19 | VNODE       |
+| 5365b0b0-0924-11ee-9173-1f4a33dd583b | test2                 | table1             | COMPLETED | 100.00      | 2023-06-06 15:33:19 | 2023-06-13 15:33:19 | VNODE       |
+| 54079600-0924-11ee-9173-1f4a33dd583b | test2                 | table2             | COMPLETED | 100.00      | 2023-06-06 15:33:19 | 2023-06-13 15:33:19 | VNODE       |
+| 51021e30-0924-11ee-9173-1f4a33dd583b | test                  | table1             | COMPLETED | 100.00      | 2023-06-12 15:26:27 | 2023-06-19 15:26:27 | VNODE       |
+| 24280063-034f-4f63-9e40-2f8a86ca569b | test                  | table2             | COMPLETED | 100.00      | 2023-06-12 15:26:53 | 2023-06-13 15:26:53 | INCREMENTAL |
+| d4c0fdb8-8183-4bbe-b714-53f8aff892f0 | test                  | table1             | COMPLETED | 100.00      | 2023-06-12 15:33:19 | 2023-06-13 15:33:19 | INCREMENTAL |
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Summary: 7 completed, 0 on time, 0 blocked, 0 late, 0 overdue
 ```
 
 Looking at the example output above, the first line is `Snapshot as of 2022-09-22 14:05:12`.
@@ -88,6 +93,8 @@ ecChronos assumes all ranges are repaired if there's no repair history.
 This is based on the (oldest range repair time + interval) - repair time taken for the ranges.
 This is updated each time a repair group is completed.
 
+`Repair type` - the type of the schedule, can be either `VNODE` or `INCREMENTAL`. All schedules pre ecChronos 5.0 were `VNODE`.
+
 ## run-repair
 
 In this example we will use `ecctool run-repair` to run a manual repair for all ecChronos instances,
@@ -95,20 +102,20 @@ for all keyspaces and tables.
 The output shows created manual repairs for all ecChronos instances.
 
 ```bash
---------------------------------------------------------------------------------------------------------------------------------------------------------------------
-| Id                                   | Host Id                              | Keyspace              | Table              | Status   | Repaired(%) | Completed at |
---------------------------------------------------------------------------------------------------------------------------------------------------------------------
-| 497eb4cf-9275-4216-9cca-12958bde28af | 6424a5fa-69ea-49a3-a542-4751d0283c9a | test2                 | table2             | IN_QUEUE | 0.00        | -            |
-| 497eb4cf-9275-4216-9cca-12958bde28af | 045c01c1-ff50-4de2-8da3-1b9270c382b5 | test2                 | table2             | IN_QUEUE | 0.00        | -            |
-| ea32c8b5-3e8a-466a-b5f5-f9248e73774c | 6424a5fa-69ea-49a3-a542-4751d0283c9a | test                  | table2             | IN_QUEUE | 0.00        | -            |
-| ea32c8b5-3e8a-466a-b5f5-f9248e73774c | 045c01c1-ff50-4de2-8da3-1b9270c382b5 | test                  | table2             | IN_QUEUE | 0.00        | -            |
-| 0d8845fd-84dc-435c-8b8b-83b701dd2cbd | 045c01c1-ff50-4de2-8da3-1b9270c382b5 | keyspaceWithCamelCase | tableWithCamelCase | IN_QUEUE | 0.00        | -            |
-| 0d8845fd-84dc-435c-8b8b-83b701dd2cbd | 6424a5fa-69ea-49a3-a542-4751d0283c9a | keyspaceWithCamelCase | tableWithCamelCase | IN_QUEUE | 0.00        | -            |
-| c5f830b0-533a-464f-80ed-aa8b90248ba3 | 6424a5fa-69ea-49a3-a542-4751d0283c9a | test2                 | table1             | IN_QUEUE | 0.00        | -            |
-| c5f830b0-533a-464f-80ed-aa8b90248ba3 | 045c01c1-ff50-4de2-8da3-1b9270c382b5 | test2                 | table1             | IN_QUEUE | 0.00        | -            |
-| 73c27554-58a5-47b9-a2ab-01b9fcfad4f0 | 6424a5fa-69ea-49a3-a542-4751d0283c9a | test                  | table1             | IN_QUEUE | 0.00        | -            |
-| 73c27554-58a5-47b9-a2ab-01b9fcfad4f0 | 045c01c1-ff50-4de2-8da3-1b9270c382b5 | test                  | table1             | IN_QUEUE | 0.00        | -            |
---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| Id                                   | Host Id                              | Keyspace              | Table              | Status   | Repaired(%) | Completed at | Repair type |
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| 497eb4cf-9275-4216-9cca-12958bde28af | 6424a5fa-69ea-49a3-a542-4751d0283c9a | test2                 | table2             | IN_QUEUE | 0.00        | -            | VNODE       |
+| 497eb4cf-9275-4216-9cca-12958bde28af | 045c01c1-ff50-4de2-8da3-1b9270c382b5 | test2                 | table2             | IN_QUEUE | 0.00        | -            | VNODE       |
+| ea32c8b5-3e8a-466a-b5f5-f9248e73774c | 6424a5fa-69ea-49a3-a542-4751d0283c9a | test                  | table2             | IN_QUEUE | 0.00        | -            | VNODE       |
+| ea32c8b5-3e8a-466a-b5f5-f9248e73774c | 045c01c1-ff50-4de2-8da3-1b9270c382b5 | test                  | table2             | IN_QUEUE | 0.00        | -            | VNODE       |
+| 0d8845fd-84dc-435c-8b8b-83b701dd2cbd | 045c01c1-ff50-4de2-8da3-1b9270c382b5 | keyspaceWithCamelCase | tableWithCamelCase | IN_QUEUE | 0.00        | -            | VNODE       |
+| 0d8845fd-84dc-435c-8b8b-83b701dd2cbd | 6424a5fa-69ea-49a3-a542-4751d0283c9a | keyspaceWithCamelCase | tableWithCamelCase | IN_QUEUE | 0.00        | -            | VNODE       |
+| c5f830b0-533a-464f-80ed-aa8b90248ba3 | 6424a5fa-69ea-49a3-a542-4751d0283c9a | test2                 | table1             | IN_QUEUE | 0.00        | -            | VNODE       |
+| c5f830b0-533a-464f-80ed-aa8b90248ba3 | 045c01c1-ff50-4de2-8da3-1b9270c382b5 | test2                 | table1             | IN_QUEUE | 0.00        | -            | VNODE       |
+| 73c27554-58a5-47b9-a2ab-01b9fcfad4f0 | 6424a5fa-69ea-49a3-a542-4751d0283c9a | test                  | table1             | IN_QUEUE | 0.00        | -            | VNODE       |
+| 73c27554-58a5-47b9-a2ab-01b9fcfad4f0 | 045c01c1-ff50-4de2-8da3-1b9270c382b5 | test                  | table1             | IN_QUEUE | 0.00        | -            | VNODE       |
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Summary: 0 completed, 10 in queue, 0 blocked, 0 warning, 0 error
 ```
 

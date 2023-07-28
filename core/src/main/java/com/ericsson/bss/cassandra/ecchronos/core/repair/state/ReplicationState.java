@@ -39,6 +39,14 @@ public interface ReplicationState
     ImmutableSet<DriverNode> getNodes(TableReference tableReference, LongTokenRange tokenRange);
 
     /**
+     * Get the nodes that are a replica for the provided table that have ranges in common with the local node.
+     *
+     * @param tableReference The table to fetch replicas for.
+     * @return The replicas for the table
+     */
+    ImmutableSet<DriverNode> getReplicas(TableReference tableReference);
+
+    /**
      * Get the nodes that are responsible for the provided token range, check clusterwide.
      * The provided token range can be a sub range of an existing one.
      *

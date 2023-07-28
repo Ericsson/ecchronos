@@ -44,7 +44,6 @@ import java.util.UUID;
 public class RepairGroup extends ScheduledTask
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairGroup.class);
-
     private static final String LOCK_METADATA_KEYSPACE = "keyspace";
     private static final String LOCK_METADATA_TABLE = "table";
 
@@ -55,10 +54,10 @@ public class RepairGroup extends ScheduledTask
     private final TableRepairMetrics myTableRepairMetrics;
     private final RepairResourceFactory myRepairResourceFactory;
     private final RepairLockFactory myRepairLockFactory;
-    private final BigInteger myTokensPerRepair;
     private final List<TableRepairPolicy> myRepairPolicies;
-    private final RepairHistory myRepairHistory;
     private final UUID myJobId;
+    private BigInteger myTokensPerRepair;
+    private RepairHistory myRepairHistory;
 
     public RepairGroup(final int priority, final Builder builder)
     {
@@ -77,12 +76,15 @@ public class RepairGroup extends ScheduledTask
                 .checkNotNull(builder.repairResourceFactory, "Repair resource factory must be set");
         myRepairLockFactory = Preconditions
                 .checkNotNull(builder.repairLockFactory, "Repair lock factory must be set");
-        myTokensPerRepair = Preconditions
-                .checkNotNull(builder.tokensPerRepair, "Tokens per repair must be set");
         myRepairPolicies = new ArrayList<>(Preconditions
                 .checkNotNull(builder.repairPolicies, "Repair policies must be set"));
-        myRepairHistory = Preconditions
-                .checkNotNull(builder.repairHistory, "Repair history must be set");
+        if (!myRepairConfiguration.getRepairType().equals(RepairOptions.RepairType.INCREMENTAL))
+        {
+            myRepairHistory = Preconditions
+                    .checkNotNull(builder.repairHistory, "Repair history must be set");
+            myTokensPerRepair = Preconditions
+                    .checkNotNull(builder.tokensPerRepair, "Tokens per repair must be set");
+        }
         myJobId = Preconditions
                 .checkNotNull(builder.jobId, "Job id must be set");
     }
@@ -107,14 +109,14 @@ public class RepairGroup extends ScheduledTask
                 successful = false;
                 break;
             }
-
             try
             {
                 repairTask.execute();
             }
             catch (ScheduledJobException e)
             {
-                LOG.warn("Encountered issue when running repair task {}", repairTask, e);
+                LOG.warn("Encountered issue when running repair task {}, {}", repairTask, e.getMessage());
+                LOG.debug("", e);
                 successful = false;
                 if (e.getCause() instanceof InterruptedException)
                 {
@@ -162,7 +164,10 @@ public class RepairGroup extends ScheduledTask
     @Override
     public String toString()
     {
-        return String.format("Repair job of %s", myTableReference);
+        return String.format("%s repair group of %s",
+                myRepairConfiguration.getRepairType().equals(RepairOptions.RepairType.INCREMENTAL)
+                        ? "Incremental"
+                        : "Vnode", myTableReference);
     }
 
     /**
@@ -174,13 +179,21 @@ public class RepairGroup extends ScheduledTask
     Collection<RepairTask> getRepairTasks()
     {
         Collection<RepairTask> tasks = new ArrayList<>();
-        for (LongTokenRange range : myReplicaRepairGroup)
+        if (myRepairConfiguration.getRepairType().equals(RepairOptions.RepairType.INCREMENTAL))
         {
-            for (LongTokenRange subRange : new TokenSubRangeUtil(range).generateSubRanges(myTokensPerRepair))
+            tasks.add(new IncrementalRepairTask(myJmxProxyFactory, myTableReference,
+                    myRepairConfiguration, myTableRepairMetrics));
+        }
+        else
+        {
+            for (LongTokenRange range : myReplicaRepairGroup)
             {
-                tasks.add(new SubrangeRepairTask(myJmxProxyFactory, myTableReference, myRepairConfiguration,
-                        myTableRepairMetrics, myRepairHistory, Collections.singleton(subRange),
-                        new HashSet<>(myReplicaRepairGroup.getReplicas()), myJobId));
+                for (LongTokenRange subRange : new TokenSubRangeUtil(range).generateSubRanges(myTokensPerRepair))
+                {
+                    tasks.add(new VnodeRepairTask(myJmxProxyFactory, myTableReference, myRepairConfiguration,
+                            myTableRepairMetrics, myRepairHistory, Collections.singleton(subRange),
+                            new HashSet<>(myReplicaRepairGroup.getReplicas()), myJobId));
+                }
             }
         }
 
@@ -196,7 +209,6 @@ public class RepairGroup extends ScheduledTask
     {
         private List<TableRepairPolicy> repairPolicies = new ArrayList<>();
         private BigInteger tokensPerRepair = LongTokenRange.FULL_RANGE;
-
         private TableReference tableReference;
         private RepairConfiguration repairConfiguration;
         private ReplicaRepairGroup replicaRepairGroup;

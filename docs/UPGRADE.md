@@ -1,3 +1,18 @@
+# Upgrade to 5.X
+
+Version 5.X has added support for incremental repairs and multiple schedules for the same table.
+To enable multiple schedules for a table, multiple schedules should be specified in `schedule.yaml`.
+If there's a single entry in the `schedule.yaml` it will overwrite the default schedule (as in pre 5.X).
+
+On demand repairs has also gotten the incremental support, due to this the `ecchronos.on_demand_repair_status` table
+has gotten a new column `repair_type`.
+The `ecchronos.on_demand_repair_status` table must be updated before performing the upgrade to version 5.X.
+
+The command to add the column is shown below:
+```
+ALTER TABLE ecchronos.on_demand_repair_status ADD repair_type text;
+```
+
 # Upgrade to 4.x
 
 ## Metrics

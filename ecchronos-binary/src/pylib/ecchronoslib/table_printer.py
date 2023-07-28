@@ -32,6 +32,7 @@ def print_schedule(schedule, max_lines, full=False):
     print(verbose_print_format.format("Repaired(%)", schedule.get_repair_percentage()))
     print(verbose_print_format.format("Completed at", schedule.get_last_repaired_at()))
     print(verbose_print_format.format("Next repair", schedule.get_next_repair()))
+    print(verbose_print_format.format("Repair type", schedule.repair_type))
     print(verbose_print_format.format("Config", schedule.get_config()))
 
     if full:
@@ -78,7 +79,7 @@ def print_repair_summary(repairs):
 
 def print_schedules(schedules, max_lines):
     schedule_table = [["Id", "Keyspace", "Table", "Status", "Repaired(%)",
-                       "Completed at", "Next repair"]]
+                       "Completed at", "Next repair", "Repair type"]]
     print("Snapshot as of", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     print_schedule_table(schedule_table, schedules, max_lines)
     print_summary(schedules)
@@ -86,7 +87,7 @@ def print_schedules(schedules, max_lines):
 
 def print_repairs(repairs, max_lines=-1):
     repair_table = [["Id", "Host Id", "Keyspace", "Table", "Status", "Repaired(%)",
-                     "Completed at"]]
+                     "Completed at", "Repair type"]]
     print_repair_table(repair_table, repairs, max_lines)
     print_repair_summary(repairs)
 
@@ -114,19 +115,20 @@ def print_repair_table(repair_table, repairs, max_lines):
 
 def print_repair(repair):
     repair_table = [["Id", "Host Id", "Keyspace", "Table", "Status", "Repaired(%)",
-                     "Completed at"], _convert_repair(repair)]
+                     "Completed at", "Repair type"], _convert_repair(repair)]
     table_formatter.format_table(repair_table)
 
 
 def _convert_repair(repair):
     entry = [repair.job_id, repair.host_id, repair.keyspace, repair.table, repair.status,
-             repair.get_repair_percentage(), repair.get_completed_at()]
+             repair.get_repair_percentage(), repair.get_completed_at(), repair.repair_type]
     return entry
 
 
 def _convert_schedule(schedule):
     entry = [schedule.job_id, schedule.keyspace, schedule.table, schedule.status,
-             schedule.get_repair_percentage(), schedule.get_last_repaired_at(), schedule.get_next_repair()]
+             schedule.get_repair_percentage(), schedule.get_last_repaired_at(), schedule.get_next_repair(),
+             schedule.repair_type]
 
     return entry
 

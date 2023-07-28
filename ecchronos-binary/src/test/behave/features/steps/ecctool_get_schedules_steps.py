@@ -21,7 +21,7 @@ from ecc_step_library.common_steps import match_and_remove_row, strip_and_collap
 ID_PATTERN = r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
 SCHEDULE_SUMMARY = r'Summary: \d+ completed, \d+ on time, \d+ blocked, \d+ late, \d+ overdue'
 
-TABLE_SCHEDULE_HEADER = r'| Id | Keyspace | Table | Status | Repaired(%) | Completed at | Next repair |'
+TABLE_SCHEDULE_HEADER = r'| Id | Keyspace | Table | Status | Repaired(%) | Completed at | Next repair | Repair type |'
 TABLE_SNAPSHOT_HEADER = r'Snapshot as of .*'
 TABLE_SCHEDULE_ROW_FORMAT_PATTERN = r'\| .* \| {0} \| {1} \| (COMPLETED|ON_TIME|LATE|OVERDUE) \| \d+[.]\d+ \| .* \|'
 
@@ -91,8 +91,8 @@ def step_show_schedule_with_id(context, keyspace, table):
     assert job_id
     run_ecc_schedule_status(context, ['--id', job_id])
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
-    context.table_info = output_data[0:7]
-    context.conf = output_data[7:8]
+    context.table_info = output_data[0:8]
+    context.conf = output_data[8:9]
 
 
 @when('we show schedule {keyspace}.{table} with a limit of {limit}')
@@ -104,9 +104,9 @@ def step_show_schedule_with_limit(context, keyspace, table, limit):
     run_ecc_schedule_status(context, ['--id', job_id, '--limit', limit, '--full'])
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
 
-    context.table_info = output_data[0:7]
-    context.header = output_data[8:9]
-    context.rows = output_data[11:]
+    context.table_info = output_data[0:8]
+    context.header = output_data[9:10]
+    context.rows = output_data[12:]
 
 
 @then('the output should contain a valid schedule summary')
@@ -119,7 +119,7 @@ def step_validate_list_schedule_contains_summary(context):
 
 @then('the output should contain a valid schedule for {keyspace}.{table}')
 def step_validate_list_schedule_contains_rows(context, keyspace, table):
-    assert len(context.table_info) == 7, "Expecting 7 rows"
+    assert len(context.table_info) == 8, "Expecting 8 rows"
     assert len(context.conf) == 1, "Expecting 1 row"
 
     step_validate_expected_show_table_header(context, keyspace, table)
@@ -163,6 +163,9 @@ def step_validate_expected_show_table_header(context, keyspace, table):
         "Completed at : .*", strip_and_collapse(table_info[5])), "Faulty repaired at '{0}'".format(table_info[5])
     assert re.match(
         "Next repair : .*", strip_and_collapse(table_info[6])), "Faulty next repair '{0}'".format(table_info[6])
+    assert re.match(
+        "Repair type : (VNODE|INCREMENTAL)", strip_and_collapse(table_info[7])), \
+        "Faulty repair type '{0}'".format(table_info[7])
 
 
 @then('the token list should contain {limit:d} rows')

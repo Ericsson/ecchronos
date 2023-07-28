@@ -41,18 +41,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
-public class SubrangeRepairTask extends RepairTask
+public class VnodeRepairTask extends RepairTask
 {
-    private static final Logger LOG = LoggerFactory.getLogger(SubrangeRepairTask.class);
+    private static final Logger LOG = LoggerFactory.getLogger(VnodeRepairTask.class);
     private final ConcurrentMap<LongTokenRange, RepairHistory.RepairSession> myRepairSessions =
             new ConcurrentHashMap<>();
-    private final Set<LongTokenRange> myCompletedRanges = Collections.synchronizedSet(new HashSet<>());
     private final Set<LongTokenRange> myTokenRanges;
     private final Set<DriverNode> myReplicas;
+    private volatile Set<LongTokenRange> myUnknownRanges;
 
-    private volatile Collection<LongTokenRange> myUnknownRanges;
-
-    public SubrangeRepairTask(final JmxProxyFactory jmxProxyFactory, final TableReference tableReference,
+    public VnodeRepairTask(final JmxProxyFactory jmxProxyFactory, final TableReference tableReference,
             final RepairConfiguration repairConfiguration, final TableRepairMetrics tableRepairMetrics,
             final RepairHistory repairHistory, final Set<LongTokenRange> tokenRanges, final Set<DriverNode> replicas,
             final UUID jobId)
@@ -77,7 +75,13 @@ public class SubrangeRepairTask extends RepairTask
     {
         if (repairStatus.equals(RepairStatus.FAILED))
         {
-            LOG.warn("Unable to repair '{}', affected ranges: '{}'", this, myTokenRanges);
+            Set<LongTokenRange> unrepairedRanges = new HashSet<>();
+            if (myUnknownRanges != null)
+            {
+                unrepairedRanges.addAll(myUnknownRanges);
+            }
+            unrepairedRanges.addAll(getFailedRanges());
+            LOG.warn("Unable to repair '{}', affected ranges: '{}'", this, unrepairedRanges);
         }
         myRepairSessions.values().forEach(rs -> rs.finish(repairStatus));
         myRepairSessions.clear();
@@ -86,15 +90,17 @@ public class SubrangeRepairTask extends RepairTask
     @Override
     protected final void verifyRepair(final JmxProxy proxy) throws ScheduledJobException
     {
-        Set<LongTokenRange> unknownRanges = Sets.difference(myTokenRanges, myCompletedRanges);
+        Set<LongTokenRange> completedRanges = Sets.union(getFailedRanges(), getSuccessfulRanges());
+        Set<LongTokenRange> unknownRanges = Sets.difference(myTokenRanges, completedRanges);
         if (!unknownRanges.isEmpty())
         {
             LOG.debug("Unknown ranges: {}", unknownRanges);
-            LOG.debug("Completed ranges: {}", myCompletedRanges);
+            LOG.debug("Completed ranges: {}", completedRanges);
             myUnknownRanges = Collections.unmodifiableSet(unknownRanges);
             proxy.forceTerminateAllRepairSessions();
             throw new ScheduledJobException(String.format("Unknown status of some ranges for %s", this));
         }
+        super.verifyRepair(proxy);
     }
 
     @Override
@@ -121,6 +127,7 @@ public class SubrangeRepairTask extends RepairTask
     @Override
     protected final void onRangeFinished(final LongTokenRange range, final RepairStatus repairStatus)
     {
+        super.onRangeFinished(range, repairStatus);
         RepairHistory.RepairSession repairSession = myRepairSessions.remove(range);
         if (repairSession == null)
         {
@@ -131,13 +138,17 @@ public class SubrangeRepairTask extends RepairTask
         {
             repairSession.finish(repairStatus);
         }
-        myCompletedRanges.add(range);
     }
 
-    @VisibleForTesting
-    final Set<LongTokenRange> getCompletedRanges()
+    /**
+     * String representation.
+     *
+     * @return String
+     */
+    @Override
+    public String toString()
     {
-        return myCompletedRanges;
+        return String.format("Vnode repairTask of %s", getTableReference());
     }
 
     @VisibleForTesting

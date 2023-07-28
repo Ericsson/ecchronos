@@ -117,9 +117,12 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             final String table,
             @RequestParam(required = false)
             @Parameter(description = "Decides if the repair should be only for the local node, i.e not cluster-wide.")
-            final boolean isLocal)
+            final boolean isLocal,
+            @RequestParam(required = false)
+            @Parameter(description = "Decides if the repair should be incremental")
+            final boolean isIncremental)
     {
-        return ResponseEntity.ok(getListOfOnDemandRepairs(keyspace, table, isLocal));
+        return ResponseEntity.ok(getListOfOnDemandRepairs(keyspace, table, isLocal, isIncremental));
     }
 
 
@@ -185,7 +188,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
     }
 
     private List<OnDemandRepair> getListOfOnDemandRepairs(final String keyspace, final String table,
-            final boolean isLocal)
+            final boolean isLocal, final boolean isIncremental)
     {
         try
         {
@@ -200,12 +203,13 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                         throw new ResponseStatusException(NOT_FOUND,
                                 "Table " + keyspace + "." + table + " does not exist");
                     }
-                    onDemandRepairs = runLocalOrCluster(
-                            isLocal, Collections.singleton(myTableReferenceFactory.forTable(keyspace, table)));
+                    onDemandRepairs = runLocalOrCluster(isLocal, isIncremental,
+                            Collections.singleton(myTableReferenceFactory.forTable(keyspace, table)));
                 }
                 else
                 {
-                    onDemandRepairs = runLocalOrCluster(isLocal, myTableReferenceFactory.forKeyspace(keyspace));
+                    onDemandRepairs = runLocalOrCluster(isLocal, isIncremental,
+                            myTableReferenceFactory.forKeyspace(keyspace));
                 }
             }
             else
@@ -214,7 +218,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 {
                     throw new ResponseStatusException(BAD_REQUEST, "Keyspace must be provided if table is provided");
                 }
-                onDemandRepairs = runLocalOrCluster(isLocal, myTableReferenceFactory.forCluster());
+                onDemandRepairs = runLocalOrCluster(isLocal, isIncremental, myTableReferenceFactory.forCluster());
             }
             return onDemandRepairs;
         }
@@ -242,7 +246,8 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 .collect(Collectors.toList());
     }
 
-    private List<OnDemandRepair> runLocalOrCluster(final boolean isLocal, final Set<TableReference> tables)
+    private List<OnDemandRepair> runLocalOrCluster(final boolean isLocal, final boolean isIncremental,
+            final Set<TableReference> tables)
             throws EcChronosException
     {
         List<OnDemandRepair> onDemandRepairs = new ArrayList<>();
@@ -252,7 +257,8 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             {
                 if (myReplicatedTableProvider.accept(tableReference.getKeyspace()))
                 {
-                    onDemandRepairs.add(new OnDemandRepair(myOnDemandRepairScheduler.scheduleJob(tableReference)));
+                    onDemandRepairs.add(new OnDemandRepair(
+                            myOnDemandRepairScheduler.scheduleJob(tableReference, isIncremental)));
                 }
             }
             else
@@ -260,7 +266,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 if (myReplicatedTableProvider.accept(tableReference.getKeyspace()))
                 {
                     List<OnDemandRepairJobView> repairJobView = myOnDemandRepairScheduler.scheduleClusterWideJob(
-                            tableReference);
+                            tableReference, isIncremental);
                     onDemandRepairs.addAll(
                             repairJobView.stream().map(OnDemandRepair::new).collect(Collectors.toList()));
                 }

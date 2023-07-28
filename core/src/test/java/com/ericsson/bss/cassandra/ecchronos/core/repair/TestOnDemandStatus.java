@@ -57,6 +57,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
     private static final String HOST_ID_COLUMN_NAME = "host_id";
     private static final String STATUS_COLUMN_NAME = "status";
     private static final String JOB_ID_COLUMN_NAME = "job_id";
+    private static final String REPAIR_TYPE_COLUMN_NAME = "repair_type";
     private static final String TABLE_REFERENCE_COLUMN_NAME = "table_reference";
     private static final String TOKEN_MAP_HASH_COLUMN_NAME = "token_map_hash";
     private static final String REPAIRED_TOKENS_COLUMN_NAME = "repaired_tokens";
@@ -87,7 +88,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
                 "CREATE TYPE IF NOT EXISTS %s.table_reference (id uuid, keyspace_name text, table_name text)",
                 KEYSPACE_NAME));
         mySession.execute(String.format(
-                "CREATE TABLE IF NOT EXISTS %s.%s (host_id uuid, job_id uuid, table_reference frozen<table_reference>, token_map_hash int, repaired_tokens frozen<set<frozen<token_range>>>, status text, completed_time timestamp, PRIMARY KEY(host_id, job_id)) WITH default_time_to_live = 2592000 AND gc_grace_seconds = 0",
+                "CREATE TABLE IF NOT EXISTS %s.%s (host_id uuid, job_id uuid, table_reference frozen<table_reference>, token_map_hash int, repaired_tokens frozen<set<frozen<token_range>>>, status text, completed_time timestamp, repair_type text, PRIMARY KEY(host_id, job_id)) WITH default_time_to_live = 2592000 AND gc_grace_seconds = 0",
                 KEYSPACE_NAME, TABLE_NAME));
         mySession.execute(
                 String.format("CREATE TABLE IF NOT EXISTS %s.%s (col1 int, col2 int, PRIMARY KEY(col1))", KEYSPACE_NAME,
@@ -133,7 +134,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         int hashValue = 1;
         TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
 
-        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue, RepairOptions.RepairType.VNODE);
 
         ResultSet result = mySession.execute("SELECT * FROM " + KEYSPACE_NAME + "." + TABLE_NAME);
 
@@ -153,10 +154,11 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(row.getSet(REPAIRED_TOKENS_COLUMN_NAME, UdtValue.class)).isEmpty();
         assertThat(row.getString(STATUS_COLUMN_NAME)).isEqualTo(STATUS_STARTED);
         assertThat(row.get(COMPLETED_TIME_COLUMN_NAME, Instant.class)).isNull();
+        assertThat(row.getString(REPAIR_TYPE_COLUMN_NAME)).isEqualTo(RepairOptions.RepairType.VNODE.toString());
     }
 
     @Test
-    public void testUpdateRepariedTokkens()
+    public void testUpdateRepairedTokens()
     {
         OnDemandStatus onDemandStatus = new OnDemandStatus(getNativeConnectionProvider());
 
@@ -164,7 +166,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         int hashValue = 1;
         TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
 
-        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue, RepairOptions.RepairType.VNODE);
 
         Set<UdtValue> repairedTokens = new HashSet<>();
         repairedTokens.add(onDemandStatus.createUDTTokenRangeValue(-50L, 700L));
@@ -187,6 +189,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(row.getSet(REPAIRED_TOKENS_COLUMN_NAME, UdtValue.class)).isEqualTo(repairedTokens);
         assertThat(row.getString(STATUS_COLUMN_NAME)).isEqualTo(STATUS_STARTED);
         assertThat(row.get(COMPLETED_TIME_COLUMN_NAME, Instant.class)).isNull();
+        assertThat(row.getString(REPAIR_TYPE_COLUMN_NAME)).isEqualTo(RepairOptions.RepairType.VNODE.toString());
     }
 
     @Test
@@ -198,7 +201,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         int hashValue = 1;
         TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
 
-        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue, RepairOptions.RepairType.VNODE);
 
         Set<UdtValue> repairedTokens = new HashSet<>();
         repairedTokens.add(onDemandStatus.createUDTTokenRangeValue(-50L, 700L));
@@ -223,6 +226,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(row.getSet(REPAIRED_TOKENS_COLUMN_NAME, UdtValue.class)).isEqualTo(repairedTokens);
         assertThat(row.getString(STATUS_COLUMN_NAME)).isEqualTo(STATUS_FINISHED);
         assertThat(row.get(COMPLETED_TIME_COLUMN_NAME, Instant.class)).isNotNull();
+        assertThat(row.getString(REPAIR_TYPE_COLUMN_NAME)).isEqualTo(RepairOptions.RepairType.VNODE.toString());
     }
 
     @Test
@@ -234,7 +238,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         int hashValue = 1;
         TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
 
-        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue, RepairOptions.RepairType.VNODE);
 
         Set<UdtValue> repairedTokens = new HashSet<>();
         repairedTokens.add(onDemandStatus.createUDTTokenRangeValue(-50L, 700L));
@@ -282,7 +286,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         Map<LongTokenRange, ImmutableSet<DriverNode>> tokenMap = new HashMap<>();
         when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap);
 
-        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue, RepairOptions.RepairType.VNODE);
 
         Set<OngoingJob> ongoingJobs = onDemandStatus.getAllClusterWideJobs();
 
@@ -295,6 +299,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(ongoingJob.getRepairedTokens()).isEmpty();
         assertThat(ongoingJob.getStatus()).isEqualTo(Status.started);
         assertThat(ongoingJob.getCompletedTime()).isEqualTo(-1L);
+        assertThat(ongoingJob.getRepairType()).isEqualTo(RepairOptions.RepairType.VNODE);
     }
 
     @Test
@@ -318,7 +323,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         Map<LongTokenRange, ImmutableSet<DriverNode>> tokenMap = new HashMap<>();
         when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap);
 
-        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue, RepairOptions.RepairType.VNODE);
 
         Set<OngoingJob> ongoingJobs = onDemandStatus.getOngoingJobs(myReplicationState);
 
@@ -331,6 +336,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(ongoingJob.getRepairedTokens()).isEmpty();
         assertThat(ongoingJob.getStatus()).isEqualTo(Status.started);
         assertThat(ongoingJob.getCompletedTime()).isEqualTo(-1L);
+        assertThat(ongoingJob.getRepairType()).isEqualTo(RepairOptions.RepairType.VNODE);
     }
 
     @Test
@@ -343,7 +349,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
         Map<LongTokenRange, ImmutableSet<DriverNode>> tokenMap = new HashMap<>();
         when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap);
-        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue, RepairOptions.RepairType.VNODE);
 
         mySession.execute("DROP TABLE " + KEYSPACE_NAME + "." + TEST_TABLE_NAME);
         mySession.execute(String.format("CREATE TABLE %s.%s (col1 int, col2 int, PRIMARY KEY(col1))", KEYSPACE_NAME,
@@ -364,7 +370,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
         Map<LongTokenRange, ImmutableSet<DriverNode>> tokenMap = new HashMap<>();
         when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap);
-        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue, RepairOptions.RepairType.VNODE);
 
         Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
         expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
@@ -381,6 +387,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(ongoingJob.getRepairedTokens()).isEqualTo(expectedRepairedTokens);
         assertThat(ongoingJob.getStatus()).isEqualTo(Status.started);
         assertThat(ongoingJob.getCompletedTime()).isEqualTo(-1L);
+        assertThat(ongoingJob.getRepairType()).isEqualTo(RepairOptions.RepairType.VNODE);
     }
 
     @Test
@@ -393,7 +400,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
         Map<LongTokenRange, ImmutableSet<DriverNode>> tokenMap = new HashMap<>();
         when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap);
-        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue, RepairOptions.RepairType.VNODE);
 
         Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
         expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
@@ -417,7 +424,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
         Map<LongTokenRange, ImmutableSet<DriverNode>> tokenMap = new HashMap<>();
         when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap);
-        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue, RepairOptions.RepairType.VNODE);
 
         Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
         expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
@@ -452,7 +459,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         Map<LongTokenRange, ImmutableSet<DriverNode>> tokenMap = new HashMap<>();
         when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap);
 
-        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue, RepairOptions.RepairType.VNODE);
 
         Set<OngoingJob> ongoingJobs = onDemandStatus.getAllJobs(myReplicationState);
 
@@ -465,6 +472,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(ongoingJob.getRepairedTokens()).isEmpty();
         assertThat(ongoingJob.getStatus()).isEqualTo(Status.started);
         assertThat(ongoingJob.getCompletedTime()).isEqualTo(-1L);
+        assertThat(ongoingJob.getRepairType()).isEqualTo(RepairOptions.RepairType.VNODE);
     }
 
     @Test
@@ -477,7 +485,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
         Map<LongTokenRange, ImmutableSet<DriverNode>> tokenMap = new HashMap<>();
         when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap);
-        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue, RepairOptions.RepairType.VNODE);
 
         mySession.execute("DROP TABLE " + KEYSPACE_NAME + "." + TEST_TABLE_NAME);
         mySession.execute(String.format("CREATE TABLE %s.%s (col1 int, col2 int, PRIMARY KEY(col1))", KEYSPACE_NAME,
@@ -498,7 +506,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
         Map<LongTokenRange, ImmutableSet<DriverNode>> tokenMap = new HashMap<>();
         when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap);
-        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue, RepairOptions.RepairType.VNODE);
 
         Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
         expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
@@ -515,6 +523,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(ongoingJob.getRepairedTokens()).isEqualTo(expectedRepairedTokens);
         assertThat(ongoingJob.getStatus()).isEqualTo(Status.started);
         assertThat(ongoingJob.getCompletedTime()).isEqualTo(-1L);
+        assertThat(ongoingJob.getRepairType()).isEqualTo(RepairOptions.RepairType.VNODE);
     }
 
     @Test
@@ -527,7 +536,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
         Map<LongTokenRange, ImmutableSet<DriverNode>> tokenMap = new HashMap<>();
         when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap);
-        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue, RepairOptions.RepairType.VNODE);
 
         Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
         expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
@@ -545,6 +554,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(ongoingJob.getRepairedTokens()).isEqualTo(expectedRepairedTokens);
         assertThat(ongoingJob.getStatus()).isEqualTo(Status.finished);
         assertThat(ongoingJob.getCompletedTime()).isPositive();
+        assertThat(ongoingJob.getRepairType()).isEqualTo(RepairOptions.RepairType.VNODE);
     }
 
     @Test
@@ -557,7 +567,7 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         TableReference tableReference = myTableReferenceFactory.forTable(KEYSPACE_NAME, TEST_TABLE_NAME);
         Map<LongTokenRange, ImmutableSet<DriverNode>> tokenMap = new HashMap<>();
         when(myReplicationState.getTokenRangeToReplicas(tableReference)).thenReturn(tokenMap);
-        onDemandStatus.addNewJob(jobId, tableReference, hashValue);
+        onDemandStatus.addNewJob(jobId, tableReference, hashValue, RepairOptions.RepairType.VNODE);
 
         Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
         expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
@@ -575,5 +585,6 @@ public class TestOnDemandStatus extends AbstractCassandraTest
         assertThat(ongoingJob.getRepairedTokens()).isEqualTo(expectedRepairedTokens);
         assertThat(ongoingJob.getStatus()).isEqualTo(Status.failed);
         assertThat(ongoingJob.getCompletedTime()).isPositive();
+        assertThat(ongoingJob.getRepairType()).isEqualTo(RepairOptions.RepairType.VNODE);
     }
 }

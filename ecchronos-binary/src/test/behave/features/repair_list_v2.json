@@ -31,6 +31,10 @@
       "hostId": {
         "type": "string",
         "description": "A unique identifier for the host the job was run on"
+      },
+      "repairType": {
+        "type": "string",
+        "description": "The type of repair for the schedule"
       }
     },
     "required": [
@@ -40,7 +44,8 @@
       "table",
       "status",
       "repairedRatio",
-      "completedAt"
+      "completedAt",
+      "repairType"
     ]
   }
 }

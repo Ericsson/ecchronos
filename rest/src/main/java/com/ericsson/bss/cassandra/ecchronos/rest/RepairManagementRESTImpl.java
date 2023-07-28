@@ -194,5 +194,4 @@ public class RepairManagementRESTImpl implements RepairManagementREST
         }
         return new RepairInfo(sinceTime, toTime, repairStats);
     }
-
 }

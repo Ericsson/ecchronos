@@ -269,7 +269,7 @@ public class ITOnDemandRepairJob extends TestBase
     private void schedule(TableReference tableReference) throws EcChronosException
     {
         myRepairs.add(tableReference);
-        myRepairSchedulerImpl.scheduleJob(tableReference);
+        myRepairSchedulerImpl.scheduleJob(tableReference, false);
     }
 
     private void verifyTableRepairedSince(TableReference tableReference, long repairedSince)

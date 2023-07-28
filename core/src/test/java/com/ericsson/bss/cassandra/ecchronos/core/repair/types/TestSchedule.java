@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TestUtils;
@@ -53,6 +54,7 @@ public class TestSchedule
                 .withProgress(1.0d)
                 .withRepairConfiguration(repairConfig)
                 .withVnodeRepairStateSet(Arrays.asList(vnodeRepairState, vnodeRepairState2))
+                .withRepairType(RepairOptions.RepairType.VNODE)
                 .build();
 
         Schedule schedule = new Schedule(repairJobView, true);
@@ -65,6 +67,7 @@ public class TestSchedule
         assertThat(schedule.status).isEqualTo(Status.COMPLETED);
         assertThat(schedule.nextRepairInMs).isEqualTo(lastRepairedAt + repairInterval);
         assertThat(schedule.config).isEqualTo(new ScheduleConfig(repairJobView));
+        assertThat(schedule.repairType).isEqualTo(RepairOptions.RepairType.VNODE);
 
         assertVnodes(schedule, repairedAfter, vnodeRepairState, vnodeRepairState2);
     }
@@ -83,6 +86,7 @@ public class TestSchedule
                 .withLastRepairedAt(lastRepairedAt)
                 .withRepairInterval(repairInterval)
                 .withRepairConfiguration(repairConfig)
+                .withRepairType(RepairOptions.RepairType.INCREMENTAL)
                 .build();
 
         Schedule schedule = new Schedule(repairJobView);
@@ -96,6 +100,7 @@ public class TestSchedule
         assertThat(schedule.nextRepairInMs).isEqualTo(lastRepairedAt + repairInterval);
         assertThat(schedule.config).isEqualTo(new ScheduleConfig(repairJobView));
         assertThat(schedule.virtualNodeStates).isEmpty();
+        assertThat(schedule.repairType).isEqualTo(RepairOptions.RepairType.INCREMENTAL);
     }
 
     @Test
@@ -122,6 +127,7 @@ public class TestSchedule
                 .withStatus(Status.LATE)
                 .withProgress(0.5d)
                 .withRepairConfiguration(repairConfig)
+                .withRepairType(RepairOptions.RepairType.VNODE)
                 .build();
 
         Schedule schedule = new Schedule(repairJobView, true);
@@ -134,6 +140,7 @@ public class TestSchedule
         assertThat(schedule.status).isEqualTo(Status.LATE);
         assertThat(schedule.nextRepairInMs).isEqualTo(lastRepairedAt + repairInterval);
         assertThat(schedule.config).isEqualTo(new ScheduleConfig(repairJobView));
+        assertThat(schedule.repairType).isEqualTo(RepairOptions.RepairType.VNODE);
 
         assertVnodes(schedule, repairedAfter, vnodeRepairState, vnodeRepairState2);
     }
@@ -161,6 +168,7 @@ public class TestSchedule
                 .withStatus(Status.LATE)
                 .withProgress(0.5d)
                 .withRepairConfiguration(repairConfig)
+                .withRepairType(RepairOptions.RepairType.VNODE)
                 .build();
 
         Schedule schedule = new Schedule(repairJobView);
@@ -174,6 +182,7 @@ public class TestSchedule
         assertThat(schedule.nextRepairInMs).isEqualTo(lastRepairedAt + repairInterval);
         assertThat(schedule.config).isEqualTo(new ScheduleConfig(repairJobView));
         assertThat(schedule.virtualNodeStates).isEmpty();
+        assertThat(schedule.repairType).isEqualTo(RepairOptions.RepairType.VNODE);
     }
 
 
@@ -190,6 +199,7 @@ public class TestSchedule
                 .withLastRepairedAt(lastRepairedAt)
                 .withRepairInterval(repairInterval)
                 .withStatus(Status.OVERDUE)
+                .withRepairType(RepairOptions.RepairType.VNODE)
                 .build();
         Schedule schedule = new Schedule(repairJobView);
 
@@ -202,7 +212,7 @@ public class TestSchedule
     public void testEqualsContract()
     {
         EqualsVerifier.simple().forClass(Schedule.class).usingGetClass()
-                .withNonnullFields("id", "keyspace", "table", "config", "virtualNodeStates")
+                .withNonnullFields("id", "keyspace", "table", "config", "virtualNodeStates", "repairType")
                 .verify();
     }
 

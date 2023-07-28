@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -83,6 +84,26 @@ public class TestOngoingJob
         assertThat(ongoingJob.getTableReference()).isEqualTo(myTableReference);
         assertThat(ongoingJob.getTokens()).isEqualTo(myTokenMap);
         assertThat(ongoingJob.getStatus()).isEqualTo(Status.started);
+        assertThat(ongoingJob.getRepairType()).isEqualTo(RepairOptions.RepairType.VNODE);
+        assertThat(ongoingJob.getCompletedTime()).isEqualTo(-1);
+    }
+
+    @Test
+    public void testOngoingJobForNewIncrementalJobIsCreated()
+    {
+        OngoingJob ongoingJob = new OngoingJob.Builder()
+                .withOnDemandStatus(myOnDemandStatus)
+                .withReplicationState(myReplicationState)
+                .withTableReference(myTableReference)
+                .withRepairType(RepairOptions.RepairType.INCREMENTAL)
+                .build();
+
+        assertThat(ongoingJob.getJobId()).isNotNull();
+        assertThat(ongoingJob.getRepairedTokens()).isEmpty();
+        assertThat(ongoingJob.getTableReference()).isEqualTo(myTableReference);
+        assertThat(ongoingJob.getTokens()).isEqualTo(myTokenMap);
+        assertThat(ongoingJob.getStatus()).isEqualTo(Status.started);
+        assertThat(ongoingJob.getRepairType()).isEqualTo(RepairOptions.RepairType.INCREMENTAL);
         assertThat(ongoingJob.getCompletedTime()).isEqualTo(-1);
     }
 
@@ -92,8 +113,8 @@ public class TestOngoingJob
         UUID jobId = UUID.randomUUID();
         Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
         expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
-        Set<UdtValue> repiaredTokens = new HashSet<>();
-        repiaredTokens.add(myUdtValue);
+        Set<UdtValue> repairedTokens = new HashSet<>();
+        repairedTokens.add(myUdtValue);
 
         when(myOnDemandStatus.getStartTokenFrom(myUdtValue)).thenReturn(-50L);
         when(myOnDemandStatus.getEndTokenFrom(myUdtValue)).thenReturn(700L);
@@ -102,7 +123,7 @@ public class TestOngoingJob
                 .withOnDemandStatus(myOnDemandStatus)
                 .withReplicationState(myReplicationState)
                 .withTableReference(myTableReference)
-                .withOngoingJobInfo(jobId, myTokenMap.hashCode(), repiaredTokens, Status.started, null)
+                .withOngoingJobInfo(jobId, myTokenMap.hashCode(), repairedTokens, Status.started, null, RepairOptions.RepairType.VNODE)
                 .build();
 
         assertThat(ongoingJob.getJobId()).isEqualTo(jobId);
@@ -110,6 +131,27 @@ public class TestOngoingJob
         assertThat(ongoingJob.getTableReference()).isEqualTo(myTableReference);
         assertThat(ongoingJob.getTokens()).isEqualTo(myTokenMap);
         assertThat(ongoingJob.getStatus()).isEqualTo(Status.started);
+        assertThat(ongoingJob.getRepairType()).isEqualTo(RepairOptions.RepairType.VNODE);
+        assertThat(ongoingJob.getCompletedTime()).isEqualTo(-1);
+    }
+
+    @Test
+    public void testOngoingJobForRestartedIncrementalJobIsCreated()
+    {
+        UUID jobId = UUID.randomUUID();
+        OngoingJob ongoingJob = new OngoingJob.Builder()
+                .withOnDemandStatus(myOnDemandStatus)
+                .withReplicationState(myReplicationState)
+                .withTableReference(myTableReference)
+                .withOngoingJobInfo(jobId, myTokenMap.hashCode(), Collections.emptySet(), Status.started, null, RepairOptions.RepairType.INCREMENTAL)
+                .build();
+
+        assertThat(ongoingJob.getJobId()).isEqualTo(jobId);
+        assertThat(ongoingJob.getRepairedTokens()).isEqualTo(Collections.emptySet());
+        assertThat(ongoingJob.getTableReference()).isEqualTo(myTableReference);
+        assertThat(ongoingJob.getTokens()).isEqualTo(myTokenMap);
+        assertThat(ongoingJob.getStatus()).isEqualTo(Status.started);
+        assertThat(ongoingJob.getRepairType()).isEqualTo(RepairOptions.RepairType.INCREMENTAL);
         assertThat(ongoingJob.getCompletedTime()).isEqualTo(-1);
     }
 
@@ -129,7 +171,7 @@ public class TestOngoingJob
                 .withOnDemandStatus(myOnDemandStatus)
                 .withReplicationState(myReplicationState)
                 .withTableReference(myTableReference)
-                .withOngoingJobInfo(jobId, myTokenMap.hashCode(), repiaredTokens, Status.finished, 12345L)
+                .withOngoingJobInfo(jobId, myTokenMap.hashCode(), repiaredTokens, Status.finished, 12345L, RepairOptions.RepairType.VNODE)
                 .build();
 
         assertThat(ongoingJob.getJobId()).isEqualTo(jobId);
@@ -137,6 +179,56 @@ public class TestOngoingJob
         assertThat(ongoingJob.getTableReference()).isEqualTo(myTableReference);
         assertThat(ongoingJob.getTokens()).isEqualTo(myTokenMap);
         assertThat(ongoingJob.getStatus()).isEqualTo(Status.finished);
+        assertThat(ongoingJob.getRepairType()).isEqualTo(RepairOptions.RepairType.VNODE);
+        assertThat(ongoingJob.getCompletedTime()).isEqualTo(12345L);
+    }
+
+    @Test
+    public void testOngoingJobForFinishedJobWithoutRepairTypeIsCreated()
+    {
+        UUID jobId = UUID.randomUUID();
+        Set<LongTokenRange> expectedRepairedTokens = new HashSet<>();
+        expectedRepairedTokens.add(new LongTokenRange(-50L, 700L));
+        Set<UdtValue> repiaredTokens = new HashSet<>();
+        repiaredTokens.add(myUdtValue);
+
+        when(myOnDemandStatus.getStartTokenFrom(myUdtValue)).thenReturn(-50L);
+        when(myOnDemandStatus.getEndTokenFrom(myUdtValue)).thenReturn(700L);
+
+        OngoingJob ongoingJob = new OngoingJob.Builder()
+                .withOnDemandStatus(myOnDemandStatus)
+                .withReplicationState(myReplicationState)
+                .withTableReference(myTableReference)
+                .withOngoingJobInfo(jobId, myTokenMap.hashCode(), repiaredTokens, Status.finished, 12345L, null)
+                .build();
+
+        assertThat(ongoingJob.getJobId()).isEqualTo(jobId);
+        assertThat(ongoingJob.getRepairedTokens()).isEqualTo(expectedRepairedTokens);
+        assertThat(ongoingJob.getTableReference()).isEqualTo(myTableReference);
+        assertThat(ongoingJob.getTokens()).isEqualTo(myTokenMap);
+        assertThat(ongoingJob.getStatus()).isEqualTo(Status.finished);
+        assertThat(ongoingJob.getRepairType()).isEqualTo(RepairOptions.RepairType.VNODE);
+        assertThat(ongoingJob.getCompletedTime()).isEqualTo(12345L);
+    }
+
+    @Test
+    public void testOngoingJobForFinishedIncrementalJobIsCreated()
+    {
+        UUID jobId = UUID.randomUUID();
+
+        OngoingJob ongoingJob = new OngoingJob.Builder()
+                .withOnDemandStatus(myOnDemandStatus)
+                .withReplicationState(myReplicationState)
+                .withTableReference(myTableReference)
+                .withOngoingJobInfo(jobId, myTokenMap.hashCode(), Collections.emptySet(), Status.finished, 12345L, RepairOptions.RepairType.INCREMENTAL)
+                .build();
+
+        assertThat(ongoingJob.getJobId()).isEqualTo(jobId);
+        assertThat(ongoingJob.getRepairedTokens()).isEqualTo(Collections.emptySet());
+        assertThat(ongoingJob.getTableReference()).isEqualTo(myTableReference);
+        assertThat(ongoingJob.getTokens()).isEqualTo(myTokenMap);
+        assertThat(ongoingJob.getStatus()).isEqualTo(Status.finished);
+        assertThat(ongoingJob.getRepairType()).isEqualTo(RepairOptions.RepairType.INCREMENTAL);
         assertThat(ongoingJob.getCompletedTime()).isEqualTo(12345L);
     }
 
@@ -230,7 +322,7 @@ public class TestOngoingJob
                 .withOnDemandStatus(myOnDemandStatus)
                 .withReplicationState(myReplicationState)
                 .withTableReference(myTableReference)
-                .withOngoingJobInfo(jobId, myTokenMap.keySet().hashCode(), repiaredTokens, Status.started, null)
+                .withOngoingJobInfo(jobId, myTokenMap.keySet().hashCode(), repiaredTokens, Status.started, null, null)
                 .build();
 
         boolean result = ongoingJob.hasTopologyChanged();
@@ -251,7 +343,7 @@ public class TestOngoingJob
                 .withOnDemandStatus(myOnDemandStatus)
                 .withReplicationState(myReplicationState)
                 .withTableReference(myTableReference)
-                .withOngoingJobInfo(jobId, myTokenMap.keySet().hashCode() - 1, repiaredTokens, Status.started, null)
+                .withOngoingJobInfo(jobId, myTokenMap.keySet().hashCode() - 1, repiaredTokens, Status.started, null, null)
                 .build();
 
         boolean result = ongoingJob.hasTopologyChanged();
@@ -313,9 +405,9 @@ public class TestOngoingJob
                 .withTableReference(myTableReference)
                 .build();
         UUID jobId = ongoingJob.getJobId();
-        verify(myOnDemandStatus).addNewJob(jobId, myTableReference, ongoingJob.getTokens().keySet().hashCode());
+        verify(myOnDemandStatus).addNewJob(jobId, myTableReference, ongoingJob.getTokens().keySet().hashCode(), RepairOptions.RepairType.VNODE);
 
-        ongoingJob.startClusterWideJob();
+        ongoingJob.startClusterWideJob(false);
 
         Set<LongTokenRange> repairedRangesNode2 = new HashSet<>();
         //Node2 will repair range6 and range7
@@ -326,7 +418,7 @@ public class TestOngoingJob
         repairedRangesNode2.add(range5);
         repairedRangesNode2.add(range8);
         repairedRangesNode2.add(range9);
-        verify(myOnDemandStatus).addNewJob(node2.getId(), jobId, myTableReference, allTokenMap.keySet().hashCode(), repairedRangesNode2);
+        verify(myOnDemandStatus).addNewJob(node2.getId(), jobId, myTableReference, allTokenMap.keySet().hashCode(), repairedRangesNode2, RepairOptions.RepairType.VNODE);
 
         Set<LongTokenRange> repairedRangesNode3 = new HashSet<>();
         //Node3 will repair range8
@@ -338,7 +430,7 @@ public class TestOngoingJob
         repairedRangesNode3.add(range6);
         repairedRangesNode3.add(range7);
         repairedRangesNode3.add(range9);
-        verify(myOnDemandStatus).addNewJob(node3.getId(), jobId, myTableReference, allTokenMap.keySet().hashCode(), repairedRangesNode3);
+        verify(myOnDemandStatus).addNewJob(node3.getId(), jobId, myTableReference, allTokenMap.keySet().hashCode(), repairedRangesNode3, RepairOptions.RepairType.VNODE);
 
         Set<LongTokenRange> repairedRangesNode4 = new HashSet<>();
         //Node4 will repair range9, ranges range1-range5 shouldn't be here since node4 is not replica for those
@@ -351,7 +443,78 @@ public class TestOngoingJob
         node4TokenMap.put(range7, range7Replicas);
         node4TokenMap.put(range8, range8Replicas);
         node4TokenMap.put(range9, range9Replicas);
-        verify(myOnDemandStatus).addNewJob(node4.getId(), jobId, myTableReference, node4TokenMap.keySet().hashCode(), repairedRangesNode4);
+        verify(myOnDemandStatus).addNewJob(node4.getId(), jobId, myTableReference, node4TokenMap.keySet().hashCode(), repairedRangesNode4, RepairOptions.RepairType.VNODE);
+        verifyNoMoreInteractions(myOnDemandStatus);
+    }
+
+    @Test
+    public void testStartIncrementalClusterWideJob()
+    {
+        Map<LongTokenRange, ImmutableSet<DriverNode>> thisNodeTokenMap = new HashMap<>();
+        DriverNode node1 = mock(DriverNode.class);
+        DriverNode node2 = mock(DriverNode.class);
+        UUID node2Id = UUID.randomUUID();
+        when(node2.getId()).thenReturn(node2Id);
+        DriverNode node3 = mock(DriverNode.class);
+        UUID node3Id = UUID.randomUUID();
+        when(node3.getId()).thenReturn(node3Id);
+        DriverNode node4 = mock(DriverNode.class);
+        UUID node4Id = UUID.randomUUID();
+        when(node4.getId()).thenReturn(node4Id);
+
+        LongTokenRange range1 = new LongTokenRange(1, 2);
+        ImmutableSet<DriverNode> range1Replicas = ImmutableSet.of(node1, node2, node3);
+        LongTokenRange range2 = new LongTokenRange(2, 3);
+        ImmutableSet<DriverNode> range2Replicas = ImmutableSet.of(node1, node2, node3);
+        LongTokenRange range3 = new LongTokenRange(3, 4);
+        ImmutableSet<DriverNode> range3Replicas = ImmutableSet.of(node2, node1, node3);
+        LongTokenRange range4 = new LongTokenRange(4, 5);
+        ImmutableSet<DriverNode> range4Replicas = ImmutableSet.of(node2, node1, node3);
+        LongTokenRange range5 = new LongTokenRange(5, 6);
+        ImmutableSet<DriverNode> range5Replicas = ImmutableSet.of(node3, node2, node1);
+
+        LongTokenRange range6 = new LongTokenRange(6, 7);
+        ImmutableSet<DriverNode> range6Replicas = ImmutableSet.of(node2, node3, node4);
+        LongTokenRange range7 = new LongTokenRange(7, 8);
+        ImmutableSet<DriverNode> range7Replicas = ImmutableSet.of(node2, node3, node4);
+        LongTokenRange range8 = new LongTokenRange(8, 9);
+        ImmutableSet<DriverNode> range8Replicas = ImmutableSet.of(node3, node2, node4);
+        LongTokenRange range9 = new LongTokenRange(9, 10);
+        ImmutableSet<DriverNode> range9Replicas = ImmutableSet.of(node4, node3, node2);
+
+        thisNodeTokenMap.put(range1, range1Replicas);
+        thisNodeTokenMap.put(range2, range2Replicas);
+        thisNodeTokenMap.put(range3, range3Replicas);
+        thisNodeTokenMap.put(range4, range4Replicas);
+        thisNodeTokenMap.put(range5, range5Replicas);
+
+        Map<LongTokenRange, ImmutableSet<DriverNode>> allTokenMap = new HashMap<>();
+        allTokenMap.put(range1, range1Replicas);
+        allTokenMap.put(range2, range2Replicas);
+        allTokenMap.put(range3, range3Replicas);
+        allTokenMap.put(range4, range4Replicas);
+        allTokenMap.put(range5, range5Replicas);
+        allTokenMap.put(range6, range6Replicas);
+        allTokenMap.put(range7, range7Replicas);
+        allTokenMap.put(range8, range8Replicas);
+        allTokenMap.put(range9, range9Replicas);
+        ReplicationState replicationState = mock(ReplicationState.class);
+        when(replicationState.getTokenRangeToReplicas(myTableReference)).thenReturn(thisNodeTokenMap);
+        when(replicationState.getTokenRanges(myTableReference)).thenReturn(allTokenMap);
+        OngoingJob ongoingJob = new OngoingJob.Builder()
+                .withOnDemandStatus(myOnDemandStatus)
+                .withReplicationState(replicationState)
+                .withTableReference(myTableReference)
+                .withRepairType(RepairOptions.RepairType.INCREMENTAL)
+                .build();
+        UUID jobId = ongoingJob.getJobId();
+        verify(myOnDemandStatus).addNewJob(jobId, myTableReference, ongoingJob.getTokens().keySet().hashCode(), RepairOptions.RepairType.INCREMENTAL);
+
+        ongoingJob.startClusterWideJob(true);
+
+        verify(myOnDemandStatus).addNewJob(node2Id, jobId, myTableReference, 0, Collections.emptySet(), RepairOptions.RepairType.INCREMENTAL);
+        verify(myOnDemandStatus).addNewJob(node3Id, jobId, myTableReference, 0, Collections.emptySet(), RepairOptions.RepairType.INCREMENTAL);
+        verify(myOnDemandStatus).addNewJob(node4Id, jobId, myTableReference, 0, Collections.emptySet(), RepairOptions.RepairType.INCREMENTAL);
         verifyNoMoreInteractions(myOnDemandStatus);
     }
 }

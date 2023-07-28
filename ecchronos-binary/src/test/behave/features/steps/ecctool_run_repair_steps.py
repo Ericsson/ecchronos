@@ -18,7 +18,7 @@ from ecc_step_library.common_steps import match_and_remove_row, validate_header,
 
 
 TABLE_ROW_FORMAT_PATTERN = r'\| .* \| .* \| {0} \| {1} \| (COMPLETED|IN_QUEUE|WARNING|ERROR) \| \d+[.]\d+ \| .* \|'
-TABLE_HEADER = r'| Id | Host Id | Keyspace | Table | Status | Repaired(%) | Completed at |'
+TABLE_HEADER = r'| Id | Host Id | Keyspace | Table | Status | Repaired(%) | Completed at | Repair type |'
 
 
 def run_ecc_run_repair(context, params):

@@ -29,8 +29,8 @@ public class TestRepairConfiguration
     private static final RepairOptions.RepairParallelism DEFAULT_REPAIR_PARALLELISM = RepairOptions.RepairParallelism.PARALLEL;
     private static final double DEFAULT_REPAIR_UNWIND_RATIO = 0.0d;
     private static final long DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES = Long.MAX_VALUE;
-
     private static final long DEFAULT_BACKOFF_IN_MS = TimeUnit.MINUTES.toMillis(30);
+    private static final RepairOptions.RepairType DEFAULT_REPAIR_TYPE = RepairOptions.RepairType.VNODE;
 
     @Test
     public void testDefaultValues()
@@ -46,6 +46,7 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
         assertThat(repairConfiguration.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
         assertThat(repairConfiguration.getBackoffInMs()).isEqualTo(DEFAULT_BACKOFF_IN_MS);
+        assertThat(repairConfiguration.getRepairType()).isEqualTo(DEFAULT_REPAIR_TYPE);
     }
 
     @Test
@@ -62,6 +63,7 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
         assertThat(repairConfiguration.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
         assertThat(repairConfiguration.getBackoffInMs()).isEqualTo(DEFAULT_BACKOFF_IN_MS);
+        assertThat(repairConfiguration.getRepairType()).isEqualTo(DEFAULT_REPAIR_TYPE);
     }
 
     @Test
@@ -78,6 +80,7 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
         assertThat(repairConfiguration.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
         assertThat(repairConfiguration.getBackoffInMs()).isEqualTo(DEFAULT_BACKOFF_IN_MS);
+        assertThat(repairConfiguration.getRepairType()).isEqualTo(DEFAULT_REPAIR_TYPE);
     }
 
     @Test
@@ -94,6 +97,7 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
         assertThat(repairConfiguration.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
         assertThat(repairConfiguration.getBackoffInMs()).isEqualTo(DEFAULT_BACKOFF_IN_MS);
+        assertThat(repairConfiguration.getRepairType()).isEqualTo(DEFAULT_REPAIR_TYPE);
     }
 
     @Test
@@ -110,6 +114,7 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(1.0d);
         assertThat(repairConfiguration.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
         assertThat(repairConfiguration.getBackoffInMs()).isEqualTo(DEFAULT_BACKOFF_IN_MS);
+        assertThat(repairConfiguration.getRepairType()).isEqualTo(DEFAULT_REPAIR_TYPE);
     }
 
     @Test
@@ -126,6 +131,7 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
         assertThat(repairConfiguration.getTargetRepairSizeInBytes()).isEqualTo(1024L);
         assertThat(repairConfiguration.getBackoffInMs()).isEqualTo(DEFAULT_BACKOFF_IN_MS);
+        assertThat(repairConfiguration.getRepairType()).isEqualTo(DEFAULT_REPAIR_TYPE);
     }
 
     @Test
@@ -142,6 +148,24 @@ public class TestRepairConfiguration
         assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
         assertThat(repairConfiguration.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
         assertThat(repairConfiguration.getBackoffInMs()).isEqualTo(1000L);
+        assertThat(repairConfiguration.getRepairType()).isEqualTo(DEFAULT_REPAIR_TYPE);
+    }
+
+    @Test
+    public void testSetRepairType()
+    {
+        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
+                .withRepairType(RepairOptions.RepairType.INCREMENTAL)
+                .build();
+
+        assertThat(repairConfiguration.getRepairParallelism()).isEqualTo(DEFAULT_REPAIR_PARALLELISM);
+        assertThat(repairConfiguration.getRepairIntervalInMs()).isEqualTo(DEFAULT_REPAIR_INTERVAL_IN_MS);
+        assertThat(repairConfiguration.getRepairWarningTimeInMs()).isEqualTo(DEFAULT_REPAIR_WARNING_TIME_IN_MS);
+        assertThat(repairConfiguration.getRepairErrorTimeInMs()).isEqualTo(DEFAULT_REPAIR_ERROR_TIME_IN_MS);
+        assertThat(repairConfiguration.getRepairUnwindRatio()).isEqualTo(DEFAULT_REPAIR_UNWIND_RATIO);
+        assertThat(repairConfiguration.getTargetRepairSizeInBytes()).isEqualTo(DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES);
+        assertThat(repairConfiguration.getBackoffInMs()).isEqualTo(DEFAULT_BACKOFF_IN_MS);
+        assertThat(repairConfiguration.getRepairType()).isEqualTo(RepairOptions.RepairType.INCREMENTAL);
     }
 
     @Test

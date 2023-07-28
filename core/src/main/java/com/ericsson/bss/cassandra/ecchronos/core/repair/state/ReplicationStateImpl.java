@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -72,6 +73,21 @@ public class ReplicationStateImpl implements ReplicationState
 
         ImmutableMap<LongTokenRange, ImmutableSet<DriverNode>> replication = maybeRenew(keyspace);
         return getNodes(replication, tokenRange);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ImmutableSet<DriverNode> getReplicas(final TableReference tableReference)
+    {
+        Map<LongTokenRange, ImmutableSet<DriverNode>> tokens = getTokenRangeToReplicas(tableReference);
+        Set<DriverNode> allReplicas = new HashSet<>();
+        for (ImmutableSet<DriverNode> replicas : tokens.values())
+        {
+            allReplicas.addAll(replicas);
+        }
+        return ImmutableSet.copyOf(allReplicas);
     }
 
     /**

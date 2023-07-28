@@ -90,4 +90,22 @@ public interface JmxProxy extends Closeable
      * @return The live disk space used by the provided table.
      */
     long liveDiskSpaceUsed(TableReference tableReference);
+
+    /**
+     * Get max repaired at for the provided table.
+     * Only usable when running incremental repairs.
+     *
+     * @param tableReference The table to get max repaired at for.
+     * @return Max repaired at or 0 if it cannot be determined.
+     */
+    long getMaxRepairedAt(TableReference tableReference);
+
+    /**
+     * Gets repaired ratio for a specific table.
+     * Only usable when running incremental repairs.
+     *
+     * @param tableReference The table to get repaired ratio for.
+     * @return The repaired ratio or 0 if it cannot be determined.
+     */
+    double getPercentRepaired(TableReference tableReference);
 }

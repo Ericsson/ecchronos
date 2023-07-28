@@ -53,7 +53,6 @@ import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 public class ECChronos implements Closeable
 {
     private final ECChronosInternals myECChronosInternals;
-
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
     private final RepairSchedulerImpl myRepairSchedulerImpl;
     private final OnDemandRepairSchedulerImpl myOnDemandRepairSchedulerImpl;
@@ -99,10 +98,12 @@ public class ECChronos implements Closeable
                 .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
                 .withScheduleManager(myECChronosInternals.getScheduleManager())
                 .withRepairStateFactory(repairStateFactoryImpl)
+                .withReplicationState(replicationState)
                 .withRepairLockType(repairConfig.getLockType())
                 .withTableStorageStates(myECChronosInternals.getTableStorageStates())
                 .withRepairPolicies(Collections.singletonList(myTimeBasedRunPolicy))
                 .withRepairHistory(repairHistory)
+                .withCassandraMetrics(myECChronosInternals.getCassandraMetrics())
                 .build();
 
         AbstractRepairConfigurationProvider repairConfigurationProvider = ReflectionUtils

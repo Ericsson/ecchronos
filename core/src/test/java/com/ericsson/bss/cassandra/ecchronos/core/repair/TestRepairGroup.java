@@ -24,9 +24,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.ignoreStubs;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -100,14 +98,14 @@ public class TestRepairGroup
 
     private final UUID myJobId = UUID.randomUUID();
 
-    private RepairConfiguration repairConfiguration;
+    private RepairConfiguration myRepairConfiguration;
 
     @Before
     public void init()
     {
         when(myRepairHistory.newSession(any(), any(), any(), any())).thenReturn(myRepairSession);
 
-        repairConfiguration = RepairConfiguration.newBuilder()
+        myRepairConfiguration = RepairConfiguration.newBuilder()
                 .withParallelism(RepairOptions.RepairParallelism.PARALLEL)
                 .withRepairWarningTime(RUN_INTERVAL_IN_DAYS * 2, TimeUnit.DAYS)
                 .withRepairErrorTime(GC_GRACE_DAYS, TimeUnit.DAYS)
@@ -181,12 +179,37 @@ public class TestRepairGroup
         Collection<RepairTask> repairTasks = repairGroup.getRepairTasks();
 
         assertThat(repairTasks).hasSize(1);
-        SubrangeRepairTask repairTask = (SubrangeRepairTask) repairTasks.iterator().next();
+        VnodeRepairTask repairTask = (VnodeRepairTask) repairTasks.iterator().next();
 
         assertThat(repairTask.getReplicas()).containsExactlyInAnyOrderElementsOf(nodes);
         assertThat(repairTask.getTokenRanges()).containsExactly(range);
         assertThat(repairTask.getTableReference()).isEqualTo(tableReference);
         assertThat(repairTask.getRepairConfiguration().getRepairParallelism()).isEqualTo(RepairOptions.RepairParallelism.PARALLEL);
+    }
+
+    @Test
+    public void testGetIncrementalRepairTask()
+    {
+        DriverNode node = mockNode("DC1");
+        ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(), System.currentTimeMillis());
+        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
+                .withParallelism(RepairOptions.RepairParallelism.PARALLEL)
+                .withRepairWarningTime(RUN_INTERVAL_IN_DAYS * 2, TimeUnit.DAYS)
+                .withRepairErrorTime(GC_GRACE_DAYS, TimeUnit.DAYS)
+                .withRepairType(RepairOptions.RepairType.INCREMENTAL)
+                .build();
+
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).withRepairConfiguration(repairConfiguration).build(priority);
+
+        Collection<RepairTask> repairTasks = repairGroup.getRepairTasks();
+
+        assertThat(repairTasks).hasSize(1);
+        IncrementalRepairTask repairTask = (IncrementalRepairTask) repairTasks.iterator().next();
+
+        assertThat(repairTask.getTableReference()).isEqualTo(tableReference);
+        assertThat(repairTask.getRepairConfiguration().getRepairParallelism()).isEqualTo(RepairOptions.RepairParallelism.PARALLEL);
+        assertThat(repairTask.getRepairConfiguration().getRepairType()).isEqualTo(RepairOptions.RepairType.INCREMENTAL);
     }
 
     @Test
@@ -222,7 +245,7 @@ public class TestRepairGroup
         for (LongTokenRange expectedRange : expectedTokenRanges)
         {
             assertThat(iterator.hasNext()).isTrue();
-            SubrangeRepairTask repairTask = (SubrangeRepairTask) iterator.next();
+            VnodeRepairTask repairTask = (VnodeRepairTask) iterator.next();
 
             assertThat(repairTask.getReplicas()).containsExactlyInAnyOrderElementsOf(nodes);
             assertThat(repairTask.getTokenRanges()).containsExactly(expectedRange);
@@ -255,7 +278,7 @@ public class TestRepairGroup
 
         for (RepairTask task : tasks)
         {
-            SubrangeRepairTask repairTask = (SubrangeRepairTask) task;
+            VnodeRepairTask repairTask = (VnodeRepairTask) task;
             assertThat(repairTask.getTokenRanges().size()).isEqualTo(1);
             LongTokenRange range = repairTask.getTokenRanges().iterator().next();
             repairTaskRanges.add(range);
@@ -347,7 +370,7 @@ public class TestRepairGroup
     {
         return RepairGroup.newBuilder()
                 .withTableReference(tableReference)
-                .withRepairConfiguration(repairConfiguration)
+                .withRepairConfiguration(myRepairConfiguration)
                 .withReplicaRepairGroup(replicaRepairGroup)
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withTableRepairMetrics(myTableRepairMetrics)

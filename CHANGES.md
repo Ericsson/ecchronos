@@ -2,6 +2,7 @@
 
 ## Version 5.0.0
 
+* Add support for incremental repairs - Issue #31
 * Bump java driver from 4.14.1 to 4.17.0
 * Bump guava from 31.1 to 32.0.1 (CVE-2023-2976)
 * Fix shebang in ecctool - Issue #504

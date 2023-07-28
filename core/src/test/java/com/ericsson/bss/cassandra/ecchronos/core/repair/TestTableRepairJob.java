@@ -34,6 +34,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -326,7 +327,7 @@ public class TestTableRepairJob
         Collection<RepairTask> repairTasks = ((RepairGroup) task).getRepairTasks();
 
         assertThat(repairTasks).hasSize(1);
-        SubrangeRepairTask repairTask = (SubrangeRepairTask) repairTasks.iterator().next();
+        VnodeRepairTask repairTask = (VnodeRepairTask) repairTasks.iterator().next();
         assertThat(repairTask.getReplicas()).containsExactlyInAnyOrderElementsOf(replicas);
         assertThat(repairTask.getTokenRanges()).containsExactly(tokenRange);
         assertThat(repairTask.getRepairConfiguration()).isEqualTo(myRepairConfiguration);
@@ -378,7 +379,7 @@ public class TestTableRepairJob
         for (LongTokenRange expectedRange : expectedTokenRanges)
         {
             assertThat(repairTaskIterator.hasNext()).isTrue();
-            SubrangeRepairTask repairTask = (SubrangeRepairTask) repairTaskIterator.next();
+            VnodeRepairTask repairTask = (VnodeRepairTask) repairTaskIterator.next();
             assertThat(repairTask.getReplicas()).containsExactlyInAnyOrderElementsOf(replicas);
             assertThat(repairTask.getRepairConfiguration()).isEqualTo(myRepairConfiguration);
             assertThat(repairTask.getTableReference()).isEqualTo(myTableReference);
@@ -606,6 +607,12 @@ public class TestTableRepairJob
         ReplicaRepairGroup secondReplicaRepairGroup = getRepairGroup(new LongTokenRange(2, 3), secondRepairGroupLastRepairedAt);
         mockRepairGroup(secondReplicaRepairGroup, firstReplicaRepairGroup);
         assertThat(myRepairJob.getRealPriority()).isEqualTo(2);
+    }
+
+    @Test
+    public void testEqualsAndHashcode()
+    {
+        EqualsVerifier.simple().forClass(TableRepairJob.class).withRedefinedSuperclass().verify();
     }
 
     private void mockRepairGroup(long lastRepairedAt)

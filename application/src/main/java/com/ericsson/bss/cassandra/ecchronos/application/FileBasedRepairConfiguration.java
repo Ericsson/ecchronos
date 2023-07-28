@@ -14,7 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
-import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.context.ApplicationContext;
 
@@ -46,8 +46,8 @@ public class FileBasedRepairConfiguration extends AbstractRepairConfigurationPro
     }
 
     @Override
-    public final Optional<RepairConfiguration> forTable(final TableReference tableReference)
+    public final Set<RepairConfiguration> forTable(final TableReference tableReference)
     {
-        return repairSchedule.getRepairConfiguration(tableReference.getKeyspace(), tableReference.getTable());
+        return repairSchedule.getRepairConfigurations(tableReference.getKeyspace(), tableReference.getTable());
     }
 }

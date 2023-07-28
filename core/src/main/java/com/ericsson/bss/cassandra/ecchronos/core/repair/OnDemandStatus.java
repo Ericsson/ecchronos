@@ -60,6 +60,7 @@ public class OnDemandStatus
     private static final String HOST_ID_COLUMN_NAME = "host_id";
     private static final String STATUS_COLUMN_NAME = "status";
     private static final String JOB_ID_COLUMN_NAME = "job_id";
+    private static final String REPAIR_TYPE_COLUMN_NAME = "repair_type";
     private static final String TABLE_REFERENCE_COLUMN_NAME = "table_reference";
     private static final String TOKEN_MAP_HASH_COLUMN_NAME = "token_map_hash";
     private static final String REPAIRED_TOKENS_COLUMN_NAME = "repaired_tokens";
@@ -112,6 +113,7 @@ public class OnDemandStatus
                 .value(TABLE_REFERENCE_COLUMN_NAME, bindMarker())
                 .value(TOKEN_MAP_HASH_COLUMN_NAME, bindMarker())
                 .value(REPAIRED_TOKENS_COLUMN_NAME, bindMarker())
+                .value(REPAIR_TYPE_COLUMN_NAME, bindMarker())
                 .value(STATUS_COLUMN_NAME, literal("started"))
                 .build().setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
         SimpleStatement updateRepairedTokenForJobStatement = update(KEYSPACE_NAME, TABLE_NAME)
@@ -252,6 +254,12 @@ public class OnDemandStatus
         String table = uDTTableReference.getString(UDT_TABLE_NAME);
         TableReference tableReference = myTableReferenceFactory.forTable(keyspace, table);
         Instant completed = row.get(COMPLETED_TIME_COLUMN_NAME, Instant.class);
+        RepairOptions.RepairType repairType = RepairOptions.RepairType.VNODE;
+        String repairTypeStr = row.getString(REPAIR_TYPE_COLUMN_NAME);
+        if (repairTypeStr != null && !repairTypeStr.isEmpty())
+        {
+            repairType = RepairOptions.RepairType.valueOf(repairTypeStr);
+        }
         Long completedTime = null;
         if (completed != null)
         {
@@ -264,8 +272,9 @@ public class OnDemandStatus
                     .withOnDemandStatus(this)
                     .withTableReference(tableReference)
                     .withReplicationState(replicationState)
-                    .withOngoingJobInfo(jobId, tokenMapHash, repairedTokens, status, completedTime)
+                    .withOngoingJobInfo(jobId, tokenMapHash, repairedTokens, status, completedTime, repairType)
                     .withHostId(hostId)
+                    .withRepairType(repairType)
                     .build();
             ongoingJobs.add(ongoingJob);
         }
@@ -283,9 +292,10 @@ public class OnDemandStatus
      * @param tableReference The table reference.
      * @param tokenMapHash The token map hash.
      */
-    public void addNewJob(final UUID jobId, final TableReference tableReference, final int tokenMapHash)
+    public void addNewJob(final UUID jobId, final TableReference tableReference, final int tokenMapHash,
+            final RepairOptions.RepairType repairType)
     {
-        addNewJob(myHostId, jobId, tableReference, tokenMapHash, Collections.EMPTY_SET);
+        addNewJob(myHostId, jobId, tableReference, tokenMapHash, Collections.EMPTY_SET, repairType);
     }
 
     /**
@@ -301,7 +311,8 @@ public class OnDemandStatus
                           final UUID jobId,
                           final TableReference tableReference,
                           final int tokenMapHash,
-                          final Set<LongTokenRange> repairedRanges)
+                          final Set<LongTokenRange> repairedRanges,
+                          final RepairOptions.RepairType repairType)
     {
         Set<UdtValue> repairedRangesUDT = new HashSet<>();
         if (repairedRanges != null)
@@ -312,7 +323,7 @@ public class OnDemandStatus
                 .setString(UDT_KEYSPACE_NAME, tableReference.getKeyspace())
                 .setString(UDT_TABLE_NAME, tableReference.getTable());
         BoundStatement statement = myInsertNewJobStatement.bind(host, jobId, uDTTableReference, tokenMapHash,
-                repairedRangesUDT);
+                repairedRangesUDT, repairType.toString());
         mySession.execute(statement);
     }
 

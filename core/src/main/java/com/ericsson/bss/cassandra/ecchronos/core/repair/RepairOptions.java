@@ -98,4 +98,10 @@ public final class RepairOptions
             return myName;
         }
     }
+
+    public enum RepairType
+    {
+        VNODE,
+        INCREMENTAL
+    }
 }

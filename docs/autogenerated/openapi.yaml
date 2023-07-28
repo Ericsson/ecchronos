@@ -82,6 +82,12 @@ paths:
         required: false
         schema:
           type: boolean
+      - name: isIncremental
+        in: query
+        description: Decides if the repair should be incremental
+        required: false
+        schema:
+          type: boolean
       responses:
         "200":
           description: OK
@@ -341,6 +347,7 @@ components:
       - hostId
       - id
       - keyspace
+      - repairType
       - repairedRatio
       - status
       - table
@@ -373,6 +380,11 @@ components:
           minimum: -1
           type: integer
           format: int64
+        repairType:
+          type: string
+          enum:
+          - VNODE
+          - INCREMENTAL
     Schedule:
       required:
       - config
@@ -380,6 +392,7 @@ components:
       - keyspace
       - lastRepairedAtInMs
       - nextRepairInMs
+      - repairType
       - repairedRatio
       - status
       - table
@@ -413,6 +426,11 @@ components:
           format: int64
         config:
           $ref: '#/components/schemas/ScheduleConfig'
+        repairType:
+          type: string
+          enum:
+          - VNODE
+          - INCREMENTAL
         virtualNodeStates:
           type: array
           items:

@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.NotificationListener;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
+import javax.management.openmbean.CompositeData;
 import javax.management.remote.JMXConnector;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -45,8 +47,10 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
     private static final Logger LOG = LoggerFactory.getLogger(JmxProxyFactoryImpl.class);
 
     private static final String SS_OBJ_NAME = "org.apache.cassandra.db:type=StorageService";
+    private static final String RS_OBJ_NAME = "org.apache.cassandra.db:type=RepairService";
 
     private static final String REPAIR_ASYNC_METHOD = "repairAsync";
+    private static final String REPAIR_STATS_METHOD = "getRepairStats";
     private static final String FORCE_TERMINATE_ALL_REPAIR_SESSIONS_METHOD = "forceTerminateAllRepairSessions";
     private static final String LIVE_NODES_ATTRIBUTE = "LiveNodes";
     private static final String UNREACHABLE_NODES_ATTRIBUTE = "UnreachableNodes";
@@ -67,7 +71,7 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
 
             return new InternalJmxProxy(jmxConnector,
                     jmxConnector.getMBeanServerConnection(),
-                    new ObjectName(SS_OBJ_NAME));
+                    new ObjectName(SS_OBJ_NAME), new ObjectName(RS_OBJ_NAME));
         }
         catch (MalformedObjectNameException e)
         {
@@ -79,16 +83,18 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
     {
         private final JMXConnector myJmxConnector;
         private final MBeanServerConnection myMbeanServerConnection;
-
         private final ObjectName myStorageServiceObject;
+        private final ObjectName myRepairServiceObject;
 
         private InternalJmxProxy(final JMXConnector jmxConnector,
                                  final MBeanServerConnection mbeanServerConnection,
-                                 final ObjectName storageServiceObject)
+                                 final ObjectName storageServiceObject,
+                                 final ObjectName repairServiceObject)
         {
             myJmxConnector = jmxConnector;
             myMbeanServerConnection = mbeanServerConnection;
             myStorageServiceObject = storageServiceObject;
+            myRepairServiceObject = repairServiceObject;
         }
 
         @Override
@@ -244,6 +250,63 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
             }
 
             return 0;
+        }
+
+        @Override
+        public long getMaxRepairedAt(final TableReference tableReference)
+        {
+            try
+            {
+                List<String> args = new ArrayList<>();
+                args.add(tableReference.getKeyspace());
+                args.add(tableReference.getTable());
+                List<CompositeData> compositeDatas = (List<CompositeData>) myMbeanServerConnection.invoke(
+                        myRepairServiceObject, REPAIR_STATS_METHOD,
+                        new Object[]
+                        {
+                                args, null
+                        },
+                        new String[]
+                        {
+                                List.class.getName(),
+                                String.class.getName()
+                        });
+                for (CompositeData data : compositeDatas)
+                {
+                    long maxRepaired = (long) data.getAll(new String[]{"maxRepaired"})[0];
+                    return maxRepaired;
+                }
+            }
+            catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
+            {
+                LOG.error("Unable to get maxRepaired for {}", tableReference, e);
+            }
+            return 0;
+        }
+
+        @Override
+        public double getPercentRepaired(final TableReference tableReference)
+        {
+            try
+            {
+                ObjectName objectName
+                        = new ObjectName(String
+                        .format("org.apache.cassandra.metrics:type=Table,keyspace=%s,scope=%s,name=PercentRepaired",
+                                tableReference.getKeyspace(), tableReference.getTable()));
+
+                double percentRepaired = (double) myMbeanServerConnection.getAttribute(objectName, "Value");
+                return percentRepaired;
+            }
+            catch (AttributeNotFoundException
+                   | InstanceNotFoundException
+                   | MBeanException
+                   | ReflectionException
+                   | IOException
+                   | MalformedObjectNameException e)
+            {
+                LOG.error("Unable to retrieve disk space usage for {}", tableReference, e);
+            }
+            return 0.0;
         }
     }
 

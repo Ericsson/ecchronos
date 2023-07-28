@@ -111,10 +111,9 @@ def add_schedules_subcommand(sub_parsers):
 def add_run_repair_subcommand(sub_parsers):
     parser_run_repair = sub_parsers.add_parser("run-repair",
                                                description="Run a manual repair. The manual repair will be triggered "
-                                                           "in ecChronos, which will group sub-ranges by nodes that "
-                                                           "have them in common. Afterwards, each sub-range will be "
-                                                           "repaired once through Cassandra JMX interface. This "
-                                                           "subcommand has no mandatory parameters.")
+                                                           "in ecChronos. EcChronos will perform repair through "
+                                                           "Cassandra JMX interface. This subcommand has no "
+                                                           "mandatory parameters.")
     parser_run_repair.add_argument("-u", "--url", type=str,
                                    help="The ecChronos host to connect to, specified in the format "
                                         "http://<host>:<port>.",
@@ -122,6 +121,8 @@ def add_run_repair_subcommand(sub_parsers):
     parser_run_repair.add_argument("--local", action='store_true',
                                    help='Run repair for the local node only, i.e repair will only be performed for '
                                         'the ranges that the local node is a replica for.', default=False)
+    parser_run_repair.add_argument("--incremental", action='store_true',
+                                   help='Run the repair as an incremental repair', default=False)
     parser_run_repair.add_argument("-k", "--keyspace", type=str,
                                    help="Run repair for the specified keyspace. Repair will be run for all tables "
                                         "within the keyspace with replication factor higher than 1.", required=False)
@@ -265,7 +266,8 @@ def run_repair(arguments):
     if not arguments.keyspace and arguments.table:
         print("--keyspace must be specified if table is specified")
         sys.exit(1)
-    result = request.post(keyspace=arguments.keyspace, table=arguments.table, local=arguments.local)
+    result = request.post(keyspace=arguments.keyspace, table=arguments.table, local=arguments.local,
+                          incremental=arguments.incremental)
     if result.is_successful():
         table_printer.print_repairs(result.data)
     else:

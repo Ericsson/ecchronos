@@ -32,13 +32,15 @@ public class OnDemandRepairJobView
     private final double myProgress;
     private final UUID myHostId;
     private final long myCompletionTime;
+    private final RepairOptions.RepairType myRepairType;
 
     public OnDemandRepairJobView(final UUID id,
                                  final UUID hostId,
                                  final TableReference tableReference,
                                  final Status status,
                                  final double progress,
-                                 final long completionTime)
+                                 final long completionTime,
+                                 final RepairOptions.RepairType repairType)
     {
         myId = id;
         myTableReference = tableReference;
@@ -46,6 +48,7 @@ public class OnDemandRepairJobView
         myProgress = progress;
         myHostId = hostId;
         myCompletionTime = completionTime;
+        myRepairType = repairType;
     }
 
     /**
@@ -109,6 +112,16 @@ public class OnDemandRepairJobView
     }
 
     /**
+     * Get repair type.
+     *
+     * @return RepairType
+     */
+    public RepairOptions.RepairType getRepairType()
+    {
+        return myRepairType;
+    }
+
+    /**
      * Equality check.
      *
      * @return boolean
@@ -126,8 +139,9 @@ public class OnDemandRepairJobView
         }
         OnDemandRepairJobView that = (OnDemandRepairJobView) o;
         return Double.compare(that.myProgress, myProgress) == 0 && myCompletionTime == that.myCompletionTime
-                && Objects.equals(myId, that.myId) && Objects.equals(myTableReference,
-                that.myTableReference) && myStatus == that.myStatus && Objects.equals(myHostId, that.myHostId);
+                && Objects.equals(myId, that.myId) && Objects.equals(myTableReference, that.myTableReference)
+                && myStatus == that.myStatus && Objects.equals(myHostId, that.myHostId)
+                && Objects.equals(myRepairType, that.myRepairType);
     }
 
     /**
@@ -138,6 +152,6 @@ public class OnDemandRepairJobView
     @Override
     public int hashCode()
     {
-        return Objects.hash(myId, myTableReference, myStatus, myProgress, myHostId, myCompletionTime);
+        return Objects.hash(myId, myTableReference, myStatus, myProgress, myHostId, myCompletionTime, myRepairType);
     }
 }

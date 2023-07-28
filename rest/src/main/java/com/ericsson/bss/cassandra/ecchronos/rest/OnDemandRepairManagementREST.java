@@ -50,7 +50,9 @@ public interface OnDemandRepairManagementREST
      * @param keyspace The keyspace of the table
      * @param table The table
      * @param isLocal If repair should be only run for the local node (optional)
+     * @param isIncremental If repair should be incremental (optional)
      * @return A JSON representation of {@link OnDemandRepair}
      */
-    ResponseEntity<List<OnDemandRepair>> runRepair(String keyspace, String table, boolean isLocal);
+    ResponseEntity<List<OnDemandRepair>> runRepair(String keyspace, String table, boolean isLocal,
+            boolean isIncremental);
 }
