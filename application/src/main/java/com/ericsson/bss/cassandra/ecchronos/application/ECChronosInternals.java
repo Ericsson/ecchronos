@@ -89,10 +89,7 @@ public class ECChronosInternals implements Closeable
 
         myReplicatedTableProvider = new ReplicatedTableProviderImpl(node, session, myTableReferenceFactory);
 
-        myCassandraMetrics = CassandraMetrics.builder()
-                .withJmxProxyFactory(myJmxProxyFactory)
-                .withReplicatedTableProvider(myReplicatedTableProvider)
-                .build();
+        myCassandraMetrics = new CassandraMetrics(myJmxProxyFactory);
 
         if (configuration.getStatisticsConfig().isEnabled())
         {
