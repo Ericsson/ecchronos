@@ -79,7 +79,7 @@ public class ECChronosInternals implements Closeable
                 .withNativeConnectionProvider(nativeConnectionProvider)
                 .withHostStates(myHostStatesImpl)
                 .withStatementDecorator(statementDecorator)
-                .withKeyspaceName(configuration.getLockFactory().getCas().getKeyspace())
+                .withKeyspaceName(configuration.getLockFactory().getCasLockFactoryConfig().getKeyspaceName())
                 .build();
 
         Node node = nativeConnectionProvider.getLocalNode();
@@ -94,7 +94,7 @@ public class ECChronosInternals implements Closeable
                 .withReplicatedTableProvider(myReplicatedTableProvider)
                 .build();
 
-        if (configuration.getStatistics().isEnabled())
+        if (configuration.getStatisticsConfig().isEnabled())
         {
             myTableStorageStatesImpl = TableStorageStatesImpl.builder()
                     .withReplicatedTableProvider(myReplicatedTableProvider)
@@ -113,7 +113,7 @@ public class ECChronosInternals implements Closeable
         }
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withLockFactory(myLockFactory)
-                .withRunInterval(configuration.getScheduler().getFrequency().getInterval(TimeUnit.MILLISECONDS),
+                .withRunInterval(configuration.getSchedulerConfig().getFrequency().getInterval(TimeUnit.MILLISECONDS),
                         TimeUnit.MILLISECONDS)
                 .build();
     }

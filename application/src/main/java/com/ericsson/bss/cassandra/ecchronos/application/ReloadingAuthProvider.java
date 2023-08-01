@@ -21,10 +21,12 @@ import java.util.function.Supplier;
 
 public class ReloadingAuthProvider extends ProgrammaticPlainTextAuthProvider
 {
-    private final Supplier<com.ericsson.bss.cassandra.ecchronos.application.config.Credentials> credentialSupplier;
+    private final Supplier<com.ericsson.bss.cassandra.ecchronos.application.config.security.Credentials>
+            credentialSupplier;
 
     public ReloadingAuthProvider(
-            final Supplier<com.ericsson.bss.cassandra.ecchronos.application.config.Credentials> aCredentialSupplier)
+            final Supplier<com.ericsson.bss.cassandra.ecchronos.application.config.security.Credentials>
+                    aCredentialSupplier)
     {
         super(aCredentialSupplier.get().getUsername(), aCredentialSupplier.get().getPassword());
         this.credentialSupplier = aCredentialSupplier;
@@ -33,7 +35,8 @@ public class ReloadingAuthProvider extends ProgrammaticPlainTextAuthProvider
     @Override
     protected final Credentials getCredentials(final EndPoint endPoint, final String serverAuthenticator)
     {
-        com.ericsson.bss.cassandra.ecchronos.application.config.Credentials credentials = credentialSupplier.get();
+        com.ericsson.bss.cassandra.ecchronos.application.config.security.Credentials credentials =
+                credentialSupplier.get();
         return new Credentials(credentials.getUsername().toCharArray(), credentials.getPassword().toCharArray());
     }
 }

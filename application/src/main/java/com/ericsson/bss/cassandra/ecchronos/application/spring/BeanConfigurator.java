@@ -39,7 +39,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.ReflectionUtils;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.ConfigRefresher;
 import com.ericsson.bss.cassandra.ecchronos.application.config.ConfigurationHelper;
-import com.ericsson.bss.cassandra.ecchronos.application.config.Security;
+import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
@@ -79,8 +79,8 @@ public class BeanConfigurator
         }
 
         Security security = getSecurityConfig();
-        cqlSecurity.set(security.getCql());
-        jmxSecurity.set(security.getJmx());
+        cqlSecurity.set(security.getCqlSecurity());
+        jmxSecurity.set(security.getJmxSecurity());
     }
 
     public final void close()
@@ -119,7 +119,7 @@ public class BeanConfigurator
     @Bean
     public RepairFaultReporter repairFaultReporter(final Config config) throws ConfigurationException
     {
-        return ReflectionUtils.construct(config.getRepair().getAlarm().getFaultReporter());
+        return ReflectionUtils.construct(config.getRepairConfig().getAlarm().getFaultReporterClass());
     }
 
     @Bean
@@ -143,17 +143,17 @@ public class BeanConfigurator
             final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
             final MeterRegistry meterRegistry) throws ConfigurationException
     {
-        Supplier tlsSupplier = () -> securitySupplier.get().getTls();
+        Supplier tlsSupplier = () -> securitySupplier.get().getCqlTlsConfig();
 
-        CertificateHandler certificateHandler =
-                ReflectionUtils.construct(configuration.getConnectionConfig().getCql().getCertificateHandlerClass(),
+        CertificateHandler certificateHandler = ReflectionUtils.construct(
+                configuration.getConnectionConfig().getCqlConnection().getCertificateHandlerClass(),
                 new Class<?>[] {
                         Supplier.class
                 }, tlsSupplier);
         try
         {
             return ReflectionUtils
-                    .construct(configuration.getConnectionConfig().getCql().getProviderClass(),
+                    .construct(configuration.getConnectionConfig().getCqlConnection().getProviderClass(),
                             new Class<?>[] {
                                     Config.class,
                                     Supplier.class,
@@ -176,7 +176,7 @@ public class BeanConfigurator
 
         // Check for old versions of DefaultNativeConnectionProvider
         return ReflectionUtils
-                .construct(configuration.getConnectionConfig().getCql().getProviderClass(),
+                .construct(configuration.getConnectionConfig().getCqlConnection().getProviderClass(),
                         new Class<?>[]{
                                 Config.class, Supplier.class, DefaultRepairConfigurationProvider.class,
                                 MeterRegistry.class
@@ -195,7 +195,7 @@ public class BeanConfigurator
             throws ConfigurationException
     {
         return ReflectionUtils
-                .construct(configuration.getConnectionConfig().getJmx().getProviderClass(),
+                .construct(configuration.getConnectionConfig().getJmxConnection().getProviderClass(),
                         new Class<?>[] {
                                 Config.class, Supplier.class
                         },
@@ -211,7 +211,7 @@ public class BeanConfigurator
     private static StatementDecorator getStatementDecorator(final Config configuration) throws ConfigurationException
     {
         return ReflectionUtils
-                .construct(configuration.getConnectionConfig().getCql().getDecoratorClass(), configuration);
+                .construct(configuration.getConnectionConfig().getCqlConnection().getDecoratorClass(), configuration);
     }
 
     private void refreshSecurityConfig(final Consumer<Security.CqlSecurity> cqlSetter,
@@ -221,8 +221,8 @@ public class BeanConfigurator
         {
             Security security = getSecurityConfig();
 
-            cqlSetter.accept(security.getCql());
-            jmxSetter.accept(security.getJmx());
+            cqlSetter.accept(security.getCqlSecurity());
+            jmxSetter.accept(security.getJmxSecurity());
         }
         catch (ConfigurationException e)
         {

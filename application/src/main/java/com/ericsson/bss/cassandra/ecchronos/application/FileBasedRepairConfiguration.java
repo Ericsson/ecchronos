@@ -19,7 +19,7 @@ import java.util.Set;
 import org.springframework.context.ApplicationContext;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.ConfigurationHelper;
-import com.ericsson.bss.cassandra.ecchronos.application.config.RepairSchedule;
+import com.ericsson.bss.cassandra.ecchronos.application.config.repair.RepairSchedule;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.annotations.VisibleForTesting;

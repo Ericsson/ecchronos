@@ -15,7 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.application;
 
 import com.datastax.oss.driver.api.core.metadata.EndPoint;
-import com.ericsson.bss.cassandra.ecchronos.application.config.TLSConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.security.TLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.ssl.SslContext;
@@ -92,7 +92,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
             sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
             sslEngine.setSSLParameters(sslParameters);
         }
-        tlsConfig.getCipher_suites().ifPresent(sslEngine::setEnabledCipherSuites);
+        tlsConfig.getCipherSuites().ifPresent(sslEngine::setEnabledCipherSuites);
         return sslEngine;
     }
 
@@ -169,22 +169,22 @@ public class ReloadingCertificateHandler implements CertificateHandler
                 throws IOException, NoSuchAlgorithmException
         {
             Map<String, String> checksums = new HashMap<>();
-            if (tlsConfig.getCertificate().isPresent()
-                    && tlsConfig.getCertificatePrivateKey().isPresent()
-                    && tlsConfig.getTrustCertificate().isPresent())
+            if (tlsConfig.getCertificatePath().isPresent()
+                    && tlsConfig.getCertificatePrivateKeyPath().isPresent()
+                    && tlsConfig.getTrustCertificatePath().isPresent())
             {
-                String certificate = tlsConfig.getCertificate().get();
+                String certificate = tlsConfig.getCertificatePath().get();
                 checksums.put(certificate, getChecksum(certificate));
-                String certificatePrivateKey = tlsConfig.getCertificatePrivateKey().get();
+                String certificatePrivateKey = tlsConfig.getCertificatePrivateKeyPath().get();
                 checksums.put(certificatePrivateKey, getChecksum(certificatePrivateKey));
-                String trustCertificate = tlsConfig.getTrustCertificate().get();
+                String trustCertificate = tlsConfig.getTrustCertificatePath().get();
                 checksums.put(trustCertificate, getChecksum(trustCertificate));
             }
             else
             {
-                String keyStore = tlsConfig.getKeystore();
+                String keyStore = tlsConfig.getKeyStorePath();
                 checksums.put(keyStore, getChecksum(keyStore));
-                String trustStore = tlsConfig.getTruststore();
+                String trustStore = tlsConfig.getTrustStorePath();
                 checksums.put(trustStore, getChecksum(trustStore));
             }
             return checksums;
@@ -212,13 +212,13 @@ public class ReloadingCertificateHandler implements CertificateHandler
 
         SslContextBuilder builder = SslContextBuilder.forClient();
 
-        if (tlsConfig.getCertificate().isPresent()
-                && tlsConfig.getCertificatePrivateKey().isPresent()
-                && tlsConfig.getTrustCertificate().isPresent())
+        if (tlsConfig.getCertificatePath().isPresent()
+                && tlsConfig.getCertificatePrivateKeyPath().isPresent()
+                && tlsConfig.getTrustCertificatePath().isPresent())
         {
-            File certificateFile = new File(tlsConfig.getCertificate().get());
-            File certificatePrivateKeyFile = new File(tlsConfig.getCertificatePrivateKey().get());
-            File trustCertificateFile = new File(tlsConfig.getTrustCertificate().get());
+            File certificateFile = new File(tlsConfig.getCertificatePath().get());
+            File certificatePrivateKeyFile = new File(tlsConfig.getCertificatePrivateKeyPath().get());
+            File trustCertificateFile = new File(tlsConfig.getTrustCertificatePath().get());
 
             builder.keyManager(certificateFile, certificatePrivateKeyFile);
             builder.trustManager(trustCertificateFile);
@@ -230,9 +230,9 @@ public class ReloadingCertificateHandler implements CertificateHandler
             builder.keyManager(keyManagerFactory);
             builder.trustManager(trustManagerFactory);
         }
-        if (tlsConfig.getCipher_suites().isPresent())
+        if (tlsConfig.getCipherSuites().isPresent())
         {
-            builder.ciphers(Arrays.asList(tlsConfig.getCipher_suites().get()));
+            builder.ciphers(Arrays.asList(tlsConfig.getCipherSuites().get()));
         }
         return builder.protocols(tlsConfig.getProtocols()).build();
     }
@@ -241,12 +241,12 @@ public class ReloadingCertificateHandler implements CertificateHandler
             NoSuchAlgorithmException, KeyStoreException, CertificateException, UnrecoverableKeyException
     {
         String algorithm = tlsConfig.getAlgorithm().orElse(KeyManagerFactory.getDefaultAlgorithm());
-        char[] keystorePassword = tlsConfig.getKeystore_password().toCharArray();
+        char[] keystorePassword = tlsConfig.getKeyStorePassword().toCharArray();
 
-        try (InputStream keystoreFile = new FileInputStream(tlsConfig.getKeystore()))
+        try (InputStream keystoreFile = new FileInputStream(tlsConfig.getKeyStorePath()))
         {
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(algorithm);
-            KeyStore keyStore = KeyStore.getInstance(tlsConfig.getStore_type());
+            KeyStore keyStore = KeyStore.getInstance(tlsConfig.getStoreType());
             keyStore.load(keystoreFile, keystorePassword);
             keyManagerFactory.init(keyStore, keystorePassword);
             return keyManagerFactory;
@@ -257,12 +257,12 @@ public class ReloadingCertificateHandler implements CertificateHandler
             throws IOException, NoSuchAlgorithmException, KeyStoreException, CertificateException
     {
         String algorithm = tlsConfig.getAlgorithm().orElse(TrustManagerFactory.getDefaultAlgorithm());
-        char[] truststorePassword = tlsConfig.getTruststore_password().toCharArray();
+        char[] truststorePassword = tlsConfig.getTrustStorePassword().toCharArray();
 
-        try (InputStream truststoreFile = new FileInputStream(tlsConfig.getTruststore()))
+        try (InputStream truststoreFile = new FileInputStream(tlsConfig.getTrustStorePath()))
         {
             TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(algorithm);
-            KeyStore keyStore = KeyStore.getInstance(tlsConfig.getStore_type());
+            KeyStore keyStore = KeyStore.getInstance(tlsConfig.getStoreType());
             keyStore.load(truststoreFile, truststorePassword);
             trustManagerFactory.init(keyStore);
             return trustManagerFactory;

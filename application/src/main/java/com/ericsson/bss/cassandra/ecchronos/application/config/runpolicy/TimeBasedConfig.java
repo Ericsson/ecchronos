@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Telefonaktiebolaget LM Ericsson
+ * Copyright 2023 Telefonaktiebolaget LM Ericsson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,8 +12,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.ericsson.bss.cassandra.ecchronos.application.config.runpolicy;
 
-/**
- * Contains configurations for ecChronos.
- */
-package com.ericsson.bss.cassandra.ecchronos.application.config;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public class TimeBasedConfig
+{
+    private String myKeyspaceName = "ecchronos";
+
+    @JsonProperty("keyspace")
+    public final String getKeyspaceName()
+    {
+        return myKeyspaceName;
+    }
+
+    @JsonProperty("keyspace")
+    public final void setKeyspaceName(final String keyspaceName)
+    {
+        myKeyspaceName = keyspaceName;
+    }
+}

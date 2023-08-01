@@ -24,6 +24,20 @@ import com.ericsson.bss.cassandra.ecchronos.application.DefaultNativeConnectionP
 import com.ericsson.bss.cassandra.ecchronos.application.FileBasedRepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.application.NoopStatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.application.ReloadingCertificateHandler;
+import com.ericsson.bss.cassandra.ecchronos.application.config.connection.Connection;
+import com.ericsson.bss.cassandra.ecchronos.application.config.connection.ConnectionConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.connection.NativeConnection;
+import com.ericsson.bss.cassandra.ecchronos.application.config.lockfactory.LockFactoryConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.metrics.ExcludedMetric;
+import com.ericsson.bss.cassandra.ecchronos.application.config.metrics.ReportingConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.metrics.StatisticsConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.repair.GlobalRepairConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.repair.RepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.application.config.rest.RestServerConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.runpolicy.RunPolicyConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.scheduler.SchedulerConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
+import com.ericsson.bss.cassandra.ecchronos.application.config.security.TLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
@@ -66,9 +80,9 @@ public class TestConfig
 
         Config config = objectMapper.readValue(file, Config.class);
 
-        Config.ConnectionConfig connection = config.getConnectionConfig();
+        ConnectionConfig connection = config.getConnectionConfig();
 
-        Config.NativeConnection nativeConnection = connection.getCql();
+        NativeConnection nativeConnection = connection.getCqlConnection();
         assertThat(nativeConnection.getHost()).isEqualTo("127.0.0.2");
         assertThat(nativeConnection.getPort()).isEqualTo(9100);
         assertThat(nativeConnection.getRemoteRouting()).isFalse();
@@ -77,7 +91,7 @@ public class TestConfig
         assertThat(nativeConnection.getCertificateHandlerClass()).isEqualTo(TestCertificateHandler.class);
         assertThat(nativeConnection.getDecoratorClass()).isEqualTo(TestStatementDecorator.class);
 
-        Config.Connection jmxConnection = connection.getJmx();
+        Connection jmxConnection = connection.getJmxConnection();
         assertThat(jmxConnection.getHost()).isEqualTo("127.0.0.3");
         assertThat(jmxConnection.getPort()).isEqualTo(7100);
         assertThat(jmxConnection.getProviderClass()).isEqualTo(TestJmxConnectionProvider.class);
@@ -93,59 +107,59 @@ public class TestConfig
                 .withTargetRepairSizeInBytes(UnitConverter.toBytes("5m"))
                 .build();
 
-        Config.GlobalRepairConfig repairConfig = config.getRepair();
+        GlobalRepairConfig repairConfig = config.getRepairConfig();
         assertThat(repairConfig.asRepairConfiguration()).isEqualTo(expectedConfiguration);
 
-        assertThat(repairConfig.getLockType()).isEqualTo(RepairLockType.DATACENTER);
-        assertThat(repairConfig.getProvider()).isEqualTo(TestRepairConfigurationProvider.class);
+        assertThat(repairConfig.getRepairLockType()).isEqualTo(RepairLockType.DATACENTER);
+        assertThat(repairConfig.getRepairConfigurationClass()).isEqualTo(TestRepairConfigurationProvider.class);
 
-        assertThat(repairConfig.getHistoryLookback().getInterval(TimeUnit.DAYS)).isEqualTo(13);
-        assertThat(repairConfig.getHistory().getProvider()).isEqualTo(Config.RepairHistory.Provider.CASSANDRA);
-        assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("customkeyspace");
-        assertThat(repairConfig.getAlarm().getFaultReporter()).isEqualTo(TestFaultReporter.class);
+        assertThat(repairConfig.getRepairHistoryLookback().getInterval(TimeUnit.DAYS)).isEqualTo(13);
+        assertThat(repairConfig.getRepairHistory().getProvider()).isEqualTo(RepairHistory.Provider.CASSANDRA);
+        assertThat(repairConfig.getRepairHistory().getKeyspaceName()).isEqualTo("customkeyspace");
+        assertThat(repairConfig.getAlarm().getFaultReporterClass()).isEqualTo(TestFaultReporter.class);
         assertThat(repairConfig.getIgnoreTWCSTables()).isTrue();
         assertThat(repairConfig.getBackoff().getInterval(TimeUnit.SECONDS)).isEqualTo(13);
 
-        Config.StatisticsConfig statisticsConfig = config.getStatistics();
+        StatisticsConfig statisticsConfig = config.getStatisticsConfig();
         assertThat(statisticsConfig.isEnabled()).isFalse();
-        assertThat(statisticsConfig.getDirectory()).isEqualTo(new File("./non-default-statistics"));
-        assertThat(statisticsConfig.getPrefix()).isEqualTo("unittest");
+        assertThat(statisticsConfig.getOutputDirectory()).isEqualTo(new File("./non-default-statistics"));
+        assertThat(statisticsConfig.getMetricsPrefix()).isEqualTo("unittest");
 
-        assertThat(statisticsConfig.getReporting().isJmxReportingEnabled()).isFalse();
-        Config.ReportingConfig jmxReportingConfig = statisticsConfig.getReporting().getJmx();
+        assertThat(statisticsConfig.getReportingConfigs().isJmxReportingEnabled()).isFalse();
+        ReportingConfig jmxReportingConfig = statisticsConfig.getReportingConfigs().getJmxReportingConfig();
         assertThat(jmxReportingConfig.isEnabled()).isFalse();
         assertThat(jmxReportingConfig.getExcludedMetrics()).isEmpty();
 
-        assertThat(statisticsConfig.getReporting().isFileReportingEnabled()).isTrue();
-        Config.ReportingConfig fileReportingConfig = statisticsConfig.getReporting().getFile();
-        Config.ExcludedMetric expectedFileExcludedMetric = new Config.ExcludedMetric();
-        expectedFileExcludedMetric.setName(".*fileExcluded");
+        assertThat(statisticsConfig.getReportingConfigs().isFileReportingEnabled()).isTrue();
+        ReportingConfig fileReportingConfig = statisticsConfig.getReportingConfigs().getFileReportingConfig();
+        ExcludedMetric expectedFileExcludedMetric = new ExcludedMetric();
+        expectedFileExcludedMetric.setMetricName(".*fileExcluded");
         Map<String, String> excludedFileTags = new HashMap<>();
         excludedFileTags.put("keyspace", "filekeyspace");
         excludedFileTags.put("table", ".*table");
-        expectedFileExcludedMetric.setTags(excludedFileTags);
+        expectedFileExcludedMetric.setMetricTags(excludedFileTags);
         assertThat(fileReportingConfig.isEnabled()).isTrue();
         assertThat(fileReportingConfig.getExcludedMetrics()).hasSize(1);
         assertThat(fileReportingConfig.getExcludedMetrics()).contains(expectedFileExcludedMetric);
 
-        assertThat(statisticsConfig.getReporting().isHttpReportingEnabled()).isTrue();
-        Config.ReportingConfig httpReportingConfig = statisticsConfig.getReporting().getHttp();
+        assertThat(statisticsConfig.getReportingConfigs().isHttpReportingEnabled()).isTrue();
+        ReportingConfig httpReportingConfig = statisticsConfig.getReportingConfigs().getHttpReportingConfig();
         assertThat(httpReportingConfig.isEnabled()).isTrue();
-        Config.ExcludedMetric expectedHttpExcludedMetric = new Config.ExcludedMetric();
-        expectedHttpExcludedMetric.setName(".*httpExcluded");
+        ExcludedMetric expectedHttpExcludedMetric = new ExcludedMetric();
+        expectedHttpExcludedMetric.setMetricName(".*httpExcluded");
         assertThat(httpReportingConfig.getExcludedMetrics()).hasSize(1);
         assertThat(httpReportingConfig.getExcludedMetrics()).contains(expectedHttpExcludedMetric);
 
-        Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
-        assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecc");
+        LockFactoryConfig lockFactoryConfig = config.getLockFactory();
+        assertThat(lockFactoryConfig.getCasLockFactoryConfig().getKeyspaceName()).isEqualTo("ecc");
 
-        Config.RunPolicyConfig runPolicyConfig = config.getRunPolicy();
-        assertThat(runPolicyConfig.getTimeBased().getKeyspace()).isEqualTo("ecc");
+        RunPolicyConfig runPolicyConfig = config.getRunPolicy();
+        assertThat(runPolicyConfig.getTimeBasedConfig().getKeyspaceName()).isEqualTo("ecc");
 
-        Config.SchedulerConfig schedulerConfig = config.getScheduler();
+        SchedulerConfig schedulerConfig = config.getSchedulerConfig();
         assertThat(schedulerConfig.getFrequency().getInterval(TimeUnit.SECONDS)).isEqualTo(60);
 
-        Config.RestServerConfig restServerConfig = config.getRestServer();
+        RestServerConfig restServerConfig = config.getRestServer();
         assertThat(restServerConfig.getHost()).isEqualTo("127.0.0.2");
         assertThat(restServerConfig.getPort()).isEqualTo(8081);
     }
@@ -160,9 +174,9 @@ public class TestConfig
 
         Config config = objectMapper.readValue(file, Config.class);
 
-        Config.ConnectionConfig connection = config.getConnectionConfig();
+        ConnectionConfig connection = config.getConnectionConfig();
 
-        Config.NativeConnection nativeConnection = connection.getCql();
+        NativeConnection nativeConnection = connection.getCqlConnection();
         assertThat(nativeConnection.getHost()).isEqualTo("localhost");
         assertThat(nativeConnection.getPort()).isEqualTo(9042);
         assertThat(nativeConnection.getRemoteRouting()).isTrue();
@@ -171,7 +185,7 @@ public class TestConfig
         assertThat(nativeConnection.getCertificateHandlerClass()).isEqualTo(ReloadingCertificateHandler.class);
         assertThat(nativeConnection.getDecoratorClass()).isEqualTo(NoopStatementDecorator.class);
 
-        Config.Connection jmxConnection = connection.getJmx();
+        Connection jmxConnection = connection.getJmxConnection();
         assertThat(jmxConnection.getHost()).isEqualTo("localhost");
         assertThat(jmxConnection.getPort()).isEqualTo(7199);
         assertThat(jmxConnection.getProviderClass()).isEqualTo(DefaultJmxConnectionProvider.class);
@@ -187,50 +201,50 @@ public class TestConfig
                 .withTargetRepairSizeInBytes(RepairConfiguration.FULL_REPAIR_SIZE)
                 .build();
 
-        Config.GlobalRepairConfig repairConfig = config.getRepair();
+        GlobalRepairConfig repairConfig = config.getRepairConfig();
 
         assertThat(repairConfig.asRepairConfiguration()).isEqualTo(expectedConfiguration);
 
-        assertThat(repairConfig.getLockType()).isEqualTo(RepairLockType.VNODE);
-        assertThat(repairConfig.getProvider()).isEqualTo(FileBasedRepairConfiguration.class);
+        assertThat(repairConfig.getRepairLockType()).isEqualTo(RepairLockType.VNODE);
+        assertThat(repairConfig.getRepairConfigurationClass()).isEqualTo(FileBasedRepairConfiguration.class);
 
-        assertThat(repairConfig.getHistoryLookback().getInterval(TimeUnit.DAYS)).isEqualTo(30);
-        assertThat(repairConfig.getHistory().getProvider()).isEqualTo(Config.RepairHistory.Provider.ECC);
-        assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("ecchronos");
-        assertThat(repairConfig.getAlarm().getFaultReporter()).isEqualTo(LoggingFaultReporter.class);
+        assertThat(repairConfig.getRepairHistoryLookback().getInterval(TimeUnit.DAYS)).isEqualTo(30);
+        assertThat(repairConfig.getRepairHistory().getProvider()).isEqualTo(RepairHistory.Provider.ECC);
+        assertThat(repairConfig.getRepairHistory().getKeyspaceName()).isEqualTo("ecchronos");
+        assertThat(repairConfig.getAlarm().getFaultReporterClass()).isEqualTo(LoggingFaultReporter.class);
         assertThat(repairConfig.getIgnoreTWCSTables()).isFalse();
         assertThat(repairConfig.getBackoff().getInterval(TimeUnit.MINUTES)).isEqualTo(30);
 
-        Config.StatisticsConfig statisticsConfig = config.getStatistics();
+        StatisticsConfig statisticsConfig = config.getStatisticsConfig();
         assertThat(statisticsConfig.isEnabled()).isTrue();
-        assertThat(statisticsConfig.getDirectory()).isEqualTo(new File("./statistics"));
-        assertThat(statisticsConfig.getPrefix()).isEmpty();
+        assertThat(statisticsConfig.getOutputDirectory()).isEqualTo(new File("./statistics"));
+        assertThat(statisticsConfig.getMetricsPrefix()).isEmpty();
 
-        assertThat(statisticsConfig.getReporting().isJmxReportingEnabled()).isTrue();
-        Config.ReportingConfig jmxReportingConfig = statisticsConfig.getReporting().getJmx();
+        assertThat(statisticsConfig.getReportingConfigs().isJmxReportingEnabled()).isTrue();
+        ReportingConfig jmxReportingConfig = statisticsConfig.getReportingConfigs().getJmxReportingConfig();
         assertThat(jmxReportingConfig.isEnabled()).isTrue();
         assertThat(jmxReportingConfig.getExcludedMetrics()).isEmpty();
 
-        assertThat(statisticsConfig.getReporting().isFileReportingEnabled()).isTrue();
-        Config.ReportingConfig fileReportingConfig = statisticsConfig.getReporting().getFile();
+        assertThat(statisticsConfig.getReportingConfigs().isFileReportingEnabled()).isTrue();
+        ReportingConfig fileReportingConfig = statisticsConfig.getReportingConfigs().getFileReportingConfig();
         assertThat(fileReportingConfig.isEnabled()).isTrue();
         assertThat(fileReportingConfig.getExcludedMetrics()).isEmpty();
 
-        assertThat(statisticsConfig.getReporting().isHttpReportingEnabled()).isTrue();
-        Config.ReportingConfig httpReportingConfig = statisticsConfig.getReporting().getHttp();
+        assertThat(statisticsConfig.getReportingConfigs().isHttpReportingEnabled()).isTrue();
+        ReportingConfig httpReportingConfig = statisticsConfig.getReportingConfigs().getHttpReportingConfig();
         assertThat(httpReportingConfig.isEnabled()).isTrue();
         assertThat(httpReportingConfig.getExcludedMetrics()).isEmpty();
 
-        Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
-        assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecchronos");
+        LockFactoryConfig lockFactoryConfig = config.getLockFactory();
+        assertThat(lockFactoryConfig.getCasLockFactoryConfig().getKeyspaceName()).isEqualTo("ecchronos");
 
-        Config.RunPolicyConfig runPolicyConfig = config.getRunPolicy();
-        assertThat(runPolicyConfig.getTimeBased().getKeyspace()).isEqualTo("ecchronos");
+        RunPolicyConfig runPolicyConfig = config.getRunPolicy();
+        assertThat(runPolicyConfig.getTimeBasedConfig().getKeyspaceName()).isEqualTo("ecchronos");
 
-        Config.SchedulerConfig schedulerConfig = config.getScheduler();
+        SchedulerConfig schedulerConfig = config.getSchedulerConfig();
         assertThat(schedulerConfig.getFrequency().getInterval(TimeUnit.SECONDS)).isEqualTo(30);
 
-        Config.RestServerConfig restServerConfig = config.getRestServer();
+        RestServerConfig restServerConfig = config.getRestServer();
         assertThat(restServerConfig.getHost()).isEqualTo("localhost");
         assertThat(restServerConfig.getPort()).isEqualTo(8080);
     }
@@ -245,9 +259,9 @@ public class TestConfig
 
         Config config = objectMapper.readValue(file, Config.class);
 
-        Config.ConnectionConfig connection = config.getConnectionConfig();
+        ConnectionConfig connection = config.getConnectionConfig();
 
-        Config.NativeConnection nativeConnection = connection.getCql();
+        NativeConnection nativeConnection = connection.getCqlConnection();
         assertThat(nativeConnection.getHost()).isEqualTo("localhost");
         assertThat(nativeConnection.getPort()).isEqualTo(9042);
         assertThat(nativeConnection.getRemoteRouting()).isTrue();
@@ -256,7 +270,7 @@ public class TestConfig
         assertThat(nativeConnection.getCertificateHandlerClass()).isEqualTo(ReloadingCertificateHandler.class);
         assertThat(nativeConnection.getDecoratorClass()).isEqualTo(NoopStatementDecorator.class);
 
-        Config.Connection jmxConnection = connection.getJmx();
+        Connection jmxConnection = connection.getJmxConnection();
         assertThat(jmxConnection.getHost()).isEqualTo("localhost");
         assertThat(jmxConnection.getPort()).isEqualTo(7199);
         assertThat(jmxConnection.getProviderClass()).isEqualTo(DefaultJmxConnectionProvider.class);
@@ -271,50 +285,50 @@ public class TestConfig
                 .withTargetRepairSizeInBytes(RepairConfiguration.FULL_REPAIR_SIZE)
                 .build();
 
-        Config.GlobalRepairConfig repairConfig = config.getRepair();
+        GlobalRepairConfig repairConfig = config.getRepairConfig();
 
         assertThat(repairConfig.asRepairConfiguration()).isEqualTo(expectedConfiguration);
 
-        assertThat(repairConfig.getLockType()).isEqualTo(RepairLockType.VNODE);
-        assertThat(repairConfig.getProvider()).isEqualTo(FileBasedRepairConfiguration.class);
+        assertThat(repairConfig.getRepairLockType()).isEqualTo(RepairLockType.VNODE);
+        assertThat(repairConfig.getRepairConfigurationClass()).isEqualTo(FileBasedRepairConfiguration.class);
 
-        assertThat(repairConfig.getHistoryLookback().getInterval(TimeUnit.DAYS)).isEqualTo(30);
-        assertThat(repairConfig.getHistory().getProvider()).isEqualTo(Config.RepairHistory.Provider.ECC);
-        assertThat(repairConfig.getHistory().getKeyspace()).isEqualTo("ecchronos");
-        assertThat(repairConfig.getAlarm().getFaultReporter()).isEqualTo(LoggingFaultReporter.class);
+        assertThat(repairConfig.getRepairHistoryLookback().getInterval(TimeUnit.DAYS)).isEqualTo(30);
+        assertThat(repairConfig.getRepairHistory().getProvider()).isEqualTo(RepairHistory.Provider.ECC);
+        assertThat(repairConfig.getRepairHistory().getKeyspaceName()).isEqualTo("ecchronos");
+        assertThat(repairConfig.getAlarm().getFaultReporterClass()).isEqualTo(LoggingFaultReporter.class);
         assertThat(repairConfig.getIgnoreTWCSTables()).isFalse();
         assertThat(repairConfig.getBackoff().getInterval(TimeUnit.MINUTES)).isEqualTo(30);
 
-        Config.StatisticsConfig statisticsConfig = config.getStatistics();
+        StatisticsConfig statisticsConfig = config.getStatisticsConfig();
         assertThat(statisticsConfig.isEnabled()).isTrue();
-        assertThat(statisticsConfig.getDirectory()).isEqualTo(new File("./statistics"));
-        assertThat(statisticsConfig.getPrefix()).isEmpty();
+        assertThat(statisticsConfig.getOutputDirectory()).isEqualTo(new File("./statistics"));
+        assertThat(statisticsConfig.getMetricsPrefix()).isEmpty();
 
-        assertThat(statisticsConfig.getReporting().isJmxReportingEnabled()).isTrue();
-        Config.ReportingConfig jmxReportingConfig = statisticsConfig.getReporting().getJmx();
+        assertThat(statisticsConfig.getReportingConfigs().isJmxReportingEnabled()).isTrue();
+        ReportingConfig jmxReportingConfig = statisticsConfig.getReportingConfigs().getJmxReportingConfig();
         assertThat(jmxReportingConfig.isEnabled()).isTrue();
         assertThat(jmxReportingConfig.getExcludedMetrics()).isEmpty();
 
-        assertThat(statisticsConfig.getReporting().isFileReportingEnabled()).isTrue();
-        Config.ReportingConfig fileReportingConfig = statisticsConfig.getReporting().getFile();
+        assertThat(statisticsConfig.getReportingConfigs().isFileReportingEnabled()).isTrue();
+        ReportingConfig fileReportingConfig = statisticsConfig.getReportingConfigs().getFileReportingConfig();
         assertThat(fileReportingConfig.isEnabled()).isTrue();
         assertThat(fileReportingConfig.getExcludedMetrics()).isEmpty();
 
-        assertThat(statisticsConfig.getReporting().isHttpReportingEnabled()).isTrue();
-        Config.ReportingConfig httpReportingConfig = statisticsConfig.getReporting().getHttp();
+        assertThat(statisticsConfig.getReportingConfigs().isHttpReportingEnabled()).isTrue();
+        ReportingConfig httpReportingConfig = statisticsConfig.getReportingConfigs().getHttpReportingConfig();
         assertThat(httpReportingConfig.isEnabled()).isTrue();
         assertThat(httpReportingConfig.getExcludedMetrics()).isEmpty();
 
-        Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
-        assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecchronos");
+        LockFactoryConfig lockFactoryConfig = config.getLockFactory();
+        assertThat(lockFactoryConfig.getCasLockFactoryConfig().getKeyspaceName()).isEqualTo("ecchronos");
 
-        Config.RunPolicyConfig runPolicyConfig = config.getRunPolicy();
-        assertThat(runPolicyConfig.getTimeBased().getKeyspace()).isEqualTo("ecchronos");
+        RunPolicyConfig runPolicyConfig = config.getRunPolicy();
+        assertThat(runPolicyConfig.getTimeBasedConfig().getKeyspaceName()).isEqualTo("ecchronos");
 
-        Config.SchedulerConfig schedulerConfig = config.getScheduler();
+        SchedulerConfig schedulerConfig = config.getSchedulerConfig();
         assertThat(schedulerConfig.getFrequency().getInterval(TimeUnit.SECONDS)).isEqualTo(30);
 
-        Config.RestServerConfig restServerConfig = config.getRestServer();
+        RestServerConfig restServerConfig = config.getRestServer();
         assertThat(restServerConfig.getHost()).isEqualTo("localhost");
         assertThat(restServerConfig.getPort()).isEqualTo(8080);
     }
@@ -329,10 +343,10 @@ public class TestConfig
 
         Config config = objectMapper.readValue(file, Config.class);
 
-        Config.StatisticsConfig statisticsConfig = config.getStatistics();
-        assertThat(statisticsConfig.getReporting().isJmxReportingEnabled()).isFalse();
-        assertThat(statisticsConfig.getReporting().isFileReportingEnabled()).isFalse();
-        assertThat(statisticsConfig.getReporting().isHttpReportingEnabled()).isFalse();
+        StatisticsConfig statisticsConfig = config.getStatisticsConfig();
+        assertThat(statisticsConfig.getReportingConfigs().isJmxReportingEnabled()).isFalse();
+        assertThat(statisticsConfig.getReportingConfigs().isFileReportingEnabled()).isFalse();
+        assertThat(statisticsConfig.getReportingConfigs().isHttpReportingEnabled()).isFalse();
         assertThat(statisticsConfig.isEnabled()).isFalse();
     }
 

@@ -12,13 +12,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.application.config;
+package com.ericsson.bss.cassandra.ecchronos.application.config.repair;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
+import com.ericsson.bss.cassandra.ecchronos.application.config.repair.RepairSchedule;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import org.junit.Test;
 

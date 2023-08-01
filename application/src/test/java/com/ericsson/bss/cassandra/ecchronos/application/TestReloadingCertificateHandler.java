@@ -15,7 +15,7 @@
 
 package com.ericsson.bss.cassandra.ecchronos.application;
 
-import com.ericsson.bss.cassandra.ecchronos.application.config.TLSConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.security.TLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.utils.CertUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -170,11 +170,11 @@ public class TestReloadingCertificateHandler
     private TLSConfig getTLSConfigWithKeyStore()
     {
         TLSConfig tlsConfig = new TLSConfig();
-        tlsConfig.setKeystore(clientKeyStore);
-        tlsConfig.setTruststore(clientTrustStore);
-        tlsConfig.setKeystore_password(KEYSTORE_PASSWORD);
-        tlsConfig.setTruststore_password(KEYSTORE_PASSWORD);
-        tlsConfig.setStore_type(STORE_TYPE_JKS);
+        tlsConfig.setKeyStorePath(clientKeyStore);
+        tlsConfig.setTrustStorePath(clientTrustStore);
+        tlsConfig.setKeyStorePassword(KEYSTORE_PASSWORD);
+        tlsConfig.setTrustStorePassword(KEYSTORE_PASSWORD);
+        tlsConfig.setStoreType(STORE_TYPE_JKS);
         tlsConfig.setProtocol(protocolVersion);
         return tlsConfig;
     }
@@ -182,9 +182,9 @@ public class TestReloadingCertificateHandler
     private TLSConfig getTLSConfigWithPEMFiles()
     {
         TLSConfig tlsConfig = new TLSConfig();
-        tlsConfig.setCertificate(clientCert);
-        tlsConfig.setCertificate_private_key(clientCertKey);
-        tlsConfig.setTrust_certificate(clientCaCert);
+        tlsConfig.setCertificatePath(clientCert);
+        tlsConfig.setCertificatePrivateKeyPath(clientCertKey);
+        tlsConfig.setTrustCertificatePath(clientCaCert);
         tlsConfig.setProtocol(protocolVersion);
         return tlsConfig;
     }

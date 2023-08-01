@@ -15,7 +15,7 @@
 
 package com.ericsson.bss.cassandra.ecchronos.application;
 
-import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
+import com.ericsson.bss.cassandra.ecchronos.application.config.metrics.ExcludedMetric;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.config.MeterFilter;
@@ -31,7 +31,6 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestMeterFilterImpl
@@ -71,7 +70,7 @@ public class TestMeterFilterImpl
     @Test
     public void testAcceptExcludedExactNameNullTags()
     {
-        Set<Config.ExcludedMetric> excluded = new HashSet<>();
+        Set<ExcludedMetric> excluded = new HashSet<>();
         excluded.add(createExcludedMetric(FIRST_METRIC_NAME, null));
         MeterFilter meterFilter = new MeterFilterImpl(null, excluded);
 
@@ -82,7 +81,7 @@ public class TestMeterFilterImpl
     @Test
     public void testAcceptExcludedExactNameNullTagsPrefixed()
     {
-        Set<Config.ExcludedMetric> excluded = new HashSet<>();
+        Set<ExcludedMetric> excluded = new HashSet<>();
         excluded.add(createExcludedMetric(FIRST_METRIC_NAME, null));
         MeterFilter meterFilter = new MeterFilterImpl(PREFIX, excluded);
 
@@ -93,7 +92,7 @@ public class TestMeterFilterImpl
     @Test
     public void testAcceptExcludedRegexNameNullTags()
     {
-        Set<Config.ExcludedMetric> excluded = new HashSet<>();
+        Set<ExcludedMetric> excluded = new HashSet<>();
         excluded.add(createExcludedMetric("foo.*", null));
         MeterFilter meterFilter = new MeterFilterImpl(null, excluded);
 
@@ -107,7 +106,7 @@ public class TestMeterFilterImpl
     @Test
     public void testAcceptExcludedRegexNameNullTagsPrefixed()
     {
-        Set<Config.ExcludedMetric> excluded = new HashSet<>();
+        Set<ExcludedMetric> excluded = new HashSet<>();
         excluded.add(createExcludedMetric("foo.*", null));
         MeterFilter meterFilter = new MeterFilterImpl(PREFIX, excluded);
 
@@ -121,7 +120,7 @@ public class TestMeterFilterImpl
     @Test
     public void testAcceptMultipleExcludedWildcardRegexNameNullTags()
     {
-        Set<Config.ExcludedMetric> excluded = new HashSet<>();
+        Set<ExcludedMetric> excluded = new HashSet<>();
         excluded.add(createExcludedMetric(".*", null));
         MeterFilter meterFilter = new MeterFilterImpl(null, excluded);
 
@@ -135,7 +134,7 @@ public class TestMeterFilterImpl
     @Test
     public void testAcceptMultipleExcludedWildcardRegexNameNullTagsPrefixed()
     {
-        Set<Config.ExcludedMetric> excluded = new HashSet<>();
+        Set<ExcludedMetric> excluded = new HashSet<>();
         excluded.add(createExcludedMetric(".*", null));
         MeterFilter meterFilter = new MeterFilterImpl(PREFIX, excluded);
 
@@ -149,7 +148,7 @@ public class TestMeterFilterImpl
     @Test
     public void testAcceptWithTags()
     {
-        Set<Config.ExcludedMetric> excluded = new HashSet<>();
+        Set<ExcludedMetric> excluded = new HashSet<>();
         Map<String, String> commonExcludedTags = new HashMap<>();
         commonExcludedTags.put(COMMON_TAG_KEY, COMMON_TAG_VALUE);
         excluded.add(createExcludedMetric(".*", commonExcludedTags));
@@ -182,7 +181,7 @@ public class TestMeterFilterImpl
     @Test
     public void testAcceptWithTagsPrefixed()
     {
-        Set<Config.ExcludedMetric> excluded = new HashSet<>();
+        Set<ExcludedMetric> excluded = new HashSet<>();
         Map<String, String> commonExcludedTags = new HashMap<>();
         commonExcludedTags.put(COMMON_TAG_KEY, COMMON_TAG_VALUE);
         excluded.add(createExcludedMetric(".*", commonExcludedTags));
@@ -267,13 +266,13 @@ public class TestMeterFilterImpl
         assertThat(secondMappedMeterId.getTags()).isEqualTo(secondMeterId.getTags());
     }
 
-    private Config.ExcludedMetric createExcludedMetric(String name, Map<String, String> tags)
+    private ExcludedMetric createExcludedMetric(String name, Map<String, String> tags)
     {
-        Config.ExcludedMetric excludedMetric = new Config.ExcludedMetric();
-        excludedMetric.setName(name);
+        ExcludedMetric excludedMetric = new ExcludedMetric();
+        excludedMetric.setMetricName(name);
         if (tags != null)
         {
-            excludedMetric.setTags(tags);
+            excludedMetric.setMetricTags(tags);
         }
         return excludedMetric;
     }
