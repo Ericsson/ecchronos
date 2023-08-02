@@ -15,12 +15,15 @@
 package com.ericsson.bss.cassandra.ecchronos.application.config.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class TestSecurity
 {
@@ -36,41 +39,27 @@ public class TestSecurity
 
         Credentials expectedCredentials = new Credentials(false, "cassandra", "cassandra");
 
-        TLSConfig cqlTlsConfig = new TLSConfig();
-        cqlTlsConfig.setEnabled(false);
-        cqlTlsConfig.setKeyStorePath("/path/to/keystore");
-        cqlTlsConfig.setKeyStorePassword("ecchronos");
-        cqlTlsConfig.setTrustStorePath("/path/to/truststore");
-        cqlTlsConfig.setTrustStorePassword("ecchronos");
-        cqlTlsConfig.setCertificatePath(null);
-        cqlTlsConfig.setCertificatePrivateKeyPath(null);
-        cqlTlsConfig.setTrustCertificatePath(null);
-        cqlTlsConfig.setProtocol("TLSv1.2");
-        cqlTlsConfig.setAlgorithm(null);
-        cqlTlsConfig.setStoreType("JKS");
-        cqlTlsConfig.setCipherSuites(null);
-        cqlTlsConfig.setRequireEndpointVerification(false);
+        CqlTLSConfig cqlTLSConfig = new CqlTLSConfig(false, "/path/to/keystore", "ecchronos",
+                "/path/to/truststore", "ecchronos");
+        cqlTLSConfig.setStoreType("JKS");
+        cqlTLSConfig.setProtocol("TLSv1.2");
 
-        TLSConfig jmxTlsConfig = new TLSConfig();
-        jmxTlsConfig.setEnabled(false);
-        jmxTlsConfig.setKeyStorePath("/path/to/keystore");
-        jmxTlsConfig.setKeyStorePassword("ecchronos");
-        jmxTlsConfig.setTrustStorePath("/path/to/truststore");
-        jmxTlsConfig.setTrustStorePassword("ecchronos");
-        jmxTlsConfig.setProtocol("TLSv1.2");
-        jmxTlsConfig.setCipherSuites(null);
+        JmxTLSConfig jmxTLSConfig = new JmxTLSConfig(false, "/path/to/keystore",
+                "ecchronos", "/path/to/truststore", "ecchronos");
+        jmxTLSConfig.setProtocol("TLSv1.2");
+        jmxTLSConfig.setCipherSuites(null);
 
         assertThat(config.getCqlSecurity().getCqlCredentials()).isEqualTo(expectedCredentials);
         assertThat(config.getJmxSecurity().getJmxCredentials()).isEqualTo(expectedCredentials);
-        assertThat(config.getCqlSecurity().getCqlTlsConfig()).isEqualTo(cqlTlsConfig);
-        assertThat(config.getJmxSecurity().getJmxTlsConfig()).isEqualTo(jmxTlsConfig);
+        assertThat(config.getCqlSecurity().getCqlTlsConfig()).isEqualTo(cqlTLSConfig);
+        assertThat(config.getJmxSecurity().getJmxTlsConfig()).isEqualTo(jmxTLSConfig);
     }
 
     @Test
-    public void testEnabled() throws Exception
+    public void testCqlAndJmxEnabledKeyStore() throws Exception
     {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        File file = new File(classLoader.getResource("enabled_security.yml").getFile());
+        File file = new File(classLoader.getResource("security/enabled_keystore_jmxandcql.yml").getFile());
 
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
 
@@ -79,38 +68,30 @@ public class TestSecurity
         Credentials expectedCqlCredentials = new Credentials(true, "cqluser", "cqlpassword");
         Credentials expectedJmxCredentials = new Credentials(true, "jmxuser", "jmxpassword");
 
-        TLSConfig cqlTlsConfig = new TLSConfig();
-        cqlTlsConfig.setEnabled(true);
-        cqlTlsConfig.setKeyStorePath("/path/to/cql/keystore");
-        cqlTlsConfig.setKeyStorePassword("cqlkeystorepassword");
-        cqlTlsConfig.setTrustStorePath("/path/to/cql/truststore");
-        cqlTlsConfig.setTrustStorePassword("cqltruststorepassword");
-        cqlTlsConfig.setProtocol("TLSv1.2");
-        cqlTlsConfig.setAlgorithm("SunX509");
-        cqlTlsConfig.setStoreType("JKS");
-        cqlTlsConfig.setCipherSuites("VALID_CIPHER_SUITE,VALID_CIPHER_SUITE2");
-        cqlTlsConfig.setRequireEndpointVerification(true);
+        CqlTLSConfig cqlTLSConfig = new CqlTLSConfig(true, "/path/to/cql/keystore",
+                "cqlkeystorepassword", "/path/to/cql/truststore","cqltruststorepassword");
+        cqlTLSConfig.setStoreType("JKS");
+        cqlTLSConfig.setAlgorithm("SunX509");
+        cqlTLSConfig.setProtocol("TLSv1.2");
+        cqlTLSConfig.setCipherSuites("VALID_CIPHER_SUITE,VALID_CIPHER_SUITE2");
+        cqlTLSConfig.setRequireEndpointVerification(true);
 
-        TLSConfig jmxTlsConfig = new TLSConfig();
-        jmxTlsConfig.setEnabled(true);
-        jmxTlsConfig.setKeyStorePath("/path/to/jmx/keystore");
-        jmxTlsConfig.setKeyStorePassword("jmxkeystorepassword");
-        jmxTlsConfig.setTrustStorePath("/path/to/jmx/truststore");
-        jmxTlsConfig.setTrustStorePassword("jmxtruststorepassword");
-        jmxTlsConfig.setProtocol("TLSv1.2");
-        jmxTlsConfig.setCipherSuites("VALID_CIPHER_SUITE,VALID_CIPHER_SUITE2");
+        JmxTLSConfig jmxTLSConfig = new JmxTLSConfig(true, "/path/to/jmx/keystore",
+                "jmxkeystorepassword", "/path/to/jmx/truststore", "jmxtruststorepassword");
+        jmxTLSConfig.setProtocol("TLSv1.2");
+        jmxTLSConfig.setCipherSuites("VALID_CIPHER_SUITE,VALID_CIPHER_SUITE2");
 
         assertThat(config.getCqlSecurity().getCqlCredentials()).isEqualTo(expectedCqlCredentials);
         assertThat(config.getJmxSecurity().getJmxCredentials()).isEqualTo(expectedJmxCredentials);
-        assertThat(config.getCqlSecurity().getCqlTlsConfig()).isEqualTo(cqlTlsConfig);
-        assertThat(config.getJmxSecurity().getJmxTlsConfig()).isEqualTo(jmxTlsConfig);
+        assertThat(config.getCqlSecurity().getCqlTlsConfig()).isEqualTo(cqlTLSConfig);
+        assertThat(config.getJmxSecurity().getJmxTlsConfig()).isEqualTo(jmxTLSConfig);
     }
 
     @Test
-    public void testEnabledWithCertificate() throws Exception
+    public void testCqlEnabledWithCertificate() throws Exception
     {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        File file = new File(classLoader.getResource("enabled_certificate_security.yml").getFile());
+        File file = new File(classLoader.getResource("security/enabled_pem_cql.yml").getFile());
 
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
 
@@ -118,16 +99,46 @@ public class TestSecurity
 
         Credentials expectedCqlCredentials = new Credentials(true, "cqluser", "cqlpassword");
 
-        TLSConfig cqlTlsConfig = new TLSConfig();
-        cqlTlsConfig.setEnabled(true);
-        cqlTlsConfig.setCertificatePath("/path/to/cql/certificate");
-        cqlTlsConfig.setCertificatePrivateKeyPath("/path/to/cql/certificate_key");
-        cqlTlsConfig.setTrustCertificatePath("/path/to/cql/certificate_authorities");
-        cqlTlsConfig.setProtocol("TLSv1.2");
-        cqlTlsConfig.setCipherSuites("VALID_CIPHER_SUITE,VALID_CIPHER_SUITE2");
-        cqlTlsConfig.setRequireEndpointVerification(true);
+        CqlTLSConfig cqlTLSConfig = new CqlTLSConfig(true, "/path/to/cql/certificate",
+                "/path/to/cql/certificate_key", "/path/to/cql/certificate_authorities");
+        cqlTLSConfig.setProtocol("TLSv1.2");
+        cqlTLSConfig.setCipherSuites("VALID_CIPHER_SUITE,VALID_CIPHER_SUITE2");
+        cqlTLSConfig.setRequireEndpointVerification(true);
 
         assertThat(config.getCqlSecurity().getCqlCredentials()).isEqualTo(expectedCqlCredentials);
-        assertThat(config.getCqlSecurity().getCqlTlsConfig()).isEqualTo(cqlTlsConfig);
+        assertThat(config.getCqlSecurity().getCqlTlsConfig()).isEqualTo(cqlTLSConfig);
+    }
+
+    @Test
+    public void testJmxEnabledWithCertificate()
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("security/enabled_pem_jmx.yml").getFile());
+
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
+        assertThatExceptionOfType(IOException.class).isThrownBy(() -> objectMapper.readValue(file, Security.class));
+    }
+
+    @Test
+    public void testCqlEnabledWithNothing()
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("security/enabled_nokeystore_nopem_cql.yml").getFile());
+
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
+        assertThatExceptionOfType(ValueInstantiationException.class).isThrownBy(() -> objectMapper.readValue(file, Security.class));
+    }
+
+    @Test
+    public void testJmxEnabledWithNothing()
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("security/enabled_nokeystore_nopem_jmx.yml").getFile());
+
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
+        assertThatExceptionOfType(ValueInstantiationException.class).isThrownBy(() -> objectMapper.readValue(file, Security.class));
     }
 }

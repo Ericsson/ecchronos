@@ -22,16 +22,15 @@ import java.util.function.Supplier;
 import javax.management.remote.JMXConnector;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.Connection;
+import com.ericsson.bss.cassandra.ecchronos.application.config.security.JmxTLSConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Credentials;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
-import com.ericsson.bss.cassandra.ecchronos.application.config.security.TLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalJmxConnectionProvider;
-import com.google.common.base.Joiner;
 
 public class DefaultJmxConnectionProvider implements JmxConnectionProvider
 {
@@ -70,19 +69,21 @@ public class DefaultJmxConnectionProvider implements JmxConnectionProvider
 
     private Map<String, String> convertTls(final Supplier<Security.JmxSecurity> jmxSecurity)
     {
-        TLSConfig tlsConfig = jmxSecurity.get().getJmxTlsConfig();
+        JmxTLSConfig tlsConfig = jmxSecurity.get().getJmxTlsConfig();
         if (!tlsConfig.isEnabled())
         {
             return new HashMap<>();
         }
 
         Map<String, String> config = new HashMap<>();
-        config.put("com.sun.management.jmxremote.ssl.enabled.protocols", tlsConfig.getProtocol());
-        String ciphers = tlsConfig.getCipherSuites()
-                .map(Joiner.on(',')::join)
-                .orElse("");
-        config.put("com.sun.management.jmxremote.ssl.enabled.cipher.suites", ciphers);
-
+        if (tlsConfig.getProtocol() != null)
+        {
+            config.put("com.sun.management.jmxremote.ssl.enabled.protocols", tlsConfig.getProtocol());
+        }
+        if (tlsConfig.getCipherSuites() != null)
+        {
+            config.put("com.sun.management.jmxremote.ssl.enabled.cipher.suites", tlsConfig.getCipherSuites());
+        }
         config.put("javax.net.ssl.keyStore", tlsConfig.getKeyStorePath());
         config.put("javax.net.ssl.keyStorePassword", tlsConfig.getKeyStorePassword());
         config.put("javax.net.ssl.trustStore", tlsConfig.getTrustStorePath());

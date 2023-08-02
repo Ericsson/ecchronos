@@ -36,8 +36,8 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.repair.RepairHist
 import com.ericsson.bss.cassandra.ecchronos.application.config.rest.RestServerConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.runpolicy.RunPolicyConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.scheduler.SchedulerConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.security.CqlTLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
-import com.ericsson.bss.cassandra.ecchronos.application.config.security.TLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
@@ -379,7 +379,7 @@ public class TestConfig
 
     public static class TestCertificateHandler implements CertificateHandler
     {
-        public TestCertificateHandler(Supplier<TLSConfig> tlsConfigSupplier)
+        public TestCertificateHandler(Supplier<CqlTLSConfig> tlsConfigSupplier)
         {
             // Empty constructor
         }
