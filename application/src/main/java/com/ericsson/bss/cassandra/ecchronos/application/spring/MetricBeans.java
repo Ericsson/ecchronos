@@ -19,6 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.CsvConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.CsvMeterRegistry;
 import com.ericsson.bss.cassandra.ecchronos.application.MeterFilterImpl;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
+import com.ericsson.bss.cassandra.ecchronos.application.config.metrics.StatisticsConfig;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.core.instrument.config.MeterFilter;
@@ -49,53 +50,53 @@ public class MetricBeans
     public MetricBeans(final Config config)
     {
         myCompositeMeterRegistry = new CompositeMeterRegistry(Clock.SYSTEM);
-        Config.StatisticsConfig metricConfig = config.getStatistics();
+        StatisticsConfig metricConfig = config.getStatisticsConfig();
         if (metricConfig.isEnabled())
         {
-            if (metricConfig.getReporting().isJmxReportingEnabled())
+            if (metricConfig.getReportingConfigs().isJmxReportingEnabled())
             {
                 createJmxMeterRegistry(metricConfig);
             }
-            if (metricConfig.getReporting().isFileReportingEnabled())
+            if (metricConfig.getReportingConfigs().isFileReportingEnabled())
             {
                 createCsvMeterRegistry(metricConfig);
             }
-            if (metricConfig.getReporting().isHttpReportingEnabled())
+            if (metricConfig.getReportingConfigs().isHttpReportingEnabled())
             {
                 createPrometheusMeterRegistry(metricConfig);
             }
         }
     }
 
-    private void createJmxMeterRegistry(final Config.StatisticsConfig metricConfig)
+    private void createJmxMeterRegistry(final StatisticsConfig metricConfig)
     {
-        MeterFilter meterFilter = new MeterFilterImpl(metricConfig.getPrefix(), metricConfig
-                .getReporting()
-                .getJmx()
+        MeterFilter meterFilter = new MeterFilterImpl(metricConfig.getMetricsPrefix(), metricConfig
+                .getReportingConfigs()
+                .getJmxReportingConfig()
                 .getExcludedMetrics());
         JmxMeterRegistry jmxMeterRegistry = new JmxMeterRegistry(JmxConfig.DEFAULT, Clock.SYSTEM);
         jmxMeterRegistry.config().meterFilter(meterFilter);
         myCompositeMeterRegistry.add(jmxMeterRegistry);
     }
 
-    private void createCsvMeterRegistry(final Config.StatisticsConfig metricConfig)
+    private void createCsvMeterRegistry(final StatisticsConfig metricConfig)
     {
-        MeterFilter meterFilter = new MeterFilterImpl(metricConfig.getPrefix(), metricConfig
-                .getReporting()
-                .getFile()
+        MeterFilter meterFilter = new MeterFilterImpl(metricConfig.getMetricsPrefix(), metricConfig
+                .getReportingConfigs()
+                .getFileReportingConfig()
                 .getExcludedMetrics());
         CsvMeterRegistry csvMeterRegistry = new CsvMeterRegistry(CsvConfig.DEFAULT, Clock.SYSTEM,
-                metricConfig.getDirectory());
+                metricConfig.getOutputDirectory());
         csvMeterRegistry.config().meterFilter(meterFilter);
         csvMeterRegistry.start();
         myCompositeMeterRegistry.add(csvMeterRegistry);
     }
 
-    private void createPrometheusMeterRegistry(final Config.StatisticsConfig metricConfig)
+    private void createPrometheusMeterRegistry(final StatisticsConfig metricConfig)
     {
-        MeterFilter meterFilter = new MeterFilterImpl(metricConfig.getPrefix(), metricConfig
-                .getReporting()
-                .getHttp()
+        MeterFilter meterFilter = new MeterFilterImpl(metricConfig.getMetricsPrefix(), metricConfig
+                .getReportingConfigs()
+                .getHttpReportingConfig()
                 .getExcludedMetrics());
         myPrometheusMeterRegistry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
         myPrometheusMeterRegistry.config().meterFilter(meterFilter);

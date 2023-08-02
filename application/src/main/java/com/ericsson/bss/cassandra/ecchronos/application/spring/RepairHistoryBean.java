@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
+import com.ericsson.bss.cassandra.ecchronos.application.config.repair.GlobalRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.EccRepairHistory;
@@ -48,9 +49,10 @@ public class RepairHistoryBean
 
         DriverNode localNode = nodeResolver.fromUUID(node.getHostId()).orElseThrow(IllegalStateException::new);
 
-        Config.GlobalRepairConfig repairConfig = configuration.getRepair();
+        GlobalRepairConfig repairConfig = configuration.getRepairConfig();
 
-        if (repairConfig.getHistory().getProvider() == Config.RepairHistory.Provider.CASSANDRA)
+        if (repairConfig.getRepairHistory().getProvider()
+                == com.ericsson.bss.cassandra.ecchronos.application.config.repair.RepairHistory.Provider.CASSANDRA)
         {
             repairHistoryProvider = createCassandraHistoryProvider(repairConfig, session, nodeResolver,
                     statementDecorator);
@@ -63,12 +65,13 @@ public class RepairHistoryBean
                     .withReplicationState(replicationState)
                     .withLocalNode(localNode)
                     .withStatementDecorator(statementDecorator)
-                    .withLookbackTime(repairConfig.getHistoryLookback().getInterval(TimeUnit.MILLISECONDS),
+                    .withLookbackTime(repairConfig.getRepairHistoryLookback().getInterval(TimeUnit.MILLISECONDS),
                             TimeUnit.MILLISECONDS)
-                    .withKeyspace(repairConfig.getHistory().getKeyspace())
+                    .withKeyspace(repairConfig.getRepairHistory().getKeyspaceName())
                     .build();
 
-            if (repairConfig.getHistory().getProvider() == Config.RepairHistory.Provider.UPGRADE)
+            if (repairConfig.getRepairHistory().getProvider()
+                    == com.ericsson.bss.cassandra.ecchronos.application.config.repair.RepairHistory.Provider.UPGRADE)
             {
                 repairHistoryProvider = createCassandraHistoryProvider(repairConfig, session, nodeResolver,
                         statementDecorator);
@@ -94,12 +97,12 @@ public class RepairHistoryBean
         return repairHistoryProvider;
     }
 
-    private RepairHistoryProvider createCassandraHistoryProvider(final Config.GlobalRepairConfig repairConfig,
+    private RepairHistoryProvider createCassandraHistoryProvider(final GlobalRepairConfig repairConfig,
                                                                  final CqlSession session,
                                                                  final NodeResolver nodeResolver,
                                                                  final StatementDecorator statementDecorator)
     {
         return new RepairHistoryProviderImpl(nodeResolver, session, statementDecorator,
-                repairConfig.getHistoryLookback().getInterval(TimeUnit.MILLISECONDS));
+                repairConfig.getRepairHistoryLookback().getInterval(TimeUnit.MILLISECONDS));
     }
 }

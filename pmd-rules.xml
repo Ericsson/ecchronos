@@ -42,4 +42,11 @@
         <exclude name="AvoidFieldNameMatchingMethodName" />
         <exclude name="CloseResource" />
     </rule>
+
+    <!-- Skip avoidDuplicateLiterals for annotations -->
+    <rule ref="category/java/errorprone.xml/AvoidDuplicateLiterals">
+        <properties>
+            <property name="skipAnnotations" value="true" />
+        </properties>
+    </rule>
 </ruleset>

@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
+import com.ericsson.bss.cassandra.ecchronos.application.config.repair.GlobalRepairConfig;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,7 +48,7 @@ public class TestFileBasedRepairConfiguration
     public void setup()
     {
         when(mockApplicationContext.getBean(eq(Config.class))).thenReturn(config);
-        when(config.getRepair()).thenReturn(new Config.GlobalRepairConfig());
+        when(config.getRepairConfig()).thenReturn(new GlobalRepairConfig());
     }
 
     @Test

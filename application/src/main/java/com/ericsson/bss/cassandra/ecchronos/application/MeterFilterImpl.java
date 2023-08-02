@@ -15,7 +15,7 @@
 
 package com.ericsson.bss.cassandra.ecchronos.application;
 
-import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
+import com.ericsson.bss.cassandra.ecchronos.application.config.metrics.ExcludedMetric;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.config.MeterFilter;
@@ -31,9 +31,9 @@ public class MeterFilterImpl implements MeterFilter
 {
     private static final Logger LOG = LoggerFactory.getLogger(MeterFilterImpl.class);
     private final String myPrefix;
-    private final Set<Config.ExcludedMetric> myExcludedMetrics;
+    private final Set<ExcludedMetric> myExcludedMetrics;
 
-    public MeterFilterImpl(final String prefix, final Set<Config.ExcludedMetric> excludedMetrics)
+    public MeterFilterImpl(final String prefix, final Set<ExcludedMetric> excludedMetrics)
     {
         myPrefix = prefix;
         myExcludedMetrics = excludedMetrics;
@@ -55,9 +55,9 @@ public class MeterFilterImpl implements MeterFilter
         }
         metricName = removePrefixIfPresent(metricName);
         List<Tag> tags = id.getTags();
-        for (Config.ExcludedMetric excludedMetric : myExcludedMetrics)
+        for (ExcludedMetric excludedMetric : myExcludedMetrics)
         {
-            if (shouldExclude(metricName, excludedMetric.getName(), tags, excludedMetric.getTags()))
+            if (shouldExclude(metricName, excludedMetric.getMetricName(), tags, excludedMetric.getMetricTags()))
             {
                 return MeterFilterReply.DENY;
             }

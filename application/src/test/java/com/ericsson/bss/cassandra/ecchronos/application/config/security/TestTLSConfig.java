@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.application.config;
+package com.ericsson.bss.cassandra.ecchronos.application.config.security;
 
 import nl.jqno.equalsverifier.Warning;
 import org.junit.Test;
@@ -28,16 +28,16 @@ public class TestTLSConfig
     {
         TLSConfig tlsConfig = new TLSConfig();
 
-        tlsConfig.setCipher_suites("test");
-        assertThat(tlsConfig.getCipher_suites()).isPresent();
-        assertThat(tlsConfig.getCipher_suites().get()).containsExactly("test");
+        tlsConfig.setCipherSuites("test");
+        assertThat(tlsConfig.getCipherSuites()).isPresent();
+        assertThat(tlsConfig.getCipherSuites().get()).containsExactly("test");
 
-        tlsConfig.setCipher_suites("test,test2");
-        assertThat(tlsConfig.getCipher_suites()).isPresent();
-        assertThat(tlsConfig.getCipher_suites().get()).containsExactly("test", "test2");
+        tlsConfig.setCipherSuites("test,test2");
+        assertThat(tlsConfig.getCipherSuites()).isPresent();
+        assertThat(tlsConfig.getCipherSuites().get()).containsExactly("test", "test2");
 
-        tlsConfig.setCipher_suites(null);
-        assertThat(tlsConfig.getCipher_suites()).isEmpty();
+        tlsConfig.setCipherSuites(null);
+        assertThat(tlsConfig.getCipherSuites()).isEmpty();
     }
 
     @Test

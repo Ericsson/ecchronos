@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
 import java.io.Closeable;
 import java.util.Collections;
 
+import com.ericsson.bss.cassandra.ecchronos.application.config.repair.GlobalRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.RepairStatsProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.RepairStatsProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
@@ -77,7 +78,7 @@ public class ECChronos implements Closeable
 
         CqlSession session = nativeConnectionProvider.getSession();
 
-        Config.GlobalRepairConfig repairConfig = configuration.getRepair();
+        GlobalRepairConfig repairConfig = configuration.getRepairConfig();
 
         RepairStateFactoryImpl repairStateFactoryImpl = RepairStateFactoryImpl.builder()
                 .withReplicationState(replicationState)
@@ -89,7 +90,7 @@ public class ECChronos implements Closeable
         myTimeBasedRunPolicy = TimeBasedRunPolicy.builder()
                 .withSession(session)
                 .withStatementDecorator(statementDecorator)
-                .withKeyspaceName(configuration.getRunPolicy().getTimeBased().getKeyspace())
+                .withKeyspaceName(configuration.getRunPolicy().getTimeBasedConfig().getKeyspaceName())
                 .build();
 
         myRepairSchedulerImpl = RepairSchedulerImpl.builder()
@@ -99,7 +100,7 @@ public class ECChronos implements Closeable
                 .withScheduleManager(myECChronosInternals.getScheduleManager())
                 .withRepairStateFactory(repairStateFactoryImpl)
                 .withReplicationState(replicationState)
-                .withRepairLockType(repairConfig.getLockType())
+                .withRepairLockType(repairConfig.getRepairLockType())
                 .withTableStorageStates(myECChronosInternals.getTableStorageStates())
                 .withRepairPolicies(Collections.singletonList(myTimeBasedRunPolicy))
                 .withRepairHistory(repairHistory)
@@ -107,7 +108,7 @@ public class ECChronos implements Closeable
                 .build();
 
         AbstractRepairConfigurationProvider repairConfigurationProvider = ReflectionUtils
-                .construct(repairConfig.getProvider(), new Class[] {
+                .construct(repairConfig.getRepairConfigurationClass(), new Class[] {
                         ApplicationContext.class
                 }, applicationContext);
 
@@ -123,7 +124,7 @@ public class ECChronos implements Closeable
                 .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
                 .withJmxProxyFactory(myECChronosInternals.getJmxProxyFactory())
                 .withReplicationState(replicationState)
-                .withRepairLockType(repairConfig.getLockType())
+                .withRepairLockType(repairConfig.getRepairLockType())
                 .withSession(session)
                 .withRepairConfiguration(repairConfig.asRepairConfiguration())
                 .withRepairHistory(repairHistory)

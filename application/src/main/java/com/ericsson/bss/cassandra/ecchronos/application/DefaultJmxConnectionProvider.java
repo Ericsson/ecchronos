@@ -21,13 +21,14 @@ import java.util.function.Supplier;
 
 import javax.management.remote.JMXConnector;
 
+import com.ericsson.bss.cassandra.ecchronos.application.config.connection.Connection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
-import com.ericsson.bss.cassandra.ecchronos.application.config.Credentials;
-import com.ericsson.bss.cassandra.ecchronos.application.config.Security;
-import com.ericsson.bss.cassandra.ecchronos.application.config.TLSConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.security.Credentials;
+import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
+import com.ericsson.bss.cassandra.ecchronos.application.config.security.TLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalJmxConnectionProvider;
 import com.google.common.base.Joiner;
@@ -41,11 +42,11 @@ public class DefaultJmxConnectionProvider implements JmxConnectionProvider
     public DefaultJmxConnectionProvider(final Config config,
                                         final Supplier<Security.JmxSecurity> jmxSecurity) throws IOException
     {
-        Config.Connection<JmxConnectionProvider> jmxConfig = config.getConnectionConfig().getJmx();
+        Connection<JmxConnectionProvider> jmxConfig = config.getConnectionConfig().getJmxConnection();
         String host = jmxConfig.getHost();
         int port = jmxConfig.getPort();
-        boolean authEnabled = jmxSecurity.get().getCredentials().isEnabled();
-        boolean tlsEnabled = jmxSecurity.get().getTls().isEnabled();
+        boolean authEnabled = jmxSecurity.get().getJmxCredentials().isEnabled();
+        boolean tlsEnabled = jmxSecurity.get().getJmxTlsConfig().isEnabled();
         LOG.info("Connecting through JMX using {}:{}, authentication: {}, tls: {}", host, port, authEnabled,
                 tlsEnabled);
 
@@ -69,7 +70,7 @@ public class DefaultJmxConnectionProvider implements JmxConnectionProvider
 
     private Map<String, String> convertTls(final Supplier<Security.JmxSecurity> jmxSecurity)
     {
-        TLSConfig tlsConfig = jmxSecurity.get().getTls();
+        TLSConfig tlsConfig = jmxSecurity.get().getJmxTlsConfig();
         if (!tlsConfig.isEnabled())
         {
             return new HashMap<>();
@@ -77,22 +78,22 @@ public class DefaultJmxConnectionProvider implements JmxConnectionProvider
 
         Map<String, String> config = new HashMap<>();
         config.put("com.sun.management.jmxremote.ssl.enabled.protocols", tlsConfig.getProtocol());
-        String ciphers = tlsConfig.getCipher_suites()
+        String ciphers = tlsConfig.getCipherSuites()
                 .map(Joiner.on(',')::join)
                 .orElse("");
         config.put("com.sun.management.jmxremote.ssl.enabled.cipher.suites", ciphers);
 
-        config.put("javax.net.ssl.keyStore", tlsConfig.getKeystore());
-        config.put("javax.net.ssl.keyStorePassword", tlsConfig.getKeystore_password());
-        config.put("javax.net.ssl.trustStore", tlsConfig.getTruststore());
-        config.put("javax.net.ssl.trustStorePassword", tlsConfig.getTruststore_password());
+        config.put("javax.net.ssl.keyStore", tlsConfig.getKeyStorePath());
+        config.put("javax.net.ssl.keyStorePassword", tlsConfig.getKeyStorePassword());
+        config.put("javax.net.ssl.trustStore", tlsConfig.getTrustStorePath());
+        config.put("javax.net.ssl.trustStorePassword", tlsConfig.getTrustStorePassword());
 
         return config;
     }
 
     private String[] convertCredentials(final Supplier<Security.JmxSecurity> jmxSecurity)
     {
-        Credentials credentials = jmxSecurity.get().getCredentials();
+        Credentials credentials = jmxSecurity.get().getJmxCredentials();
         if (!credentials.isEnabled())
         {
             return null;

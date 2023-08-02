@@ -17,7 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 import com.datastax.oss.driver.api.core.auth.AuthProvider;
 import com.datastax.oss.driver.api.core.auth.Authenticator;
 import com.datastax.oss.driver.api.core.metadata.EndPoint;
-import com.ericsson.bss.cassandra.ecchronos.application.config.Credentials;
+import com.ericsson.bss.cassandra.ecchronos.application.config.security.Credentials;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;

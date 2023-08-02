@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Telefonaktiebolaget LM Ericsson
+ * Copyright 2023 Telefonaktiebolaget LM Ericsson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,56 +12,64 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.application.config;
+package com.ericsson.bss.cassandra.ecchronos.application.config.security;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
 public class Credentials
 {
-    private boolean enabled;
-    private String username;
-    private String password;
+    private boolean myIsEnabled;
+    private String myUsername;
+    private String myPassword;
 
     public Credentials()
     {
         // Default constructor
     }
 
-    public Credentials(final boolean enabledValue, final String aUsername, final String aPassword)
+    public Credentials(final boolean enabled, final String username, final String password)
     {
-        this.enabled = enabledValue;
-        this.username = aUsername;
-        this.password = aPassword;
+        myIsEnabled = enabled;
+        myUsername = username;
+        myPassword = password;
     }
 
+    @JsonProperty("enabled")
     public final boolean isEnabled()
     {
-        return enabled;
+        return myIsEnabled;
     }
 
-    public final void setEnabled(final boolean enabledValue)
+    @JsonProperty("enabled")
+    public final void setEnabled(final boolean enabled)
     {
-        this.enabled = enabledValue;
+        myIsEnabled = enabled;
     }
 
+    @JsonProperty("username")
     public final String getUsername()
     {
-        return username;
+        return myUsername;
     }
 
-    public final void setUsername(final String aUsername)
+    @JsonProperty("username")
+    public final void setUsername(final String username)
     {
-        this.username = aUsername;
+        myUsername = username;
     }
 
+    @JsonProperty("password")
     public final String getPassword()
     {
-        return password;
+        return myPassword;
     }
 
-    public final void setPassword(final String aPassword)
+    @JsonProperty("password")
+    public final void setPassword(final String password)
     {
-        this.password = aPassword;
+        myPassword = password;
     }
 
     @Override
@@ -76,14 +84,14 @@ public class Credentials
             return false;
         }
         Credentials that = (Credentials) o;
-        return enabled == that.enabled
-                && username.equals(that.username)
-                && password.equals(that.password);
+        return myIsEnabled == that.myIsEnabled
+                && myUsername.equals(that.myUsername)
+                && myPassword.equals(that.myPassword);
     }
 
     @Override
     public final int hashCode()
     {
-        return Objects.hash(enabled, username, password);
+        return Objects.hash(myIsEnabled, myUsername, myPassword);
     }
 }

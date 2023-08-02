@@ -39,7 +39,7 @@ public abstract class AbstractRepairConfigurationProvider
         this.applicationContext = anApplicationContext;
 
         Config config = applicationContext.getBean(Config.class);
-        this.defaultRepairConfiguration = config.getRepair().asRepairConfiguration();
+        this.defaultRepairConfiguration = config.getRepairConfig().asRepairConfiguration();
     }
 
     public final Set<RepairConfiguration> get(final TableReference tableReference)

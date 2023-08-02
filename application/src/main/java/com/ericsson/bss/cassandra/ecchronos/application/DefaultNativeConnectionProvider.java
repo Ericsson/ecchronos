@@ -22,6 +22,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.auth.AuthProvider;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
+import com.ericsson.bss.cassandra.ecchronos.application.config.connection.NativeConnection;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -29,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
-import com.ericsson.bss.cassandra.ecchronos.application.config.Security;
+import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalNativeConnectionProvider;
 
@@ -47,19 +48,19 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
                                            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
                                            final MeterRegistry meterRegistry)
     {
-        Config.NativeConnection nativeConfig = config.getConnectionConfig().getCql();
+        NativeConnection nativeConfig = config.getConnectionConfig().getCqlConnection();
         String host = nativeConfig.getHost();
         int port = nativeConfig.getPort();
         boolean remoteRouting = nativeConfig.getRemoteRouting();
         Security.CqlSecurity cqlSecurity = cqlSecuritySupplier.get();
-        boolean authEnabled = cqlSecurity.getCredentials().isEnabled();
-        boolean tlsEnabled = cqlSecurity.getTls().isEnabled();
+        boolean authEnabled = cqlSecurity.getCqlCredentials().isEnabled();
+        boolean tlsEnabled = cqlSecurity.getCqlTlsConfig().isEnabled();
         LOG.info("Connecting through CQL using {}:{}, authentication: {}, tls: {}", host, port, authEnabled,
                 tlsEnabled);
         AuthProvider authProvider = null;
         if (authEnabled)
         {
-            authProvider = new ReloadingAuthProvider(() -> cqlSecuritySupplier.get().getCredentials());
+            authProvider = new ReloadingAuthProvider(() -> cqlSecuritySupplier.get().getCqlCredentials());
         }
 
         SslEngineFactory sslEngineFactory = null;
@@ -74,7 +75,7 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
                 .withRemoteRouting(remoteRouting)
                 .withAuthProvider(authProvider)
                 .withSslEngineFactory(sslEngineFactory)
-                .withMetricsEnabled(config.getStatistics().isEnabled())
+                .withMetricsEnabled(config.getStatisticsConfig().isEnabled())
                 .withMeterRegistry(meterRegistry)
                 .withSchemaChangeListener(defaultRepairConfigurationProvider)
                 .withNodeStateListener(defaultRepairConfigurationProvider);
@@ -88,7 +89,8 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
                                            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
                                            final MeterRegistry meterRegistry)
     {
-        this(config, cqlSecuritySupplier, new ReloadingCertificateHandler(() -> cqlSecuritySupplier.get().getTls()),
+        this(config, cqlSecuritySupplier,
+                new ReloadingCertificateHandler(() -> cqlSecuritySupplier.get().getCqlTlsConfig()),
                 defaultRepairConfigurationProvider, meterRegistry);
     }
 
