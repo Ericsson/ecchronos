@@ -110,9 +110,7 @@ keyspaces:
 
 EOF
 
-cd $PYLIB_DIR
-
-python setup.py install
+pip install $PYLIB_DIR
 
 cd $BASE_DIR
 
