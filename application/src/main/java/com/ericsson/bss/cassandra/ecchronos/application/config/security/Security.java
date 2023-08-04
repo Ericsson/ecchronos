@@ -48,7 +48,7 @@ public final class Security
     public static final class CqlSecurity
     {
         private Credentials myCqlCredentials;
-        private TLSConfig myCqlTlsConfig;
+        private CqlTLSConfig myCqlTlsConfig;
 
         @JsonProperty("credentials")
         public Credentials getCqlCredentials()
@@ -63,13 +63,13 @@ public final class Security
         }
 
         @JsonProperty("tls")
-        public TLSConfig getCqlTlsConfig()
+        public CqlTLSConfig getCqlTlsConfig()
         {
             return myCqlTlsConfig;
         }
 
         @JsonProperty("tls")
-        public void setCqlTlsConfig(final TLSConfig cqlTlsConfig)
+        public void setCqlTlsConfig(final CqlTLSConfig cqlTlsConfig)
         {
             myCqlTlsConfig = cqlTlsConfig;
         }
@@ -78,7 +78,7 @@ public final class Security
     public static final class JmxSecurity
     {
         private Credentials myJmxCredentials;
-        private TLSConfig myJmxTlsConfig;
+        private JmxTLSConfig myJmxTlsConfig;
 
         @JsonProperty("credentials")
         public Credentials getJmxCredentials()
@@ -93,13 +93,13 @@ public final class Security
         }
 
         @JsonProperty("tls")
-        public TLSConfig getJmxTlsConfig()
+        public JmxTLSConfig getJmxTlsConfig()
         {
             return myJmxTlsConfig;
         }
 
         @JsonProperty("tls")
-        public void setJmxTlsConfig(final TLSConfig jmxTlsConfig)
+        public void setJmxTlsConfig(final JmxTLSConfig jmxTlsConfig)
         {
             myJmxTlsConfig = jmxTlsConfig;
         }
