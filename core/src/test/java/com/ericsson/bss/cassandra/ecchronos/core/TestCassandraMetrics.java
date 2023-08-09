@@ -15,7 +15,6 @@
 
 package com.ericsson.bss.cassandra.ecchronos.core;
 
-import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import org.junit.After;
 import org.junit.Before;
@@ -25,15 +24,14 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestCassandraMetrics
@@ -42,22 +40,14 @@ public class TestCassandraMetrics
     private JmxProxyFactory myJmxProxyFactoryMock;
     @Mock
     private JmxProxy myJmxProxyMock;
-    @Mock
-    private ReplicatedTableProvider myReplicatedTableProviderMock;
 
-    private Set<TableReference> myReplicatedTables = new HashSet<>();
     private CassandraMetrics myCassandraMetrics;
 
     @Before
     public void setup() throws Exception
     {
         doReturn(myJmxProxyMock).when(myJmxProxyFactoryMock).connect();
-        doReturn(myReplicatedTables).when(myReplicatedTableProviderMock).getAll();
-        myCassandraMetrics = CassandraMetrics.builder()
-                .withJmxProxyFactory(myJmxProxyFactoryMock)
-                .withReplicatedTableProvider(myReplicatedTableProviderMock)
-                .withInitialDelay(60, TimeUnit.SECONDS)
-                .build();
+        myCassandraMetrics = new CassandraMetrics(myJmxProxyFactoryMock);
     }
 
     @After
@@ -85,10 +75,9 @@ public class TestCassandraMetrics
 
         mockTable(tableReference, maxRepairedAt, percentRepaired);
 
-        myCassandraMetrics.updateMetrics();
-
         assertThat(myCassandraMetrics.getMaxRepairedAt(tableReference)).isEqualTo(0L);
         assertThat(myCassandraMetrics.getPercentRepaired(tableReference)).isEqualTo(0.0d);
+        verify(myJmxProxyFactoryMock, times(2)).connect();
     }
 
     @Test
@@ -103,46 +92,41 @@ public class TestCassandraMetrics
 
         mockTable(tableReference, firstMaxRepairedAt, firstPercentRepaired);
 
-        myCassandraMetrics.updateMetrics();
-
         assertThat(myCassandraMetrics.getMaxRepairedAt(tableReference)).isEqualTo(firstMaxRepairedAt);
         assertThat(myCassandraMetrics.getPercentRepaired(tableReference)).isEqualTo(firstPercentRepaired);
 
         doThrow(IOException.class).when(myJmxProxyFactoryMock).connect();
-
         mockTable(tableReference, secondMaxRepairedAt, secondPercentRepaired);
-
-        myCassandraMetrics.updateMetrics();
+        myCassandraMetrics.refreshCache(tableReference);
 
         assertThat(myCassandraMetrics.getMaxRepairedAt(tableReference)).isEqualTo(firstMaxRepairedAt);
         assertThat(myCassandraMetrics.getPercentRepaired(tableReference)).isEqualTo(firstPercentRepaired);
+        verify(myJmxProxyFactoryMock, times(2)).connect();
     }
 
     @Test
-    public void testUpdateMetricsForMultipleTables()
+    public void testUpdateMetricsForMultipleTables() throws IOException
     {
         TableReference firstTable = tableReference("keyspace", "table");
         long firstTableMaxRepairedAt = 1234L;
         double firstTablePercentRepaired = 0.5d;
         mockTable(firstTable, firstTableMaxRepairedAt, firstTablePercentRepaired);
 
+        assertThat(myCassandraMetrics.getMaxRepairedAt(firstTable)).isEqualTo(firstTableMaxRepairedAt);
+        assertThat(myCassandraMetrics.getPercentRepaired(firstTable)).isEqualTo(firstTablePercentRepaired);
+
         TableReference secondTable = tableReference("keyspace", "table2");
         long secondTableMaxRepairedAt = 2345L;
         double secondTablePercentRepaired = 1.0d;
         mockTable(secondTable, secondTableMaxRepairedAt, secondTablePercentRepaired);
 
-        myCassandraMetrics.updateMetrics();
-
-        assertThat(myCassandraMetrics.getMaxRepairedAt(firstTable)).isEqualTo(firstTableMaxRepairedAt);
-        assertThat(myCassandraMetrics.getPercentRepaired(firstTable)).isEqualTo(firstTablePercentRepaired);
-
         assertThat(myCassandraMetrics.getMaxRepairedAt(secondTable)).isEqualTo(secondTableMaxRepairedAt);
         assertThat(myCassandraMetrics.getPercentRepaired(secondTable)).isEqualTo(secondTablePercentRepaired);
+        verify(myJmxProxyFactoryMock, times(2)).connect();
     }
 
     private void mockTable(TableReference tableReference, long maxRepairedAt, double percentRepaired)
     {
-        myReplicatedTables.add(tableReference);
         doReturn(maxRepairedAt).when(myJmxProxyMock).getMaxRepairedAt(eq(tableReference));
         doReturn(percentRepaired).when(myJmxProxyMock).getPercentRepaired(eq(tableReference));
     }

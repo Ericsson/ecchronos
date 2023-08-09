@@ -50,6 +50,7 @@ import javax.management.MBeanException;
 import javax.management.MalformedObjectNameException;
 import javax.management.ReflectionException;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -133,12 +134,8 @@ public class ITIncrementalSchedules extends TestBase
                 .withRunInterval(1, TimeUnit.SECONDS)
                 .build();
 
-        myCassandraMetrics = CassandraMetrics.builder()
-                .withJmxProxyFactory(getJmxProxyFactory())
-                .withReplicatedTableProvider(new ReplicatedTableProviderImpl(localNode, session, myTableReferenceFactory))
-                .withInitialDelay(0, TimeUnit.MILLISECONDS)
-                .withUpdateDelay(CASSANDRA_METRICS_UPDATE_IN_SECONDS, TimeUnit.SECONDS)
-                .build();
+        myCassandraMetrics = new CassandraMetrics(getJmxProxyFactory(),
+                Duration.ofSeconds(CASSANDRA_METRICS_UPDATE_IN_SECONDS), Duration.ofMinutes(30));
 
         myRepairSchedulerImpl = RepairSchedulerImpl.builder()
                 .withJmxProxyFactory(getJmxProxyFactory())

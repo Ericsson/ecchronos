@@ -47,6 +47,7 @@ import javax.management.MBeanException;
 import javax.management.MalformedObjectNameException;
 import javax.management.ReflectionException;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -122,12 +123,8 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
         myScheduleManagerImpl = ScheduleManagerImpl.builder().withLockFactory(myLockFactory)
                 .withRunInterval(100, TimeUnit.MILLISECONDS).build();
 
-        myCassandraMetrics = CassandraMetrics.builder()
-                .withJmxProxyFactory(getJmxProxyFactory())
-                .withReplicatedTableProvider(new ReplicatedTableProviderImpl(localNode, session, myTableReferenceFactory))
-                .withInitialDelay(0, TimeUnit.MILLISECONDS)
-                .withUpdateDelay(5, TimeUnit.SECONDS)
-                .build();
+        myCassandraMetrics = new CassandraMetrics(getJmxProxyFactory(),
+                Duration.ofSeconds(5), Duration.ofMinutes(30));
 
         myOnDemandRepairSchedulerImpl = OnDemandRepairSchedulerImpl.builder().withJmxProxyFactory(getJmxProxyFactory())
                 .withTableRepairMetrics(mockTableRepairMetrics).withScheduleManager(myScheduleManagerImpl)

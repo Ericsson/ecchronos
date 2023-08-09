@@ -15,72 +15,71 @@
 
 package com.ericsson.bss.cassandra.ecchronos.core;
 
-import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.time.Duration;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Used to fetch metrics from Cassandra through JMX and keep them updated.
+ */
 public class CassandraMetrics implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CassandraMetrics.class);
-    private static final long DEFAULT_INITIAL_DELAY_IN_MS = 0;
-    private static final long DEFAULT_UPDATE_DELAY_IN_MS = TimeUnit.SECONDS.toMillis(60);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
+    private static final long DEFAULT_CACHE_EXPIRY_TIME_MINUTES = 30;
+    private static final long DEFAULT_CACHE_REFRESH_TIME_SECONDS = 30;
 
-    private final AtomicReference<ImmutableMap<TableReference, Double>> myPercentRepaired = new AtomicReference<>();
-    private final AtomicReference<ImmutableMap<TableReference, Long>> myMaxRepairedAt = new AtomicReference<>();
-    private final ScheduledExecutorService myScheduledExecutorService;
-    private final ReplicatedTableProvider myReplicatedTableProvider;
+    private final LoadingCache<TableReference, CassandraMetric> myCache;
     private final JmxProxyFactory myJmxProxyFactory;
 
-    CassandraMetrics(final Builder builder)
+    public CassandraMetrics(final JmxProxyFactory jmxProxyFactory)
     {
-        myReplicatedTableProvider = Preconditions.checkNotNull(builder.myReplicatedTableProvider,
-                "Replicated table provider must be set");
-        myJmxProxyFactory = Preconditions.checkNotNull(builder.myJmxProxyFactory,
-                "JMX proxy factory must be set");
-        myScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
-                new ThreadFactoryBuilder().setNameFormat("CassandraMetricsUpdater-%d").build());
-        myScheduledExecutorService.scheduleAtFixedRate(this::updateMetrics,
-                builder.myInitialDelayInMs,
-                builder.myUpdateDelayInMs,
-                TimeUnit.MILLISECONDS);
+        this(jmxProxyFactory, Duration.ofSeconds(DEFAULT_CACHE_REFRESH_TIME_SECONDS),
+                Duration.ofMinutes(DEFAULT_CACHE_EXPIRY_TIME_MINUTES));
+    }
+    public CassandraMetrics(final JmxProxyFactory jmxProxyFactory, final Duration refreshAfter,
+            final Duration expireAfter)
+    {
+        myJmxProxyFactory = Preconditions.checkNotNull(jmxProxyFactory, "JMX proxy factory must be set");
+        myCache = CacheBuilder.newBuilder()
+                .refreshAfterWrite(Preconditions.checkNotNull(refreshAfter, "Refresh after must be set"))
+                .expireAfterAccess(Preconditions.checkNotNull(expireAfter, "Expire after must be set"))
+                .build(new CacheLoader<>()
+                {
+                    @Override
+                    public CassandraMetric load(final TableReference key) throws Exception
+                    {
+                        return getMetrics(key);
+                    }
+                });
     }
 
     @VisibleForTesting
-    final void updateMetrics()
+    final void refreshCache(final TableReference tableReference)
+    {
+        myCache.refresh(tableReference);
+    }
+
+    private CassandraMetric getMetrics(final TableReference tableReference) throws IOException
     {
         try (JmxProxy jmxProxy = myJmxProxyFactory.connect())
         {
-            Map<TableReference, Double> tablesPercentRepaired = new HashMap<>();
-            Map<TableReference, Long> tablesMaxRepairedAt = new HashMap<>();
-            for (TableReference tableReference : myReplicatedTableProvider.getAll())
-            {
-                long maxRepairedAt = jmxProxy.getMaxRepairedAt(tableReference);
-                tablesMaxRepairedAt.put(tableReference, maxRepairedAt);
-
-                double percentRepaired = jmxProxy.getPercentRepaired(tableReference);
-                tablesPercentRepaired.put(tableReference, percentRepaired);
-                LOG.debug("{}, maxRepairedAt: {}, percentRepaired: {}", tableReference, maxRepairedAt, percentRepaired);
-            }
-            myPercentRepaired.set(ImmutableMap.copyOf(tablesPercentRepaired));
-            myMaxRepairedAt.set(ImmutableMap.copyOf(tablesMaxRepairedAt));
-        }
-        catch (IOException e)
-        {
-            LOG.error("Unable to update Cassandra metrics, future metrics might contain stale data", e);
+            long maxRepairedAt = jmxProxy.getMaxRepairedAt(tableReference);
+            double percentRepaired = jmxProxy.getPercentRepaired(tableReference);
+            LOG.debug("{}, maxRepairedAt: {}, percentRepaired: {}", tableReference, maxRepairedAt, percentRepaired);
+            return new CassandraMetric(percentRepaired, maxRepairedAt);
         }
     }
 
@@ -91,12 +90,16 @@ public class CassandraMetrics implements Closeable
      */
     public long getMaxRepairedAt(final TableReference tableReference)
     {
-        ImmutableMap<TableReference, Long> maxRepairedAt = myMaxRepairedAt.get();
-        if (maxRepairedAt != null && maxRepairedAt.containsKey(tableReference))
+        try
         {
-            return maxRepairedAt.get(tableReference);
+            CassandraMetric cassandraMetric = myCache.get(tableReference);
+            return cassandraMetric.myMaxRepairedAt;
         }
-        return 0L;
+        catch (ExecutionException e)
+        {
+            THROTTLED_LOGGER.error("Failed to get CassandraMetric, future metrics might contain stale values", e);
+            return 0L;
+        }
     }
 
     /**
@@ -106,61 +109,37 @@ public class CassandraMetrics implements Closeable
      */
     public double getPercentRepaired(final TableReference tableReference)
     {
-        ImmutableMap<TableReference, Double> percentRepaired = myPercentRepaired.get();
-        if (percentRepaired != null && percentRepaired.containsKey(tableReference))
+        try
         {
-            return percentRepaired.get(tableReference);
+            CassandraMetric cassandraMetric = myCache.get(tableReference);
+            return cassandraMetric.myPercentRepaired;
         }
-        return 0.0d;
+        catch (ExecutionException e)
+        {
+            THROTTLED_LOGGER.error("Failed to get CassandraMetric, future metrics might contain stale values", e);
+            return 0.0d;
+        }
     }
 
+    /**
+     * Cleans the cache.
+     */
     @Override
-    public final void close()
+    public void close()
     {
-        myScheduledExecutorService.shutdown();
-        myPercentRepaired.set(null);
-        myMaxRepairedAt.set(null);
+        myCache.invalidateAll();
+        myCache.cleanUp();
     }
 
-    public static Builder builder()
+    private class CassandraMetric
     {
-        return new Builder();
-    }
+        private final double myPercentRepaired;
+        private final long myMaxRepairedAt;
 
-    public static class Builder
-    {
-        private ReplicatedTableProvider myReplicatedTableProvider;
-        private JmxProxyFactory myJmxProxyFactory;
-        private long myInitialDelayInMs = DEFAULT_INITIAL_DELAY_IN_MS;
-        private long myUpdateDelayInMs = DEFAULT_UPDATE_DELAY_IN_MS;
-
-        public final Builder withReplicatedTableProvider(final ReplicatedTableProvider replicatedTableProvider)
+        CassandraMetric(final Double percentRepaired, final Long maxRepairedAt)
         {
-            myReplicatedTableProvider = replicatedTableProvider;
-            return this;
-        }
-
-        public final Builder withJmxProxyFactory(final JmxProxyFactory jmxProxyFactory)
-        {
-            myJmxProxyFactory = jmxProxyFactory;
-            return this;
-        }
-
-        public final Builder withInitialDelay(final long initialDelay, final TimeUnit timeUnit)
-        {
-            myInitialDelayInMs = timeUnit.toMillis(initialDelay);
-            return this;
-        }
-
-        public final Builder withUpdateDelay(final long updateDelay, final TimeUnit timeUnit)
-        {
-            myUpdateDelayInMs = timeUnit.toMillis(updateDelay);
-            return this;
-        }
-
-        public final CassandraMetrics build()
-        {
-            return new CassandraMetrics(this);
+            myPercentRepaired = percentRepaired;
+            myMaxRepairedAt = maxRepairedAt;
         }
     }
 }
