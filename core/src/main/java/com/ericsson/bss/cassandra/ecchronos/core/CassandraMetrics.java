@@ -17,18 +17,17 @@ package com.ericsson.bss.cassandra.ecchronos.core;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -38,7 +37,7 @@ public class CassandraMetrics implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CassandraMetrics.class);
     private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
-    private static final long DEFAULT_CACHE_EXPIRY_TIME_MINUTES = 30;
+    private static final long DEFAULT_CACHE_EXPIRY_TIME_MINUTES = 60;
     private static final long DEFAULT_CACHE_REFRESH_TIME_SECONDS = 30;
 
     private final LoadingCache<TableReference, CassandraMetric> myCache;
@@ -53,23 +52,11 @@ public class CassandraMetrics implements Closeable
             final Duration expireAfter)
     {
         myJmxProxyFactory = Preconditions.checkNotNull(jmxProxyFactory, "JMX proxy factory must be set");
-        myCache = CacheBuilder.newBuilder()
+        myCache = Caffeine.newBuilder()
                 .refreshAfterWrite(Preconditions.checkNotNull(refreshAfter, "Refresh after must be set"))
                 .expireAfterAccess(Preconditions.checkNotNull(expireAfter, "Expire after must be set"))
-                .build(new CacheLoader<>()
-                {
-                    @Override
-                    public CassandraMetric load(final TableReference key) throws Exception
-                    {
-                        return getMetrics(key);
-                    }
-                });
-    }
-
-    @VisibleForTesting
-    final void refreshCache(final TableReference tableReference)
-    {
-        myCache.refresh(tableReference);
+                .executor(Runnable::run)
+                .build(this::getMetrics);
     }
 
     private CassandraMetric getMetrics(final TableReference tableReference) throws IOException
@@ -78,9 +65,21 @@ public class CassandraMetrics implements Closeable
         {
             long maxRepairedAt = jmxProxy.getMaxRepairedAt(tableReference);
             double percentRepaired = jmxProxy.getPercentRepaired(tableReference);
-            LOG.debug("{}, maxRepairedAt: {}, percentRepaired: {}", tableReference, maxRepairedAt, percentRepaired);
+            LOG.trace("{}, maxRepairedAt: {}, percentRepaired: {}", tableReference, maxRepairedAt, percentRepaired);
             return new CassandraMetric(percentRepaired, maxRepairedAt);
         }
+        catch (IOException e)
+        {
+            THROTTLED_LOGGER.warn("Unable to fetch metrics from Cassandra, future metrics might contain stale values",
+                    e);
+            throw e;
+        }
+    }
+
+    @VisibleForTesting
+    final void refreshCache(final TableReference tableReference)
+    {
+        myCache.refresh(tableReference);
     }
 
     /**
@@ -95,9 +94,9 @@ public class CassandraMetrics implements Closeable
             CassandraMetric cassandraMetric = myCache.get(tableReference);
             return cassandraMetric.myMaxRepairedAt;
         }
-        catch (ExecutionException e)
+        catch (CompletionException e)
         {
-            THROTTLED_LOGGER.error("Failed to get CassandraMetric, future metrics might contain stale values", e);
+            THROTTLED_LOGGER.error("Failed to fetch maxRepairedAt metric for {}", tableReference, e);
             return 0L;
         }
     }
@@ -114,9 +113,9 @@ public class CassandraMetrics implements Closeable
             CassandraMetric cassandraMetric = myCache.get(tableReference);
             return cassandraMetric.myPercentRepaired;
         }
-        catch (ExecutionException e)
+        catch (CompletionException e)
         {
-            THROTTLED_LOGGER.error("Failed to get CassandraMetric, future metrics might contain stale values", e);
+            THROTTLED_LOGGER.error("Failed to fetch percentRepaired metric for {}", tableReference, e);
             return 0.0d;
         }
     }
