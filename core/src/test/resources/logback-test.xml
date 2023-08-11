@@ -24,6 +24,7 @@
     </appender>
 
     <logger name="com.datastax" level="ERROR" />
+    <logger name="com.github.benmanes.caffeine" level="ERROR" />
     <logger name="io.netty" level="WARN" />
 
     <root level="INFO">

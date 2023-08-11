@@ -16,8 +16,8 @@ package com.ericsson.bss.cassandra.ecchronos.core;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory.DistributedLock;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,8 +46,9 @@ public final class LockCache
     {
         myLockSupplier = lockSupplier;
 
-        myFailureCache = CacheBuilder.newBuilder()
+        myFailureCache = Caffeine.newBuilder()
                 .expireAfterWrite(expireTime, expireTimeUnit)
+                .executor(Runnable::run)
                 .build();
     }
 

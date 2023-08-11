@@ -2,6 +2,7 @@
 
 ## Version 5.0.0 (Not yet released)
 
+* Use Caffeine caches instead of Guava - Issue #534
 * Validate TLS config for JMX and CQL - Issue #529
 * Add support for incremental repairs - Issue #31
 * Bump java driver from 4.14.1 to 4.17.0

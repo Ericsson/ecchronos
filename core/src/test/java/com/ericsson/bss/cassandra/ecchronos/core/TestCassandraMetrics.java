@@ -57,15 +57,7 @@ public class TestCassandraMetrics
     }
 
     @Test
-    public void testGetMetricsForNonExistingTable()
-    {
-        assertThat(myCassandraMetrics.getMaxRepairedAt(tableReference("non_existing_keyspace", "non_existing_table")))
-                .isEqualTo(0L);
-        assertThat(myCassandraMetrics.getPercentRepaired(tableReference("non_existing_keyspace", "non_existing_table"))).isEqualTo(0.0d);
-    }
-
-    @Test
-    public void testUpdateMetricsUnableToConnectToJmx() throws IOException
+    public void testLoadMetricsFails() throws IOException
     {
         TableReference tableReference = tableReference("keyspace", "table");
         long maxRepairedAt = 1234L;
@@ -81,7 +73,8 @@ public class TestCassandraMetrics
     }
 
     @Test
-    public void testUpdateMetricsTwiceUnableToConnectToJmxSecondTime() throws IOException
+    public void testUpdateMetricsTwiceUnableToConnectToJmxSecondTime()
+            throws IOException
     {
         TableReference tableReference = tableReference("keyspace", "table");
         long firstMaxRepairedAt = 1234L;

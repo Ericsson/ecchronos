@@ -27,10 +27,9 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,22 +96,21 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
 
     private LoadingCache<TableKey, TimeRejectionCollection> createConfigCache(final long expireAfter)
     {
-        return CacheBuilder.newBuilder()
+        return Caffeine.newBuilder()
                 .expireAfterWrite(expireAfter, TimeUnit.MILLISECONDS)
-                .build(new CacheLoader<TableKey, TimeRejectionCollection>()
-                {
-                    @Override
-                    public TimeRejectionCollection load(final TableKey key)
-                    {
-                        Statement decoratedStatement =
-                                myStatementDecorator.apply(myGetRejectionsStatement.bind(key.getKeyspace(),
-                                        key.getTable()));
+                .executor(Runnable::run)
+                .build(key -> load(key));
+    }
 
-                        ResultSet resultSet = mySession.execute(decoratedStatement);
-                        Iterator<Row> iterator = resultSet.iterator();
-                        return new TimeRejectionCollection(iterator);
-                    }
-                });
+    private TimeRejectionCollection load(final TableKey key)
+    {
+        Statement decoratedStatement =
+                myStatementDecorator.apply(myGetRejectionsStatement.bind(key.getKeyspace(),
+                        key.getTable()));
+
+        ResultSet resultSet = mySession.execute(decoratedStatement);
+        Iterator<Row> iterator = resultSet.iterator();
+        return new TimeRejectionCollection(iterator);
     }
 
     @Override

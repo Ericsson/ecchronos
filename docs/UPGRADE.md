@@ -1,5 +1,14 @@
 # Upgrade to 5.X
 
+## Caffeine cache
+
+EcChronos has changed its caches to use [Caffeine](https://github.com/ben-manes/caffeine).
+Logback.xml has been updated because of this to only log errors from Caffeine, if you're overriding logback make sure
+to include latest changes. If not, logs will be spammed by Caffeine cache when values in cache cannot be reloaded
+(same behaviour as Guava cache).
+
+## Incremental repairs
+
 Version 5.X has added support for incremental repairs and multiple schedules for the same table.
 To enable multiple schedules for a table, multiple schedules should be specified in `schedule.yaml`.
 If there's a single entry in the `schedule.yaml` it will overwrite the default schedule (as in pre 5.X).
