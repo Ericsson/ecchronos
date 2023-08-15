@@ -327,7 +327,7 @@ public class TestVnodeRepairStateFactoryImpl
 
         assertThat(updatedVnodeRepairStates).isEqualTo(expectedVnodeRepairStates);
 
-        // Check that vnodes keep their states from old snapshot when iterator contains new entries
+        // Check that vnodes get updated for the new repair entries and old are kept from old snapshot
         long secondSnapshotCreatedAt = 5;
         RepairStateSnapshot secondRepairStateSnapshot = RepairStateSnapshot.newBuilder()
                 .withVnodeRepairStates(actualVnodeRepairStates)
