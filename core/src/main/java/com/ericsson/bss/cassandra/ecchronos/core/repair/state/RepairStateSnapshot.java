@@ -33,16 +33,27 @@ public class RepairStateSnapshot
 {
     private final boolean canRepair;
     private final long myLastRepairedAt;
+    private final long myCreatedAt;
     private final ImmutableList<ReplicaRepairGroup> myReplicaRepairGroup;
     private final VnodeRepairStates myVnodeRepairStates;
 
     private RepairStateSnapshot(Builder builder)
     {
+        myCreatedAt = builder.myCreatedAt;
         myLastRepairedAt = builder.myLastRepairedAt;
         myReplicaRepairGroup = builder.myReplicaRepairGroup;
         myVnodeRepairStates = builder.myVnodeRepairStates;
 
         canRepair = !myReplicaRepairGroup.isEmpty();
+    }
+
+    /**
+     * Get the time this snapshot was created.
+     * @return The time this snapshot was created.
+     */
+    public long getCreatedAt()
+    {
+        return myCreatedAt;
     }
 
     /**
@@ -94,6 +105,7 @@ public class RepairStateSnapshot
     public static class Builder
     {
         private Long myLastRepairedAt;
+        private long myCreatedAt = System.currentTimeMillis();
         private ImmutableList<ReplicaRepairGroup> myReplicaRepairGroup;
         private VnodeRepairStates myVnodeRepairStates;
 
@@ -112,6 +124,12 @@ public class RepairStateSnapshot
         public Builder withVnodeRepairStates(VnodeRepairStates vnodeRepairStates)
         {
             myVnodeRepairStates = vnodeRepairStates;
+            return this;
+        }
+
+        public Builder withCreatedAt(long createdAt)
+        {
+            myCreatedAt = createdAt;
             return this;
         }
 
