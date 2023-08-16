@@ -18,9 +18,14 @@
 
 ### Merged from 1.0
 
+* Skip unnecessary reads from repair history - Issue #548
 * Fix repair job priority - Issue #515
 
 ## Version 4.0.5 (Not yet released)
+
+### Merged from 1.0
+
+* Skip unnecessary reads from repair history - Issue #548
 
 ## Version 4.0.4
 
@@ -74,6 +79,7 @@
 
 ### Merged from 1.0
 
+* Skip unnecessary reads from repair history - Issue #548
 * Fix repair job priority - Issue #515
 
 ## Version 3.0.0
@@ -94,6 +100,7 @@
 
 ### Merged from 1.0
 
+* Skip unnecessary reads from repair history - Issue #548
 * Fix repair job priority - Issue #515
 * Fix malformed IPv6 for JMX - Issue #306
 
@@ -216,6 +223,7 @@
 
 ### Merged from 1.0
 
+* Skip unnecessary reads from repair history - Issue #548
 * Fix repair job priority - Issue #515
 * Fix malformed IPv6 for JMX - Issue #306
 * Step karaf to 4.2.8
@@ -226,6 +234,7 @@
 
 #### Merged from 1.0
 
+* Skip unnecessary reads from repair history - Issue #548
 * Fix repair job priority - Issue #515
 * Fix malformed IPv6 for JMX - Issue #306
 
@@ -263,6 +272,7 @@
 
 ## Version 1.0.8 (Not yet released)
 
+* Skip unnecessary reads from repair history - Issue #548
 * Fix repair job priority - Issue #515
 * Fix malformed IPv6 for JMX - Issue #306
 * Step karaf to 4.2.8
