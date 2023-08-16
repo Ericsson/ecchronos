@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -252,12 +254,79 @@ public class TestVnodeRepairStateFactoryImpl
                 newState(range(5, 0), 1234L));
     }
 
+    @Test
+    public void testWithHistoryAndPreviousOnlyIteratesOverDiff() throws UnknownHostException
+    {
+        Node node1 = withNode("127.0.0.1");
+        Node node2 = withNode("127.0.0.2");
+
+        LongTokenRange longTokenRange1 = range(1, 2);
+        LongTokenRange longTokenRange2 = range(2, 3);
+        withRange(longTokenRange1, node1, node2);
+        withRange(longTokenRange2, node1, node2);
+        ImmutableSet<Node> replicas = ImmutableSet.of(node1, node2);
+
+        Map<LongTokenRange, ImmutableSet<Node>> tokenToHostMap = new HashMap<>();
+        tokenToHostMap.put(longTokenRange1, replicas);
+        tokenToHostMap.put(longTokenRange2, replicas);
+
+        long range1RepairedAt = 1;
+        long range2RepairedAt = 2;
+        RepairEntry repairEntry1 = new RepairEntry(longTokenRange1, range1RepairedAt, replicas, "SUCCESS");
+        RepairEntry repairEntry2 = new RepairEntry(longTokenRange2, range2RepairedAt, replicas, "SUCCESS");
+        List<RepairEntry> firstIterateRepairEntries = new ArrayList<>();
+        firstIterateRepairEntries.add(repairEntry1);
+        firstIterateRepairEntries.add(repairEntry2);
+
+        when(mockReplicationState.getTokenRangeToReplicas(eq(TABLE_REFERENCE))).thenReturn(tokenToHostMap);
+        repairHistoryProvider = mock(RepairHistoryProvider.class);
+        when(repairHistoryProvider.iterate(eq(TABLE_REFERENCE), any(long.class), any(Predicate.class))).thenReturn(
+                firstIterateRepairEntries.iterator());
+
+        assertVnodeStates(newState(range(1, 2), range1RepairedAt),
+                newState(range(2, 3), range2RepairedAt));
+
+        // Check that vnodes keep their states from old snapshot even if iterator is empty
+        long firstSnapshotCreatedAt = 3;
+        RepairStateSnapshot firstRepairStateSnapshot = snapshot(range1RepairedAt, firstSnapshotCreatedAt,
+                newState(range(1, 2), range1RepairedAt),
+                newState(range(2, 3), range2RepairedAt));
+        List<RepairEntry> secondIterateRepairEntries = new ArrayList<>();
+
+        when(repairHistoryProvider.iterate(eq(TABLE_REFERENCE), any(long.class), eq(firstSnapshotCreatedAt),
+                any(Predicate.class))).thenReturn(secondIterateRepairEntries.iterator());
+
+        assertVnodeStates(firstRepairStateSnapshot, newState(range(1, 2), range1RepairedAt),
+                newState(range(2, 3), range2RepairedAt));
+
+        // Check that vnodes get updated for the new repair entries and old are kept from old snapshot
+        long secondSnapshotCreatedAt = 5;
+        RepairStateSnapshot secondRepairStateSnapshot = snapshot(range1RepairedAt, secondSnapshotCreatedAt,
+                newState(range(1, 2), range1RepairedAt),
+                newState(range(2, 3), range2RepairedAt));
+        long updateRange1RepairedAt = 4;
+        RepairEntry repairEntry3 = new RepairEntry(longTokenRange1, updateRange1RepairedAt, replicas, "SUCCESS");
+        List<RepairEntry> thirdIterateRepairEntries = new ArrayList<>();
+        thirdIterateRepairEntries.add(repairEntry3);
+
+        when(repairHistoryProvider.iterate(eq(TABLE_REFERENCE), any(long.class), eq(secondSnapshotCreatedAt),
+                any(Predicate.class))).thenReturn(thirdIterateRepairEntries.iterator());
+        assertVnodeStates(secondRepairStateSnapshot, newState(range(1, 2), updateRange1RepairedAt),
+                newState(range(2, 3), range2RepairedAt));
+    }
+
     private RepairStateSnapshot snapshot(long repairedAt, VnodeRepairState... states)
+    {
+        return snapshot(repairedAt, repairedAt, states);
+    }
+
+    private RepairStateSnapshot snapshot(long repairedAt, long createdAt, VnodeRepairState... states)
     {
         return RepairStateSnapshot.newBuilder()
                 .withLastCompletedAt(repairedAt)
                 .withReplicaRepairGroups(Collections.emptyList())
                 .withVnodeRepairStates(vnodeRepairStates(states))
+                .withCreatedAt(createdAt)
                 .build();
     }
 
