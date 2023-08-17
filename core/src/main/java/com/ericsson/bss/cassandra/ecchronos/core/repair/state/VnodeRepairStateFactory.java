@@ -28,9 +28,11 @@ public interface VnodeRepairStateFactory
      *
      * @param tableReference The table to calculate the new repair state for vnodes.
      * @param previous The previous repair state or null if non exists.
+     * @param iterateToTime The time to iterate repair entries to.
      * @return The calculated repair state.
      */
-    VnodeRepairStates calculateNewState(TableReference tableReference, RepairStateSnapshot previous);
+    VnodeRepairStates calculateNewState(TableReference tableReference, RepairStateSnapshot previous,
+            long iterateToTime);
 
     /**
      * Calculate the repair state for a time window.
