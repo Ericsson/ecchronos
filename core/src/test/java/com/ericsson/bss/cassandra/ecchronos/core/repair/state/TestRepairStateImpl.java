@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
@@ -88,7 +89,7 @@ public class TestRepairStateImpl
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Collections.singletonList(vnodeRepairState))
                 .build();
 
-        when(mockVnodeRepairStateFactory.calculateNewState(eq(tableReference), isNull())).thenReturn(vnodeRepairStates);
+        when(mockVnodeRepairStateFactory.calculateNewState(eq(tableReference), isNull(), any(long.class))).thenReturn(vnodeRepairStates);
         when(mockReplicaRepairGroupFactory.generateReplicaRepairGroups(repairGroupCaptor.capture())).thenReturn(Lists.emptyList());
 
         RepairState repairState = new RepairStateImpl(tableReference, repairConfiguration,
@@ -123,7 +124,7 @@ public class TestRepairStateImpl
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState, repairedVnodeRepairState))
                 .build();
 
-        when(mockVnodeRepairStateFactory.calculateNewState(eq(tableReference), isNull())).thenReturn(vnodeRepairStates);
+        when(mockVnodeRepairStateFactory.calculateNewState(eq(tableReference), isNull(), any(long.class))).thenReturn(vnodeRepairStates);
         when(mockReplicaRepairGroupFactory.generateReplicaRepairGroups(repairGroupCaptor.capture())).thenReturn(Collections.singletonList(mockReplicaRepairGroup));
 
         RepairState repairState = new RepairStateImpl(tableReference, repairConfiguration,
@@ -158,7 +159,7 @@ public class TestRepairStateImpl
         VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Collections.singletonList(vnodeRepairState))
                 .build();
 
-        when(mockVnodeRepairStateFactory.calculateNewState(eq(tableReference), isNull())).thenReturn(vnodeRepairStates);
+        when(mockVnodeRepairStateFactory.calculateNewState(eq(tableReference), isNull(), any(long.class))).thenReturn(vnodeRepairStates);
         when(mockReplicaRepairGroupFactory.generateReplicaRepairGroups(repairGroupCaptor.capture())).thenReturn(Lists.emptyList());
 
         RepairState repairState = new RepairStateImpl(tableReference, repairConfiguration,

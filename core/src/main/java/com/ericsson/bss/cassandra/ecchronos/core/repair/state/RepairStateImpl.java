@@ -67,10 +67,11 @@ public class RepairStateImpl implements RepairState
     {
         RepairStateSnapshot oldRepairStateSnapshot = myRepairStateSnapshot.get();
 
+        long now = System.currentTimeMillis();
         if (oldRepairStateSnapshot == null
-                || oldRepairStateSnapshot.lastCompletedAt() < System.currentTimeMillis() - myRepairConfiguration.getRepairIntervalInMs())
+                || oldRepairStateSnapshot.lastCompletedAt() < now - myRepairConfiguration.getRepairIntervalInMs())
         {
-            RepairStateSnapshot newRepairStateSnapshot = generateNewRepairState(oldRepairStateSnapshot);
+            RepairStateSnapshot newRepairStateSnapshot = generateNewRepairState(oldRepairStateSnapshot, now);
             if (myRepairStateSnapshot.compareAndSet(oldRepairStateSnapshot, newRepairStateSnapshot))
             {
                 myTableRepairMetrics.lastRepairedAt(myTableReference, newRepairStateSnapshot.lastCompletedAt());
@@ -98,14 +99,14 @@ public class RepairStateImpl implements RepairState
         return myRepairStateSnapshot.get();
     }
 
-    private RepairStateSnapshot generateNewRepairState(RepairStateSnapshot old)
+    private RepairStateSnapshot generateNewRepairState(RepairStateSnapshot old, long now)
     {
-        VnodeRepairStates vnodeRepairStates = myVnodeRepairStateFactory.calculateNewState(myTableReference, old);
+        VnodeRepairStates vnodeRepairStates = myVnodeRepairStateFactory.calculateNewState(myTableReference, old, now);
 
-        return generateSnapshotForVnode(vnodeRepairStates);
+        return generateSnapshotForVnode(vnodeRepairStates, now);
     }
 
-    private RepairStateSnapshot generateSnapshotForVnode(VnodeRepairStates vnodeRepairStates)
+    private RepairStateSnapshot generateSnapshotForVnode(VnodeRepairStates vnodeRepairStates, long createdAt)
     {
         long repairedAt = calculateRepairedAt(vnodeRepairStates);
 
@@ -121,6 +122,7 @@ public class RepairStateImpl implements RepairState
         return RepairStateSnapshot.newBuilder()
                 .withLastCompletedAt(repairedAt)
                 .withVnodeRepairStates(updatedVnodeRepairStates)
+                .withCreatedAt(createdAt)
                 .withReplicaRepairGroups(replicaRepairGroups)
                 .build();
     }
