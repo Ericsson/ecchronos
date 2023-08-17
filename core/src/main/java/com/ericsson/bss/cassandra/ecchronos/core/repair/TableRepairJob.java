@@ -69,7 +69,6 @@ public class TableRepairJob extends ScheduledJob
         myRepairConfiguration = builder.repairConfiguration;
         myRepairLockType = builder.repairLockType;
         myRepairPolicies = builder.repairPolicies;
-        refreshState();
     }
 
     public TableReference getTableReference()

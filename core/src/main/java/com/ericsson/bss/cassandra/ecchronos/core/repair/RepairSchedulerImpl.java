@@ -173,6 +173,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
                 .withRepairLockType(myRepairLockType)
                 .withRepairPolices(myRepairPolicies)
                 .build();
+        job.refreshState();
 
         return job;
     }

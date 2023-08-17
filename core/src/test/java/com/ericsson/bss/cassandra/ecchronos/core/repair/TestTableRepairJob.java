@@ -165,7 +165,6 @@ public class TestTableRepairJob
 
         assertThat(myRepairJob.runnable()).isFalse();
 
-        verify(myRepairState, times(1)).update();
         verify(myRepairStateSnapshot, times(1)).canRepair();
     }
 
@@ -177,7 +176,6 @@ public class TestTableRepairJob
         mockRepairGroup(0L);
         assertThat(myRepairJob.runnable()).isTrue();
 
-        verify(myRepairState, times(1)).update();
         verify(myRepairStateSnapshot, times(2)).canRepair();
     }
 
@@ -190,7 +188,6 @@ public class TestTableRepairJob
         assertThat(myRepairJob.runnable()).isFalse();
         assertThat(myRepairJob.runnable()).isTrue();
 
-        verify(myRepairState, times(1)).update();
         verify(myRepairStateSnapshot, times(3)).canRepair();
     }
 
@@ -229,7 +226,7 @@ public class TestTableRepairJob
         myRepairJob.postExecute(true);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(repairedAt);
-        verify(myRepairState, times(2)).update();
+        verify(myRepairState, times(1)).update();
     }
 
     @Test
@@ -243,7 +240,7 @@ public class TestTableRepairJob
         myRepairJob.postExecute(false);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(repairedAt);
-        verify(myRepairState, times(2)).update();
+        verify(myRepairState, times(1)).update();
     }
 
     @Test
@@ -257,7 +254,7 @@ public class TestTableRepairJob
         myRepairJob.postExecute(true);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(lastRun);
-        verify(myRepairState, times(2)).update();
+        verify(myRepairState, times(1)).update();
     }
 
     @Test
@@ -271,7 +268,7 @@ public class TestTableRepairJob
         myRepairJob.postExecute(false);
 
         assertThat(myRepairJob.getLastSuccessfulRun()).isEqualTo(lastRun);
-        verify(myRepairState, times(2)).update();
+        verify(myRepairState, times(1)).update();
     }
 
     @Test
