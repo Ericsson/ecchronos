@@ -71,12 +71,13 @@ public class RepairStateImpl implements RepairState
     public final void update()
     {
         RepairStateSnapshot oldRepairStateSnapshot = myRepairStateSnapshot.get();
+        long now = System.currentTimeMillis();
         if (oldRepairStateSnapshot == null
                 || isRepairNeeded(oldRepairStateSnapshot.lastCompletedAt(),
                 oldRepairStateSnapshot.getEstimatedRepairTime(),
-                System.currentTimeMillis()))
+                now))
         {
-            RepairStateSnapshot newRepairStateSnapshot = generateNewRepairState(oldRepairStateSnapshot);
+            RepairStateSnapshot newRepairStateSnapshot = generateNewRepairState(oldRepairStateSnapshot, now);
             if (myRepairStateSnapshot.compareAndSet(oldRepairStateSnapshot, newRepairStateSnapshot))
             {
                 myTableRepairMetrics.lastRepairedAt(myTableReference, newRepairStateSnapshot.lastCompletedAt());
@@ -114,15 +115,15 @@ public class RepairStateImpl implements RepairState
         return myRepairStateSnapshot.get();
     }
 
-    private RepairStateSnapshot generateNewRepairState(final RepairStateSnapshot old)
+    private RepairStateSnapshot generateNewRepairState(final RepairStateSnapshot old, final long now)
     {
-        VnodeRepairStates vnodeRepairStates = myVnodeRepairStateFactory.calculateNewState(myTableReference, old);
+        VnodeRepairStates vnodeRepairStates = myVnodeRepairStateFactory.calculateNewState(myTableReference, old, now);
 
-        return generateSnapshotForVnode(vnodeRepairStates, old);
+        return generateSnapshotForVnode(vnodeRepairStates, old, now);
     }
 
     private RepairStateSnapshot generateSnapshotForVnode(final VnodeRepairStates vnodeRepairStates,
-                                                         final RepairStateSnapshot old)
+                                                         final RepairStateSnapshot old, final long createdAt)
     {
         long repairedAt = calculateRepairedAt(vnodeRepairStates, old);
 
@@ -139,6 +140,7 @@ public class RepairStateImpl implements RepairState
         return RepairStateSnapshot.newBuilder()
                 .withLastCompletedAt(repairedAt)
                 .withVnodeRepairStates(updatedVnodeRepairStates)
+                .withCreatedAt(createdAt)
                 .withReplicaRepairGroups(replicaRepairGroups)
                 .build();
     }

@@ -52,27 +52,27 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
      * {@inheritDoc}
      */
     @Override
-    public VnodeRepairStates calculateNewState(final TableReference tableReference, final RepairStateSnapshot previous)
+    public VnodeRepairStates calculateNewState(final TableReference tableReference, final RepairStateSnapshot previous,
+            final long iterateToTime)
     {
         Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicaMap
                 = myReplicationState.getTokenRangeToReplicas(tableReference);
         long lastRepairedAt = previousLastRepairedAt(previous, tokenRangeToReplicaMap);
-        long now = System.currentTimeMillis();
 
         Iterator<RepairEntry> repairEntryIterator;
 
         if (lastRepairedAt == VnodeRepairState.UNREPAIRED)
         {
             LOG.debug("No last repaired at found for {}, iterating over all repair entries", tableReference);
-            repairEntryIterator = myRepairHistoryProvider.iterate(tableReference,
-                    now, (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
+            repairEntryIterator = myRepairHistoryProvider.iterate(tableReference, iterateToTime,
+                    (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
         }
         else
         {
-            LOG.debug("Table {} snapshot created at {}, iterating repir entries until that time", tableReference,
+            LOG.debug("Table {} snapshot created at {}, iterating repair entries until that time", tableReference,
                     previous.getCreatedAt());
-            repairEntryIterator = myRepairHistoryProvider.iterate(tableReference, now, previous.getCreatedAt(),
-                    (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
+            repairEntryIterator = myRepairHistoryProvider.iterate(tableReference, iterateToTime,
+                    previous.getCreatedAt(), (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
         }
 
         return generateVnodeRepairStates(lastRepairedAt, previous, repairEntryIterator, tokenRangeToReplicaMap);
