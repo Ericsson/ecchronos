@@ -75,7 +75,7 @@ public class TestVnodeRepairStateFactoryImpl
 
         VnodeRepairStateFactory vnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider);
 
-        VnodeRepairStates actualVnodeRepairStates = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, null);
+        VnodeRepairStates actualVnodeRepairStates = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, null, System.currentTimeMillis());
 
         assertThat(actualVnodeRepairStates).isEqualTo(expectedVnodeRepairStates);
     }
@@ -109,7 +109,7 @@ public class TestVnodeRepairStateFactoryImpl
 
         VnodeRepairStateFactory vnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider);
 
-        VnodeRepairStates actualVnodeRepairStates = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, previousRepairState);
+        VnodeRepairStates actualVnodeRepairStates = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, previousRepairState, System.currentTimeMillis());
 
         assertThat(actualVnodeRepairStates).isEqualTo(expectedVnodeRepairStates);
     }
@@ -145,7 +145,7 @@ public class TestVnodeRepairStateFactoryImpl
 
         VnodeRepairStateFactory vnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider);
 
-        VnodeRepairStates actualVnodeRepairStates = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, null);
+        VnodeRepairStates actualVnodeRepairStates = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, null, System.currentTimeMillis());
 
         assertThat(actualVnodeRepairStates).isEqualTo(expectedVnodeRepairStates);
     }
@@ -181,7 +181,7 @@ public class TestVnodeRepairStateFactoryImpl
 
         VnodeRepairStateFactory vnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider);
 
-        VnodeRepairStates actualVnodeRepairStates = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, null);
+        VnodeRepairStates actualVnodeRepairStates = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, null, System.currentTimeMillis());
 
         assertThat(actualVnodeRepairStates).isEqualTo(expectedVnodeRepairStates);
     }
@@ -217,7 +217,7 @@ public class TestVnodeRepairStateFactoryImpl
 
         VnodeRepairStateFactory vnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState, repairHistoryProvider);
 
-        VnodeRepairStates actualVnodeRepairStates = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, null);
+        VnodeRepairStates actualVnodeRepairStates = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, null, System.currentTimeMillis());
 
         assertThat(actualVnodeRepairStates).isEqualTo(expectedVnodeRepairStates);
     }
@@ -266,7 +266,7 @@ public class TestVnodeRepairStateFactoryImpl
                 .withReplicaRepairGroups(Collections.emptyList())
                 .build();
 
-        VnodeRepairStates actualVnodeRepairStatesAfter = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, repairStateSnapshot);
+        VnodeRepairStates actualVnodeRepairStatesAfter = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, repairStateSnapshot, System.currentTimeMillis());
 
         assertThat(actualVnodeRepairStatesAfter).isEqualTo(expectedVnodeRepairStatesAfter);
     }
@@ -307,7 +307,7 @@ public class TestVnodeRepairStateFactoryImpl
         VnodeRepairStateFactory vnodeRepairStateFactory = new VnodeRepairStateFactoryImpl(mockReplicationState,
                 repairHistoryProvider);
 
-        VnodeRepairStates actualVnodeRepairStates = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, null);
+        VnodeRepairStates actualVnodeRepairStates = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE, null, System.currentTimeMillis());
 
         assertThat(actualVnodeRepairStates).isEqualTo(expectedVnodeRepairStates);
 
@@ -323,7 +323,7 @@ public class TestVnodeRepairStateFactoryImpl
         when(repairHistoryProvider.iterate(eq(TABLE_REFERENCE), any(long.class), eq(firstSnapshotCreatedAt),
                 any(Predicate.class))).thenReturn(secondIterateRepairEntries.iterator());
         VnodeRepairStates updatedVnodeRepairStates = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE,
-                firstRepairStateSnapshot);
+                firstRepairStateSnapshot, System.currentTimeMillis());
 
         assertThat(updatedVnodeRepairStates).isEqualTo(expectedVnodeRepairStates);
 
@@ -342,7 +342,7 @@ public class TestVnodeRepairStateFactoryImpl
         when(repairHistoryProvider.iterate(eq(TABLE_REFERENCE), any(long.class), eq(secondSnapshotCreatedAt),
                 any(Predicate.class))).thenReturn(thirdIterateRepairEntries.iterator());
         updatedVnodeRepairStates = vnodeRepairStateFactory.calculateNewState(TABLE_REFERENCE,
-                secondRepairStateSnapshot);
+                secondRepairStateSnapshot, System.currentTimeMillis());
 
         expectedVnodeRepairStates = VnodeRepairStates.newBuilder(Arrays.asList(
                         new VnodeRepairState(longTokenRange1, replicas, updateRange1RepairedAt),
