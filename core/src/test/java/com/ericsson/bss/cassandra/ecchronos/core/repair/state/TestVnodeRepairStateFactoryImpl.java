@@ -483,7 +483,7 @@ public class TestVnodeRepairStateFactoryImpl
 
     private void assertNewState(VnodeRepairStateFactory factory, RepairStateSnapshot previous, Class<? extends VnodeRepairStates> expectedClass, Collection<VnodeRepairState> expectedStates)
     {
-        VnodeRepairStates newStates = factory.calculateNewState(TABLE_REFERENCE, previous);
+        VnodeRepairStates newStates = factory.calculateNewState(TABLE_REFERENCE, previous, System.currentTimeMillis());
         assertThat(newStates).isInstanceOf(expectedClass);
 
         Collection<VnodeRepairState> vnodeRepairStates = newStates.getVnodeRepairStates();
