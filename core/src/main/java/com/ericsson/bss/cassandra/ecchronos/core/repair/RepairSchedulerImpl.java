@@ -280,7 +280,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
                     .build();
 
         }
-        job.runnable();
+        job.refreshState();
         return job;
     }
 
