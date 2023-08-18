@@ -189,8 +189,7 @@ public class RepairSchedulerImpl implements RepairScheduler, Closeable
                 .withTableStorageStates(myTableStorageStates)
                 .withRepairPolices(myRepairPolicies)
                 .build();
-
-        job.runnable();
+        job.refreshState();
 
         return job;
     }
