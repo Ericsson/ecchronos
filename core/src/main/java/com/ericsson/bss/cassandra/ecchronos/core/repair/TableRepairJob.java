@@ -172,7 +172,7 @@ public class TableRepairJob extends ScheduledJob
                         .withRepairHistory(myRepairHistory)
                         .withJobId(getId());
 
-                taskList.add(builder.build(getRealPriority()));
+                taskList.add(builder.build(getRealPriority(replicaRepairGroup.getLastCompletedAt())));
             }
 
             return taskList.iterator();
@@ -213,15 +213,20 @@ public class TableRepairJob extends ScheduledJob
     @Override
     public boolean runnable()
     {
+        return myRepairState.getSnapshot().canRepair() && super.runnable();
+    }
+
+    @Override
+    public void refreshState()
+    {
         try
         {
             myRepairState.update();
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
             LOG.warn("Unable to check repair history, {}", this, e);
         }
-
-        return myRepairState.getSnapshot().canRepair() && super.runnable();
     }
 
     /**

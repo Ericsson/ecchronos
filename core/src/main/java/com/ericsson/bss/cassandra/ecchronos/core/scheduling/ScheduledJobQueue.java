@@ -116,6 +116,7 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
     @Override
     public synchronized Iterator<ScheduledJob> iterator()
     {
+        myJobQueues.values().forEach(q -> q.forEach(ScheduledJob::refreshState));
         Iterator<ScheduledJob> baseIterator = new ManyToOneIterator<>(myJobQueues.values(), myComparator);
 
         return new RunnableJobIterator(baseIterator);
