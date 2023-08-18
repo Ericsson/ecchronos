@@ -91,7 +91,8 @@ public class TableRepairJob extends ScheduledJob
 
             for (ReplicaRepairGroup replicaRepairGroup : repairStateSnapshot.getRepairGroups())
             {
-                taskList.add(new RepairGroup(getRealPriority(), myTableReference, myRepairConfiguration,
+                taskList.add(new RepairGroup(getRealPriority(replicaRepairGroup.getLastCompletedAt()),
+                        myTableReference, myRepairConfiguration,
                         replicaRepairGroup, myJmxProxyFactory, myTableRepairMetrics,
                         myRepairLockType.getLockFactory(),
                         new RepairLockFactoryImpl(), myRepairPolicies));
@@ -181,14 +182,6 @@ public class TableRepairJob extends ScheduledJob
     @Override
     public boolean runnable()
     {
-        try
-        {
-            myRepairState.update();
-        } catch (Exception e)
-        {
-            LOG.warn("Unable to check repair history, {}", this, e);
-        }
-
         RepairStateSnapshot repairStateSnapshot = myRepairState.getSnapshot();
 
         long lastRepaired = repairStateSnapshot.lastRepairedAt();
@@ -199,6 +192,19 @@ public class TableRepairJob extends ScheduledJob
         }
 
         return repairStateSnapshot.canRepair() && super.runnable();
+    }
+
+    @Override
+    public void refreshState()
+    {
+        try
+        {
+            myRepairState.update();
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Unable to check repair history, {}", this, e);
+        }
     }
 
     /**
