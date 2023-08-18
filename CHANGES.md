@@ -4,6 +4,7 @@
 
 ### Merged from 1.0
 
+* Fix priority calculation for local queue - Issue #546
 * Skip unnecessary reads from repair history - Issue #548
 
 ## Version 4.0.4
@@ -58,6 +59,7 @@
 
 ### Merged from 1.0
 
+* Fix priority calculation for local queue - Issue #546
 * Skip unnecessary reads from repair history - Issue #548
 * Fix repair job priority - Issue #515
 
@@ -79,6 +81,7 @@
 
 ### Merged from 1.0
 
+* Fix priority calculation for local queue - Issue #546
 * Skip unnecessary reads from repair history - Issue #548
 * Fix repair job priority - Issue #515
 * Fix malformed IPv6 for JMX - Issue #306
@@ -202,6 +205,7 @@
 
 ### Merged from 1.0
 
+* Fix priority calculation for local queue - Issue #546
 * Skip unnecessary reads from repair history - Issue #548
 * Fix repair job priority - Issue #515
 * Fix malformed IPv6 for JMX - Issue #306
@@ -213,6 +217,7 @@
 
 #### Merged from 1.0
 
+* Fix priority calculation for local queue - Issue #546
 * Skip unnecessary reads from repair history - Issue #548
 * Fix repair job priority - Issue #515
 * Fix malformed IPv6 for JMX - Issue #306
@@ -251,6 +256,7 @@
 
 ## Version 1.0.8 (Not yet released)
 
+* Fix priority calculation for local queue - Issue #546
 * Skip unnecessary reads from repair history - Issue #548
 * Fix repair job priority - Issue #515
 * Fix malformed IPv6 for JMX - Issue #306

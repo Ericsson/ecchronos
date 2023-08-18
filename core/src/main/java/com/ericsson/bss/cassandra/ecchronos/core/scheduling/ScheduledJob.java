@@ -79,6 +79,16 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     }
 
     /**
+     * This method is called every time the scheduler creates a list of jobs to run.
+     * Use this if you need to do some updates before priority is calculated.
+     * Default is noop.
+     */
+    protected void refreshState()
+    {
+        // NOOP by default
+    }
+
+    /**
      * Set the job to be runnable again after the given delay has elapsed.
      *
      * @param delay
