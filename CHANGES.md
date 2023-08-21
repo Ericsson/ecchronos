@@ -22,7 +22,9 @@
 * Skip unnecessary reads from repair history - Issue #548
 * Fix repair job priority - Issue #515
 
-## Version 4.0.5 (Not yet released)
+## Version 4.0.6 (Not yet released)
+
+## Version 4.0.5
 
 ### Merged from 1.0
 
