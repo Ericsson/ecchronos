@@ -128,24 +128,16 @@ public class IncrementalRepairJob extends ScheduledRepairJob
     }
 
     /**
-     * Decides if the job is runnable.
-     *
-     * @return true if enough time has passed and there is something to repair.
+     * Check if there's anything to repair, if not then just move the last run.
      */
     @Override
-    public boolean runnable()
+    public void refreshState()
     {
-        if (super.runnable())
+        boolean nothingToRepair = getProgress() >= 1.0;
+        if (nothingToRepair)
         {
-            boolean nothingToRepair = getProgress() >= 1.0;
-            if (nothingToRepair)
-            {
-                myLastSuccessfulRun = System.currentTimeMillis();
-                return false;
-            }
-            return true;
+            myLastSuccessfulRun = System.currentTimeMillis();
         }
-        return false;
     }
 
     /**

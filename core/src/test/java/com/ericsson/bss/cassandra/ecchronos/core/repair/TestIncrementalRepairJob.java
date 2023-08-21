@@ -218,6 +218,7 @@ public class TestIncrementalRepairJob
     {
         doReturn(0.0d).when(myCassandraMetrics).getPercentRepaired(myTableReference);
         IncrementalRepairJob job = getIncrementalRepairJob();
+        job.refreshState();
 
         assertThat(job).isNotNull();
         assertThat(job.runnable()).isTrue();
@@ -228,6 +229,7 @@ public class TestIncrementalRepairJob
     {
         doReturn(50.0d).when(myCassandraMetrics).getPercentRepaired(myTableReference);
         IncrementalRepairJob job = getIncrementalRepairJob();
+        job.refreshState();
 
         assertThat(job).isNotNull();
         assertThat(job.runnable()).isTrue();
@@ -238,6 +240,7 @@ public class TestIncrementalRepairJob
     {
         doReturn(100.0d).when(myCassandraMetrics).getPercentRepaired(myTableReference);
         IncrementalRepairJob job = getIncrementalRepairJob();
+        job.refreshState();
 
         assertThat(job).isNotNull();
         assertThat(job.runnable()).isFalse();
@@ -249,6 +252,7 @@ public class TestIncrementalRepairJob
         long lastRepairedAt = System.currentTimeMillis();
         doReturn(lastRepairedAt).when(myCassandraMetrics).getMaxRepairedAt(myTableReference);
         IncrementalRepairJob job = getIncrementalRepairJob();
+        job.refreshState();
 
         assertThat(job).isNotNull();
         assertThat(job.runnable()).isFalse();
