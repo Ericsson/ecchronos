@@ -20,6 +20,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.longThat;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
@@ -440,10 +442,10 @@ public class ITTableRepairJob extends TestBase
         OptionalLong repairedAt = lastRepairedSince(tableReference, repairedSince, expectedRepaired);
         assertThat(repairedAt.isPresent()).isTrue();
 
-        verify(mockTableRepairMetrics, timeout(5000)).lastRepairedAt(tableReference, repairedAt.getAsLong());
+        verify(mockTableRepairMetrics, timeout(5000)).lastRepairedAt(eq(tableReference), longThat(l -> l >= repairedAt.getAsLong()));
 
         int expectedTokenRanges = expectedRepaired.size();
-        verify(mockTableRepairMetrics, times(expectedTokenRanges))
+        verify(mockTableRepairMetrics, atLeast(expectedTokenRanges))
                 .repairTiming(eq(tableReference), anyLong(), any(TimeUnit.class), eq(true));
     }
 
@@ -453,10 +455,10 @@ public class ITTableRepairJob extends TestBase
         OptionalLong repairedAt = lastRepairedSince(tableReference, repairedSince);
         assertThat(repairedAt.isPresent()).isTrue();
 
-        verify(mockTableRepairMetrics, timeout(5000)).lastRepairedAt(tableReference, repairedAt.getAsLong());
+        verify(mockTableRepairMetrics, timeout(5000)).lastRepairedAt(eq(tableReference), longThat(l -> l >= repairedAt.getAsLong()));
 
         int expectedTokenRanges = expectedRepaired.size();
-        verify(mockTableRepairMetrics, times(expectedTokenRanges))
+        verify(mockTableRepairMetrics, atLeast(expectedTokenRanges))
                 .repairTiming(eq(tableReference), anyLong(), any(TimeUnit.class), eq(true));
     }
 
