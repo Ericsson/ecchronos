@@ -27,6 +27,38 @@ public class TestLoggingFaultReporter
     LoggingFaultReporter loggingFaultReporter = new LoggingFaultReporter();
 
     @Test
+    public void testAlarmIncreasingSeverity()
+    {
+        Map<String, Object> data = new HashMap<>();
+        data.put(RepairFaultReporter.FAULT_KEYSPACE, "keyspace");
+        data.put(RepairFaultReporter.FAULT_TABLE, "table");
+
+        loggingFaultReporter.raise(RepairFaultReporter.FaultCode.REPAIR_WARNING, data);
+        assertThat(loggingFaultReporter.alarms.size()).isEqualTo(1);
+        assertThat(loggingFaultReporter.alarms).containsValue(RepairFaultReporter.FaultCode.REPAIR_WARNING);
+
+        loggingFaultReporter.raise(RepairFaultReporter.FaultCode.REPAIR_ERROR, data);
+        assertThat(loggingFaultReporter.alarms.size()).isEqualTo(1);
+        assertThat(loggingFaultReporter.alarms).containsValue(RepairFaultReporter.FaultCode.REPAIR_ERROR);
+    }
+
+    @Test
+    public void testRaiseMultipleTimes()
+    {
+        Map<String, Object> data = new HashMap<>();
+        data.put(RepairFaultReporter.FAULT_KEYSPACE, "keyspace");
+        data.put(RepairFaultReporter.FAULT_TABLE, "table");
+
+        loggingFaultReporter.raise(RepairFaultReporter.FaultCode.REPAIR_WARNING, data);
+        loggingFaultReporter.raise(RepairFaultReporter.FaultCode.REPAIR_WARNING, data);
+        loggingFaultReporter.raise(RepairFaultReporter.FaultCode.REPAIR_WARNING, data);
+        loggingFaultReporter.raise(RepairFaultReporter.FaultCode.REPAIR_WARNING, data);
+        loggingFaultReporter.raise(RepairFaultReporter.FaultCode.REPAIR_WARNING, data);
+        assertThat(loggingFaultReporter.alarms.size()).isEqualTo(1);
+        assertThat(loggingFaultReporter.alarms).containsValue(RepairFaultReporter.FaultCode.REPAIR_WARNING);
+    }
+
+    @Test
     public void testCeaseAlarms()
     {
         Map<String, Object> data = new HashMap<>();
@@ -59,6 +91,4 @@ public class TestLoggingFaultReporter
         loggingFaultReporter.cease(RepairFaultReporter.FaultCode.REPAIR_ERROR, data);
         assertThat(loggingFaultReporter.alarms.size()).isEqualTo(0);
     }
-
-
 }

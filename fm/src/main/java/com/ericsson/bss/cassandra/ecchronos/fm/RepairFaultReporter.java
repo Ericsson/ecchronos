@@ -27,7 +27,19 @@ public interface RepairFaultReporter
         REPAIR_ERROR
     }
 
+    /**
+     * This method might be called multiple times with the same parameters,
+     * implementations of this method should control whether the alarm should be raised.
+     * @param faultCode The fault code
+     * @param data The data containing keyspace and table
+     */
     void raise(FaultCode faultCode, Map<String, Object> data);
 
+    /**
+     * This method might be called multiple times with the same parameters,
+     * implementations of this method should control whether the alarm should be cleared.
+     * @param faultCode The fault code
+     * @param data The data containing keyspace and table
+     */
     void cease(FaultCode faultCode, Map<String, Object> data);
 }
