@@ -4,6 +4,7 @@
 
 ### Merged from 1.0
 
+* Fix logging fault reporter raising duplicate alarm - Issue #557
 * Fix priority calculation for local queue - Issue #546
 * Skip unnecessary reads from repair history - Issue #548
 * Fix repair job priority - Issue #515
@@ -26,6 +27,7 @@
 
 ### Merged from 1.0
 
+* Fix logging fault reporter raising duplicate alarm - Issue #557
 * Fix priority calculation for local queue - Issue #546
 * Skip unnecessary reads from repair history - Issue #548
 * Fix repair job priority - Issue #515
@@ -150,6 +152,7 @@
 
 ### Merged from 1.0
 
+* Fix logging fault reporter raising duplicate alarm - Issue #557
 * Fix priority calculation for local queue - Issue #546
 * Skip unnecessary reads from repair history - Issue #548
 * Fix repair job priority - Issue #515
@@ -162,6 +165,7 @@
 
 #### Merged from 1.0
 
+* Fix logging fault reporter raising duplicate alarm - Issue #557
 * Fix priority calculation for local queue - Issue #546
 * Skip unnecessary reads from repair history - Issue #548
 * Fix repair job priority - Issue #515
@@ -201,6 +205,7 @@
 
 ## Version 1.0.8 (Not yet released)
 
+* Fix logging fault reporter raising duplicate alarm - Issue #557
 * Fix priority calculation for local queue - Issue #546
 * Skip unnecessary reads from repair history - Issue #548
 * Fix repair job priority - Issue #515

@@ -32,8 +32,11 @@ public class LoggingFaultReporter implements RepairFaultReporter
     @Override
     public void raise(FaultCode faultCode, Map<String, Object> data)
     {
-        alarms.put(data.hashCode(), faultCode);
-        LOG.error("Raising alarm: {} - {}", faultCode, data);
+        FaultCode oldCode = alarms.put(data.hashCode(), faultCode);
+        if (oldCode == null || (oldCode == FaultCode.REPAIR_WARNING && faultCode == FaultCode.REPAIR_ERROR))
+        {
+            LOG.error("Raising alarm: {} - {}", faultCode, data);
+        }
     }
 
     @Override
