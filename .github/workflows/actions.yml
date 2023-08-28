@@ -2,8 +2,14 @@ name: Test report
 
 on:
   workflow_dispatch:
+    paths-ignore:
+      - '**.md'
   pull_request:
+    paths-ignore:
+      - '**.md'
   push:
+    paths-ignore:
+      - '**.md'
 
 env:
   MAVEN_OPTS: -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3 -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120
