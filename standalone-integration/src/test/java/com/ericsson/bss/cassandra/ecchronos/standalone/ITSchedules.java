@@ -603,7 +603,7 @@ public class ITSchedules extends TestBase
             statement = QueryBuilder.insertInto("ecchronos", "repair_history")
                     .value("table_id", literal(tableReference.getId()))
                     .value("node_id", literal(myLocalNode.getId()))
-                    .value("repair_id", literal(Uuids.startOf(started_at)))
+                    .value("repair_id", literal(Uuids.startOf(finished_at)))
                     .value("job_id", literal(tableReference.getId()))
                     .value("coordinator_id", literal(myLocalNode.getId()))
                     .value("range_begin", literal(range_begin))

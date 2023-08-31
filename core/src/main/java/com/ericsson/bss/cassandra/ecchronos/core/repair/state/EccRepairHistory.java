@@ -36,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -77,8 +76,7 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
 
     private final PreparedStatement iterateStatement;
 
-    private final PreparedStatement initiateStatement;
-    private final PreparedStatement finishStatement;
+    private final PreparedStatement createStatement;
 
     private EccRepairHistory(final Builder builder)
     {
@@ -95,7 +93,7 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
                 "Replication state must be set");
         lookbackTimeInMs = builder.lookbackTimeInMs;
 
-        initiateStatement = session.prepare(QueryBuilder.insertInto(builder.keyspaceName, "repair_history")
+        createStatement = session.prepare(QueryBuilder.insertInto(builder.keyspaceName, "repair_history")
                         .value(COLUMN_TABLE_ID, bindMarker())
                         .value(COLUMN_NODE_ID, bindMarker())
                         .value(COLUMN_REPAIR_ID, bindMarker())
@@ -105,15 +103,8 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
                         .value(COLUMN_RANGE_END, bindMarker())
                         .value(COLUMN_STATUS, bindMarker())
                         .value(COLUMN_STARTED_AT, bindMarker())
+                        .value(COLUMN_FINISHED_AT, bindMarker())
                 .build().setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
-
-        finishStatement = session.prepare(QueryBuilder.update(builder.keyspaceName, "repair_history")
-                        .setColumn(COLUMN_STATUS, bindMarker())
-                        .setColumn(COLUMN_FINISHED_AT, bindMarker())
-                        .whereColumn(COLUMN_TABLE_ID).isEqualTo(bindMarker())
-                        .whereColumn(COLUMN_NODE_ID).isEqualTo(bindMarker())
-                        .whereColumn(COLUMN_REPAIR_ID).isEqualTo(bindMarker())
-                        .build().setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
 
         iterateStatement = session.prepare(QueryBuilder.selectFrom(builder.keyspaceName, "repair_history")
                 .columns(COLUMN_STARTED_AT, COLUMN_FINISHED_AT, COLUMN_STATUS, COLUMN_RANGE_BEGIN, COLUMN_RANGE_END)
@@ -295,6 +286,7 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
         private final Set<UUID> participants;
         private final AtomicReference<SessionState> sessionState = new AtomicReference<>(SessionState.NO_STATE);
         private final AtomicReference<UUID> repairId = new AtomicReference<>(null);
+        private final AtomicReference<Instant> startedAt = new AtomicReference<>(null);
 
         RepairSessionImpl(final UUID aTableId,
                           final UUID aNodeId,
@@ -320,19 +312,14 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
         @Override
         public void start()
         {
-            repairId.compareAndSet(null, Uuids.timeBased());
             transitionTo(SessionState.STARTED);
-            String rangeBegin = Long.toString(range.start);
-            String rangeEnd = Long.toString(range.end);
-            Date startedAt = new Date(Uuids.unixTimestamp(repairId.get()));
-
-            insertWithRetry(participant -> insertStart(rangeBegin, rangeEnd, startedAt, participant));
+            startedAt.compareAndSet(null, Instant.now());
         }
 
         /**
          * Transition to state DONE, as long as the previous status was STARTED. Set finished at to current timestamp.
          *
-         * @param repairStatus The previous status
+         * @param repairStatus The repair status
          */
         @Override
         public void finish(final RepairStatus repairStatus)
@@ -340,9 +327,11 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
             Preconditions.checkArgument(!RepairStatus.STARTED.equals(repairStatus),
                     "Repair status must change from started");
             transitionTo(SessionState.DONE);
-            Date finishedAt = new Date(System.currentTimeMillis());
-
-            insertWithRetry(participant -> insertFinish(repairStatus, finishedAt, participant));
+            String rangeBegin = Long.toString(range.start);
+            String rangeEnd = Long.toString(range.end);
+            Instant finishedAt = Instant.now();
+            repairId.compareAndSet(null, Uuids.timeBased());
+            insertWithRetry(participant -> insertFinish(rangeBegin, rangeEnd, repairStatus, finishedAt, participant));
         }
 
         private void insertWithRetry(final Function<UUID, CompletionStage<AsyncResultSet>> insertFunction)
@@ -386,26 +375,14 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
             }
         }
 
-        private CompletionStage<AsyncResultSet> insertStart(final String rangeBegin,
-                                                            final String rangeEnd,
-                                                            final Date startedAt,
-                                                            final UUID participant)
-        {
-            Statement statement = initiateStatement.bind(tableId, participant, repairId.get(), jobId, nodeId,
-                    rangeBegin,
-                    rangeEnd, RepairStatus.STARTED.toString(), startedAt.toInstant());
-            return executeAsync(statement);
-        }
-
-        private CompletionStage<AsyncResultSet> insertFinish(final RepairStatus repairStatus,
-                                                             final Date finishedAt,
+        private CompletionStage<AsyncResultSet> insertFinish(final String rangeBegin,
+                                                             final String rangeEnd,
+                                                             final RepairStatus repairStatus,
+                                                             final Instant finishedAt,
                                                              final UUID participant)
         {
-            Statement statement = finishStatement.bind(repairStatus.toString(),
-                    finishedAt.toInstant(),
-                    tableId,
-                    participant,
-                    repairId.get());
+            Statement statement = createStatement.bind(tableId, participant, repairId.get(), jobId, nodeId, rangeBegin,
+                    rangeEnd, repairStatus.toString(), startedAt.get(), finishedAt);
             return executeAsync(statement);
         }
 

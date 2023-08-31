@@ -152,9 +152,7 @@ public class TestEccRepairHistory extends AbstractCassandraTest
 
         RepairHistory.RepairSession repairSession = repairHistory.newSession(tableReference, jobId, range,
                 participants);
-
         repairSession.start();
-        assertCorrectStart(repairSession, jobId, range, participants);
 
         repairSession.finish(RepairStatus.SUCCESS);
         assertCorrectFinish(repairSession, jobId, range, participants);
@@ -187,11 +185,7 @@ public class TestEccRepairHistory extends AbstractCassandraTest
         RepairHistory.RepairSession repairSession = repairHistory
                 .newSession(tableReference, jobId, range, participants);
         repairSession.start();
-
-        assertCorrectStart(repairSession, jobId, range, participants);
-
         repairSession.finish(RepairStatus.FAILED);
-
         assertFailedFinish(repairSession, jobId, range, participants);
     }
 
@@ -215,31 +209,19 @@ public class TestEccRepairHistory extends AbstractCassandraTest
                 .newSession(tableReference, jobId, range, participants);
         repairSession.start();
 
-        long to = System.currentTimeMillis();
+        long beforeFinish = System.currentTimeMillis();
+        repairSession.finish(RepairStatus.SUCCESS);
+        long afterFinish = System.currentTimeMillis();
 
-        // Assert that we have a started session
-        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider
-                .iterate(tableReference, to, from, Predicates.alwaysTrue());
+        // Assert that the session has finished
+        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(tableReference, afterFinish, beforeFinish, Predicates.alwaysTrue());
         assertThat(repairEntryIterator.hasNext()).isTrue();
         RepairEntry repairEntry = repairEntryIterator.next();
         assertThat(repairEntry.getParticipants()).isEqualTo(participants);
-        assertThat(repairEntry.getStatus()).isEqualTo(RepairStatus.STARTED);
-        assertThat(repairEntry.getRange()).isEqualTo(range);
-        assertThat(repairEntry.getStartedAt()).isBetween(from, to);
-        assertThat(repairEntry.getFinishedAt()).isEqualTo(-1L);
-        assertThat(repairEntryIterator.hasNext()).isFalse();
-
-        repairSession.finish(RepairStatus.SUCCESS);
-
-        // Assert that the session has finished
-        repairEntryIterator = repairHistoryProvider.iterate(tableReference, to, from, Predicates.alwaysTrue());
-        assertThat(repairEntryIterator.hasNext()).isTrue();
-        repairEntry = repairEntryIterator.next();
-        assertThat(repairEntry.getParticipants()).isEqualTo(participants);
         assertThat(repairEntry.getStatus()).isEqualTo(RepairStatus.SUCCESS);
         assertThat(repairEntry.getRange()).isEqualTo(range);
-        assertThat(repairEntry.getStartedAt()).isBetween(from, to);
-        assertThat(repairEntry.getFinishedAt()).isGreaterThanOrEqualTo(to);
+        assertThat(repairEntry.getStartedAt()).isBetween(beforeFinish, afterFinish);
+        assertThat(repairEntry.getFinishedAt()).isGreaterThanOrEqualTo(beforeFinish);
         assertThat(repairEntryIterator.hasNext()).isFalse();
     }
 
@@ -327,52 +309,34 @@ public class TestEccRepairHistory extends AbstractCassandraTest
                 .newSession(tableReference, jobId, range2, participants2);
         repairSession2.start();
 
-        long to = System.currentTimeMillis();
-
-        // Assert that we have a started sessions
-        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider
-                .iterate(localId, tableReference, to, from, Predicates.alwaysTrue());
-        assertThat(repairEntryIterator.hasNext()).isTrue();
-        RepairEntry repairEntry = repairEntryIterator.next();
-        assertThat(repairEntry.getParticipants()).isEqualTo(participants1);
-        assertThat(repairEntry.getStatus()).isEqualTo(RepairStatus.STARTED);
-        assertThat(repairEntry.getRange()).isEqualTo(range1);
-        assertThat(repairEntry.getStartedAt()).isBetween(from, to);
-        assertThat(repairEntry.getFinishedAt()).isEqualTo(-1L);
-        assertThat(repairEntryIterator.hasNext()).isFalse();
-
-        repairEntryIterator = repairHistoryProvider.iterate(remoteNodeId, tableReference, to, from, Predicates.alwaysTrue());
-        assertThat(repairEntryIterator.hasNext()).isTrue();
-        repairEntry = repairEntryIterator.next();
-        assertThat(repairEntry.getParticipants()).isEqualTo(participants2);
-        assertThat(repairEntry.getStatus()).isEqualTo(RepairStatus.STARTED);
-        assertThat(repairEntry.getRange()).isEqualTo(range2);
-        assertThat(repairEntry.getStartedAt()).isBetween(from, to);
-        assertThat(repairEntry.getFinishedAt()).isEqualTo(-1L);
-        assertThat(repairEntryIterator.hasNext()).isFalse();
+        long beforeFinish = System.currentTimeMillis();
 
         repairSession1.finish(RepairStatus.SUCCESS);
         repairSession2.finish(RepairStatus.SUCCESS);
 
+        long afterFinish = System.currentTimeMillis();
+
         // Assert that the sessions has finished
-        repairEntryIterator = repairHistoryProvider.iterate(localId, tableReference, to, from, Predicates.alwaysTrue());
+        Iterator<RepairEntry> repairEntryIterator = repairHistoryProvider.iterate(localId, tableReference, afterFinish,
+                beforeFinish, Predicates.alwaysTrue());
         assertThat(repairEntryIterator.hasNext()).isTrue();
-        repairEntry = repairEntryIterator.next();
+        RepairEntry repairEntry = repairEntryIterator.next();
         assertThat(repairEntry.getParticipants()).isEqualTo(participants1);
         assertThat(repairEntry.getStatus()).isEqualTo(RepairStatus.SUCCESS);
         assertThat(repairEntry.getRange()).isEqualTo(range1);
-        assertThat(repairEntry.getStartedAt()).isBetween(from, to);
-        assertThat(repairEntry.getFinishedAt()).isGreaterThanOrEqualTo(to);
+        assertThat(repairEntry.getStartedAt()).isBetween(from, afterFinish);
+        assertThat(repairEntry.getFinishedAt()).isGreaterThanOrEqualTo(beforeFinish);
         assertThat(repairEntryIterator.hasNext()).isFalse();
 
-        repairEntryIterator = repairHistoryProvider.iterate(remoteNodeId, tableReference, to, from, Predicates.alwaysTrue());
+        repairEntryIterator = repairHistoryProvider.iterate(remoteNodeId, tableReference, afterFinish, beforeFinish,
+                Predicates.alwaysTrue());
         assertThat(repairEntryIterator.hasNext()).isTrue();
         repairEntry = repairEntryIterator.next();
         assertThat(repairEntry.getParticipants()).isEqualTo(participants2);
         assertThat(repairEntry.getStatus()).isEqualTo(RepairStatus.SUCCESS);
         assertThat(repairEntry.getRange()).isEqualTo(range2);
-        assertThat(repairEntry.getStartedAt()).isBetween(from, to);
-        assertThat(repairEntry.getFinishedAt()).isGreaterThanOrEqualTo(to);
+        assertThat(repairEntry.getStartedAt()).isBetween(from, afterFinish);
+        assertThat(repairEntry.getFinishedAt()).isGreaterThanOrEqualTo(beforeFinish);
         assertThat(repairEntryIterator.hasNext()).isFalse();
     }
 
@@ -389,7 +353,6 @@ public class TestEccRepairHistory extends AbstractCassandraTest
                 participants);
 
         repairSession.start();
-        assertCorrectStart(repairSession, jobId, range, participants);
 
         // We can only start a session once
         assertThatExceptionOfType(IllegalStateException.class).isThrownBy(repairSession::start);
@@ -405,18 +368,6 @@ public class TestEccRepairHistory extends AbstractCassandraTest
                 .isThrownBy(() -> repairSession.finish(RepairStatus.FAILED));
         assertThatExceptionOfType(IllegalStateException.class)
                 .isThrownBy(() -> repairSession.finish(RepairStatus.UNKNOWN));
-    }
-
-    private void assertCorrectStart(RepairHistory.RepairSession repairSession, UUID jobId, LongTokenRange range,
-            Set<DriverNode> participants)
-    {
-        for (DriverNode node : participants)
-        {
-            UUID nodeId = node.getId();
-            EccEntry expectedEntry = startedSession(nodeId, internalSession(repairSession).getId(), jobId, range);
-            EccEntry actualEntry = fromDb(nodeId, repairSession);
-            assertCorrectStartEntry(actualEntry, expectedEntry);
-        }
     }
 
     private void assertFailedFinish(RepairHistory.RepairSession repairSession, UUID jobId, LongTokenRange range,
@@ -445,15 +396,8 @@ public class TestEccRepairHistory extends AbstractCassandraTest
         }
     }
 
-    private void assertCorrectStartEntry(EccEntry actual, EccEntry expected)
-    {
-        assertThat(actual).isEqualTo(expected);
-        assertThat(actual.startedAt).isEqualTo(Uuids.unixTimestamp(actual.repairId));
-    }
-
     private void assertCorrectEndEntry(EccEntry actual, EccEntry expected)
     {
-        assertCorrectStartEntry(actual, expected);
         assertThat(actual.finishedAt).isBetween(actual.startedAt, expected.finishedAt);
     }
 
