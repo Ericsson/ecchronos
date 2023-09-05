@@ -69,12 +69,14 @@ public class RepairSchedule
             if (tableRepairConfigs != null)
             {
                 Map<String, Set<TableRepairConfig>> tableConfigs = new HashMap<>();
-                for (TableRepairConfig table : tableRepairConfigs)
+                for (TableRepairConfig tableRepairConfig : tableRepairConfigs)
                 {
+                    tableRepairConfig.validate("Schedule \"" + getKeyspaceName() + "\".\""
+                            + tableRepairConfig.getTableName() + "\"");
                     Set<TableRepairConfig> repairConfigs = tableConfigs.getOrDefault(
-                            table.getTableName(), new HashSet<>());
-                    repairConfigs.add(table);
-                    tableConfigs.put(table.getTableName(), repairConfigs);
+                            tableRepairConfig.getTableName(), new HashSet<>());
+                    repairConfigs.add(tableRepairConfig);
+                    tableConfigs.put(tableRepairConfig.getTableName(), repairConfigs);
                 }
                 myTableConfigs = tableConfigs;
             }

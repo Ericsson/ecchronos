@@ -112,6 +112,25 @@ public class RepairConfig
         myRepairType = RepairOptions.RepairType.valueOf(repairType.toUpperCase(Locale.US));
     }
 
+    public final void validate(final String repairConfigType)
+    {
+        long repairIntervalSeconds = myRepairInterval.getInterval(TimeUnit.SECONDS);
+        long warningIntervalSeconds = myAlarm.getWarningInverval().getInterval(TimeUnit.SECONDS);
+        if (repairIntervalSeconds >= warningIntervalSeconds)
+        {
+            throw new IllegalArgumentException(String.format("%s repair interval must be shorter than warning interval."
+                    + " Current repair interval: %d seconds, warning interval: %d seconds", repairConfigType,
+                    repairIntervalSeconds, warningIntervalSeconds));
+        }
+        long errorIntervalSeconds = myAlarm.getErrorInterval().getInterval(TimeUnit.SECONDS);
+        if (warningIntervalSeconds >= errorIntervalSeconds)
+        {
+            throw new IllegalArgumentException(String.format("%s warning interval must be shorter than error interval."
+                            + " Current warning interval: %d seconds, error interval: %d seconds", repairConfigType,
+                    warningIntervalSeconds, errorIntervalSeconds));
+        }
+    }
+
     /**
      * Convert this object to {@link com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration}.
      * @return {@link com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration}

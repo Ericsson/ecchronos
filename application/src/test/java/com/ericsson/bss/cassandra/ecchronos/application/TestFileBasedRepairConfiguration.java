@@ -62,10 +62,12 @@ public class TestFileBasedRepairConfiguration
     @Test
     public void testAllSchedules() throws Exception
     {
-        AbstractRepairConfigurationProvider repairConfigProvider = withSchedule("regex_schedule.yml");
+        AbstractRepairConfigurationProvider repairConfigProvider = withSchedule("repair/regex_schedule.yml");
 
         RepairConfiguration allKeyspacesPattern = RepairConfiguration.newBuilder()
                 .withRepairInterval(8, TimeUnit.DAYS)
+                .withRepairWarningTime(9, TimeUnit.DAYS)
+                .withRepairErrorTime(10, TimeUnit.DAYS)
                 .build();
 
         RepairConfiguration allKeyspacesTb2 = RepairConfiguration.newBuilder()
@@ -97,7 +99,7 @@ public class TestFileBasedRepairConfiguration
     @Test (expected = ConfigurationException.class)
     public void testNullScheduleConfig() throws Exception
     {
-        withSchedule("null_schedule.yml");
+        withSchedule("repair/null_schedule.yml");
     }
 
     private void assertConfig(AbstractRepairConfigurationProvider repairConfigProvider, String keyspace, String table,

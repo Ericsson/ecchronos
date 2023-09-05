@@ -1,5 +1,5 @@
 #
-# Copyright 2020 Telefonaktiebolaget LM Ericsson
+# Copyright 2023 Telefonaktiebolaget LM Ericsson
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,21 +16,12 @@
 keyspaces:
   - name: ".*"
     tables:
-    - name: "[a-zA-Z0-9]+_abc"
-      interval:
-        time: 8
-        unit: days
-    - name: tb2
-      interval:
-        time: 5
-        unit: days
-  - name: ks2
-    tables:
-    - name: tb1
-      interval:
-        time: 1
-        unit: days
-    - name: tb2
-      interval:
-        time: 2
-        unit: days
+      - name: ".*"
+        interval:
+          time: 6
+          unit: days
+      - name: ".*"
+        interval:
+          time: 1
+          unit: days
+        repair_type: incremental

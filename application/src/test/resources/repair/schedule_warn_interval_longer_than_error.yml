@@ -18,10 +18,12 @@ keyspaces:
     tables:
       - name: tb1
         interval:
-          time: 44
+          time: 7
           unit: days
-      - name: tb1
-        interval:
-          time: 1
-          unit: days
-        repair_type: incremental
+        alarm:
+          warn:
+            time: 200
+            unit: days
+          error:
+            time: 11
+            unit: days

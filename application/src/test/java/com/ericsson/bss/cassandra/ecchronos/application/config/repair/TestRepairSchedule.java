@@ -15,12 +15,13 @@
 package com.ericsson.bss.cassandra.ecchronos.application.config.repair;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
-import com.ericsson.bss.cassandra.ecchronos.application.config.repair.RepairSchedule;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import org.junit.Test;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
@@ -47,7 +48,7 @@ public class TestRepairSchedule
     public void testSettings() throws Exception
     {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        File file = new File(classLoader.getResource("test_schedule.yml").getFile());
+        File file = new File(classLoader.getResource("repair/test_schedule.yml").getFile());
 
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
 
@@ -83,7 +84,7 @@ public class TestRepairSchedule
     public void testRegex() throws Exception
     {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        File file = new File(classLoader.getResource("regex_schedule.yml").getFile());
+        File file = new File(classLoader.getResource("repair/regex_schedule.yml").getFile());
 
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
 
@@ -91,6 +92,8 @@ public class TestRepairSchedule
 
         RepairConfiguration allKeyspacesPattern = RepairConfiguration.newBuilder()
                 .withRepairInterval(8, TimeUnit.DAYS)
+                .withRepairWarningTime(9, TimeUnit.DAYS)
+                .withRepairErrorTime(10, TimeUnit.DAYS)
                 .build();
 
         RepairConfiguration allKeyspacesTb2 = RepairConfiguration.newBuilder()
@@ -121,14 +124,14 @@ public class TestRepairSchedule
     public void testMultipleSchedulesForSameTable() throws Exception
     {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        File file = new File(classLoader.getResource("multiple_schedules.yml").getFile());
+        File file = new File(classLoader.getResource("repair/multiple_schedules.yml").getFile());
 
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
 
         RepairSchedule schedule = objectMapper.readValue(file, RepairSchedule.class);
 
         RepairConfiguration vnodeKs1tb1 = RepairConfiguration.newBuilder()
-                .withRepairInterval(44, TimeUnit.DAYS)
+                .withRepairInterval(6, TimeUnit.DAYS)
                 .withRepairType(RepairOptions.RepairType.VNODE)
                 .build();
 
@@ -144,14 +147,14 @@ public class TestRepairSchedule
     public void testMultipleSchedulesForSameTableRegex() throws Exception
     {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        File file = new File(classLoader.getResource("multiple_schedules_regex.yml").getFile());
+        File file = new File(classLoader.getResource("repair/multiple_schedules_regex.yml").getFile());
 
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
 
         RepairSchedule schedule = objectMapper.readValue(file, RepairSchedule.class);
 
         RepairConfiguration vnodeRegexTable = RepairConfiguration.newBuilder()
-                .withRepairInterval(44, TimeUnit.DAYS)
+                .withRepairInterval(6, TimeUnit.DAYS)
                 .withRepairType(RepairOptions.RepairType.VNODE)
                 .build();
 
@@ -162,5 +165,27 @@ public class TestRepairSchedule
 
         assertThat(schedule.getRepairConfigurations("ks1", "tb1")).containsExactlyInAnyOrder(vnodeRegexTable, incrementalRegexTable);
         assertThat(schedule.getRepairConfigurations("ks1", "tb2")).containsExactlyInAnyOrder(vnodeRegexTable, incrementalRegexTable);
+    }
+
+    @Test
+    public void testRepairIntervalLongerThanWarn()
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("repair/schedule_repair_interval_longer_than_warn.yml").getFile());
+
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
+        assertThatExceptionOfType(JsonMappingException.class).isThrownBy(() -> objectMapper.readValue(file, RepairSchedule.class));
+    }
+
+    @Test
+    public void testWarnIntervalLongerThanError()
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("repair/schedule_warn_interval_longer_than_error.yml").getFile());
+
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
+        assertThatExceptionOfType(JsonMappingException.class).isThrownBy(() -> objectMapper.readValue(file, RepairSchedule.class));
     }
 }
