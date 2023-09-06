@@ -14,13 +14,13 @@
 #
 
 keyspaces:
-  - name: ".*"
+  - name: ks1
     tables:
-      - name: ".*"
+      - name: tb1
         interval:
-          time: 44
+          time: 6
           unit: days
-      - name: ".*"
+      - name: tb1
         interval:
           time: 1
           unit: days

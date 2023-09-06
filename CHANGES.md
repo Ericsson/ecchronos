@@ -2,6 +2,7 @@
 
 ## Version 5.0.0 (Not yet released)
 
+* Add validation of repair interval and alarms - Issue #560
 * Insert into repair history only on session finish - Issue #565
 * Use Caffeine caches instead of Guava - Issue #534
 * Validate TLS config for JMX and CQL - Issue #529

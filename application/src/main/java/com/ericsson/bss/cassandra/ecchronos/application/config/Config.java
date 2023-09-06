@@ -70,6 +70,7 @@ public class Config
         if (globalRepairConfig != null)
         {
             myRepairConfig = globalRepairConfig;
+            myRepairConfig.validate("Global");
         }
     }
 

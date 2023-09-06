@@ -33,6 +33,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.metrics.Reporting
 import com.ericsson.bss.cassandra.ecchronos.application.config.metrics.StatisticsConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.GlobalRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.RepairHistory;
+import com.ericsson.bss.cassandra.ecchronos.application.config.repair.RepairSchedule;
 import com.ericsson.bss.cassandra.ecchronos.application.config.rest.RestServerConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.runpolicy.RunPolicyConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.scheduler.SchedulerConfig;
@@ -50,6 +51,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -67,6 +69,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class TestConfig
 {
@@ -331,6 +334,28 @@ public class TestConfig
         RestServerConfig restServerConfig = config.getRestServer();
         assertThat(restServerConfig.getHost()).isEqualTo("localhost");
         assertThat(restServerConfig.getPort()).isEqualTo(8080);
+    }
+
+    @Test
+    public void testRepairIntervalLongerThanWarn()
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("repair_interval_longer_than_warn.yml").getFile());
+
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
+        assertThatExceptionOfType(JsonMappingException.class).isThrownBy(() -> objectMapper.readValue(file, Config.class));
+    }
+
+    @Test
+    public void testWarnIntervalLongerThanError()
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("warn_interval_longer_than_error.yml").getFile());
+
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
+        assertThatExceptionOfType(JsonMappingException.class).isThrownBy(() -> objectMapper.readValue(file, Config.class));
     }
 
     @Test
