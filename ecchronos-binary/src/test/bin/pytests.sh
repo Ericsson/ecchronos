@@ -42,6 +42,8 @@ CERTIFICATE_DIRECTORY=${project.build.directory}/certificates/cert
 ## Connection
 # Remove comment lines
 sed '/^\s*#.*/d' -i "$CONF_DIR"/ecc.yml
+# Uncomment heap options
+sed 's/^#-X/-X/g' -i "$CONF_DIR"/jvm.options
 # Replace native/jmx host (it's important not to change the REST host)
 sed "/cql:/{n;s/host: .*/host: $CASSANDRA_IP/}" -i "$CONF_DIR"/ecc.yml
 sed "/jmx:/{n;s/host: .*/host: $CASSANDRA_IP/}" -i "$CONF_DIR"/ecc.yml
