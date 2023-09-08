@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStateFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStateUtils;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.RepairStats;
 
@@ -52,17 +53,7 @@ public class RepairStatsProviderImpl implements RepairStatsProvider
                 Collectors.toList());
         double repairedRatio = states.isEmpty() ? 0 : (double) repairedStates.size() / states.size();
         return new RepairStats(tableReference.getKeyspace(), tableReference.getTable(), repairedRatio,
-                getRepairTime(repairedStates));
-    }
-
-    private long getRepairTime(final Collection<VnodeRepairState> repairedStates)
-    {
-        long totalRepairTime = 0L;
-        for (VnodeRepairState vnodeRepairState : repairedStates)
-        {
-            totalRepairTime += vnodeRepairState.getRepairTime();
-        }
-        return totalRepairTime;
+                VnodeRepairStateUtils.getRepairTime(repairedStates));
     }
 
     private boolean isRepaired(final VnodeRepairState state, final long since, final long to)

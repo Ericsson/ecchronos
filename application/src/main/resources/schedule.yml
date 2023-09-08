@@ -67,6 +67,7 @@ keyspaces:
 #      unwind_ratio: 0.0
 ##
 ## Specifies a target for how much data each repair session should process.
+## This is only supported if using 'vnode' as repair_type.
 ## This is an estimation assuming uniform data distribution among partition keys.
 ## The value should be either a number or a number with a unit of measurement:
 ## 12  (12 B)
@@ -76,7 +77,10 @@ keyspaces:
 ##
 #      size_target:
 ##
-## Specifies the repair_type
-## Possible values are: vnode or incremental
+## Specifies the default repair_type.
+## Possible values are: vnode, parallel_vnode, incremental
+## vnode = repair 1 vnode at a time (supports size_target to split the vnode further, in this case there will be 1 repair session per subrange)
+## parallel_vnode = repair vnodes in parallel, this will combine vnodes into a single repair session per repair group
+## incremental = repair vnodes incrementally (incremental repair)
 ##
 #      repair_type: vnode

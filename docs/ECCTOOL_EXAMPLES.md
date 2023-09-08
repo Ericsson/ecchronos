@@ -39,7 +39,7 @@ For manual repairs this value should never go down.
 
 `Completed at` - the time when the manual repair has finished.
 
-`Repair type` - the type of the repair, can be either `VNODE` or `INCREMENTAL`. All repairs pre ecChronos 5.0 were `VNODE`.
+`Repair type` - the type of the repair, can be `VNODE`, `PARALLEL_VNODE` or `INCREMENTAL`. All repairs pre ecChronos 5.0 were `VNODE`.
 
 ## schedules
 
@@ -93,7 +93,7 @@ ecChronos assumes all ranges are repaired if there's no repair history.
 This is based on the (oldest range repair time + interval) - repair time taken for the ranges.
 This is updated each time a repair group is completed.
 
-`Repair type` - the type of the schedule, can be either `VNODE` or `INCREMENTAL`. All schedules pre ecChronos 5.0 were `VNODE`.
+`Repair type` - the type of the schedule, can be `VNODE`, `PARALLEL_VNODE` or `INCREMENTAL`. All schedules pre ecChronos 5.0 were `VNODE`.
 
 ## run-repair
 

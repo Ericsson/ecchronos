@@ -121,8 +121,9 @@ def add_run_repair_subcommand(sub_parsers):
     parser_run_repair.add_argument("--local", action='store_true',
                                    help='Run repair for the local node only, i.e repair will only be performed for '
                                         'the ranges that the local node is a replica for.', default=False)
-    parser_run_repair.add_argument("--incremental", action='store_true',
-                                   help='Run the repair as an incremental repair', default=False)
+    parser_run_repair.add_argument("-r", "--repair_type", type=str,
+                                   help="The type of the repair, possible values are 'vnode', 'parallel_vnode', "
+                                   "'incremental'", required=False)
     parser_run_repair.add_argument("-k", "--keyspace", type=str,
                                    help="Run repair for the specified keyspace. Repair will be run for all tables "
                                         "within the keyspace with replication factor higher than 1.", required=False)
@@ -267,7 +268,7 @@ def run_repair(arguments):
         print("--keyspace must be specified if table is specified")
         sys.exit(1)
     result = request.post(keyspace=arguments.keyspace, table=arguments.table, local=arguments.local,
-                          incremental=arguments.incremental)
+                          repair_type=arguments.repair_type)
     if result.is_successful():
         table_printer.print_repairs(result.data)
     else:
