@@ -18,6 +18,10 @@
 * Support configuring backoff for failed jobs - Issue #475
 * Dropping keyspaces does not clean up schedules - Issue #469
 
+### Merged from 1.2
+
+* Fix calculation of tokens per repair - Issue #570
+
 ### Merged from 1.0
 
 * Fix logging fault reporter raising duplicate alarm - Issue #557
@@ -26,6 +30,10 @@
 * Fix repair job priority - Issue #515
 
 ## Version 4.0.6 (Not yet released)
+
+### Merged from 1.2
+
+* Fix calculation of tokens per repair - Issue #570
 
 ### Merged from 1.0
 
@@ -88,6 +96,10 @@
 
 ## Version 3.0.1 (Not yet released)
 
+### Merged from 1.2
+
+* Fix calculation of tokens per repair - Issue #570
+
 ### Merged from 1.0
 
 * Fix logging fault reporter raising duplicate alarm - Issue #557
@@ -110,6 +122,10 @@
 * Add blocked status - Issue #284
 
 ## Version 2.0.7 (Not yet released)
+
+### Merged from 1.2
+
+* Fix calculation of tokens per repair - Issue #570
 
 ### Merged from 1.0
 
@@ -234,6 +250,7 @@
 
 ## Version 1.2.0 (Not yet released)
 
+* Fix calculation of tokens per repair - Issue #570
 * Repairs not scheduled when statistics disabled - Issue #175
 
 ### Merged from 1.0
