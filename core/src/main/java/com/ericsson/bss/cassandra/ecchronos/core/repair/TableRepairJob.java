@@ -276,8 +276,11 @@ public class TableRepairJob extends ScheduledJob
 
                 BigInteger targetSizeInBytes = BigInteger.valueOf(myRepairConfiguration.getTargetRepairSizeInBytes());
 
-                BigInteger targetRepairs = tableSizeInBytes.divide(targetSizeInBytes);
-                tokensPerRepair = fullRangeSize.divide(targetRepairs);
+                if (tableSizeInBytes.compareTo(targetSizeInBytes) > 0)
+                {
+                    BigInteger targetRepairs = tableSizeInBytes.divide(targetSizeInBytes);
+                    tokensPerRepair = fullRangeSize.divide(targetRepairs);
+                }
             }
         }
 
