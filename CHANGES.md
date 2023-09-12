@@ -2,6 +2,7 @@
 
 ## Version 1.2.0 (Not yet released)
 
+* Fix calculation of tokens per repair - Issue #570
 * Repairs not scheduled when statistics disabled - Issue #175
 
 ### Merged from 1.0
