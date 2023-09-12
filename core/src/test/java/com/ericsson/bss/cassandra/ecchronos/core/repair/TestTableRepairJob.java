@@ -72,6 +72,7 @@ public class TestTableRepairJob
     private static final long RUN_INTERVAL_IN_DAYS = 1;
     private static final long GC_GRACE_DAYS = 10;
 
+    private static final long ONE_MB_IN_BYTES = 1 * 1024 * 1024;
     private static final long HUNDRED_MB_IN_BYTES = 100 * 1024 * 1024;
     private static final long THOUSAND_MB_IN_BYTES = 1000 * 1024 * 1024;
 
@@ -362,6 +363,108 @@ public class TestTableRepairJob
         when(myRepairState.getSnapshot()).thenReturn(repairStateSnapshot);
         // 100 MB target size, 1000MB in table
         when(myTableStorageStates.getDataSize(eq(myTableReference))).thenReturn(THOUSAND_MB_IN_BYTES);
+
+        Iterator<ScheduledTask> iterator = myRepairJob.iterator();
+
+        ScheduledTask task = iterator.next();
+        assertThat(task).isInstanceOf(RepairGroup.class);
+        Collection<RepairTask> repairTasks = ((RepairGroup) task).getRepairTasks();
+
+        assertThat(repairTasks).hasSize(expectedTokenRanges.size());
+
+        Iterator<RepairTask> repairTaskIterator = repairTasks.iterator();
+        for (LongTokenRange expectedRange : expectedTokenRanges)
+        {
+            assertThat(repairTaskIterator.hasNext()).isTrue();
+            RepairTask repairTask = repairTaskIterator.next();
+            assertThat(repairTask.getReplicas()).containsExactlyInAnyOrderElementsOf(replicas);
+            assertThat(repairTask.getRepairConfiguration()).isEqualTo(myRepairConfiguration);
+            assertThat(repairTask.getTableReference()).isEqualTo(myTableReference);
+
+            assertThat(repairTask.getTokenRanges()).containsExactly(expectedRange);
+        }
+    }
+
+    @Test
+    public void testIteratorWithTargetSizeBiggerThanTableSize()
+    {
+        LongTokenRange tokenRange1 = new LongTokenRange(0, 10);
+        LongTokenRange tokenRange2 = new LongTokenRange(10, 20);
+        LongTokenRange tokenRange3 = new LongTokenRange(20, 30);
+        List<LongTokenRange> expectedTokenRanges = Arrays.asList(
+                tokenRange1,
+                tokenRange2,
+                tokenRange3
+        );
+        ImmutableSet<DriverNode> replicas = ImmutableSet.of(mock(DriverNode.class), mock(DriverNode.class));
+        ImmutableList<LongTokenRange> vnodes = ImmutableList.of(tokenRange1, tokenRange2, tokenRange3);
+
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(
+                ImmutableList.of(
+                        new VnodeRepairState(tokenRange1, replicas, 1234L),
+                        new VnodeRepairState(tokenRange2, replicas, 1234L),
+                        new VnodeRepairState(tokenRange3, replicas, 1234L))).build();
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(replicas, vnodes, System.currentTimeMillis());
+
+        RepairStateSnapshot repairStateSnapshot = RepairStateSnapshot.newBuilder()
+                .withReplicaRepairGroups(Collections.singletonList(replicaRepairGroup))
+                .withLastCompletedAt(1234L)
+                .withVnodeRepairStates(vnodeRepairStates)
+                .build();
+        when(myRepairState.getSnapshot()).thenReturn(repairStateSnapshot);
+        // 100 MB target size, 1 MB in table
+        when(myTableStorageStates.getDataSize(eq(myTableReference))).thenReturn(ONE_MB_IN_BYTES);
+
+        Iterator<ScheduledTask> iterator = myRepairJob.iterator();
+
+        ScheduledTask task = iterator.next();
+        assertThat(task).isInstanceOf(RepairGroup.class);
+        Collection<RepairTask> repairTasks = ((RepairGroup) task).getRepairTasks();
+
+        assertThat(repairTasks).hasSize(expectedTokenRanges.size());
+
+        Iterator<RepairTask> repairTaskIterator = repairTasks.iterator();
+        for (LongTokenRange expectedRange : expectedTokenRanges)
+        {
+            assertThat(repairTaskIterator.hasNext()).isTrue();
+            RepairTask repairTask = repairTaskIterator.next();
+            assertThat(repairTask.getReplicas()).containsExactlyInAnyOrderElementsOf(replicas);
+            assertThat(repairTask.getRepairConfiguration()).isEqualTo(myRepairConfiguration);
+            assertThat(repairTask.getTableReference()).isEqualTo(myTableReference);
+
+            assertThat(repairTask.getTokenRanges()).containsExactly(expectedRange);
+        }
+    }
+
+    @Test
+    public void testIteratorWithTargetSizeSameAsTableSize()
+    {
+        LongTokenRange tokenRange1 = new LongTokenRange(0, 10);
+        LongTokenRange tokenRange2 = new LongTokenRange(10, 20);
+        LongTokenRange tokenRange3 = new LongTokenRange(20, 30);
+        List<LongTokenRange> expectedTokenRanges = Arrays.asList(
+                tokenRange1,
+                tokenRange2,
+                tokenRange3
+        );
+        ImmutableSet<DriverNode> replicas = ImmutableSet.of(mock(DriverNode.class), mock(DriverNode.class));
+        ImmutableList<LongTokenRange> vnodes = ImmutableList.of(tokenRange1, tokenRange2, tokenRange3);
+
+        VnodeRepairStates vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(
+                ImmutableList.of(
+                        new VnodeRepairState(tokenRange1, replicas, 1234L),
+                        new VnodeRepairState(tokenRange2, replicas, 1234L),
+                        new VnodeRepairState(tokenRange3, replicas, 1234L))).build();
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(replicas, vnodes, System.currentTimeMillis());
+
+        RepairStateSnapshot repairStateSnapshot = RepairStateSnapshot.newBuilder()
+                .withReplicaRepairGroups(Collections.singletonList(replicaRepairGroup))
+                .withLastCompletedAt(1234L)
+                .withVnodeRepairStates(vnodeRepairStates)
+                .build();
+        when(myRepairState.getSnapshot()).thenReturn(repairStateSnapshot);
+        // 100 MB target size, 100 MB in table
+        when(myTableStorageStates.getDataSize(eq(myTableReference))).thenReturn(HUNDRED_MB_IN_BYTES);
 
         Iterator<ScheduledTask> iterator = myRepairJob.iterator();
 
