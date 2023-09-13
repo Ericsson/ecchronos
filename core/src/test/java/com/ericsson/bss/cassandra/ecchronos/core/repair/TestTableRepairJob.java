@@ -727,6 +727,7 @@ public class TestTableRepairJob
         }
     }
 
+    @Test
     public void testGetRealPriority()
     {
         long lastRepaired = System.currentTimeMillis();
