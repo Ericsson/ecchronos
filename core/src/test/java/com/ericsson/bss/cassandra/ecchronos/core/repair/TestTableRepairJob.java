@@ -586,6 +586,7 @@ public class TestTableRepairJob
         assertThat(myRepairJob.getView().getProgress()).isEqualTo(0);
     }
 
+    @Test
     public void testGetRealPriority()
     {
         long lastRepaired = System.currentTimeMillis();
