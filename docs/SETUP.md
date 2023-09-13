@@ -180,6 +180,24 @@ The security parameters can be updated during runtime and will automatically be 
 It's possible to override the default connection providers if needed.
 More information about the custom connection provider can be found [here](STANDALONE.md).
 
+For more advanced use-cases, it's possible to override the java-driver configuration,
+please see [reference configuration](https://docs.datastax.com/en/developer/java-driver/4.17/manual/core/configuration/reference/) for available configuration options.
+To override default java-driver configuration, make sure `application.conf` file is available on the class path.
+The easiest way to do this is by simply putting `application.conf` file in the `conf` directory of ecChronos.
+
+Example:
+
+```
+datastax-java-driver {
+  advanced.prepared-statements {
+    prepare-on-all-nodes = false
+    reprepare-on-up {
+      enabled = false
+    }
+  }
+}
+```
+
 ## Running ecChronos
 
 To run ecChronos execute `bin/ecc` or `bin/ecctool start` from the root directory.
