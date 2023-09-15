@@ -182,10 +182,12 @@ More information about the custom connection provider can be found [here](STANDA
 
 For more advanced use-cases, it's possible to override the java-driver configuration,
 please see [reference configuration](https://docs.datastax.com/en/developer/java-driver/4.17/manual/core/configuration/reference/) for available configuration options.
-To override default java-driver configuration, make sure `application.conf` file is available on the class path.
-The easiest way to do this is by simply putting `application.conf` file in the `conf` directory of ecChronos.
+To override default java-driver configuration,
+follow any of the supported methods documented at [datastax docs](https://docs.datastax.com/en/developer/java-driver/4.17/manual/core/configuration/#default-implementation-typesafe-config).
 
-Example:
+Examples:
+
+`application.conf` in `conf` directory of ecChronos:
 
 ```
 datastax-java-driver {
@@ -197,6 +199,14 @@ datastax-java-driver {
   }
 }
 ```
+
+system properties (you can put these in `jvm.options` file of ecChronos:
+
+```
+-Ddatastax-java-driver.advanced.prepared-statements.prepare-on-all-nodes=false -Ddatastax-java-driver.advanced.prepared-statements.reprepare-on-up.enabled=false
+```
+
+
 
 ## Running ecChronos
 

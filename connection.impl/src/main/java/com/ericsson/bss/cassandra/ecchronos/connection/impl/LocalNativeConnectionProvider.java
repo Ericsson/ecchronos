@@ -221,7 +221,9 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
             {
                 sessionBuilder.withMetricRegistry(builder.myMeterRegistry);
             }
-            sessionBuilder.withConfigLoader(loaderBuilder.build());
+            DriverConfigLoader driverConfigLoader = loaderBuilder.build();
+            LOG.debug("Driver configuration: {}", driverConfigLoader.getInitialConfig().getDefaultProfile().entrySet());
+            sessionBuilder.withConfigLoader(driverConfigLoader);
             return sessionBuilder.build();
         }
 
