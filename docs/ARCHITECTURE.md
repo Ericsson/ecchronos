@@ -14,7 +14,6 @@
         - [Repair history](#repair-history)
 - [Incremental repairs](#incremental-repairs)
 - [References](#references)
-    
 
 ## Overview
 ecChronos is built to be continuously repairing data in the background. Each ecChronos instance keeps track of the repairs
@@ -23,13 +22,22 @@ can be configured to run only during certain time periods or not at all. Setting
 make sure repair is spread out over the interval time while alarms are provided to signal when a job has not run for
 longer than expected.
 
-<figure>
-  <div align="center">
-    <img src="images/ecchronos-instances.png" alt="Alt Text" style="display: block; margin-left: auto; margin-right: auto; width: 500px;">
-    <br/>
-    <figcaption >Figure 1: ecChronos and Cassandra Nodes.</figcaption>
-  </div>
-</figure>
+<div align="center">
+
+  ```mermaid
+  flowchart RL
+      A(((Cassandra Node)))---B(((ecChronos Instance)));
+      A(((Cassandra Node)))---C(((ecChronos Instance)));
+      B(((ecChronos Instance)))---D(((Cassandra Node)));
+      C(((ecChronos Instance)))---E(((Cassandra Node)));
+      D(((Cassandra Node)))---F(((ecChronos Instance)));
+      E(((Cassandra Node)))---G(((ecChronos Instance)));
+      F(((ecChronos Instance)))---H(((Cassandra Node)));
+      G(((ecChronos Instance)))---H(((Cassandra Node)));
+  ```
+
+  <figcaption>Figure 1: ecChronos and Cassandra Nodes.</figcaption>
+</div>
 
 ## Concepts
 
@@ -37,19 +45,26 @@ longer than expected.
 
 In the context of Apache Cassandra, a "lease" refers to a mechanism employed during the repair process within Cassandra.
 
-Upon the initiation of a repair in a Cassandra cluster, a "lease" is granted to one of the cluster nodes, which serves as the repair coordinator. This coordinating node is responsible for overseeing the repair process to ensure that all data replicas conform and any disparities are addressed.
+Upon the initiation of a repair in a Cassandra cluster, it's granted to one of the cluster nodes, which serves as the repair coordinator. This coordinating node is responsible for overseeing the repair process to ensure that all data replicas conform and any disparities are addressed.
 
-The "lease" bestows upon the coordinating node the exclusive right to conduct the repair during a specific time frame. Within this duration, the coordinating node assesses the data, ensuring that all replicas are updated and consistent. Additionally, it helps prevent multiple nodes from concurrently initiating repairs on the same data, thereby mitigating potential consistency issues and cluster overload.
+It bestows upon the coordinating node the exclusive right to conduct repair during a specific time frame. Within this duration, coordinating node assesses the data, ensuring that all replicas are updated and consistent. Additionally, it helps prevent multiple nodes from concurrently initiating repairs on the same data, thereby mitigating potential consistency issues and cluster overload.
 
-Once the repair is completed by the coordinating node, the "lease" is released, enabling other nodes to request the "lease" and carry out their own repairs as needed. This helps in efficiently distributing the repair load within the cluster [\[1\]](#references).
+Once the repair is completed by the coordinating node, the "lease" is released, enabling other nodes to request and carry out their own repairs as needed. It helps in efficiently distributing the repair load within the cluster [\[1\]](#references).
 
-<figure>
-  <div align="center">
-    <img src="images/election.png" alt="Alt Text" style="display: block; margin-left: auto; margin-right: auto; width: 500px;">
-    <br/>
-    <figcaption >Figure 2: Lease Typically Election.</figcaption>
-  </div>
-</figure>
+<div align="center">
+
+  ```mermaid
+  flowchart TB
+    A[Create Lease] -->|Failed| b[Sleap]
+    b[Sleap] --> A[Create Lease]
+    A[Create Lease] -->|Succeeded| c[Become Master]
+    c[Become Master] --> D[Periodically Renew Lease]
+    D[Periodically Renew Lease] -->|Failed| A[Create Lease]
+    D[Periodically Renew Lease] -->|Succeeded|D[Periodically Renew Lease]
+  ```
+
+  <figcaption>Figure 2: Lease Typically Election.</figcaption>
+</div>
 
 In order to perform distributed scheduling ecChronos utilize two things `deterministic priorities` and `distributed leases`.
 Deterministic priorities means that all nodes use the same algorithm to decide how important the local work is.
@@ -65,13 +80,19 @@ The announcement is done to avoid node starvation and to try to promote the high
 The leases are created with a TTL of 10 minutes to avoid locking in case of failure.
 As some jobs might take more than 10 minutes to run the lease is continuously updated every minute until the job finishes.
 
-<figure>
-  <div align="center">
-    <img src="images/ecchronos-lease.png" alt="Alt Text" style="display: block; margin-left: auto; margin-right: auto; width: 500px;">
-    <br/>
-    <figcaption >Figure 3: Compare-And-Set.</figcaption>
-  </div>
-</figure>
+<div align="center">
+
+  ```mermaid
+  flowchart LR
+      A(((Local Node))) --> a[DeclarePriority]
+      B(((Other Node))) --> b[DeclarePriority]
+      a[DeclarePriority] --> CheckOtherNodePriority
+      b[DeclarePriority] --> CheckOtherNodePriority
+      CheckOtherNodePriority --> ObtainTheLease
+  ```
+
+  <figcaption>Figure 3: Compare-And-Set.</figcaption>
+</div>
 
 ### Scheduling flow
 
@@ -107,13 +128,36 @@ The repair scheduler then creates a [TableRepairJob](../core/src/main/java/com/e
 or [IncrementalRepairJob](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/IncrementalRepairJob.java)
 and schedules it using the [ScheduleManager](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/scheduling/ScheduleManagerImpl.java) [\[2\]](#references).
 
-<figure>
-  <div align="center">
-    <img src="images/repair-job-flow.png" alt="Alt Text" style="display: block; margin-left: auto; margin-right: auto; width: 500px;">
-    <br/>
-    <figcaption >Figure 4: Scheduling flow.</figcaption>
-  </div>
-</figure>
+<div align="center">
+
+  ```mermaid
+  stateDiagram
+      direction LR
+      state RepairScheduler {
+        direction LR
+        RepairConfiguration1
+        RepairConfiguration2
+        RepairConfiguration3
+      }
+      state SchedulerManager {
+        [...]
+      }
+      state ShouldJobRunCondition <<choice>>
+      RepairScheduler --> CreateRepairJob
+      CreateRepairJob --> SchedulerManager
+      SchedulerManager --> RefreshPriorities
+      RefreshPriorities --> PickJobWithHighestPriority
+      PickJobWithHighestPriority --> ShouldJobRun
+      ShouldJobRun --> ShouldJobRunCondition
+      ShouldJobRunCondition --> PickJobWithHighestPriority: No
+      ShouldJobRunCondition --> CreateJobTask: Yes
+      CreateJobTask --> ExecuteTasks
+      ExecuteTasks --> SchedulerManager
+  ```
+
+  <figcaption>Figure 4: Scheduling flow.</figcaption>
+
+</div>
 
 #### Vnode repairs
 
