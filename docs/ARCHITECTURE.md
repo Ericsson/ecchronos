@@ -1,6 +1,20 @@
 # Architecture
 
-
+## Summary
+- [Overview](#overview)
+- [Concepts](#concepts)
+    - [Leases](#leases)
+    - [Scheduling flow](#scheduling-flow)
+    - [Scheduled jobs](#scheduled-jobs)
+    - [Run policies](#run-policies)
+    - [Repair scheduling](#repair-scheduling)
+        - [Vnode repairs](#vnode-repairs)
+- [Sub-range repairs](#sub-range-repairs)
+    - [Example](#example)
+        - [Repair history](#repair-history)
+- [Incremental repairs](#incremental-repairs)
+- [References](#references)
+    
 
 ## Overview
 ecChronos is built to be continuously repairing data in the background. Each ecChronos instance keeps track of the repairs
@@ -9,9 +23,33 @@ can be configured to run only during certain time periods or not at all. Setting
 make sure repair is spread out over the interval time while alarms are provided to signal when a job has not run for
 longer than expected.
 
+<figure>
+  <div align="center">
+    <img src="images/ecchronos-instances.png" alt="Alt Text" style="display: block; margin-left: auto; margin-right: auto; width: 500px;">
+    <br/>
+    <figcaption >Figure 1: ecChronos and Cassandra Nodes.</figcaption>
+  </div>
+</figure>
+
 ## Concepts
 
 ### Leases
+
+In the context of Apache Cassandra, a "lease" refers to a mechanism employed during the repair process within Cassandra.
+
+Upon the initiation of a repair in a Cassandra cluster, a "lease" is granted to one of the cluster nodes, which serves as the repair coordinator. This coordinating node is responsible for overseeing the repair process to ensure that all data replicas conform and any disparities are addressed.
+
+The "lease" bestows upon the coordinating node the exclusive right to conduct the repair during a specific time frame. Within this duration, the coordinating node assesses the data, ensuring that all replicas are updated and consistent. Additionally, it helps prevent multiple nodes from concurrently initiating repairs on the same data, thereby mitigating potential consistency issues and cluster overload.
+
+Once the repair is completed by the coordinating node, the "lease" is released, enabling other nodes to request the "lease" and carry out their own repairs as needed. This helps in efficiently distributing the repair load within the cluster [\[1\]](#references).
+
+<figure>
+  <div align="center">
+    <img src="images/election.png" alt="Alt Text" style="display: block; margin-left: auto; margin-right: auto; width: 500px;">
+    <br/>
+    <figcaption >Figure 2: Lease Typically Election.</figcaption>
+  </div>
+</figure>
 
 In order to perform distributed scheduling ecChronos utilize two things `deterministic priorities` and `distributed leases`.
 Deterministic priorities means that all nodes use the same algorithm to decide how important the local work is.
@@ -27,11 +65,18 @@ The announcement is done to avoid node starvation and to try to promote the high
 The leases are created with a TTL of 10 minutes to avoid locking in case of failure.
 As some jobs might take more than 10 minutes to run the lease is continuously updated every minute until the job finishes.
 
+<figure>
+  <div align="center">
+    <img src="images/ecchronos-lease.png" alt="Alt Text" style="display: block; margin-left: auto; margin-right: auto; width: 500px;">
+    <br/>
+    <figcaption >Figure 3: Compare-And-Set.</figcaption>
+  </div>
+</figure>
+
 ### Scheduling flow
 
 The scheduling in ecChronos is handled by the `schedule manager`.
-The schedule manager is responsible to keep track of the local work queue,
-check with run policies if a job should run and also to acquire the leases for the jobs before running them.
+The schedule manager is responsible to keep track of the local work queue, check with run policies if a job should run and also to acquire the leases for the jobs before running them.
 
 ### Scheduled jobs
 
@@ -60,7 +105,15 @@ For more information about time based run policy refer to [Time based run policy
 The repair scheduling begins by providing a [RepairConfiguration](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/RepairConfiguration.java) to the [RepairScheduler](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/RepairSchedulerImpl.java).
 The repair scheduler then creates a [TableRepairJob](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/TableRepairJob.java)
 or [IncrementalRepairJob](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/IncrementalRepairJob.java)
-and schedules it using the [ScheduleManager](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/scheduling/ScheduleManagerImpl.java).
+and schedules it using the [ScheduleManager](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/scheduling/ScheduleManagerImpl.java) [\[2\]](#references).
+
+<figure>
+  <div align="center">
+    <img src="images/repair-job-flow.png" alt="Alt Text" style="display: block; margin-left: auto; margin-right: auto; width: 500px;">
+    <br/>
+    <figcaption >Figure 4: Scheduling flow.</figcaption>
+  </div>
+</figure>
 
 #### Vnode repairs
 
@@ -112,7 +165,7 @@ Assuming that X is more than one hour before Y this will produce three sub range
 
 * (0, 15] repaired at X.
 * (15, 20] repaired at Y
-* (20, 30] repaired at X
+* (20, 30] repaired at X5f
 
 ## Incremental repairs
 
@@ -126,6 +179,13 @@ When the job runs, it calculates the replicas that might be involved in the repa
 [ReplicationStateImpl](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/state/ReplicationStateImpl.java).
 Afterwards a single [RepairGroups](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/RepairGroup.java) is created.
 When the RepairGroup is executed it will generate one [IncrementalRepairTask](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/IncrementalRepairTask.java).
-The IncrementalRepairTask is the class that will perform the incremental repair.
+The IncrementalRepairTask is the class that will perform the incremental repair [\[3\]](#references).
 
 [i96]: https://github.com/Ericsson/ecchronos/issues/96
+
+## References
+ [1\]: [Consensus on Cassandra](https://www.datastax.com/blog/consensus-cassandra);
+
+ [2\]: [Incremental and Full Repairs](https://cassandra.apache.org/doc/latest/cassandra/operating/repair.html#incremental-and-full-repairs)
+
+ [3\]: [Cassandra Metrics](#https://cassandra.apache.org/doc/4.1/cassandra/operating/metrics.html#table-metrics)
