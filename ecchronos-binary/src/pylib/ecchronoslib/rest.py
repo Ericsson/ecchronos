@@ -186,7 +186,7 @@ class V2RepairSchedulerRequest(RestRequest):
 
         return result
 
-    def post(self, keyspace=None, table=None, local=False, incremental=False):
+    def post(self, keyspace=None, table=None, local=False, repair_type="vnode"):
         request_url = V2RepairSchedulerRequest.v2_repair_run_url
         if keyspace:
             request_url += "?keyspace=" + keyspace
@@ -197,11 +197,11 @@ class V2RepairSchedulerRequest(RestRequest):
                 request_url += "&isLocal=true"
             else:
                 request_url += "?isLocal=true"
-        if incremental:
+        if repair_type:
             if keyspace or local:
-                request_url += "&isIncremental=true"
+                request_url += "&repairType=" + repair_type
             else:
-                request_url += "?isIncremental=true"
+                request_url += "?repairType=" + repair_type
         result = self.request(request_url, 'POST')
         if result.is_successful():
             result = result.transform_with_data(new_data=[Repair(x) for x in result.data])

@@ -30,6 +30,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairSchedulerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.EccRepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairEntry;
@@ -70,6 +71,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
@@ -300,6 +302,7 @@ public class ITSchedules extends TestBase
                 .until(() -> isRepairedSince(tableReference, startTime));
 
         verifyTableRepairedSince(tableReference, startTime);
+        verifyRepairSessionMetrics(tableReference, tokenRangesFor(tableReference.getKeyspace()).size());
         verify(mockFaultReporter, never())
                 .raise(any(RepairFaultReporter.FaultCode.class), anyMap());
     }
@@ -325,6 +328,7 @@ public class ITSchedules extends TestBase
                 .until(() -> isRepairedSince(tableReference, startTime));
 
         verifyTableRepairedSince(tableReference, startTime);
+        verifyRepairSessionMetrics(tableReference, tokenRangesFor(tableReference.getKeyspace()).size());
         verify(mockFaultReporter, never())
                 .raise(any(RepairFaultReporter.FaultCode.class), anyMap());
     }
@@ -354,6 +358,36 @@ public class ITSchedules extends TestBase
                 .until(() -> isRepairedSince(tableReference, startTime, expectedRanges));
 
         verifyTableRepairedSinceWithSubRangeRepair(tableReference, startTime, expectedRanges);
+        verifyRepairSessionMetrics(tableReference, expectedRanges.size());
+        verify(mockFaultReporter, never())
+                .raise(any(RepairFaultReporter.FaultCode.class), anyMap());
+    }
+
+    /**
+     * Create a table that is replicated and was repaired two hours ago.
+     *
+     * The repair factory should detect the new table automatically and schedule it to run.
+     */
+    @Test
+    public void repairSingleTableInParallel()
+    {
+        long startTime = System.currentTimeMillis();
+
+        TableReference tableReference = myTableReferenceFactory.forTable("test", "table1");
+
+        injectRepairHistory(tableReference, System.currentTimeMillis() - TimeUnit.HOURS.toMillis(2));
+
+        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
+                .withRepairInterval(60, TimeUnit.MINUTES)
+                .withRepairType(RepairOptions.RepairType.PARALLEL_VNODE)
+                .build();
+        schedule(tableReference, repairConfiguration);
+
+        await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
+                .until(() -> isRepairedSince(tableReference, startTime));
+
+        verifyTableRepairedSince(tableReference, startTime);
+        verifyRepairSessionMetrics(tableReference, 3); // Amount of repair groups
         verify(mockFaultReporter, never())
                 .raise(any(RepairFaultReporter.FaultCode.class), anyMap());
     }
@@ -383,7 +417,9 @@ public class ITSchedules extends TestBase
                 .until(() -> isRepairedSince(tableReference2, startTime));
 
         verifyTableRepairedSince(tableReference, startTime);
+        verifyRepairSessionMetrics(tableReference, tokenRangesFor(tableReference.getKeyspace()).size());
         verifyTableRepairedSince(tableReference2, startTime);
+        verifyRepairSessionMetrics(tableReference2, tokenRangesFor(tableReference2.getKeyspace()).size());
         verify(mockFaultReporter, never())
                 .raise(any(RepairFaultReporter.FaultCode.class), anyMap());
     }
@@ -420,22 +456,29 @@ public class ITSchedules extends TestBase
         await().pollInterval(1, TimeUnit.SECONDS).atMost(90, TimeUnit.SECONDS)
                 .until(() -> isRepairedSince(tableReference, startTime, expectedRepairedRanges));
 
-        verifyTableRepairedSince(tableReference, expectedRepairedInterval, expectedRepairedRanges);
+        verifyTableRepairedSince(tableReference, expectedRepairedInterval);
+        verifyRepairSessionMetrics(tableReference, expectedRepairedRanges.size());
         verify(mockFaultReporter, never())
                 .raise(any(RepairFaultReporter.FaultCode.class), anyMap());
     }
 
     private void schedule(TableReference tableReference)
     {
+        schedule(tableReference, myRepairConfiguration);
+    }
+
+    private void schedule(TableReference tableReference, RepairConfiguration repairConfiguration)
+    {
         if (myRepairs.add(tableReference))
         {
-            myRepairSchedulerImpl.putConfigurations(tableReference, Collections.singleton(myRepairConfiguration));
+            myRepairSchedulerImpl.putConfigurations(tableReference, Collections.singleton(repairConfiguration));
         }
     }
 
-    private void verifyTableRepairedSince(TableReference tableReference, long repairedSince)
+    private void verifyRepairSessionMetrics(TableReference tableReference, int times)
     {
-        verifyTableRepairedSince(tableReference, repairedSince, tokenRangesFor(tableReference.getKeyspace()));
+        verify(mockTableRepairMetrics, atLeast(times))
+                .repairSession(eq(tableReference), anyLong(), any(TimeUnit.class), eq(true));
     }
 
     private void verifyTableRepairedSinceWithSubRangeRepair(TableReference tableReference, long repairedSince,
@@ -445,23 +488,14 @@ public class ITSchedules extends TestBase
         assertThat(repairedAt.isPresent()).isTrue();
 
         verify(mockTableRepairMetrics, timeout(5000)).lastRepairedAt(eq(tableReference), longThat(l -> l >= repairedAt.getAsLong()));
-
-        int expectedTokenRanges = expectedRepaired.size();
-        verify(mockTableRepairMetrics, atLeast(expectedTokenRanges))
-                .repairSession(eq(tableReference), anyLong(), any(TimeUnit.class), eq(true));
     }
 
-    private void verifyTableRepairedSince(TableReference tableReference, long repairedSince,
-            Set<LongTokenRange> expectedRepaired)
+    private void verifyTableRepairedSince(TableReference tableReference, long repairedSince)
     {
         OptionalLong repairedAt = lastRepairedSince(tableReference, repairedSince);
         assertThat(repairedAt.isPresent()).isTrue();
 
         verify(mockTableRepairMetrics, timeout(5000)).lastRepairedAt(eq(tableReference), longThat(l -> l >= repairedAt.getAsLong()));
-
-        int expectedTokenRanges = expectedRepaired.size();
-        verify(mockTableRepairMetrics, atLeast(expectedTokenRanges))
-                .repairSession(eq(tableReference), anyLong(), any(TimeUnit.class), eq(true));
     }
 
     private boolean isRepairedSince(TableReference tableReference, long repairedSince)

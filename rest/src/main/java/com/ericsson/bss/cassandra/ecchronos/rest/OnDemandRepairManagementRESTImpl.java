@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.rest;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -116,13 +117,22 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             @Parameter(description = "The table to run repair for.")
             final String table,
             @RequestParam(required = false)
-            @Parameter(description = "Decides if the repair should be only for the local node, i.e not cluster-wide.")
-            final boolean isLocal,
+            @Parameter(description = "The type of the repair, defaults to vnode.")
+            final RepairOptions.RepairType repairType,
             @RequestParam(required = false)
-            @Parameter(description = "Decides if the repair should be incremental")
-            final boolean isIncremental)
+            @Parameter(description = "Decides if the repair should be only for the local node, i.e not cluster-wide.")
+            final boolean isLocal)
     {
-        return ResponseEntity.ok(getListOfOnDemandRepairs(keyspace, table, isLocal, isIncremental));
+        return ResponseEntity.ok(runOnDemandRepair(keyspace, table, getRepairTypeOrDefault(repairType), isLocal));
+    }
+
+    private RepairOptions.RepairType getRepairTypeOrDefault(final RepairOptions.RepairType repairType)
+    {
+        if (repairType == null)
+        {
+            return RepairOptions.RepairType.VNODE;
+        }
+        return repairType;
     }
 
 
@@ -187,8 +197,8 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         return repairJobs;
     }
 
-    private List<OnDemandRepair> getListOfOnDemandRepairs(final String keyspace, final String table,
-            final boolean isLocal, final boolean isIncremental)
+    private List<OnDemandRepair> runOnDemandRepair(final String keyspace, final String table,
+            final RepairOptions.RepairType repairType, final boolean isLocal)
     {
         try
         {
@@ -203,12 +213,12 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                         throw new ResponseStatusException(NOT_FOUND,
                                 "Table " + keyspace + "." + table + " does not exist");
                     }
-                    onDemandRepairs = runLocalOrCluster(isLocal, isIncremental,
+                    onDemandRepairs = runLocalOrCluster(repairType, isLocal,
                             Collections.singleton(myTableReferenceFactory.forTable(keyspace, table)));
                 }
                 else
                 {
-                    onDemandRepairs = runLocalOrCluster(isLocal, isIncremental,
+                    onDemandRepairs = runLocalOrCluster(repairType, isLocal,
                             myTableReferenceFactory.forKeyspace(keyspace));
                 }
             }
@@ -218,7 +228,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 {
                     throw new ResponseStatusException(BAD_REQUEST, "Keyspace must be provided if table is provided");
                 }
-                onDemandRepairs = runLocalOrCluster(isLocal, isIncremental, myTableReferenceFactory.forCluster());
+                onDemandRepairs = runLocalOrCluster(repairType, isLocal, myTableReferenceFactory.forCluster());
             }
             return onDemandRepairs;
         }
@@ -246,7 +256,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 .collect(Collectors.toList());
     }
 
-    private List<OnDemandRepair> runLocalOrCluster(final boolean isLocal, final boolean isIncremental,
+    private List<OnDemandRepair> runLocalOrCluster(final RepairOptions.RepairType repairType, final boolean isLocal,
             final Set<TableReference> tables)
             throws EcChronosException
     {
@@ -258,7 +268,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 if (myReplicatedTableProvider.accept(tableReference.getKeyspace()))
                 {
                     onDemandRepairs.add(new OnDemandRepair(
-                            myOnDemandRepairScheduler.scheduleJob(tableReference, isIncremental)));
+                            myOnDemandRepairScheduler.scheduleJob(tableReference, repairType)));
                 }
             }
             else
@@ -266,7 +276,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 if (myReplicatedTableProvider.accept(tableReference.getKeyspace()))
                 {
                     List<OnDemandRepairJobView> repairJobView = myOnDemandRepairScheduler.scheduleClusterWideJob(
-                            tableReference, isIncremental);
+                            tableReference, repairType);
                     onDemandRepairs.addAll(
                             repairJobView.stream().map(OnDemandRepair::new).collect(Collectors.toList()));
                 }

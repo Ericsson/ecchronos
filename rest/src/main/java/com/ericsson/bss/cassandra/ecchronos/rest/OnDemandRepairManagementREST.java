@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
 import org.springframework.http.ResponseEntity;
 
@@ -49,10 +50,10 @@ public interface OnDemandRepairManagementREST
      *
      * @param keyspace The keyspace of the table
      * @param table The table
+     * @param repairType The type of repair (optional)
      * @param isLocal If repair should be only run for the local node (optional)
-     * @param isIncremental If repair should be incremental (optional)
      * @return A JSON representation of {@link OnDemandRepair}
      */
-    ResponseEntity<List<OnDemandRepair>> runRepair(String keyspace, String table, boolean isLocal,
-            boolean isIncremental);
+    ResponseEntity<List<OnDemandRepair>> runRepair(String keyspace, String table, RepairOptions.RepairType repairType,
+            boolean isLocal);
 }

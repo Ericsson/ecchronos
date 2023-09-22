@@ -160,7 +160,7 @@ public class VnodeRepairTask extends RepairTask
     @VisibleForTesting
     final Set<LongTokenRange> getTokenRanges()
     {
-        return Sets.newHashSet(myTokenRanges);
+        return Sets.newLinkedHashSet(myTokenRanges);
     }
 
     @VisibleForTesting

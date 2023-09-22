@@ -125,7 +125,7 @@ public class OngoingJob
                 && myTokenHash != myTokens.hashCode()));
     }
 
-    public void startClusterWideJob(final boolean isIncremental)
+    public void startClusterWideJob(final RepairOptions.RepairType repairType)
     {
         Map<LongTokenRange, ImmutableSet<DriverNode>> allTokenRanges = myReplicationState
                 .getTokenRanges(myTableReference);
@@ -163,13 +163,13 @@ public class OngoingJob
             {
                 allTokensForNode.addAll(repairedRanges);
             }
-            if (isIncremental)
+            if (repairType == RepairOptions.RepairType.INCREMENTAL)
             {
                 myOnDemandStatus.addNewJob(node.getId(),
                         myJobId,
                         myTableReference,
                         0,
-                        Collections.emptySet(), RepairOptions.RepairType.INCREMENTAL);
+                        Collections.emptySet(), repairType);
             }
             else
             {
@@ -177,7 +177,7 @@ public class OngoingJob
                         myJobId,
                         myTableReference,
                         allTokensForNode.hashCode(),
-                        repairedRanges, RepairOptions.RepairType.VNODE);
+                        repairedRanges, repairType);
             }
         }
     }

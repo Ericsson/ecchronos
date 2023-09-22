@@ -217,10 +217,10 @@ public class TestOnDemandRepairManagementRESTImpl
                 RepairOptions.RepairType.VNODE);
         List<OnDemandRepair> localExpectedResponse = Collections.singletonList(new OnDemandRepair(localRepairJobView));
 
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference, false)).thenReturn(localRepairJobView);
+        when(myOnDemandRepairScheduler.scheduleJob(tableReference, RepairOptions.RepairType.VNODE)).thenReturn(localRepairJobView);
         when(myReplicatedTableProvider.accept("ks")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair("ks", "tb", true,
-                false);
+        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair("ks", "tb", RepairOptions.RepairType.VNODE,
+                true);
 
         assertThat(response.getBody()).isEqualTo(localExpectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -229,9 +229,9 @@ public class TestOnDemandRepairManagementRESTImpl
                 RepairOptions.RepairType.VNODE);
         List<OnDemandRepair> expectedResponse = Collections.singletonList(new OnDemandRepair(repairJobView));
 
-        when(myOnDemandRepairScheduler.scheduleClusterWideJob(tableReference, false)).thenReturn(
+        when(myOnDemandRepairScheduler.scheduleClusterWideJob(tableReference, RepairOptions.RepairType.VNODE)).thenReturn(
                 Collections.singletonList(repairJobView));
-        response = OnDemandRest.runRepair("ks", "tb", false, false);
+        response = OnDemandRest.runRepair("ks", "tb", RepairOptions.RepairType.VNODE, false);
 
         assertThat(response.getBody()).isEqualTo(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -248,9 +248,9 @@ public class TestOnDemandRepairManagementRESTImpl
                 RepairOptions.RepairType.INCREMENTAL);
         List<OnDemandRepair> localExpectedResponse = Collections.singletonList(new OnDemandRepair(localRepairJobView));
 
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference, true)).thenReturn(localRepairJobView);
+        when(myOnDemandRepairScheduler.scheduleJob(tableReference, RepairOptions.RepairType.INCREMENTAL)).thenReturn(localRepairJobView);
         when(myReplicatedTableProvider.accept("ks")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair("ks", "tb", true,
+        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair("ks", "tb", RepairOptions.RepairType.INCREMENTAL,
                 true);
 
         assertThat(response.getBody()).isEqualTo(localExpectedResponse);
@@ -260,9 +260,9 @@ public class TestOnDemandRepairManagementRESTImpl
                 RepairOptions.RepairType.INCREMENTAL);
         List<OnDemandRepair> expectedResponse = Collections.singletonList(new OnDemandRepair(repairJobView));
 
-        when(myOnDemandRepairScheduler.scheduleClusterWideJob(tableReference, true)).thenReturn(
+        when(myOnDemandRepairScheduler.scheduleClusterWideJob(tableReference, RepairOptions.RepairType.INCREMENTAL)).thenReturn(
                 Collections.singletonList(repairJobView));
-        response = OnDemandRest.runRepair("ks", "tb", false, true);
+        response = OnDemandRest.runRepair("ks", "tb", RepairOptions.RepairType.INCREMENTAL, false);
 
         assertThat(response.getBody()).isEqualTo(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -294,12 +294,12 @@ public class TestOnDemandRepairManagementRESTImpl
         expectedResponse.add(new OnDemandRepair(repairJobView2));
         expectedResponse.add(new OnDemandRepair(repairJobView3));
 
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference1, false)).thenReturn(repairJobView1);
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference2, false)).thenReturn(repairJobView2);
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference3, false)).thenReturn(repairJobView3);
+        when(myOnDemandRepairScheduler.scheduleJob(tableReference1, RepairOptions.RepairType.VNODE)).thenReturn(repairJobView1);
+        when(myOnDemandRepairScheduler.scheduleJob(tableReference2, RepairOptions.RepairType.VNODE)).thenReturn(repairJobView2);
+        when(myOnDemandRepairScheduler.scheduleJob(tableReference3, RepairOptions.RepairType.VNODE)).thenReturn(repairJobView3);
         when(myReplicatedTableProvider.accept("ks")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair("ks", null, true,
-                false);
+        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair("ks", null, null,
+                true);
 
         assertThat(response.getBody()).containsAll(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -331,11 +331,11 @@ public class TestOnDemandRepairManagementRESTImpl
         expectedResponse.add(new OnDemandRepair(repairJobView2));
         expectedResponse.add(new OnDemandRepair(repairJobView3));
 
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference1, true)).thenReturn(repairJobView1);
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference2, true)).thenReturn(repairJobView2);
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference3, true)).thenReturn(repairJobView3);
+        when(myOnDemandRepairScheduler.scheduleJob(tableReference1, RepairOptions.RepairType.INCREMENTAL)).thenReturn(repairJobView1);
+        when(myOnDemandRepairScheduler.scheduleJob(tableReference2, RepairOptions.RepairType.INCREMENTAL)).thenReturn(repairJobView2);
+        when(myOnDemandRepairScheduler.scheduleJob(tableReference3, RepairOptions.RepairType.INCREMENTAL)).thenReturn(repairJobView3);
         when(myReplicatedTableProvider.accept("ks")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair("ks", null, true,
+        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair("ks", null, RepairOptions.RepairType.INCREMENTAL,
                 true);
 
         assertThat(response.getBody()).containsAll(expectedResponse);
@@ -378,16 +378,16 @@ public class TestOnDemandRepairManagementRESTImpl
         expectedResponse.add(new OnDemandRepair(repairJobView4));
         expectedResponse.add(new OnDemandRepair(repairJobView5));
 
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference1, false)).thenReturn(repairJobView1);
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference2, false)).thenReturn(repairJobView2);
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference3, false)).thenReturn(repairJobView3);
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference4, false)).thenReturn(repairJobView4);
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference5, false)).thenReturn(repairJobView5);
+        when(myOnDemandRepairScheduler.scheduleJob(tableReference1, RepairOptions.RepairType.VNODE)).thenReturn(repairJobView1);
+        when(myOnDemandRepairScheduler.scheduleJob(tableReference2, RepairOptions.RepairType.VNODE)).thenReturn(repairJobView2);
+        when(myOnDemandRepairScheduler.scheduleJob(tableReference3, RepairOptions.RepairType.VNODE)).thenReturn(repairJobView3);
+        when(myOnDemandRepairScheduler.scheduleJob(tableReference4, RepairOptions.RepairType.VNODE)).thenReturn(repairJobView4);
+        when(myOnDemandRepairScheduler.scheduleJob(tableReference5, RepairOptions.RepairType.VNODE)).thenReturn(repairJobView5);
         when(myReplicatedTableProvider.accept("keyspace1")).thenReturn(true);
         when(myReplicatedTableProvider.accept("keyspace2")).thenReturn(true);
         when(myReplicatedTableProvider.accept("keyspace3")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(null, null, true,
-                false);
+        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(null, null, null,
+                true);
 
         assertThat(response.getBody()).containsAll(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -428,15 +428,15 @@ public class TestOnDemandRepairManagementRESTImpl
         expectedResponse.add(new OnDemandRepair(repairJobView4));
         expectedResponse.add(new OnDemandRepair(repairJobView5));
 
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference1, true)).thenReturn(repairJobView1);
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference2, true)).thenReturn(repairJobView2);
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference3, true)).thenReturn(repairJobView3);
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference4, true)).thenReturn(repairJobView4);
-        when(myOnDemandRepairScheduler.scheduleJob(tableReference5, true)).thenReturn(repairJobView5);
+        when(myOnDemandRepairScheduler.scheduleJob(tableReference1, RepairOptions.RepairType.INCREMENTAL)).thenReturn(repairJobView1);
+        when(myOnDemandRepairScheduler.scheduleJob(tableReference2, RepairOptions.RepairType.INCREMENTAL)).thenReturn(repairJobView2);
+        when(myOnDemandRepairScheduler.scheduleJob(tableReference3, RepairOptions.RepairType.INCREMENTAL)).thenReturn(repairJobView3);
+        when(myOnDemandRepairScheduler.scheduleJob(tableReference4, RepairOptions.RepairType.INCREMENTAL)).thenReturn(repairJobView4);
+        when(myOnDemandRepairScheduler.scheduleJob(tableReference5, RepairOptions.RepairType.INCREMENTAL)).thenReturn(repairJobView5);
         when(myReplicatedTableProvider.accept("keyspace1")).thenReturn(true);
         when(myReplicatedTableProvider.accept("keyspace2")).thenReturn(true);
         when(myReplicatedTableProvider.accept("keyspace3")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(null, null, true,
+        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(null, null, RepairOptions.RepairType.INCREMENTAL,
                 true);
 
         assertThat(response.getBody()).containsAll(expectedResponse);
@@ -456,7 +456,7 @@ public class TestOnDemandRepairManagementRESTImpl
         ResponseEntity<List<OnDemandRepair>> response = null;
         try
         {
-            response = OnDemandRest.runRepair(null, "table1", true, false);
+            response = OnDemandRest.runRepair(null, "table1", RepairOptions.RepairType.VNODE, true);
         }
         catch (ResponseStatusException e)
         {

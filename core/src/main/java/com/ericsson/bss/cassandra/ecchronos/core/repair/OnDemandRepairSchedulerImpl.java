@@ -119,10 +119,10 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
      */
     @Override
     public List<OnDemandRepairJobView> scheduleClusterWideJob(final TableReference tableReference,
-            final boolean isIncremental)
+            final RepairOptions.RepairType repairType)
             throws EcChronosException
     {
-        OnDemandRepairJobView currentJob = scheduleJob(tableReference, true, isIncremental);
+        OnDemandRepairJobView currentJob = scheduleJob(tableReference, true, repairType);
         return getAllClusterWideRepairJobs().stream()
                 .filter(j -> j.getId().equals(currentJob.getId()))
                 .collect(Collectors.toList());
@@ -133,18 +133,19 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
      *
      * @param tableReference
      *            The table to schedule a job on.
-     * @param isIncremental If repair should be an incremental repair.
+     * @param repairType The repair type for the on demand repair.
      * @return RepairJobView
      */
     @Override
-    public OnDemandRepairJobView scheduleJob(final TableReference tableReference, final boolean isIncremental)
+    public OnDemandRepairJobView scheduleJob(final TableReference tableReference,
+            final RepairOptions.RepairType repairType)
             throws EcChronosException
     {
-        return scheduleJob(tableReference, false, isIncremental);
+        return scheduleJob(tableReference, false, repairType);
     }
 
     private OnDemandRepairJobView scheduleJob(final TableReference tableReference,
-                                              final boolean isClusterWide, final boolean isIncremental)
+                                              final boolean isClusterWide, final RepairOptions.RepairType repairType)
             throws EcChronosException
     {
         synchronized (myLock)
@@ -154,7 +155,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
                 Optional<KeyspaceMetadata> ks = Metadata.getKeyspace(mySession, tableReference.getKeyspace());
                 if (ks.isPresent() && Metadata.getTable(ks.get(), tableReference.getTable()).isPresent())
                 {
-                    OnDemandRepairJob job = getRepairJob(tableReference, isClusterWide, isIncremental);
+                    OnDemandRepairJob job = getRepairJob(tableReference, isClusterWide, repairType);
                     myScheduledJobs.put(job.getId(), job);
                     myScheduleManager.schedule(job);
                     return job.getView();
@@ -233,19 +234,18 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
     }
 
     private OnDemandRepairJob getRepairJob(final TableReference tableReference, final boolean isClusterWide,
-            final boolean isIncremental)
+            final RepairOptions.RepairType repairType)
     {
         OngoingJob ongoingJob = new OngoingJob.Builder()
                 .withOnDemandStatus(myOnDemandStatus)
                 .withTableReference(tableReference)
                 .withReplicationState(myReplicationState)
                 .withHostId(myOnDemandStatus.getHostId())
-                .withRepairType(isIncremental ? RepairOptions.RepairType.INCREMENTAL
-                        : RepairOptions.RepairType.VNODE)
+                .withRepairType(repairType)
                 .build();
         if (isClusterWide)
         {
-            ongoingJob.startClusterWideJob(isIncremental);
+            ongoingJob.startClusterWideJob(repairType);
         }
         return getOngoingRepairJob(ongoingJob);
     }
@@ -253,22 +253,10 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
     private OnDemandRepairJob getOngoingRepairJob(final OngoingJob ongoingJob)
     {
         OnDemandRepairJob job;
-        if (ongoingJob.getRepairType().equals(RepairOptions.RepairType.VNODE))
+        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder(myRepairConfiguration)
+                .withRepairType(ongoingJob.getRepairType()).build();
+        if (ongoingJob.getRepairType().equals(RepairOptions.RepairType.INCREMENTAL))
         {
-            job = new VnodeOnDemandRepairJob.Builder()
-                    .withJmxProxyFactory(myJmxProxyFactory)
-                    .withTableRepairMetrics(myTableRepairMetrics)
-                    .withRepairLockType(myRepairLockType)
-                    .withOnFinished(this::removeScheduledJob)
-                    .withRepairConfiguration(myRepairConfiguration)
-                    .withRepairHistory(myRepairHistory)
-                    .withOngoingJob(ongoingJob)
-                    .build();
-        }
-        else
-        {
-            RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder(myRepairConfiguration)
-                    .withRepairType(RepairOptions.RepairType.INCREMENTAL).build();
             job = new IncrementalOnDemandRepairJob.Builder()
                     .withJmxProxyFactory(myJmxProxyFactory)
                     .withTableRepairMetrics(myTableRepairMetrics)
@@ -276,6 +264,18 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
                     .withOnFinished(this::removeScheduledJob)
                     .withRepairConfiguration(repairConfiguration)
                     .withReplicationState(myReplicationState)
+                    .withOngoingJob(ongoingJob)
+                    .build();
+        }
+        else
+        {
+            job = new VnodeOnDemandRepairJob.Builder()
+                    .withJmxProxyFactory(myJmxProxyFactory)
+                    .withTableRepairMetrics(myTableRepairMetrics)
+                    .withRepairLockType(myRepairLockType)
+                    .withOnFinished(this::removeScheduledJob)
+                    .withRepairConfiguration(repairConfiguration)
+                    .withRepairHistory(myRepairHistory)
                     .withOngoingJob(ongoingJob)
                     .build();
         }
