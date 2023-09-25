@@ -23,7 +23,7 @@ SCHEDULE_SUMMARY = r'Summary: \d+ completed, \d+ on time, \d+ blocked, \d+ late,
 
 TABLE_SCHEDULE_HEADER = r'| Id | Keyspace | Table | Status | Repaired(%) | Completed at | Next repair | Repair type |'
 TABLE_SNAPSHOT_HEADER = r'Snapshot as of .*'
-TABLE_SCHEDULE_ROW_FORMAT_PATTERN = r'\| .* \| {0} \| {1} \| (COMPLETED|ON_TIME|LATE|OVERDUE) \| \d+[.]\d+ \| .* \|'
+TABLE_SCHEDULE_ROW_FORMAT_PATTERN = r'\| .* \| {0} \| {1} \| (COMPLETED|ON_TIME|LATE|OVERDUE) \| \d+[.]\d+ \| .* \| {2} \|' # pylint: disable=line-too-long
 
 
 def run_ecc_schedule_status(context, params):
@@ -77,9 +77,9 @@ def step_show_schedule(context, keyspace, table):
     handle_schedule_output(context)
 
 
-@then('the output should contain a schedule row for {keyspace}.{table}')
-def step_validate_list_tables_row(context, keyspace, table):
-    expected_row = table_row(keyspace, table)
+@then('the output should contain a schedule row for {keyspace}.{table} with type {repair_type}')
+def step_validate_list_tables_row(context, keyspace, table, repair_type):
+    expected_row = table_row(keyspace, table, repair_type)
     match_and_remove_row(context.rows, expected_row)
 
 
@@ -117,12 +117,12 @@ def step_validate_list_schedule_contains_summary(context):
     assert re.match(SCHEDULE_SUMMARY, summary), "Faulty summary '{0}'".format(summary)
 
 
-@then('the output should contain a valid schedule for {keyspace}.{table}')
-def step_validate_list_schedule_contains_rows(context, keyspace, table):
+@then('the output should contain a valid schedule for {keyspace}.{table} with type {repair_type}')
+def step_validate_list_schedule_contains_rows(context, keyspace, table, repair_type):
     assert len(context.table_info) == 8, "Expecting 8 rows"
     assert len(context.conf) == 1, "Expecting 1 row"
 
-    step_validate_expected_show_table_header(context, keyspace, table)
+    step_validate_expected_show_table_header(context, keyspace, table, repair_type)
 
 
 @then('the output should contain a valid snapshot header')
@@ -142,13 +142,13 @@ def step_validate_list_schedules_contains_rows_with_limit(context, limit):
     assert len(rows) == limit + 1, "Expecting only {0} schedule element from {1}".format(limit, rows)
 
     for _ in range(limit):
-        step_validate_list_tables_row(context, ".*", ".*")
+        step_validate_list_tables_row(context, ".*", ".*", ".*")
 
     step_validate_list_rows_clear(context)
 
 
-@then('the expected schedule header should be for {keyspace}.{table}')
-def step_validate_expected_show_table_header(context, keyspace, table):
+@then('the expected schedule header should be for {keyspace}.{table} with type {repair_type}')
+def step_validate_expected_show_table_header(context, keyspace, table, repair_type):
     table_info = context.table_info
     assert re.match("Id : .*", strip_and_collapse(table_info[0])), "Faulty Id '{0}'".format(table_info[0])
     assert strip_and_collapse(
@@ -164,7 +164,7 @@ def step_validate_expected_show_table_header(context, keyspace, table):
     assert re.match(
         "Next repair : .*", strip_and_collapse(table_info[6])), "Faulty next repair '{0}'".format(table_info[6])
     assert re.match(
-        "Repair type : (VNODE|INCREMENTAL)", strip_and_collapse(table_info[7])), \
+        "Repair type : {0}".format(repair_type), strip_and_collapse(table_info[7])), \
         "Faulty repair type '{0}'".format(table_info[7])
 
 
@@ -191,8 +191,8 @@ def remove_token_row(context):
     del context.rows[found_row]
 
 
-def table_row(keyspace, table):
-    return TABLE_SCHEDULE_ROW_FORMAT_PATTERN.format(keyspace, table)
+def table_row(keyspace, table, repair_type):
+    return TABLE_SCHEDULE_ROW_FORMAT_PATTERN.format(keyspace, table, repair_type)
 
 
 def token_row():
