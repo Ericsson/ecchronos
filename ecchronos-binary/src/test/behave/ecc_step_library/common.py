@@ -23,7 +23,16 @@ from jsonschema import validate
 from behave import given, then, when  # pylint: disable=no-name-in-module
 
 
+ID_PATTERN = r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
 REPAIR_SUMMARY_PATTERN = r'Summary: \d+ completed, \d+ in queue, \d+ blocked, \d+ warning, \d+ error'
+REPAIR_HEADER = r'| Id | Host Id | Keyspace | Table | Status | Repaired(%) | Completed at | Repair type |'
+REPAIR_ROW_FORMAT_PATTERN = r'\| .* \| .* \| {0} \| {1} \| (COMPLETED|IN_QUEUE|WARNING|ERROR) \| \d+[.]\d+ \| .* \| {2} \|'  # pylint: disable=line-too-long
+
+
+def table_row(template, keyspace, table, repair_type=None):
+    if repair_type:
+        return template.format(keyspace, table, repair_type)
+    return template.format(keyspace, table)
 
 
 def strip_and_collapse(line):
@@ -46,6 +55,13 @@ def match_and_remove_row(rows, expected_row):
     return found_row
 
 
+def handle_repair_output(context):
+    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
+    context.header = output_data[0:3]
+    context.rows = output_data[3:-1]
+    context.summary = output_data[-1:]
+
+
 def validate_header(header, expected_main_header):
     assert len(header) == 3, header
 
@@ -61,6 +77,13 @@ def validate_last_table_row(rows):
     assert len(rows) == 1, "Expecting last element to be '---' in {0}".format(rows)
     assert rows[0] == len(rows[0]) * rows[0][0], rows[0]  # -----
     assert len(rows) == 1, "{0} not empty".format(rows)
+
+
+def get_job_id(context):
+    out = context.out.decode('ascii')
+    job_id = re.search(ID_PATTERN, out).group(0)
+    assert job_id, "Could not find job id matching {0} in {1}".format(ID_PATTERN, out)
+    return job_id
 
 
 @given('we have access to ecctool')
@@ -82,14 +105,25 @@ def step_validate_list_rows_clear(context):
     validate_last_table_row(context.rows)
 
 
+@then('the output should contain a valid repair header')
+def step_validate_list_tables_header(context):
+    validate_header(context.header, REPAIR_HEADER)
+
+
+@then('the output should contain a repair row for {keyspace}.{table} with type {repair_type}')
+def step_validate_repair_row(context, keyspace, table, repair_type):
+    expected_row = table_row(REPAIR_ROW_FORMAT_PATTERN, keyspace, table, repair_type)
+    match_and_remove_row(context.rows, expected_row)
+
+
 def get_behave_dir():
     current_dir = os.path.dirname(__file__)
     return os.path.abspath(os.path.join(current_dir, '../features'))
 
 
-@given('I have a json schema in {schema_name}.json')
+@given('I have a json schema {schema_name}')
 def step_import_schema(context, schema_name):
-    schema_file = os.path.join(get_behave_dir(), "{0}.json".format(schema_name))
+    schema_file = os.path.join(get_behave_dir(), "schemas", "{0}.json".format(schema_name))
 
     with io.open(schema_file, "r", encoding="utf-8") as jsonfile:
         setattr(context, schema_name, json.loads(jsonfile.read()))
@@ -138,7 +172,7 @@ def step_verify_response_is_successful(context):
     assert context.response.status_code == 200
 
 
-@then('the response matches the json {schema_name}')
+@then('the response matches the json schema {schema_name}')
 def step_verify_schema(context, schema_name):
     schema = getattr(context, schema_name, None)
     assert schema is not None

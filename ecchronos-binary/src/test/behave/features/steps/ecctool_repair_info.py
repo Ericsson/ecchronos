@@ -14,7 +14,7 @@
 #
 
 from behave import when, then  # pylint: disable=no-name-in-module
-from ecc_step_library.common_steps import match_and_remove_row, validate_header, run_ecctool
+from ecc_step_library.common import match_and_remove_row, validate_header, run_ecctool, table_row
 
 
 REPAIR_INFO_HEADER = r'| Keyspace | Table | Repaired (%) | Repair time taken |'
@@ -23,10 +23,6 @@ REPAIR_INFO_ROW_FORMAT_PATTERN = r'\| {0} \| {1} \| \d+[.]\d+ \| .* \|'
 
 def run_ecc_repair_info(context, params):
     run_ecctool(context, ["repair-info"] + params)
-
-
-def table_row(keyspace, table):
-    return REPAIR_INFO_ROW_FORMAT_PATTERN.format(keyspace, table)
 
 
 def handle_repair_info_output(context):
@@ -121,5 +117,5 @@ def step_validate_repair_info_header(context):
 
 @then('the output should contain a repair-info row for {keyspace}.{table}')
 def step_validate_repair_info_row(context, keyspace, table):
-    expected_row = table_row(keyspace, table)
+    expected_row = table_row(REPAIR_INFO_ROW_FORMAT_PATTERN, keyspace, table)
     match_and_remove_row(context.rows, expected_row)
