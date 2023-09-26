@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.rest.osgi;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
@@ -75,8 +76,8 @@ public class RepairManagementOnDemandRESTComponent implements OnDemandRepairMana
 
     @Override
     public final ResponseEntity<List<OnDemandRepair>> runRepair(final String keyspace, final String table,
-            final boolean isLocal, final boolean isIncremental)
+            final RepairOptions.RepairType repairType, final boolean isLocal)
     {
-        return myDelegateOnDemandRESTImpl.runRepair(keyspace, table, isLocal, isIncremental);
+        return myDelegateOnDemandRESTImpl.runRepair(keyspace, table, repairType, isLocal);
     }
 }

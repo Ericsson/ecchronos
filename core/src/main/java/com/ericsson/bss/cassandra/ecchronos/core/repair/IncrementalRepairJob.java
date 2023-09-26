@@ -66,7 +66,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
     {
         long now = System.currentTimeMillis();
         return new ScheduledRepairJobView(getId(), getTableReference(), getRepairConfiguration(), getStatus(now),
-                getProgress(), getNextRunInMs(), getLastSuccessfulRun(), RepairOptions.RepairType.INCREMENTAL);
+                getProgress(), getNextRunInMs(), getLastSuccessfulRun(), getRepairConfiguration().getRepairType());
     }
 
     private long getNextRunInMs()

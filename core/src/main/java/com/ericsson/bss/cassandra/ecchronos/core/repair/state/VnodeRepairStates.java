@@ -16,7 +16,6 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import java.util.Collection;
 
-
 /**
  * A collection of {@link VnodeRepairState VnodeRepairStates} that contains utilities to easily combine
  * with new entries.
@@ -35,21 +34,6 @@ public interface VnodeRepairStates
      * @return The created state.
      */
     VnodeRepairStates combineWithRepairedAt(long repairedAt);
-
-    /**
-     * Calculate the effective repair time (time for Cassandra to perform repair) for all the repaired vnodes.
-     *
-     * @return The repair time in milliseconds
-     */
-    default long getRepairTime()
-    {
-        long sum = 0;
-        for (VnodeRepairState vnodeRepairState : getVnodeRepairStates())
-        {
-            sum += vnodeRepairState.getRepairTime();
-        }
-        return sum;
-    }
 
     interface Builder
     {

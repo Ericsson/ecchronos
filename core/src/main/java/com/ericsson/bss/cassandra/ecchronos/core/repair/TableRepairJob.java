@@ -79,7 +79,7 @@ public class TableRepairJob extends ScheduledRepairJob
         long now = System.currentTimeMillis();
         return new ScheduledRepairJobView(getId(), getTableReference(), getRepairConfiguration(),
                 myRepairState.getSnapshot(),
-                getStatus(now), getProgress(now), getNextRunInMs(), RepairOptions.RepairType.VNODE);
+                getStatus(now), getProgress(now), getNextRunInMs(), getRepairConfiguration().getRepairType());
     }
 
     private long getNextRunInMs()

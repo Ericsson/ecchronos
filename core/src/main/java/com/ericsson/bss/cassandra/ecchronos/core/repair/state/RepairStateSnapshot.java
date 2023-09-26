@@ -45,21 +45,14 @@ public class RepairStateSnapshot
         myCreatedAt = builder.myCreatedAt;
         myReplicaRepairGroup = builder.myReplicaRepairGroup;
         myVnodeRepairStates = builder.myVnodeRepairStates;
-        myEstimatedRepairTime = myVnodeRepairStates.getRepairTime();
+        myEstimatedRepairTime = VnodeRepairStateUtils.getRepairTime(myVnodeRepairStates.getVnodeRepairStates());
         canRepair = !myReplicaRepairGroup.isEmpty();
     }
 
     public long getRemainingRepairTime(final long now, final long repairIntervalMs)
     {
-        long sum = 0;
-        for (VnodeRepairState vnodeRepairState : myVnodeRepairStates.getVnodeRepairStates())
-        {
-            if (vnodeRepairState.lastRepairedAt() + (repairIntervalMs - myEstimatedRepairTime) <= now)
-            {
-                sum += vnodeRepairState.getRepairTime();
-            }
-        }
-        return sum;
+        return VnodeRepairStateUtils.getRemainingRepairTime(myVnodeRepairStates.getVnodeRepairStates(),
+                repairIntervalMs, now, myEstimatedRepairTime);
     }
 
     /**

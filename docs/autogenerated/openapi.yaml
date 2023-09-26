@@ -75,16 +75,20 @@ paths:
         required: false
         schema:
           type: string
+      - name: repairType
+        in: query
+        description: "The type of the repair, defaults to vnode."
+        required: false
+        schema:
+          type: string
+          enum:
+          - VNODE
+          - PARALLEL_VNODE
+          - INCREMENTAL
       - name: isLocal
         in: query
         description: "Decides if the repair should be only for the local node, i.e\
           \ not cluster-wide."
-        required: false
-        schema:
-          type: boolean
-      - name: isIncremental
-        in: query
-        description: Decides if the repair should be incremental
         required: false
         schema:
           type: boolean
@@ -384,6 +388,7 @@ components:
           type: string
           enum:
           - VNODE
+          - PARALLEL_VNODE
           - INCREMENTAL
     Schedule:
       required:
@@ -430,6 +435,7 @@ components:
           type: string
           enum:
           - VNODE
+          - PARALLEL_VNODE
           - INCREMENTAL
         virtualNodeStates:
           type: array

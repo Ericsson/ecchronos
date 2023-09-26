@@ -41,6 +41,7 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.token.TokenRange;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.internal.core.metadata.token.Murmur3Token;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import org.assertj.core.util.Lists;
 import org.junit.After;
 import org.junit.Test;
@@ -269,7 +270,7 @@ public class ITOnDemandRepairJob extends TestBase
     private void schedule(TableReference tableReference) throws EcChronosException
     {
         myRepairs.add(tableReference);
-        myRepairSchedulerImpl.scheduleJob(tableReference, false);
+        myRepairSchedulerImpl.scheduleJob(tableReference, RepairOptions.RepairType.VNODE);
     }
 
     private void verifyTableRepairedSince(TableReference tableReference, long repairedSince)

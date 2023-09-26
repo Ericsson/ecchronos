@@ -407,7 +407,7 @@ public class TestOngoingJob
         UUID jobId = ongoingJob.getJobId();
         verify(myOnDemandStatus).addNewJob(jobId, myTableReference, ongoingJob.getTokens().keySet().hashCode(), RepairOptions.RepairType.VNODE);
 
-        ongoingJob.startClusterWideJob(false);
+        ongoingJob.startClusterWideJob(RepairOptions.RepairType.VNODE);
 
         Set<LongTokenRange> repairedRangesNode2 = new HashSet<>();
         //Node2 will repair range6 and range7
@@ -510,7 +510,7 @@ public class TestOngoingJob
         UUID jobId = ongoingJob.getJobId();
         verify(myOnDemandStatus).addNewJob(jobId, myTableReference, ongoingJob.getTokens().keySet().hashCode(), RepairOptions.RepairType.INCREMENTAL);
 
-        ongoingJob.startClusterWideJob(true);
+        ongoingJob.startClusterWideJob(RepairOptions.RepairType.INCREMENTAL);
 
         verify(myOnDemandStatus).addNewJob(node2Id, jobId, myTableReference, 0, Collections.emptySet(), RepairOptions.RepairType.INCREMENTAL);
         verify(myOnDemandStatus).addNewJob(node3Id, jobId, myTableReference, 0, Collections.emptySet(), RepairOptions.RepairType.INCREMENTAL);

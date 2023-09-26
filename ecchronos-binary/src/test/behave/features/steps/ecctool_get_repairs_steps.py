@@ -21,15 +21,11 @@ from ecc_step_library.common_steps import match_and_remove_row, validate_header,
 ID_PATTERN = r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
 
 TABLE_REPAIR_HEADER = r'| Id | Host Id | Keyspace | Table | Status | Repaired(%) | Completed at | Repair type |'
-TABLE_REPAIR_ROW_FORMAT_PATTERN = r'\| .* \| .* \| {0} \| {1} \| (COMPLETED|IN_QUEUE|WARNING|ERROR) \| \d+[.]\d+ \|'
+TABLE_REPAIR_ROW_FORMAT_PATTERN = r'\| .* \| .* \| {0} \| {1} \| (COMPLETED|IN_QUEUE|WARNING|ERROR) \| \d+[.]\d+ \| .* \| {2} \|' # pylint: disable=line-too-long
 
 
 def run_ecc_repair_status(context, params):
     run_ecctool(context, ["repairs"] + params)
-
-
-def table_row(keyspace, table):
-    return TABLE_REPAIR_ROW_FORMAT_PATTERN.format(keyspace, table)
 
 
 def handle_repair_output(context):
@@ -90,10 +86,14 @@ def step_validate_list_tables_header(context):
     validate_header(context.header, TABLE_REPAIR_HEADER)
 
 
-@then('the output should contain a repair row for {keyspace}.{table}')
-def step_validate_list_tables_row(context, keyspace, table):
-    expected_row = table_row(keyspace, table)
+@then('the output should contain a repair row for {keyspace}.{table} with type {repair_type}')
+def step_validate_list_tables_row(context, keyspace, table, repair_type):
+    expected_row = table_row(keyspace, table, repair_type)
     match_and_remove_row(context.rows, expected_row)
+
+
+def table_row(keyspace, table, repair_type):
+    return TABLE_REPAIR_ROW_FORMAT_PATTERN.format(keyspace, table, repair_type)
 
 
 @then('the output should contain {limit:d} repair rows')
@@ -103,4 +103,4 @@ def step_validate_list_repairs_contains_rows_with_limit(context, limit):
     assert len(rows) == limit + 1, "Expecting only {0} table element from {1}".format(limit, rows)
 
     for _ in range(limit):
-        step_validate_list_tables_row(context, ".*", ".*")
+        step_validate_list_tables_row(context, ".*", ".*", ".*")

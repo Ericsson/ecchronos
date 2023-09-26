@@ -29,6 +29,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairSchedulerI
 import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManagerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
@@ -276,6 +277,6 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
     private UUID triggerRepair(TableReference tableReference) throws EcChronosException
     {
         myRepairs.add(tableReference);
-        return myOnDemandRepairSchedulerImpl.scheduleJob(tableReference, true).getId();
+        return myOnDemandRepairSchedulerImpl.scheduleJob(tableReference, RepairOptions.RepairType.INCREMENTAL).getId();
     }
 }

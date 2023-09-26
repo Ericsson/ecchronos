@@ -109,6 +109,12 @@ keyspaces:
         error:
           time: 8
           unit: days
+  - name: test2
+    tables:
+    - name: table1
+      repair_type: incremental
+    - name: table2
+      repair_type: parallel_vnode
 
 EOF
 

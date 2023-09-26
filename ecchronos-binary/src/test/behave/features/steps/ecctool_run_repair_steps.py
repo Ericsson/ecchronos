@@ -17,16 +17,12 @@ from behave import when, then  # pylint: disable=no-name-in-module
 from ecc_step_library.common_steps import match_and_remove_row, validate_header, validate_last_table_row, run_ecctool  # pylint: disable=line-too-long
 
 
-TABLE_ROW_FORMAT_PATTERN = r'\| .* \| .* \| {0} \| {1} \| (COMPLETED|IN_QUEUE|WARNING|ERROR) \| \d+[.]\d+ \| .* \|'
+TABLE_ROW_FORMAT_PATTERN = r'\| .* \| .* \| {0} \| {1} \| (COMPLETED|IN_QUEUE|WARNING|ERROR) \| \d+[.]\d+ \| .* \| {2} \|' # pylint: disable=line-too-long
 TABLE_HEADER = r'| Id | Host Id | Keyspace | Table | Status | Repaired(%) | Completed at | Repair type |'
 
 
 def run_ecc_run_repair(context, params):
     run_ecctool(context, ["run-repair"] + params)
-
-
-def repair_row(keyspace, table):
-    return TABLE_ROW_FORMAT_PATTERN.format(keyspace, table)
 
 
 @when('we run repair for keyspace {keyspace} and table {table}')
@@ -47,9 +43,9 @@ def step_run_repair_cluster(context):
     split_output(context)
 
 
-@when('we run local repair for keyspace {keyspace} and table {table}')
-def step_run_local_repair(context, keyspace, table):
-    run_ecc_run_repair(context, ['--keyspace', keyspace, '--table', table, '--local'])
+@when('we run local repair for keyspace {keyspace} and table {table} with type {repair_type}')
+def step_run_local_repair(context, keyspace, table, repair_type):
+    run_ecc_run_repair(context, ['--keyspace', keyspace, '--table', table, '--local', '--repair_type', repair_type])
     split_output(context)
 
 
@@ -77,10 +73,14 @@ def step_validate_tables_header(context):
     validate_header(context.header, TABLE_HEADER)
 
 
-@then('the repair output should contain a valid repair row for {keyspace}.{table}')
-def step_validate_repair_row(context, keyspace, table):
-    expected_row = repair_row(keyspace, table)
+@then('the repair output should contain a valid repair row for {keyspace}.{table} with type {repair_type}')
+def step_validate_repair_row(context, keyspace, table, repair_type):
+    expected_row = repair_row(keyspace, table, repair_type)
     match_and_remove_row(context.rows, expected_row)
+
+
+def repair_row(keyspace, table, repair_type):
+    return TABLE_ROW_FORMAT_PATTERN.format(keyspace, table, repair_type)
 
 
 @then('the repair output should not contain more rows')

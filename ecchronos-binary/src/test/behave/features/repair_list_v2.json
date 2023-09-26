@@ -34,7 +34,7 @@
       },
       "repairType": {
         "type": "string",
-        "description": "The type of repair for the schedule"
+        "description": "The type of repair for the job"
       }
     },
     "required": [
