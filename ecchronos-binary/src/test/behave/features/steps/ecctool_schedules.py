@@ -15,15 +15,13 @@
 
 import re
 from behave import when, then  # pylint: disable=no-name-in-module
-from ecc_step_library.common_steps import match_and_remove_row, strip_and_collapse, validate_header, step_validate_list_rows_clear, run_ecctool  # pylint: disable=line-too-long
+from ecc_step_library.common import get_job_id, match_and_remove_row, strip_and_collapse, validate_header, step_validate_list_rows_clear, run_ecctool, table_row  # pylint: disable=line-too-long
 
-
-ID_PATTERN = r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
 SCHEDULE_SUMMARY = r'Summary: \d+ completed, \d+ on time, \d+ blocked, \d+ late, \d+ overdue'
 
-TABLE_SCHEDULE_HEADER = r'| Id | Keyspace | Table | Status | Repaired(%) | Completed at | Next repair | Repair type |'
-TABLE_SNAPSHOT_HEADER = r'Snapshot as of .*'
-TABLE_SCHEDULE_ROW_FORMAT_PATTERN = r'\| .* \| {0} \| {1} \| (COMPLETED|ON_TIME|LATE|OVERDUE) \| \d+[.]\d+ \| .* \| {2} \|' # pylint: disable=line-too-long
+SCHEDULE_HEADER = r'| Id | Keyspace | Table | Status | Repaired(%) | Completed at | Next repair | Repair type |'
+SNAPSHOT_HEADER = r'Snapshot as of .*'
+SCHEDULE_ROW_FORMAT_PATTERN = r'\| .* \| {0} \| {1} \| (COMPLETED|ON_TIME|LATE|OVERDUE) \| \d+[.]\d+ \| .* \| {2} \|' # pylint: disable=line-too-long
 
 
 def run_ecc_schedule_status(context, params):
@@ -65,9 +63,7 @@ def step_list_schedules_for_keyspace(context, keyspace):
 @when('we list schedules {keyspace}.{table} with a limit of {limit}')
 def step_list_schedule_with_limit(context, keyspace, table, limit):
     run_ecc_schedule_status(context, ['--keyspace', keyspace, '--table', table])
-    job_id = re.search(ID_PATTERN, context.out.decode('ascii')).group(0)
-    assert job_id
-    run_ecc_schedule_status(context, ['--id', job_id, '--limit', limit])
+    run_ecc_schedule_status(context, ['--id', get_job_id(context), '--limit', limit])
     handle_schedule_output(context)
 
 
@@ -79,17 +75,14 @@ def step_show_schedule(context, keyspace, table):
 
 @then('the output should contain a schedule row for {keyspace}.{table} with type {repair_type}')
 def step_validate_list_tables_row(context, keyspace, table, repair_type):
-    expected_row = table_row(keyspace, table, repair_type)
+    expected_row = table_row(SCHEDULE_ROW_FORMAT_PATTERN, keyspace, table, repair_type)
     match_and_remove_row(context.rows, expected_row)
 
 
 @when('we fetch schedule {keyspace}.{table} by id')
 def step_show_schedule_with_id(context, keyspace, table):
     run_ecc_schedule_status(context, ['--keyspace', keyspace, '--table', table])
-
-    job_id = re.search(ID_PATTERN, context.out.decode('ascii')).group(0)
-    assert job_id
-    run_ecc_schedule_status(context, ['--id', job_id])
+    run_ecc_schedule_status(context, ['--id', get_job_id(context)])
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
     context.table_info = output_data[0:8]
     context.conf = output_data[8:9]
@@ -98,10 +91,7 @@ def step_show_schedule_with_id(context, keyspace, table):
 @when('we show schedule {keyspace}.{table} with a limit of {limit}')
 def step_show_schedule_with_limit(context, keyspace, table, limit):
     run_ecc_schedule_status(context, ['--keyspace', keyspace, '--table', table])
-
-    job_id = re.search(ID_PATTERN, context.out.decode('ascii')).group(0)
-    assert job_id
-    run_ecc_schedule_status(context, ['--id', job_id, '--limit', limit, '--full'])
+    run_ecc_schedule_status(context, ['--id', get_job_id(context), '--limit', limit, '--full'])
     output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
 
     context.table_info = output_data[0:8]
@@ -127,12 +117,12 @@ def step_validate_list_schedule_contains_rows(context, keyspace, table, repair_t
 
 @then('the output should contain a valid snapshot header')
 def step_validate_list_snapshot_header(context):
-    match_and_remove_row(context.snapshot, TABLE_SNAPSHOT_HEADER)
+    match_and_remove_row(context.snapshot, SNAPSHOT_HEADER)
 
 
 @then('the output should contain a valid schedule header')
 def step_validate_list_schedule_header(context):
-    validate_header(context.header, TABLE_SCHEDULE_HEADER)
+    validate_header(context.header, SCHEDULE_HEADER)
 
 
 @then('the output should contain {limit:d} row')
@@ -189,10 +179,6 @@ def remove_token_row(context):
 
     assert found_row != -1, "{0} not found in {1}".format(expected_row, context.rows)
     del context.rows[found_row]
-
-
-def table_row(keyspace, table, repair_type):
-    return TABLE_SCHEDULE_ROW_FORMAT_PATTERN.format(keyspace, table, repair_type)
 
 
 def token_row():
