@@ -24,18 +24,24 @@ longer than expected.
 
 <div align="center">
 
-  ```mermaid
-  flowchart RL
-      A(((Cassandra Node)))---B(((ecChronos Instance)));
-      A(((Cassandra Node)))---C(((ecChronos Instance)));
-      B(((ecChronos Instance)))---D(((Cassandra Node)));
-      C(((ecChronos Instance)))---E(((Cassandra Node)));
-      D(((Cassandra Node)))---F(((ecChronos Instance)));
-      E(((Cassandra Node)))---G(((ecChronos Instance)));
-      F(((ecChronos Instance)))---H(((Cassandra Node)));
-      G(((ecChronos Instance)))---H(((Cassandra Node)));
-  ```
+```mermaid
+  graph TB
+      c[ecChronos Instance]---C((Cassandra Node));
 
+      a[ecChronos Instance]---A((Cassandra Node));
+
+      A((Cassandra Node))===B((Cassandra Node));
+
+      A((Cassandra Node))===C((Cassandra Node));
+
+      C((Cassandra Node))===D((Cassandra Node))
+
+      b[ecChronos Instance]---B((Cassandra Node))
+
+      B((Cassandra Node))===D((Cassandra Node))
+
+      D((Cassandra Node))---d[ecChronos Instance]
+  ```
   <figcaption>Figure 1: ecChronos and Cassandra Nodes.</figcaption>
 </div>
 
@@ -43,22 +49,14 @@ longer than expected.
 
 ### Leases
 
-In the context of Apache Cassandra, a "lease" refers to a mechanism employed during the repair process within Cassandra.
-
-Upon the initiation of a repair in a Cassandra cluster, it's granted to one of the cluster nodes, which serves as the repair coordinator. This coordinating node is responsible for overseeing the repair process to ensure that all data replicas conform and any disparities are addressed.
-
-It bestows upon the coordinating node the exclusive right to conduct repair during a specific time frame. Within this duration, coordinating node assesses the data, ensuring that all replicas are updated and consistent. Additionally, it helps prevent multiple nodes from concurrently initiating repairs on the same data, thereby mitigating potential consistency issues and cluster overload.
-
-Once the repair is completed by the coordinating node, the "lease" is released, enabling other nodes to request and carry out their own repairs as needed. It helps in efficiently distributing the repair load within the cluster [\[1\]](#references).
-
 <div align="center">
 
   ```mermaid
   flowchart TB
-    A[Create Lease] -->|Failed| b[Sleap]
-    b[Sleap] --> A[Create Lease]
-    A[Create Lease] -->|Succeeded| c[Become Master]
-    c[Become Master] --> D[Periodically Renew Lease]
+    A[Create Lease] -->|Failed| b[Sleep]
+    b[Sleep] --> A[Create Lease]
+    A[Create Lease] -->|Succeeded| c[Get the Lock]
+    c[Get the Lock] --> D[Periodically Renew Lease]
     D[Periodically Renew Lease] -->|Failed| A[Create Lease]
     D[Periodically Renew Lease] -->|Succeeded|D[Periodically Renew Lease]
   ```
@@ -69,8 +67,8 @@ Once the repair is completed by the coordinating node, the "lease" is released, 
 In order to perform distributed scheduling ecChronos utilize two things `deterministic priorities` and `distributed leases`.
 Deterministic priorities means that all nodes use the same algorithm to decide how important the local work is.
 By having the priorities deterministic it is possible to compare the priority between nodes and get a fair scheduling.
-Each time a node wants to perform some work a lease needs to be acquired for the node.
-The lease should typically go to the node with the highest priority.
+Each time a node wants to perform some work a lease needs to be acquired for the node and should typically go to the node with the highest priority. It bestows upon the node the exclusive right to conduct repair during a specific time frame. Within this duration, the node assesses the data, ensuring that all replicas are updated and consistent. Additionally, it helps prevent multiple nodes from concurrently initiating repairs on the same data, thereby mitigating potential consistency issues and cluster overload.
+Once the repair is completed by the node, the "lease" is released, enabling other nodes to request and carry out their own repairs as needed. It helps in efficiently distributing the repair load within the cluster [\[1\]](#references).
 
 The default implementation of leases in ecChronos is based on CAS (Compare-And-Set) with Apache Cassandra as backend.
 When the local node tries to obtain a lease it first announces its own priority and check what other nodes have announced.
@@ -143,15 +141,15 @@ and schedules it using the [ScheduleManager](../core/src/main/java/com/ericsson/
         [...]
       }
       state ShouldJobRunCondition <<choice>>
-      RepairScheduler --> CreateRepairJob
-      CreateRepairJob --> SchedulerManager
+      RepairScheduler --> CreateRepairJobs
+      CreateRepairJobs --> SchedulerManager
       SchedulerManager --> RefreshPriorities
       RefreshPriorities --> PickJobWithHighestPriority
       PickJobWithHighestPriority --> ShouldJobRun
       ShouldJobRun --> ShouldJobRunCondition
       ShouldJobRunCondition --> PickJobWithHighestPriority: No
-      ShouldJobRunCondition --> CreateJobTask: Yes
-      CreateJobTask --> ExecuteTasks
+      ShouldJobRunCondition --> CreateJobTasks: Yes
+      CreateJobTasks --> ExecuteTasks
       ExecuteTasks --> SchedulerManager
   ```
 
@@ -209,7 +207,7 @@ Assuming that X is more than one hour before Y this will produce three sub range
 
 * (0, 15] repaired at X.
 * (15, 20] repaired at Y
-* (20, 30] repaired at X5f
+* (20, 30] repaired at X
 
 ## Incremental repairs
 
@@ -232,4 +230,4 @@ The IncrementalRepairTask is the class that will perform the incremental repair 
 
  [2\]: [Incremental and Full Repairs](https://cassandra.apache.org/doc/latest/cassandra/operating/repair.html#incremental-and-full-repairs)
 
- [3\]: [Cassandra Metrics](#https://cassandra.apache.org/doc/4.1/cassandra/operating/metrics.html#table-metrics)
+ [3\]: [Cassandra Metrics](https://cassandra.apache.org/doc/4.1/cassandra/operating/metrics.html#table-metrics)
