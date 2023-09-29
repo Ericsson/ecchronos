@@ -67,7 +67,7 @@ longer than expected.
 In order to perform distributed scheduling ecChronos utilize two things `deterministic priorities` and `distributed leases`.
 Deterministic priorities means that all nodes use the same algorithm to decide how important the local work is.
 By having the priorities deterministic it is possible to compare the priority between nodes and get a fair scheduling.
-Each time a node wants to perform some work a lease needs to be acquired for the node and should typically go to the node with the highest priority. It bestows upon the node the exclusive right to conduct repair during a specific time frame. Within this duration, the node assesses the data, ensuring that all replicas are updated and consistent. Additionally, it helps prevent multiple nodes from concurrently initiating repairs on the same data, thereby mitigating potential consistency issues and cluster overload.
+Each time a node wants to perform some work a lease needs to be acquired for the node and should typically go to the node with the highest priority. It bestows upon the node the to conduct repair during a specific time frame. Within this duration, the node assesses the data, ensuring that all replicas are updated and consistent. Additionally, it helps prevent multiple nodes from concurrently initiating repairs on the same data, thereby mitigating potential consistency issues and cluster overload.
 Once the repair is completed by the node, the "lease" is released, enabling other nodes to request and carry out their own repairs as needed. It helps in efficiently distributing the repair load within the cluster [\[1\]](#references).
 
 The default implementation of leases in ecChronos is based on CAS (Compare-And-Set) with Apache Cassandra as backend.
@@ -189,7 +189,6 @@ The sub ranges would be:
 (98, 100]
 
 #### Repair history
-
 
 Sub-ranges are handled in two parts, one part is building an internal state of the repair history and the other is performing the repairs.
 While building the internal repair history state all sub-ranges which are fully contained within a local virtual node are collected from the repair history.
