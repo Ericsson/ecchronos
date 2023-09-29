@@ -13,12 +13,8 @@
 # limitations under the License.
 #
 
-from behave import when, then  # pylint: disable=no-name-in-module
-from ecc_step_library.common_steps import match_and_remove_row, validate_header, validate_last_table_row, run_ecctool  # pylint: disable=line-too-long
-
-
-TABLE_ROW_FORMAT_PATTERN = r'\| .* \| .* \| {0} \| {1} \| (COMPLETED|IN_QUEUE|WARNING|ERROR) \| \d+[.]\d+ \| .* \| {2} \|' # pylint: disable=line-too-long
-TABLE_HEADER = r'| Id | Host Id | Keyspace | Table | Status | Repaired(%) | Completed at | Repair type |'
+from behave import when  # pylint: disable=no-name-in-module
+from ecc_step_library.common import handle_repair_output, run_ecctool
 
 
 def run_ecc_run_repair(context, params):
@@ -28,61 +24,34 @@ def run_ecc_run_repair(context, params):
 @when('we run repair for keyspace {keyspace} and table {table}')
 def step_run_repair(context, keyspace, table):
     run_ecc_run_repair(context, ['--keyspace', keyspace, '--table', table])
-    split_output(context)
+    handle_repair_output(context)
 
 
 @when('we run repair for keyspace {keyspace}')
 def step_run_repair_keyspace(context, keyspace):
     run_ecc_run_repair(context, ['--keyspace', keyspace])
-    split_output(context)
+    handle_repair_output(context)
 
 
 @when('we run repair')
 def step_run_repair_cluster(context):
     run_ecc_run_repair(context, [])
-    split_output(context)
+    handle_repair_output(context)
 
 
 @when('we run local repair for keyspace {keyspace} and table {table} with type {repair_type}')
 def step_run_local_repair(context, keyspace, table, repair_type):
     run_ecc_run_repair(context, ['--keyspace', keyspace, '--table', table, '--local', '--repair_type', repair_type])
-    split_output(context)
+    handle_repair_output(context)
 
 
 @when('we run local repair for keyspace {keyspace}')
 def step_run_local_repair_for_keyspace(context, keyspace):
     run_ecc_run_repair(context, ['--keyspace', keyspace, '--local'])
-    split_output(context)
+    handle_repair_output(context)
 
 
 @when('we run local repair')
 def step_run_local_repair_cluster(context):
     run_ecc_run_repair(context, ['--local'])
-    split_output(context)
-
-
-def split_output(context):
-    output_data = context.out.decode('ascii').lstrip().rstrip().split('\n')
-    context.header = output_data[0:3]
-    context.rows = output_data[3:-1]
-    context.summary = output_data[-1:]
-
-
-@then('the repair output should contain a valid header')
-def step_validate_tables_header(context):
-    validate_header(context.header, TABLE_HEADER)
-
-
-@then('the repair output should contain a valid repair row for {keyspace}.{table} with type {repair_type}')
-def step_validate_repair_row(context, keyspace, table, repair_type):
-    expected_row = repair_row(keyspace, table, repair_type)
-    match_and_remove_row(context.rows, expected_row)
-
-
-def repair_row(keyspace, table, repair_type):
-    return TABLE_ROW_FORMAT_PATTERN.format(keyspace, table, repair_type)
-
-
-@then('the repair output should not contain more rows')
-def step_validate_list_rows_clear(context):
-    validate_last_table_row(context.rows)
+    handle_repair_output(context)

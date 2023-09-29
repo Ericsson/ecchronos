@@ -36,7 +36,7 @@ Feature: ecctool repairs
     Given we have access to ecctool
     When we list all repairs for keyspace test2 with a limit of 1
     Then the output should contain a valid repair header
-    And the repair output should contain a valid repair row for test2..* with type .*
+    And the output should contain a repair row for test2..* with type .*
     And the output should not contain more rows
     And the output should contain a valid repair summary
 
