@@ -381,8 +381,7 @@ public final class CASLockFactory implements LockFactory, Closeable
     private DistributedLock doTryLock(final String dataCenter,
                                       final String resource,
                                       final int priority,
-                                      final Map<String, String> metadata)
-                                                                          throws LockException
+                                      final Map<String, String> metadata) throws LockException
     {
         LOG.trace("Trying lock for {} - {}", dataCenter, resource);
 
