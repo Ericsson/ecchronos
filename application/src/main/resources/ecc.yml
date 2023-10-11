@@ -238,13 +238,18 @@ lock_factory:
     ##
     keyspace: ecchronos
     ##
-    ## resource lock time in second to calculate failed lock retry attempts
+    ## The duration for which the lock is held, in seconds
     ##
     lock_time_in_seconds: 600
     ##
-    ## resource lock update time in second to calculate failed lock retry attempts
+    ## The interval at which the lock is updated, in seconds
     ##
     lock_update_time_in_seconds: 60
+    ##
+    ## The time after which the lock cache expires, in seconds", in seconds
+    ##
+    cache_expiry_time_in_second: 30
+
 run_policy:
   time_based:
     ##

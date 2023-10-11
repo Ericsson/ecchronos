@@ -21,7 +21,7 @@ public class CasLockFactoryConfig
     private String myKeyspaceName = "ecchronos";
     private long myLockTimeInSeconds = 600L;
     private long myLockUpdateTimeInSeconds = 60L;
-
+    private long myExpiryTimeInSeconds = 30L;
     @JsonProperty ("lock_time_in_seconds")
     public final long getLockTimeInSeconds()
     {
@@ -45,7 +45,14 @@ public class CasLockFactoryConfig
     {
         myLockTimeInSeconds = lockUpdateTimeInSeconds;
     }
-
+    @JsonProperty ("cache_expiry_time_in_second")
+    public long getExpiryTimeInSeconds() {
+        return myExpiryTimeInSeconds;
+    }
+    @JsonProperty ("cache_expiry_time_in_second")
+    public void setExpiryTimeInSeconds(long expiryTimeInSeconds) {
+        myExpiryTimeInSeconds = expiryTimeInSeconds;
+    }
     @JsonProperty ("keyspace")
     public final String getKeyspaceName()
     {

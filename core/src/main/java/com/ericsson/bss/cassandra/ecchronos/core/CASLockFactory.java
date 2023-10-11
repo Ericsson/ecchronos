@@ -88,7 +88,6 @@ public final class CASLockFactory implements LockFactory, Closeable
     private static final String COLUMN_NODE = "node";
     private static final String COLUMN_METADATA = "metadata";
     private static final String COLUMN_PRIORITY = "priority";
-
     private static final String TABLE_LOCK = "lock";
     private static final String TABLE_LOCK_PRIORITY = "lock_priority";
 
@@ -196,7 +195,7 @@ public final class CASLockFactory implements LockFactory, Closeable
 
         myUuid = hostId;
 
-        myLockCache = new LockCache(this::doTryLock);
+        myLockCache = new LockCache(this::doTryLock, builder.myCacheExpiryTimeInSeconds);
     }
 
     @Override
@@ -290,14 +289,17 @@ public final class CASLockFactory implements LockFactory, Closeable
     public static class Builder
     {
         private static final String DEFAULT_KEYSPACE_NAME = "ecchronos";
+        private static final long DEFAULT_LOCK_TIME_IN_SECONDS = 600L;
+        private static final long DEFAULT_LOCK_UPDATE_TIME_IN_SECONDS = 60L;
+        private static final long DEFAULT_EXPIRY_TIME_IN_SECONDS = 30L;
 
         private NativeConnectionProvider myNativeConnectionProvider;
         private HostStates myHostStates;
         private StatementDecorator myStatementDecorator;
         private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
-
-        private long myLockTimeInSeconds = 600L;
-        private long myLockUpdateTimeInSeconds = 60L;
+        private long myLockTimeInSeconds = DEFAULT_LOCK_TIME_IN_SECONDS;
+        private long myLockUpdateTimeInSeconds = DEFAULT_LOCK_UPDATE_TIME_IN_SECONDS;
+        private long myCacheExpiryTimeInSeconds = DEFAULT_LOCK_UPDATE_TIME_IN_SECONDS;
 
         public final Builder withNativeConnectionProvider(final NativeConnectionProvider nativeConnectionProvider)
         {
@@ -330,6 +332,11 @@ public final class CASLockFactory implements LockFactory, Closeable
         public final Builder withLockUpdateTimeInSeconds (final long lockUpdateTimeInSeconds )
         {
             myLockUpdateTimeInSeconds = lockUpdateTimeInSeconds;
+            return this;
+        }
+        public final Builder withCacheExpiryInSeconds (final long cacheExpiryInSeconds )
+        {
+            myCacheExpiryTimeInSeconds = cacheExpiryInSeconds;
             return this;
         }
 
