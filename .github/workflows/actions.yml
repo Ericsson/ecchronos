@@ -31,6 +31,8 @@ jobs:
            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -DskipUTs'
          - name: "Standalone integration 4.1"
            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=4.1 -DskipUTs'
+         - name: "Standalone integration 5.0-alpha1"
+           test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=5.0-alpha1 -DskipUTs'
          - name: "Python integration"
            test_suite: 'verify -P docker-integration-test,python-integration-tests -DskipUTs'
     steps:
