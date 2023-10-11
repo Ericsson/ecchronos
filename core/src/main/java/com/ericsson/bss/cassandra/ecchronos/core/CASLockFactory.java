@@ -111,6 +111,7 @@ public final class CASLockFactory implements LockFactory, Closeable
     private final LockCache myLockCache;
     private final long myLockUpdateTimeInSeconds;
     private final int myFailedLockRetryAttempts;
+
     private CASLockFactory(final Builder builder)
     {
         myStatementDecorator = builder.myStatementDecorator;
@@ -299,7 +300,7 @@ public final class CASLockFactory implements LockFactory, Closeable
         private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
         private long myLockTimeInSeconds = DEFAULT_LOCK_TIME_IN_SECONDS;
         private long myLockUpdateTimeInSeconds = DEFAULT_LOCK_UPDATE_TIME_IN_SECONDS;
-        private long myCacheExpiryTimeInSeconds = DEFAULT_LOCK_UPDATE_TIME_IN_SECONDS;
+        private long myCacheExpiryTimeInSeconds = DEFAULT_EXPIRY_TIME_IN_SECONDS;
 
         public final Builder withNativeConnectionProvider(final NativeConnectionProvider nativeConnectionProvider)
         {
@@ -329,12 +330,12 @@ public final class CASLockFactory implements LockFactory, Closeable
             myLockTimeInSeconds = lockTimeInSeconds;
             return this;
         }
-        public final Builder withLockUpdateTimeInSeconds (final long lockUpdateTimeInSeconds )
+        public final Builder withLockUpdateTimeInSeconds(final long lockUpdateTimeInSeconds)
         {
             myLockUpdateTimeInSeconds = lockUpdateTimeInSeconds;
             return this;
         }
-        public final Builder withCacheExpiryInSeconds (final long cacheExpiryInSeconds )
+        public final Builder withCacheExpiryInSeconds(final long cacheExpiryInSeconds)
         {
             myCacheExpiryTimeInSeconds = cacheExpiryInSeconds;
             return this;

@@ -246,7 +246,10 @@ lock_factory:
     ##
     lock_update_time_in_seconds: 60
     ##
-    ## The time after which the lock cache expires, in seconds", in seconds
+    ## The number of seconds until the lock failure cache expires.
+    ## If an attempt to secure a lock is unsuccessful,
+    ## all subsequent attempts will be failed until
+    ## the cache expiration time is reached.
     ##
     cache_expiry_time_in_second: 30
 

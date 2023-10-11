@@ -76,7 +76,9 @@ public class ECChronosInternals implements Closeable
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .build();
 
-       CasLockFactoryConfig  casLockFactoryConfig = configuration.getLockFactory().getCasLockFactoryConfig();
+        CasLockFactoryConfig casLockFactoryConfig = configuration.getLockFactory()
+                .getCasLockFactoryConfig();
+
         myLockFactory = CASLockFactory.builder()
                 .withNativeConnectionProvider(nativeConnectionProvider)
                 .withHostStates(myHostStatesImpl)
@@ -84,7 +86,7 @@ public class ECChronosInternals implements Closeable
                 .withKeyspaceName(casLockFactoryConfig.getKeyspaceName())
                 .withLockTimeInSeconds(casLockFactoryConfig.getLockTimeInSeconds())
                 .withLockUpdateTimeInSeconds(casLockFactoryConfig.getLockUpdateTimeInSeconds())
-                .withCacheExpiryInSeconds(casLockFactoryConfig.getExpiryTimeInSeconds())
+                .withCacheExpiryInSeconds(casLockFactoryConfig.getFailureCacheExpiryTimeInSeconds())
                 .build();
 
         Node node = nativeConnectionProvider.getLocalNode();
@@ -226,9 +228,9 @@ public class ECChronosInternals implements Closeable
 
         @Override
         public void repairSession(final TableReference tableReference,
-                                 final long timeTaken,
-                                 final TimeUnit timeUnit,
-                                 final boolean successful)
+                                  final long timeTaken,
+                                  final TimeUnit timeUnit,
+                                  final boolean successful)
         {
             if (LOG.isTraceEnabled())
             {
