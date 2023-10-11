@@ -84,8 +84,6 @@ public class ECChronosInternals implements Closeable
                 .withHostStates(myHostStatesImpl)
                 .withStatementDecorator(statementDecorator)
                 .withKeyspaceName(casLockFactoryConfig.getKeyspaceName())
-                .withLockTimeInSeconds(casLockFactoryConfig.getLockTimeInSeconds())
-                .withLockUpdateTimeInSeconds(casLockFactoryConfig.getLockUpdateTimeInSeconds())
                 .withCacheExpiryInSeconds(casLockFactoryConfig.getFailureCacheExpiryTimeInSeconds())
                 .build();
 

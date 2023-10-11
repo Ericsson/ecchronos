@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
@@ -26,6 +27,7 @@ import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.TokenMap;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwareStatement;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
@@ -90,6 +92,8 @@ public final class CASLockFactory implements LockFactory, Closeable
     private static final String COLUMN_PRIORITY = "priority";
     private static final String TABLE_LOCK = "lock";
     private static final String TABLE_LOCK_PRIORITY = "lock_priority";
+    private static final int REFRESH_INTERVAL_RATIO = 10;
+    private static final int DEFAULT_LOCK_TIME_IN_SECONDS = 600;
 
     private final UUID myUuid;
 
@@ -202,12 +206,29 @@ public final class CASLockFactory implements LockFactory, Closeable
 
         myUuid = hostId;
 
-        int myFailedLockRetryAttempts = (int) (builder.myLockTimeInSeconds / builder.myLockUpdateTimeInSeconds) - 1;
+        int lockTimeInSeconds = getDefaultTimeToLiveFromLockTable();
+        int lockUpdateTimeInSeconds = lockTimeInSeconds / REFRESH_INTERVAL_RATIO;
+        int myFailedLockRetryAttempts = (lockTimeInSeconds / lockUpdateTimeInSeconds) - 1;
         myCasLockFactoryCacheContext = CASLockFactoryCacheContext.newBuilder()
-                .withLockUpdateTimeInSeconds(builder.myLockUpdateTimeInSeconds)
+                .withLockUpdateTimeInSeconds(lockUpdateTimeInSeconds)
                 .withFailedLockRetryAttempts(myFailedLockRetryAttempts)
                 .withLockCache(new LockCache(this::doTryLock, builder.myCacheExpiryTimeInSeconds))
                 .build();
+    }
+
+    private int getDefaultTimeToLiveFromLockTable()
+    {
+        TableMetadata tableMetadata = mySession.getMetadata()
+                .getKeyspace(myKeyspaceName)
+                .flatMap(ks -> ks.getTable(TABLE_LOCK))
+                .orElse(null);
+
+        if (tableMetadata != null && tableMetadata.getOptions() != null)
+        {
+            Map<CqlIdentifier, Object> tableOptions = tableMetadata.getOptions();
+            return (Integer) tableOptions.get(CqlIdentifier.fromInternal("default_time_to_live"));
+        }
+        return DEFAULT_LOCK_TIME_IN_SECONDS;
     }
 
     @Override
@@ -302,16 +323,12 @@ public final class CASLockFactory implements LockFactory, Closeable
     public static class Builder
     {
         private static final String DEFAULT_KEYSPACE_NAME = "ecchronos";
-        private static final long DEFAULT_LOCK_TIME_IN_SECONDS = 600L;
-        private static final long DEFAULT_LOCK_UPDATE_TIME_IN_SECONDS = 60L;
         private static final long DEFAULT_EXPIRY_TIME_IN_SECONDS = 30L;
 
         private NativeConnectionProvider myNativeConnectionProvider;
         private HostStates myHostStates;
         private StatementDecorator myStatementDecorator;
         private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
-        private long myLockTimeInSeconds = DEFAULT_LOCK_TIME_IN_SECONDS;
-        private long myLockUpdateTimeInSeconds = DEFAULT_LOCK_UPDATE_TIME_IN_SECONDS;
         private long myCacheExpiryTimeInSeconds = DEFAULT_EXPIRY_TIME_IN_SECONDS;
 
         public final Builder withNativeConnectionProvider(final NativeConnectionProvider nativeConnectionProvider)
@@ -335,18 +352,6 @@ public final class CASLockFactory implements LockFactory, Closeable
         public final Builder withKeyspaceName(final String keyspaceName)
         {
             myKeyspaceName = keyspaceName;
-            return this;
-        }
-
-        public final Builder withLockTimeInSeconds(final long lockTimeInSeconds)
-        {
-            myLockTimeInSeconds = lockTimeInSeconds;
-            return this;
-        }
-
-        public final Builder withLockUpdateTimeInSeconds(final long lockUpdateTimeInSeconds)
-        {
-            myLockUpdateTimeInSeconds = lockUpdateTimeInSeconds;
             return this;
         }
 

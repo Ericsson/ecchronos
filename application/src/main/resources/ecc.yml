@@ -238,16 +238,6 @@ lock_factory:
     ##
     keyspace: ecchronos
     ##
-    ## The duration for which the lock is held, in seconds
-    ## and directly tied with the TTL(time to live)
-    ## of 'ecchronos.lock' table.
-    ##
-    lock_time_in_seconds: 600
-    ##
-    ## The interval at which the lock is updated, in seconds
-    ##
-    lock_update_time_in_seconds: 60
-    ##
     ## The number of seconds until the lock failure cache expires.
     ## If an attempt to secure a lock is unsuccessful,
     ## all subsequent attempts will be failed until

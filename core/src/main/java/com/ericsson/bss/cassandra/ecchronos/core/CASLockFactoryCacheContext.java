@@ -54,10 +54,10 @@ public final class CASLockFactoryCacheContext
     public static class Builder
     {
         private LockCache myLockCache;
-        private long myLockUpdateTimeInSeconds;
+        private int myLockUpdateTimeInSeconds;
         private int myFailedLockRetryAttempts;
 
-        public final Builder withLockUpdateTimeInSeconds(final long lockTimeInSeconds)
+        public final Builder withLockUpdateTimeInSeconds(final int lockTimeInSeconds)
         {
             myLockUpdateTimeInSeconds = lockTimeInSeconds;
             return this;

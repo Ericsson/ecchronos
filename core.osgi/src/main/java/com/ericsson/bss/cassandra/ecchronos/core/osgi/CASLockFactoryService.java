@@ -38,9 +38,6 @@ import java.util.Map;
 public class CASLockFactoryService implements LockFactory
 {
     private static final String DEFAULT_KEYSPACE_NAME = "ecchronos";
-    private static final long DEFAULT_LOCK_TIME_IN_SECONDS = 600L;
-    private static final long DEFAULT_UPDATE_TIME_IN_SECONDS = 60L;
-
     @Reference(service = NativeConnectionProvider.class,
             cardinality = ReferenceCardinality.MANDATORY,
             policy = ReferencePolicy.STATIC)
@@ -66,8 +63,6 @@ public class CASLockFactoryService implements LockFactory
                 .withHostStates(myHostStates)
                 .withStatementDecorator(myStatementDecorator)
                 .withKeyspaceName(configuration.keyspaceName())
-                .withLockTimeInSeconds(configuration.lockTimeInSeconds())
-                .withLockUpdateTimeInSeconds(configuration.lockUpdateTimeInSeconds())
                 .build();
     }
 
@@ -105,13 +100,5 @@ public class CASLockFactoryService implements LockFactory
         @AttributeDefinition(name = "The lock factory keyspace to use",
                 description = "The name of the keyspace containing the lock factory tables")
         String keyspaceName() default DEFAULT_KEYSPACE_NAME;
-        @AttributeDefinition(name = "Lock Time",
-                description = "The duration for which the lock is held, in seconds")
-        long lockTimeInSeconds() default DEFAULT_LOCK_TIME_IN_SECONDS;
-
-        @AttributeDefinition(name = "Lock Update Time",
-                description = "The interval at which the lock is updated, in seconds")
-        long lockUpdateTimeInSeconds() default DEFAULT_UPDATE_TIME_IN_SECONDS;
-
     }
 }

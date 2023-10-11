@@ -17,7 +17,6 @@ package com.ericsson.bss.cassandra.ecchronos.application.config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.lockfactory.CasLockFactoryConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
@@ -32,8 +31,6 @@ public class TestCasLockFactoryConfig
     {
         CasLockFactoryConfig casLockFactoryConfig = getCasLockFactoryConfig("all_set.yml");
         assertThat(casLockFactoryConfig.getKeyspaceName()).isEqualTo("ecc");
-        assertThat(casLockFactoryConfig.getLockTimeInSeconds()).isEqualTo(800L);
-        assertThat(casLockFactoryConfig.getLockUpdateTimeInSeconds()).isEqualTo(80L);
         assertThat(casLockFactoryConfig.getFailureCacheExpiryTimeInSeconds()).isEqualTo(100L);
     }
 
@@ -42,10 +39,7 @@ public class TestCasLockFactoryConfig
     {
         CasLockFactoryConfig casLockFactoryConfig = getCasLockFactoryConfig("nothing_set.yml");
         assertThat(casLockFactoryConfig.getKeyspaceName()).isEqualTo("ecchronos");
-        assertThat(casLockFactoryConfig.getLockTimeInSeconds()).isEqualTo(600L);
-        assertThat(casLockFactoryConfig.getLockUpdateTimeInSeconds()).isEqualTo(60L);
         assertThat(casLockFactoryConfig.getFailureCacheExpiryTimeInSeconds()).isEqualTo(30L);
-
     }
 
     private CasLockFactoryConfig getCasLockFactoryConfig(final String fileName) throws IOException
