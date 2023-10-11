@@ -17,7 +17,8 @@
 * Bump guava from 18.0 to 31.1 - Issue #491
 * Reread repair configuration when a node state changes - Issues #470 and #478
 * Support configuring backoff for failed jobs - Issue #475
-* Dropping keyspaces does not clean up schedules - Issue #469
+* Dropping keyspaces does not clean up schedules - Issue #469 
+* Make lock refresh + failure cache configurable #543
 
 ### Merged from 1.2
 
