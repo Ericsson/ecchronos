@@ -21,8 +21,8 @@ public class CasLockFactoryConfig
     private static final long DEFAULT_LOCK_TIME_IN_SECONDS = 600L;
     private static final long DEFAULT_LOCK_UPDATE_TIME_IN_SECONDS = 60L;
     private static final long DEFAULT_EXPIRY_TIME_IN_SECONDS = 30L;
-    private static final String DEFAULT_KEY_SPACE_NAME = "ecchronos";
-    private String myKeyspaceName = DEFAULT_KEY_SPACE_NAME;
+    private static final String DEFAULT_KEYSPACE_NAME = "ecchronos";
+    private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
     private long myLockTimeInSeconds = DEFAULT_LOCK_TIME_IN_SECONDS;
     private long myLockUpdateTimeInSeconds = DEFAULT_LOCK_UPDATE_TIME_IN_SECONDS;
     private long myExpiryTimeInSeconds = DEFAULT_EXPIRY_TIME_IN_SECONDS;
@@ -54,7 +54,7 @@ public class CasLockFactoryConfig
         return myExpiryTimeInSeconds;
     }
 
-    @JsonProperty ("cache_expiry_time_in_second")
+    @JsonProperty ("cache_expiry_time_in_seconds")
     public final void setFailureCacheExpiryTimeInSeconds(final long expiryTimeInSeconds)
     {
         myExpiryTimeInSeconds = expiryTimeInSeconds;

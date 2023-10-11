@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Telefonaktiebolaget LM Ericsson
+ * Copyright 2023 Telefonaktiebolaget LM Ericsson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,43 +27,33 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestCasLockFactoryConfig
 {
-    private static CasLockFactoryConfig casLockFactoryConfig;
-
-    @Before
-    public void setup() throws IOException
-    {
-        if (casLockFactoryConfig == null)
-        {
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            File file = new File(classLoader.getResource("all_set.yml").getFile());
-            ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-            Config config = mapper.readValue(file, Config.class);
-            casLockFactoryConfig = config.getLockFactory().getCasLockFactoryConfig();
-
-        }
-    }
-
     @Test
-    public void testKeyspaceNameFromYaml()
+    public void testCasLockFactoryConfigWithProvidedValue() throws IOException
     {
+        CasLockFactoryConfig casLockFactoryConfig = getCasLockFactoryConfig("all_set.yml");
         assertThat(casLockFactoryConfig.getKeyspaceName()).isEqualTo("ecc");
-    }
-
-    @Test
-    public void testLockTimeInSecondsFromYaml()
-    {
         assertThat(casLockFactoryConfig.getLockTimeInSeconds()).isEqualTo(800L);
-    }
-
-    @Test
-    public void testLockUpdateTimeInSecondsFromYaml()
-    {
         assertThat(casLockFactoryConfig.getLockUpdateTimeInSeconds()).isEqualTo(80L);
+        assertThat(casLockFactoryConfig.getFailureCacheExpiryTimeInSeconds()).isEqualTo(100L);
     }
 
     @Test
-    public void testExpiryTimeInSecondsFromYaml()
+    public void testCasLockFactoryConfigDefaultValue() throws IOException
     {
-        assertThat(casLockFactoryConfig.getFailureCacheExpiryTimeInSeconds()).isEqualTo(100L);
+        CasLockFactoryConfig casLockFactoryConfig = getCasLockFactoryConfig("nothing_set.yml");
+        assertThat(casLockFactoryConfig.getKeyspaceName()).isEqualTo("ecchronos");
+        assertThat(casLockFactoryConfig.getLockTimeInSeconds()).isEqualTo(600L);
+        assertThat(casLockFactoryConfig.getLockUpdateTimeInSeconds()).isEqualTo(60L);
+        assertThat(casLockFactoryConfig.getFailureCacheExpiryTimeInSeconds()).isEqualTo(30L);
+
+    }
+
+    private CasLockFactoryConfig getCasLockFactoryConfig(final String fileName) throws IOException
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource(fileName).getFile());
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        Config config = mapper.readValue(file, Config.class);
+        return config.getLockFactory().getCasLockFactoryConfig();
     }
 }

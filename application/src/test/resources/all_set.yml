@@ -81,7 +81,7 @@ lock_factory:
     keyspace: ecc
     lock_time_in_seconds: 800
     lock_update_time_in_seconds: 80
-    cache_expiry_time_in_second: 100
+    cache_expiry_time_in_seconds: 100
 
 
 run_policy:

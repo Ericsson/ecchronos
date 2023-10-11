@@ -32,7 +32,6 @@ import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.CASLockFactoryCacheContext;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
@@ -109,14 +108,10 @@ public final class CASLockFactory implements LockFactory, Closeable
     private final PreparedStatement myRemoveLockStatement;
     private final PreparedStatement myUpdateLockStatement;
     private final PreparedStatement myRemoveLockPriorityStatement;
-    private final CASLockFactoryCacheContext myCasLockFactoryContext;
+    private final CASLockFactoryCacheContext myCasLockFactoryCacheContext;
 
     private CASLockFactory(final Builder builder)
     {
-        int myFailedLockRetryAttempts = (int) (builder.myLockTimeInSeconds / builder.myLockUpdateTimeInSeconds) - 1;
-        CASLockFactoryCacheContext.Builder casLockFactoryContextBuilder = CASLockFactoryCacheContext.newBuilder()
-                .withLockUpdateTimeInSeconds(builder.myLockUpdateTimeInSeconds)
-                .withFailedLockRetryAttempts(myFailedLockRetryAttempts);
         myStatementDecorator = builder.myStatementDecorator;
         myHostStates = builder.myHostStates;
         myKeyspaceName = builder.myKeyspaceName;
@@ -207,8 +202,12 @@ public final class CASLockFactory implements LockFactory, Closeable
 
         myUuid = hostId;
 
-        casLockFactoryContextBuilder.withLockCache(new LockCache(this::doTryLock, builder.myCacheExpiryTimeInSeconds));
-        myCasLockFactoryContext = casLockFactoryContextBuilder.build();
+        int myFailedLockRetryAttempts = (int) (builder.myLockTimeInSeconds / builder.myLockUpdateTimeInSeconds) - 1;
+        myCasLockFactoryCacheContext = CASLockFactoryCacheContext.newBuilder()
+                .withLockUpdateTimeInSeconds(builder.myLockUpdateTimeInSeconds)
+                .withFailedLockRetryAttempts(myFailedLockRetryAttempts)
+                .withLockCache(new LockCache(this::doTryLock, builder.myCacheExpiryTimeInSeconds))
+                .build();
     }
 
     @Override
@@ -218,7 +217,7 @@ public final class CASLockFactory implements LockFactory, Closeable
                                    final Map<String, String> metadata)
                                                                        throws LockException
     {
-        return myCasLockFactoryContext.getLockCache()
+        return myCasLockFactoryCacheContext.getLockCache()
                 .getLock(dataCenter, resource, priority, metadata);
     }
 
@@ -269,7 +268,7 @@ public final class CASLockFactory implements LockFactory, Closeable
     @Override
     public Optional<LockException> getCachedFailure(final String dataCenter, final String resource)
     {
-        return myCasLockFactoryContext.getLockCache().getCachedFailure(dataCenter, resource);
+        return myCasLockFactoryCacheContext.getLockCache().getCachedFailure(dataCenter, resource);
     }
 
     @Override
@@ -536,9 +535,9 @@ public final class CASLockFactory implements LockFactory, Closeable
                 if (tryLock())
                 {
                     LOG.trace("Lock for resource {} acquired", myResource);
-                    long lockUpdateTimeInSeconds = myCasLockFactoryContext.getLockUpdateTimeInSeconds();
-                    ScheduledFuture<?> future = myExecutor.scheduleAtFixedRate(this, lockUpdateTimeInSeconds,
-                            lockUpdateTimeInSeconds, TimeUnit.SECONDS);
+                    ScheduledFuture<?> future = myExecutor.scheduleAtFixedRate(this,
+                            myCasLockFactoryCacheContext.getLockUpdateTimeInSeconds(),
+                            myCasLockFactoryCacheContext.getLockUpdateTimeInSeconds(), TimeUnit.SECONDS);
                     myUpdateFuture.set(future);
 
                     return true;
@@ -560,7 +559,7 @@ public final class CASLockFactory implements LockFactory, Closeable
             {
                 int failedAttempts = myFailedUpdateAttempts.incrementAndGet();
 
-                if (failedAttempts >= myCasLockFactoryContext.getFailedLockRetryAttempts())
+                if (failedAttempts >= myCasLockFactoryCacheContext.getFailedLockRetryAttempts())
                 {
                     LOG.error("Unable to re-lock resource '{}' after {} failed attempts", myResource, failedAttempts);
                 }

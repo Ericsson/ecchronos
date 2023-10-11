@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Telefonaktiebolaget LM Ericsson
+ * Copyright 2023 Telefonaktiebolaget LM Ericsson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,9 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.utils;
-
-import com.ericsson.bss.cassandra.ecchronos.core.LockCache;
+package com.ericsson.bss.cassandra.ecchronos.core;
 
 /**
  * Represents a container for cache-related configurations and state for the CASLockFactory.

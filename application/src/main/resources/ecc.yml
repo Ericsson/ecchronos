@@ -239,6 +239,8 @@ lock_factory:
     keyspace: ecchronos
     ##
     ## The duration for which the lock is held, in seconds
+    ## and directly tied with the TTL(time to live)
+    ## of 'ecchronos.lock' table.
     ##
     lock_time_in_seconds: 600
     ##
@@ -251,7 +253,7 @@ lock_factory:
     ## all subsequent attempts will be failed until
     ## the cache expiration time is reached.
     ##
-    cache_expiry_time_in_second: 30
+    cache_expiry_time_in_seconds: 30
 
 run_policy:
   time_based:
