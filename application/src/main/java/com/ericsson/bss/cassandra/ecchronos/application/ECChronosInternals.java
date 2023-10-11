@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
+import com.ericsson.bss.cassandra.ecchronos.application.config.lockfactory.CasLockFactoryConfig;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
@@ -75,11 +76,14 @@ public class ECChronosInternals implements Closeable
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .build();
 
+       CasLockFactoryConfig  casLockFactoryConfig = configuration.getLockFactory().getCasLockFactoryConfig();
         myLockFactory = CASLockFactory.builder()
                 .withNativeConnectionProvider(nativeConnectionProvider)
                 .withHostStates(myHostStatesImpl)
                 .withStatementDecorator(statementDecorator)
-                .withKeyspaceName(configuration.getLockFactory().getCasLockFactoryConfig().getKeyspaceName())
+                .withKeyspaceName(casLockFactoryConfig.getKeyspaceName())
+                .withLockTimeInSeconds(casLockFactoryConfig.getLockTimeInSeconds())
+                .withLockUpdateTimeInSeconds(casLockFactoryConfig.getLockUpdateTimeInSeconds())
                 .build();
 
         Node node = nativeConnectionProvider.getLocalNode();

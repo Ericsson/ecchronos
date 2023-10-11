@@ -89,11 +89,6 @@ public final class CASLockFactory implements LockFactory, Closeable
     private static final String COLUMN_METADATA = "metadata";
     private static final String COLUMN_PRIORITY = "priority";
 
-    private static final int LOCK_TIME_IN_SECONDS = 600;
-    private static final long LOCK_UPDATE_TIME_IN_SECONDS = 60;
-    private static final int FAILED_LOCK_RETRY_ATTEMPTS =
-            (int) (LOCK_TIME_IN_SECONDS / LOCK_UPDATE_TIME_IN_SECONDS) - 1;
-
     private static final String TABLE_LOCK = "lock";
     private static final String TABLE_LOCK_PRIORITY = "lock_priority";
 
@@ -115,13 +110,15 @@ public final class CASLockFactory implements LockFactory, Closeable
     private final PreparedStatement myUpdateLockStatement;
     private final PreparedStatement myRemoveLockPriorityStatement;
     private final LockCache myLockCache;
-
+    private final long myLockUpdateTimeInSeconds;
+    private final int myFailedLockRetryAttempts;
     private CASLockFactory(final Builder builder)
     {
         myStatementDecorator = builder.myStatementDecorator;
         myHostStates = builder.myHostStates;
         myKeyspaceName = builder.myKeyspaceName;
-
+        myLockUpdateTimeInSeconds = builder.myLockUpdateTimeInSeconds;
+        myFailedLockRetryAttempts =  (int) (builder.myLockTimeInSeconds / myLockUpdateTimeInSeconds) - 1;
         myExecutor = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder().setNameFormat("LockRefresher-%d").build());
 
@@ -299,6 +296,9 @@ public final class CASLockFactory implements LockFactory, Closeable
         private StatementDecorator myStatementDecorator;
         private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
 
+        private long myLockTimeInSeconds = 600L;
+        private long myLockUpdateTimeInSeconds = 60L;
+
         public final Builder withNativeConnectionProvider(final NativeConnectionProvider nativeConnectionProvider)
         {
             myNativeConnectionProvider = nativeConnectionProvider;
@@ -320,6 +320,16 @@ public final class CASLockFactory implements LockFactory, Closeable
         public final Builder withKeyspaceName(final String keyspaceName)
         {
             myKeyspaceName = keyspaceName;
+            return this;
+        }
+        public final Builder withLockTimeInSeconds(final long lockTimeInSeconds)
+        {
+            myLockTimeInSeconds = lockTimeInSeconds;
+            return this;
+        }
+        public final Builder withLockUpdateTimeInSeconds (final long lockUpdateTimeInSeconds )
+        {
+            myLockUpdateTimeInSeconds = lockUpdateTimeInSeconds;
             return this;
         }
 
@@ -497,8 +507,8 @@ public final class CASLockFactory implements LockFactory, Closeable
                 if (tryLock())
                 {
                     LOG.trace("Lock for resource {} acquired", myResource);
-                    ScheduledFuture<?> future = myExecutor.scheduleAtFixedRate(this, LOCK_UPDATE_TIME_IN_SECONDS,
-                            LOCK_UPDATE_TIME_IN_SECONDS, TimeUnit.SECONDS);
+                    ScheduledFuture<?> future = myExecutor.scheduleAtFixedRate(this, myLockUpdateTimeInSeconds,
+                            myLockUpdateTimeInSeconds, TimeUnit.SECONDS);
                     myUpdateFuture.set(future);
 
                     return true;
@@ -520,7 +530,7 @@ public final class CASLockFactory implements LockFactory, Closeable
             {
                 int failedAttempts = myFailedUpdateAttempts.incrementAndGet();
 
-                if (failedAttempts >= FAILED_LOCK_RETRY_ATTEMPTS)
+                if (failedAttempts >= myFailedLockRetryAttempts)
                 {
                     LOG.error("Unable to re-lock resource '{}' after {} failed attempts", myResource, failedAttempts);
                 }

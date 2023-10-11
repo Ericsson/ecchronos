@@ -19,14 +19,40 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class CasLockFactoryConfig
 {
     private String myKeyspaceName = "ecchronos";
+    private long myLockTimeInSeconds = 600L;
+    private long myLockUpdateTimeInSeconds = 60L;
 
-    @JsonProperty("keyspace")
+    @JsonProperty ("lock_time_in_seconds")
+    public final long getLockTimeInSeconds()
+    {
+        return myLockTimeInSeconds;
+    }
+
+    @JsonProperty ("lock_time_in_seconds")
+    public final void setLockTimeInSeconds(final long lockTimeInSeconds)
+    {
+        myLockTimeInSeconds = lockTimeInSeconds;
+    }
+
+    @JsonProperty ("lock_update_time_in_seconds")
+    public final long getLockUpdateTimeInSeconds()
+    {
+        return myLockUpdateTimeInSeconds;
+    }
+
+    @JsonProperty ("lock_update_time_in_seconds")
+    public final void setLockUpdateTimeInSeconds(final long lockUpdateTimeInSeconds)
+    {
+        myLockTimeInSeconds = lockUpdateTimeInSeconds;
+    }
+
+    @JsonProperty ("keyspace")
     public final String getKeyspaceName()
     {
         return myKeyspaceName;
     }
 
-    @JsonProperty("keyspace")
+    @JsonProperty ("keyspace")
     public final void setKeyspaceName(final String keyspaceName)
     {
         myKeyspaceName = keyspaceName;
