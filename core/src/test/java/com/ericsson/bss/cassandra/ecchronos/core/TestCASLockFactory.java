@@ -126,7 +126,20 @@ public class TestCASLockFactory extends AbstractCassandraTest
         execute(myRemoveLockStatement.bind("lock"));
         myLockFactory.close();
     }
-
+    @Test
+    public void testGetDefaultTimeToLiveFromLockTable() throws LockException
+    {
+        String alterLockTable = String.format("ALTER TABLE %s.%s WITH default_time_to_live = 1200;", myKeyspaceName, TABLE_LOCK);
+        mySession.execute(alterLockTable);
+        myLockFactory = new CASLockFactory.Builder()
+                .withNativeConnectionProvider(getNativeConnectionProvider())
+                .withHostStates(hostStates)
+                .withStatementDecorator(s -> s)
+                .withKeyspaceName(myKeyspaceName)
+                .build();
+        assertThat(myLockFactory.getCasLockFactoryCacheContext().getFailedLockRetryAttempts()).isEqualTo(9);
+        assertThat(myLockFactory.getCasLockFactoryCacheContext().getLockUpdateTimeInSeconds()).isEqualTo(120);
+    }
     @Test
     public void testGetLock() throws LockException
     {

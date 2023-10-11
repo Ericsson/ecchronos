@@ -18,7 +18,7 @@
 * Reread repair configuration when a node state changes - Issues #470 and #478
 * Support configuring backoff for failed jobs - Issue #475
 * Dropping keyspaces does not clean up schedules - Issue #469
-* Make lock refresh + failure cache configurable - Issues #543 and #587
+* Make lock refresh + failure cache configurable - Issues #543
 
 ### Merged from 1.2
 

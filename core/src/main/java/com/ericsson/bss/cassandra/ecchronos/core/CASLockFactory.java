@@ -205,14 +205,19 @@ public final class CASLockFactory implements LockFactory, Closeable
         }
 
         myUuid = hostId;
+        myCasLockFactoryCacheContext = buildCasLockFactoryCacheContext(builder.myCacheExpiryTimeInSeconds);
+    }
 
+    private CASLockFactoryCacheContext buildCasLockFactoryCacheContext(final long cacheExpiryTimeInSeconds)
+    {
         int lockTimeInSeconds = getDefaultTimeToLiveFromLockTable();
         int lockUpdateTimeInSeconds = lockTimeInSeconds / REFRESH_INTERVAL_RATIO;
         int myFailedLockRetryAttempts = (lockTimeInSeconds / lockUpdateTimeInSeconds) - 1;
-        myCasLockFactoryCacheContext = CASLockFactoryCacheContext.newBuilder()
+
+        return CASLockFactoryCacheContext.newBuilder()
                 .withLockUpdateTimeInSeconds(lockUpdateTimeInSeconds)
                 .withFailedLockRetryAttempts(myFailedLockRetryAttempts)
-                .withLockCache(new LockCache(this::doTryLock, builder.myCacheExpiryTimeInSeconds))
+                .withLockCache(new LockCache(this::doTryLock, cacheExpiryTimeInSeconds))
                 .build();
     }
 
@@ -222,13 +227,13 @@ public final class CASLockFactory implements LockFactory, Closeable
                 .getKeyspace(myKeyspaceName)
                 .flatMap(ks -> ks.getTable(TABLE_LOCK))
                 .orElse(null);
-
-        if (tableMetadata != null && tableMetadata.getOptions() != null)
+        if (tableMetadata == null || tableMetadata.getOptions() == null)
         {
-            Map<CqlIdentifier, Object> tableOptions = tableMetadata.getOptions();
-            return (Integer) tableOptions.get(CqlIdentifier.fromInternal("default_time_to_live"));
+            LOG.warn("Could not parse default ttl of {}.{}", myKeyspaceName, TABLE_LOCK);
+            return DEFAULT_LOCK_TIME_IN_SECONDS;
         }
-        return DEFAULT_LOCK_TIME_IN_SECONDS;
+        Map<CqlIdentifier, Object> tableOptions = tableMetadata.getOptions();
+        return (Integer) tableOptions.get(CqlIdentifier.fromInternal("default_time_to_live"));
     }
 
     @Override
@@ -313,6 +318,12 @@ public final class CASLockFactory implements LockFactory, Closeable
     UUID getHostId()
     {
         return myUuid;
+    }
+
+    @VisibleForTesting
+    CASLockFactoryCacheContext getCasLockFactoryCacheContext()
+    {
+        return myCasLockFactoryCacheContext;
     }
 
     public static Builder builder()
