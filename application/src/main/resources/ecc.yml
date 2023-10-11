@@ -237,7 +237,14 @@ lock_factory:
     ## The keyspace used for the CAS lock factory tables.
     ##
     keyspace: ecchronos
-
+    ##
+    ## resource lock time in second to calculate failed lock retry attempts
+    ##
+    lock_time_in_seconds: 600
+    ##
+    ## resource lock update time in second to calculate failed lock retry attempts
+    ##
+    lock_update_time_in_seconds: 60
 run_policy:
   time_based:
     ##
