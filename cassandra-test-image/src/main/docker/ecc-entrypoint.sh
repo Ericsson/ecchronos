@@ -17,6 +17,9 @@
 set -e
 
 sed -i "s/authenticator: .*/authenticator: PasswordAuthenticator/g" "$CASSANDRA_CONF"/cassandra.yaml
+# Start of for 5.X
+sed -i "/^authenticator:/{n;s/class_name : .*/class_name : PasswordAuthenticator/}" "$CASSANDRA_CONF"/cassandra.yaml
+# End of for 5.X
 sed -i "s/^authorizer: .*/authorizer: CassandraAuthorizer/g" "$CASSANDRA_CONF"/cassandra.yaml
 
 sed -i "s/num_tokens: .*/num_tokens: 16/g" "$CASSANDRA_CONF"/cassandra.yaml
