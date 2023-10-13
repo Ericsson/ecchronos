@@ -49,7 +49,7 @@ statistics:
     http:
       enabled: true
       excludedMetrics:
-        - name: "repaired\\.ratio"
+        - name: repaired\.ratio
 ```
 
 #### Exclude metrics on name with regexp
@@ -62,7 +62,7 @@ statistics:
     http:
       enabled: true
       excludedMetrics:
-        - name: "node\\..*"
+        - name: node\..*
 ```
 
 #### Exclude metrics on exact name and tag
@@ -75,9 +75,9 @@ statistics:
     http:
       enabled: true
       excludedMetrics:
-        - name: "repaired\\.ratio"
+        - name: repaired\.ratio
           tags:
-            keyspace: "ecchronos"
+            keyspace: ecchronos
 ```
 
 #### Exclude metrics with name regexp and exact tag
@@ -90,9 +90,9 @@ statistics:
     http:
       enabled: true
       excludedMetrics:
-        - name: "node\\..*"
+        - name: node\..*
           tags:
-            successful: "true"
+            successful: true
 ```
 
 #### Exclude metrics with exact name and tag regexp
@@ -105,9 +105,9 @@ statistics:
     http:
       enabled: true
       excludedMetrics:
-        - name: "remaining\\.repair\\.time"
+        - name: remaining\.repair\.time
           tags:
-            keyspace: "test.*"
+            keyspace: test.*
 ```
 
 #### Exclude metric with exact name and multiple exact tags
@@ -120,10 +120,10 @@ statistics:
     http:
       enabled: true
       excludedMetrics:
-        - name: "time\\.since\\.last\\.repaired"
+        - name: time\.since\.last\.repaired
           tags:
-            keyspace: "test"
-            table: "table1"
+            keyspace: test
+            table: table1
 ```
 
 ## Driver metrics
@@ -143,8 +143,8 @@ statistics:
     http:
       enabled: true
       excludedMetrics:
-        - name: "nodes\\..*"
-        - name: "session\\..*"
+        - name: nodes\..*
+        - name: session\..*
 ```
 
 ## Spring Boot metrics
@@ -164,15 +164,15 @@ statistics:
     http:
       enabled: true
       excludedMetrics:
-        - name: "jvm\\..*"
-        - name: "logback\\..*"
-        - name: "executor\\..*"
-        - name: "application\\..*"
-        - name: "process\\..*"
-        - name: "tomcat\\..*"
-        - name: "disk\\..*"
-        - name: "system\\..*"
-        - name: "http\\..*"
+        - name: jvm\..*
+        - name: logback\..*
+        - name: executor\..*
+        - name: application\..*
+        - name: process\..*
+        - name: tomcat\..*
+        - name: disk\..*
+        - name: system\..*
+        - name: http\..*
 ```
 
 ## ecChronos metrics
