@@ -27,14 +27,19 @@ jobs:
            test_suite: 'compile com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
          - name: "OSGi integration"
            test_suite: 'install -P docker-integration-test,osgi-integration-tests -DskipUTs'
+           artifacts_dir: "osgi-integration/target"
          - name: "Standalone integration 4.0"
            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -DskipUTs'
+           artifacts_dir: "standalone-integration/target"
          - name: "Standalone integration 4.1"
            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=4.1 -DskipUTs'
+           artifacts_dir: "standalone-integration/target"
          - name: "Standalone integration 5.0-alpha1"
            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=5.0-alpha1 -DskipUTs'
+           artifacts_dir: "standalone-integration/target"
          - name: "Python integration"
            test_suite: 'verify -P docker-integration-test,python-integration-tests -DskipUTs'
+           artifacts_dir: "ecchronos-binary/target"
     steps:
       - uses: actions/checkout@v3
       - name: Cache local Maven repository
@@ -57,8 +62,16 @@ jobs:
       - name: install dependencies
         run: mvn install -DskipTests=true
       - run: mvn $TEST_SUITE -B
+        id: tests
         env:
           TEST_SUITE: ${{ matrix.test_suite }}
+      - name: Upload artifacts
+        if: ${{ failure() && steps.tests.conclusion == 'failure' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.name }}-cassandra-logs
+          path: ${{ matrix.artifacts_dir }}/cassandra*.log
+          if-no-files-found: 'ignore'
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
