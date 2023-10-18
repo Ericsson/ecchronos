@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Telefonaktiebolaget LM Ericsson
+ * Copyright 2023 Telefonaktiebolaget LM Ericsson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,6 @@
  */
 
 /**
- *
+ * Contains classes used to read/write the state of the repair.
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
