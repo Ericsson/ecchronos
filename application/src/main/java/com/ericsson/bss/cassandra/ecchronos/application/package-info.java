@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Telefonaktiebolaget LM Ericsson
+ * Copyright 2023 Telefonaktiebolaget LM Ericsson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,6 @@
  */
 
 /**
- *
+ * Contains classes that make ecChronos a standalone springboot application.
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
