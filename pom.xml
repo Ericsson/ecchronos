@@ -908,6 +908,9 @@ limitations under the License.
                                                 <name>ecc-cassandra-test:${it.cassandra.version}</name>
                                                 <alias>cassandra1</alias>
                                                 <run>
+                                                    <log>
+                                                        <file>${project.build.directory}/cassandra1.log</file>
+                                                    </log>
                                                     <memory>${it.cassandra.memory}</memory>
                                                     <memorySwap>-1</memorySwap>
                                                     <env>
@@ -935,6 +938,9 @@ limitations under the License.
                                                 <name>ecc-cassandra-test:${it.cassandra.version}</name>
                                                 <alias>cassandra2</alias>
                                                 <run>
+                                                    <log>
+                                                        <file>${project.build.directory}/cassandra2.log</file>
+                                                    </log>
                                                     <memory>${it.cassandra.memory}</memory>
                                                     <memorySwap>-1</memorySwap>
                                                     <env>
@@ -963,6 +969,9 @@ limitations under the License.
                                                 <name>ecc-cassandra-test:${it.cassandra.version}</name>
                                                 <alias>cassandra3</alias>
                                                 <run>
+                                                    <log>
+                                                        <file>${project.build.directory}/cassandra3.log</file>
+                                                    </log>
                                                     <memory>${it.cassandra.memory}</memory>
                                                     <memorySwap>-1</memorySwap>
                                                     <env>
@@ -990,6 +999,9 @@ limitations under the License.
                                                 <name>ecc-cassandra-test:${it.cassandra.version}</name>
                                                 <alias>cassandra4</alias>
                                                 <run>
+                                                    <log>
+                                                        <file>${project.build.directory}/cassandra4.log</file>
+                                                    </log>
                                                     <memory>${it.cassandra.memory}</memory>
                                                     <memorySwap>-1</memorySwap>
                                                     <env>
