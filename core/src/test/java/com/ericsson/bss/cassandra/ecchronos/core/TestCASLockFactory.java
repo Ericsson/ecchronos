@@ -66,11 +66,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @NotThreadSafe
-@RunWith(Parameterized.class)
+@RunWith (Parameterized.class)
 public class TestCASLockFactory extends AbstractCassandraTest
 {
     @Parameterized.Parameters
-    public static Collection<String> keyspaceNames() {
+    public static Collection<String> keyspaceNames()
+    {
         return Arrays.asList("ecchronos", "anotherkeyspace");
     }
 
@@ -92,9 +93,14 @@ public class TestCASLockFactory extends AbstractCassandraTest
     @Before
     public void startup()
     {
-        mySession.execute(String.format("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {'class': 'NetworkTopologyStrategy', 'DC1': 1}", myKeyspaceName));
-        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.lock (resource text, node uuid, metadata map<text,text>, PRIMARY KEY(resource)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0", myKeyspaceName));
-        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.lock_priority (resource text, node uuid, priority int, PRIMARY KEY(resource, node)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0", myKeyspaceName));
+        mySession.execute(String.format(
+                "CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {'class': 'NetworkTopologyStrategy', 'DC1': 1}", myKeyspaceName));
+        mySession.execute(String.format(
+                "CREATE TABLE IF NOT EXISTS %s.lock (resource text, node uuid, metadata map<text,text>, PRIMARY KEY(resource)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0",
+                myKeyspaceName));
+        mySession.execute(String.format(
+                "CREATE TABLE IF NOT EXISTS %s.lock_priority (resource text, node uuid, priority int, PRIMARY KEY(resource, node)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0",
+                myKeyspaceName));
 
         hostStates = mock(HostStates.class);
         when(hostStates.isUp(any(Node.class))).thenReturn(true);
@@ -113,9 +119,12 @@ public class TestCASLockFactory extends AbstractCassandraTest
                 .build()
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
                 .setSerialConsistencyLevel(ConsistencyLevel.LOCAL_SERIAL));
-        myRemoveLockStatement = mySession.prepare(String.format("DELETE FROM %s.%s WHERE resource=? IF EXISTS", myKeyspaceName, TABLE_LOCK));
-        myCompeteStatement = mySession.prepare(String.format("INSERT INTO %s.%s (resource, node, priority) VALUES (?, ?, ?)", myKeyspaceName, TABLE_LOCK_PRIORITY));
-        myGetPrioritiesStatement = mySession.prepare(String.format("SELECT * FROM %s.%s WHERE resource=?", myKeyspaceName, TABLE_LOCK_PRIORITY));
+        myRemoveLockStatement =
+                mySession.prepare(String.format("DELETE FROM %s.%s WHERE resource=? IF EXISTS", myKeyspaceName, TABLE_LOCK));
+        myCompeteStatement = mySession.prepare(
+                String.format("INSERT INTO %s.%s (resource, node, priority) VALUES (?, ?, ?)", myKeyspaceName, TABLE_LOCK_PRIORITY));
+        myGetPrioritiesStatement =
+                mySession.prepare(String.format("SELECT * FROM %s.%s WHERE resource=?", myKeyspaceName, TABLE_LOCK_PRIORITY));
     }
 
     @After
@@ -126,6 +135,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         execute(myRemoveLockStatement.bind("lock"));
         myLockFactory.close();
     }
+
     @Test
     public void testGetDefaultTimeToLiveFromLockTable() throws LockException
     {
@@ -140,6 +150,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         assertThat(myLockFactory.getCasLockFactoryCacheContext().getFailedLockRetryAttempts()).isEqualTo(9);
         assertThat(myLockFactory.getCasLockFactoryCacheContext().getLockUpdateTimeInSeconds()).isEqualTo(120);
     }
+
     @Test
     public void testGetLock() throws LockException
     {
@@ -171,7 +182,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         assertThat(myLockFactory.getCachedFailure(null, "lock")).isNotEmpty();
     }
 
-    @Test(timeout = 1000)
+    @Test (timeout = 1000)
     public void testGlobalLockTakenIsCachedOnSecondTry() throws InterruptedException
     {
         execute(myLockStatement.bind("lock", UUID.randomUUID(), new HashMap<>()));
@@ -340,7 +351,9 @@ public class TestCASLockFactory extends AbstractCassandraTest
                         .withKeyspaceName(myKeyspaceName)
                         .build());
 
-        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (resource text, node uuid, metadata map<text,text>, PRIMARY KEY(resource)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0", myKeyspaceName, TABLE_LOCK));
+        mySession.execute(String.format(
+                "CREATE TABLE IF NOT EXISTS %s.%s (resource text, node uuid, metadata map<text,text>, PRIMARY KEY(resource)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0",
+                myKeyspaceName, TABLE_LOCK));
     }
 
     @Test

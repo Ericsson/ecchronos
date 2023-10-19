@@ -38,6 +38,7 @@ import java.util.Map;
 public class CASLockFactoryService implements LockFactory
 {
     private static final String DEFAULT_KEYSPACE_NAME = "ecchronos";
+
     @Reference(service = NativeConnectionProvider.class,
             cardinality = ReferenceCardinality.MANDATORY,
             policy = ReferencePolicy.STATIC)

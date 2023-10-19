@@ -2,6 +2,7 @@
 
 ## Version 5.0.0 (Not yet released)
 
+* Make locks dynamic based on TTL of lock table - Issue #543
 * Add new repair type parallel_vnode - Issue #554
 * Add validation of repair interval and alarms - Issue #560
 * Insert into repair history only on session finish - Issue #565
@@ -18,7 +19,6 @@
 * Reread repair configuration when a node state changes - Issues #470 and #478
 * Support configuring backoff for failed jobs - Issue #475
 * Dropping keyspaces does not clean up schedules - Issue #469
-* Make lock refresh + failure cache configurable - Issues #543
 
 ### Merged from 1.2
 
