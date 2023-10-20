@@ -49,7 +49,7 @@ public class TestLockCache
     @Before
     public void setup()
     {
-        myLockCache = new LockCache(mockedLockSupplier);
+        myLockCache = new LockCache(mockedLockSupplier, 30L);
     }
 
     @Test
