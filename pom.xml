@@ -79,7 +79,7 @@
         <org.apache.commons.io.version>2.7</org.apache.commons.io.version>
         <com.fasterxml.jackson.core.version>2.15.2</com.fasterxml.jackson.core.version>
         <com.fasterxml.jackson.dataformat.version>2.15.2</com.fasterxml.jackson.dataformat.version>
-        <org.yaml.snakeyaml.version>1.33</org.yaml.snakeyaml.version>
+        <org.yaml.snakeyaml.version>2.0</org.yaml.snakeyaml.version>
 
         <pax-exam.version>4.13.4</pax-exam.version>
         <pax-logging-logback.version>1.8.4</pax-logging-logback.version>
