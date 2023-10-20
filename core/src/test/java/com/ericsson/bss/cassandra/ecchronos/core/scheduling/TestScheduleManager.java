@@ -25,7 +25,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -107,16 +106,15 @@ public class TestScheduleManager
     @Test
     public void testRunningTwoTasksStoppedAfterFirstByPolicy() throws LockException
     {
-        ShortRunningMultipleTasks job = new ShortRunningMultipleTasks(ScheduledJob.Priority.LOW, 2, () -> {
+        TestJob job = new TestJob(ScheduledJob.Priority.LOW, 2, () -> {
             when(myRunPolicy.validate(any(ScheduledJob.class))).thenReturn(1L);
         });
         myScheduler.schedule(job);
 
         when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap())).thenReturn(new DummyLock());
-
         myScheduler.run();
 
-        assertThat(job.getNumRuns()).isEqualTo(1);
+        assertThat(job.getTaskRuns()).isEqualTo(1);
         assertThat(myScheduler.getQueueSize()).isEqualTo(1);
         verify(myLockFactory).tryLock(any(), anyString(), anyInt(), anyMap());
     }
@@ -152,27 +150,19 @@ public class TestScheduleManager
     @Test (timeout = 2000L)
     public void testRunningTwoJobsInParallelShouldFail() throws InterruptedException
     {
-        LongRunningJob job = new LongRunningJob(ScheduledJob.Priority.HIGH);
-        LongRunningJob job2 = new LongRunningJob(ScheduledJob.Priority.LOW);
+        CountDownLatch job1Latch = new CountDownLatch(1);
+        TestJob job = new TestJob(ScheduledJob.Priority.HIGH, job1Latch);
+        CountDownLatch job2Latch = new CountDownLatch(1);
+        TestJob job2 = new TestJob(ScheduledJob.Priority.LOW, job2Latch);
         myScheduler.schedule(job);
         myScheduler.schedule(job2);
 
-        final CountDownLatch cdl = new CountDownLatch(1);
-
-        new Thread()
-        {
-
-            @Override
-            public void run()
-            {
-                myScheduler.run();
-                cdl.countDown();
-            }
-        }.start();
-
-        myScheduler.run();
-
-        cdl.await();
+        new Thread(() -> myScheduler.run()).start();
+        new Thread(() -> myScheduler.run()).start();
+        waitForJobStarted(job);
+        job1Latch.countDown();
+        job2Latch.countDown();
+        waitForJobFinished(job);
 
         assertThat(job.hasRun()).isTrue();
         assertThat(job2.hasRun()).isFalse();
@@ -192,6 +182,7 @@ public class TestScheduleManager
         myScheduler.run();
 
         assertThat(job.hasRun()).isFalse();
+        assertThat(job2.hasRun()).isFalse();
         assertThat(myScheduler.getQueueSize()).isEqualTo(2);
         verify(myRunPolicy, times(2)).validate(any(ScheduledJob.class));
     }
@@ -209,6 +200,7 @@ public class TestScheduleManager
         myScheduler.run();
 
         assertThat(job.hasRun()).isFalse();
+        assertThat(job2.hasRun()).isFalse();
         assertThat(myScheduler.getQueueSize()).isEqualTo(2);
         verify(myLockFactory, times(2)).tryLock(any(), anyString(), anyInt(), anyMap());
     }
@@ -216,7 +208,7 @@ public class TestScheduleManager
     @Test
     public void testThreeTasksOneThrowing() throws LockException
     {
-        ShortRunningMultipleTasks job = new ShortRunningMultipleTasks(ScheduledJob.Priority.LOW, 3);
+        TestJob job = new TestJob(ScheduledJob.Priority.LOW, 3);
         myScheduler.schedule(job);
 
         when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap()))
@@ -226,53 +218,82 @@ public class TestScheduleManager
 
         myScheduler.run();
 
-        assertThat(job.getNumRuns()).isEqualTo(2);
+        assertThat(job.getTaskRuns()).isEqualTo(2);
         assertThat(myScheduler.getQueueSize()).isEqualTo(1);
         verify(myLockFactory, times(3)).tryLock(any(), anyString(), anyInt(), anyMap());
     }
 
     @Test (timeout = 2000L)
-    public void testRemoveLongRunningJob() throws InterruptedException
+    public void testDescheduleRunningJob() throws InterruptedException
     {
-        LongRunningJob job = new LongRunningJob(ScheduledJob.Priority.HIGH);
+        CountDownLatch jobCdl = new CountDownLatch(1);
+        TestJob job = new TestJob(ScheduledJob.Priority.HIGH, jobCdl);
         myScheduler.schedule(job);
 
-        final CountDownLatch cdl = new CountDownLatch(1);
+        new Thread(() -> myScheduler.run()).start();
 
-        new Thread()
-        {
-            @Override
-            public void run()
-            {
-                myScheduler.run();
-                cdl.countDown();
-            }
-        }.start();
-
-        while(!job.hasStarted())
-        {
-            Thread.sleep(10);
-        }
-
+        waitForJobStarted(job);
         myScheduler.deschedule(job);
-
-        cdl.await();
+        jobCdl.countDown();
+        waitForJobFinished(job);
 
         assertThat(job.hasRun()).isTrue();
         assertThat(myScheduler.getQueueSize()).isEqualTo(0);
     }
 
-
-
-
-    private class LongRunningJob extends ScheduledJob
+    private void waitForJobStarted(TestJob job) throws InterruptedException
     {
+        while(!job.hasStarted())
+        {
+            Thread.sleep(10);
+        }
+    }
+
+    private void waitForJobFinished(TestJob job) throws InterruptedException
+    {
+        while(!job.hasRun())
+        {
+            Thread.sleep(10);
+        }
+    }
+
+    private class TestJob extends ScheduledJob
+    {
+        private volatile CountDownLatch countDownLatch;
         private volatile boolean hasRun = false;
         private volatile boolean hasStarted = false;
+        private final AtomicInteger taskRuns = new AtomicInteger();
+        private final int numTasks;
+        private final Runnable onCompletion;
 
-        public LongRunningJob(Priority priority)
+        public TestJob(Priority priority, CountDownLatch cdl)
+        {
+            this(priority, cdl, 1, () -> {});
+        }
+
+        public TestJob(Priority priority, int numTasks)
+        {
+            this(priority, numTasks, () -> {});
+        }
+
+        public TestJob(Priority priority, int numTasks, Runnable onCompletion)
         {
             super(new ConfigurationBuilder().withPriority(priority).withRunInterval(1, TimeUnit.SECONDS).build());
+            this.numTasks = numTasks;
+            this.onCompletion = onCompletion;
+        }
+
+        public TestJob(Priority priority, CountDownLatch cdl, int numTasks, Runnable onCompletion)
+        {
+            super(new ConfigurationBuilder().withPriority(priority).withRunInterval(1, TimeUnit.SECONDS).build());
+            this.numTasks = numTasks;
+            this.onCompletion = onCompletion;
+            countDownLatch = cdl;
+        }
+
+        public int getTaskRuns()
+        {
+            return taskRuns.get();
         }
 
         public boolean hasStarted()
@@ -283,67 +304,6 @@ public class TestScheduleManager
         public boolean hasRun()
         {
             return hasRun;
-        }
-
-        @Override
-        public Iterator<ScheduledTask> iterator()
-        {
-            return Arrays.<ScheduledTask> asList(new LongRunningTask()).iterator();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "LongRunningJob " + getPriority();
-        }
-
-        public class LongRunningTask extends ScheduledTask
-        {
-            @Override
-            public boolean execute()
-            {
-                hasStarted = true;
-                try
-                {
-                    Thread.sleep(1000);
-                }
-                catch (InterruptedException e)
-                {
-                    // Intentionally left empty
-                }
-                hasRun = true;
-                return true;
-            }
-
-            @Override
-            public void cleanup()
-            {
-                // NOOP
-            }
-        }
-    }
-
-    private class ShortRunningMultipleTasks extends ScheduledJob
-    {
-        private final AtomicInteger numRuns = new AtomicInteger();
-        private final int numTasks;
-        private final Runnable onCompletion;
-
-        public ShortRunningMultipleTasks(Priority priority, int numTasks)
-        {
-            this(priority, numTasks, () -> {});
-        }
-
-        public ShortRunningMultipleTasks(Priority priority, int numTasks, Runnable onCompletion)
-        {
-            super(new ConfigurationBuilder().withPriority(priority).withRunInterval(1, TimeUnit.SECONDS).build());
-            this.numTasks = numTasks;
-            this.onCompletion = onCompletion;
-        }
-
-        public int getNumRuns()
-        {
-            return numRuns.get();
         }
 
         @Override
@@ -371,8 +331,21 @@ public class TestScheduleManager
             @Override
             public boolean execute()
             {
+                hasStarted = true;
+                try
+                {
+                    if (countDownLatch != null)
+                    {
+                        countDownLatch.await();
+                    }
+                }
+                catch (InterruptedException e)
+                {
+                    // Intentionally left empty
+                }
                 onCompletion.run();
-                numRuns.incrementAndGet();
+                taskRuns.incrementAndGet();
+                hasRun = true;
                 return true;
             }
         }
