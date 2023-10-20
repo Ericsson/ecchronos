@@ -2,6 +2,9 @@
 
 ## Version 5.0.0 (Not yet released)
 
+* Bump springboot from 2.7.12 to 2.7.17 - Issue #604
+* Bump io.micrometer from 1.9.2 to 1.9.16 - Issue #604
+* Bump io.dropwizard.metrics from 4.2.10 to 4.2.21 - Issue #604
 * Bump jackson-dataformat-yaml from 2.13.5 to 2.15.2 - Issue #602
 * Make locks dynamic based on TTL of lock table - Issue #543
 * Add new repair type parallel_vnode - Issue #554
