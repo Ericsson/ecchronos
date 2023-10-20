@@ -282,7 +282,7 @@
                                     </arguments>
                                     <workingDirectory>${project.build.directory}/test</workingDirectory>
                                     <environmentVariables>
-                                        <CASSANDRA_IP>${docker.container.seed.ip}</CASSANDRA_IP>
+                                        <CASSANDRA_IP>${docker.container.seed1.ip}</CASSANDRA_IP>
                                         <CASSANDRA_JMX_PORT>7199</CASSANDRA_JMX_PORT>
                                         <CASSANDRA_NATIVE_PORT>9042</CASSANDRA_NATIVE_PORT>
                                     </environmentVariables>
