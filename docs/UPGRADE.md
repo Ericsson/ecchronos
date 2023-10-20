@@ -22,6 +22,17 @@ The command to add the column is shown below:
 ALTER TABLE ecchronos.on_demand_repair_status ADD repair_type text;
 ```
 
+## Lock Refresh and failure cache 
+
+Added support for dynamic calculation of the lock refresh rate based on the Time-To-Live (TTL) from 
+the ecchronos.lock table. The refresh rate is calculated by the formula TTL/10.
+This update ensures that the lock refresh rate aligns consistently with the actual TTL of the ecchronos.lock table.
+
+Additionally, a feature has been introduced that allows users to configure the expiry time of the lock failure cache
+directly within the `ecc.yaml` file.
+
+It’s important to note that while making these changes, the default behavior remains unchanged.
+
 # Upgrade to 4.x
 
 ## Metrics

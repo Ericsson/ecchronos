@@ -18,15 +18,28 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class CasLockFactoryConfig
 {
-    private String myKeyspaceName = "ecchronos";
+    private static final long DEFAULT_EXPIRY_TIME_IN_SECONDS = 30L;
+    private static final String DEFAULT_KEYSPACE_NAME = "ecchronos";
+    private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
+    private long myExpiryTimeInSeconds = DEFAULT_EXPIRY_TIME_IN_SECONDS;
 
-    @JsonProperty("keyspace")
+    public final long getFailureCacheExpiryTimeInSeconds()
+    {
+        return myExpiryTimeInSeconds;
+    }
+
+    @JsonProperty ("cache_expiry_time_in_seconds")
+    public final void setFailureCacheExpiryTimeInSeconds(final long expiryTimeInSeconds)
+    {
+        myExpiryTimeInSeconds = expiryTimeInSeconds;
+    }
+
     public final String getKeyspaceName()
     {
         return myKeyspaceName;
     }
 
-    @JsonProperty("keyspace")
+    @JsonProperty ("keyspace")
     public final void setKeyspaceName(final String keyspaceName)
     {
         myKeyspaceName = keyspaceName;

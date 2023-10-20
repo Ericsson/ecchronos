@@ -32,14 +32,12 @@ public final class LockCache
 {
     private static final Logger LOG = LoggerFactory.getLogger(LockCache.class);
 
-    private static final long DEFAULT_EXPIRE_TIME_IN_SECONDS = 30;
-
     private final Cache<LockKey, LockException> myFailureCache;
     private final LockSupplier myLockSupplier;
 
-    public LockCache(final LockSupplier lockSupplier)
+    public LockCache(final LockSupplier lockSupplier, final long expireTimeInSeconds)
     {
-        this(lockSupplier, DEFAULT_EXPIRE_TIME_IN_SECONDS, TimeUnit.SECONDS);
+        this(lockSupplier, expireTimeInSeconds, TimeUnit.SECONDS);
     }
 
     LockCache(final LockSupplier lockSupplier, final long expireTime, final TimeUnit expireTimeUnit)

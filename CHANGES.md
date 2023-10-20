@@ -2,6 +2,7 @@
 
 ## Version 5.0.0 (Not yet released)
 
+* Make locks dynamic based on TTL of lock table - Issue #543
 * Add new repair type parallel_vnode - Issue #554
 * Add validation of repair interval and alarms - Issue #560
 * Insert into repair history only on session finish - Issue #565

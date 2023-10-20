@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
@@ -26,6 +27,7 @@ import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.TokenMap;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwareStatement;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
@@ -88,14 +90,10 @@ public final class CASLockFactory implements LockFactory, Closeable
     private static final String COLUMN_NODE = "node";
     private static final String COLUMN_METADATA = "metadata";
     private static final String COLUMN_PRIORITY = "priority";
-
-    private static final int LOCK_TIME_IN_SECONDS = 600;
-    private static final long LOCK_UPDATE_TIME_IN_SECONDS = 60;
-    private static final int FAILED_LOCK_RETRY_ATTEMPTS =
-            (int) (LOCK_TIME_IN_SECONDS / LOCK_UPDATE_TIME_IN_SECONDS) - 1;
-
     private static final String TABLE_LOCK = "lock";
     private static final String TABLE_LOCK_PRIORITY = "lock_priority";
+    private static final int REFRESH_INTERVAL_RATIO = 10;
+    private static final int DEFAULT_LOCK_TIME_IN_SECONDS = 600;
 
     private final UUID myUuid;
 
@@ -114,14 +112,13 @@ public final class CASLockFactory implements LockFactory, Closeable
     private final PreparedStatement myRemoveLockStatement;
     private final PreparedStatement myUpdateLockStatement;
     private final PreparedStatement myRemoveLockPriorityStatement;
-    private final LockCache myLockCache;
+    private final CASLockFactoryCacheContext myCasLockFactoryCacheContext;
 
     private CASLockFactory(final Builder builder)
     {
         myStatementDecorator = builder.myStatementDecorator;
         myHostStates = builder.myHostStates;
         myKeyspaceName = builder.myKeyspaceName;
-
         myExecutor = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder().setNameFormat("LockRefresher-%d").build());
 
@@ -144,23 +141,30 @@ public final class CASLockFactory implements LockFactory, Closeable
 
         SimpleStatement getLockMetadataStatement = QueryBuilder.selectFrom(myKeyspaceName, TABLE_LOCK)
                 .column(COLUMN_METADATA)
-                .whereColumn(COLUMN_RESOURCE).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_RESOURCE)
+                .isEqualTo(bindMarker())
                 .build()
                 .setSerialConsistencyLevel(serialConsistencyLevel);
 
         SimpleStatement removeLockStatement = QueryBuilder.deleteFrom(myKeyspaceName, TABLE_LOCK)
-                .whereColumn(COLUMN_RESOURCE).isEqualTo(bindMarker())
-                .ifColumn(COLUMN_NODE).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_RESOURCE)
+                .isEqualTo(bindMarker())
+                .ifColumn(COLUMN_NODE)
+                .isEqualTo(bindMarker())
                 .build()
-                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM).setSerialConsistencyLevel(serialConsistencyLevel);
+                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
+                .setSerialConsistencyLevel(serialConsistencyLevel);
 
         SimpleStatement updateLockStatement = QueryBuilder.update(myKeyspaceName, TABLE_LOCK)
                 .setColumn(COLUMN_NODE, bindMarker())
                 .setColumn(COLUMN_METADATA, bindMarker())
-                .whereColumn(COLUMN_RESOURCE).isEqualTo(bindMarker())
-                .ifColumn(COLUMN_NODE).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_RESOURCE)
+                .isEqualTo(bindMarker())
+                .ifColumn(COLUMN_NODE)
+                .isEqualTo(bindMarker())
                 .build()
-                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM).setSerialConsistencyLevel(serialConsistencyLevel);
+                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
+                .setSerialConsistencyLevel(serialConsistencyLevel);
 
         SimpleStatement competeStatement = QueryBuilder.insertInto(myKeyspaceName, TABLE_LOCK_PRIORITY)
                 .value(COLUMN_RESOURCE, bindMarker())
@@ -171,13 +175,16 @@ public final class CASLockFactory implements LockFactory, Closeable
 
         SimpleStatement getPriorityStatement = QueryBuilder.selectFrom(myKeyspaceName, TABLE_LOCK_PRIORITY)
                 .columns(COLUMN_PRIORITY, COLUMN_NODE)
-                .whereColumn(COLUMN_RESOURCE).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_RESOURCE)
+                .isEqualTo(bindMarker())
                 .build()
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
 
         SimpleStatement removeLockPriorityStatement = QueryBuilder.deleteFrom(myKeyspaceName, TABLE_LOCK_PRIORITY)
-                .whereColumn(COLUMN_RESOURCE).isEqualTo(bindMarker())
-                .whereColumn(COLUMN_NODE).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_RESOURCE)
+                .isEqualTo(bindMarker())
+                .whereColumn(COLUMN_NODE)
+                .isEqualTo(bindMarker())
                 .build()
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
 
@@ -198,8 +205,35 @@ public final class CASLockFactory implements LockFactory, Closeable
         }
 
         myUuid = hostId;
+        myCasLockFactoryCacheContext = buildCasLockFactoryCacheContext(builder.myCacheExpiryTimeInSeconds);
+    }
 
-        myLockCache = new LockCache(this::doTryLock);
+    private CASLockFactoryCacheContext buildCasLockFactoryCacheContext(final long cacheExpiryTimeInSeconds)
+    {
+        int lockTimeInSeconds = getDefaultTimeToLiveFromLockTable();
+        int lockUpdateTimeInSeconds = lockTimeInSeconds / REFRESH_INTERVAL_RATIO;
+        int myFailedLockRetryAttempts = (lockTimeInSeconds / lockUpdateTimeInSeconds) - 1;
+
+        return CASLockFactoryCacheContext.newBuilder()
+                .withLockUpdateTimeInSeconds(lockUpdateTimeInSeconds)
+                .withFailedLockRetryAttempts(myFailedLockRetryAttempts)
+                .withLockCache(new LockCache(this::doTryLock, cacheExpiryTimeInSeconds))
+                .build();
+    }
+
+    private int getDefaultTimeToLiveFromLockTable()
+    {
+        TableMetadata tableMetadata = mySession.getMetadata()
+                .getKeyspace(myKeyspaceName)
+                .flatMap(ks -> ks.getTable(TABLE_LOCK))
+                .orElse(null);
+        if (tableMetadata == null || tableMetadata.getOptions() == null)
+        {
+            LOG.warn("Could not parse default ttl of {}.{}", myKeyspaceName, TABLE_LOCK);
+            return DEFAULT_LOCK_TIME_IN_SECONDS;
+        }
+        Map<CqlIdentifier, Object> tableOptions = tableMetadata.getOptions();
+        return (Integer) tableOptions.get(CqlIdentifier.fromInternal("default_time_to_live"));
     }
 
     @Override
@@ -207,9 +241,10 @@ public final class CASLockFactory implements LockFactory, Closeable
                                    final String resource,
                                    final int priority,
                                    final Map<String, String> metadata)
-            throws LockException
+                                                                       throws LockException
     {
-        return myLockCache.getLock(dataCenter, resource, priority, metadata);
+        return myCasLockFactoryCacheContext.getLockCache()
+                .getLock(dataCenter, resource, priority, metadata);
     }
 
     @Override
@@ -259,7 +294,7 @@ public final class CASLockFactory implements LockFactory, Closeable
     @Override
     public Optional<LockException> getCachedFailure(final String dataCenter, final String resource)
     {
-        return myLockCache.getCachedFailure(dataCenter, resource);
+        return myCasLockFactoryCacheContext.getLockCache().getCachedFailure(dataCenter, resource);
     }
 
     @Override
@@ -285,6 +320,12 @@ public final class CASLockFactory implements LockFactory, Closeable
         return myUuid;
     }
 
+    @VisibleForTesting
+    CASLockFactoryCacheContext getCasLockFactoryCacheContext()
+    {
+        return myCasLockFactoryCacheContext;
+    }
+
     public static Builder builder()
     {
         return new Builder();
@@ -293,11 +334,13 @@ public final class CASLockFactory implements LockFactory, Closeable
     public static class Builder
     {
         private static final String DEFAULT_KEYSPACE_NAME = "ecchronos";
+        private static final long DEFAULT_EXPIRY_TIME_IN_SECONDS = 30L;
 
         private NativeConnectionProvider myNativeConnectionProvider;
         private HostStates myHostStates;
         private StatementDecorator myStatementDecorator;
         private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
+        private long myCacheExpiryTimeInSeconds = DEFAULT_EXPIRY_TIME_IN_SECONDS;
 
         public final Builder withNativeConnectionProvider(final NativeConnectionProvider nativeConnectionProvider)
         {
@@ -320,6 +363,12 @@ public final class CASLockFactory implements LockFactory, Closeable
         public final Builder withKeyspaceName(final String keyspaceName)
         {
             myKeyspaceName = keyspaceName;
+            return this;
+        }
+
+        public final Builder withCacheExpiryInSeconds(final long cacheExpiryInSeconds)
+        {
+            myCacheExpiryTimeInSeconds = cacheExpiryInSeconds;
             return this;
         }
 
@@ -347,8 +396,7 @@ public final class CASLockFactory implements LockFactory, Closeable
     private DistributedLock doTryLock(final String dataCenter,
                                       final String resource,
                                       final int priority,
-                                      final Map<String, String> metadata)
-            throws LockException
+                                      final Map<String, String> metadata) throws LockException
     {
         LOG.trace("Trying lock for {} - {}", dataCenter, resource);
 
@@ -483,10 +531,16 @@ public final class CASLockFactory implements LockFactory, Closeable
 
             List<NodePriority> nodePriorities = computePriorities();
 
-            myLocallyHighestPriority = nodePriorities.stream().filter(n -> n.getUuid().equals(myUuid))
-                    .map(NodePriority::getPriority).findFirst().orElse(myPriority);
-            globalHighPriority = nodePriorities.stream().filter(n -> !n.getUuid().equals(myUuid))
-                    .map(NodePriority::getPriority).max(Integer::compare).orElse(myPriority);
+            myLocallyHighestPriority = nodePriorities.stream()
+                    .filter(n -> n.getUuid().equals(myUuid))
+                    .map(NodePriority::getPriority)
+                    .findFirst()
+                    .orElse(myPriority);
+            globalHighPriority = nodePriorities.stream()
+                    .filter(n -> !n.getUuid().equals(myUuid))
+                    .map(NodePriority::getPriority)
+                    .max(Integer::compare)
+                    .orElse(myPriority);
         }
 
         public boolean lock()
@@ -497,8 +551,9 @@ public final class CASLockFactory implements LockFactory, Closeable
                 if (tryLock())
                 {
                     LOG.trace("Lock for resource {} acquired", myResource);
-                    ScheduledFuture<?> future = myExecutor.scheduleAtFixedRate(this, LOCK_UPDATE_TIME_IN_SECONDS,
-                            LOCK_UPDATE_TIME_IN_SECONDS, TimeUnit.SECONDS);
+                    ScheduledFuture<?> future = myExecutor.scheduleAtFixedRate(this,
+                            myCasLockFactoryCacheContext.getLockUpdateTimeInSeconds(),
+                            myCasLockFactoryCacheContext.getLockUpdateTimeInSeconds(), TimeUnit.SECONDS);
                     myUpdateFuture.set(future);
 
                     return true;
@@ -520,7 +575,7 @@ public final class CASLockFactory implements LockFactory, Closeable
             {
                 int failedAttempts = myFailedUpdateAttempts.incrementAndGet();
 
-                if (failedAttempts >= FAILED_LOCK_RETRY_ATTEMPTS)
+                if (failedAttempts >= myCasLockFactoryCacheContext.getFailedLockRetryAttempts())
                 {
                     LOG.error("Unable to re-lock resource '{}' after {} failed attempts", myResource, failedAttempts);
                 }
