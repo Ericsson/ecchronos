@@ -2,6 +2,7 @@
 
 ## Version 5.0.0 (Not yet released)
 
+* Bump jackson-dataformat-yaml from 2.13.5 to 2.15.2 - Issue #602
 * Add new repair type parallel_vnode - Issue #554
 * Add validation of repair interval and alarms - Issue #560
 * Insert into repair history only on session finish - Issue #565
