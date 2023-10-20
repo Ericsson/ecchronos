@@ -122,6 +122,7 @@ public class TestConfig
         assertThat(repairConfig.getAlarm().getFaultReporterClass()).isEqualTo(TestFaultReporter.class);
         assertThat(repairConfig.getIgnoreTWCSTables()).isTrue();
         assertThat(repairConfig.getBackoff().getInterval(TimeUnit.SECONDS)).isEqualTo(13);
+        assertThat(repairConfig.getPriority().getPriorityGranularityUnit()).isEqualTo(TimeUnit.HOURS);
 
         StatisticsConfig statisticsConfig = config.getStatisticsConfig();
         assertThat(statisticsConfig.isEnabled()).isFalse();

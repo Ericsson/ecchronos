@@ -39,31 +39,43 @@ public class RepairConfig
     private boolean myIgnoreTwcsTables = false;
     private RepairOptions.RepairType myRepairType = RepairOptions.RepairType.VNODE;
 
-    @JsonProperty("interval")
+    private Priority myPriority = new Priority();
+
+    public final Priority getPriority()
+    {
+        return  myPriority;
+    }
+    @JsonProperty ("priority")
+    public final void setPriority(final Priority priority)
+    {
+        myPriority = priority;
+    }
+
+    @JsonProperty ("interval")
     public final void setRepairInterval(final Interval repairInterval)
     {
         myRepairInterval = repairInterval;
     }
 
-    @JsonProperty("alarm")
+    @JsonProperty ("alarm")
     public final Alarm getAlarm()
     {
         return myAlarm;
     }
 
-    @JsonProperty("alarm")
+    @JsonProperty ("alarm")
     public final void setAlarm(final Alarm alarm)
     {
         myAlarm = alarm;
     }
 
-    @JsonProperty("unwind_ratio")
+    @JsonProperty ("unwind_ratio")
     public final void setUnwindRatio(final double unwindRatio)
     {
         myUnwindRatio = unwindRatio;
     }
 
-    @JsonProperty("size_target")
+    @JsonProperty ("size_target")
     public final void setSizeTarget(final String sizeTarget)
     {
         if (sizeTarget == null)
@@ -76,37 +88,37 @@ public class RepairConfig
         }
     }
 
-    @JsonProperty("backoff")
+    @JsonProperty ("backoff")
     public final Interval getBackoff()
     {
         return myBackoff;
     }
 
-    @JsonProperty("backoff")
+    @JsonProperty ("backoff")
     public final void setBackoff(final Interval backoff)
     {
         myBackoff = backoff;
     }
 
-    @JsonProperty("ignore_twcs_tables")
+    @JsonProperty ("ignore_twcs_tables")
     public final boolean getIgnoreTWCSTables()
     {
         return myIgnoreTwcsTables;
     }
 
-    @JsonProperty("ignore_twcs_tables")
+    @JsonProperty ("ignore_twcs_tables")
     public final void setIgnoreTwcsTables(final boolean ignoreTWCSTables)
     {
         myIgnoreTwcsTables = ignoreTWCSTables;
     }
 
-    @JsonProperty("repair_type")
+    @JsonProperty ("repair_type")
     public final RepairOptions.RepairType getRepairType()
     {
         return myRepairType;
     }
 
-    @JsonProperty("repair_type")
+    @JsonProperty ("repair_type")
     public final void setRepairType(final String repairType)
     {
         myRepairType = RepairOptions.RepairType.valueOf(repairType.toUpperCase(Locale.US));
@@ -126,7 +138,7 @@ public class RepairConfig
         if (warningIntervalSeconds >= errorIntervalSeconds)
         {
             throw new IllegalArgumentException(String.format("%s warning interval must be shorter than error interval."
-                            + " Current warning interval: %d seconds, error interval: %d seconds", repairConfigType,
+                    + " Current warning interval: %d seconds, error interval: %d seconds", repairConfigType,
                     warningIntervalSeconds, errorIntervalSeconds));
         }
     }
@@ -149,6 +161,7 @@ public class RepairConfig
                 .withTargetRepairSizeInBytes(mySizeTarget)
                 .withBackoff(myBackoff.getInterval(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .withRepairType(myRepairType)
+                .withPriorityGranularityUnit(myPriority.getPriorityGranularityUnit())
                 .build();
     }
 }
