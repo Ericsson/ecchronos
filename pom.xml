@@ -897,7 +897,7 @@ limitations under the License.
                             <artifactId>maven-failsafe-plugin</artifactId>
                             <configuration>
                                 <systemPropertyVariables>
-                                    <it-cassandra.ip>${docker.container.seed.ip}</it-cassandra.ip>
+                                    <it-cassandra.ip>${docker.container.seed1.ip}</it-cassandra.ip>
                                     <it-cassandra.jmx.port>7199</it-cassandra.jmx.port>
                                     <it-cassandra.native.port>9042</it-cassandra.native.port>
                                 </systemPropertyVariables>
@@ -931,7 +931,7 @@ limitations under the License.
                                                         <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap}</JVM_OPTS>
                                                         <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.ring_delay_ms=0</JVM_EXTRA_OPTS>
                                                     </env>
-                                                    <exposedPropertyKey>seed</exposedPropertyKey>
+                                                    <exposedPropertyKey>seed1</exposedPropertyKey>
                                                     <volumes>
                                                         <bind>
                                                             <volume>${project.build.directory}/certificates/cert:/etc/certificates</volume>
@@ -959,10 +959,11 @@ limitations under the License.
                                                     <env>
                                                         <LOCAL_JMX>no</LOCAL_JMX>
                                                         <HOSTNAME>$HOSTNAME</HOSTNAME>
-                                                        <CASSANDRA_SEEDS>$${docker.container.seed.ip}</CASSANDRA_SEEDS>
+                                                        <CASSANDRA_SEEDS>$${docker.container.seed1.ip}</CASSANDRA_SEEDS>
                                                         <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap}</JVM_OPTS>
                                                         <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.gossip_settle_min_wait_ms=100 -Dcassandra.gossip_settle_interval_ms=100 -Dcassandra.ring_delay_ms=4000</JVM_EXTRA_OPTS>
                                                     </env>
+                                                    <exposedPropertyKey>seed2</exposedPropertyKey>
                                                     <volumes>
                                                         <bind>
                                                             <volume>${project.build.directory}/certificates/cert:/etc/certificates</volume>
@@ -989,7 +990,7 @@ limitations under the License.
                                                     <memorySwap>-1</memorySwap>
                                                     <env>
                                                         <LOCAL_JMX>no</LOCAL_JMX>
-                                                        <CASSANDRA_SEEDS>$${docker.container.seed.ip}</CASSANDRA_SEEDS>
+                                                        <CASSANDRA_SEEDS>$${docker.container.seed1.ip},$${docker.container.seed2.ip}</CASSANDRA_SEEDS>
                                                         <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap}</JVM_OPTS>
                                                         <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.gossip_settle_min_wait_ms=100 -Dcassandra.gossip_settle_interval_ms=100 -Dcassandra.ring_delay_ms=4000</JVM_EXTRA_OPTS>
                                                     </env>
@@ -1019,7 +1020,7 @@ limitations under the License.
                                                     <memorySwap>-1</memorySwap>
                                                     <env>
                                                         <LOCAL_JMX>no</LOCAL_JMX>
-                                                        <CASSANDRA_SEEDS>$${docker.container.seed.ip}</CASSANDRA_SEEDS>
+                                                        <CASSANDRA_SEEDS>$${docker.container.seed1.ip},$${docker.container.seed2.ip}</CASSANDRA_SEEDS>
                                                         <JVM_OPTS>-Xmx${it.cassandra.heap} -Xms${it.cassandra.heap}</JVM_OPTS>
                                                         <JVM_EXTRA_OPTS>-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.gossip_settle_min_wait_ms=100 -Dcassandra.gossip_settle_interval_ms=100 -Dcassandra.ring_delay_ms=4000</JVM_EXTRA_OPTS>
                                                     </env>
