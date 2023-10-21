@@ -2,6 +2,7 @@
 
 ## Version 5.0.0 (Not yet released)
 
+* Make priority granularity configurable - Issue #599
 * Bump springboot from 2.7.12 to 2.7.17 - Issue #604
 * Bump io.micrometer from 1.9.2 to 1.9.16 - Issue #604
 * Bump io.dropwizard.metrics from 4.2.10 to 4.2.21 - Issue #604

@@ -56,7 +56,7 @@ repair:
     time: 13
     unit: seconds
   priority:
-    granularity_unit: HOURS
+    granularity_unit: MINUTES
 
 statistics:
   enabled: false

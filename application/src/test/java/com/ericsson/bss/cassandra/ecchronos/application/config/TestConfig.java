@@ -108,6 +108,7 @@ public class TestConfig
                 .withIgnoreTWCSTables(true)
                 .withBackoff(13, TimeUnit.SECONDS)
                 .withTargetRepairSizeInBytes(UnitConverter.toBytes("5m"))
+                .withPriorityGranularityUnit(TimeUnit.MINUTES)
                 .build();
 
         GlobalRepairConfig repairConfig = config.getRepairConfig();
@@ -122,7 +123,7 @@ public class TestConfig
         assertThat(repairConfig.getAlarm().getFaultReporterClass()).isEqualTo(TestFaultReporter.class);
         assertThat(repairConfig.getIgnoreTWCSTables()).isTrue();
         assertThat(repairConfig.getBackoff().getInterval(TimeUnit.SECONDS)).isEqualTo(13);
-        assertThat(repairConfig.getPriority().getPriorityGranularityUnit()).isEqualTo(TimeUnit.HOURS);
+        assertThat(repairConfig.getPriority().getPriorityGranularityUnit()).isEqualTo(TimeUnit.MINUTES);
 
         StatisticsConfig statisticsConfig = config.getStatisticsConfig();
         assertThat(statisticsConfig.isEnabled()).isFalse();
@@ -218,6 +219,7 @@ public class TestConfig
         assertThat(repairConfig.getAlarm().getFaultReporterClass()).isEqualTo(LoggingFaultReporter.class);
         assertThat(repairConfig.getIgnoreTWCSTables()).isFalse();
         assertThat(repairConfig.getBackoff().getInterval(TimeUnit.MINUTES)).isEqualTo(30);
+        assertThat(repairConfig.getPriority().getPriorityGranularityUnit()).isEqualTo(TimeUnit.HOURS);
 
         StatisticsConfig statisticsConfig = config.getStatisticsConfig();
         assertThat(statisticsConfig.isEnabled()).isTrue();
