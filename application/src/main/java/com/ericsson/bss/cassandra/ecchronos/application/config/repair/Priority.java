@@ -37,6 +37,7 @@ public class Priority
     {
         // Default constructor for jackson
     }
+
     @JsonCreator
     public Priority(@JsonProperty("granularity_unit") final TimeUnit granularityUnit)
     {
