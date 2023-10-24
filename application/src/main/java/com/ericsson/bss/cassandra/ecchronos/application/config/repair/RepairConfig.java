@@ -45,6 +45,7 @@ public class RepairConfig
     {
         return  myPriority;
     }
+
     @JsonProperty("priority")
     public final void setPriority(final Priority priority)
     {

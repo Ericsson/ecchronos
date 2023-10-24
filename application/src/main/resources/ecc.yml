@@ -87,7 +87,7 @@ repair:
     unit: days
   ##
   ##  The unit of time granularity for priority calculation, can be HOURS, MINUTES, or SECONDS.
-  ##  It determines how often the priority is recalculated.
+  ##  This unit is used in the calculation of priority.
   ##  Default is HOURS for backward compatibility.
   ##  Ensure to pause repair operations when changing the granularity to maintain consistency.
   ##  HOURS  # or MINUTES, SECONDS

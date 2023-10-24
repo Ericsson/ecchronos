@@ -33,6 +33,14 @@ directly within the `ecc.yaml` file.
 
 It’s important to note that while making these changes, the default behavior remains unchanged.
 
+## Priority Calculation
+
+The unit of time granularity for priority calculation, can be HOURS, MINUTES, or SECONDS.
+This unit is used in the calculation of priority. Default is HOURS for backward compatibility.
+Ensure to pause repair operations when changing the granularity to maintain consistency. 
+HOURS  # or MINUTES, SECONDS. It’s important to note that while making these changes, 
+the default behavior remains unchanged.
+
 # Upgrade to 4.x
 
 ## Metrics

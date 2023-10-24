@@ -34,7 +34,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     private volatile long myNextRunTime = -1;
     private volatile long myRunOffset = 0;
     private final UUID myId;
-    private final TimeUnit myGranularityUnit;
+    private final TimeUnit myPriorityGranularity;
 
     public ScheduledJob(final Configuration configuration)
     {
@@ -48,7 +48,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         myRunIntervalInMs = configuration.runIntervalInMs;
         myBackoffInMs = configuration.backoffInMs;
         myLastSuccessfulRun = System.currentTimeMillis() - myRunIntervalInMs;
-        myGranularityUnit = configuration.granularityUnit;
+        myPriorityGranularity = configuration.priorityGranularity;
     }
 
     /**
@@ -173,7 +173,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
             return -1;
         }
 
-        long granularityInMs = TimeUnit.MILLISECONDS.convert(1, myGranularityUnit);
+        long granularityInMs = myPriorityGranularity.toMillis(1);
         long unitsPassed = diff / granularityInMs + 1;
 
         // Overflow protection
@@ -223,7 +223,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
                 && myRunOffset == that.myRunOffset
                 && myPriority == that.myPriority
                 && Objects.equals(myId, that.myId)
-                && Objects.equals(myGranularityUnit, that.myGranularityUnit);
+                && Objects.equals(myPriorityGranularity, that.myPriorityGranularity);
     }
 
     /**
@@ -233,7 +233,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     public int hashCode()
     {
         return Objects.hash(myPriority, myBackoffInMs, myRunIntervalInMs, myLastSuccessfulRun,
-                myNextRunTime, myRunOffset, myId, myGranularityUnit);
+                myNextRunTime, myRunOffset, myId, myPriorityGranularity);
     }
 
     /**
@@ -325,14 +325,14 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         /**
          * The unit of time granularity used for priority calculation in scheduling jobs.
          */
-        public final TimeUnit granularityUnit;
+        public final TimeUnit priorityGranularity;
 
         Configuration(final ConfigurationBuilder builder)
         {
             priority = builder.priority;
             runIntervalInMs = builder.runIntervalInMs;
             backoffInMs = builder.backoffInMs;
-            granularityUnit = builder.granularityUnit;
+            priorityGranularity = builder.granularityUnit;
         }
     }
 
@@ -346,7 +346,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         private long backoffInMs = TimeUnit.MINUTES.toMillis(DEFAULT_BACKOFF_IN_MINUTES);
         private TimeUnit granularityUnit = TimeUnit.HOURS;
 
-        public final ConfigurationBuilder withGranularityUnit(final TimeUnit granularityTimeUnit)
+        public final ConfigurationBuilder withPriorityGranularity(final TimeUnit granularityTimeUnit)
         {
             this.granularityUnit = granularityTimeUnit;
             return this;
