@@ -244,6 +244,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
                 .withPriority(ScheduledJob.Priority.LOW)
                 .withRunInterval(repairConfiguration.getRepairIntervalInMs(), TimeUnit.MILLISECONDS)
                 .withBackoff(repairConfiguration.getBackoffInMs(), TimeUnit.MILLISECONDS)
+                .withPriorityGranularity(repairConfiguration.getPriorityGranularityUnit())
                 .build();
         ScheduledRepairJob job;
         if (repairConfiguration.getRepairType().equals(RepairOptions.RepairType.INCREMENTAL))

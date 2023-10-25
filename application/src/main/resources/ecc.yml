@@ -86,6 +86,17 @@ repair:
     time: 7
     unit: days
   ##
+  ## The unit of time granularity for priority calculation, can be HOURS, MINUTES, or SECONDS.
+  ## This unit is used in the calculation of priority.
+  ## Default is HOURS for backward compatibility.
+  ## Ensure to pause repair operations prior to changing the granularity.
+  ## Not doing so may lead to inconsistencies as some ecchronos instances
+  ## could have different priorities compared to others for the same repair.
+  ## Possible values are HOURS, MINUTES, or SECONDS.
+  ##
+  priority:
+    granularity_unit: HOURS
+  ##
   ## Specifies the type of lock to use for repairs.
   ## "vnode" will lock each node involved in a repair individually and increase the number of
   ## parallel repairs that can run in a single data center.

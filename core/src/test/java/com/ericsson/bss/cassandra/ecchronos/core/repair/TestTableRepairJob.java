@@ -665,6 +665,90 @@ public class TestTableRepairJob
     }
 
     @Test
+    public void testGetRealPriorityWithMinuteGranularity()
+    {
+        ScheduledJob.Configuration configuration = new ScheduledJob.ConfigurationBuilder()
+                .withPriority(ScheduledJob.Priority.LOW)
+                .withRunInterval(RUN_INTERVAL_IN_DAYS, TimeUnit.DAYS)
+                .withPriorityGranularity(TimeUnit.MINUTES)
+                .build();
+
+        myRepairJob = new TableRepairJob.Builder()
+                .withConfiguration(configuration)
+                .withTableReference(myTableReference)
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withRepairState(myRepairState)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairConfiguration(myRepairConfiguration)
+                .withRepairLockType(RepairLockType.VNODE)
+                .withTableStorageStates(myTableStorageStates)
+                .withRepairHistory(myRepairHistory)
+                .build();
+
+        long lastRepaired = System.currentTimeMillis();
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastCompletedAt();
+        doReturn(false).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
+        assertThat(myRepairJob.getRealPriority()).isEqualTo(-1);
+
+        lastRepaired = System.currentTimeMillis() - (TimeUnit.DAYS.toMillis(RUN_INTERVAL_IN_DAYS) - TimeUnit.MINUTES.toMillis(1));
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastCompletedAt();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
+        assertThat(myRepairJob.getRealPriority()).isEqualTo(-1);
+
+        lastRepaired = System.currentTimeMillis() - (TimeUnit.DAYS.toMillis(RUN_INTERVAL_IN_DAYS));
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastCompletedAt();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
+        assertThat(myRepairJob.getRealPriority()).isEqualTo(1);
+
+        lastRepaired = System.currentTimeMillis() - (TimeUnit.DAYS.toMillis(RUN_INTERVAL_IN_DAYS) + TimeUnit.MINUTES.toMillis(1));
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastCompletedAt();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
+        assertThat(myRepairJob.getRealPriority()).isEqualTo(2);
+    }
+    @Test
+    public void testGetRealPriorityOverflow()
+    {
+        ScheduledJob.Configuration configuration = new ScheduledJob.ConfigurationBuilder()
+                .withPriority(ScheduledJob.Priority.HIGHEST)
+                .withPriorityGranularity(TimeUnit.MILLISECONDS)
+                .build();
+
+        myRepairJob = new TableRepairJob.Builder()
+                .withConfiguration(configuration)
+                .withTableReference(myTableReference)
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .withRepairState(myRepairState)
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairConfiguration(myRepairConfiguration)
+                .withRepairLockType(RepairLockType.VNODE)
+                .withTableStorageStates(myTableStorageStates)
+                .withRepairHistory(myRepairHistory)
+                .build();
+
+        long diffLargeEnoughForOverflow = (long) (Integer.MAX_VALUE / myRepairJob.getPriority().getValue())
+                * myRepairJob
+                .getRepairConfiguration()
+                .getPriorityGranularityUnit()
+                .toMillis(1) + 1;
+
+        long currentTimeMillis = System.currentTimeMillis();
+        long lastRepaired = currentTimeMillis - diffLargeEnoughForOverflow - myRepairJob
+                .getRepairConfiguration()
+                .getRepairIntervalInMs();
+
+        doReturn(lastRepaired).when(myRepairStateSnapshot).lastCompletedAt();
+        doReturn(true).when(myRepairStateSnapshot).canRepair();
+        mockRepairGroup(lastRepaired);
+
+        assertThat(myRepairJob.getRealPriority()).isEqualTo(Integer.MAX_VALUE);
+    }
+
+
+    @Test
     public void testGetRealPriority()
     {
         long lastRepaired = System.currentTimeMillis();

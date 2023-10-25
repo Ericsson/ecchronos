@@ -55,6 +55,8 @@ repair:
   backoff:
     time: 13
     unit: seconds
+  priority:
+    granularity_unit: MINUTES
 
 statistics:
   enabled: false

@@ -39,6 +39,19 @@ public class RepairConfig
     private boolean myIgnoreTwcsTables = false;
     private RepairOptions.RepairType myRepairType = RepairOptions.RepairType.VNODE;
 
+    private Priority myPriority = new Priority();
+
+    public final Priority getPriority()
+    {
+        return  myPriority;
+    }
+
+    @JsonProperty("priority")
+    public final void setPriority(final Priority priority)
+    {
+        myPriority = priority;
+    }
+
     @JsonProperty("interval")
     public final void setRepairInterval(final Interval repairInterval)
     {
@@ -126,7 +139,7 @@ public class RepairConfig
         if (warningIntervalSeconds >= errorIntervalSeconds)
         {
             throw new IllegalArgumentException(String.format("%s warning interval must be shorter than error interval."
-                            + " Current warning interval: %d seconds, error interval: %d seconds", repairConfigType,
+                    + " Current warning interval: %d seconds, error interval: %d seconds", repairConfigType,
                     warningIntervalSeconds, errorIntervalSeconds));
         }
     }
@@ -149,6 +162,7 @@ public class RepairConfig
                 .withTargetRepairSizeInBytes(mySizeTarget)
                 .withBackoff(myBackoff.getInterval(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .withRepairType(myRepairType)
+                .withPriorityGranularityUnit(myPriority.getPriorityGranularityUnit())
                 .build();
     }
 }

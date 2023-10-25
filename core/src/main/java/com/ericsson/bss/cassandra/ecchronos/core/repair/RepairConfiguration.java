@@ -14,6 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import static com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions.RepairParallelism;
+
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -29,8 +31,7 @@ public class RepairConfiguration
     private static final long DEFAULT_REPAIR_INTERVAL_IN_MS = TimeUnit.DAYS.toMillis(7);
     private static final long DEFAULT_REPAIR_WARNING_TIME_IN_MS = TimeUnit.DAYS.toMillis(8);
     private static final long DEFAULT_REPAIR_ERROR_TIME_IN_MS = TimeUnit.DAYS.toMillis(10);
-    private static final RepairOptions.RepairParallelism DEFAULT_REPAIR_PARALLELISM
-            = RepairOptions.RepairParallelism.PARALLEL;
+    private static final RepairParallelism DEFAULT_REPAIR_PARALLELISM = RepairParallelism.PARALLEL;
     private static final RepairOptions.RepairType DEFAULT_REPAIR_TYPE = RepairOptions.RepairType.VNODE;
     private static final double DEFAULT_UNWIND_RATIO = NO_UNWIND;
     private static final long DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES = FULL_REPAIR_SIZE;
@@ -39,8 +40,9 @@ public class RepairConfiguration
     private static final boolean DEFAULT_IGNORE_TWCS_TABLES = false;
 
     public static final RepairConfiguration DEFAULT = newBuilder().build();
-    public static final RepairConfiguration DISABLED
-            = newBuilder().withRepairInterval(0, TimeUnit.MILLISECONDS).build();
+    public static final RepairConfiguration DISABLED = newBuilder()
+            .withRepairInterval(0, TimeUnit.MILLISECONDS)
+            .build();
 
     private final RepairOptions.RepairParallelism myRepairParallelism;
     private final long myRepairIntervalInMs;
@@ -50,6 +52,7 @@ public class RepairConfiguration
     private final long myTargetRepairSizeInBytes;
     private final boolean myIgnoreTWCSTables;
     private final long myBackoffInMs;
+    private final TimeUnit myPriorityGranularityUnit;
 
     private final RepairOptions.RepairType myRepairType;
 
@@ -64,6 +67,12 @@ public class RepairConfiguration
         myIgnoreTWCSTables = builder.myIgnoreTWCSTables;
         myBackoffInMs = builder.myBackoffInMs;
         myRepairType = builder.myRepairType;
+        myPriorityGranularityUnit = builder.myPriorityGranularityUnit;
+    }
+
+    public TimeUnit getPriorityGranularityUnit()
+    {
+        return myPriorityGranularityUnit;
     }
 
     public RepairOptions.RepairParallelism getRepairParallelism()
@@ -126,9 +135,9 @@ public class RepairConfiguration
     {
         return String.format(
                 "RepairConfiguration(interval=%dms,warning=%dms,error=%dms,parallelism=%s,unwindRatio=%.2f"
-                + ",ignoreTWCS=%b,backoff=%dms,repairType=%s)",
+                        + ",ignoreTWCS=%b,backoff=%dms,repairType=%s)",
                 myRepairIntervalInMs, myRepairWarningTimeInMs, myRepairErrorTimeInMs, myRepairParallelism,
-                myRepairUnwindRatio, myIgnoreTWCSTables, myBackoffInMs, myRepairType);
+                myRepairUnwindRatio, myIgnoreTWCSTables, myBackoffInMs, myRepairType, myPriorityGranularityUnit);
     }
 
     @Override
@@ -151,7 +160,8 @@ public class RepairConfiguration
                 && myRepairParallelism == that.myRepairParallelism
                 && myIgnoreTWCSTables == that.myIgnoreTWCSTables
                 && myBackoffInMs == that.myBackoffInMs
-                && myRepairType == that.myRepairType;
+                && myRepairType == that.myRepairType
+                && myPriorityGranularityUnit == that.myPriorityGranularityUnit;
     }
 
     @Override
@@ -159,7 +169,7 @@ public class RepairConfiguration
     {
         return Objects.hash(myRepairParallelism, myRepairIntervalInMs, myRepairWarningTimeInMs,
                 myRepairErrorTimeInMs, myRepairUnwindRatio, myTargetRepairSizeInBytes, myIgnoreTWCSTables,
-                myBackoffInMs, myRepairType);
+                myBackoffInMs, myRepairType, myPriorityGranularityUnit);
     }
 
     public static class Builder
@@ -173,6 +183,7 @@ public class RepairConfiguration
         private long myTargetRepairSizeInBytes = DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES;
         private long myBackoffInMs = DEFAULT_BACKOFF_IN_MS;
         private boolean myIgnoreTWCSTables = DEFAULT_IGNORE_TWCS_TABLES;
+        private TimeUnit myPriorityGranularityUnit = TimeUnit.HOURS;
 
         /**
          * Constructor.
@@ -196,6 +207,7 @@ public class RepairConfiguration
             myRepairErrorTimeInMs = from.getRepairErrorTimeInMs();
             myRepairUnwindRatio = from.getRepairUnwindRatio();
             myBackoffInMs = from.getBackoffInMs();
+            myPriorityGranularityUnit = from.getPriorityGranularityUnit();
         }
 
         /**
@@ -321,6 +333,18 @@ public class RepairConfiguration
         public Builder withBackoff(final long backoff, final TimeUnit timeUnit)
         {
             myBackoffInMs = timeUnit.toMillis(backoff);
+            return this;
+        }
+
+        /**
+         * Build with Priority Granularity Unit for the scheduling job.
+         *
+         * @param unit The Priority Granularity Unit.
+         * @return Builder
+         */
+        public Builder withPriorityGranularityUnit(final TimeUnit unit)
+        {
+            myPriorityGranularityUnit = unit;
             return this;
         }
 

@@ -33,6 +33,16 @@ directly within the `ecc.yaml` file.
 
 It’s important to note that while making these changes, the default behavior remains unchanged.
 
+## Priority Calculation
+
+The unit of time granularity used for priority calculation.
+Possible values are HOURS, MINUTES, or SECONDS.
+This unit influences how quickly the priority of a job increases.
+Default is set to HOURS for backward compatibility.
+IMPORTANT: Ensure to pause repair operations prior to changing the granularity. 
+Not doing so may lead to inconsistencies as some ecchronos instances could have 
+different priorities compared to others for the same repair.
+
 # Upgrade to 4.x
 
 ## Metrics
