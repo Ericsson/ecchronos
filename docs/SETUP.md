@@ -5,7 +5,7 @@
 In order to allow ecChronos to run there are a few tables that needs to be present.
 The keyspace name is configurable and is `ecchronos` by default.
 It is important that the keyspace is configured to replicate to all data centers.
-It is also highly recommended to use `NetworkTopologyStategy`.
+It is also highly recommended to use `NetworkTopologyStrategy`.
 
 The required tables are shown below:
 ```
