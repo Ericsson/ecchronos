@@ -1,6 +1,6 @@
 
 ## Introduction
-As any distributed service does, sometimes ecChronos breaks and you will have to troubleshoot what is going on. Generally speaking you can debug ecChronos like any other distributed Java program, meaning that you have to find which instances in your cluster are misbehaving and then isolate the problem using logs and tools. Luckily Chronos have a set of tools to help the debbuging proccess.
+As any distributed service does, sometimes ecChronos breaks and you will have to troubleshoot what is going on. Generally speaking you can debug ecChronos like any other distributed Java program, meaning that you have to find which instances in your cluster are misbehaving and then isolate the problem using logs and tools. Luckily ecChronos have a set of tools to help the debbuging proccess.
 
 ## Find The Misbehaving Instances
 The first step to troubleshooting an ecChronos issue is to use error messages, metrics and monitoring information to identify if the issue lies with the clients or the server and if it does lie with the server find the problematic nodes in the Cassandra cluster. The goal is to determine if this is a system issue (e.g. a problem pattern that affects the entire cluster) or isolated to a subset of instances (e.g. neighbors holding a lock or even a single node with faulty hardware).
