@@ -39,8 +39,11 @@ jobs:
          - name: "Standalone integration 5.0-alpha1"
            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=5.0-alpha1 -DskipUTs'
            artifacts_dir: "standalone-integration/target"
+         - name: "Docker Integration"
+           test_suite: 'verify -P docker-integration-test -DskipUTs'
+           artifacts_dir: "ecchronos-binary/target"
          - name: "Python integration"
-           test_suite: 'verify -P docker-integration-test,python-integration-tests -DskipUTs'
+           test_suite: 'verify -P python-integration-tests -DskipUTs'
            artifacts_dir: "ecchronos-binary/target"
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
