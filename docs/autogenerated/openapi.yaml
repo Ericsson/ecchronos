@@ -6,7 +6,7 @@ info:
     url: https://www.apache.org/licenses/LICENSE-2.0
   version: 1.0.0
 servers:
-- url: https://localhost:8080
+- url: http://localhost:8080
   description: Generated server url
 tags:
 - name: Repair-Management
