@@ -15,6 +15,8 @@
 
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
+import static com.ericsson.bss.cassandra.ecchronos.core.repair.OngoingJob.Status;
+
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
@@ -52,7 +54,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
     private static final Logger LOG = LoggerFactory.getLogger(VnodeOnDemandRepairJob.class);
     private final RepairHistory myRepairHistory;
     private final Map<ScheduledTask, Set<LongTokenRange>> myTasks;
-    private final int myTotalTasks;
+    private final int myTotalTokens;
 
     private VnodeOnDemandRepairJob(final Builder builder)
     {
@@ -60,9 +62,8 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
                 builder.repairLockType, builder.onFinishedHook, builder.tableRepairMetrics, builder.ongoingJob);
         myRepairHistory = Preconditions.checkNotNull(builder.repairHistory,
                 "Repair history must be set");
-
+        myTotalTokens = getOngoingJob().getTokens().size();
         myTasks = createRepairTasks(getOngoingJob().getTokens(), getOngoingJob().getRepairedTokens());
-        myTotalTasks = myTasks.size();
     }
 
     private Map<ScheduledTask, Set<LongTokenRange>> createRepairTasks(
@@ -187,8 +188,16 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
 
     public double getProgress()
     {
-        int finishedTasks = myTotalTasks - myTasks.size();
-        return myTotalTasks == 0 ? 1 : (double) finishedTasks / myTotalTasks;
+        if (myTotalTokens == 0)
+        {
+            LOG.debug("Total tokens for this job are 0");
+            return 0;
+        }
+
+        OngoingJob ongoingJob = getOngoingJob();
+        Status state = ongoingJob.getStatus();
+        int  repairedTokens = ongoingJob.getRepairedTokens().size();
+        return state == Status.finished ? 1 : (double) repairedTokens / myTotalTokens;
     }
 
     @Override

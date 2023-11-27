@@ -92,7 +92,7 @@ public class TestVnodeOnDemandRepairJob
     @Test
     public void testJobCorrectlyReturned()
     {
-        VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob();
+        VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob(0);
         OnDemandRepairJobView expectedView = new OnDemandRepairJobView(repairJob.getId(), myHostId, myTableReference,
                 OnDemandRepairJobView.Status.IN_QUEUE, 0, System.currentTimeMillis(), RepairOptions.RepairType.VNODE);
         assertThat(repairJob.getId()).isEqualTo(repairJob.getId());
@@ -106,7 +106,7 @@ public class TestVnodeOnDemandRepairJob
     @Test
     public void testFailedJobCorrectlyReturned()
     {
-        VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob();
+        VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob(0);
         Iterator<ScheduledTask> it = repairJob.iterator();
         repairJob.postExecute(false, it.next());
         OnDemandRepairJobView expectedView = new OnDemandRepairJobView(repairJob.getId(), myHostId, myTableReference,
@@ -121,7 +121,7 @@ public class TestVnodeOnDemandRepairJob
     @Test
     public void testJobFinishedAfterExecution()
     {
-        VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob();
+        VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob(0);
         Iterator<ScheduledTask> it = repairJob.iterator();
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
         repairJob.postExecute(true, it.next());
@@ -143,7 +143,7 @@ public class TestVnodeOnDemandRepairJob
     @Test
     public void testJobFailedWhenTopologyChange()
     {
-        VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob();
+        VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob(0);
         when(myOngoingJob.hasTopologyChanged()).thenReturn(true);
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.FAILED);
     }
@@ -151,7 +151,7 @@ public class TestVnodeOnDemandRepairJob
     @Test
     public void testJobUnsuccessful()
     {
-        VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob();
+        VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob(0);
         Iterator<ScheduledTask> it = repairJob.iterator();
         repairJob.postExecute(true, it.next());
         assertThat(repairJob.getState()).isEqualTo(ScheduledJob.State.RUNNABLE);
@@ -162,16 +162,20 @@ public class TestVnodeOnDemandRepairJob
     @Test
     public void testGetProgress()
     {
-        VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob();
-        assertThat(repairJob.getProgress()).isEqualTo(0);
-        Iterator<ScheduledTask> it = repairJob.iterator();
-        repairJob.postExecute(true, it.next());
-        assertThat(repairJob.getProgress()).isEqualTo(0.5);
-        repairJob.postExecute(true, it.next());
-        assertThat(repairJob.getProgress()).isEqualTo(1);
+        VnodeOnDemandRepairJob repairJobZeroProgress = createVnodeOnDemandRepairJob(0);
+        assertThat(repairJobZeroProgress.getProgress()).isEqualTo(0);
+
+        VnodeOnDemandRepairJob repairJobHalfProgress = createVnodeOnDemandRepairJob(50);
+        assertThat(repairJobHalfProgress.getProgress()).isEqualTo(0.5);
+
+        VnodeOnDemandRepairJob repairJobFullProgress = createVnodeOnDemandRepairJob(100);
+        assertThat(repairJobFullProgress.getProgress()).isEqualTo(1.0);
+
+        when(repairJobHalfProgress.getOngoingJob().getStatus()).thenReturn(OngoingJob.Status.finished);
+        assertThat(repairJobHalfProgress.getProgress()).isEqualTo(1.0);
     }
 
-    private VnodeOnDemandRepairJob createVnodeOnDemandRepairJob()
+    private VnodeOnDemandRepairJob createVnodeOnDemandRepairJob(int repairedTokenPercentage)
     {
         LongTokenRange range1 = new LongTokenRange(1, 2);
         LongTokenRange range2 = new LongTokenRange(1, 3);
@@ -180,7 +184,19 @@ public class TestVnodeOnDemandRepairJob
                 ImmutableSet.of(mockReplica1, mockReplica2, mockReplica3));
         tokenRangeToReplicas.put(range2,
                 ImmutableSet.of(mockReplica1, mockReplica2));
+
+        Set<LongTokenRange> repairedTokens = new HashSet<>();
+        if (repairedTokenPercentage >= 50)
+        {
+            repairedTokens.add(range1);
+        }
+        if (repairedTokenPercentage == 100)
+        {
+            repairedTokens.add(range2);
+        }
+
         when(myOngoingJob.getTokens()).thenReturn(tokenRangeToReplicas);
+        when(myOngoingJob.getRepairedTokens()).thenReturn(repairedTokens);
 
         return new VnodeOnDemandRepairJob.Builder()
                 .withJmxProxyFactory(myJmxProxyFactory)
