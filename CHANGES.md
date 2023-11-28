@@ -2,6 +2,7 @@
 
 ## Version 5.0.0 (Not yet released)
 
+* Progress for on demand repair jobs is either 0% or 100% - Issue #593
 * Make priority granularity configurable - Issue #599
 * Bump springboot from 2.7.12 to 2.7.17 - Issue #604
 * Bump io.micrometer from 1.9.2 to 1.9.16 - Issue #604
