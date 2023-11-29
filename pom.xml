@@ -70,7 +70,7 @@
         <com.typesafe.config.version>1.4.2</com.typesafe.config.version>
         <org.hdrhistogram.version>2.1.12</org.hdrhistogram.version>
         <slf4j.version>1.7.30</slf4j.version>
-        <logback.version>1.2.10</logback.version>
+        <logback.version>1.3.12</logback.version>
         <cassandra.version>4.0.10</cassandra.version>
         <osgi.version>1.3.0</osgi.version>
         <mockito.core.version>3.3.3</mockito.core.version>
