@@ -2,6 +2,7 @@
 
 ## Version 5.0.0 (Not yet released)
 
+* Bump logback from 1.2.10 to 1.2.13 (CVE-2023-6378) - Issue #622
 * Progress for on demand repair jobs is either 0% or 100% - Issue #593
 * Make priority granularity configurable - Issue #599
 * Bump springboot from 2.7.12 to 2.7.17 - Issue #604
