@@ -62,6 +62,7 @@
                             </descriptors>
                             <skipAssembly>false</skipAssembly>
                             <appendAssemblyId>false</appendAssemblyId>
+                            <tarLongFileMode>posix</tarLongFileMode>
                         </configuration>
                     </execution>
                 </executions>
