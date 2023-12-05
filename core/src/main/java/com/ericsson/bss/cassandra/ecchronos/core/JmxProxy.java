@@ -108,4 +108,6 @@ public interface JmxProxy extends Closeable
      * @return The repaired ratio or 0 if it cannot be determined.
      */
     double getPercentRepaired(TableReference tableReference);
+
+    String getNodeStatus() ;
 }

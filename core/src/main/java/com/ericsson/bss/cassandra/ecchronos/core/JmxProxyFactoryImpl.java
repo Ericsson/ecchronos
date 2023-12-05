@@ -308,6 +308,20 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
             }
             return 0.0;
         }
+
+        @Override
+        public String getNodeStatus()
+        {
+            try
+            {
+                return (String) myMbeanServerConnection.getAttribute(myStorageServiceObject, "OperationMode");
+            }
+            catch (Exception e)
+            {
+                LOG.error("Unable to retrieve node status {}", e.getMessage());
+                return "Unknown";
+            }
+        }
     }
 
     public static Builder builder()
