@@ -46,6 +46,7 @@ public abstract class RepairTask implements NotificationListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairTask.class);
     private static final Pattern RANGE_PATTERN = Pattern.compile("\\((-?[0-9]+),(-?[0-9]+)\\]");
+    private static final int HEALTH_CHECK_INTERVAL = 10;
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
             new ThreadFactoryBuilder().setNameFormat("HangPreventingTask-%d").build());
     private final CountDownLatch myLatch = new CountDownLatch(1);
@@ -259,7 +260,7 @@ public abstract class RepairTask implements NotificationListener
             myHangPreventFuture.cancel(false);
         }
         // Schedule the first check to happen after 10 minutes
-        myHangPreventFuture = myExecutor.schedule(new HangPreventingTask(), 10,
+        myHangPreventFuture = myExecutor.schedule(new HangPreventingTask(), HEALTH_CHECK_INTERVAL,
                 TimeUnit.MINUTES);
     }
 
@@ -386,7 +387,7 @@ public abstract class RepairTask implements NotificationListener
                     else
                     {
                         checkCount++;
-                        myHangPreventFuture = myExecutor.schedule(this, 10, TimeUnit.MINUTES);
+                        myHangPreventFuture = myExecutor.schedule(this, HEALTH_CHECK_INTERVAL, TimeUnit.MINUTES);
                     }
                 }
                 else
