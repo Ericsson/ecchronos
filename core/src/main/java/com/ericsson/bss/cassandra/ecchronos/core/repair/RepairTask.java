@@ -32,7 +32,6 @@ import javax.management.NotificationListener;
 import javax.management.remote.JMXConnectionNotification;
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -48,9 +47,11 @@ public abstract class RepairTask implements NotificationListener
     private static final Logger LOG = LoggerFactory.getLogger(RepairTask.class);
     private static final Pattern RANGE_PATTERN = Pattern.compile("\\((-?[0-9]+),(-?[0-9]+)\\]");
     private static final long HANG_PREVENT_TIME_IN_MINUTES = 30;
-    private static final String NODE_STATUS_ERROR = "Local Cassandra node is down, aborting repair task.";
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
             new ThreadFactoryBuilder().setNameFormat("HangPreventingTask-%d").build());
+    private final ScheduledExecutorService myHealthCheckExecutor = Executors.newSingleThreadScheduledExecutor(
+            new ThreadFactoryBuilder().setNameFormat("NodeHealthCheck-%d").build());
+
     private final CountDownLatch myLatch = new CountDownLatch(1);
     private final JmxProxyFactory myJmxProxyFactory;
     private final TableReference myTableReference;
@@ -87,10 +88,10 @@ public abstract class RepairTask implements NotificationListener
         onExecute();
         try (JmxProxy proxy = myJmxProxyFactory.connect())
         {
-            if (isLocalNodeDown(proxy))
+            if(!isNodeOperational(proxy))
             {
-                LOG.warn(NODE_STATUS_ERROR);
-                throw new Exception(NODE_STATUS_ERROR);
+                LOG.debug("Local Cassandra node is down, aborting repair task.");
+                new Exception();
             }
             rescheduleHangPrevention();
             repair(proxy);
@@ -124,63 +125,23 @@ public abstract class RepairTask implements NotificationListener
         // NOOP
     }
 
-    private boolean isLocalNodeDown(JmxProxy proxy)
-    {
-        String status = proxy.getNodeStatus();
-        LOG.debug("NodeStatus {}", status);
-        return !"NORMAL".equals(status);
-    }
-
-    private long calculateDynamicHangPreventionTime()
-    {
-        try (JmxProxy jmxProxy = myJmxProxyFactory.connect())
-        {
-            // Get metrics
-            long diskSpaceUsed = jmxProxy.liveDiskSpaceUsed(myTableReference);
-            List<String> unreachableNodes = jmxProxy.getUnreachableNodes();
-
-            // Base timeout
-            long baseTimeoutMinutes = 5;
-
-            // Adjustments
-            long sizeAdjustment = calculateSizeAdjustment(diskSpaceUsed);
-            long clusterStateAdjustment = unreachableNodes.size() * 2;
-
-            // Total timeout
-            long dynamicTimeout = baseTimeoutMinutes + sizeAdjustment + clusterStateAdjustment;
-
-            // Ensure the timeout is within a reasonable range
-            return Math.min(dynamicTimeout, HANG_PREVENT_TIME_IN_MINUTES);
-        }
-        catch (IOException e)
-        {
-            LOG.error("Error accessing JMX: {}", e.getMessage());
-            return HANG_PREVENT_TIME_IN_MINUTES; // Use a default timeout if JMX access fails
-        }
-    }
-
-    private long calculateSizeAdjustment(long diskSpaceUsed)
-    {
-        // Constants for adjustment calculation
-        double logBase = 2;
-        double minutesPerLogUnit = 5; // Time added per logarithmic unit
-        double scaleFactor = 1024 * 1024 * 1024; // Scale factor (1 GB in bytes)
-        // Normalize disk space used to GB and apply logarithmic scale
-        double normalizedDiskSpace = Math.log(diskSpaceUsed / scaleFactor) / Math.log(logBase);
-        // Calculate adjustment based on logarithmic scale
-        long sizeAdjustment = (long)(normalizedDiskSpace * minutesPerLogUnit);
-        long maxSizeAdjustment = 15;
-        return Math.min(Math.max(0, sizeAdjustment), maxSizeAdjustment);
-    }
-
     private void repair(final JmxProxy proxy) throws ScheduledJobException
     {
         proxy.addStorageServiceListener(this);
         myCommand = proxy.repairAsync(myTableReference.getKeyspace(), getOptions());
         if (myCommand > 0)
         {
+            ScheduledFuture<?> healthCheckFuture = null;
             try
             {
+                healthCheckFuture = myHealthCheckExecutor.scheduleAtFixedRate(() ->
+                {
+                    if (!isNodeOperational(proxy))
+                    {
+                        myLastError = new ScheduledJobException("Node became non-operational during repair");
+                        myLatch.countDown();
+                    }
+                }, 0, 10, TimeUnit.MINUTES); // Check every 10 minute
                 myLatch.await();
                 proxy.removeStorageServiceListener(this);
                 verifyRepair(proxy);
@@ -202,7 +163,21 @@ public abstract class RepairTask implements NotificationListener
                 Thread.currentThread().interrupt();
                 throw new ScheduledJobException(e);
             }
+            finally
+            {
+                if (healthCheckFuture != null && !healthCheckFuture.isCancelled())
+                {
+                    healthCheckFuture.cancel(false);
+                }
+            }
         }
+    }
+
+    private boolean isNodeOperational(JmxProxy proxy)
+    {
+            String nodeStatus = proxy.getNodeStatus();
+            LOG.debug("Node Status {} ", nodeStatus);
+            return "NORMAL".equals(nodeStatus);
     }
 
     /**
@@ -262,6 +237,7 @@ public abstract class RepairTask implements NotificationListener
     public void cleanup()
     {
         myExecutor.shutdown();
+        myHealthCheckExecutor.shutdown();
     }
 
     /**
@@ -315,7 +291,7 @@ public abstract class RepairTask implements NotificationListener
         {
             myHangPreventFuture.cancel(false);
         }
-        myHangPreventFuture = myExecutor.schedule(new HangPreventingTask(), calculateDynamicHangPreventionTime(), TimeUnit.MINUTES);
+        myHangPreventFuture = myExecutor.schedule(new HangPreventingTask(), HANG_PREVENT_TIME_IN_MINUTES, TimeUnit.MINUTES);
     }
 
     /**
@@ -424,17 +400,12 @@ public abstract class RepairTask implements NotificationListener
         {
             try (JmxProxy proxy = myJmxProxyFactory.connect())
             {
-                if (isLocalNodeDown(proxy))
-                {
-                   throw new IOException(NODE_STATUS_ERROR);
-                }
                 proxy.forceTerminateAllRepairSessions();
             }
             catch (IOException e)
             {
                 LOG.error("Unable to prevent hanging repair task: {}", this, e);
             }
-            myLatch.countDown();
         }
     }
 

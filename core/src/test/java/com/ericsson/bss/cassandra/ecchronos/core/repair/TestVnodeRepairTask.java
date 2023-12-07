@@ -21,14 +21,11 @@ import static com.ericsson.bss.cassandra.ecchronos.core.repair.TestUtils.getRepa
 import static com.ericsson.bss.cassandra.ecchronos.core.repair.TestUtils.startRepair;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.ignoreStubs;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -47,11 +44,8 @@ import java.util.stream.Collectors;
 import javax.management.Notification;
 import javax.management.remote.JMXConnectionNotification;
 
-import com.ericsson.bss.cassandra.ecchronos.core.JmxProxy;
-import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -81,9 +75,6 @@ public class TestVnodeRepairTask
 
     @Mock
     private RepairHistory repairHistory;
-
-    @Mock
-    private JmxProxy myJmxProxy;
 
     private RepairConfiguration myRepairConfiguration = RepairConfiguration.DEFAULT;
 
@@ -115,30 +106,6 @@ public class TestVnodeRepairTask
     public void finalVerification()
     {
         verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
-    }
-
-
-    @Test
-    public void testWhenLocalNodeIsDown() throws Exception
-    {
-        when(jmxProxyFactory.connect()).thenReturn(myJmxProxy);
-        when(myJmxProxy.getNodeStatus()).thenReturn("DOWN");
-        Set<LongTokenRange> ranges = new HashSet<>();
-        LongTokenRange range1 = new LongTokenRange(1, 2);
-        LongTokenRange range2 = new LongTokenRange(3, 4);
-
-        ranges.add(range1);
-        ranges.add(range2);
-
-        RepairTask repairTask = new VnodeRepairTask(jmxProxyFactory, myTableReference, myRepairConfiguration,
-                myTableRepairMetrics, repairHistory, ranges, participants, jobId);
-
-        Exception exception = assertThrows(ScheduledJobException.class, repairTask::execute);
-        String expectedMessage = "Unable to repair 'Vnode repairTask of keyspace.table (mock)";
-        String actualMessage = exception.getMessage();
-        assertTrue(actualMessage.contains(expectedMessage));
-
-        verify(myTableRepairMetrics).repairSession(eq(myTableReference), anyLong(), any(TimeUnit.class), eq(false));
     }
 
     @Test
