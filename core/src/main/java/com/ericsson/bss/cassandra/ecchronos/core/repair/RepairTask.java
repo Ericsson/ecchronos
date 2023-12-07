@@ -47,6 +47,7 @@ public abstract class RepairTask implements NotificationListener
     private static final Logger LOG = LoggerFactory.getLogger(RepairTask.class);
     private static final Pattern RANGE_PATTERN = Pattern.compile("\\((-?[0-9]+),(-?[0-9]+)\\]");
     private static final long HANG_PREVENT_TIME_IN_MINUTES = 30;
+    private static final long HEALTH_CHECK_TIME_IN_MINUTES = 10;
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
             new ThreadFactoryBuilder().setNameFormat("HangPreventingTask-%d").build());
     private final ScheduledExecutorService myHealthCheckExecutor = Executors.newSingleThreadScheduledExecutor(
@@ -88,7 +89,7 @@ public abstract class RepairTask implements NotificationListener
         onExecute();
         try (JmxProxy proxy = myJmxProxyFactory.connect())
         {
-            if(!isNodeOperational(proxy))
+            if (!isNodeOperational(proxy))
             {
                 LOG.debug("Local Cassandra node is down, aborting repair task.");
                 new Exception();
@@ -141,7 +142,7 @@ public abstract class RepairTask implements NotificationListener
                         myLastError = new ScheduledJobException("Node became non-operational during repair");
                         myLatch.countDown();
                     }
-                }, 0, 10, TimeUnit.MINUTES); // Check every 10 minute
+                }, 0, HEALTH_CHECK_TIME_IN_MINUTES, TimeUnit.MINUTES); // Check every 10 minute
                 myLatch.await();
                 proxy.removeStorageServiceListener(this);
                 verifyRepair(proxy);
@@ -173,7 +174,7 @@ public abstract class RepairTask implements NotificationListener
         }
     }
 
-    private boolean isNodeOperational(JmxProxy proxy)
+    private boolean isNodeOperational(final JmxProxy proxy)
     {
             String nodeStatus = proxy.getNodeStatus();
             LOG.debug("Node Status {} ", nodeStatus);
@@ -291,7 +292,8 @@ public abstract class RepairTask implements NotificationListener
         {
             myHangPreventFuture.cancel(false);
         }
-        myHangPreventFuture = myExecutor.schedule(new HangPreventingTask(), HANG_PREVENT_TIME_IN_MINUTES, TimeUnit.MINUTES);
+        myHangPreventFuture = myExecutor.schedule(new HangPreventingTask(),
+                HANG_PREVENT_TIME_IN_MINUTES, TimeUnit.MINUTES);
     }
 
     /**
