@@ -441,6 +441,7 @@ limitations under the License.
                             </headerSection>
                         </headerSections>
                         <excludes>
+                            <exclude>CODEOWNERS</exclude>
                             <exclude>src/test/resources/cassandra.yaml</exclude>
                             <exclude>src/test/resources/cassandra-rackdc.properties</exclude>
                             <exclude>**/*.cql</exclude>
