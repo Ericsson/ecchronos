@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -254,13 +255,13 @@ public class TestRepairGroupTasks
         @Override
         public List<String> getLiveNodes()
         {
-            throw new UnsupportedOperationException();
+            return Collections.emptyList();
         }
 
         @Override
         public List<String> getUnreachableNodes()
         {
-            throw new UnsupportedOperationException();
+            return Collections.emptyList();
         }
 
         @Override
@@ -286,7 +287,7 @@ public class TestRepairGroupTasks
         @Override
         public long liveDiskSpaceUsed(TableReference tableReference)
         {
-            throw new UnsupportedOperationException();
+            return 5;
         }
 
         @Override
@@ -299,6 +300,12 @@ public class TestRepairGroupTasks
         public double getPercentRepaired(TableReference tableReference)
         {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String getNodeStatus()
+        {
+            return "NORMAL";
         }
 
         @Override
