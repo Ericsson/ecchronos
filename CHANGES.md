@@ -1,5 +1,9 @@
 # Changes
 
+## Version 5.0.1 (Not yet released)
+
+* Improve hang preventing task - Issue #544
+
 ## Version 5.0.0 (Not yet released)
 
 * Make priority granularity configurable - Issue #599
