@@ -3,6 +3,7 @@
 ## Version 5.0.1 (Not yet released)
 
 * Improve hang preventing task - Issue #544
+* Improve Description of unwind_ratio - Issue #628  
 
 ## Version 5.0.0 (Not yet released)
 
