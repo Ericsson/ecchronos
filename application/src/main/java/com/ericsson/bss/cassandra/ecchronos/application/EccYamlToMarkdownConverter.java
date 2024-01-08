@@ -44,7 +44,7 @@ public final class EccYamlToMarkdownConverter
         }
         catch (IOException e)
         {
-            LOG.error("Error converting YAML to Markdown: {}", e.getMessage(), e);
+            LOG.error("Error converting YAML to Markdown", e);
         }
     }
 
@@ -66,14 +66,14 @@ public final class EccYamlToMarkdownConverter
                 throw new FileNotFoundException("Resource not found: " + yamlFilePath);
             }
 
-            boolean skipLicenseHeader = true; // Skip license header
+            boolean skipLicenseHeader = true;
             String line = reader.readLine();
             while (line != null)
             {
                 if (skipLicenseHeader && line.startsWith("#"))
                 {
                     line = reader.readLine();
-                    continue; // Skip license header lines
+                    continue;
                 }
                 skipLicenseHeader = false;
 
