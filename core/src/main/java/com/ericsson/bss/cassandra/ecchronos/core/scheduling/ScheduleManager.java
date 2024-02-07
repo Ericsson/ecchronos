@@ -31,4 +31,14 @@ public interface ScheduleManager
      *            The job to deschedule.
      */
     void deschedule(ScheduledJob job);
+
+    /**
+     * Retrieves the current status of the job being managed by this scheduler.
+     * <p>
+     * It's intended for monitoring and logging purposes, allowing users to query the job's current state
+     * without affecting its execution.
+     *
+     * @return A {@code String} representing the current status of the job.
+     */
+    String getCurrentJobStatus();
 }

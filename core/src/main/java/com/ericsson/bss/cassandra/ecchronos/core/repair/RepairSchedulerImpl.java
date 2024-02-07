@@ -87,6 +87,12 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     }
 
     @Override
+    public String getCurrentJobStatus()
+    {
+        return myScheduleManager.getCurrentJobStatus();
+    }
+
+    @Override
     public void close()
     {
         myExecutor.shutdown();

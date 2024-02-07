@@ -65,6 +65,23 @@ public class TestScheduleRepairManagementRESTImpl
     }
 
     @Test
+    public void testGetCurrentJobOneExist()
+    {
+        UUID jobId = UUID.randomUUID();
+        String t = "Running Job - ID: " + jobId + ", Status: " + "Running";
+        when(myRepairScheduler.getCurrentJobStatus()).thenReturn(t);
+        assertThat( myRepairScheduler.getCurrentJobStatus()).isEqualTo(t);
+    }
+
+    @Test
+    public void testGetCurrentJobNoneExist()
+    {
+        String t =  "No job is currently running";
+        when(myRepairScheduler.getCurrentJobStatus()).thenReturn(t);
+        assertThat( myRepairScheduler.getCurrentJobStatus()).isEqualTo(t);
+    }
+
+    @Test
     public void testGetNoSchedules()
     {
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(new ArrayList<>());
