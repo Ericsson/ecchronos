@@ -57,6 +57,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 TimeUnit.MILLISECONDS);
     }
 
+    @Override
     public String getCurrentJobStatus()
     {
         ScheduledJob job = currentExecutingJob.get();
