@@ -20,7 +20,7 @@
 
     <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
     <artifactId>parent</artifactId>
-    <version>5.0.0-SNAPSHOT</version>
+    <version>5.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Ericsson Cassandra Chronos</name>
@@ -70,7 +70,7 @@
         <com.typesafe.config.version>1.4.2</com.typesafe.config.version>
         <org.hdrhistogram.version>2.1.12</org.hdrhistogram.version>
         <slf4j.version>1.7.30</slf4j.version>
-        <logback.version>1.2.10</logback.version>
+        <logback.version>1.2.13</logback.version>
         <cassandra.version>4.0.10</cassandra.version>
         <osgi.version>1.3.0</osgi.version>
         <mockito.core.version>3.3.3</mockito.core.version>
@@ -102,7 +102,7 @@
         <org.apache.maven.plugins.maven-install-plugin.version>2.5.2</org.apache.maven.plugins.maven-install-plugin.version>
         <org.apache.maven.plugins.maven-surefire-plugin.version>2.22.1</org.apache.maven.plugins.maven-surefire-plugin.version>
         <org.apache.maven.plugins.maven-failsafe-plugin.version>2.22.1</org.apache.maven.plugins.maven-failsafe-plugin.version>
-        <org.apache.maven.plugins.maven-assembly-plugin.version>3.1.0</org.apache.maven.plugins.maven-assembly-plugin.version>
+        <org.apache.maven.plugins.maven-assembly-plugin.version>3.6.0</org.apache.maven.plugins.maven-assembly-plugin.version>
         <org.apache.maven.plugins-maven-checkstyle-plugin.version>3.2.0</org.apache.maven.plugins-maven-checkstyle-plugin.version>
         <org.apache.maven.plugins-maven-pmd-plugin.version>3.14.0</org.apache.maven.plugins-maven-pmd-plugin.version>
         <org.apache.maven.plugin.maven-jxr-plugin.version>3.0.0</org.apache.maven.plugin.maven-jxr-plugin.version>
@@ -681,6 +681,7 @@ limitations under the License.
                             </headerSection>
                         </headerSections>
                         <excludes>
+                            <exclude>CODEOWNERS</exclude>
                             <exclude>src/test/resources/cassandra.yaml</exclude>
                             <exclude>src/test/resources/cassandra-rackdc.properties</exclude>
                             <exclude>**/*.cql</exclude>

@@ -108,4 +108,13 @@ public interface JmxProxy extends Closeable
      * @return The repaired ratio or 0 if it cannot be determined.
      */
     double getPercentRepaired(TableReference tableReference);
+
+    /**
+     * Retrieves the current operational status of the local Cassandra node via JMX.
+     * Returns a string indicating the node's state (e.g., "NORMAL", "JOINING", "LEAVING", "MOVING")
+     * or "Unknown" if the status is undeterminable.
+     *
+     * @return A string representing the node's status.
+     */
+    String getNodeStatus();
 }

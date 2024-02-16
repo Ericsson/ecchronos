@@ -1,7 +1,15 @@
 # Changes
 
+## Version 5.0.1 (Not yet released)
+
+* Improve hang preventing task - Issue #544
+* Improve Description of unwind_ratio - Issue #628  
+
 ## Version 5.0.0 (Not yet released)
 
+* Build Ecchronos with Java 11 - Issue 616
+* Bump logback from 1.2.10 to 1.2.13 (CVE-2023-6378) - Issue #622
+* Progress for on demand repair jobs is either 0% or 100% - Issue #593
 * Make priority granularity configurable - Issue #599
 * Bump springboot from 2.7.12 to 2.7.17 - Issue #604
 * Bump io.micrometer from 1.9.2 to 1.9.16 - Issue #604
