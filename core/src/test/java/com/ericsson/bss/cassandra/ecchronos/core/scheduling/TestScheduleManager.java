@@ -254,7 +254,7 @@ public class TestScheduleManager
         myScheduler.schedule(testJob);
         new Thread(() -> myScheduler.run()).start();
         Thread.sleep(100);
-        assertThat(myScheduler.getCurrentJobStatus()).contains("Running Job - ID: " + jobId.toString());
+        assertThat(myScheduler.getCurrentJobStatus()).isEqualTo("Job ID: " + jobId.toString() + ", Status: Running");
         latch.countDown();
 
     }
