@@ -17,9 +17,14 @@ package com.ericsson.bss.cassandra.ecchronos.core;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
@@ -375,11 +380,101 @@ public class TestCASLockFactory extends AbstractCassandraTest
                             {
                                 return true;
                             }
+
+                            @Override
+                            public String getSerialConsistency(){
+                                return "DEFAULT";
+                            }
                         })
                         .withHostStates(hostStates)
                         .withStatementDecorator(s -> s)
                         .withKeyspaceName(myKeyspaceName)
                         .build());
+    }
+
+    @Test
+    public void testRemoteRoutingTrueWithDefaultSerialConsistency() {
+
+        myLockFactory = new CASLockFactory.Builder()
+                .withNativeConnectionProvider(getNativeConnectionProvider())
+                .withHostStates(hostStates)
+                .withStatementDecorator(s -> s)
+                .withKeyspaceName(myKeyspaceName)
+                .build();
+
+        
+        assertEquals(ConsistencyLevel.LOCAL_SERIAL, myLockFactory.getSerialConsistencyLevel());
+    }
+
+    @Test
+    public void testRemoteRoutingFalseWithDefaultSerialConsistency() {
+
+        Node nodeMock = mock(Node.class);
+        
+        NativeConnectionProvider connectionProviderMock = mock(NativeConnectionProvider.class);
+
+        when(connectionProviderMock.getSession()).thenReturn(mySession);
+
+        when(connectionProviderMock.getLocalNode()).thenReturn(nodeMock);
+        
+        when(connectionProviderMock.getRemoteRouting()).thenReturn(false);
+
+        when(connectionProviderMock.getSerialConsistency()).thenReturn("DEFAULT");
+
+        myLockFactory = new CASLockFactory.Builder()
+                .withNativeConnectionProvider(connectionProviderMock)
+                .withHostStates(hostStates)
+                .withStatementDecorator(s -> s)
+                .withKeyspaceName(myKeyspaceName)
+                .build();
+
+        assertEquals(ConsistencyLevel.SERIAL, myLockFactory.getSerialConsistencyLevel());
+    }
+
+    @Test
+    public void testLocalSerialConsistency(){
+
+        NativeConnectionProvider connectionProviderMock = mock(NativeConnectionProvider.class);
+
+        Node nodeMock = mock(Node.class);
+        
+        when(connectionProviderMock.getSerialConsistency()).thenReturn("LOCAL");
+
+        when(connectionProviderMock.getSession()).thenReturn(mySession);
+
+        when(connectionProviderMock.getLocalNode()).thenReturn(nodeMock);
+        
+        myLockFactory = new CASLockFactory.Builder()
+                .withNativeConnectionProvider(connectionProviderMock)
+                .withHostStates(hostStates)
+                .withStatementDecorator(s -> s)
+                .withKeyspaceName(myKeyspaceName)
+                .build();
+
+        assertEquals(ConsistencyLevel.LOCAL_SERIAL, myLockFactory.getSerialConsistencyLevel());
+
+    }
+
+    @Test
+    public void testSerialConsistency(){
+        NativeConnectionProvider connectionProviderMock = mock(NativeConnectionProvider.class);
+        
+        Node nodeMock = mock(Node.class);
+
+        when(connectionProviderMock.getSerialConsistency()).thenReturn("SERIAL");
+
+        when(connectionProviderMock.getSession()).thenReturn(mySession);
+
+        when(connectionProviderMock.getLocalNode()).thenReturn(nodeMock);
+        
+        myLockFactory = new CASLockFactory.Builder()
+                .withNativeConnectionProvider(connectionProviderMock)
+                .withHostStates(hostStates)
+                .withStatementDecorator(s -> s)
+                .withKeyspaceName(myKeyspaceName)
+                .build();
+
+        assertEquals(ConsistencyLevel.SERIAL, myLockFactory.getSerialConsistencyLevel());
     }
 
     private void assertPriorityListEmpty(String resource)

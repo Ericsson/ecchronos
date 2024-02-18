@@ -89,6 +89,7 @@ public class TestConfig
         assertThat(nativeConnection.getHost()).isEqualTo("127.0.0.2");
         assertThat(nativeConnection.getPort()).isEqualTo(9100);
         assertThat(nativeConnection.getRemoteRouting()).isFalse();
+        assertThat(nativeConnection.getConsistencySerial().equals("LOCAL")).isTrue();
         assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.SECONDS)).isEqualTo(5);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(TestNativeConnectionProvider.class);
         assertThat(nativeConnection.getCertificateHandlerClass()).isEqualTo(TestCertificateHandler.class);
@@ -185,6 +186,7 @@ public class TestConfig
         assertThat(nativeConnection.getHost()).isEqualTo("localhost");
         assertThat(nativeConnection.getPort()).isEqualTo(9042);
         assertThat(nativeConnection.getRemoteRouting()).isTrue();
+        assertThat(nativeConnection.getConsistencySerial().equals("DEFAULT")).isTrue();
         assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS)).isEqualTo(0);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(DefaultNativeConnectionProvider.class);
         assertThat(nativeConnection.getCertificateHandlerClass()).isEqualTo(ReloadingCertificateHandler.class);
@@ -271,6 +273,8 @@ public class TestConfig
         assertThat(nativeConnection.getHost()).isEqualTo("localhost");
         assertThat(nativeConnection.getPort()).isEqualTo(9042);
         assertThat(nativeConnection.getRemoteRouting()).isTrue();
+        
+        assertThat(nativeConnection.getConsistencySerial().equals("DEFAULT")).isTrue();
         assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS)).isEqualTo(0);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(DefaultNativeConnectionProvider.class);
         assertThat(nativeConnection.getCertificateHandlerClass()).isEqualTo(ReloadingCertificateHandler.class);
@@ -400,6 +404,12 @@ public class TestConfig
 
         @Override
         public boolean getRemoteRouting()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String getSerialConsistency()
         {
             throw new UnsupportedOperationException();
         }

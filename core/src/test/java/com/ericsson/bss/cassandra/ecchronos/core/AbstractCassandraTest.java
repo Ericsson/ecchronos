@@ -77,6 +77,11 @@ public abstract class AbstractCassandraTest
             {
                 return true;
             }
+
+            @Override
+            public String getSerialConsistency(){
+                return "DEFAULT";
+            }
         };
     }
 
