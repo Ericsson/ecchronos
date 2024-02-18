@@ -17,14 +17,9 @@ package com.ericsson.bss.cassandra.ecchronos.core;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
@@ -350,111 +345,41 @@ public class TestCASLockFactory extends AbstractCassandraTest
         mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (resource text, node uuid, metadata map<text,text>, PRIMARY KEY(resource)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0", myKeyspaceName, TABLE_LOCK));
     }
 
-    // @SuppressWarnings("resource")
-    // @Test
-    // public void testActivateWithoutCassandraCausesIllegalStateException()
-    // {
-    //     // mock
-    //     CqlSession session = mock(CqlSession.class);
-
-    //     doThrow(AllNodesFailedException.class).when(session).getMetadata();
-
-    //     // test
-    //     assertThatExceptionOfType(AllNodesFailedException.class)
-    //             .isThrownBy(() -> new CASLockFactory.Builder()
-    //                     .withNativeConnectionProvider(new NativeConnectionProvider()
-    //                     {
-    //                         @Override
-    //                         public CqlSession getSession()
-    //                         {
-    //                             return mySession;
-    //                         }
-
-    //                         @Override
-    //                         public Node getLocalNode()
-    //                         {
-    //                             return null;
-    //                         }
-
-    //                         @Override
-    //                         public boolean getRemoteRouting()
-    //                         {
-    //                             return true;
-    //                         }
-
-    //                         @Override
-    //                         public String getSerialConsistency(){
-    //                             return "DEFAULT";
-    //                         }
-    //                     })
-    //                     .withHostStates(hostStates)
-    //                     .withStatementDecorator(s -> s)
-    //                     .withKeyspaceName(myKeyspaceName)
-    //                     .build());
-    // }
-
-
     @Test
-    public void testRemoteRoutingTrueWithDefaultSerialConsistency() {
+    public void testActivateWithoutCassandraCausesIllegalStateException()
+    {
+        // mock
+        CqlSession session = mock(CqlSession.class);
 
-        myLockFactory = new CASLockFactory.Builder()
-                .withNativeConnectionProvider(getNativeConnectionProvider())
-                .withHostStates(hostStates)
-                .withStatementDecorator(s -> s)
-                .withKeyspaceName(myKeyspaceName)
-                .build();
+        doThrow(AllNodesFailedException.class).when(session).getMetadata();
 
-        
-        assertEquals(ConsistencyLevel.LOCAL_SERIAL, myLockFactory.getSerialConsistencyLevel());
-    }
+        // test
+        assertThatExceptionOfType(AllNodesFailedException.class)
+                .isThrownBy(() -> new CASLockFactory.Builder()
+                        .withNativeConnectionProvider(new NativeConnectionProvider()
+                        {
+                            @Override
+                            public CqlSession getSession()
+                            {
+                                return session;
+                            }
 
-    // @Test
-    // public void testRemoteRoutingFalseWithDefaultSerialConsistency() {
-        
-    //     NativeConnectionProvider connectionProviderMock = mock(NativeConnectionProvider.class);
-        
-    //     when(connectionProviderMock.getRemoteRouting()).thenReturn(false);
-        
-    //     myLockFactory = new CASLockFactory.Builder()
-    //             .withNativeConnectionProvider(getNativeConnectionProvider())
-    //             .withHostStates(hostStates)
-    //             .withStatementDecorator(s -> s)
-    //             .withKeyspaceName(myKeyspaceName)
-    //             .build();
+                            @Override
+                            public Node getLocalNode()
+                            {
+                                return null;
+                            }
 
-    //     assertEquals(ConsistencyLevel.SERIAL, myLockFactory.getSerialConsistencyLevel());
-    // }
-
-    public void testLocalSerialConsistency(){
-
-        NativeConnectionProvider connectionProviderMock = mock(NativeConnectionProvider.class);
-        
-        when(connectionProviderMock.getSerialConsistency()).thenReturn("LOCAL");
-        
-        myLockFactory = new CASLockFactory.Builder()
-                .withNativeConnectionProvider(getNativeConnectionProvider())
-                .withHostStates(hostStates)
-                .withStatementDecorator(s -> s)
-                .withKeyspaceName(myKeyspaceName)
-                .build();
-
-        assertEquals(ConsistencyLevel.LOCAL_SERIAL, myLockFactory.getSerialConsistencyLevel());
-
-    }
-
-    public void testSerialConsistency(){
-        NativeConnectionProvider connectionProviderMock = mock(NativeConnectionProvider.class);
-        
-        when(connectionProviderMock.getSerialConsistency()).thenReturn("SERIAL");
-        
-        myLockFactory = new CASLockFactory.Builder()
-                .withNativeConnectionProvider(getNativeConnectionProvider())
-                .withHostStates(hostStates)
-                .withStatementDecorator(s -> s)
-                .withKeyspaceName(myKeyspaceName)
-                .build();
-
-        assertEquals(ConsistencyLevel.SERIAL, myLockFactory.getSerialConsistencyLevel());
+                            @Override
+                            public boolean getRemoteRouting()
+                            {
+                                return true;
+                            }
+                        })
+                        .withHostStates(hostStates)
+                        .withStatementDecorator(s -> s)
+                        .withKeyspaceName(myKeyspaceName)
+                        .build());
     }
 
     private void assertPriorityListEmpty(String resource)

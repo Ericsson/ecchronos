@@ -39,17 +39,10 @@
 # Allow routing requests directly to a remote datacenter.
 # This allows locks for other datacenters to be taken in that datacenter instead of via the local datacenter.
 # If clients are prevented from connecting directly to Cassandra nodes in other sites this is not possible.
-# If remote routing is disabled and consistency serial uses the DEFAULT mode its not possible to use LOCAL_SERIAL consistency for the locking,
+# If remote routing is disabled its not possible to use LOCAL_SERIAL consistency for the locking,
 # instead SERIAL consistency will be used for those request.
 #
 * remoteRouting: true
-#
-# consistencySerial value can be DEFAULT, which means that the serial consistency for lightweight transactions is based
-# on the remoteRouting configurations. It is possible to define as LOCAL or SERIAL as well, the first one defines serial consistency
-# as LOCAL_SERIAL which requires a quorum of replicas in the local DC, also SERIAL defines a serial consistency of SERIAL
-# which requires a quorum of replicas in all DCs.
-#
-* consistencySerial: "DEFAULT"
 **jmx:**
 #
 # Host and port properties for JMX.
@@ -131,23 +124,6 @@
 # This value is a ratio between 0 -> 100% of the execution time of a repair session.
 #
 # 100% means that the executor will wait to run the next session for as long time as the previous session took.
-# The 'unwind_ratio' setting configures the wait time between repair tasks as a proportion of the previous task's execution time.
-#
-# Examples:
-# - unwind_ratio: 0
-#   Explanation: No wait time between tasks. The next task starts immediately after the previous one finishes.
-#   Total Repair Time: T1 (10s) + T2 (20s) = 30 seconds.
-#
-# - unwind_ratio: 1.0 (100%)
-#   Explanation: The wait time after each task equals its duration.
-#   Total Repair Time: T1 (10s + 10s wait) + T2 (20s + 20s wait) = 60 seconds.
-#
-# - unwind_ratio: 0.5 (50%)
-#   Explanation: The wait time is half of the task's duration.
-#   Total Repair Time: T1 (10s + 5s wait) + T2 (20s + 10s wait) = 45 seconds.
-#
-#  A higher 'unwind_ratio' reduces system load by adding longer waits, but increases total repair time.
-#  A lower 'unwind_ratio' speeds up repairs but may increase system load.
 #
 * unwind_ratio: 0.0
 #

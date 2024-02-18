@@ -32,7 +32,6 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
 
     private Class<? extends StatementDecorator> myDecoratorClass = NoopStatementDecorator.class;
     private boolean myRemoteRouting = true;
-    private String myConsistencySerial = "DEFAULT";
 
     public NativeConnection()
     {
@@ -73,18 +72,6 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
     public final void setRemoteRouting(final boolean remoteRouting)
     {
         myRemoteRouting = remoteRouting;
-    }
-
-    @JsonProperty("consistencySerial")
-    public final String getConsistencySerial()
-    {
-        return myConsistencySerial;
-    }
-
-    @JsonProperty("consistencySerial")
-    public final void setConsistencySerial(final String consistencySerial)
-    {
-        myConsistencySerial = consistencySerial;
     }
 
     @Override

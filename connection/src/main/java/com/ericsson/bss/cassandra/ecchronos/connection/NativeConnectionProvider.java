@@ -31,8 +31,6 @@ public interface NativeConnectionProvider extends Closeable
 
     boolean getRemoteRouting();
 
-    String getSerialConsistency();
-
     @Override
     default void close() throws IOException
     {

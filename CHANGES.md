@@ -2,11 +2,10 @@
 
 ## Version 5.0.1 (Not yet released)
 
-* Separate serial consistency configuration from remoteRouting functionality - Issue #633
 * Improve hang preventing task - Issue #544
 * Improve Description of unwind_ratio - Issue #628  
 
-## Version 5.0.0
+## Version 5.0.0 (Not yet released)
 
 * Build Ecchronos with Java 11 - Issue 616
 * Bump logback from 1.2.10 to 1.2.13 (CVE-2023-6378) - Issue #622

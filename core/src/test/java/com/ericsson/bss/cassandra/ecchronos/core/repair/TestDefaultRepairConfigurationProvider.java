@@ -101,11 +101,6 @@ public class TestDefaultRepairConfigurationProvider
             {
                 return true;
             }
-
-            @Override
-            public String getSerialConsistency(){
-                return "DEFAULT";
-            }
         };
 
         when(session.getMetadata()).thenReturn(metadata);

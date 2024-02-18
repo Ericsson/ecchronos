@@ -52,7 +52,6 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
         String host = nativeConfig.getHost();
         int port = nativeConfig.getPort();
         boolean remoteRouting = nativeConfig.getRemoteRouting();
-        String consistencySerial = nativeConfig.getConsistencySerial();
         Security.CqlSecurity cqlSecurity = cqlSecuritySupplier.get();
         boolean authEnabled = cqlSecurity.getCqlCredentials().isEnabled();
         boolean tlsEnabled = cqlSecurity.getCqlTlsConfig().isEnabled();
@@ -74,7 +73,6 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
                 .withLocalhost(host)
                 .withPort(port)
                 .withRemoteRouting(remoteRouting)
-                .withConsistencySerial(consistencySerial)
                 .withAuthProvider(authProvider)
                 .withSslEngineFactory(sslEngineFactory)
                 .withMetricsEnabled(config.getStatisticsConfig().isEnabled())
@@ -147,12 +145,6 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
     public final boolean getRemoteRouting()
     {
         return myLocalNativeConnectionProvider.getRemoteRouting();
-    }
-
-    @Override
-    public final String getSerialConsistency()
-    {
-        return myLocalNativeConnectionProvider.getSerialConsistency();
     }
 
     @Override

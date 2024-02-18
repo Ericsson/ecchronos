@@ -50,13 +50,11 @@ public class OSGiLocalNativeConnectionProvider implements NativeConnectionProvid
         String localhost = configuration.localHost();
         int port = configuration.nativePort();
         boolean remoteRouting = configuration.remoteRouting();
-        String serialConsistency = configuration.serialConsistency();
 
         LocalNativeConnectionProvider.Builder builder = LocalNativeConnectionProvider.builder()
                 .withLocalhost(localhost)
                 .withPort(port)
-                .withRemoteRouting(remoteRouting)
-                .withConsistencySerial(serialConsistency);
+                .withRemoteRouting(remoteRouting);
 
         if (!configuration.credentialsFile().isEmpty())
         {
@@ -102,12 +100,6 @@ public class OSGiLocalNativeConnectionProvider implements NativeConnectionProvid
         return myDelegateNativeConnectionProvider.getRemoteRouting();
     }
 
-    @Override
-    public final String getSerialConsistency()
-    {
-        return myDelegateNativeConnectionProvider.getSerialConsistency();
-    }
-
     @ObjectClassDefinition
     public @interface Configuration
     {
@@ -125,8 +117,5 @@ public class OSGiLocalNativeConnectionProvider implements NativeConnectionProvid
 
         @AttributeDefinition(name = "Remote routing", description = "Enables remote routing between datacenters")
         boolean remoteRouting() default true;
-
-        @AttributeDefinition(name = "Serial consistency", description = "Define serial consistency level used")
-        String serialConsistency() default "DEFAULT";
     }
 }
