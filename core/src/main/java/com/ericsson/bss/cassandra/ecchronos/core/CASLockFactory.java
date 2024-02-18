@@ -102,6 +102,7 @@ public final class CASLockFactory implements LockFactory, Closeable
     private final StatementDecorator myStatementDecorator;
     private final HostStates myHostStates;
     private final boolean myRemoteRouting;
+    private final String mySerialConsistency;
 
     private final CqlSession mySession;
     private final String myKeyspaceName;
@@ -114,6 +115,8 @@ public final class CASLockFactory implements LockFactory, Closeable
     private final PreparedStatement myRemoveLockPriorityStatement;
     private final CASLockFactoryCacheContext myCasLockFactoryCacheContext;
 
+    private final ConsistencyLevel serialConsistencyLevel;
+
     private CASLockFactory(final Builder builder)
     {
         myStatementDecorator = builder.myStatementDecorator;
@@ -124,12 +127,23 @@ public final class CASLockFactory implements LockFactory, Closeable
 
         mySession = builder.myNativeConnectionProvider.getSession();
         myRemoteRouting = builder.myNativeConnectionProvider.getRemoteRouting();
+        mySerialConsistency = builder.myNativeConnectionProvider.getSerialConsistency();
 
         verifySchemasExists();
 
-        ConsistencyLevel serialConsistencyLevel = myRemoteRouting
+        if (mySerialConsistency.equals("DEFAULT"))
+        {
+            serialConsistencyLevel = myRemoteRouting
                 ? ConsistencyLevel.LOCAL_SERIAL
                 : ConsistencyLevel.SERIAL;
+        }
+        else
+        {
+            serialConsistencyLevel = mySerialConsistency.equals("LOCAL")
+                ? ConsistencyLevel.LOCAL_SERIAL
+                : ConsistencyLevel.SERIAL;
+        }
+
         SimpleStatement insertLockStatement = QueryBuilder.insertInto(myKeyspaceName, TABLE_LOCK)
                 .value(COLUMN_RESOURCE, bindMarker())
                 .value(COLUMN_NODE, bindMarker())
@@ -318,6 +332,12 @@ public final class CASLockFactory implements LockFactory, Closeable
     UUID getHostId()
     {
         return myUuid;
+    }
+
+    @VisibleForTesting
+    ConsistencyLevel getSerialConsistencyLevel()
+    {
+        return serialConsistencyLevel;
     }
 
     @VisibleForTesting

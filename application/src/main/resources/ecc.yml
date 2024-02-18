@@ -53,10 +53,17 @@ connection:
     ## Allow routing requests directly to a remote datacenter.
     ## This allows locks for other datacenters to be taken in that datacenter instead of via the local datacenter.
     ## If clients are prevented from connecting directly to Cassandra nodes in other sites this is not possible.
-    ## If remote routing is disabled its not possible to use LOCAL_SERIAL consistency for the locking,
+    ## If remote routing is disabled and consistency serial uses the DEFAULT mode its not possible to use LOCAL_SERIAL consistency for the locking,
     ## instead SERIAL consistency will be used for those request.
     ##
     remoteRouting: true
+    ##
+    # consistencySerial value can be DEFAULT, which means that the serial consistency for lightweight transactions is based
+    # on the remoteRouting configurations. It is possible to define as LOCAL or SERIAL as well, the first one defines serial consistency
+    # as LOCAL_SERIAL which requires a quorum of replicas in the local DC, also SERIAL defines a serial consistency of SERIAL
+    # which requires a quorum of replicas in all DCs.
+    ##
+    consistencySerial: "DEFAULT"
   jmx:
     ##
     ## Host and port properties for JMX.
