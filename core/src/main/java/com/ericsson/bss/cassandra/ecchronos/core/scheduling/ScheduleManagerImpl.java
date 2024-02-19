@@ -66,7 +66,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         if (job != null)
         {
             String jobId = job.getId().toString();
-            return "Job ID: " + jobId + ", Status: " + "Running";
+            return "Job ID: " + jobId + ", Status: Running";
         }
         else
         {
