@@ -2,6 +2,8 @@
 
 ## Version 4.0.6 (Not yet released)
 
+* Separate serial consistency configuration from remoteRouting functionality - Issue #633
+
 ### Merged from 1.2
 
 * Fix calculation of tokens per repair - Issue #570

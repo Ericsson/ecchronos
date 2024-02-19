@@ -71,12 +71,18 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
     private final CqlSession mySession;
     private final Node myLocalNode;
     private final boolean myRemoteRouting;
+    private final String mySerialConsistencyLevel;
 
-    private LocalNativeConnectionProvider(final CqlSession session, final Node node, final boolean remoteRouting)
+    private LocalNativeConnectionProvider(
+        final CqlSession session,
+        final Node node,
+        final boolean remoteRouting,
+        final String serialConsistencyLevel)
     {
         mySession = session;
         myLocalNode = node;
         myRemoteRouting = remoteRouting;
+        mySerialConsistencyLevel = serialConsistencyLevel;
     }
 
     @Override
@@ -98,6 +104,12 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
     }
 
     @Override
+    public String getSerialConsistency()
+    {
+        return mySerialConsistencyLevel;
+    }
+
+    @Override
     public void close()
     {
         mySession.close();
@@ -115,6 +127,7 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
         private String myLocalhost = DEFAULT_LOCAL_HOST;
         private int myPort = DEFAULT_NATIVE_PORT;
         private boolean myRemoteRouting = true;
+        private String mySerialConsistency = "DEFAULT";
         private boolean myIsMetricsEnabled = true;
         private AuthProvider myAuthProvider = null;
         private SslEngineFactory mySslEngineFactory = null;
@@ -136,6 +149,12 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
         public final Builder withRemoteRouting(final boolean remoteRouting)
         {
             myRemoteRouting = remoteRouting;
+            return this;
+        }
+
+        public final Builder withConsistencySerial(final String serialConsistency)
+        {
+            mySerialConsistency = serialConsistency;
             return this;
         }
 
@@ -173,7 +192,7 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
         {
             CqlSession session = createSession(this);
             Node node = resolveLocalhost(session, localEndPoint());
-            return new LocalNativeConnectionProvider(session, node, myRemoteRouting);
+            return new LocalNativeConnectionProvider(session, node, myRemoteRouting, mySerialConsistency);
         }
 
         private EndPoint localEndPoint()

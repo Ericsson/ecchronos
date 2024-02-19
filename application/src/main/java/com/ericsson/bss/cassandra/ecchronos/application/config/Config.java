@@ -34,6 +34,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.ApplicationContext;
 
@@ -324,6 +325,7 @@ public class Config
 
         private Class<? extends StatementDecorator> decoratorClass = NoopStatementDecorator.class;
         private boolean remoteRouting = true;
+        private String consistencySerial = "DEFAULT";
 
         public NativeConnection()
         {
@@ -360,6 +362,16 @@ public class Config
         public final void setRemoteRouting(final boolean aRemoteRouting)
         {
             this.remoteRouting = aRemoteRouting;
+        }
+
+        public final String getConsistencySerial()
+        {
+            return consistencySerial;
+        }
+
+        public final void setConsistencySerial(final String aConsistencySerial)
+        {
+            this.consistencySerial = aConsistencySerial;
         }
 
         @Override
