@@ -79,7 +79,8 @@ public abstract class AbstractCassandraTest
             }
 
             @Override
-            public String getSerialConsistency(){
+            public String getSerialConsistency()
+            {
                 return "DEFAULT";
             }
         };

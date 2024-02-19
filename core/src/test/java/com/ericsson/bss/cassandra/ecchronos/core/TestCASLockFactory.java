@@ -382,7 +382,8 @@ public class TestCASLockFactory extends AbstractCassandraTest
                             }
 
                             @Override
-                            public String getSerialConsistency(){
+                            public String getSerialConsistency()
+                            {
                                 return "DEFAULT";
                             }
                         })
@@ -393,7 +394,8 @@ public class TestCASLockFactory extends AbstractCassandraTest
     }
 
     @Test
-    public void testRemoteRoutingTrueWithDefaultSerialConsistency() {
+    public void testRemoteRoutingTrueWithDefaultSerialConsistency()
+    {
 
         myLockFactory = new CASLockFactory.Builder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
@@ -407,7 +409,8 @@ public class TestCASLockFactory extends AbstractCassandraTest
     }
 
     @Test
-    public void testRemoteRoutingFalseWithDefaultSerialConsistency() {
+    public void testRemoteRoutingFalseWithDefaultSerialConsistency()
+    {
 
         Node nodeMock = mock(Node.class);
         
@@ -432,7 +435,8 @@ public class TestCASLockFactory extends AbstractCassandraTest
     }
 
     @Test
-    public void testLocalSerialConsistency(){
+    public void testLocalSerialConsistency()
+    {
 
         NativeConnectionProvider connectionProviderMock = mock(NativeConnectionProvider.class);
 
@@ -456,7 +460,8 @@ public class TestCASLockFactory extends AbstractCassandraTest
     }
 
     @Test
-    public void testSerialConsistency(){
+    public void testSerialConsistency()
+    {
         NativeConnectionProvider connectionProviderMock = mock(NativeConnectionProvider.class);
         
         Node nodeMock = mock(Node.class);

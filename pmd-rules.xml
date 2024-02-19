@@ -30,10 +30,10 @@
         <exclude name="DataClass" />
         <exclude name="ExcessiveImports" />
         <exclude name="AvoidUncheckedExceptionsInSignatures" />
-        <exclude name="GodClass" />
-        <exclude name="TooManyFields" />
-        <exclude name="SingularField" />
-        <exclude name="ExcessiveMethodLength" />
+        <exclude name="GodClass" /> <!-- Should consider fixing this -->
+        <exclude name="TooManyFields" /> <!-- Should consider fixing this -->
+        <exclude name="SingularField" /> <!-- Should consider fixing this -->
+        <exclude name="ExcessiveMethodLength" /> <!-- Should consider fixing this -->
     </rule>
 
     <rule ref="category/java/bestpractices.xml">

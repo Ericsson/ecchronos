@@ -103,7 +103,8 @@ public class TestDefaultRepairConfigurationProvider
             }
 
             @Override
-            public String getSerialConsistency(){
+            public String getSerialConsistency()
+            {
                 return "DEFAULT";
             }
         };
