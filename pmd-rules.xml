@@ -30,6 +30,8 @@
         <exclude name="DataClass" />
         <exclude name="ExcessiveImports" />
         <exclude name="AvoidUncheckedExceptionsInSignatures" />
+        <exclude name="TooManyFields" />
+        <exclude name="SingularField" />
     </rule>
 
     <rule ref="category/java/bestpractices.xml">
