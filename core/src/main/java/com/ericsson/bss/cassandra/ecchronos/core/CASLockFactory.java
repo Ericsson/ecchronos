@@ -82,6 +82,7 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
  * WITH default_time_to_live = 600 AND gc_grace_seconds = 0;
  * </pre>
  */
+@SuppressWarnings({"GodClass", "TooManyFields", "SingularField", "ExcessiveMethodLength"})
 public final class CASLockFactory implements LockFactory, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CASLockFactory.class);
