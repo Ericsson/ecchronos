@@ -73,11 +73,7 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
     private final Node myLocalNode;
     private final boolean myRemoteRouting;
 
-    private LocalNativeConnectionProvider(
-        final CqlSession session,
-        final Node node,
-        final boolean remoteRouting
-        )
+    private LocalNativeConnectionProvider(final CqlSession session, final Node node, final boolean remoteRouting)
     {
         mySession = session;
         myLocalNode = node;

@@ -21,10 +21,8 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.micrometer.core.instrument.MeterRegistry;
-
 
 import java.util.function.Supplier;
 

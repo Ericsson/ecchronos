@@ -25,7 +25,6 @@ import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.NativeConnection;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
-
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
