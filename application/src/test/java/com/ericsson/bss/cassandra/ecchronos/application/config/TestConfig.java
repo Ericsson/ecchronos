@@ -32,6 +32,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurati
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ConsistencyType;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
@@ -71,7 +72,6 @@ public class TestConfig
         assertThat(nativeConnection.getHost()).isEqualTo("127.0.0.2");
         assertThat(nativeConnection.getPort()).isEqualTo(9100);
         assertThat(nativeConnection.getRemoteRouting()).isFalse();
-        assertThat(nativeConnection.getConsistencySerial().equals("LOCAL")).isTrue();
         assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.SECONDS)).isEqualTo(5);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(TestNativeConnectionProvider.class);
         assertThat(nativeConnection.getCertificateHandlerClass()).isEqualTo(TestCertificateHandler.class);
@@ -136,6 +136,7 @@ public class TestConfig
 
         Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecc");
+        assertThat(lockFactoryConfig.getCas().getConsistencySerial().equals(ConsistencyType.LOCAL)).isTrue();
 
         Config.RunPolicyConfig runPolicyConfig = config.getRunPolicy();
         assertThat(runPolicyConfig.getTimeBased().getKeyspace()).isEqualTo("ecc");
@@ -164,7 +165,6 @@ public class TestConfig
         assertThat(nativeConnection.getHost()).isEqualTo("localhost");
         assertThat(nativeConnection.getPort()).isEqualTo(9042);
         assertThat(nativeConnection.getRemoteRouting()).isTrue();
-        assertThat(nativeConnection.getConsistencySerial().equals("DEFAULT")).isTrue();
         assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS)).isEqualTo(0);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(DefaultNativeConnectionProvider.class);
         assertThat(nativeConnection.getCertificateHandlerClass()).isEqualTo(ReloadingCertificateHandler.class);
@@ -220,6 +220,7 @@ public class TestConfig
 
         Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecchronos");
+        assertThat(lockFactoryConfig.getCas().getConsistencySerial().equals(ConsistencyType.DEFAULT)).isTrue();
 
         Config.RunPolicyConfig runPolicyConfig = config.getRunPolicy();
         assertThat(runPolicyConfig.getTimeBased().getKeyspace()).isEqualTo("ecchronos");
@@ -248,7 +249,6 @@ public class TestConfig
         assertThat(nativeConnection.getHost()).isEqualTo("localhost");
         assertThat(nativeConnection.getPort()).isEqualTo(9042);
         assertThat(nativeConnection.getRemoteRouting()).isTrue();
-        assertThat(nativeConnection.getConsistencySerial().equals("DEFAULT")).isTrue();
         assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS)).isEqualTo(0);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(DefaultNativeConnectionProvider.class);
         assertThat(nativeConnection.getCertificateHandlerClass()).isEqualTo(ReloadingCertificateHandler.class);
@@ -303,6 +303,7 @@ public class TestConfig
 
         Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecchronos");
+        assertThat(lockFactoryConfig.getCas().getConsistencySerial().equals(ConsistencyType.DEFAULT)).isTrue();
 
         Config.RunPolicyConfig runPolicyConfig = config.getRunPolicy();
         assertThat(runPolicyConfig.getTimeBased().getKeyspace()).isEqualTo("ecchronos");
@@ -354,12 +355,6 @@ public class TestConfig
 
         @Override
         public boolean getRemoteRouting()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public String getSerialConsistency()
         {
             throw new UnsupportedOperationException();
         }

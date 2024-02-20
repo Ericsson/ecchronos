@@ -62,6 +62,7 @@ import org.junit.Test;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory.DistributedLock;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ConsistencyType;
 
 import net.jcip.annotations.NotThreadSafe;
 import org.junit.runner.RunWith;
@@ -362,11 +363,6 @@ public class TestCASLockFactory extends AbstractCassandraTest
                             {
                                 return true;
                             }
-
-                            @Override
-                            public String getSerialConsistency(){
-                                return "DEFAULT";
-                            }
                         })
                         .withHostStates(hostStates)
                         .withStatementDecorator(s -> s)
@@ -375,13 +371,25 @@ public class TestCASLockFactory extends AbstractCassandraTest
     }
 
     @Test
-    public void testRemoteRoutingTrueWithDefaultSerialConsistency() {
+    public void testRemoteRoutingTrueWithDefaultSerialConsistency()
+    {
+
+        Node nodeMock = mock(Node.class);
+
+        NativeConnectionProvider connectionProviderMock = mock(NativeConnectionProvider.class);
+
+        when(connectionProviderMock.getSession()).thenReturn(mySession);
+
+        when(connectionProviderMock.getLocalNode()).thenReturn(nodeMock);
+
+        when(connectionProviderMock.getRemoteRouting()).thenReturn(true);
 
         myLockFactory = new CASLockFactory.Builder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(hostStates)
                 .withStatementDecorator(s -> s)
                 .withKeyspaceName(myKeyspaceName)
+                .withConsistencySerial(ConsistencyType.DEFAULT)
                 .build();
 
 
@@ -389,7 +397,8 @@ public class TestCASLockFactory extends AbstractCassandraTest
     }
 
     @Test
-    public void testRemoteRoutingFalseWithDefaultSerialConsistency() {
+    public void testRemoteRoutingFalseWithDefaultSerialConsistency()
+    {
 
         Node nodeMock = mock(Node.class);
 
@@ -401,26 +410,24 @@ public class TestCASLockFactory extends AbstractCassandraTest
 
         when(connectionProviderMock.getRemoteRouting()).thenReturn(false);
 
-        when(connectionProviderMock.getSerialConsistency()).thenReturn("DEFAULT");
-
         myLockFactory = new CASLockFactory.Builder()
                 .withNativeConnectionProvider(connectionProviderMock)
                 .withHostStates(hostStates)
                 .withStatementDecorator(s -> s)
                 .withKeyspaceName(myKeyspaceName)
+                .withConsistencySerial(ConsistencyType.DEFAULT)
                 .build();
 
         assertEquals(ConsistencyLevel.SERIAL, myLockFactory.getSerialConsistencyLevel());
     }
 
     @Test
-    public void testLocalSerialConsistency(){
+    public void testLocalSerialConsistency()
+    {
 
         NativeConnectionProvider connectionProviderMock = mock(NativeConnectionProvider.class);
 
         Node nodeMock = mock(Node.class);
-
-        when(connectionProviderMock.getSerialConsistency()).thenReturn("LOCAL");
 
         when(connectionProviderMock.getSession()).thenReturn(mySession);
 
@@ -431,6 +438,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
                 .withHostStates(hostStates)
                 .withStatementDecorator(s -> s)
                 .withKeyspaceName(myKeyspaceName)
+                .withConsistencySerial(ConsistencyType.LOCAL)
                 .build();
 
         assertEquals(ConsistencyLevel.LOCAL_SERIAL, myLockFactory.getSerialConsistencyLevel());
@@ -438,12 +446,11 @@ public class TestCASLockFactory extends AbstractCassandraTest
     }
 
     @Test
-    public void testSerialConsistency(){
+    public void testSerialConsistency()
+    {
         NativeConnectionProvider connectionProviderMock = mock(NativeConnectionProvider.class);
 
         Node nodeMock = mock(Node.class);
-
-        when(connectionProviderMock.getSerialConsistency()).thenReturn("SERIAL");
 
         when(connectionProviderMock.getSession()).thenReturn(mySession);
 
@@ -454,6 +461,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
                 .withHostStates(hostStates)
                 .withStatementDecorator(s -> s)
                 .withKeyspaceName(myKeyspaceName)
+                .withConsistencySerial(ConsistencyType.SERIAL)
                 .build();
 
         assertEquals(ConsistencyLevel.SERIAL, myLockFactory.getSerialConsistencyLevel());

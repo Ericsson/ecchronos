@@ -32,6 +32,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ConsistencyType;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
@@ -80,6 +81,7 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
  * WITH default_time_to_live = 600 AND gc_grace_seconds = 0;
  * </pre>
  */
+@SuppressWarnings({"PMD.GodClass", "PMD.TooManyFields", "PMD.SingularField", "PMD.ExcessiveMethodLength"})
 public final class CASLockFactory implements LockFactory, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CASLockFactory.class);
@@ -104,7 +106,7 @@ public final class CASLockFactory implements LockFactory, Closeable
     private final StatementDecorator myStatementDecorator;
     private final HostStates myHostStates;
     private final boolean myRemoteRouting;
-    private final String mySerialConsistency;
+    private final ConsistencyType mySerialConsistency;
 
     private final CqlSession mySession;
     private final String myKeyspaceName;
@@ -130,11 +132,11 @@ public final class CASLockFactory implements LockFactory, Closeable
 
         mySession = builder.myNativeConnectionProvider.getSession();
         myRemoteRouting = builder.myNativeConnectionProvider.getRemoteRouting();
-        mySerialConsistency = builder.myNativeConnectionProvider.getSerialConsistency();
+        mySerialConsistency = builder.myConsistencyType;
 
         verifySchemasExists();
 
-        if ("DEFAULT".equals(mySerialConsistency))
+        if (ConsistencyType.DEFAULT.equals(mySerialConsistency))
         {
             serialConsistencyLevel = myRemoteRouting
                 ? ConsistencyLevel.LOCAL_SERIAL
@@ -142,10 +144,11 @@ public final class CASLockFactory implements LockFactory, Closeable
         }
         else
         {
-            serialConsistencyLevel = "LOCAL".equals(mySerialConsistency)
+            serialConsistencyLevel = ConsistencyType.LOCAL.equals(mySerialConsistency)
                 ? ConsistencyLevel.LOCAL_SERIAL
                 : ConsistencyLevel.SERIAL;
         }
+
         SimpleStatement insertLockStatement = QueryBuilder.insertInto(myKeyspaceName, TABLE_LOCK)
                 .value(COLUMN_RESOURCE, bindMarker())
                 .value(COLUMN_NODE, bindMarker())
@@ -317,6 +320,7 @@ public final class CASLockFactory implements LockFactory, Closeable
         private HostStates myHostStates;
         private StatementDecorator myStatementDecorator;
         private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
+        private ConsistencyType myConsistencyType;
 
         public final Builder withNativeConnectionProvider(final NativeConnectionProvider nativeConnectionProvider)
         {
@@ -339,6 +343,12 @@ public final class CASLockFactory implements LockFactory, Closeable
         public final Builder withKeyspaceName(final String keyspaceName)
         {
             myKeyspaceName = keyspaceName;
+            return this;
+        }
+
+        public final Builder withConsistencySerial(final ConsistencyType consistencyType)
+        {
+            myConsistencyType = consistencyType;
             return this;
         }
 

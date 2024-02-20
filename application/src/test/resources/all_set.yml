@@ -24,7 +24,6 @@ connection:
     certificateHandler: com.ericsson.bss.cassandra.ecchronos.application.config.TestConfig$TestCertificateHandler
     decoratorClass: com.ericsson.bss.cassandra.ecchronos.application.config.TestConfig$TestStatementDecorator
     remoteRouting: false
-    consistencySerial: "LOCAL"
   jmx:
     host: 127.0.0.3
     port: 7100
@@ -77,6 +76,7 @@ statistics:
 lock_factory:
   cas:
     keyspace: ecc
+    consistencySerial: "LOCAL"
 
 run_policy:
   time_based:

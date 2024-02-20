@@ -42,6 +42,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ConsistencyType;
 
 @SuppressWarnings({"checkstyle:methodname", "checkstyle:membername"})
 public class Config
@@ -325,7 +326,6 @@ public class Config
 
         private Class<? extends StatementDecorator> decoratorClass = NoopStatementDecorator.class;
         private boolean remoteRouting = true;
-        private String consistencySerial = "DEFAULT";
 
         public NativeConnection()
         {
@@ -362,16 +362,6 @@ public class Config
         public final void setRemoteRouting(final boolean aRemoteRouting)
         {
             this.remoteRouting = aRemoteRouting;
-        }
-
-        public final String getConsistencySerial()
-        {
-            return consistencySerial;
-        }
-
-        public final void setConsistencySerial(final String aConsistencySerial)
-        {
-            this.consistencySerial = aConsistencySerial;
         }
 
         @Override
@@ -747,6 +737,7 @@ public class Config
     public static class CasLockFactoryConfig
     {
         private String keyspace = "ecchronos";
+        private ConsistencyType consistencySerial = ConsistencyType.DEFAULT;
 
         public final String getKeyspace()
         {
@@ -757,7 +748,17 @@ public class Config
         {
             this.keyspace = aKeyspace;
         }
-    }
+
+        public final ConsistencyType getConsistencySerial()
+        {
+            return consistencySerial;
+        }
+
+        public final void setConsistencySerial(final String aConsistencySerial)
+        {
+            consistencySerial = ConsistencyType.valueOf(aConsistencySerial.toUpperCase(Locale.US));
+        }
+        }
 
     public static class RunPolicyConfig
     {

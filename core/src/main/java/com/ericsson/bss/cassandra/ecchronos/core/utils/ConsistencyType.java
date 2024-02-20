@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Telefonaktiebolaget LM Ericsson
+ * Copyright 2024 Telefonaktiebolaget LM Ericsson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,27 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.connection;
+package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.metadata.Node;
-
-import java.io.Closeable;
-import java.io.IOException;
-
-/**
- * Provider for native connections.
- */
-public interface NativeConnectionProvider extends Closeable
+public enum ConsistencyType
 {
-    CqlSession getSession();
-
-    Node getLocalNode();
-
-    boolean getRemoteRouting();
-
-    @Override
-    default void close() throws IOException
-    {
-    }
+    DEFAULT,
+    LOCAL,
+    SERIAL
 }
