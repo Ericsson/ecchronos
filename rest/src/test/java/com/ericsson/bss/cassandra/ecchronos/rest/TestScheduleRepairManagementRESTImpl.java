@@ -70,7 +70,7 @@ public class TestScheduleRepairManagementRESTImpl
         UUID jobId = UUID.randomUUID();
         String t = "Job ID: " + jobId + ", Status: Running";
         when(myRepairScheduler.getCurrentJobStatus()).thenReturn(t);
-        assertThat( myRepairScheduler.getCurrentJobStatus()).isEqualTo(t);
+        assertThat(myRepairScheduler.getCurrentJobStatus()).isEqualTo(t);
     }
 
     @Test
@@ -78,7 +78,7 @@ public class TestScheduleRepairManagementRESTImpl
     {
         String t =  "No job is currently running";
         when(myRepairScheduler.getCurrentJobStatus()).thenReturn(t);
-        assertThat( myRepairScheduler.getCurrentJobStatus()).isEqualTo(t);
+        assertThat(myRepairScheduler.getCurrentJobStatus()).isEqualTo(t);
     }
 
     @Test
