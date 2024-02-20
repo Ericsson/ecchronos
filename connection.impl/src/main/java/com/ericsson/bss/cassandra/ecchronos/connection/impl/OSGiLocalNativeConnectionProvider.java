@@ -127,6 +127,6 @@ public class OSGiLocalNativeConnectionProvider implements NativeConnectionProvid
         boolean remoteRouting() default true;
 
         @AttributeDefinition(name = "Serial consistency", description = "Define serial consistency level used")
-        String serialConsistency() default "DEFAULT";
+        String serialConsistency() default LocalNativeConnectionProvider.DEFAUL_CONSISTENCY_TYPE;
     }
 }

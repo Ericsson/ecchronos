@@ -21,6 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ConsistencyType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.micrometer.core.instrument.MeterRegistry;
 
@@ -32,7 +33,7 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
 
     private Class<? extends StatementDecorator> myDecoratorClass = NoopStatementDecorator.class;
     private boolean myRemoteRouting = true;
-    private String myConsistencySerial = "DEFAULT";
+    private String myConsistencySerial = ConsistencyType.DEFAULT.getStringValue();
 
     public NativeConnection()
     {

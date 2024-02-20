@@ -68,6 +68,7 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
 
     public static final int DEFAULT_NATIVE_PORT = 9042;
     public static final String DEFAULT_LOCAL_HOST = "localhost";
+    public static final String DEFAUL_CONSISTENCY_TYPE = "DEFAULT";
 
     private final CqlSession mySession;
     private final Node myLocalNode;
@@ -129,7 +130,7 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
         private String myLocalhost = DEFAULT_LOCAL_HOST;
         private int myPort = DEFAULT_NATIVE_PORT;
         private boolean myRemoteRouting = true;
-        private String mySerialConsistency = "DEFAULT";
+        private String mySerialConsistency = DEFAUL_CONSISTENCY_TYPE;
         private boolean myIsMetricsEnabled = true;
         private AuthProvider myAuthProvider = null;
         private SslEngineFactory mySslEngineFactory = null;

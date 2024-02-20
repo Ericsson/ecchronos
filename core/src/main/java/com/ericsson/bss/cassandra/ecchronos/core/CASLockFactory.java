@@ -34,6 +34,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ConsistencyType;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
@@ -82,7 +83,7 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
  * WITH default_time_to_live = 600 AND gc_grace_seconds = 0;
  * </pre>
  */
-@SuppressWarnings({"GodClass", "TooManyFields", "SingularField", "ExcessiveMethodLength"})
+@SuppressWarnings({"PMD.GodClass", "PMD.TooManyFields", "PMD.SingularField", "PMD.ExcessiveMethodLength"})
 public final class CASLockFactory implements LockFactory, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CASLockFactory.class);
@@ -132,7 +133,7 @@ public final class CASLockFactory implements LockFactory, Closeable
 
         verifySchemasExists();
 
-        if ("DEFAULT".equals(mySerialConsistency))
+        if (ConsistencyType.DEFAULT.getStringValue().equals(mySerialConsistency))
         {
             serialConsistencyLevel = myRemoteRouting
                 ? ConsistencyLevel.LOCAL_SERIAL
@@ -140,7 +141,7 @@ public final class CASLockFactory implements LockFactory, Closeable
         }
         else
         {
-            serialConsistencyLevel = "LOCAL".equals(mySerialConsistency)
+            serialConsistencyLevel = ConsistencyType.LOCAL.getStringValue().equals(mySerialConsistency)
                 ? ConsistencyLevel.LOCAL_SERIAL
                 : ConsistencyLevel.SERIAL;
         }
