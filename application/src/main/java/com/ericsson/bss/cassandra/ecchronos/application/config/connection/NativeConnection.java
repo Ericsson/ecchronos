@@ -21,9 +21,10 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.ConsistencyType;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.micrometer.core.instrument.MeterRegistry;
+
 
 import java.util.function.Supplier;
 
@@ -33,7 +34,6 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
 
     private Class<? extends StatementDecorator> myDecoratorClass = NoopStatementDecorator.class;
     private boolean myRemoteRouting = true;
-    private String myConsistencySerial = ConsistencyType.DEFAULT.getStringValue();
 
     public NativeConnection()
     {
@@ -74,18 +74,6 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
     public final void setRemoteRouting(final boolean remoteRouting)
     {
         myRemoteRouting = remoteRouting;
-    }
-
-    @JsonProperty("consistencySerial")
-    public final String getConsistencySerial()
-    {
-        return myConsistencySerial;
-    }
-
-    @JsonProperty("consistencySerial")
-    public final void setConsistencySerial(final String consistencySerial)
-    {
-        myConsistencySerial = consistencySerial;
     }
 
     @Override

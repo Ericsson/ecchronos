@@ -22,6 +22,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ConsistencyType;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
@@ -100,12 +101,6 @@ public class TestDefaultRepairConfigurationProvider
             public boolean getRemoteRouting()
             {
                 return true;
-            }
-
-            @Override
-            public String getSerialConsistency()
-            {
-                return "DEFAULT";
             }
         };
 

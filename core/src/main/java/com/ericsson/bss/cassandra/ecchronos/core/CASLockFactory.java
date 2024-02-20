@@ -104,7 +104,7 @@ public final class CASLockFactory implements LockFactory, Closeable
     private final StatementDecorator myStatementDecorator;
     private final HostStates myHostStates;
     private final boolean myRemoteRouting;
-    private final String mySerialConsistency;
+    private final ConsistencyType mySerialConsistency;
 
     private final CqlSession mySession;
     private final String myKeyspaceName;
@@ -129,11 +129,11 @@ public final class CASLockFactory implements LockFactory, Closeable
 
         mySession = builder.myNativeConnectionProvider.getSession();
         myRemoteRouting = builder.myNativeConnectionProvider.getRemoteRouting();
-        mySerialConsistency = builder.myNativeConnectionProvider.getSerialConsistency();
+        mySerialConsistency = builder.myConsistencyType;
 
         verifySchemasExists();
 
-        if (ConsistencyType.DEFAULT.getStringValue().equals(mySerialConsistency))
+        if (ConsistencyType.DEFAULT.equals(mySerialConsistency))
         {
             serialConsistencyLevel = myRemoteRouting
                 ? ConsistencyLevel.LOCAL_SERIAL
@@ -141,7 +141,7 @@ public final class CASLockFactory implements LockFactory, Closeable
         }
         else
         {
-            serialConsistencyLevel = ConsistencyType.LOCAL.getStringValue().equals(mySerialConsistency)
+            serialConsistencyLevel = ConsistencyType.LOCAL.equals(mySerialConsistency)
                 ? ConsistencyLevel.LOCAL_SERIAL
                 : ConsistencyLevel.SERIAL;
         }
@@ -363,6 +363,7 @@ public final class CASLockFactory implements LockFactory, Closeable
         private StatementDecorator myStatementDecorator;
         private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
         private long myCacheExpiryTimeInSeconds = DEFAULT_EXPIRY_TIME_IN_SECONDS;
+        private ConsistencyType myConsistencyType;
 
         public final Builder withNativeConnectionProvider(final NativeConnectionProvider nativeConnectionProvider)
         {
@@ -391,6 +392,12 @@ public final class CASLockFactory implements LockFactory, Closeable
         public final Builder withCacheExpiryInSeconds(final long cacheExpiryInSeconds)
         {
             myCacheExpiryTimeInSeconds = cacheExpiryInSeconds;
+            return this;
+        }
+
+        public final Builder withConsistencySerial(final ConsistencyType consistencyType)
+        {
+            myConsistencyType = consistencyType;
             return this;
         }
 
