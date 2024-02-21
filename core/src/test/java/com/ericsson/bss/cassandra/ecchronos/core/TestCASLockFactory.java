@@ -373,15 +373,11 @@ public class TestCASLockFactory extends AbstractCassandraTest
     @Test
     public void testRemoteRoutingTrueWithDefaultSerialConsistency()
     {
-
         Node nodeMock = mock(Node.class);
-
         NativeConnectionProvider connectionProviderMock = mock(NativeConnectionProvider.class);
 
         when(connectionProviderMock.getSession()).thenReturn(mySession);
-
         when(connectionProviderMock.getLocalNode()).thenReturn(nodeMock);
-
         when(connectionProviderMock.getRemoteRouting()).thenReturn(true);
 
         myLockFactory = new CASLockFactory.Builder()
@@ -392,22 +388,17 @@ public class TestCASLockFactory extends AbstractCassandraTest
                 .withConsistencySerial(ConsistencyType.DEFAULT)
                 .build();
 
-
         assertEquals(ConsistencyLevel.LOCAL_SERIAL, myLockFactory.getSerialConsistencyLevel());
     }
 
     @Test
     public void testRemoteRoutingFalseWithDefaultSerialConsistency()
     {
-
         Node nodeMock = mock(Node.class);
-
         NativeConnectionProvider connectionProviderMock = mock(NativeConnectionProvider.class);
 
         when(connectionProviderMock.getSession()).thenReturn(mySession);
-
         when(connectionProviderMock.getLocalNode()).thenReturn(nodeMock);
-
         when(connectionProviderMock.getRemoteRouting()).thenReturn(false);
 
         myLockFactory = new CASLockFactory.Builder()
@@ -424,13 +415,10 @@ public class TestCASLockFactory extends AbstractCassandraTest
     @Test
     public void testLocalSerialConsistency()
     {
-
         NativeConnectionProvider connectionProviderMock = mock(NativeConnectionProvider.class);
-
         Node nodeMock = mock(Node.class);
 
         when(connectionProviderMock.getSession()).thenReturn(mySession);
-
         when(connectionProviderMock.getLocalNode()).thenReturn(nodeMock);
 
         myLockFactory = new CASLockFactory.Builder()
@@ -442,18 +430,15 @@ public class TestCASLockFactory extends AbstractCassandraTest
                 .build();
 
         assertEquals(ConsistencyLevel.LOCAL_SERIAL, myLockFactory.getSerialConsistencyLevel());
-
     }
 
     @Test
     public void testSerialConsistency()
     {
         NativeConnectionProvider connectionProviderMock = mock(NativeConnectionProvider.class);
-
         Node nodeMock = mock(Node.class);
 
         when(connectionProviderMock.getSession()).thenReturn(mySession);
-
         when(connectionProviderMock.getLocalNode()).thenReturn(nodeMock);
 
         myLockFactory = new CASLockFactory.Builder()
