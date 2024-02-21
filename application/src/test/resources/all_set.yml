@@ -82,6 +82,7 @@ lock_factory:
   cas:
     keyspace: ecc
     cache_expiry_time_in_seconds: 100
+    consistencySerial: "LOCAL"
 
 
 run_policy:

@@ -34,6 +34,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ConsistencyType;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
@@ -82,6 +83,7 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
  * WITH default_time_to_live = 600 AND gc_grace_seconds = 0;
  * </pre>
  */
+@SuppressWarnings({"PMD.GodClass", "PMD.TooManyFields", "PMD.SingularField", "PMD.ExcessiveMethodLength"})
 public final class CASLockFactory implements LockFactory, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CASLockFactory.class);
@@ -102,7 +104,6 @@ public final class CASLockFactory implements LockFactory, Closeable
     private final StatementDecorator myStatementDecorator;
     private final HostStates myHostStates;
     private final boolean myRemoteRouting;
-
     private final CqlSession mySession;
     private final String myKeyspaceName;
     private final PreparedStatement myCompeteStatement;
@@ -113,6 +114,7 @@ public final class CASLockFactory implements LockFactory, Closeable
     private final PreparedStatement myUpdateLockStatement;
     private final PreparedStatement myRemoveLockPriorityStatement;
     private final CASLockFactoryCacheContext myCasLockFactoryCacheContext;
+    private final ConsistencyLevel mySerialConsistencyLevel;
 
     private CASLockFactory(final Builder builder)
     {
@@ -127,9 +129,19 @@ public final class CASLockFactory implements LockFactory, Closeable
 
         verifySchemasExists();
 
-        ConsistencyLevel serialConsistencyLevel = myRemoteRouting
+        if (ConsistencyType.DEFAULT.equals(builder.myConsistencyType))
+        {
+            mySerialConsistencyLevel = myRemoteRouting
                 ? ConsistencyLevel.LOCAL_SERIAL
                 : ConsistencyLevel.SERIAL;
+        }
+        else
+        {
+            mySerialConsistencyLevel = ConsistencyType.LOCAL.equals(builder.myConsistencyType)
+                ? ConsistencyLevel.LOCAL_SERIAL
+                : ConsistencyLevel.SERIAL;
+        }
+
         SimpleStatement insertLockStatement = QueryBuilder.insertInto(myKeyspaceName, TABLE_LOCK)
                 .value(COLUMN_RESOURCE, bindMarker())
                 .value(COLUMN_NODE, bindMarker())
@@ -137,14 +149,14 @@ public final class CASLockFactory implements LockFactory, Closeable
                 .ifNotExists()
                 .build()
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                .setSerialConsistencyLevel(serialConsistencyLevel);
+                .setSerialConsistencyLevel(mySerialConsistencyLevel);
 
         SimpleStatement getLockMetadataStatement = QueryBuilder.selectFrom(myKeyspaceName, TABLE_LOCK)
                 .column(COLUMN_METADATA)
                 .whereColumn(COLUMN_RESOURCE)
                 .isEqualTo(bindMarker())
                 .build()
-                .setSerialConsistencyLevel(serialConsistencyLevel);
+                .setSerialConsistencyLevel(mySerialConsistencyLevel);
 
         SimpleStatement removeLockStatement = QueryBuilder.deleteFrom(myKeyspaceName, TABLE_LOCK)
                 .whereColumn(COLUMN_RESOURCE)
@@ -153,7 +165,7 @@ public final class CASLockFactory implements LockFactory, Closeable
                 .isEqualTo(bindMarker())
                 .build()
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                .setSerialConsistencyLevel(serialConsistencyLevel);
+                .setSerialConsistencyLevel(mySerialConsistencyLevel);
 
         SimpleStatement updateLockStatement = QueryBuilder.update(myKeyspaceName, TABLE_LOCK)
                 .setColumn(COLUMN_NODE, bindMarker())
@@ -164,7 +176,7 @@ public final class CASLockFactory implements LockFactory, Closeable
                 .isEqualTo(bindMarker())
                 .build()
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                .setSerialConsistencyLevel(serialConsistencyLevel);
+                .setSerialConsistencyLevel(mySerialConsistencyLevel);
 
         SimpleStatement competeStatement = QueryBuilder.insertInto(myKeyspaceName, TABLE_LOCK_PRIORITY)
                 .value(COLUMN_RESOURCE, bindMarker())
@@ -321,6 +333,12 @@ public final class CASLockFactory implements LockFactory, Closeable
     }
 
     @VisibleForTesting
+    ConsistencyLevel getSerialConsistencyLevel()
+    {
+        return mySerialConsistencyLevel;
+    }
+
+    @VisibleForTesting
     CASLockFactoryCacheContext getCasLockFactoryCacheContext()
     {
         return myCasLockFactoryCacheContext;
@@ -341,6 +359,7 @@ public final class CASLockFactory implements LockFactory, Closeable
         private StatementDecorator myStatementDecorator;
         private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
         private long myCacheExpiryTimeInSeconds = DEFAULT_EXPIRY_TIME_IN_SECONDS;
+        private ConsistencyType myConsistencyType;
 
         public final Builder withNativeConnectionProvider(final NativeConnectionProvider nativeConnectionProvider)
         {
@@ -369,6 +388,12 @@ public final class CASLockFactory implements LockFactory, Closeable
         public final Builder withCacheExpiryInSeconds(final long cacheExpiryInSeconds)
         {
             myCacheExpiryTimeInSeconds = cacheExpiryInSeconds;
+            return this;
+        }
+
+        public final Builder withConsistencySerial(final ConsistencyType consistencyType)
+        {
+            myConsistencyType = consistencyType;
             return this;
         }
 
