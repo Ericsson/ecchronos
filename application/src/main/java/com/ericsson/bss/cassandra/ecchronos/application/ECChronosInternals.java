@@ -82,6 +82,7 @@ public class ECChronosInternals implements Closeable
                 .withHostStates(myHostStatesImpl)
                 .withStatementDecorator(statementDecorator)
                 .withKeyspaceName(configuration.getLockFactory().getCas().getKeyspace())
+                .withConsistencySerial(configuration.getLockFactory().getCas().getConsistencySerial())
                 .build();
 
         Node node = nativeConnectionProvider.getLocalNode();

@@ -34,6 +34,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.ApplicationContext;
 
@@ -41,6 +42,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ConsistencyType;
 
 @SuppressWarnings({"checkstyle:methodname", "checkstyle:membername"})
 public class Config
@@ -735,6 +737,7 @@ public class Config
     public static class CasLockFactoryConfig
     {
         private String keyspace = "ecchronos";
+        private ConsistencyType consistencySerial = ConsistencyType.DEFAULT;
 
         public final String getKeyspace()
         {
@@ -745,7 +748,17 @@ public class Config
         {
             this.keyspace = aKeyspace;
         }
-    }
+
+        public final ConsistencyType getConsistencySerial()
+        {
+            return consistencySerial;
+        }
+
+        public final void setConsistencySerial(final String aConsistencySerial)
+        {
+            consistencySerial = ConsistencyType.valueOf(aConsistencySerial.toUpperCase(Locale.US));
+        }
+        }
 
     public static class RunPolicyConfig
     {

@@ -32,6 +32,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurati
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ConsistencyType;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
@@ -135,6 +136,7 @@ public class TestConfig
 
         Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecc");
+        assertThat(lockFactoryConfig.getCas().getConsistencySerial().equals(ConsistencyType.LOCAL)).isTrue();
 
         Config.RunPolicyConfig runPolicyConfig = config.getRunPolicy();
         assertThat(runPolicyConfig.getTimeBased().getKeyspace()).isEqualTo("ecc");
@@ -218,6 +220,7 @@ public class TestConfig
 
         Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecchronos");
+        assertThat(lockFactoryConfig.getCas().getConsistencySerial().equals(ConsistencyType.DEFAULT)).isTrue();
 
         Config.RunPolicyConfig runPolicyConfig = config.getRunPolicy();
         assertThat(runPolicyConfig.getTimeBased().getKeyspace()).isEqualTo("ecchronos");
@@ -300,6 +303,7 @@ public class TestConfig
 
         Config.LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCas().getKeyspace()).isEqualTo("ecchronos");
+        assertThat(lockFactoryConfig.getCas().getConsistencySerial().equals(ConsistencyType.DEFAULT)).isTrue();
 
         Config.RunPolicyConfig runPolicyConfig = config.getRunPolicy();
         assertThat(runPolicyConfig.getTimeBased().getKeyspace()).isEqualTo("ecchronos");

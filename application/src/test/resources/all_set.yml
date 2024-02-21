@@ -76,6 +76,7 @@ statistics:
 lock_factory:
   cas:
     keyspace: ecc
+    consistencySerial: "LOCAL"
 
 run_policy:
   time_based:
