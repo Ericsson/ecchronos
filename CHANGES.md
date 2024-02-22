@@ -1,6 +1,6 @@
 # Changes
 
-## Version 4.0.6 (Not yet released)
+## Version 4.0.6
 
 * Separate serial consistency configuration from remoteRouting functionality - Issue #633
 
