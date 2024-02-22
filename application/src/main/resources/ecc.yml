@@ -53,8 +53,7 @@ connection:
     ## Allow routing requests directly to a remote datacenter.
     ## This allows locks for other datacenters to be taken in that datacenter instead of via the local datacenter.
     ## If clients are prevented from connecting directly to Cassandra nodes in other sites this is not possible.
-    ## If remote routing is disabled its not possible to use LOCAL_SERIAL consistency for the locking,
-    ## instead SERIAL consistency will be used for those request.
+    ## If remote routing is disabled, instead SERIAL consistency will be used for those request.
     ##
     remoteRouting: true
   jmx:
@@ -272,6 +271,17 @@ lock_factory:
     ## the cache expiration time is reached.
     ##
     cache_expiry_time_in_seconds: 30
+    ##
+    ## Allow to override consistency level for LWT (lightweight transactions). Possible values are:
+    ## "DEFAULT" - Use consistency level based on remoteRouting.
+    ## "SERIAL" - Use SERIAL consistency for LWT regardless of remoteRouting.
+    ## "LOCAL_SERIAL" - Use LOCAL_SERIAL consistency for LWT regardless of remoteRouting.
+    ##
+    ## if you use remoteRouting: false and LOCAL_SERIAL then all locks will be taken locally
+    ## in DC. I.e There's a risk that multiple nodes in different datacenters will be able to lock the
+    ## same nodes causing multiple repairs on the same range/node at the same time.
+    ##
+    consistencySerial: "DEFAULT"
 
 run_policy:
   time_based:
