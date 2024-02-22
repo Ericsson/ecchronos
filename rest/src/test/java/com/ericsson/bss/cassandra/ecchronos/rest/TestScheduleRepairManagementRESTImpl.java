@@ -49,7 +49,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
-
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class TestScheduleRepairManagementRESTImpl
 {
