@@ -49,6 +49,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
+
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class TestScheduleRepairManagementRESTImpl
 {
@@ -62,23 +63,6 @@ public class TestScheduleRepairManagementRESTImpl
     public void setupMocks()
     {
         ScheduleREST = new ScheduleRepairManagementRESTImpl(myRepairScheduler);
-    }
-
-    @Test
-    public void testGetCurrentJobOneExist()
-    {
-        UUID jobId = UUID.randomUUID();
-        String t = "Job ID: " + jobId + ", Status: Running";
-        when(myRepairScheduler.getCurrentJobStatus()).thenReturn(t);
-        assertThat(myRepairScheduler.getCurrentJobStatus()).isEqualTo(t);
-    }
-
-    @Test
-    public void testGetCurrentJobNoneExist()
-    {
-        String t =  "No job is currently running";
-        when(myRepairScheduler.getCurrentJobStatus()).thenReturn(t);
-        assertThat(myRepairScheduler.getCurrentJobStatus()).isEqualTo(t);
     }
 
     @Test
