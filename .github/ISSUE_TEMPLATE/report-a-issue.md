@@ -1,6 +1,6 @@
 ---
-name: Issue template
-about: Template for reporting a issue
+name: Report a issue
+about: Report a issue
 title: "[Descriptive Title of the User Story Capitalized Using Chicago style capitalization.]"
 labels: ''
 assignees: ''
