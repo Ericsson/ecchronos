@@ -9,10 +9,10 @@ assignees: ''
 
 Description:
 
-Give us a description that can answer these questions:
+_Give us a description that can answer these questions:_
 
-1- Does the problem persist?
-2- Describe how to reproduce the issue, if possible. If not, describe why.
+_1- Does the problem persist?_
+_2- Describe how to reproduce the issue, if possible. If not, describe why._
 
 Detailed description:
 • What is happening?
