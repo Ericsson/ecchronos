@@ -7,6 +7,8 @@ assignees: ''
 
 ---
 
+_[Attach log files and command results. Otherwise, it will not be possible to investigate the problem accurately.]_
+
 Description:
 
 _Give us a description that can answer these questions:_
