@@ -169,3 +169,19 @@ Looking at the example output above, the columns are:
 
 By default, repair-info fetches the information on a cluster level.
 To check the repair information for the local node use `--local` flag.
+
+## running-job
+
+In this example we will use `ecctool running-job` to check if any job is currently running. It will give one of these 
+two responses
+
+```bash
+No job is currently running
+```
+or
+
+```bash
+Job ID: x-x-x-x-x, Status: Running
+
+```
+
