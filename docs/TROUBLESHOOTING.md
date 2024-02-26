@@ -12,7 +12,7 @@ During repair operations in a cassandra instance, triggered by ecChronos, it can
 |------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
 |"Unexpected interrupt while trying to connect to Cassandra"             | Cassandra Node Overloaded, Bad Configuration on Installing, ecChronos Tables does not exists, etc. |
 |"Unable to register watch service, configuration refresh will not work" | Path Directory does not exists, File Permission disagred with request, etc.                        |
-|"Unable to get maxRepaired for {<table_reference>}"                     | Cassandra Node Overloaded, Instance Not Found, Table does not Exists Anymore, etc.                |
+|"Unable to get maxRepaired for {<table_reference>}"                     | Cassandra Node Overloaded, Instance Not Found, Table does not Exists Anymore, etc.                 |
 
 *Furthermore, one common problem is when repair is taking too much time or is overdue. This can be caused by too many vnodes, nodes going down while holding a lock and Cassandra nodes being down.*
 
@@ -32,10 +32,12 @@ If using the tools and performing debugging was not enough to determine the root
 
 Also, before opening an ISSUE, gather log files, metrics, tests carried out and open the ticket with the following format:
 
-```
+```markdown
 Title: A concise and descriptive summary of the Problem
 
 Description:
+
+It is important to contextualize the problem. Therefore, it describes the current system's behavior and its proposed correction. Additionally, it should describe ecChronos version and system configuration (Virtualized or Container) if the author has this information. This is to avoid asking the author basic questions that could have been avoided by providing more detailed information in the user story.
 
 Give us a description that can answer these questions:
 
