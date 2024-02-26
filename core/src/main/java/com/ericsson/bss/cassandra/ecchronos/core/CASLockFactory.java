@@ -30,7 +30,6 @@ import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwareStatement;
-import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
@@ -83,7 +82,7 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
  * WITH default_time_to_live = 600 AND gc_grace_seconds = 0;
  * </pre>
  */
-@SuppressWarnings({"PMD.GodClass", "PMD.TooManyFields", "PMD.SingularField", "PMD.ExcessiveMethodLength"})
+@SuppressWarnings({"PMD.GodClass", "PMD.TooManyFields", "PMD.SingularField"})
 public final class CASLockFactory implements LockFactory, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CASLockFactory.class);
@@ -98,9 +97,7 @@ public final class CASLockFactory implements LockFactory, Closeable
     private static final int DEFAULT_LOCK_TIME_IN_SECONDS = 600;
 
     private final UUID myUuid;
-
     private final ScheduledExecutorService myExecutor;
-
     private final StatementDecorator myStatementDecorator;
     private final HostStates myHostStates;
     private final boolean myRemoteRouting;
@@ -116,20 +113,20 @@ public final class CASLockFactory implements LockFactory, Closeable
     private final CASLockFactoryCacheContext myCasLockFactoryCacheContext;
     private final ConsistencyLevel mySerialConsistencyLevel;
 
-    private CASLockFactory(final Builder builder)
+    CASLockFactory(final CASLockFactoryBuilder builder)
     {
-        myStatementDecorator = builder.myStatementDecorator;
-        myHostStates = builder.myHostStates;
-        myKeyspaceName = builder.myKeyspaceName;
+        myStatementDecorator = builder.getStatementDecorator();
+        myHostStates = builder.getHostStates();
+        myKeyspaceName = builder.getKeyspaceName();
         myExecutor = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder().setNameFormat("LockRefresher-%d").build());
 
-        mySession = builder.myNativeConnectionProvider.getSession();
-        myRemoteRouting = builder.myNativeConnectionProvider.getRemoteRouting();
+        mySession = builder.getNativeConnectionProvider().getSession();
+        myRemoteRouting = builder.getNativeConnectionProvider().getRemoteRouting();
 
         verifySchemasExists();
 
-        if (ConsistencyType.DEFAULT.equals(builder.myConsistencyType))
+        if (ConsistencyType.DEFAULT.equals(builder.getConsistencyType()))
         {
             mySerialConsistencyLevel = myRemoteRouting
                 ? ConsistencyLevel.LOCAL_SERIAL
@@ -137,78 +134,20 @@ public final class CASLockFactory implements LockFactory, Closeable
         }
         else
         {
-            mySerialConsistencyLevel = ConsistencyType.LOCAL.equals(builder.myConsistencyType)
+            mySerialConsistencyLevel = ConsistencyType.LOCAL.equals(builder.getConsistencyType())
                 ? ConsistencyLevel.LOCAL_SERIAL
                 : ConsistencyLevel.SERIAL;
         }
 
-        SimpleStatement insertLockStatement = QueryBuilder.insertInto(myKeyspaceName, TABLE_LOCK)
-                .value(COLUMN_RESOURCE, bindMarker())
-                .value(COLUMN_NODE, bindMarker())
-                .value(COLUMN_METADATA, bindMarker())
-                .ifNotExists()
-                .build()
-                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                .setSerialConsistencyLevel(mySerialConsistencyLevel);
+        myLockStatement = mySession.prepare(insertLockStatement());
+        myGetLockMetadataStatement = mySession.prepare(getLockMetadataStatement());
+        myRemoveLockStatement = mySession.prepare(removeLockStatement());
+        myUpdateLockStatement = mySession.prepare(updateLockStatement());
+        myCompeteStatement = mySession.prepare(competeStatement());
+        myGetPriorityStatement = mySession.prepare(getPriorityStatement());
+        myRemoveLockPriorityStatement = mySession.prepare(removeLockPriorityStatement());
 
-        SimpleStatement getLockMetadataStatement = QueryBuilder.selectFrom(myKeyspaceName, TABLE_LOCK)
-                .column(COLUMN_METADATA)
-                .whereColumn(COLUMN_RESOURCE)
-                .isEqualTo(bindMarker())
-                .build()
-                .setSerialConsistencyLevel(mySerialConsistencyLevel);
-
-        SimpleStatement removeLockStatement = QueryBuilder.deleteFrom(myKeyspaceName, TABLE_LOCK)
-                .whereColumn(COLUMN_RESOURCE)
-                .isEqualTo(bindMarker())
-                .ifColumn(COLUMN_NODE)
-                .isEqualTo(bindMarker())
-                .build()
-                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                .setSerialConsistencyLevel(mySerialConsistencyLevel);
-
-        SimpleStatement updateLockStatement = QueryBuilder.update(myKeyspaceName, TABLE_LOCK)
-                .setColumn(COLUMN_NODE, bindMarker())
-                .setColumn(COLUMN_METADATA, bindMarker())
-                .whereColumn(COLUMN_RESOURCE)
-                .isEqualTo(bindMarker())
-                .ifColumn(COLUMN_NODE)
-                .isEqualTo(bindMarker())
-                .build()
-                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                .setSerialConsistencyLevel(mySerialConsistencyLevel);
-
-        SimpleStatement competeStatement = QueryBuilder.insertInto(myKeyspaceName, TABLE_LOCK_PRIORITY)
-                .value(COLUMN_RESOURCE, bindMarker())
-                .value(COLUMN_NODE, bindMarker())
-                .value(COLUMN_PRIORITY, bindMarker())
-                .build()
-                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-
-        SimpleStatement getPriorityStatement = QueryBuilder.selectFrom(myKeyspaceName, TABLE_LOCK_PRIORITY)
-                .columns(COLUMN_PRIORITY, COLUMN_NODE)
-                .whereColumn(COLUMN_RESOURCE)
-                .isEqualTo(bindMarker())
-                .build()
-                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-
-        SimpleStatement removeLockPriorityStatement = QueryBuilder.deleteFrom(myKeyspaceName, TABLE_LOCK_PRIORITY)
-                .whereColumn(COLUMN_RESOURCE)
-                .isEqualTo(bindMarker())
-                .whereColumn(COLUMN_NODE)
-                .isEqualTo(bindMarker())
-                .build()
-                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
-
-        myLockStatement = mySession.prepare(insertLockStatement);
-        myGetLockMetadataStatement = mySession.prepare(getLockMetadataStatement);
-        myRemoveLockStatement = mySession.prepare(removeLockStatement);
-        myUpdateLockStatement = mySession.prepare(updateLockStatement);
-        myCompeteStatement = mySession.prepare(competeStatement);
-        myGetPriorityStatement = mySession.prepare(getPriorityStatement);
-        myRemoveLockPriorityStatement = mySession.prepare(removeLockPriorityStatement);
-
-        UUID hostId = builder.myNativeConnectionProvider.getLocalNode().getHostId();
+        UUID hostId = builder.getNativeConnectionProvider().getLocalNode().getHostId();
 
         if (hostId == null)
         {
@@ -217,7 +156,7 @@ public final class CASLockFactory implements LockFactory, Closeable
         }
 
         myUuid = hostId;
-        myCasLockFactoryCacheContext = buildCasLockFactoryCacheContext(builder.myCacheExpiryTimeInSeconds);
+        myCasLockFactoryCacheContext = buildCasLockFactoryCacheContext(builder.getCacheExpiryTimeInSecond());
     }
 
     private CASLockFactoryCacheContext buildCasLockFactoryCacheContext(final long cacheExpiryTimeInSeconds)
@@ -260,25 +199,20 @@ public final class CASLockFactory implements LockFactory, Closeable
     }
 
     @Override
-    public Map<String, String> getLockMetadata(final String dataCenter, final String resource)
+    public Map<String, String> getLockMetadata(final String dataCenter, final String resource) throws LockException
     {
-        try
+        ResultSet resultSet = execute(dataCenter, myGetLockMetadataStatement.bind(resource));
+
+        Row row = resultSet.one();
+
+        if (row != null)
         {
-            ResultSet resultSet = execute(dataCenter, myGetLockMetadataStatement.bind(resource));
-
-            Row row = resultSet.one();
-
-            if (row != null)
-            {
-                return row.getMap("metadata", String.class, String.class);
-            }
+            return row.getMap("metadata", String.class, String.class);
         }
-        catch (Exception e)
+        else
         {
-            LOG.warn("Unable to retrieve metadata for resource {}", resource, e);
+            throw new LockException("Unable to retrieve metadata for resource " + resource);
         }
-
-        return null;
     }
 
     @Override
@@ -344,78 +278,9 @@ public final class CASLockFactory implements LockFactory, Closeable
         return myCasLockFactoryCacheContext;
     }
 
-    public static Builder builder()
+    public static CASLockFactoryBuilder builder()
     {
-        return new Builder();
-    }
-
-    public static class Builder
-    {
-        private static final String DEFAULT_KEYSPACE_NAME = "ecchronos";
-        private static final long DEFAULT_EXPIRY_TIME_IN_SECONDS = 30L;
-
-        private NativeConnectionProvider myNativeConnectionProvider;
-        private HostStates myHostStates;
-        private StatementDecorator myStatementDecorator;
-        private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
-        private long myCacheExpiryTimeInSeconds = DEFAULT_EXPIRY_TIME_IN_SECONDS;
-        private ConsistencyType myConsistencyType;
-
-        public final Builder withNativeConnectionProvider(final NativeConnectionProvider nativeConnectionProvider)
-        {
-            myNativeConnectionProvider = nativeConnectionProvider;
-            return this;
-        }
-
-        public final Builder withHostStates(final HostStates hostStates)
-        {
-            myHostStates = hostStates;
-            return this;
-        }
-
-        public final Builder withStatementDecorator(final StatementDecorator statementDecorator)
-        {
-            myStatementDecorator = statementDecorator;
-            return this;
-        }
-
-        public final Builder withKeyspaceName(final String keyspaceName)
-        {
-            myKeyspaceName = keyspaceName;
-            return this;
-        }
-
-        public final Builder withCacheExpiryInSeconds(final long cacheExpiryInSeconds)
-        {
-            myCacheExpiryTimeInSeconds = cacheExpiryInSeconds;
-            return this;
-        }
-
-        public final Builder withConsistencySerial(final ConsistencyType consistencyType)
-        {
-            myConsistencyType = consistencyType;
-            return this;
-        }
-
-        public final CASLockFactory build()
-        {
-            if (myNativeConnectionProvider == null)
-            {
-                throw new IllegalArgumentException("Native connection provider cannot be null");
-            }
-
-            if (myHostStates == null)
-            {
-                throw new IllegalArgumentException("Host states cannot be null");
-            }
-
-            if (myStatementDecorator == null)
-            {
-                throw new IllegalArgumentException("Statement decorator cannot be null");
-            }
-
-            return new CASLockFactory(this);
-        }
+        return new CASLockFactoryBuilder();
     }
 
     private DistributedLock doTryLock(final String dataCenter,
@@ -430,22 +295,15 @@ public final class CASLockFactory implements LockFactory, Closeable
             LOG.warn("Not sufficient nodes to lock resource {} in datacenter {}", resource, dataCenter);
             throw new LockException("Not sufficient nodes to lock");
         }
-
-        try
+        CASLock casLock = new CASLock(dataCenter, resource, priority, metadata); // NOSONAR
+        if (casLock.lock())
         {
-            CASLock casLock = new CASLock(dataCenter, resource, priority, metadata); // NOSONAR
-            if (casLock.lock())
-            {
-                return casLock;
-            }
+            return casLock;
         }
-        catch (Exception e)
+        else
         {
-            LOG.warn("Unable to lock resource {} in datacenter {} - {}", resource, dataCenter, e.getMessage());
-            throw new LockException(e);
+            throw new LockException(String.format("Unable to lock resource %s in datacenter %s", resource, dataCenter));
         }
-
-        throw new LockException(String.format("Unable to lock resource %s in datacenter %s", resource, dataCenter));
     }
 
     private Set<Node> getNodesForResource(final String dataCenter,
@@ -533,6 +391,92 @@ public final class CASLockFactory implements LockFactory, Closeable
         }
     }
 
+    private SimpleStatement insertLockStatement()
+    {
+        SimpleStatement insertLockStatement = QueryBuilder.insertInto(myKeyspaceName, TABLE_LOCK)
+                    .value(COLUMN_RESOURCE, bindMarker())
+                    .value(COLUMN_NODE, bindMarker())
+                    .value(COLUMN_METADATA, bindMarker())
+                    .ifNotExists()
+                    .build()
+                    .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
+                    .setSerialConsistencyLevel(mySerialConsistencyLevel);
+        return insertLockStatement;
+    }
+
+    private SimpleStatement getLockMetadataStatement()
+    {
+        SimpleStatement getLockMetadataStatement = QueryBuilder.selectFrom(myKeyspaceName, TABLE_LOCK)
+                .column(COLUMN_METADATA)
+                .whereColumn(COLUMN_RESOURCE)
+                .isEqualTo(bindMarker())
+                .build()
+                .setSerialConsistencyLevel(mySerialConsistencyLevel);
+        return getLockMetadataStatement;
+    }
+
+    private SimpleStatement removeLockStatement()
+    {
+        SimpleStatement removeLockStatement = QueryBuilder.deleteFrom(myKeyspaceName, TABLE_LOCK)
+                .whereColumn(COLUMN_RESOURCE)
+                .isEqualTo(bindMarker())
+                .ifColumn(COLUMN_NODE)
+                .isEqualTo(bindMarker())
+                .build()
+                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
+                .setSerialConsistencyLevel(mySerialConsistencyLevel);
+        return removeLockStatement;
+    }
+
+    private SimpleStatement updateLockStatement()
+    {
+        SimpleStatement updateLockStatement = QueryBuilder.update(myKeyspaceName, TABLE_LOCK)
+                .setColumn(COLUMN_NODE, bindMarker())
+                .setColumn(COLUMN_METADATA, bindMarker())
+                .whereColumn(COLUMN_RESOURCE)
+                .isEqualTo(bindMarker())
+                .ifColumn(COLUMN_NODE)
+                .isEqualTo(bindMarker())
+                .build()
+                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
+                .setSerialConsistencyLevel(mySerialConsistencyLevel);
+        return updateLockStatement;
+    }
+
+    private SimpleStatement competeStatement()
+    {
+        SimpleStatement competeStatement = QueryBuilder.insertInto(myKeyspaceName, TABLE_LOCK_PRIORITY)
+                .value(COLUMN_RESOURCE, bindMarker())
+                .value(COLUMN_NODE, bindMarker())
+                .value(COLUMN_PRIORITY, bindMarker())
+                .build()
+                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+        return competeStatement;
+    }
+
+    private SimpleStatement getPriorityStatement()
+    {
+        SimpleStatement priorityStatement = QueryBuilder.selectFrom(myKeyspaceName, TABLE_LOCK_PRIORITY)
+                .columns(COLUMN_PRIORITY, COLUMN_NODE)
+                .whereColumn(COLUMN_RESOURCE)
+                .isEqualTo(bindMarker())
+                .build()
+                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+        return priorityStatement;
+    }
+
+    private SimpleStatement removeLockPriorityStatement()
+    {
+        SimpleStatement removeLockPriorityStatement = QueryBuilder.deleteFrom(myKeyspaceName, TABLE_LOCK_PRIORITY)
+                .whereColumn(COLUMN_RESOURCE)
+                .isEqualTo(bindMarker())
+                .whereColumn(COLUMN_NODE)
+                .isEqualTo(bindMarker())
+                .build()
+                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+        return removeLockPriorityStatement;
+    }
+
     class CASLock implements DistributedLock, Runnable
     {
         private final String myDataCenter;
@@ -549,7 +493,7 @@ public final class CASLockFactory implements LockFactory, Closeable
 
         CASLock(final String dataCenter, final String resource, final int priority, final Map<String, String> metadata)
         {
-            myDataCenter = dataCenter;
+        myDataCenter = dataCenter;
             myResource = resource;
             myPriority = priority;
             myMetadata = metadata;
@@ -560,7 +504,7 @@ public final class CASLockFactory implements LockFactory, Closeable
                     .filter(n -> n.getUuid().equals(myUuid))
                     .map(NodePriority::getPriority)
                     .findFirst()
-                    .orElse(myPriority);
+                .orElse(myPriority);
             globalHighPriority = nodePriorities.stream()
                     .filter(n -> !n.getUuid().equals(myUuid))
                     .map(NodePriority::getPriority)
@@ -596,7 +540,7 @@ public final class CASLockFactory implements LockFactory, Closeable
                 updateLock();
                 myFailedUpdateAttempts.set(0);
             }
-            catch (Exception e)
+            catch (LockException e)
             {
                 int failedAttempts = myFailedUpdateAttempts.incrementAndGet();
 
@@ -684,28 +628,6 @@ public final class CASLockFactory implements LockFactory, Closeable
         int getFailedAttempts()
         {
             return myFailedUpdateAttempts.get();
-        }
-    }
-
-    public static final class NodePriority
-    {
-        private final UUID myNode;
-        private final int myPriority;
-
-        public NodePriority(final UUID node, final int priority)
-        {
-            myNode = node;
-            myPriority = priority;
-        }
-
-        public UUID getUuid()
-        {
-            return myNode;
-        }
-
-        public int getPriority()
-        {
-            return myPriority;
         }
     }
 }

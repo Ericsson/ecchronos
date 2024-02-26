@@ -104,7 +104,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
 
         hostStates = mock(HostStates.class);
         when(hostStates.isUp(any(Node.class))).thenReturn(true);
-        myLockFactory = new CASLockFactory.Builder()
+        myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(hostStates)
                 .withStatementDecorator(s -> s)
@@ -138,7 +138,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
     {
         String alterLockTable = String.format("ALTER TABLE %s.%s WITH default_time_to_live = 1200;", myKeyspaceName, TABLE_LOCK);
         mySession.execute(alterLockTable);
-        myLockFactory = new CASLockFactory.Builder()
+        myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(hostStates)
                 .withStatementDecorator(s -> s)
@@ -341,7 +341,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         mySession.execute(String.format("DROP TABLE %s.%s", myKeyspaceName, TABLE_LOCK));
 
         assertThatExceptionOfType(IllegalStateException.class)
-                .isThrownBy(() -> new CASLockFactory.Builder()
+                .isThrownBy(() -> new CASLockFactoryBuilder()
                         .withNativeConnectionProvider(getNativeConnectionProvider())
                         .withHostStates(hostStates)
                         .withStatementDecorator(s -> s)
@@ -361,7 +361,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
 
         // test
         assertThatExceptionOfType(AllNodesFailedException.class)
-                .isThrownBy(() -> new CASLockFactory.Builder()
+                .isThrownBy(() -> new CASLockFactoryBuilder()
                         .withNativeConnectionProvider(new NativeConnectionProvider()
                         {
                             @Override
@@ -398,7 +398,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         when(connectionProviderMock.getLocalNode()).thenReturn(nodeMock);
         when(connectionProviderMock.getRemoteRouting()).thenReturn(true);
 
-        myLockFactory = new CASLockFactory.Builder()
+        myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(hostStates)
                 .withStatementDecorator(s -> s)
@@ -419,7 +419,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         when(connectionProviderMock.getLocalNode()).thenReturn(nodeMock);
         when(connectionProviderMock.getRemoteRouting()).thenReturn(false);
 
-        myLockFactory = new CASLockFactory.Builder()
+        myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(connectionProviderMock)
                 .withHostStates(hostStates)
                 .withStatementDecorator(s -> s)
@@ -439,7 +439,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         when(connectionProviderMock.getSession()).thenReturn(mySession);
         when(connectionProviderMock.getLocalNode()).thenReturn(nodeMock);
         
-        myLockFactory = new CASLockFactory.Builder()
+        myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(connectionProviderMock)
                 .withHostStates(hostStates)
                 .withStatementDecorator(s -> s)
@@ -459,7 +459,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         when(connectionProviderMock.getSession()).thenReturn(mySession);
         when(connectionProviderMock.getLocalNode()).thenReturn(nodeMock);
         
-        myLockFactory = new CASLockFactory.Builder()
+        myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(connectionProviderMock)
                 .withHostStates(hostStates)
                 .withStatementDecorator(s -> s)
