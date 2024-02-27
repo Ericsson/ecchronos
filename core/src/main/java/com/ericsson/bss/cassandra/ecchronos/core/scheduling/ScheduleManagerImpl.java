@@ -178,7 +178,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                     }
                 }
             }
-            currentExecutingJob.set(null); // Reset after trying to run a job
+            currentExecutingJob.set(null);
         }
 
         private boolean validate(final ScheduledJob job)
