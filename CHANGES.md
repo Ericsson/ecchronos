@@ -1,5 +1,9 @@
 # Changes
 
+## Version 5.0.2
+
+* Show currently running job - Issue #592
+
 ## Version 5.0.1
 
 * Improve hang preventing task - Issue #544
