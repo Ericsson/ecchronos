@@ -215,3 +215,24 @@ Stops the ecChronos instance by pid fetched from the specified pid file.
 # Examples
 
 For example usage and explanation about output refer to [ECCTOOL_EXAMPLES.md](../ECCTOOL_EXAMPLES.md)
+
+## ecctool running-job
+
+Show which (if any) job that is currently running.
+
+```console
+usage: ecctool running-job [-h] [-u URL]
+
+Show which (if any) job is currently running
+
+optional arguments:
+  -h, --help         show this help message and exit
+  -u URL, --url URL  The ecChronos host to connect to, specified in the format http://<host>:<port>.
+```
+
+### -h, --help
+show this help message and exit
+
+
+### -u &lt;url&gt;, --url &lt;url&gt;
+The ecChronos host to connect to, specified in the format [http:/](http:/)/&lt;host&gt;:&lt;port&gt;.
