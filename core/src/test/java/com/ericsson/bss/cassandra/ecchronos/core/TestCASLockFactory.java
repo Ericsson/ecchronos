@@ -297,7 +297,16 @@ public class TestCASLockFactory extends AbstractCassandraTest
 
         try
         {
-            Future<?> future = executorService.submit(myLockFactory.new CASLock(DATA_CENTER, "lock", 1, metadata));
+            Future<?> future = executorService.submit(
+                new CASLock(
+                    DATA_CENTER,
+                    "lock",
+                    1,
+                    metadata,
+                    myLockFactory.getHostId(),
+                    myLockFactory.getCasLockStatement()
+                    )
+                );
 
             Thread.sleep(100);
 
@@ -319,7 +328,14 @@ public class TestCASLockFactory extends AbstractCassandraTest
     public void testFailedLockRetryAttempts()
     {
         Map<String, String> metadata = new HashMap<>();
-        try (CASLockFactory.CASLock lockUpdateTask = myLockFactory.new CASLock(DATA_CENTER, "lock", 1, metadata))
+        try (CASLock lockUpdateTask = new CASLock(
+            DATA_CENTER,
+            "lock",
+            1,
+            metadata,
+            myLockFactory.getHostId(),
+            myLockFactory.getCasLockStatement()
+        ))
         {
             for (int i = 0; i < 10; i++)
             {

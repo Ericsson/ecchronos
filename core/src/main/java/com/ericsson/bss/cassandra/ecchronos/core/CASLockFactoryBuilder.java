@@ -91,62 +91,32 @@ public class CASLockFactoryBuilder
         return new CASLockFactory(this);
     }
 
-    /**
-     * Gets the native connection provider.
-     *
-     * @return The native connection provider.
-     */
-    public NativeConnectionProvider getNativeConnectionProvider()
+    public final NativeConnectionProvider getNativeConnectionProvider()
     {
         return myNativeConnectionProvider;
     }
 
-    /**
-     * Gets the host states.
-     *
-     * @return The host states.
-     */
-    public HostStates getHostStates()
+    public final HostStates getHostStates()
     {
         return myHostStates;
     }
 
-    /**
-     * Gets the statement decorator.
-     *
-     * @return The statement decorator.
-     */
-    public StatementDecorator getStatementDecorator()
+    public final StatementDecorator getStatementDecorator()
     {
         return myStatementDecorator;
     }
 
-    /**
-     * Gets the keyspace name.
-     *
-     * @return The keyspace name.
-     */
-    public String getKeyspaceName()
+    public final String getKeyspaceName()
     {
         return myKeyspaceName;
     }
 
-    /**
-     * Gets the cache expiry time in seconds.
-     *
-     * @return The cache expiry time in seconds.
-     */
-    public long getCacheExpiryTimeInSecond()
+    public final long getCacheExpiryTimeInSecond()
     {
         return myCacheExpiryTimeInSeconds;
     }
 
-    /**
-     * Gets the consistency type.
-     *
-     * @return The consistency type.
-     */
-    public ConsistencyType getConsistencyType()
+    public final ConsistencyType getConsistencyType()
     {
         return myConsistencyType;
     }
