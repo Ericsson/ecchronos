@@ -55,7 +55,6 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
-          handle_no_reports_found: true
           files: >
             ./core.osgi/target/site/jacoco/jacoco.xml,
             ./application/target/site/jacoco/jacoco.xml,
