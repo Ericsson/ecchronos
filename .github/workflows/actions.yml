@@ -54,6 +54,8 @@ jobs:
         uses: codecov/codecov-action@54bcd8715eee62d40e33596ef5e8f0f48dbbccab # v4.1.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+          handle_no_reports_found: true
           files: >
             ./core.osgi/target/site/jacoco/jacoco.xml,
             ./application/target/site/jacoco/jacoco.xml,
