@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -90,8 +91,9 @@ class CASLock implements DistributedLock, Runnable
             LOG.trace("Trying to acquire lock for resource {}", myResource);
             if (tryLock())
             {
+                ScheduledExecutorService executor = myCasLockStatement.getCasLockProperties().getExecutor();
                 LOG.trace("Lock for resource {} acquired", myResource);
-                ScheduledFuture<?> future = myCasLockStatement.getExecutor().scheduleAtFixedRate(this,
+                ScheduledFuture<?> future = executor.scheduleAtFixedRate(this,
                 myCasLockStatement.getCasLockFactoryCacheContext().getLockUpdateTimeInSeconds(),
                 myCasLockStatement.getCasLockFactoryCacheContext().getLockUpdateTimeInSeconds(), TimeUnit.SECONDS);
                 myUpdateFuture.set(future);

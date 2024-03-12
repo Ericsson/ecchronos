@@ -16,10 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
-import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
@@ -27,7 +24,6 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwareStatement;
-import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 
 /**
  * Represents a container for builder configurations and state for the CASLockStatement.
@@ -35,10 +31,11 @@ import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
  */
 public class CASLockStatement
 {
-    private static final String COLUMN_RESOURCE = "resource";
+    static final String COLUMN_RESOURCE = "resource";
     static final String COLUMN_NODE = "node";
-    private static final String COLUMN_METADATA = "metadata";
+    static final String COLUMN_METADATA = "metadata";
     static final String COLUMN_PRIORITY = "priority";
+
     private static final String TABLE_LOCK = "lock";
     private static final String TABLE_LOCK_PRIORITY = "lock_priority";
 
@@ -48,45 +45,31 @@ public class CASLockStatement
     private final PreparedStatement myUpdateLockStatement;
     private final PreparedStatement myRemoveLockPriorityStatement;
     private final PreparedStatement myGetPriorityStatement;
-    private final StatementDecorator myStatementDecorator;
+    private final PreparedStatement myGetLockMetadataStatement;
 
-    private final boolean myRemoteRouting;
-    private final String myKeyspaceName;
+    private final CASLockProperties myCasLockProperties;
     private final CASLockFactoryCacheContext myCasLockFactoryCacheContext;
-    private final ScheduledExecutorService myExecutor;
-    private final ConsistencyLevel mySerialConsistencyLevel;
-    private final CqlSession mySession;
 
     public CASLockStatement(
-        final Boolean remoteRouting,
-        final String keyspaceName,
-        final ScheduledExecutorService executor,
-        final ConsistencyLevel seriaConsistencyLevel,
-        final CqlSession session,
-        final CASLockFactoryCacheContext casLockFactoryCacheContext,
-        final StatementDecorator statementDecorator)
+        final CASLockProperties casLockProperties,
+        final CASLockFactoryCacheContext casLockFactoryCacheContext)
     {
-        myRemoteRouting = remoteRouting;
-        myKeyspaceName = keyspaceName;
-        myExecutor = executor;
-        mySerialConsistencyLevel = seriaConsistencyLevel;
-        mySession = session;
+        myCasLockProperties = casLockProperties;
         myCasLockFactoryCacheContext = casLockFactoryCacheContext;
-        myStatementDecorator = statementDecorator;
-
-        myCompeteStatement = mySession.prepare(competeStatement());
-        myLockStatement = mySession.prepare((insertLockStatement()));
-        myRemoveLockStatement = mySession.prepare(removeLockStatement());
-        myUpdateLockStatement = mySession.prepare((updateLockStatement()));
-        myRemoveLockPriorityStatement = mySession.prepare(removeLockPriorityStatement());
-        myGetPriorityStatement = mySession.prepare(getPriorityStatement());
+        myCompeteStatement = myCasLockProperties.getSession().prepare(competeStatement());
+        myLockStatement = myCasLockProperties.getSession().prepare((insertLockStatement()));
+        myRemoveLockStatement = myCasLockProperties.getSession().prepare(removeLockStatement());
+        myUpdateLockStatement = myCasLockProperties.getSession().prepare((updateLockStatement()));
+        myRemoveLockPriorityStatement = myCasLockProperties.getSession().prepare(removeLockPriorityStatement());
+        myGetPriorityStatement = myCasLockProperties.getSession().prepare(getPriorityStatement());
+        myGetLockMetadataStatement = myCasLockProperties.getSession().prepare(lockMetadataStatement());
     }
 
     public final ResultSet execute(final String dataCenter, final BoundStatement statement)
     {
         Statement executeStatement;
 
-        if (dataCenter != null && myRemoteRouting)
+        if (dataCenter != null && myCasLockProperties.isRemoteRouting())
         {
             executeStatement = new DataCenterAwareStatement(statement, dataCenter);
         }
@@ -95,38 +78,43 @@ public class CASLockStatement
             executeStatement = statement;
         }
 
-        return mySession.execute(myStatementDecorator.apply(executeStatement));
+        return myCasLockProperties.getSession()
+                .execute(myCasLockProperties
+                    .getStatementDecorator().apply(executeStatement));
     }
 
     private SimpleStatement insertLockStatement()
     {
-        SimpleStatement insertLockStatement = QueryBuilder.insertInto(myKeyspaceName, TABLE_LOCK)
+        SimpleStatement insertLockStatement = QueryBuilder
+                    .insertInto(myCasLockProperties.getKeyspaceName(), TABLE_LOCK)
                     .value(COLUMN_RESOURCE, bindMarker())
                     .value(COLUMN_NODE, bindMarker())
                     .value(COLUMN_METADATA, bindMarker())
                     .ifNotExists()
                     .build()
                     .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                    .setSerialConsistencyLevel(mySerialConsistencyLevel);
+                    .setSerialConsistencyLevel(myCasLockProperties.getSerialConsistencyLevel());
         return insertLockStatement;
     }
 
     private SimpleStatement removeLockStatement()
     {
-        SimpleStatement removeLockStatement = QueryBuilder.deleteFrom(myKeyspaceName, TABLE_LOCK)
+        SimpleStatement removeLockStatement = QueryBuilder
+                .deleteFrom(myCasLockProperties.getKeyspaceName(), TABLE_LOCK)
                 .whereColumn(COLUMN_RESOURCE)
                 .isEqualTo(bindMarker())
                 .ifColumn(COLUMN_NODE)
                 .isEqualTo(bindMarker())
                 .build()
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                .setSerialConsistencyLevel(mySerialConsistencyLevel);
+                .setSerialConsistencyLevel(myCasLockProperties.getSerialConsistencyLevel());
         return removeLockStatement;
     }
 
     private SimpleStatement updateLockStatement()
     {
-        SimpleStatement updateLockStatement = QueryBuilder.update(myKeyspaceName, TABLE_LOCK)
+        SimpleStatement updateLockStatement = QueryBuilder
+                .update(myCasLockProperties.getKeyspaceName(), TABLE_LOCK)
                 .setColumn(COLUMN_NODE, bindMarker())
                 .setColumn(COLUMN_METADATA, bindMarker())
                 .whereColumn(COLUMN_RESOURCE)
@@ -135,13 +123,14 @@ public class CASLockStatement
                 .isEqualTo(bindMarker())
                 .build()
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                .setSerialConsistencyLevel(mySerialConsistencyLevel);
+                .setSerialConsistencyLevel(myCasLockProperties.getSerialConsistencyLevel());
         return updateLockStatement;
     }
 
     private SimpleStatement competeStatement()
     {
-        SimpleStatement competeStatement = QueryBuilder.insertInto(myKeyspaceName, TABLE_LOCK_PRIORITY)
+        SimpleStatement competeStatement = QueryBuilder
+                .insertInto(myCasLockProperties.getKeyspaceName(), TABLE_LOCK_PRIORITY)
                 .value(COLUMN_RESOURCE, bindMarker())
                 .value(COLUMN_NODE, bindMarker())
                 .value(COLUMN_PRIORITY, bindMarker())
@@ -152,7 +141,8 @@ public class CASLockStatement
 
     private SimpleStatement getPriorityStatement()
     {
-        SimpleStatement priorityStatement = QueryBuilder.selectFrom(myKeyspaceName, TABLE_LOCK_PRIORITY)
+        SimpleStatement priorityStatement = QueryBuilder
+                .selectFrom(myCasLockProperties.getKeyspaceName(), TABLE_LOCK_PRIORITY)
                 .columns(COLUMN_PRIORITY, COLUMN_NODE)
                 .whereColumn(COLUMN_RESOURCE)
                 .isEqualTo(bindMarker())
@@ -163,7 +153,8 @@ public class CASLockStatement
 
     private SimpleStatement removeLockPriorityStatement()
     {
-        SimpleStatement removeLockPriorityStatement = QueryBuilder.deleteFrom(myKeyspaceName, TABLE_LOCK_PRIORITY)
+        SimpleStatement removeLockPriorityStatement = QueryBuilder
+                .deleteFrom(myCasLockProperties.getKeyspaceName(), TABLE_LOCK_PRIORITY)
                 .whereColumn(COLUMN_RESOURCE)
                 .isEqualTo(bindMarker())
                 .whereColumn(COLUMN_NODE)
@@ -171,6 +162,18 @@ public class CASLockStatement
                 .build()
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
         return removeLockPriorityStatement;
+    }
+
+    private SimpleStatement lockMetadataStatement()
+    {
+        SimpleStatement lockMetadataStatement = QueryBuilder
+                .selectFrom(myCasLockProperties.getKeyspaceName(), TABLE_LOCK)
+                .column(COLUMN_METADATA)
+                .whereColumn(COLUMN_RESOURCE)
+                .isEqualTo(bindMarker())
+                .build()
+                .setSerialConsistencyLevel(myCasLockProperties.getSerialConsistencyLevel());
+        return lockMetadataStatement;
     }
 
     public final PreparedStatement getCompeteStatement()
@@ -203,14 +206,9 @@ public class CASLockStatement
         return myGetPriorityStatement;
     }
 
-    public final boolean isRemoteRouting()
+    public final PreparedStatement getLockMetadataStatement()
     {
-        return myRemoteRouting;
-    }
-
-    public final String getKeyspaceName()
-    {
-        return myKeyspaceName;
+        return myGetLockMetadataStatement;
     }
 
     public final CASLockFactoryCacheContext getCasLockFactoryCacheContext()
@@ -218,23 +216,9 @@ public class CASLockStatement
         return myCasLockFactoryCacheContext;
     }
 
-    public final ScheduledExecutorService getExecutor()
+    public final CASLockProperties getCasLockProperties()
     {
-        return myExecutor;
+        return myCasLockProperties;
     }
 
-    public final ConsistencyLevel getSerialConsistencyLevel()
-    {
-        return mySerialConsistencyLevel;
-    }
-
-    public final CqlSession getSession()
-    {
-        return mySession;
-    }
-
-    public final StatementDecorator getStatementDecorator()
-    {
-        return myStatementDecorator;
-    }
 }
