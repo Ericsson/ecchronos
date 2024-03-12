@@ -51,6 +51,12 @@ public class ScheduleManagerService implements ScheduleManager
             unbind = "unbindRunPolicy")
     private final Set<RunPolicy> myRunPolicies = Sets.newConcurrentHashSet();
 
+    @Override
+    public final String getCurrentJobStatus()
+    {
+        return myDelegateSchedulerManager.getCurrentJobStatus();
+    }
+
     @Reference (service = LockFactory.class,
             cardinality = ReferenceCardinality.MANDATORY,
             policy = ReferencePolicy.STATIC)

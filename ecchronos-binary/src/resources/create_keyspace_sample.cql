@@ -1,4 +1,4 @@
-CREATE KEYSPACE IF NOT EXISTS ecchronos WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+CREATE KEYSPACE IF NOT EXISTS ecchronos WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 1};
 
 CREATE TABLE IF NOT EXISTS ecchronos.lock (
     resource text,
@@ -25,23 +25,6 @@ CREATE TABLE IF NOT EXISTS ecchronos.reject_configuration (
     end_minute int,
     PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute));
 
-CREATE TABLE IF NOT EXISTS ecchronos.repair_history(
-    table_id uuid,
-    node_id uuid,
-    repair_id timeuuid,
-    job_id uuid,
-    coordinator_id uuid,
-    range_begin text,
-    range_end text,
-    participants set<uuid>,
-    status text,
-    started_at timestamp,
-    finished_at timestamp,
-    PRIMARY KEY((table_id,node_id), repair_id))
-    WITH compaction = {'class': 'TimeWindowCompactionStrategy'}
-    AND default_time_to_live = 1728000
-    AND CLUSTERING ORDER BY (repair_id DESC);
-
 CREATE TYPE IF NOT EXISTS ecchronos.token_range (
     start text,
     end text);
@@ -59,6 +42,24 @@ CREATE TABLE IF NOT EXISTS ecchronos.on_demand_repair_status (
     repaired_tokens frozen<set<frozen<token_range>>>,
     status text,
     completed_time timestamp,
+    repair_type text,
     PRIMARY KEY(host_id, job_id))
     WITH default_time_to_live = 2592000
     AND gc_grace_seconds = 0;
+
+CREATE TABLE IF NOT EXISTS ecchronos.repair_history(
+    table_id uuid,
+    node_id uuid,
+    repair_id timeuuid,
+    job_id uuid,
+    coordinator_id uuid,
+    range_begin text,
+    range_end text,
+    participants set<uuid>,
+    status text,
+    started_at timestamp,
+    finished_at timestamp,
+    PRIMARY KEY((table_id,node_id), repair_id))
+    WITH compaction = {'class': 'TimeWindowCompactionStrategy'}
+    AND default_time_to_live = 2592000
+    AND CLUSTERING ORDER BY (repair_id DESC);
