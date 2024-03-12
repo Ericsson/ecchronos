@@ -261,9 +261,9 @@
 # Allow to override consistency level for LWT (lightweight transactions). Possible values are:
 # "DEFAULT" - Use consistency level based on remoteRouting.
 # "SERIAL" - Use SERIAL consistency for LWT regardless of remoteRouting.
-# "LOCAL_SERIAL" - Use LOCAL_SERIAL consistency for LWT regardless of remoteRouting.
+# "LOCAL" - Use LOCAL_SERIAL consistency for LWT regardless of remoteRouting.
 #
-# if you use remoteRouting: false and LOCAL_SERIAL then all locks will be taken locally
+# if you use remoteRouting: false and LOCAL then all locks will be taken locally
 # in DC. I.e There's a risk that multiple nodes in different datacenters will be able to lock the
 # same nodes causing multiple repairs on the same range/node at the same time.
 #
