@@ -32,6 +32,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManagerImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ConsistencyType;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -119,7 +120,7 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
                 .build();
 
         myLockFactory = CASLockFactory.builder().withNativeConnectionProvider(getNativeConnectionProvider())
-                .withHostStates(myHostStates).withStatementDecorator(s -> s).build();
+                .withHostStates(myHostStates).withStatementDecorator(s -> s).withConsistencySerial(ConsistencyType.DEFAULT).build();
 
         myScheduleManagerImpl = ScheduleManagerImpl.builder().withLockFactory(myLockFactory)
                 .withRunInterval(100, TimeUnit.MILLISECONDS).build();

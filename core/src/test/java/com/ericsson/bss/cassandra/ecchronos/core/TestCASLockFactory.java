@@ -19,12 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
@@ -352,7 +348,24 @@ public class TestCASLockFactory extends AbstractCassandraTest
     }
 
     @Test
-    public void testActivateWithoutAllTablesCausesIllegalStateException()
+    public void testActivateWithoutKeyspaceCausesIllegalStateException()
+    {
+        mySession.execute(String.format("DROP KEYSPACE %s", myKeyspaceName));
+
+        assertThatExceptionOfType(IllegalStateException.class)
+                .isThrownBy(() -> new CASLockFactoryBuilder()
+                        .withNativeConnectionProvider(getNativeConnectionProvider())
+                        .withHostStates(hostStates)
+                        .withStatementDecorator(s -> s)
+                        .withKeyspaceName(myKeyspaceName)
+                        .build());
+
+        mySession.execute(String.format("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {'class': 'NetworkTopologyStrategy', 'DC1': 1}", myKeyspaceName));
+        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (resource text, node uuid, metadata map<text,text>, PRIMARY KEY(resource)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0", myKeyspaceName, TABLE_LOCK));
+        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (resource text, node uuid, priority int, PRIMARY KEY(resource, node)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0", myKeyspaceName, TABLE_LOCK_PRIORITY));    }
+
+    @Test
+    public void testActivateWithoutLockTableCausesIllegalStateException()
     {
         mySession.execute(String.format("DROP TABLE %s.%s", myKeyspaceName, TABLE_LOCK));
 
@@ -365,6 +378,22 @@ public class TestCASLockFactory extends AbstractCassandraTest
                         .build());
 
         mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (resource text, node uuid, metadata map<text,text>, PRIMARY KEY(resource)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0", myKeyspaceName, TABLE_LOCK));
+    }
+
+    @Test
+    public void testActivateWithoutLockPriorityTableCausesIllegalStateException()
+    {
+        mySession.execute(String.format("DROP TABLE %s.%s", myKeyspaceName, TABLE_LOCK_PRIORITY));
+
+        assertThatExceptionOfType(IllegalStateException.class)
+                .isThrownBy(() -> new CASLockFactoryBuilder()
+                        .withNativeConnectionProvider(getNativeConnectionProvider())
+                        .withHostStates(hostStates)
+                        .withStatementDecorator(s -> s)
+                        .withKeyspaceName(myKeyspaceName)
+                        .build());
+
+        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (resource text, node uuid, priority int, PRIMARY KEY(resource, node)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0", myKeyspaceName, TABLE_LOCK_PRIORITY));
     }
 
     @Test
