@@ -42,6 +42,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManagerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ConsistencyType;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
@@ -208,6 +209,7 @@ public class ITSchedules extends TestBase
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(myHostStates)
                 .withStatementDecorator(s -> s)
+                .withConsistencySerial(ConsistencyType.DEFAULT)
                 .build();
 
         myScheduleManagerImpl = ScheduleManagerImpl.builder()

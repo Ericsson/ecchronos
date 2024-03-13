@@ -316,7 +316,11 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
             {
                 return (String) myMbeanServerConnection.getAttribute(myStorageServiceObject, "OperationMode");
             }
-            catch (Exception e)
+            catch (InstanceNotFoundException
+                    | AttributeNotFoundException
+                    | MBeanException
+                    | ReflectionException
+                    | IOException e)
             {
                 LOG.error("Unable to retrieve node status {}", e.getMessage());
                 return "Unknown";

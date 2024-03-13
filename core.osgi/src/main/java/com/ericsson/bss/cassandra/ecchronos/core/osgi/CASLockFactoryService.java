@@ -21,6 +21,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ConsistencyType;
+
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -64,6 +66,7 @@ public class CASLockFactoryService implements LockFactory
                 .withHostStates(myHostStates)
                 .withStatementDecorator(myStatementDecorator)
                 .withKeyspaceName(configuration.keyspaceName())
+                .withConsistencySerial(configuration.consistencySerial())
                 .build();
     }
 
@@ -84,7 +87,9 @@ public class CASLockFactoryService implements LockFactory
     }
 
     @Override
-    public final Map<String, String> getLockMetadata(final String dataCenter, final String resource)
+    public final Map<String, String> getLockMetadata(
+        final String dataCenter,
+        final String resource) throws LockException
     {
         return myDelegateLockFactory.getLockMetadata(dataCenter, resource);
     }
@@ -101,5 +106,9 @@ public class CASLockFactoryService implements LockFactory
         @AttributeDefinition(name = "The lock factory keyspace to use",
                 description = "The name of the keyspace containing the lock factory tables")
         String keyspaceName() default DEFAULT_KEYSPACE_NAME;
+
+        @AttributeDefinition(name = "The serial consistency level to use",
+                description = "The type of serial consistency level to use")
+        ConsistencyType consistencySerial() default ConsistencyType.DEFAULT;
     }
 }
