@@ -206,8 +206,8 @@ public class RepairStateImpl implements RepairState
     private long newTableRepairedAt()
     {
         long runIntervalInMs = myRepairConfiguration.getRepairIntervalInMs();
-        long minimumRepairWait = Math.min(runIntervalInMs, TimeUnit.DAYS.toMillis(1));
-        long assumedRepairedAt = System.currentTimeMillis() - runIntervalInMs + minimumRepairWait;
+        long newTableSlideOff = myRepairConfiguration.getNewTableSlideOff();
+        long assumedRepairedAt = System.currentTimeMillis() - runIntervalInMs + newTableSlideOff;
 
         if (LOG.isInfoEnabled())
         {

@@ -84,6 +84,13 @@ repair:
   interval:
     time: 7
     unit: days
+
+  ##
+  ## How long from current time should the last repaired time be simulated/assumed for new tables.
+  ##
+  initial_delay:
+    time: 1
+    unit: hours
   ##
   ## The unit of time granularity for priority calculation, can be HOURS, MINUTES, or SECONDS.
   ## This unit is used in the calculation of priority.

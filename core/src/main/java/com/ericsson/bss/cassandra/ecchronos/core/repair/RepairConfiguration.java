@@ -56,6 +56,9 @@ public class RepairConfiguration
 
     private final RepairOptions.RepairType myRepairType;
 
+    private static final long DEFAULT_NEW_TABLE_SLIDEOFF = TimeUnit.DAYS.toMillis(1);
+    private final long mySlideOff;
+
     private RepairConfiguration(final Builder builder)
     {
         myRepairParallelism = builder.myRepairParallelism;
@@ -68,6 +71,7 @@ public class RepairConfiguration
         myBackoffInMs = builder.myBackoffInMs;
         myRepairType = builder.myRepairType;
         myPriorityGranularityUnit = builder.myPriorityGranularityUnit;
+        mySlideOff = builder.myNewTableSlideOff;
     }
 
     public TimeUnit getPriorityGranularityUnit()
@@ -83,6 +87,11 @@ public class RepairConfiguration
     public long getRepairIntervalInMs()
     {
         return myRepairIntervalInMs;
+    }
+
+    public long getNewTableSlideOff()
+    {
+        return mySlideOff;
     }
 
     public long getRepairWarningTimeInMs()
@@ -184,6 +193,9 @@ public class RepairConfiguration
         private long myBackoffInMs = DEFAULT_BACKOFF_IN_MS;
         private boolean myIgnoreTWCSTables = DEFAULT_IGNORE_TWCS_TABLES;
         private TimeUnit myPriorityGranularityUnit = TimeUnit.HOURS;
+        private static final long DEFAULT_NEW_TABLE_SLIDEOFF = TimeUnit.DAYS.toMillis(1);
+
+        private long myNewTableSlideOff = DEFAULT_NEW_TABLE_SLIDEOFF;
 
         /**
          * Constructor.
@@ -208,6 +220,7 @@ public class RepairConfiguration
             myRepairUnwindRatio = from.getRepairUnwindRatio();
             myBackoffInMs = from.getBackoffInMs();
             myPriorityGranularityUnit = from.getPriorityGranularityUnit();
+            myNewTableSlideOff = from.getNewTableSlideOff();
         }
 
         /**

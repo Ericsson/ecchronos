@@ -41,6 +41,8 @@ public class RepairConfig
 
     private Priority myPriority = new Priority();
 
+    private Interval myInitialDelay = new Interval(30, TimeUnit.DAYS);
+
     public final Priority getPriority()
     {
         return  myPriority;
@@ -142,6 +144,18 @@ public class RepairConfig
                     + " Current warning interval: %d seconds, error interval: %d seconds", repairConfigType,
                     warningIntervalSeconds, errorIntervalSeconds));
         }
+    }
+
+    @JsonProperty("initial_delay")
+    public final Interval getMyInitialDelay()
+    {
+        return myInitialDelay;
+    }
+
+    @JsonProperty("initial_delay")
+    public final void setMyInitialDelay(final Interval slideOff)
+    {
+        myInitialDelay = slideOff;
     }
 
     /**
