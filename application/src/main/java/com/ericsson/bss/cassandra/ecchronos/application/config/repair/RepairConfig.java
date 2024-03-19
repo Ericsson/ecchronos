@@ -41,7 +41,7 @@ public class RepairConfig
 
     private Priority myPriority = new Priority();
 
-    private Interval myInitialDelay = new Interval(30, TimeUnit.DAYS);
+    private Interval myInitialDelay = new Interval(BACKOFF_MINUTES, TimeUnit.DAYS);
 
     public final Priority getPriority()
     {

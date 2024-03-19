@@ -16,3 +16,5 @@ dependency-reduced-pom.xml
 *.iml
 .coverage
 *htmlcov
+application/statistics/
+statistics/
