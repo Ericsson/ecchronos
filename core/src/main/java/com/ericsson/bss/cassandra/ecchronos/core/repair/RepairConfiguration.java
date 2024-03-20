@@ -56,7 +56,6 @@ public class RepairConfiguration
 
     private final RepairOptions.RepairType myRepairType;
 
-    private static final long DEFAULT_NEW_TABLE_SLIDEOFF = TimeUnit.DAYS.toMillis(1);
     private final long myInitialDelay;
 
     private RepairConfiguration(final Builder builder)
