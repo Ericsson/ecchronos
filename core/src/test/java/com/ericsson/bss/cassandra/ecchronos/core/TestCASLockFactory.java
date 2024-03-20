@@ -19,12 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
@@ -104,7 +100,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
 
         hostStates = mock(HostStates.class);
         when(hostStates.isUp(any(Node.class))).thenReturn(true);
-        myLockFactory = new CASLockFactory.Builder()
+        myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(hostStates)
                 .withStatementDecorator(s -> s)
@@ -138,7 +134,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
     {
         String alterLockTable = String.format("ALTER TABLE %s.%s WITH default_time_to_live = 1200;", myKeyspaceName, TABLE_LOCK);
         mySession.execute(alterLockTable);
-        myLockFactory = new CASLockFactory.Builder()
+        myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(hostStates)
                 .withStatementDecorator(s -> s)
@@ -297,7 +293,16 @@ public class TestCASLockFactory extends AbstractCassandraTest
 
         try
         {
-            Future<?> future = executorService.submit(myLockFactory.new CASLock(DATA_CENTER, "lock", 1, metadata));
+            Future<?> future = executorService.submit(
+                new CASLock(
+                    DATA_CENTER,
+                    "lock",
+                    1,
+                    metadata,
+                    myLockFactory.getHostId(),
+                    myLockFactory.getCasLockStatement()
+                    )
+                );
 
             Thread.sleep(100);
 
@@ -319,7 +324,14 @@ public class TestCASLockFactory extends AbstractCassandraTest
     public void testFailedLockRetryAttempts()
     {
         Map<String, String> metadata = new HashMap<>();
-        try (CASLockFactory.CASLock lockUpdateTask = myLockFactory.new CASLock(DATA_CENTER, "lock", 1, metadata))
+        try (CASLock lockUpdateTask = new CASLock(
+            DATA_CENTER,
+            "lock",
+            1,
+            metadata,
+            myLockFactory.getHostId(),
+            myLockFactory.getCasLockStatement()
+        ))
         {
             for (int i = 0; i < 10; i++)
             {
@@ -336,12 +348,29 @@ public class TestCASLockFactory extends AbstractCassandraTest
     }
 
     @Test
-    public void testActivateWithoutAllTablesCausesIllegalStateException()
+    public void testActivateWithoutKeyspaceCausesIllegalStateException()
+    {
+        mySession.execute(String.format("DROP KEYSPACE %s", myKeyspaceName));
+
+        assertThatExceptionOfType(IllegalStateException.class)
+                .isThrownBy(() -> new CASLockFactoryBuilder()
+                        .withNativeConnectionProvider(getNativeConnectionProvider())
+                        .withHostStates(hostStates)
+                        .withStatementDecorator(s -> s)
+                        .withKeyspaceName(myKeyspaceName)
+                        .build());
+
+        mySession.execute(String.format("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {'class': 'NetworkTopologyStrategy', 'DC1': 1}", myKeyspaceName));
+        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (resource text, node uuid, metadata map<text,text>, PRIMARY KEY(resource)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0", myKeyspaceName, TABLE_LOCK));
+        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (resource text, node uuid, priority int, PRIMARY KEY(resource, node)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0", myKeyspaceName, TABLE_LOCK_PRIORITY));    }
+
+    @Test
+    public void testActivateWithoutLockTableCausesIllegalStateException()
     {
         mySession.execute(String.format("DROP TABLE %s.%s", myKeyspaceName, TABLE_LOCK));
 
         assertThatExceptionOfType(IllegalStateException.class)
-                .isThrownBy(() -> new CASLockFactory.Builder()
+                .isThrownBy(() -> new CASLockFactoryBuilder()
                         .withNativeConnectionProvider(getNativeConnectionProvider())
                         .withHostStates(hostStates)
                         .withStatementDecorator(s -> s)
@@ -349,6 +378,22 @@ public class TestCASLockFactory extends AbstractCassandraTest
                         .build());
 
         mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (resource text, node uuid, metadata map<text,text>, PRIMARY KEY(resource)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0", myKeyspaceName, TABLE_LOCK));
+    }
+
+    @Test
+    public void testActivateWithoutLockPriorityTableCausesIllegalStateException()
+    {
+        mySession.execute(String.format("DROP TABLE %s.%s", myKeyspaceName, TABLE_LOCK_PRIORITY));
+
+        assertThatExceptionOfType(IllegalStateException.class)
+                .isThrownBy(() -> new CASLockFactoryBuilder()
+                        .withNativeConnectionProvider(getNativeConnectionProvider())
+                        .withHostStates(hostStates)
+                        .withStatementDecorator(s -> s)
+                        .withKeyspaceName(myKeyspaceName)
+                        .build());
+
+        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (resource text, node uuid, priority int, PRIMARY KEY(resource, node)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0", myKeyspaceName, TABLE_LOCK_PRIORITY));
     }
 
     @Test
@@ -361,7 +406,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
 
         // test
         assertThatExceptionOfType(AllNodesFailedException.class)
-                .isThrownBy(() -> new CASLockFactory.Builder()
+                .isThrownBy(() -> new CASLockFactoryBuilder()
                         .withNativeConnectionProvider(new NativeConnectionProvider()
                         {
                             @Override
@@ -398,7 +443,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         when(connectionProviderMock.getLocalNode()).thenReturn(nodeMock);
         when(connectionProviderMock.getRemoteRouting()).thenReturn(true);
 
-        myLockFactory = new CASLockFactory.Builder()
+        myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(hostStates)
                 .withStatementDecorator(s -> s)
@@ -419,7 +464,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         when(connectionProviderMock.getLocalNode()).thenReturn(nodeMock);
         when(connectionProviderMock.getRemoteRouting()).thenReturn(false);
 
-        myLockFactory = new CASLockFactory.Builder()
+        myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(connectionProviderMock)
                 .withHostStates(hostStates)
                 .withStatementDecorator(s -> s)
@@ -439,7 +484,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         when(connectionProviderMock.getSession()).thenReturn(mySession);
         when(connectionProviderMock.getLocalNode()).thenReturn(nodeMock);
         
-        myLockFactory = new CASLockFactory.Builder()
+        myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(connectionProviderMock)
                 .withHostStates(hostStates)
                 .withStatementDecorator(s -> s)
@@ -459,7 +504,7 @@ public class TestCASLockFactory extends AbstractCassandraTest
         when(connectionProviderMock.getSession()).thenReturn(mySession);
         when(connectionProviderMock.getLocalNode()).thenReturn(nodeMock);
         
-        myLockFactory = new CASLockFactory.Builder()
+        myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(connectionProviderMock)
                 .withHostStates(hostStates)
                 .withStatementDecorator(s -> s)
