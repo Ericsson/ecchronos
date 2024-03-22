@@ -34,6 +34,7 @@ public class GlobalRepairConfig extends RepairConfig
     private Interval myRepairHistoryLookback = new Interval(THIRTY_DAYS, TimeUnit.DAYS);
     private RepairHistory myRepairHistory = new RepairHistory();
 
+
     @JsonProperty("provider")
     public final Class<? extends AbstractRepairConfigurationProvider> getRepairConfigurationClass()
     {
@@ -84,4 +85,6 @@ public class GlobalRepairConfig extends RepairConfig
     {
         myRepairHistory = repairHistory;
     }
+
+
 }

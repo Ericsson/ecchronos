@@ -27,7 +27,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -206,8 +205,8 @@ public class RepairStateImpl implements RepairState
     private long newTableRepairedAt()
     {
         long runIntervalInMs = myRepairConfiguration.getRepairIntervalInMs();
-        long minimumRepairWait = Math.min(runIntervalInMs, TimeUnit.DAYS.toMillis(1));
-        long assumedRepairedAt = System.currentTimeMillis() - runIntervalInMs + minimumRepairWait;
+        long newTableSlideOff = myRepairConfiguration.getNewTableSlideOff();
+        long assumedRepairedAt = System.currentTimeMillis() - runIntervalInMs + newTableSlideOff;
 
         if (LOG.isInfoEnabled())
         {

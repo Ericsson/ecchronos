@@ -56,6 +56,8 @@ public class RepairConfiguration
 
     private final RepairOptions.RepairType myRepairType;
 
+    private final long myInitialDelay;
+
     private RepairConfiguration(final Builder builder)
     {
         myRepairParallelism = builder.myRepairParallelism;
@@ -68,6 +70,7 @@ public class RepairConfiguration
         myBackoffInMs = builder.myBackoffInMs;
         myRepairType = builder.myRepairType;
         myPriorityGranularityUnit = builder.myPriorityGranularityUnit;
+        myInitialDelay = builder.myNewTableSlideOff;
     }
 
     public TimeUnit getPriorityGranularityUnit()
@@ -83,6 +86,11 @@ public class RepairConfiguration
     public long getRepairIntervalInMs()
     {
         return myRepairIntervalInMs;
+    }
+
+    public long getNewTableSlideOff()
+    {
+        return myInitialDelay;
     }
 
     public long getRepairWarningTimeInMs()
@@ -161,6 +169,7 @@ public class RepairConfiguration
                 && myIgnoreTWCSTables == that.myIgnoreTWCSTables
                 && myBackoffInMs == that.myBackoffInMs
                 && myRepairType == that.myRepairType
+                && myInitialDelay == that.myInitialDelay
                 && myPriorityGranularityUnit == that.myPriorityGranularityUnit;
     }
 
@@ -169,7 +178,7 @@ public class RepairConfiguration
     {
         return Objects.hash(myRepairParallelism, myRepairIntervalInMs, myRepairWarningTimeInMs,
                 myRepairErrorTimeInMs, myRepairUnwindRatio, myTargetRepairSizeInBytes, myIgnoreTWCSTables,
-                myBackoffInMs, myRepairType, myPriorityGranularityUnit);
+                myBackoffInMs, myRepairType, myInitialDelay, myPriorityGranularityUnit);
     }
 
     public static class Builder
@@ -184,6 +193,9 @@ public class RepairConfiguration
         private long myBackoffInMs = DEFAULT_BACKOFF_IN_MS;
         private boolean myIgnoreTWCSTables = DEFAULT_IGNORE_TWCS_TABLES;
         private TimeUnit myPriorityGranularityUnit = TimeUnit.HOURS;
+        private static final long DEFAULT_NEW_TABLE_SLIDEOFF = TimeUnit.DAYS.toMillis(1);
+
+        private long myNewTableSlideOff = DEFAULT_NEW_TABLE_SLIDEOFF;
 
         /**
          * Constructor.
@@ -208,6 +220,7 @@ public class RepairConfiguration
             myRepairUnwindRatio = from.getRepairUnwindRatio();
             myBackoffInMs = from.getBackoffInMs();
             myPriorityGranularityUnit = from.getPriorityGranularityUnit();
+            myNewTableSlideOff = from.getNewTableSlideOff();
         }
 
         /**
