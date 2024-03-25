@@ -66,6 +66,9 @@ def add_repairs_subcommand(sub_parsers):
     parser_repairs = sub_parsers.add_parser("repairs",
                                             description="Show the status of all manual repairs. This subcommand has "
                                                         "no mandatory parameters.")
+    parser_repairs.add_argument("-c", "--colors", type=str,
+                                  help="Allow colored output by ecctool schedules, the option can be auto/on/off.",
+                                  default="auto")
     parser_repairs.add_argument("-k", "--keyspace", type=str,
                                 help="Show repairs for the specified keyspace. This argument is mutually exclusive "
                                      "with -i and --id.")
@@ -92,6 +95,9 @@ def add_schedules_subcommand(sub_parsers):
     parser_schedules = sub_parsers.add_parser("schedules",
                                               description="Show the status of schedules. This subcommand has no "
                                                           "mandatory parameters.")
+    parser_schedules.add_argument("-c", "--colors", type=str,
+                                  help="Allow colored output by ecctool schedules, the option can be auto/on/off.",
+                                  default="auto")
     parser_schedules.add_argument("-k", "--keyspace", type=str,
                                   help="Show schedules for the specified keyspace. This argument is mutually "
                                        "exclusive with -i and --id.")
@@ -151,6 +157,9 @@ def add_repair_info_subcommand(sub_parsers):
                                                             "specific table using --keyspace and --table, "
                                                             "the duration will default to the table's "
                                                             "GC_GRACE_SECONDS.")
+    parser_repair_info.add_argument("-c", "--colors", type=str,
+                                  help="Allow colored output by ecctool schedules, the option can be auto/on/off.",
+                                  default="auto")
     parser_repair_info.add_argument("-k", "--keyspace", type=str,
                                     help="Show repair information for all tables in the specified keyspace.")
     parser_repair_info.add_argument("-t", "--table", type=str,
@@ -214,6 +223,7 @@ def schedules(arguments):
     # pylint: disable=too-many-branches
     request = rest.V2RepairSchedulerRequest(base_url=arguments.url)
     full = False
+    colors = color_option(arguments.colors)
     if arguments.id:
         if arguments.full:
             result = request.get_schedule(job_id=arguments.id, full=True)
@@ -222,7 +232,7 @@ def schedules(arguments):
             result = request.get_schedule(job_id=arguments.id)
 
         if result.is_successful():
-            table_printer.print_schedule(result.data, arguments.limit, full)
+            table_printer.print_schedule(result.data, arguments.limit, full, colors)
         else:
             print(result.format_exception())
     elif arguments.full:
@@ -234,23 +244,25 @@ def schedules(arguments):
             sys.exit(1)
         result = request.list_schedules(keyspace=arguments.keyspace, table=arguments.table)
         if result.is_successful():
-            table_printer.print_schedules(result.data, arguments.limit)
+            table_printer.print_schedules(result.data, arguments.limit, colors)
         else:
             print(result.format_exception())
     else:
         result = request.list_schedules(keyspace=arguments.keyspace)
         if result.is_successful():
-            table_printer.print_schedules(result.data, arguments.limit)
+            table_printer.print_schedules(result.data, arguments.limit, colors)
         else:
             print(result.format_exception())
 
 
 def repairs(arguments):
     request = rest.V2RepairSchedulerRequest(base_url=arguments.url)
+    colors = color_option(arguments.colors)
+
     if arguments.id:
         result = request.get_repair(job_id=arguments.id, host_id=arguments.hostid)
         if result.is_successful():
-            table_printer.print_repairs(result.data, arguments.limit)
+            table_printer.print_repairs(result.data, arguments.limit, colors)
         else:
             print(result.format_exception())
     elif arguments.table:
@@ -259,13 +271,13 @@ def repairs(arguments):
             sys.exit(1)
         result = request.list_repairs(keyspace=arguments.keyspace, table=arguments.table, host_id=arguments.hostid)
         if result.is_successful():
-            table_printer.print_repairs(result.data, arguments.limit)
+            table_printer.print_repairs(result.data, arguments.limit, colors)
         else:
             print(result.format_exception())
     else:
         result = request.list_repairs(keyspace=arguments.keyspace, host_id=arguments.hostid)
         if result.is_successful():
-            table_printer.print_repairs(result.data, arguments.limit)
+            table_printer.print_repairs(result.data, arguments.limit, colors)
         else:
             print(result.format_exception())
 
@@ -285,6 +297,7 @@ def run_repair(arguments):
 
 def repair_info(arguments):
     request = rest.V2RepairSchedulerRequest(base_url=arguments.url)
+    colors = color_option(arguments.colors)
     if not arguments.keyspace and arguments.table:
         print("--keyspace must be specified if table is specified")
         sys.exit(1)
@@ -301,7 +314,7 @@ def repair_info(arguments):
                                      since=arguments.since, duration=duration,
                                      local=arguments.local)
     if result.is_successful():
-        table_printer.print_repair_info(result.data, arguments.limit)
+        table_printer.print_repair_info(result.data, arguments.limit, colors)
     else:
         print(result.format_exception())
 
@@ -382,7 +395,16 @@ def running_job(arguments):
     result = request.running_job()
     print(result)
 
+def color_option(color_arg):
+    colors = "auto"
 
+    if color_arg in ["auto", "on", "off"]:
+        if color_arg != colors:
+            colors = color_arg
+    else:
+        print(f"'{color_arg}' is not an valid option, it should be auto/on/off.")
+        print("Using 'auto' as a color option.")
+    return colors
 
 def run_subcommand(arguments):
     if arguments.subcommand == "repairs":

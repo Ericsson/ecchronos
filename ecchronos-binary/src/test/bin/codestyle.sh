@@ -34,6 +34,8 @@ pip install behave
 pip install requests
 pip install jsonschema
 pip install cassandra-driver
+pip install colorama
+pip install supports-color
 
 for directory in "$@"
 do

@@ -158,6 +158,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Schedule'
+  /repair-management/v2/running-job:
+    get:
+      tags:
+      - Repair-Management
+      operationId: getCurrentJobStatus
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
   /repair-management/v2/repairs/{id}:
     get:
       tags:

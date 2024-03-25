@@ -30,6 +30,8 @@ pip install behave
 pip install requests
 pip install jsonschema
 pip install cassandra-driver
+pip install colorama
+pip install supports-color
 
 BASE_DIR="$TEST_DIR"/ecchronos-binary-${project.version}
 CONF_DIR="$BASE_DIR"/conf

@@ -81,6 +81,10 @@ def validate_last_table_row(rows):
 
 def get_job_id(context):
     out = context.out.decode('ascii')
+    print(f"LOG AQUI: {out}")
+    print(f"LOG AQUI: {out}")
+    print(f"LOG AQUI: {out}")
+    print(f"LOG AQUI: {out}")
     job_id = re.search(ID_PATTERN, out).group(0)
     assert job_id, "Could not find job id matching {0} in {1}".format(ID_PATTERN, out)
     return job_id
