@@ -15,7 +15,6 @@
 
 from __future__ import print_function
 
-
 def calculate_max_len(data, i):
     max_len = 0
     for array in data:
@@ -24,7 +23,7 @@ def calculate_max_len(data, i):
     return max_len
 
 
-def format_table(data):
+def format_table(data, colors):
     if len(data) <= 0:
         return
 
@@ -32,9 +31,12 @@ def format_table(data):
     total_length = 2
 
     for idx, _ in enumerate(data[0]):
+        remove_str = 0
+        if colors:
+            remove_str = 10 # remove ANSI extra strings
         max_len = calculate_max_len(data, idx)
         print_format = "{0}{{{1}:{2}s}} | ".format(print_format, idx, max_len)
-        total_length += max_len + 3
+        total_length += max_len + 3 - remove_str
     total_length -= 1  # Last space is not counted
 
     print("-" * total_length)

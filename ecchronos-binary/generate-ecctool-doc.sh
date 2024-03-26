@@ -26,7 +26,9 @@ fi
 
 pip install sphinx
 pip install sphinxcontrib-autoprogram
-pip install sphinxnotes-markdown-builder
+pip install sphinxnotes-markdown-builder]
+pip install colorama
+pip install supports-color
 
 sphinx-build -M markdown ${SCRIPT_DIR}/src ${SCRIPT_DIR}/target/
 sed -i 's:<:\&lt;:g' ${SCRIPT_DIR}/target/markdown/index.md
