@@ -20,6 +20,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.google.common.annotations.VisibleForTesting;
@@ -37,7 +38,10 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
     static final long DEFAULT_RUN_DELAY_IN_MS = TimeUnit.SECONDS.toMillis(30);
 
+    private static final String NO_RUNNING_JOB = "No job is currently running";
+
     private final ScheduledJobQueue myQueue = new ScheduledJobQueue(new DefaultJobComparator());
+    private final AtomicReference<ScheduledJob> currentExecutingJob = new AtomicReference<>();
     private final Set<RunPolicy> myRunPolicies = Sets.newConcurrentHashSet();
     private final ScheduledFuture<?> myRunFuture;
 
@@ -55,6 +59,20 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 TimeUnit.MILLISECONDS);
     }
 
+    @Override
+    public String getCurrentJobStatus()
+    {
+        ScheduledJob job = currentExecutingJob.get();
+        if (job != null)
+        {
+            String jobId = job.getId().toString();
+            return "Job ID: " + jobId + ", Status: Running";
+        }
+        else
+        {
+            return ScheduleManagerImpl.NO_RUNNING_JOB;
+        }
+    }
     public boolean addRunPolicy(final RunPolicy runPolicy)
     {
         LOG.debug("Run policy {} added", runPolicy);
@@ -151,11 +169,16 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         {
             for (ScheduledJob next : myQueue)
             {
-                if (validate(next) && tryRunTasks(next))
+                if (validate(next))
                 {
-                    break;
+                    currentExecutingJob.set(next);
+                    if (tryRunTasks(next))
+                    {
+                        break;
+                    }
                 }
             }
+            currentExecutingJob.set(null);
         }
 
         private boolean validate(final ScheduledJob job)

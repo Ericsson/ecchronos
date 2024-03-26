@@ -20,8 +20,7 @@ def calculate_max_len(data, i):
     max_len = 0
     for array in data:
         current_len = len(str(array[i]))
-        if current_len > max_len:
-            max_len = current_len
+        max_len = max(max_len, current_len)
     return max_len
 
 

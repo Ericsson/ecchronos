@@ -43,4 +43,10 @@ public interface ScheduleRepairManagementREST
      * @return A JSON representation of {@link Schedule}
      */
     ResponseEntity<Schedule> getSchedules(String id, boolean full);
+
+    /**
+     * Retrieves the current status of the job being managed by this scheduler.
+     *@return A {@code String} representing the current status of the job.
+     */
+    ResponseEntity<String> getCurrentJobStatus();
 }

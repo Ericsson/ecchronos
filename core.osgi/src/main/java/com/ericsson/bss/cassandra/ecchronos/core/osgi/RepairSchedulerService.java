@@ -127,6 +127,12 @@ public class RepairSchedulerService implements RepairScheduler
         return myDelegateRepairSchedulerImpl.getCurrentRepairJobs();
     }
 
+    @Override
+    public final String getCurrentJobStatus()
+    {
+        return myScheduleManager.getCurrentJobStatus();
+    }
+
     @ObjectClassDefinition
     public @interface Configuration
     {

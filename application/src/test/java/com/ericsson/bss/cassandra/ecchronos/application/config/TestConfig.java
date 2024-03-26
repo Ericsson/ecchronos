@@ -33,7 +33,6 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.metrics.Reporting
 import com.ericsson.bss.cassandra.ecchronos.application.config.metrics.StatisticsConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.GlobalRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.RepairHistory;
-import com.ericsson.bss.cassandra.ecchronos.application.config.repair.RepairSchedule;
 import com.ericsson.bss.cassandra.ecchronos.application.config.rest.RestServerConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.runpolicy.RunPolicyConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.scheduler.SchedulerConfig;
@@ -47,6 +46,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurati
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ConsistencyType;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
@@ -157,6 +157,7 @@ public class TestConfig
 
         LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCasLockFactoryConfig().getKeyspaceName()).isEqualTo("ecc");
+        assertThat(lockFactoryConfig.getCasLockFactoryConfig().getConsistencySerial().equals(ConsistencyType.LOCAL)).isTrue();
 
         RunPolicyConfig runPolicyConfig = config.getRunPolicy();
         assertThat(runPolicyConfig.getTimeBasedConfig().getKeyspaceName()).isEqualTo("ecc");
@@ -243,6 +244,7 @@ public class TestConfig
 
         LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCasLockFactoryConfig().getKeyspaceName()).isEqualTo("ecchronos");
+        assertThat(lockFactoryConfig.getCasLockFactoryConfig().getConsistencySerial().equals(ConsistencyType.DEFAULT)).isTrue();
 
         RunPolicyConfig runPolicyConfig = config.getRunPolicy();
         assertThat(runPolicyConfig.getTimeBasedConfig().getKeyspaceName()).isEqualTo("ecchronos");
@@ -327,6 +329,7 @@ public class TestConfig
 
         LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCasLockFactoryConfig().getKeyspaceName()).isEqualTo("ecchronos");
+        assertThat(lockFactoryConfig.getCasLockFactoryConfig().getConsistencySerial().equals(ConsistencyType.DEFAULT)).isTrue();
 
         RunPolicyConfig runPolicyConfig = config.getRunPolicy();
         assertThat(runPolicyConfig.getTimeBasedConfig().getKeyspaceName()).isEqualTo("ecchronos");

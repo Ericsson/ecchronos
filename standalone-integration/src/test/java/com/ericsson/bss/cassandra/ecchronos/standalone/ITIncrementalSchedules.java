@@ -31,6 +31,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairSchedulerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManagerImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ConsistencyType;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -127,6 +128,7 @@ public class ITIncrementalSchedules extends TestBase
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(myHostStates)
                 .withStatementDecorator(s -> s)
+                .withConsistencySerial(ConsistencyType.DEFAULT)
                 .build();
 
         myScheduleManagerImpl = ScheduleManagerImpl.builder()

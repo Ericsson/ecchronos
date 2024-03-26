@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.scheduling;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
@@ -27,6 +28,11 @@ public class DummyJob extends ScheduledJob
     public DummyJob(Priority priority)
     {
         super(new ConfigurationBuilder().withPriority(priority).withRunInterval(1, TimeUnit.SECONDS).build());
+    }
+
+    public DummyJob(Priority priority, UUID jobId)
+    {
+        super(new ConfigurationBuilder().withPriority(priority).build(), jobId);
     }
 
     public boolean hasRun()

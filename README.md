@@ -1,7 +1,8 @@
 # ecChronos
 
 [![codecov](https://codecov.io/gh/ericsson/ecchronos/branch/master/graph/badge.svg)](https://codecov.io/gh/ericsson/ecchronos/tree/master)
-[![maven central](https://img.shields.io/maven-central/v/com.ericsson.bss.cassandra.ecchronos/ecchronos-binary.svg?label=maven%20central&versionPrefix=4.0)](https://central.sonatype.com/artifact/com.ericsson.bss.cassandra.ecchronos/ecchronos-binary/versions)
+[![maven central](https://img.shields.io/maven-central/v/com.ericsson.bss.cassandra.ecchronos/ecchronos-binary.svg?label=maven%20central&versionPrefix=5.0)](https://central.sonatype.com/artifact/com.ericsson.bss.cassandra.ecchronos/ecchronos-binary/versions)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/Ericsson/ecchronos/badge)](https://securityscorecards.dev/viewer/?uri=github.com/Ericsson/ecchronos)
 
 ecChronos is a decentralized scheduling framework primarily focused on performing automatic repairs in Apache Cassandra.
 
@@ -20,7 +21,7 @@ More details on the underlying infrastructure can be found in [ARCHITECTURE.md](
 
 More information on the REST interface of ecChronos is described in [REST.md](docs/REST.md).
 
-### Prerequisites
+## Prerequisites
 
 * JDK 11
 * Python 3.8
@@ -53,6 +54,7 @@ Please read [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on our code of c
 ## Versioning
 
 We try to adhere to [SemVer](http://semver.org) for versioning.
+
 * Anything requiring changes to configuration or plugin APIs should be released in a new major version.
 * Anything extending configuration or plugins in a backwards compatible way should be released in a new minor version.
 * Bug fixes should be made for the first known version and merged forward.

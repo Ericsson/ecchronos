@@ -56,6 +56,12 @@ public class ScheduleRepairManagementRESTImpl implements ScheduleRepairManagemen
         myRepairScheduler = repairScheduler;
     }
 
+    @Override
+    @GetMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/running-job", produces = MediaType.APPLICATION_JSON_VALUE)
+    public final ResponseEntity<String> getCurrentJobStatus()
+    {
+        return ResponseEntity.ok(myRepairScheduler.getCurrentJobStatus());
+    }
 
     @Override
     @GetMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/schedules", produces = MediaType.APPLICATION_JSON_VALUE)

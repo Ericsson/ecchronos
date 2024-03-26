@@ -327,6 +327,12 @@ public class TestUtils
             throw new UnsupportedOperationException();
         }
 
+        @Override
+        public String getNodeStatus()
+        {
+            return "NORMAL";
+        }
+
         public void notify(Notification notification)
         {
             myListener.handleNotification(notification, null);

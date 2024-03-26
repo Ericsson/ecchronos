@@ -109,6 +109,36 @@ class RestRequest(object):
         except Exception as e:  # pylint: disable=broad-except
             return RequestResult(exception=e,
                                  message="Unable to retrieve resource {0}".format(request_url))
+    def basic_request(self, url, method='GET'):
+        request_url = "{0}/{1}".format(self.base_url, url)
+        try:
+            request = Request(request_url)
+            request.get_method = lambda: method
+            cert_file = os.getenv("ECCTOOL_CERT_FILE")
+            key_file = os.getenv("ECCTOOL_KEY_FILE")
+            ca_file = os.getenv("ECCTOOL_CA_FILE")
+            if cert_file and key_file and ca_file:
+                context = ssl.create_default_context(cafile=ca_file)
+                context.load_cert_chain(cert_file, key_file)
+                response = urlopen(request, context=context)
+            else:
+                response = urlopen(request)
+
+            data = response.read()
+
+            response.close()
+            return data.decode('UTF-8')
+        except HTTPError as e:
+            return RequestResult(status_code=e.code,
+                                 message="Unable to retrieve resource {0}".format(request_url),
+                                 exception=e)
+        except URLError as e:
+            return RequestResult(status_code=404,
+                                 message="Unable to connect to {0}".format(request_url),
+                                 exception=e)
+        except Exception as e:  # pylint: disable=broad-except
+            return RequestResult(exception=e,
+                                 message="Unable to retrieve resource {0}".format(request_url))
 
 
 class V2RepairSchedulerRequest(RestRequest):
@@ -127,6 +157,8 @@ class V2RepairSchedulerRequest(RestRequest):
     v2_repair_run_url = REPAIRS
 
     repair_info_url = PROTOCOL + 'repairInfo'
+
+    running_job_url = PROTOCOL + 'running-job'
 
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
@@ -232,4 +264,12 @@ class V2RepairSchedulerRequest(RestRequest):
         result = self.request(request_url)
         if result.is_successful():
             result = result.transform_with_data(new_data=RepairInfo(result.data))
+        return result
+
+    def running_job(self):
+        request_url = "{0}/{1}".format(self.base_url, V2RepairSchedulerRequest.running_job_url)
+        request_url = V2RepairSchedulerRequest.running_job_url
+
+        result = self.basic_request(request_url)
+
         return result

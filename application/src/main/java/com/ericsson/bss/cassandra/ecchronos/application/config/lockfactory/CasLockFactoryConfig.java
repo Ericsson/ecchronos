@@ -15,6 +15,8 @@
 package com.ericsson.bss.cassandra.ecchronos.application.config.lockfactory;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ConsistencyType;
+import java.util.Locale;
 
 public class CasLockFactoryConfig
 {
@@ -22,6 +24,7 @@ public class CasLockFactoryConfig
     private static final String DEFAULT_KEYSPACE_NAME = "ecchronos";
     private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
     private long myExpiryTimeInSeconds = DEFAULT_EXPIRY_TIME_IN_SECONDS;
+    private ConsistencyType myConsistencySerial = ConsistencyType.DEFAULT;
 
     public final long getFailureCacheExpiryTimeInSeconds()
     {
@@ -43,5 +46,17 @@ public class CasLockFactoryConfig
     public final void setKeyspaceName(final String keyspaceName)
     {
         myKeyspaceName = keyspaceName;
+    }
+
+    @JsonProperty("consistencySerial")
+    public final ConsistencyType getConsistencySerial()
+    {
+        return myConsistencySerial;
+    }
+
+    @JsonProperty("consistencySerial")
+    public final void setConsistencySerial(final String consistencySerial)
+    {
+        myConsistencySerial = ConsistencyType.valueOf(consistencySerial.toUpperCase(Locale.US));
     }
 }

@@ -50,8 +50,16 @@ def get_parser():
     add_start_subcommand(sub_parsers)
     add_stop_subcommand(sub_parsers)
     add_status_subcommand(sub_parsers)
+    add_running_job_subcommand(sub_parsers)
 
     return parser
+
+def add_running_job_subcommand(sub_parsers):
+    parser_repairs =  sub_parsers.add_parser("running-job", description="Show which (if any) job is currently running ")
+
+    parser_repairs.add_argument("-u", "--url", type=str,
+                                 help="The ecChronos host to connect to, specified in the format http://<host>:<port>.",
+                                    default=None)
 
 
 def add_repairs_subcommand(sub_parsers):
@@ -369,6 +377,12 @@ def status(arguments, print_running=False):
         print("ecChronos is not running")
         sys.exit(1)
 
+def running_job(arguments):
+    request = rest.V2RepairSchedulerRequest(base_url=arguments.url)
+    result = request.running_job()
+    print(result)
+
+
 
 def run_subcommand(arguments):
     if arguments.subcommand == "repairs":
@@ -377,6 +391,9 @@ def run_subcommand(arguments):
     elif arguments.subcommand == "schedules":
         status(arguments)
         schedules(arguments)
+    elif arguments.subcommand == "running-job":
+        status(arguments)
+        running_job(arguments)
     elif arguments.subcommand == "run-repair":
         status(arguments)
         run_repair(arguments)
