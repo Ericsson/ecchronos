@@ -18,8 +18,12 @@
 # Connection is tried every five second until either the timeout time passes or the connection is successful.
 #
 **timeout:**
-* time: 0
+* time: 60
 * unit: seconds
+**retryPolicy:**
+* maxAttempts: 5
+* delay: 5
+* maxDelay: 30
 #
 # The class used to provide CQL connections to Apache Cassandra.
 # The default provider will be used unless another is specified.

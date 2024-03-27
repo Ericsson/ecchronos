@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
+import com.ericsson.bss.cassandra.ecchronos.application.config.RetryPolicy;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalNativeConnectionProvider;
@@ -81,7 +82,8 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
                 .withNodeStateListener(defaultRepairConfigurationProvider);
 
         myLocalNativeConnectionProvider = establishConnection(nativeConnectionBuilder,
-                host, port, nativeConfig.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS));
+                host, port, nativeConfig.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS),
+                nativeConfig.getRetryPolicy());
     }
 
     public DefaultNativeConnectionProvider(final Config config,
@@ -98,11 +100,10 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
             final LocalNativeConnectionProvider.Builder builder,
             final String host,
             final int port,
-            final long timeout)
+            final long timeout,
+            final RetryPolicy retryPolicy)
     {
-        long startTime = System.currentTimeMillis();
-        long endTime = startTime + timeout;
-        while (endTime > System.currentTimeMillis())
+        for (int count = 1; count <= retryPolicy.getMaxAttempts(); count++)
         {
             try
             {
@@ -110,19 +111,33 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
             }
             catch (AllNodesFailedException | IllegalStateException e)
             {
+                LOG.warn("Unable to connect through CQL using {}:{}, retrying", host, port);
+                long delay = retryPolicy.currentDelay(count);
+                long currentTime = System.currentTimeMillis();
+                long endTime = currentTime + timeout;
                 try
                 {
-                    LOG.warn("Unable to connect through CQL using {}:{}, retrying", host, port);
-                    if (timeout != 0)
+                    if (currentTime + delay > endTime)
                     {
-                        LOG.debug("Connection failed, retrying in 5 seconds", e);
+                        String msg = String.format(
+                                "Connection failed in attempt %d of %d. Retrying in 5 seconds.",
+                                count, retryPolicy.getMaxAttempts());
+                        LOG.warn(msg);
                         Thread.sleep(SLEEP_TIME);
+                    }
+                    else
+                    {
+                        String msg = String.format(
+                                "Connection failed in attempt %d of %d. Retrying in %d seconds.",
+                                count, retryPolicy.getMaxAttempts(), TimeUnit.MILLISECONDS.toSeconds(delay));
+                        LOG.warn(msg);
+                        Thread.sleep(delay);
                     }
                 }
                 catch (InterruptedException e1)
                 {
                     LOG.error("Unexpected interrupt while trying to connect to Cassandra", e1);
-                    throw e;
+                    throw new RuntimeException(e1);
                 }
             }
         }

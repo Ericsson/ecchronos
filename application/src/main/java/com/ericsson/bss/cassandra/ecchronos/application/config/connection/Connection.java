@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config.connection;
 
+import com.ericsson.bss.cassandra.ecchronos.application.config.RetryPolicy;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -28,6 +29,7 @@ public abstract class Connection<T>
     private Class<? extends T> myProviderClass;
     private Class<? extends CertificateHandler> myCertificateHandlerClass;
     private Timeout myTimeout = new Timeout();
+    private RetryPolicy myRetryPolicy = new RetryPolicy();
 
     @JsonProperty("host")
     public final String getHost()
@@ -57,6 +59,12 @@ public abstract class Connection<T>
     public final Timeout getTimeout()
     {
         return myTimeout;
+    }
+
+    @JsonProperty("retryPolicy")
+    public final RetryPolicy getRetryPolicy()
+    {
+        return myRetryPolicy;
     }
 
     @JsonProperty("host")
@@ -100,6 +108,12 @@ public abstract class Connection<T>
     public final void setTimeout(final Timeout timeout)
     {
         myTimeout = timeout;
+    }
+
+    @JsonProperty("retryPolicy")
+    public final void setRetryCount(final RetryPolicy retryPolicy)
+    {
+        myRetryPolicy = retryPolicy;
     }
 
     protected abstract Class<?>[] expectedConstructor();
