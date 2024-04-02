@@ -210,10 +210,14 @@ public class RepairStateImpl implements RepairState
 
         if (LOG.isInfoEnabled())
         {
-            LOG.info("Assuming the table {} is new, next repair will be executed after an initial delay of {]ms at {}",
-                    myTableReference,
-                    initialDelayInMs,
-                    MY_DATE_FORMAT.get().format(new Date(assumedRepairedAt)));
+            String logMSG = "Assuming the table ";
+            logMSG += myTableReference;
+            logMSG += "is new, next repair will be executed after an initial delay of ";
+            logMSG += initialDelayInMs;
+            logMSG += "ms at";
+            logMSG += MY_DATE_FORMAT.get().format(new Date(assumedRepairedAt));
+
+            LOG.info(logMSG);
         }
 
         return assumedRepairedAt;
