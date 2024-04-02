@@ -43,7 +43,7 @@ public class RepairConfig
     private Priority myPriority = new Priority();
 
     private Interval myInitialDelay = new Interval(INITIAL_DELAY_DAYS, TimeUnit.DAYS);
-    private long myInitialDelayLong = TimeUnit.HOURS.toMillis(1);
+    private final long myInitialDelayLong = TimeUnit.HOURS.toMillis(1);
     public final Priority getPriority()
     {
         return  myPriority;
