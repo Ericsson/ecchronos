@@ -205,14 +205,15 @@ public class RepairStateImpl implements RepairState
     private long newTableRepairedAt()
     {
         long runIntervalInMs = myRepairConfiguration.getRepairIntervalInMs();
-        long newTableSlideOff = myRepairConfiguration.getNewTableSlideOff();
-        long assumedRepairedAt = System.currentTimeMillis() - runIntervalInMs + newTableSlideOff;
+        long initialDelayInMs = myRepairConfiguration.getInitialDelayInMs();
+        long assumedRepairedAt = System.currentTimeMillis() - runIntervalInMs + initialDelayInMs;
 
         if (LOG.isInfoEnabled())
         {
-            LOG.info("Assuming the table {} is new, next repair {}",
+            LOG.info("Assuming the table {} is new, next repair will be executed after an initial delay of {]ms at {}",
                     myTableReference,
-                    MY_DATE_FORMAT.get().format(new Date(assumedRepairedAt + runIntervalInMs)));
+                    initialDelayInMs,
+                    MY_DATE_FORMAT.get().format(new Date(assumedRepairedAt)));
         }
 
         return assumedRepairedAt;

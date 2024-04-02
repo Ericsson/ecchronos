@@ -198,6 +198,7 @@ public class TestRepairStateImpl
 
         assertThat(repairStateSnapshot).isNotNull();
         assertThat(repairStateSnapshot.lastCompletedAt()).isGreaterThanOrEqualTo(expectedAtLeastRepairedAt);
+        assertThat(repairStateSnapshot.lastCompletedAt()).isLessThanOrEqualTo(expectedAtMostRepairedAt);
         assertThat(repairStateSnapshot.getRepairGroups()).isEqualTo(replicaRepairGroups);
         assertThat(repairStateSnapshot.canRepair()).isEqualTo(canRepair);
         assertThat(repairStateSnapshot.getVnodeRepairStates()).isEqualTo(vnodeRepairStatesBase.combineWithRepairedAt(repairStateSnapshot.lastCompletedAt()));

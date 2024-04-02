@@ -169,6 +169,32 @@ public class TestConfig
         assertThat(restServerConfig.getHost()).isEqualTo("127.0.0.2");
         assertThat(restServerConfig.getPort()).isEqualTo(8081);
     }
+    @Test
+    public void testIssue264() throws Exception
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("issue264.yml").getFile());
+
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
+        Config config = objectMapper.readValue(file, Config.class);
+        GlobalRepairConfig repair = config.getRepairConfig();
+        Interval interval = repair.getInitialDelay();
+        long x = interval.getInterval(TimeUnit.HOURS);
+        assertThat(interval.getInterval(TimeUnit.HOURS)).isEqualTo(5);
+
+    }
+
+    @Test
+    public void testIssue264_faultyConfig() throws Exception
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("issue264_faulty.yml").getFile());
+
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        assertThatExceptionOfType(JsonMappingException.class).isThrownBy(() -> objectMapper.readValue(file, Config.class));
+
+    }
 
     @Test
     public void testWithDefaultFile() throws Exception
@@ -222,7 +248,7 @@ public class TestConfig
         assertThat(repairConfig.getBackoff().getInterval(TimeUnit.MINUTES)).isEqualTo(30);
         assertThat(repairConfig.getPriority().getPriorityGranularityUnit()).isEqualTo(TimeUnit.HOURS);
 
-        assertThat(repairConfig.getMyInitialDelay().getInterval(TimeUnit.HOURS)).isEqualTo(1);
+        assertThat(repairConfig.getInitialDelay().getInterval(TimeUnit.HOURS)).isEqualTo(1);
 
         StatisticsConfig statisticsConfig = config.getStatisticsConfig();
         assertThat(statisticsConfig.isEnabled()).isTrue();

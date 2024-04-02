@@ -1,5 +1,9 @@
 # Changes
 
+## Version 5.0.2
+
+* Possibility for repairs to never be triggered - Issue #264
+
 ## Version 5.0.1
 
 * Improve hang preventing task - Issue #544

@@ -70,7 +70,7 @@ public class RepairConfiguration
         myBackoffInMs = builder.myBackoffInMs;
         myRepairType = builder.myRepairType;
         myPriorityGranularityUnit = builder.myPriorityGranularityUnit;
-        myInitialDelay = builder.myNewTableSlideOff;
+        myInitialDelay = builder.myInitialDelay;
     }
 
     public TimeUnit getPriorityGranularityUnit()
@@ -88,7 +88,7 @@ public class RepairConfiguration
         return myRepairIntervalInMs;
     }
 
-    public long getNewTableSlideOff()
+    public long getInitialDelayInMs()
     {
         return myInitialDelay;
     }
@@ -142,10 +142,26 @@ public class RepairConfiguration
     public String toString()
     {
         return String.format(
-                "RepairConfiguration(interval=%dms,warning=%dms,error=%dms,parallelism=%s,unwindRatio=%.2f"
-                        + ",ignoreTWCS=%b,backoff=%dms,repairType=%s)",
-                myRepairIntervalInMs, myRepairWarningTimeInMs, myRepairErrorTimeInMs, myRepairParallelism,
-                myRepairUnwindRatio, myIgnoreTWCSTables, myBackoffInMs, myRepairType, myPriorityGranularityUnit);
+                "RepairConfiguration(interval=%dms,"
+                        + "warning=%dms,"
+                        + "error=%dms,"
+                        + "parallelism=%s,"
+                        + "unwindRatio=%.2f,"
+                        + "ignoreTWCS=%b,"
+                        + "backoff=%dms,"
+                        + "repairType=%s,"
+                        + "myPriorityGranularityUnit=%s,"
+                        + "myInitialDelay=%s)",
+                        myRepairIntervalInMs,
+                        myRepairWarningTimeInMs,
+                        myRepairErrorTimeInMs,
+                        myRepairParallelism,
+                        myRepairUnwindRatio,
+                        myIgnoreTWCSTables,
+                        myBackoffInMs,
+                        myRepairType,
+                        myPriorityGranularityUnit,
+                        myInitialDelay);
     }
 
     @Override
@@ -193,9 +209,9 @@ public class RepairConfiguration
         private long myBackoffInMs = DEFAULT_BACKOFF_IN_MS;
         private boolean myIgnoreTWCSTables = DEFAULT_IGNORE_TWCS_TABLES;
         private TimeUnit myPriorityGranularityUnit = TimeUnit.HOURS;
-        private static final long DEFAULT_NEW_TABLE_SLIDEOFF = TimeUnit.DAYS.toMillis(1);
+        private static final long DEFAULT_NEW_TABLE_SLIDEOFF = TimeUnit.HOURS.toMillis(1);
 
-        private long myNewTableSlideOff = DEFAULT_NEW_TABLE_SLIDEOFF;
+        private long myInitialDelay = DEFAULT_NEW_TABLE_SLIDEOFF;
 
         /**
          * Constructor.
@@ -220,7 +236,7 @@ public class RepairConfiguration
             myRepairUnwindRatio = from.getRepairUnwindRatio();
             myBackoffInMs = from.getBackoffInMs();
             myPriorityGranularityUnit = from.getPriorityGranularityUnit();
-            myNewTableSlideOff = from.getNewTableSlideOff();
+            myInitialDelay = from.getInitialDelayInMs();
         }
 
         /**
@@ -274,6 +290,19 @@ public class RepairConfiguration
         public Builder withRepairWarningTime(final long repairWarningTime, final TimeUnit timeUnit)
         {
             myRepairWarningTimeInMs = timeUnit.toMillis(repairWarningTime);
+            return this;
+        }
+
+        /**
+         * Set the interval from now when a new table will be scheduled to be repaired.
+         *
+         * @param initialDelay The time to use as initial delay
+         * @return The builder
+         *          * @see #withRepairErrorTime(long, TimeUnit)
+         * */
+        public Builder withInitialDelay(final long initialDelay)
+        {
+            myInitialDelay = initialDelay;
             return this;
         }
 

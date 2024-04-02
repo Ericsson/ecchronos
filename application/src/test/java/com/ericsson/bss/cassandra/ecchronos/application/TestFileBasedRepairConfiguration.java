@@ -55,9 +55,9 @@ public class TestFileBasedRepairConfiguration
     public void testNoSchedule() throws Exception
     {
         AbstractRepairConfigurationProvider repairConfigProvider = withSchedule("schedule.yml");
-
         assertThat(repairConfigProvider.get(tableReference("any", "table"))).containsExactly(RepairConfiguration.DEFAULT);
     }
+
 
     @Test
     public void testAllSchedules() throws Exception
