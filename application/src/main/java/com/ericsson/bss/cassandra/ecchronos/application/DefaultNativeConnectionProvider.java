@@ -23,6 +23,7 @@ import com.datastax.oss.driver.api.core.auth.AuthProvider;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.NativeConnection;
+import com.ericsson.bss.cassandra.ecchronos.application.config.exceptions.RetryPolicyException;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -38,8 +39,6 @@ import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalNativeConnectio
 public class DefaultNativeConnectionProvider implements NativeConnectionProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultNativeConnectionProvider.class);
-
-    private static final int SLEEP_TIME = 5000;
 
     private final LocalNativeConnectionProvider myLocalNativeConnectionProvider;
 
@@ -111,10 +110,10 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
             }
             catch (AllNodesFailedException | IllegalStateException e)
             {
-                handleRetry(attempt, retryPolicy, host, port);
+                handleRetry(attempt, retryPolicy, host, port, timeout);
             }
         }
-        throw new RuntimeException("Failed to establish connection after all retry attempts.");
+        throw new RetryPolicyException("Failed to establish connection after all retry attempts.");
     }
 
     private static LocalNativeConnectionProvider tryEstablishConnection(
@@ -126,6 +125,7 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
         }
         catch (AllNodesFailedException | IllegalStateException e)
         {
+            LOG.error("Unexpected interrupt while trying to connect to Cassandra", e);
             throw e;
         }
     }
@@ -134,10 +134,17 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
         final int attempt,
         final RetryPolicy retryPolicy,
         final String host,
-        final int port)
+        final int port,
+        final long timeout)
     {
         LOG.warn("Unable to connect through CQL using {}:{}, retrying.", host, port);
         long delay = retryPolicy.currentDelay(attempt);
+        long currentTime = System.currentTimeMillis();
+        long endTime = currentTime + timeout;
+        if (currentTime + delay > endTime)
+        {
+            delay = timeout;
+        }
         String msg = String.format(
                 "Connection failed in attempt %d of %d. Retrying in %d seconds.",
                 attempt, retryPolicy.getMaxAttempts(), TimeUnit.MILLISECONDS.toSeconds(delay));
@@ -151,7 +158,6 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
             LOG.error(
                 "InterruptedException caught during the delay time, while trying to reconnect to Cassandra. Reason: {}",
                 e1);
-            throw new RuntimeException(e1);
         }
     }
 

@@ -148,7 +148,6 @@ public class BeanConfigurator
         CertificateHandler certificateHandler = createCertificateHandler(configuration, tlsSupplier);
 
         Class<?> providerClass = configuration.getConnectionConfig().getCqlConnection().getProviderClass();
-        LOG.warn("Trying to connect using " + providerClass);
 
         try
         {
@@ -165,6 +164,7 @@ public class BeanConfigurator
             }
             else
             {
+                // Check for old versions of DefaultNativeConnectionProvider
                 constructorArgs = new Object[]
                 {
                         configuration,
@@ -182,8 +182,8 @@ public class BeanConfigurator
         }
         catch (ConfigurationException ex)
         {
-            LOG.error("Error while trying to connect with Cassandra using " + providerClass, ex);
-            throw ex;
+            throw new ConfigurationException(
+                "Error while trying to connect with Cassandra using " + providerClass, ex);
         }
     }
 
