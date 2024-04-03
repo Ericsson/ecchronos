@@ -15,18 +15,18 @@
 package com.ericsson.bss.cassandra.ecchronos.application.config;
 
 import java.util.concurrent.TimeUnit;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class RetryPolicy
 {
     private static final int DEFAULT_MAX_ATTEMPTS = 5;
-    private static final long DEFAULT_DELAY = 5000;
-    private static final long DEFAULT_MAX_DELAY = 30000;
+    private static final int INITIAL_BACKOFF_INTERVAL_IN_MS = 5000; // 5 seconds
+    private static final int MAX_BACKOFF_INTERVAL_IN_MS = 30000; // 30 seconds
+    private static final int DISABLE_MAX_DELAY = 0;
 
     private Integer myMaxAttempts = DEFAULT_MAX_ATTEMPTS;
-    private long myDelay = DEFAULT_DELAY;
-    private long myMaxDelay = DEFAULT_MAX_DELAY;
+    private long myDelay = INITIAL_BACKOFF_INTERVAL_IN_MS;
+    private long myMaxDelay = MAX_BACKOFF_INTERVAL_IN_MS;
 
     public RetryPolicy(
         final Integer retry,
@@ -40,13 +40,12 @@ public class RetryPolicy
 
     public RetryPolicy()
     {
-
     }
 
     public final long currentDelay(final Integer count)
     {
-        long currentDelay = myDelay * count;
-        if (currentDelay > myMaxDelay)
+        long currentDelay = (long) (INITIAL_BACKOFF_INTERVAL_IN_MS * Math.pow(2, count));
+        if (myMaxDelay > DISABLE_MAX_DELAY & currentDelay > myMaxDelay)
         {
             currentDelay = myMaxDelay;
         }

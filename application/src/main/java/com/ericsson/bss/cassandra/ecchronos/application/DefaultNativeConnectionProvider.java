@@ -97,51 +97,62 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
     }
 
     private static LocalNativeConnectionProvider establishConnection(
-            final LocalNativeConnectionProvider.Builder builder,
-            final String host,
-            final int port,
-            final long timeout,
-            final RetryPolicy retryPolicy)
+        final LocalNativeConnectionProvider.Builder builder,
+        final String host,
+        final int port,
+        final long timeout,
+        final RetryPolicy retryPolicy)
     {
-        for (int count = 1; count <= retryPolicy.getMaxAttempts(); count++)
+        for (int attempt = 1; attempt <= retryPolicy.getMaxAttempts(); attempt++)
         {
             try
             {
-                return builder.build();
+                return tryEstablishConnection(builder);
             }
             catch (AllNodesFailedException | IllegalStateException e)
             {
-                LOG.warn("Unable to connect through CQL using {}:{}, retrying", host, port);
-                long delay = retryPolicy.currentDelay(count);
-                long currentTime = System.currentTimeMillis();
-                long endTime = currentTime + timeout;
-                try
-                {
-                    if (currentTime + delay > endTime)
-                    {
-                        String msg = String.format(
-                                "Connection failed in attempt %d of %d. Retrying in 5 seconds.",
-                                count, retryPolicy.getMaxAttempts());
-                        LOG.warn(msg);
-                        Thread.sleep(SLEEP_TIME);
-                    }
-                    else
-                    {
-                        String msg = String.format(
-                                "Connection failed in attempt %d of %d. Retrying in %d seconds.",
-                                count, retryPolicy.getMaxAttempts(), TimeUnit.MILLISECONDS.toSeconds(delay));
-                        LOG.warn(msg);
-                        Thread.sleep(delay);
-                    }
-                }
-                catch (InterruptedException e1)
-                {
-                    LOG.error("Unexpected interrupt while trying to connect to Cassandra", e1);
-                    throw new RuntimeException(e1);
-                }
+                handleRetry(attempt, retryPolicy, host, port);
             }
         }
-        return builder.build();
+        throw new RuntimeException("Failed to establish connection after all retry attempts.");
+    }
+
+    private static LocalNativeConnectionProvider tryEstablishConnection(
+        final LocalNativeConnectionProvider.Builder builder)
+    {
+        try
+        {
+            return builder.build();
+        }
+        catch (AllNodesFailedException | IllegalStateException e)
+        {
+            throw e;
+        }
+    }
+
+    private static void handleRetry(
+        final int attempt,
+        final RetryPolicy retryPolicy,
+        final String host,
+        final int port)
+    {
+        LOG.warn("Unable to connect through CQL using {}:{}, retrying.", host, port);
+        long delay = retryPolicy.currentDelay(attempt);
+        String msg = String.format(
+                "Connection failed in attempt %d of %d. Retrying in %d seconds.",
+                attempt, retryPolicy.getMaxAttempts(), TimeUnit.MILLISECONDS.toSeconds(delay));
+        LOG.warn(msg);
+        try
+        {
+            Thread.sleep(delay);
+        }
+        catch (InterruptedException e1)
+        {
+            LOG.error(
+                "InterruptedException caught during the delay time, while trying to reconnect to Cassandra. Reason: {}",
+                e1);
+            throw new RuntimeException(e1);
+        }
     }
 
     @Override
