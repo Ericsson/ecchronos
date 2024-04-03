@@ -162,9 +162,9 @@ public class RepairConfig
     }
 
     @JsonProperty("initial_delay")
-    public final void setInitialDelay(final Interval slideOff)
+    public final void setInitialDelay(final Interval initialDelay)
     {
-        myInitialDelay = slideOff;
+        myInitialDelay = initialDelay;
     }
 
     /**

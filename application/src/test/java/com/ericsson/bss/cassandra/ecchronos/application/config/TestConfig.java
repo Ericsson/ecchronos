@@ -247,8 +247,7 @@ public class TestConfig
         assertThat(repairConfig.getIgnoreTWCSTables()).isFalse();
         assertThat(repairConfig.getBackoff().getInterval(TimeUnit.MINUTES)).isEqualTo(30);
         assertThat(repairConfig.getPriority().getPriorityGranularityUnit()).isEqualTo(TimeUnit.HOURS);
-
-        assertThat(repairConfig.getInitialDelay().getInterval(TimeUnit.HOURS)).isEqualTo(1);
+        assertThat(repairConfig.getInitialDelay().getInterval(TimeUnit.DAYS)).isEqualTo(1);
 
         StatisticsConfig statisticsConfig = config.getStatisticsConfig();
         assertThat(statisticsConfig.isEnabled()).isTrue();
@@ -334,7 +333,6 @@ public class TestConfig
         assertThat(repairConfig.getAlarm().getFaultReporterClass()).isEqualTo(LoggingFaultReporter.class);
         assertThat(repairConfig.getIgnoreTWCSTables()).isFalse();
         assertThat(repairConfig.getBackoff().getInterval(TimeUnit.MINUTES)).isEqualTo(30);
-
 
         StatisticsConfig statisticsConfig = config.getStatisticsConfig();
         assertThat(statisticsConfig.isEnabled()).isTrue();
