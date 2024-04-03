@@ -1,5 +1,10 @@
 # Changes
 
+## Version 5.0.2
+
+* Bump tomcat to 9.0.86 - Issue #653
+* Bump springboot to 2.7.18 - Issue #653
+
 ## Version 5.0.1
 
 * Containerized ecchronos restarting tomcat when Cassandra peer is overloaded - Issue #650
