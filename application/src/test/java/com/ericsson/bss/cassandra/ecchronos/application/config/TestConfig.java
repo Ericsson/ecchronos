@@ -91,8 +91,9 @@ public class TestConfig
         assertThat(nativeConnection.getRemoteRouting()).isFalse();
         assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.SECONDS)).isEqualTo(5);
         assertThat(nativeConnection.getRetryPolicy().getMaxAttempts()).isEqualTo(10);
-        assertThat(nativeConnection.getRetryPolicy().getDelay()).isEqualTo(10000);
-        assertThat(nativeConnection.getRetryPolicy().getMaxDelay()).isEqualTo(35000);
+        assertThat(nativeConnection.getRetryPolicy().getUnit()).isEqualTo(TimeUnit.MINUTES);
+        assertThat(nativeConnection.getRetryPolicy().getDelay()).isEqualTo(600000);
+        assertThat(nativeConnection.getRetryPolicy().getMaxDelay()).isEqualTo(2100000);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(TestNativeConnectionProvider.class);
         assertThat(nativeConnection.getCertificateHandlerClass()).isEqualTo(TestCertificateHandler.class);
         assertThat(nativeConnection.getDecoratorClass()).isEqualTo(TestStatementDecorator.class);
@@ -191,6 +192,7 @@ public class TestConfig
         assertThat(nativeConnection.getRemoteRouting()).isTrue();
         assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS)).isEqualTo(60000);
         assertThat(nativeConnection.getRetryPolicy().getMaxAttempts()).isEqualTo(5);
+        assertThat(nativeConnection.getRetryPolicy().getUnit()).isEqualTo(TimeUnit.SECONDS);
         assertThat(nativeConnection.getRetryPolicy().getDelay()).isEqualTo(5000);
         assertThat(nativeConnection.getRetryPolicy().getMaxDelay()).isEqualTo(30000);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(DefaultNativeConnectionProvider.class);

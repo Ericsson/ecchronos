@@ -23,6 +23,7 @@
 **retryPolicy:**
 # Max number of attempts that ecChronos will try to connect with Cassandra.
 * maxAttempts: 5
+* unit: seconds
 # Delay use to wait between an attempt and another, this value will be multiplied by the current attempt count.
 # If the calculated delay is greater than maxDelay, maxDelay will be used instead of the calculated delay
 * delay: 5

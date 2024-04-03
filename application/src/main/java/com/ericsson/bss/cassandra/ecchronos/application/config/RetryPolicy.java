@@ -14,7 +14,10 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config;
 
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class RetryPolicy
@@ -25,17 +28,14 @@ public class RetryPolicy
     private static final int DISABLE_MAX_DELAY = 0;
 
     private Integer myMaxAttempts = DEFAULT_MAX_ATTEMPTS;
+    private TimeUnit myUnit = TimeUnit.SECONDS;
     private long myDelay = INITIAL_BACKOFF_INTERVAL_IN_MS;
     private long myMaxDelay = MAX_BACKOFF_INTERVAL_IN_MS;
 
-    public RetryPolicy(
-        final Integer retry,
-        final Integer delay,
-        final Integer maxDelay)
+    @JsonCreator
+    public RetryPolicy(@JsonProperty("unit") final String unit)
     {
-        myMaxAttempts = retry;
-        myDelay = TimeUnit.SECONDS.toMillis(delay);
-        myMaxDelay = TimeUnit.SECONDS.toMillis(maxDelay);
+        myUnit = TimeUnit.valueOf(unit.toUpperCase(Locale.US));
     }
 
     public RetryPolicy()
@@ -57,10 +57,14 @@ public class RetryPolicy
         return myMaxAttempts;
     }
 
-    @JsonProperty("maxAttempts")
-    public final void setMaxAttempts(final Integer maxAttempts)
+    public final long getMaxDelay()
     {
-        myMaxAttempts = maxAttempts;
+        return myMaxDelay;
+    }
+
+    public final TimeUnit getUnit()
+    {
+        return myUnit;
     }
 
     public final long getDelay()
@@ -68,20 +72,21 @@ public class RetryPolicy
         return myDelay;
     }
 
+    @JsonProperty("maxAttempts")
+    public final void setMaxAttempts(final Integer maxAttempts)
+    {
+        myMaxAttempts = maxAttempts;
+    }
+
     @JsonProperty("delay")
     public final void setDelay(final Integer delay)
     {
-        myDelay = TimeUnit.SECONDS.toMillis(delay);
-    }
-
-    public final long getMaxDelay()
-    {
-        return myMaxDelay;
+        myDelay = myUnit.toMillis(delay);
     }
 
     @JsonProperty("maxDelay")
-    public final void setMaxDelay(final Integer maxRetry)
+    public final void setMaxDelay(final Integer maxDelay)
     {
-        myMaxDelay = TimeUnit.SECONDS.toMillis(maxRetry);
+        myMaxDelay = myUnit.toMillis(maxDelay);
     }
 }
