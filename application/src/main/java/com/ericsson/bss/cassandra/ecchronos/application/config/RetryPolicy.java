@@ -42,9 +42,9 @@ public class RetryPolicy
     {
     }
 
-    public final long currentDelay(final Integer count)
+    public final long currentDelay(final Integer attempt)
     {
-        long currentDelay = (long) (INITIAL_BACKOFF_INTERVAL_IN_MS * Math.pow(2, count));
+        long currentDelay = (long) (myDelay * Math.pow(2, attempt));
         if (myMaxDelay > DISABLE_MAX_DELAY & currentDelay > myMaxDelay)
         {
             currentDelay = myMaxDelay;
