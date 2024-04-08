@@ -8,22 +8,39 @@ If the calculated delay exceeds the allowed maximum (maxDelay), the maximum will
 
 ```yaml
     ##
-    ## Connection Timeout for an CQL attempt.
+    ## Connection Timeout for a CQL attempt.
     ## Specify a time to wait for cassandra to come up.
-    ## Connection is tried based on retry policy delay calculations. Each connection attempt will use timeout to calculate CQL Connection proccess delay.
+    ## Connection is tried based on retry policy delay calculations. Each connection attempt will use the timeout to calculate CQL connection process delay.
     ##
     timeout:
       time: 6
       unit: minutes
     retryPolicy:
-      ## Max number of attempts that ecChronos will try to connect with Cassandra.
-      maxAttempts: 10
-      unit: minutes
-      ## Delay use to wait between an attempt and another, this value will be multiplied by the current attempt count.
+      ## Max number of attempts ecChronos will try to connect with Cassandra.
+      maxAttempts: 5
+      ## Delay use to wait between an attempt and another, this value will be multiplied by the current attempt count powered by two.
+      ## If the current attempt is 4 and the default delay is 5 seconds, so ((4(attempt) x 2) x 5(default delay)) = 40 seconds.
       ## If the calculated delay is greater than maxDelay, maxDelay will be used instead of the calculated delay
       delay: 1
-      ## The max delay that one attempt can wait until run.
+      ## Maximum delay before the next connection attempt is made.
       ## Setting it as 0 will disable maxDelay and the delay interval will
       ## be calculated based on the attempt count and the default delay.
       maxDelay: 5
+      unit: minutes
+```
+
+With the configuration above, ecChronos will follow this procedure if it is not being able to connect with Cassandra.
+
+```log
+[main] WARN  c.e.b.c.e.a.DefaultNativeConnectionProvider - Unable to connect through CQL using localhost:9042, retrying.
+[main] WARN  c.e.b.c.e.a.DefaultNativeConnectionProvider - Connection failed in attempt 1 of 5. Retrying in 120 seconds.
+[main] WARN  c.e.b.c.e.a.DefaultNativeConnectionProvider - Unable to connect through CQL using localhost:9042, retrying.
+[main] WARN  c.e.b.c.e.a.DefaultNativeConnectionProvider - Connection failed in attempt 2 of 5. Retrying in 240 seconds.
+[main] WARN  c.e.b.c.e.a.DefaultNativeConnectionProvider - Unable to connect through CQL using localhost:9042, retrying.
+[main] WARN  c.e.b.c.e.a.DefaultNativeConnectionProvider - Connection failed in attempt 3 of 5. Retrying in 300 seconds.
+[main] WARN  c.e.b.c.e.a.DefaultNativeConnectionProvider - Unable to connect through CQL using localhost:9042, retrying.
+[main] WARN  c.e.b.c.e.a.DefaultNativeConnectionProvider - Connection failed in attempt 4 of 5. Retrying in 300 seconds.
+[main] WARN  c.e.b.c.e.a.DefaultNativeConnectionProvider - Unable to connect through CQL using localhost:9042, retrying.
+[main] WARN  c.e.b.c.e.a.DefaultNativeConnectionProvider - Connection failed in attempt 5 of 5. Retrying in 300 seconds.
+[main] ERROR  c.e.b.c.e.a..c.e.RetryPolicyException: Failed to establish connection after all retry attempts.
 ```

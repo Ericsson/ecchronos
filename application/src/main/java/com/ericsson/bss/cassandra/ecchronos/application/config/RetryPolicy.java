@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application.config;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -45,7 +46,7 @@ public class RetryPolicy
     public final long currentDelay(final Integer attempt)
     {
         long currentDelay = (long) (myDelay * Math.pow(2, attempt));
-        if (myMaxDelay > DISABLE_MAX_DELAY & currentDelay > myMaxDelay)
+        if ((myMaxDelay > DISABLE_MAX_DELAY) && (currentDelay > myMaxDelay))
         {
             currentDelay = myMaxDelay;
         }
@@ -88,5 +89,11 @@ public class RetryPolicy
     public final void setMaxDelay(final Integer maxDelay)
     {
         myMaxDelay = myUnit.toMillis(maxDelay);
+    }
+
+    @VisibleForTesting
+    public final void setUnit(final String unit)
+    {
+        myUnit = TimeUnit.valueOf(unit.toUpperCase(Locale.US));
     }
 }

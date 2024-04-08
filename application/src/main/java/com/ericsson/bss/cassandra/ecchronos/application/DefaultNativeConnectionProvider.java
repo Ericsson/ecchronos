@@ -125,7 +125,7 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
         }
         catch (AllNodesFailedException | IllegalStateException e)
         {
-            LOG.error("Unexpected interrupt while trying to connect to Cassandra", e);
+            LOG.error("Unexpected interrupt while trying to connect to Cassandra. Reason: ", e);
             throw e;
         }
     }
@@ -145,10 +145,8 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
         {
             delay = timeout;
         }
-        String msg = String.format(
-                "Connection failed in attempt %d of %d. Retrying in %d seconds.",
-                attempt, retryPolicy.getMaxAttempts(), TimeUnit.MILLISECONDS.toSeconds(delay));
-        LOG.warn(msg);
+        LOG.warn("Connection failed in attempt {} of {}. Retrying in {} seconds.",
+        attempt, retryPolicy.getMaxAttempts(), TimeUnit.MILLISECONDS.toSeconds(delay));
         try
         {
             Thread.sleep(delay);
@@ -156,7 +154,7 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
         catch (InterruptedException e1)
         {
             LOG.error(
-                "InterruptedException caught during the delay time, while trying to reconnect to Cassandra. Reason: {}",
+                "InterruptedException caught during the delay time, while trying to reconnect to Cassandra. Reason: ",
                 e1);
         }
     }
