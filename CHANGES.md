@@ -7,6 +7,7 @@
 
 ## Version 5.0.1
 
+* Containerized ecchronos restarting tomcat when Cassandra peer is overloaded - Issue #650
 * Improve hang preventing task - Issue #544
 * Improve Description of unwind_ratio - Issue #628
 

@@ -90,6 +90,10 @@ public class TestConfig
         assertThat(nativeConnection.getPort()).isEqualTo(9100);
         assertThat(nativeConnection.getRemoteRouting()).isFalse();
         assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.SECONDS)).isEqualTo(5);
+        assertThat(nativeConnection.getRetryPolicy().getMaxAttempts()).isEqualTo(10);
+        assertThat(nativeConnection.getRetryPolicy().getUnit()).isEqualTo(TimeUnit.MINUTES);
+        assertThat(nativeConnection.getRetryPolicy().getDelay()).isEqualTo(600000);
+        assertThat(nativeConnection.getRetryPolicy().getMaxDelay()).isEqualTo(2100000);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(TestNativeConnectionProvider.class);
         assertThat(nativeConnection.getCertificateHandlerClass()).isEqualTo(TestCertificateHandler.class);
         assertThat(nativeConnection.getDecoratorClass()).isEqualTo(TestStatementDecorator.class);
@@ -186,7 +190,11 @@ public class TestConfig
         assertThat(nativeConnection.getHost()).isEqualTo("localhost");
         assertThat(nativeConnection.getPort()).isEqualTo(9042);
         assertThat(nativeConnection.getRemoteRouting()).isTrue();
-        assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS)).isEqualTo(0);
+        assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS)).isEqualTo(60000);
+        assertThat(nativeConnection.getRetryPolicy().getMaxAttempts()).isEqualTo(5);
+        assertThat(nativeConnection.getRetryPolicy().getUnit()).isEqualTo(TimeUnit.SECONDS);
+        assertThat(nativeConnection.getRetryPolicy().getDelay()).isEqualTo(5000);
+        assertThat(nativeConnection.getRetryPolicy().getMaxDelay()).isEqualTo(30000);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(DefaultNativeConnectionProvider.class);
         assertThat(nativeConnection.getCertificateHandlerClass()).isEqualTo(ReloadingCertificateHandler.class);
         assertThat(nativeConnection.getDecoratorClass()).isEqualTo(NoopStatementDecorator.class);
@@ -274,6 +282,9 @@ public class TestConfig
         assertThat(nativeConnection.getPort()).isEqualTo(9042);
         assertThat(nativeConnection.getRemoteRouting()).isTrue();
         assertThat(nativeConnection.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS)).isEqualTo(0);
+        assertThat(nativeConnection.getRetryPolicy().getMaxAttempts()).isEqualTo(5);
+        assertThat(nativeConnection.getRetryPolicy().getDelay()).isEqualTo(5000);
+        assertThat(nativeConnection.getRetryPolicy().getMaxDelay()).isEqualTo(30000);
         assertThat(nativeConnection.getProviderClass()).isEqualTo(DefaultNativeConnectionProvider.class);
         assertThat(nativeConnection.getCertificateHandlerClass()).isEqualTo(ReloadingCertificateHandler.class);
         assertThat(nativeConnection.getDecoratorClass()).isEqualTo(NoopStatementDecorator.class);
