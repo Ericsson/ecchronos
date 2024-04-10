@@ -402,7 +402,7 @@ def color_option(color_arg):
         if color_arg != colors:
             colors = color_arg
     else:
-        print(f"'{color_arg}' is not an valid option, it should be auto/on/off.")
+        print(f"'{color_arg}' is not a valid option, it must be auto/on/off.")
         print("Using 'auto' as a color option.")
     return colors
 
