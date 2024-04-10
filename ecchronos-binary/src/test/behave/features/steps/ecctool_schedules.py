@@ -25,7 +25,7 @@ SCHEDULE_ROW_FORMAT_PATTERN = r'\| .* \| {0} \| {1} \| (COMPLETED|ON_TIME|LATE|O
 
 
 def run_ecc_schedule_status(context, params):
-    run_ecctool(context, ["schedules"] + params)
+    run_ecctool(context, ["schedules", "-c", "off"] + params)
 
 
 def handle_schedule_output(context):

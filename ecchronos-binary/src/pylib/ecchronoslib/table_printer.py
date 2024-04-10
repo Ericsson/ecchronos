@@ -15,28 +15,47 @@
 
 from __future__ import print_function
 from datetime import datetime
-from ecchronoslib import table_formatter
+from ecchronoslib import table_formatter, displaying
 
 
-def print_schedule(schedule, max_lines, full=False):
+def print_schedule(schedule, max_lines, full=False, colors="auto"):
     if not schedule.is_valid():
         print('Schedule not found')
         return
 
-    verbose_print_format = "{0:15s}: {1}"
+    verbose_print_format = "{0:25s}: {1}"
 
-    print(verbose_print_format.format("Id", schedule.job_id))
-    print(verbose_print_format.format("Keyspace", schedule.keyspace))
-    print(verbose_print_format.format("Table", schedule.table))
-    print(verbose_print_format.format("Status", schedule.status))
-    print(verbose_print_format.format("Repaired(%)", schedule.get_repair_percentage()))
-    print(verbose_print_format.format("Completed at", schedule.get_last_repaired_at()))
-    print(verbose_print_format.format("Next repair", schedule.get_next_repair()))
-    print(verbose_print_format.format("Repair type", schedule.repair_type))
-    print(verbose_print_format.format("Config", schedule.get_config()))
+    print(verbose_print_format.format(
+        displaying.color_key("Id", colors ),
+        displaying.color_str(schedule.job_id, colors, "UUID")))
+    print(verbose_print_format.format(
+        displaying.color_key("Keyspace", colors ),
+        displaying.color_str(schedule.keyspace, colors, "TEXT")))
+    print(verbose_print_format.format(
+        displaying.color_key("Table", colors ),
+        displaying.color_str(schedule.table, colors, "TEXT")))
+    print(verbose_print_format.format(
+        displaying.color_key("Status", colors ),
+        displaying.color_key(schedule.status, colors)))
+    print(verbose_print_format.format(
+        displaying.color_key("Repaired(%)", colors ),
+        displaying.color_str(schedule.get_repair_percentage(), colors, "TEXT")))
+    print(verbose_print_format.format(
+        displaying.color_key("Completed at", colors ),
+        displaying.color_str(schedule.get_last_repaired_at(), colors, "DATETIME")))
+    print(verbose_print_format.format(
+        displaying.color_key("Next repair", colors ),
+        displaying.color_str(schedule.get_next_repair(), colors, "DATETIME")))
+    print(verbose_print_format.format(
+        displaying.color_key("Repair type", colors ),
+        displaying.color_str(schedule.repair_type, colors, "TEXT")))
+    print(verbose_print_format.format(
+        displaying.color_key("Config", colors ),
+        displaying.color_str(schedule.get_config(), colors, "Collection")))
 
     if full:
-        vnode_state_table = [["Start token", "End token", "Replicas", "Repaired at", "Repaired"]]
+        vnode_index = ["Start token", "End token", "Replicas", "Repaired at", "Repaired"]
+        vnode_state_table = [displaying.color_index(vnode_index, colors)]
 
         sorted_vnode_states = sorted(schedule.vnode_states, key=lambda vnode: vnode.last_repaired_at_in_ms,
                                      reverse=True)
@@ -45,14 +64,19 @@ def print_schedule(schedule, max_lines, full=False):
             sorted_vnode_states = sorted_vnode_states[:max_lines]
 
         for vnode_state in sorted_vnode_states:
-            _add_vnode_state_to_table(vnode_state, vnode_state_table)
+            _add_vnode_state_to_table(vnode_state, vnode_state_table, colors)
 
-        table_formatter.format_table(vnode_state_table)
+        table_formatter.format_table(vnode_state_table, displaying.should_color(colors))
 
 
-def _add_vnode_state_to_table(vnode_state, table):
-    entry = [vnode_state.start_token, vnode_state.end_token, ', '.join(vnode_state.replicas),
-             vnode_state.get_last_repaired_at(), vnode_state.repaired]
+def _add_vnode_state_to_table(vnode_state, table, colors):
+    entry = [
+        displaying.color_str(vnode_state.start_token, colors, "Start token"),
+        displaying.color_str(vnode_state.end_token, colors, "End token"),
+        displaying.color_str((', '.join(vnode_state.replicas)), colors, "Replicas"),
+        displaying.color_str(vnode_state.get_last_repaired_at(), colors, "DATETIME"),
+        displaying.color_str(vnode_state.repaired, colors, "Repaired")
+    ]
 
     table.append(entry)
 
@@ -77,80 +101,99 @@ def print_repair_summary(repairs):
                                 status_list.count('ERROR')))
 
 
-def print_schedules(schedules, max_lines):
-    schedule_table = [["Id", "Keyspace", "Table", "Status", "Repaired(%)",
-                       "Completed at", "Next repair", "Repair type"]]
+def print_schedules(schedules, max_lines, colors):
+    summary = ["Id", "Keyspace", "Table", "Status", "Repaired(%)",
+               "Completed at", "Next repair", "Repair type"]
+    colored_summary = displaying.color_index(summary, colors)
+    schedule_table = [colored_summary]
     print("Snapshot as of", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    print_schedule_table(schedule_table, schedules, max_lines)
+    print_schedule_table(schedule_table, schedules, max_lines, colors)
     print_summary(schedules)
 
 
-def print_repairs(repairs, max_lines=-1):
-    repair_table = [["Id", "Host Id", "Keyspace", "Table", "Status", "Repaired(%)",
-                     "Completed at", "Repair type"]]
-    print_repair_table(repair_table, repairs, max_lines)
+def print_repairs(repairs, max_lines=-1, colors="auto"):
+    summary = ["Id", "Host Id", "Keyspace", "Table", "Status", "Repaired(%)",
+                "Completed at", "Repair type"]
+    colored_summary = displaying.color_index(summary, colors)
+    repair_table = [colored_summary]
+    print_repair_table(repair_table, repairs, max_lines, colors)
     print_repair_summary(repairs)
 
 
-def print_schedule_table(schedule_table, schedules, max_lines):
+def print_schedule_table(schedule_table, schedules, max_lines, colors):
     sorted_schedules = sorted(schedules, key=lambda x: (x.last_repaired_at_in_ms, x.repaired_ratio),
                               reverse=False)
     if max_lines > -1:
         sorted_schedules = sorted_schedules[:max_lines]
 
     for schedule in sorted_schedules:
-        schedule_table.append(_convert_schedule(schedule))
-    table_formatter.format_table(schedule_table)
+        schedule_table.append(_convert_schedule(schedule, colors))
+    table_formatter.format_table(schedule_table, displaying.should_color(colors))
 
 
-def print_repair_table(repair_table, repairs, max_lines):
+def print_repair_table(repair_table, repairs, max_lines, colors):
     sorted_repairs = sorted(repairs, key=lambda x: (x.completed_at, x.repaired_ratio), reverse=False)
     if max_lines > -1:
         sorted_repairs = sorted_repairs[:max_lines]
 
     for repair in sorted_repairs:
-        repair_table.append(_convert_repair(repair))
-    table_formatter.format_table(repair_table)
+        repair_table.append(_convert_repair(repair, colors))
+    table_formatter.format_table(repair_table, displaying.should_color(colors))
 
 
-def print_repair(repair):
+def print_repair(repair, colors):
     repair_table = [["Id", "Host Id", "Keyspace", "Table", "Status", "Repaired(%)",
-                     "Completed at", "Repair type"], _convert_repair(repair)]
-    table_formatter.format_table(repair_table)
+                     "Completed at", "Repair type"], _convert_repair(repair, colors)]
+    table_formatter.format_table(repair_table, colors)
 
 
-def _convert_repair(repair):
-    entry = [repair.job_id, repair.host_id, repair.keyspace, repair.table, repair.status,
-             repair.get_repair_percentage(), repair.get_completed_at(), repair.repair_type]
+def _convert_repair(repair, colors):
+    entry = [displaying.color_str(repair.job_id, colors, "UUID"),
+             displaying.color_str(repair.host_id, colors, "UUID"),
+             displaying.color_str(repair.keyspace, colors, "TEXT"),
+             displaying.color_str(repair.table, colors, "TEXT"),
+             displaying.color_key(repair.status, colors),
+             displaying.color_str(repair.get_repair_percentage(), colors, "TEXT"),
+             displaying.color_str(repair.get_completed_at(), colors, "DATETIME"),
+             displaying.color_str(repair.repair_type, colors, "TEXT")]
     return entry
 
 
-def _convert_schedule(schedule):
-    entry = [schedule.job_id, schedule.keyspace, schedule.table, schedule.status,
-             schedule.get_repair_percentage(), schedule.get_last_repaired_at(), schedule.get_next_repair(),
-             schedule.repair_type]
+def _convert_schedule(schedule, colors):
+    entry = [displaying.color_str(schedule.job_id, colors, "UUID"),
+             displaying.color_str(schedule.keyspace, colors, "TEXT"),
+             displaying.color_str(schedule.table, colors, "TEXT"),
+             displaying.color_key(schedule.status, colors),
+             displaying.color_str(schedule.get_repair_percentage(), colors, "TEXT"),
+             displaying.color_str(schedule.get_last_repaired_at(), colors, "DATETIME"),
+             displaying.color_str(schedule.get_next_repair(), colors, "DATETIME"),
+             displaying.color_str(schedule.repair_type, colors, "TEXT")]
 
     return entry
 
 
-def print_repair_info(repair_info, max_lines=-1):
+def print_repair_info(repair_info, max_lines=-1, colors="auto"):
     print("Time window between '{0}' and '{1}'".format(repair_info.get_since(), repair_info.get_to()))
-    print_repair_stats(repair_info.repair_stats, max_lines)
+    print_repair_stats(repair_info.repair_stats, max_lines, colors)
 
 
-def print_repair_stats(repair_stats, max_lines=-1):
-    repair_stats_table = [["Keyspace", "Table", "Repaired (%)",
-                           "Repair time taken"]]
+def print_repair_stats(repair_stats, max_lines=-1, colors="auto"):
+    summary = ["Keyspace", "Table", "Repaired(%)",
+                "Repair time taken"]
+    colored_summary = displaying.color_index(summary, colors)
+    repair_stats_table = [colored_summary]
     sorted_repair_stats = sorted(repair_stats, key=lambda x: (x.repaired_ratio, x.keyspace, x.table), reverse=False)
     if max_lines > -1:
         sorted_repair_stats = sorted_repair_stats[:max_lines]
 
     for repair_stat in sorted_repair_stats:
-        repair_stats_table.append(_convert_repair_stat(repair_stat))
-    table_formatter.format_table(repair_stats_table)
+        repair_stats_table.append(_convert_repair_stat(repair_stat, colors))
+    table_formatter.format_table(repair_stats_table, displaying.should_color(colors))
 
 
-def _convert_repair_stat(repair_stat):
-    entry = [repair_stat.keyspace, repair_stat.table, repair_stat.get_repaired_percentage(),
-             repair_stat.get_repair_time_taken()]
+def _convert_repair_stat(repair_stat, colors):
+    entry = [displaying.color_str(repair_stat.keyspace, colors, "TEXT"),
+             displaying.color_str(repair_stat.table, colors, "TEXT"),
+             displaying.color_str(repair_stat.get_repaired_percentage(), colors, "TEXT"),
+             displaying.color_str(repair_stat.get_repair_time_taken(), colors, "DATETIME")]
     return entry

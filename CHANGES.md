@@ -2,6 +2,7 @@
 
 ## Version 5.0.2
 
+* Colored output in ecctool - Issue #527
 * Bump tomcat to 9.0.86 - Issue #653
 * Bump springboot to 2.7.18 - Issue #653
 

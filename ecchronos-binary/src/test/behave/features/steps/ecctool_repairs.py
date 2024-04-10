@@ -18,7 +18,7 @@ from ecc_step_library.common import get_job_id, handle_repair_output, step_valid
 
 
 def run_ecc_repair_status(context, params):
-    run_ecctool(context, ["repairs"] + params)
+    run_ecctool(context, ["repairs", "-c", "off"] + params)
 
 
 @when('we list all repairs')
