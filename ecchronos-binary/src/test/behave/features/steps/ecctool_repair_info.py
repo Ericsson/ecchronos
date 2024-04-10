@@ -22,7 +22,7 @@ REPAIR_INFO_ROW_FORMAT_PATTERN = r'\| {0} \| {1} \| \d+[.]\d+ \| .* \|'
 
 
 def run_ecc_repair_info(context, params):
-    run_ecctool(context, ["repair-info"] + params)
+    run_ecctool(context, ["repair-info", "-c", "off"] + params)
 
 
 def handle_repair_info_output(context):
