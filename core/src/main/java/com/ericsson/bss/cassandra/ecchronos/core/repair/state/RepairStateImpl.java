@@ -27,12 +27,14 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class RepairStateImpl implements RepairState
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairStateImpl.class);
+
 
     private static final ThreadLocal<SimpleDateFormat> MY_DATE_FORMAT
             = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US));
@@ -210,14 +212,9 @@ public class RepairStateImpl implements RepairState
 
         if (LOG.isInfoEnabled())
         {
-            String logMSG = "Assuming the table ";
-            logMSG += myTableReference;
-            logMSG += " is new and next repair will be executed after an initial delay of ";
-            logMSG += initialDelayInMs/(1000*60*60);
-            logMSG += " hours at ";
-            logMSG += MY_DATE_FORMAT.get().format(new Date(assumedRepairedAt+runIntervalInMs));
-
-            LOG.info(logMSG);
+            LOG.info("Assuming the table {} is new and next repair will be executed after a delay of {} hours at {}",
+                    myTableReference, initialDelayInMs /  TimeUnit.HOURS.toMillis(1),
+                    MY_DATE_FORMAT.get().format(new Date(assumedRepairedAt + runIntervalInMs)));
         }
 
         return assumedRepairedAt;
