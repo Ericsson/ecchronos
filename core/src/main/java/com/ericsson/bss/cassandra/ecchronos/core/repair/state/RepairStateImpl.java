@@ -212,10 +212,10 @@ public class RepairStateImpl implements RepairState
         {
             String logMSG = "Assuming the table ";
             logMSG += myTableReference;
-            logMSG += "is new, next repair will be executed after an initial delay of ";
-            logMSG += initialDelayInMs;
-            logMSG += "ms at";
-            logMSG += MY_DATE_FORMAT.get().format(new Date(assumedRepairedAt));
+            logMSG += " is new and next repair will be executed after an initial delay of ";
+            logMSG += initialDelayInMs/(1000*60*60);
+            logMSG += " hours at ";
+            logMSG += MY_DATE_FORMAT.get().format(new Date(assumedRepairedAt+runIntervalInMs));
 
             LOG.info(logMSG);
         }

@@ -43,7 +43,7 @@ public class RepairConfig
     private Priority myPriority = new Priority();
 
     private Interval myInitialDelay = new Interval(INITIAL_DELAY_DAYS, TimeUnit.DAYS);
-    private final long myInitialDelayLong = TimeUnit.HOURS.toMillis(1);
+    private long myInitialDelayLong;
     public final Priority getPriority()
     {
         return  myPriority;
@@ -165,6 +165,7 @@ public class RepairConfig
     public final void setInitialDelay(final Interval initialDelay)
     {
         myInitialDelay = initialDelay;
+        myInitialDelayLong = initialDelay.getInterval(TimeUnit.MILLISECONDS);
     }
 
     /**
