@@ -22,7 +22,6 @@ import java.util.function.Supplier;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
-import com.ericsson.bss.cassandra.ecchronos.application.ReloadingCertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -35,6 +34,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.ericsson.bss.cassandra.ecchronos.application.ConfigurationException;
+import com.ericsson.bss.cassandra.ecchronos.application.DefaultNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.ReflectionUtils;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.ConfigRefresher;
@@ -137,51 +137,99 @@ public class BeanConfigurator
                 eccCompositeMeterRegistry);
     }
 
-    private static NativeConnectionProvider getNativeConnectionProvider(
-            final Config configuration,
-            final Supplier<Security.CqlSecurity> securitySupplier,
-            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
-            final MeterRegistry meterRegistry) throws ConfigurationException
+    public static NativeConnectionProvider getNativeConnectionProvider(
+        final Config configuration,
+        final Supplier<Security.CqlSecurity> securitySupplier,
+        final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
+        final MeterRegistry meterRegistry) throws ConfigurationException
     {
-        Supplier tlsSupplier = () -> securitySupplier.get().getCqlTlsConfig();
 
-        CertificateHandler certificateHandler = ReflectionUtils.construct(
-                configuration.getConnectionConfig().getCqlConnection().getCertificateHandlerClass(),
-                new Class<?>[] {
-                        Supplier.class
-                }, tlsSupplier);
+        Supplier tlsSupplier = () -> securitySupplier.get().getCqlTlsConfig();
+        CertificateHandler certificateHandler = createCertificateHandler(configuration, tlsSupplier);
+
+        Class<?> providerClass = configuration.getConnectionConfig().getCqlConnection().getProviderClass();
+
         try
         {
-            return ReflectionUtils
-                    .construct(configuration.getConnectionConfig().getCqlConnection().getProviderClass(),
-                            new Class<?>[] {
-                                    Config.class,
-                                    Supplier.class,
-                                    CertificateHandler.class,
-                                    DefaultRepairConfigurationProvider.class,
-                                    MeterRegistry.class
-                            },
-                            configuration, securitySupplier, certificateHandler, defaultRepairConfigurationProvider,
-                            meterRegistry);
+            Object[] constructorArgs;
+            if (DefaultNativeConnectionProvider.class.equals(providerClass))
+            {
+                constructorArgs = new Object[] {
+                        configuration,
+                        securitySupplier,
+                        certificateHandler,
+                        defaultRepairConfigurationProvider,
+                        meterRegistry
+                };
+            }
+            else
+            {
+                // Check for old versions of DefaultNativeConnectionProvider
+                constructorArgs = new Object[]
+                {
+                        configuration,
+                        securitySupplier,
+                        defaultRepairConfigurationProvider,
+                        meterRegistry
+                };
+            }
+
+            return (NativeConnectionProvider) ReflectionUtils.construct(
+                    providerClass,
+                    getConstructorParameterTypes(providerClass),
+                    constructorArgs);
+
+        }
+        catch (ConfigurationException ex)
+        {
+            throw new ConfigurationException(
+                "Error while trying to connect with Cassandra using " + providerClass, ex);
+        }
+    }
+
+    private static CertificateHandler createCertificateHandler(
+        final Config configuration,
+        final Supplier tlsSupplier) throws ConfigurationException
+    {
+        try
+        {
+            return ReflectionUtils.construct(
+                    configuration.getConnectionConfig().getCqlConnection().getCertificateHandlerClass(),
+                    new Class<?>[] {Supplier.class}, tlsSupplier);
         }
         catch (ConfigurationException e)
         {
-            if (!ReloadingCertificateHandler.class.equals(certificateHandler.getClass())
-                    && e.getCause() instanceof NoSuchMethodException)
+            if (!(e.getCause() instanceof NoSuchMethodException))
             {
-                throw new ConfigurationException("Invalid configuration, connection provider does not support"
-                        + " configured certificate handler", e);
+                throw e;
             }
+            throw new ConfigurationException("Invalid configuration, connection provider does not support"
+                    + " configured certificate handler.", e);
         }
+    }
 
-        // Check for old versions of DefaultNativeConnectionProvider
-        return ReflectionUtils
-                .construct(configuration.getConnectionConfig().getCqlConnection().getProviderClass(),
-                        new Class<?>[]{
-                                Config.class, Supplier.class, DefaultRepairConfigurationProvider.class,
-                                MeterRegistry.class
-                        },
-                        configuration, securitySupplier, defaultRepairConfigurationProvider, meterRegistry);
+    private static Class<?>[] getConstructorParameterTypes(final Class<?> providerClass)
+    {
+        if (DefaultNativeConnectionProvider.class.equals(providerClass))
+        {
+            return new Class<?>[] {
+                    Config.class,
+                    Supplier.class,
+                    CertificateHandler.class,
+                    DefaultRepairConfigurationProvider.class,
+                    MeterRegistry.class
+            };
+        }
+        else
+        {
+            return new Class<?>[]
+            {
+                    Config.class,
+                    Supplier.class,
+                    DefaultRepairConfigurationProvider.class,
+                    MeterRegistry.class
+            };
+        }
     }
 
     @Bean

@@ -13,12 +13,24 @@
 * host: localhost
 * port: 9042
 #
-# Connection Timeout for CQL.
+# Connection Timeout for a CQL attempt.
 # Specify a time to wait for cassandra to come up.
-# Connection is tried every five second until either the timeout time passes or the connection is successful.
+# Connection is tried based on retry policy delay calculations. Each connection attempt will use the timeout to calculate CQL connection process delay.
 #
 **timeout:**
-* time: 0
+* time: 60
+* unit: seconds
+**retryPolicy:**
+# Max number of attempts ecChronos will try to connect with Cassandra.
+* maxAttempts: 5
+# Delay use to wait between an attempt and another, this value will be multiplied by the current attempt count powered by two.
+# If the current attempt is 4 and the default delay is 5 seconds, so ((4(attempt) x 2) x 5(default delay)) = 40 seconds.
+# If the calculated delay is greater than maxDelay, maxDelay will be used instead of the calculated delay.
+* delay: 5
+# Maximum delay before the next connection attempt is made.
+# Setting it as 0 will disable maxDelay and the delay interval will
+# be calculated based on the attempt count and the default delay.
+* maxDelay: 30
 * unit: seconds
 #
 # The class used to provide CQL connections to Apache Cassandra.

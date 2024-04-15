@@ -23,6 +23,7 @@ import com.datastax.oss.driver.api.core.auth.AuthProvider;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.NativeConnection;
+import com.ericsson.bss.cassandra.ecchronos.application.config.exceptions.RetryPolicyException;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -30,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
+import com.ericsson.bss.cassandra.ecchronos.application.config.RetryPolicy;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalNativeConnectionProvider;
@@ -37,8 +39,6 @@ import com.ericsson.bss.cassandra.ecchronos.connection.impl.LocalNativeConnectio
 public class DefaultNativeConnectionProvider implements NativeConnectionProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultNativeConnectionProvider.class);
-
-    private static final int SLEEP_TIME = 5000;
 
     private final LocalNativeConnectionProvider myLocalNativeConnectionProvider;
 
@@ -81,7 +81,8 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
                 .withNodeStateListener(defaultRepairConfigurationProvider);
 
         myLocalNativeConnectionProvider = establishConnection(nativeConnectionBuilder,
-                host, port, nativeConfig.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS));
+                host, port, nativeConfig.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS),
+                nativeConfig.getRetryPolicy());
     }
 
     public DefaultNativeConnectionProvider(final Config config,
@@ -95,38 +96,67 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
     }
 
     private static LocalNativeConnectionProvider establishConnection(
-            final LocalNativeConnectionProvider.Builder builder,
-            final String host,
-            final int port,
-            final long timeout)
+        final LocalNativeConnectionProvider.Builder builder,
+        final String host,
+        final int port,
+        final long timeout,
+        final RetryPolicy retryPolicy)
     {
-        long startTime = System.currentTimeMillis();
-        long endTime = startTime + timeout;
-        while (endTime > System.currentTimeMillis())
+        for (int attempt = 1; attempt <= retryPolicy.getMaxAttempts(); attempt++)
         {
             try
             {
-                return builder.build();
+                return tryEstablishConnection(builder);
             }
             catch (AllNodesFailedException | IllegalStateException e)
             {
-                try
-                {
-                    LOG.warn("Unable to connect through CQL using {}:{}, retrying", host, port);
-                    if (timeout != 0)
-                    {
-                        LOG.debug("Connection failed, retrying in 5 seconds", e);
-                        Thread.sleep(SLEEP_TIME);
-                    }
-                }
-                catch (InterruptedException e1)
-                {
-                    LOG.error("Unexpected interrupt while trying to connect to Cassandra", e1);
-                    throw e;
-                }
+                handleRetry(attempt, retryPolicy, host, port, timeout);
             }
         }
-        return builder.build();
+        throw new RetryPolicyException("Failed to establish connection after all retry attempts.");
+    }
+
+    private static LocalNativeConnectionProvider tryEstablishConnection(
+        final LocalNativeConnectionProvider.Builder builder)
+    {
+        try
+        {
+            return builder.build();
+        }
+        catch (AllNodesFailedException | IllegalStateException e)
+        {
+            LOG.error("Unexpected interrupt while trying to connect to Cassandra. Reason: ", e);
+            throw e;
+        }
+    }
+
+    private static void handleRetry(
+        final int attempt,
+        final RetryPolicy retryPolicy,
+        final String host,
+        final int port,
+        final long timeout)
+    {
+        LOG.warn("Unable to connect through CQL using {}:{}, retrying.", host, port);
+        long delay = retryPolicy.currentDelay(attempt);
+        long currentTime = System.currentTimeMillis();
+        long endTime = currentTime + timeout;
+        if (currentTime + delay > endTime)
+        {
+            delay = timeout;
+        }
+        LOG.warn("Connection failed in attempt {} of {}. Retrying in {} seconds.",
+        attempt, retryPolicy.getMaxAttempts(), TimeUnit.MILLISECONDS.toSeconds(delay));
+        try
+        {
+            Thread.sleep(delay);
+        }
+        catch (InterruptedException e1)
+        {
+            LOG.error(
+                "InterruptedException caught during the delay time, while trying to reconnect to Cassandra. Reason: ",
+                e1);
+        }
     }
 
     @Override
