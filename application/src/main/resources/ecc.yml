@@ -74,7 +74,7 @@ connection:
     ## Primarily used by the default connection provider.
     ##
     host: localhost
-    port: 7100
+    port: 7199
     ##
     ## The class used to provide JMX connections to Apache Cassandra.
     ## The default provider will be used unless another is specified.

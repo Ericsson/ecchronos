@@ -209,7 +209,7 @@ public class RepairConfiguration
         private long myBackoffInMs = DEFAULT_BACKOFF_IN_MS;
         private boolean myIgnoreTWCSTables = DEFAULT_IGNORE_TWCS_TABLES;
         private TimeUnit myPriorityGranularityUnit = TimeUnit.HOURS;
-        private static final long DEFAULT_NEW_TABLE_SLIDEOFF = TimeUnit.HOURS.toMillis(1);
+        private static final long DEFAULT_NEW_TABLE_SLIDEOFF = TimeUnit.DAYS.toMillis(1);
 
         private long myInitialDelay = DEFAULT_NEW_TABLE_SLIDEOFF;
 
