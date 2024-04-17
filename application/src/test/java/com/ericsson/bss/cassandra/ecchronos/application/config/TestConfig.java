@@ -113,6 +113,7 @@ public class TestConfig
                 .withBackoff(13, TimeUnit.SECONDS)
                 .withTargetRepairSizeInBytes(UnitConverter.toBytes("5m"))
                 .withPriorityGranularityUnit(TimeUnit.MINUTES)
+                .withInitialDelay(TimeUnit.HOURS.toMillis(1))
                 .build();
 
         GlobalRepairConfig repairConfig = config.getRepairConfig();

@@ -20,6 +20,9 @@ keyspaces:
       interval:
         time: 8
         unit: days
+      initial_delay:
+        time: 1
+        unit: hours
       alarm:
         warn:
           time: 9
@@ -33,12 +36,18 @@ keyspaces:
       interval:
         time: 5
         unit: days
+      initial_delay:
+        time: 1
+        unit: hours
   - name: ks2
     tables:
     - name: tb1
       interval:
         time: 1
         unit: days
+      initial_delay:
+        time: 1
+        unit: hours
       alarm:
         warn:
           time: 5

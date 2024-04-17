@@ -32,7 +32,6 @@ public class TestRepairConfiguration
     private static final long DEFAULT_TARGET_REPAIR_SIZE_IN_BYTES = Long.MAX_VALUE;
     private static final long DEFAULT_BACKOFF_IN_MS = TimeUnit.MINUTES.toMillis(30);
     private static final RepairOptions.RepairType DEFAULT_REPAIR_TYPE = RepairOptions.RepairType.VNODE;
-    private static final long DDEFAULT_INITIAL_INTERVAL = TimeUnit.HOURS.toMillis(1);
 
     @Test
     public void testDefaultValues()
