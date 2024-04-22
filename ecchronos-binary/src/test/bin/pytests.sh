@@ -101,6 +101,9 @@ keyspaces:
       interval:
         time: 1
         unit: days
+      initial_delay:
+        time: 1
+        unit: days
       unwind_ratio: 0.1
       alarm:
         warn:
