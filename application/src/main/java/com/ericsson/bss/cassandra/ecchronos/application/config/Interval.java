@@ -35,11 +35,6 @@ public class Interval
         myUnit = timeUnit;
     }
 
-    public final long getMyTime()
-    {
-        return getInterval(myUnit);
-    }
-
     public final long getInterval(final TimeUnit timeUnit)
     {
         return timeUnit.convert(myTime, myUnit);

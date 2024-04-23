@@ -177,6 +177,7 @@ public class RepairConfiguration
         }
         RepairConfiguration that = (RepairConfiguration) o;
         return myRepairIntervalInMs == that.myRepairIntervalInMs
+                && myInitialDelay == that.myInitialDelay
                 && myRepairWarningTimeInMs == that.myRepairWarningTimeInMs
                 && myRepairErrorTimeInMs == that.myRepairErrorTimeInMs
                 && Double.compare(that.myRepairUnwindRatio, myRepairUnwindRatio) == 0
@@ -185,7 +186,6 @@ public class RepairConfiguration
                 && myIgnoreTWCSTables == that.myIgnoreTWCSTables
                 && myBackoffInMs == that.myBackoffInMs
                 && myRepairType == that.myRepairType
-                && myInitialDelay == that.myInitialDelay
                 && myPriorityGranularityUnit == that.myPriorityGranularityUnit;
     }
 
@@ -231,12 +231,13 @@ public class RepairConfiguration
             myRepairParallelism = from.getRepairParallelism();
             myRepairType = from.getRepairType();
             myRepairIntervalInMs = from.getRepairIntervalInMs();
+            myInitialDelay = from.getInitialDelayInMs();
             myRepairWarningTimeInMs = from.getRepairWarningTimeInMs();
             myRepairErrorTimeInMs = from.getRepairErrorTimeInMs();
             myRepairUnwindRatio = from.getRepairUnwindRatio();
             myBackoffInMs = from.getBackoffInMs();
             myPriorityGranularityUnit = from.getPriorityGranularityUnit();
-            myInitialDelay = from.getInitialDelayInMs();
+
         }
 
         /**

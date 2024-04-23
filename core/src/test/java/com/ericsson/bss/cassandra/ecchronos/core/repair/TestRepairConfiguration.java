@@ -14,7 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
-import com.typesafe.config.ConfigException;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
