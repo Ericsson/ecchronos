@@ -103,7 +103,7 @@ keyspaces:
         unit: days
       initial_delay:
         time: 1
-        unit: days
+        unit: hours
       unwind_ratio: 0.1
       alarm:
         warn:
