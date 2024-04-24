@@ -136,14 +136,14 @@ public class RepairConfig
         if (repairIntervalSeconds >= warningIntervalSeconds)
         {
             throw new IllegalArgumentException(String.format("%s repair interval must be shorter than warning interval."
-                    + " Current repair interval: %d ms, warning interval: %d ms", repairConfigType,
+                    + " Current repair interval: %d seconds, warning interval: %d ms", repairConfigType,
                     repairIntervalSeconds, warningIntervalSeconds));
         }
 
         if (initialDelayMilliSeconds >= repairIntervalSeconds)
         {
-            throw new IllegalArgumentException(String.format("Initial delay must be shorter than the repair interval."
-                        + " Repair interval: %d seconds, initial delay : %d seconds",
+            throw new IllegalArgumentException(String.format("%s initialDelay must be shorter than the repair interval."
+                        + " Repair interval: %d seconds, initial delay : %d seconds", repairConfigType,
                 repairIntervalSeconds, initialDelayMilliSeconds));
         }
         long errorIntervalSeconds = myAlarm.getErrorInterval().getInterval(TimeUnit.SECONDS);
