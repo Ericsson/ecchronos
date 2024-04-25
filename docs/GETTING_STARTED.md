@@ -34,16 +34,16 @@ If repair history exists for a table, ecChronos will use the last time repair wa
 On the other hand, if there's no repair history present for a table, the ecChronos will assume that the table has been repaired in the past.
 
 The assumption is done in the following way:
-* Initial delay = must be lower than Repair interval, configurable via ecc.yml
+* Initial delay = must be lower than repair interval, configurable via ecc.yml
 * Repair delay in days = min(repair interval, 1)
-* Completed at = (start time - repair interval + Initial delay)
+* Completed at = (start time - repair interval + initial delay)
 * Next repair = (start time + repair delay)
 
 Given the formulas above and *start time = 2023-08-25 10:00:00, repair interval = 7 days*, initial delay = 1 days (default value) the calculation looks like this:
 * Initial delay = 1 day (default value)
 * Repair delay in days = 1 day
 * Completed at = 2023-08-25 10:00:00
-* Next repair = 2023-09-01 10:00:00
+* Next repair = 2023-08-26 10:00:00
 
 For more fine grained control over which tables to repair and when, please refer to [schedule.yml](../application/src/main/resources/schedule.yml).
 

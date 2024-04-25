@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 repair:
   interval:
-    time: 7
-    unit: days
-  initial_delay:
-    time: 5
+    time: 1
     unit: hours
-
+  initial_delay:
+    time: 2
+    unit: hours

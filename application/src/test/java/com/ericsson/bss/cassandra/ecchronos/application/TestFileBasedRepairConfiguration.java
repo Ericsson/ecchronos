@@ -96,7 +96,6 @@ public class TestFileBasedRepairConfiguration
 
         assertConfig(repairConfigProvider, "any", "table", RepairConfiguration.DEFAULT);
     }
-
     @Test (expected = ConfigurationException.class)
     public void testNullScheduleConfig() throws Exception
     {

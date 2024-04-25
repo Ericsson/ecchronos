@@ -29,7 +29,7 @@ public class RepairConfig
     private static final int DAYS_WARNING = 8;
     private static final int DAYS_ERROR = 10;
     private static final int BACKOFF_MINUTES = 30;
-    private static final int INITIAL_DELAY_DAYS = 1;
+    private static final int DAYS_INITIAL_DAYS = 1;
 
     private Interval myRepairInterval = new Interval(DAYS_INTERVAL, TimeUnit.DAYS);
     private Alarm myAlarm = new Alarm(new Interval(DAYS_WARNING, TimeUnit.DAYS),
@@ -42,8 +42,8 @@ public class RepairConfig
 
     private Priority myPriority = new Priority();
 
-    private Interval myInitialDelay = new Interval(INITIAL_DELAY_DAYS, TimeUnit.DAYS);
-    private long myInitialDelayLong = TimeUnit.DAYS.toMillis(1);
+    private Interval myInitialDelay = new Interval(DAYS_INITIAL_DAYS, TimeUnit.DAYS);
+
     public final Priority getPriority()
     {
         return  myPriority;
@@ -132,19 +132,20 @@ public class RepairConfig
     {
         long repairIntervalSeconds = myRepairInterval.getInterval(TimeUnit.SECONDS);
         long warningIntervalSeconds = myAlarm.getWarningInverval().getInterval(TimeUnit.SECONDS);
-        long initialDelayMilliSeconds = myInitialDelay.getInterval(TimeUnit.SECONDS);
+        long initialDelaySeconds = myInitialDelay.getInterval(TimeUnit.SECONDS);
         if (repairIntervalSeconds >= warningIntervalSeconds)
         {
             throw new IllegalArgumentException(String.format("%s repair interval must be shorter than warning interval."
-                    + " Current repair interval: %d seconds, warning interval: %d ms", repairConfigType,
+                    + " Current repair interval: %d seconds, warning interval: %d seconds", repairConfigType,
                     repairIntervalSeconds, warningIntervalSeconds));
         }
 
-        if (initialDelayMilliSeconds >= repairIntervalSeconds)
+        if (initialDelaySeconds >= repairIntervalSeconds)
         {
-            throw new IllegalArgumentException(String.format("%s initialDelay must be shorter than the repair interval."
-                        + " Repair interval: %d seconds, initial delay : %d seconds", repairConfigType,
-                repairIntervalSeconds, initialDelayMilliSeconds));
+            throw new IllegalArgumentException(String.format(
+                        "%s initial delay must be shorter than the repair interval."
+                        + " Repair interval: %d seconds, initial delay : %d milli seconds", repairConfigType,
+                repairIntervalSeconds, initialDelaySeconds));
         }
         long errorIntervalSeconds = myAlarm.getErrorInterval().getInterval(TimeUnit.SECONDS);
         if (warningIntervalSeconds >= errorIntervalSeconds)
@@ -165,7 +166,6 @@ public class RepairConfig
     public final void setInitialDelay(final Interval initialDelay)
     {
         myInitialDelay = initialDelay;
-        myInitialDelayLong = initialDelay.getInterval(TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -187,7 +187,7 @@ public class RepairConfig
                 .withBackoff(myBackoff.getInterval(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .withRepairType(myRepairType)
                 .withPriorityGranularityUnit(myPriority.getPriorityGranularityUnit())
-                .withInitialDelay(myInitialDelayLong)
+                .withInitialDelay(myInitialDelay.getInterval(TimeUnit.MILLISECONDS))
                 .build();
     }
 }

@@ -96,7 +96,6 @@ repair:
   interval:
     time: 7
     unit: days
-
   ##
   ## Initial delay for new tables. New tables are always assumed to have been repaired in the past, set off by the
   ## repair interval. This will result in an immediate first repair. However, with this setting an initial delay can

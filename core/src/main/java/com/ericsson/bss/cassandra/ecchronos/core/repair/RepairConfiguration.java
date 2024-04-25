@@ -38,7 +38,7 @@ public class RepairConfiguration
 
     private static final long DEFAULT_BACKOFF_IN_MS = TimeUnit.MINUTES.toMillis(30);
     private static final boolean DEFAULT_IGNORE_TWCS_TABLES = false;
-    private static final long DEFAULT_NEW_TABLE_INITIAL_DELAY = TimeUnit.DAYS.toMillis(1);
+    private static final long DEFAULT_INITIAL_DELAY_IN_MS = TimeUnit.DAYS.toMillis(1);
 
     public static final RepairConfiguration DEFAULT = newBuilder().build();
     public static final RepairConfiguration DISABLED = newBuilder()
@@ -144,7 +144,7 @@ public class RepairConfiguration
     {
         return String.format(
                 "RepairConfiguration(interval=%dms,"
-                        + "initialDelay=%s,"
+                        + "initialDelay=%dms,"
                         + "warning=%dms,"
                         + "error=%dms,"
                         + "parallelism=%s,"
@@ -193,9 +193,9 @@ public class RepairConfiguration
     @Override
     public int hashCode()
     {
-        return Objects.hash(myRepairParallelism, myRepairIntervalInMs, myRepairWarningTimeInMs,
+        return Objects.hash(myRepairParallelism, myRepairIntervalInMs, myInitialDelayInMs, myRepairWarningTimeInMs,
                 myRepairErrorTimeInMs, myRepairUnwindRatio, myTargetRepairSizeInBytes, myIgnoreTWCSTables,
-                myBackoffInMs, myRepairType, myInitialDelayInMs, myPriorityGranularityUnit);
+                myBackoffInMs, myRepairType, myPriorityGranularityUnit);
     }
 
     public static class Builder
@@ -212,7 +212,7 @@ public class RepairConfiguration
         private TimeUnit myPriorityGranularityUnit = TimeUnit.HOURS;
 
 
-        private long myInitialDelayInMs = DEFAULT_NEW_TABLE_INITIAL_DELAY;
+        private long myInitialDelayInMs = DEFAULT_INITIAL_DELAY_IN_MS;
 
         /**
          * Constructor.
@@ -238,7 +238,6 @@ public class RepairConfiguration
             myRepairUnwindRatio = from.getRepairUnwindRatio();
             myBackoffInMs = from.getBackoffInMs();
             myPriorityGranularityUnit = from.getPriorityGranularityUnit();
-
         }
 
         /**
@@ -300,7 +299,7 @@ public class RepairConfiguration
          *
          * @param initialDelay The time to use as initial delay
          * @return The builder
-         * */
+         */
         public Builder withInitialDelay(final long initialDelay)
         {
             myInitialDelayInMs = initialDelay;
