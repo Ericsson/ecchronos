@@ -31,7 +31,8 @@ Installation information can be found in [SETUP.md](SETUP.md).
 
 When ecChronos is started, it will read repair history to see the status of the repairs.
 If repair history exists for a table, ecChronos will use the last time repair was run and add the repair interval to calculate the next repair time.
-On the other hand, if there's no repair history present for a table, the ecChronos will assume that the table has been repaired in the past.
+On the other hand, if there's no repair history present for a table, the ecChronos will assume that the table has been repaired in the past using 
+initial delay to calculate.
 
 The assumption is done in the following way:
 * Initial delay = must be lower than repair interval, configurable via ecc.yml

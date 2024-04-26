@@ -175,24 +175,24 @@ public class TestConfig
         assertThat(restServerConfig.getPort()).isEqualTo(8081);
     }
     @Test
-    public void testIssue264DefaultValues() throws Exception
+    public void testInitialDelayDefaultValue() throws Exception
     {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        File file = new File(classLoader.getResource("issue264defaultValues.yml").getFile());
+        File file = new File(classLoader.getResource("nothing_set.yml").getFile());
 
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
 
         Config config = objectMapper.readValue(file, Config.class);
         GlobalRepairConfig repair = config.getRepairConfig();
         Interval interval = repair.getInitialDelay();
-        assertThat(interval.getInterval(TimeUnit.HOURS)).isEqualTo(5);
+        assertThat(interval.getInterval(TimeUnit.DAYS)).isEqualTo(1);
     }
 
     @Test
     public void testIssue264_TestInitialDelayLongerThanRepairInterval() throws Exception
     {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        File file = new File(classLoader.getResource("initialDelayGreaterThanRepairInterval.yml").getFile());
+        File file = new File(classLoader.getResource("intial_delay_greater_than_repair.yml").getFile());
 
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
         assertThatExceptionOfType(JsonMappingException.class).isThrownBy(() -> objectMapper.readValue(file, Config.class));

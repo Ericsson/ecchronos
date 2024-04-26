@@ -44,7 +44,8 @@ For manual repairs this value should never go down.
 ## schedules
 
 In this example we will use `ecctool schedules` to check the status of schedules.
-The output shows all schedules the local ecChronos instance has.
+The output shows all schedules the local ecChronos instance has. For new tables a completed time will be calculated using 
+an initial delay that is configurable 
 
 ```bash
 Snapshot as of 2023-06-12 15:33:25
