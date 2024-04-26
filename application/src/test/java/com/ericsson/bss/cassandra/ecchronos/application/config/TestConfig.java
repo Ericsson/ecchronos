@@ -189,7 +189,7 @@ public class TestConfig
     }
 
     @Test
-    public void testIssue264_TestInitialDelayLongerThanRepairInterval() throws Exception
+    public void testInitialDelayLongerThanRepairInterval() throws Exception
     {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         File file = new File(classLoader.getResource("intial_delay_greater_than_repair.yml").getFile());
