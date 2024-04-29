@@ -192,7 +192,7 @@ public class TestConfig
     public void testInitialDelayLongerThanRepairInterval() throws Exception
     {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        File file = new File(classLoader.getResource("intial_delay_greater_than_repair.yml").getFile());
+        File file = new File(classLoader.getResource("initial_delay_greater_than_repair.yml").getFile());
 
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
         assertThatExceptionOfType(JsonMappingException.class).isThrownBy(() -> objectMapper.readValue(file, Config.class));

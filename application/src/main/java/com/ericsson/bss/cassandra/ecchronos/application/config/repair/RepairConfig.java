@@ -29,7 +29,7 @@ public class RepairConfig
     private static final int DAYS_WARNING = 8;
     private static final int DAYS_ERROR = 10;
     private static final int BACKOFF_MINUTES = 30;
-    private static final int DAYS_INITIAL_DAYS = 1;
+    private static final int DAYS_INITIAL_DELAY = 1;
 
     private Interval myRepairInterval = new Interval(DAYS_INTERVAL, TimeUnit.DAYS);
     private Alarm myAlarm = new Alarm(new Interval(DAYS_WARNING, TimeUnit.DAYS),
@@ -42,7 +42,7 @@ public class RepairConfig
 
     private Priority myPriority = new Priority();
 
-    private Interval myInitialDelay = new Interval(DAYS_INITIAL_DAYS, TimeUnit.DAYS);
+    private Interval myInitialDelay = new Interval(DAYS_INITIAL_DELAY, TimeUnit.DAYS);
 
     public final Priority getPriority()
     {
