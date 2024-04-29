@@ -82,13 +82,13 @@
 **interval:**
 * time: 7
 * unit: days
-
 #
-# How long from current time should the last repaired time be simulated/assumed for new tables.
+# Initial delay for new tables. New tables are always assumed to have been repaired in the past, however a delay
+#  can be set for the first repair. This will not affect subsequent repairs and defaults to one day.
 #
 **initial_delay:**
 * time: 1
-* unit: hours
+* unit: days
 #
 # The unit of time granularity for priority calculation, can be HOURS, MINUTES, or SECONDS.
 # This unit is used in the calculation of priority.

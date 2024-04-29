@@ -35,13 +35,12 @@ On the other hand, if there's no repair history present for a table, the ecChron
 initial delay to calculate.
 
 The assumption is done in the following way:
-* Initial delay = must be lower than repair interval, configurable via ecc.yml
 * Repair delay in days = min(repair interval, 1)
 * Completed at = (start time - repair interval + initial delay)
 * Next repair = (start time + repair delay)
 
 Given the formulas above and *start time = 2023-08-25 10:00:00, repair interval = 7 days*, initial delay = 1 days (default value) the calculation looks like this:
-* Initial delay = 1 day (default value)
+* Initial delay = 1 day
 * Repair delay in days = 1 day
 * Completed at = 2023-08-25 10:00:00
 * Next repair = 2023-08-26 10:00:00
