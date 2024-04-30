@@ -60,12 +60,12 @@ public class TestRepairSchedule
                 .withRepairErrorTime(11, TimeUnit.DAYS)
                 .withRepairUnwindRatio(1.0d)
                 .withTargetRepairSizeInBytes(UnitConverter.toBytes("15m"))
-                .withInitialDelay(TimeUnit.HOURS.toMillis(1))
+                .withInitialDelay(1, TimeUnit.HOURS)
                 .build();
 
         RepairConfiguration ks1tb2 = RepairConfiguration.newBuilder()
                 .withRepairInterval(5, TimeUnit.DAYS)
-                .withInitialDelay(TimeUnit.HOURS.toMillis(1))
+                .withInitialDelay(1, TimeUnit.HOURS)
                 .build();
 
         RepairConfiguration ks2tb1 = RepairConfiguration.newBuilder()
@@ -74,7 +74,7 @@ public class TestRepairSchedule
                 .withRepairErrorTime(10, TimeUnit.DAYS)
                 .withRepairUnwindRatio(0.5d)
                 .withTargetRepairSizeInBytes(UnitConverter.toBytes("100m"))
-                .withInitialDelay(TimeUnit.HOURS.toMillis(1))
+                .withInitialDelay(1, TimeUnit.HOURS)
                 .build();
 
         assertThat(schedule.getRepairConfigurations("ks1", "tb1")).containsExactly(ks1tb1);
@@ -105,7 +105,7 @@ public class TestRepairSchedule
 
         RepairConfiguration ks2Tb1 = RepairConfiguration.newBuilder()
                 .withRepairInterval(1, TimeUnit.DAYS)
-                .withInitialDelay(TimeUnit.HOURS.toMillis(1))
+                .withInitialDelay(1, TimeUnit.HOURS)
                 .build();
         RepairConfiguration ks2Tb2 = RepairConfiguration.newBuilder()
                 .withRepairInterval(2, TimeUnit.DAYS)
@@ -142,7 +142,7 @@ public class TestRepairSchedule
         RepairConfiguration incrementalKs1tb1 = RepairConfiguration.newBuilder()
                 .withRepairInterval(1, TimeUnit.DAYS)
                 .withRepairType(RepairOptions.RepairType.INCREMENTAL)
-                .withInitialDelay(TimeUnit.HOURS.toMillis(1))
+                .withInitialDelay(1, TimeUnit.HOURS)
                 .build();
 
         assertThat(schedule.getRepairConfigurations("ks1", "tb1")).containsExactlyInAnyOrder(vnodeKs1tb1, incrementalKs1tb1);
@@ -166,7 +166,7 @@ public class TestRepairSchedule
         RepairConfiguration incrementalRegexTable = RepairConfiguration.newBuilder()
                 .withRepairInterval(1, TimeUnit.DAYS)
                 .withRepairType(RepairOptions.RepairType.INCREMENTAL)
-                .withInitialDelay(TimeUnit.HOURS.toMillis(1))
+                .withInitialDelay(1, TimeUnit.HOURS)
                 .build();
 
         assertThat(schedule.getRepairConfigurations("ks1", "tb1")).containsExactlyInAnyOrder(vnodeRegexTable, incrementalRegexTable);

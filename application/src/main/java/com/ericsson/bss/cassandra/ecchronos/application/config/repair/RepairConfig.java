@@ -187,7 +187,7 @@ public class RepairConfig
                 .withBackoff(myBackoff.getInterval(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .withRepairType(myRepairType)
                 .withPriorityGranularityUnit(myPriority.getPriorityGranularityUnit())
-                .withInitialDelay(myInitialDelay.getInterval(TimeUnit.MILLISECONDS))
+                .withInitialDelay(myInitialDelay.getInterval(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .build();
     }
 }

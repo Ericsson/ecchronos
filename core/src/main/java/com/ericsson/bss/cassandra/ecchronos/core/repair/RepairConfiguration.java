@@ -300,9 +300,9 @@ public class RepairConfiguration
          * @param initialDelay The time to use as initial delay
          * @return The builder
          */
-        public Builder withInitialDelay(final long initialDelay)
+        public Builder withInitialDelay(final long initialDelay, final TimeUnit timeUnit)
         {
-            myInitialDelayInMs = initialDelay;
+            myInitialDelayInMs = timeUnit.toMillis(initialDelay);
             return this;
         }
 
