@@ -35,7 +35,7 @@ On the other hand, if there's no repair history present for a table, the ecChron
 initial delay to calculate.
 
 The assumption is done in the following way:
-* initial delay 
+* Initial delay is configurable (default 1 day)
 * Completed at = (start time - repair interval + initial delay)
 * Next repair = (completed at + repair interval)
 
