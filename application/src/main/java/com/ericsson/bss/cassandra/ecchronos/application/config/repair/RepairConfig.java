@@ -144,7 +144,7 @@ public class RepairConfig
         {
             throw new IllegalArgumentException(String.format(
                         "%s initial delay must be shorter than the repair interval."
-                        + " Repair interval: %d seconds, initial delay : %d milli seconds", repairConfigType,
+                        + " Repair interval: %d seconds, initial delay : %d seconds", repairConfigType,
                 repairIntervalSeconds, initialDelaySeconds));
         }
         long errorIntervalSeconds = myAlarm.getErrorInterval().getInterval(TimeUnit.SECONDS);

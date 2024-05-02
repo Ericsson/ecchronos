@@ -41,7 +41,6 @@ The assumption is done in the following way:
 
 Given the formulas above and *start time = 2023-08-25 10:00:00, repair interval = 7 days*, initial delay = 1 days (default value) the calculation looks like this:
 * Initial delay = 1 day
-* Repair delay in days = 1 day
 * Completed at = 2023-08-19 10:00:00
 * Next repair = 2023-08-26 10:00:00
 
