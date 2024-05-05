@@ -26,6 +26,7 @@
     <logger name="com.datastax" level="ERROR" />
     <logger name="com.github.benmanes.caffeine" level="ERROR" />
     <logger name="io.netty" level="WARN" />
+    <logger name="com.ericsson.bss.cassandra.ecchronos.core.utils.StatusLogger" level="DEBUG" />
 
     <root level="INFO">
         <appender-ref ref="STDOUT" />
