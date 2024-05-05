@@ -29,6 +29,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStatesImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.metrics.MetricInspector;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetricsImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.RunPolicy;
@@ -61,6 +62,8 @@ public class ECChronosInternals implements Closeable
     private final JmxProxyFactory myJmxProxyFactory;
     private final CASLockFactory myLockFactory;
     private final CassandraMetrics myCassandraMetrics;
+
+    private final MetricInspector myMetricInspector;
 
     public ECChronosInternals(final Config configuration,
                               final NativeConnectionProvider nativeConnectionProvider,
@@ -108,11 +111,17 @@ public class ECChronosInternals implements Closeable
                     .withTableStorageStates(myTableStorageStatesImpl)
                     .withMeterRegistry(meterRegistry)
                     .build();
+
+            myMetricInspector = new MetricInspector(meterRegistry,
+                    configuration.getStatisticsConfig().getMyRepairFailureCountForReporting(),
+                    configuration.getStatisticsConfig().getMyTimeWindowSizeinMinsForReporting());
+            myMetricInspector.startInspection();
         }
         else
         {
             myTableStorageStatesImpl = null;
             myTableRepairMetricsImpl = null;
+            myMetricInspector = null;
         }
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withLockFactory(myLockFactory)
