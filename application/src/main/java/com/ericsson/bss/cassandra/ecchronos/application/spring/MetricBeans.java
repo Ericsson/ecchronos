@@ -23,6 +23,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.metrics.Statistic
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.core.instrument.config.MeterFilter;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.jmx.JmxConfig;
 import io.micrometer.jmx.JmxMeterRegistry;
 import io.micrometer.prometheus.PrometheusConfig;
@@ -66,6 +67,8 @@ public class MetricBeans
                 createPrometheusMeterRegistry(metricConfig);
             }
         }
+
+        createStatusLoggerMeterRegistry(metricConfig);
     }
 
     private void createJmxMeterRegistry(final StatisticsConfig metricConfig)
@@ -101,6 +104,18 @@ public class MetricBeans
         myPrometheusMeterRegistry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
         myPrometheusMeterRegistry.config().meterFilter(meterFilter);
         myCompositeMeterRegistry.add(myPrometheusMeterRegistry);
+    }
+
+
+    private void createStatusLoggerMeterRegistry(final StatisticsConfig metricConfig)
+    {
+        MeterFilter meterFilter = new MeterFilterImpl(metricConfig.getMetricsPrefix(), metricConfig
+                .getReportingConfigs()
+                .getFileReportingConfig()
+                .getExcludedMetrics());
+        SimpleMeterRegistry simpleMeterRegistry = new SimpleMeterRegistry();
+        myCompositeMeterRegistry.add(simpleMeterRegistry);
+
     }
 
     @Bean
