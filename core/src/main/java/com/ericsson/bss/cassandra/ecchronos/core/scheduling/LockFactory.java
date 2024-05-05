@@ -38,8 +38,6 @@ public interface LockFactory
      * @param metadata
      *            The metadata of the lock.
      * @return The lock if able to lock the resource.
-     * @throws LockException
-     *             Thrown when unable to lock a resource
      */
     DistributedLock tryLock(String dataCenter, String resource, int priority, Map<String, String> metadata)
             throws LockException;
@@ -54,8 +52,9 @@ public interface LockFactory
      *             i.e "RepairResource-DC1-1".
      * @return The metadata of the lock
      *          containing keyspace and table to repair.
+     * @throws LockException
      */
-    Map<String, String> getLockMetadata(String dataCenter, String resource);
+    Map<String, String> getLockMetadata(String dataCenter, String resource) throws LockException;
 
     /**
      * Checks if local_quorum is met.

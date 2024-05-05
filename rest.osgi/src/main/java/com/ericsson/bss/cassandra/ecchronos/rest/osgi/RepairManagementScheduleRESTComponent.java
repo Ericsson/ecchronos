@@ -38,6 +38,12 @@ public class RepairManagementScheduleRESTComponent implements ScheduleRepairMana
             policy = ReferencePolicy.STATIC)
     private volatile RepairScheduler myRepairScheduler;
 
+    @Override
+    public final ResponseEntity<String> getCurrentJobStatus()
+    {
+        return myDelegateScheduleRESTImpl.getCurrentJobStatus();
+    }
+
     private volatile ScheduleRepairManagementREST myDelegateScheduleRESTImpl;
 
     @Activate

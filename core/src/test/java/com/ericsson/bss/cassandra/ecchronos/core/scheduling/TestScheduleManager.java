@@ -25,8 +25,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -241,6 +243,42 @@ public class TestScheduleManager
         assertThat(myScheduler.getQueueSize()).isEqualTo(0);
     }
 
+    @Test
+    public void testGetCurrentJobStatus() throws InterruptedException
+    {
+        CountDownLatch latch = new CountDownLatch(1);
+        UUID jobId = UUID.randomUUID();
+        ScheduledJob testJob = new TestScheduledJob(
+                new ScheduledJob.ConfigurationBuilder()
+                        .withPriority(ScheduledJob.Priority.LOW)
+                        .withRunInterval(1, TimeUnit.SECONDS)
+                        .build(),
+                jobId,
+                latch);
+        myScheduler.schedule(testJob);
+        new Thread(() -> myScheduler.run()).start();
+        Thread.sleep(50);
+        assertThat(myScheduler.getCurrentJobStatus()).isEqualTo("Job ID: " + jobId.toString() + ", Status: Running");
+        latch.countDown();
+    }
+
+    @Test
+    public void testGetCurrentJobStatusNoRunning() throws InterruptedException
+    {
+        CountDownLatch latch = new CountDownLatch(1);
+        UUID jobId = UUID.randomUUID();
+        ScheduledJob testJob = new TestScheduledJob(
+                new ScheduledJob.ConfigurationBuilder()
+                        .withPriority(ScheduledJob.Priority.LOW)
+                        .withRunInterval(1, TimeUnit.SECONDS)
+                        .build(),
+                jobId,
+                latch);
+        myScheduler.schedule(testJob);
+        new Thread(() -> myScheduler.run()).start();
+        assertThat(myScheduler.getCurrentJobStatus()).isNotEqualTo("Job ID: " + jobId.toString() + ", Status: Running");
+        latch.countDown();
+    }
     private void waitForJobStarted(TestJob job) throws InterruptedException
     {
         while(!job.hasStarted())
@@ -265,6 +303,7 @@ public class TestScheduleManager
         private final AtomicInteger taskRuns = new AtomicInteger();
         private final int numTasks;
         private final Runnable onCompletion;
+
 
         public TestJob(Priority priority, CountDownLatch cdl)
         {
@@ -347,6 +386,43 @@ public class TestScheduleManager
                 taskRuns.incrementAndGet();
                 hasRun = true;
                 return true;
+            }
+        }
+    }
+
+    public class TestScheduledJob extends ScheduledJob
+    {
+        private final CountDownLatch taskCompletionLatch;
+        public TestScheduledJob(Configuration configuration, UUID id, CountDownLatch taskCompletionLatch)
+        {
+            super(configuration, id);
+            this.taskCompletionLatch = taskCompletionLatch;
+        }
+        @Override
+        public Iterator<ScheduledTask> iterator()
+        {
+            return Collections.<ScheduledTask> singleton(new ControllableTask(taskCompletionLatch)).iterator();
+        }
+        class ControllableTask extends ScheduledTask
+        {
+            private final CountDownLatch latch;
+            public ControllableTask(CountDownLatch latch)
+            {
+                this.latch = latch;
+            }
+            @Override
+            public boolean execute()
+            {
+                try
+                {
+                    latch.await();
+                    return true;
+                }
+                catch (InterruptedException e)
+                {
+                    Thread.currentThread().interrupt();
+                    return false;
+                }
             }
         }
     }

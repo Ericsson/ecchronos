@@ -13,12 +13,24 @@
 * host: localhost
 * port: 9042
 #
-# Connection Timeout for CQL.
+# Connection Timeout for a CQL attempt.
 # Specify a time to wait for cassandra to come up.
-# Connection is tried every five second until either the timeout time passes or the connection is successful.
+# Connection is tried based on retry policy delay calculations. Each connection attempt will use the timeout to calculate CQL connection process delay.
 #
 **timeout:**
-* time: 0
+* time: 60
+* unit: seconds
+**retryPolicy:**
+# Max number of attempts ecChronos will try to connect with Cassandra.
+* maxAttempts: 5
+# Delay use to wait between an attempt and another, this value will be multiplied by the current attempt count powered by two.
+# If the current attempt is 4 and the default delay is 5 seconds, so ((4(attempt) x 2) x 5(default delay)) = 40 seconds.
+# If the calculated delay is greater than maxDelay, maxDelay will be used instead of the calculated delay.
+* delay: 5
+# Maximum delay before the next connection attempt is made.
+# Setting it as 0 will disable maxDelay and the delay interval will
+# be calculated based on the attempt count and the default delay.
+* maxDelay: 30
 * unit: seconds
 #
 # The class used to provide CQL connections to Apache Cassandra.
@@ -39,8 +51,7 @@
 # Allow routing requests directly to a remote datacenter.
 # This allows locks for other datacenters to be taken in that datacenter instead of via the local datacenter.
 # If clients are prevented from connecting directly to Cassandra nodes in other sites this is not possible.
-# If remote routing is disabled its not possible to use LOCAL_SERIAL consistency for the locking,
-# instead SERIAL consistency will be used for those request.
+# If remote routing is disabled, instead SERIAL consistency will be used for those request.
 #
 * remoteRouting: true
 **jmx:**
@@ -124,6 +135,23 @@
 # This value is a ratio between 0 -> 100% of the execution time of a repair session.
 #
 # 100% means that the executor will wait to run the next session for as long time as the previous session took.
+# The 'unwind_ratio' setting configures the wait time between repair tasks as a proportion of the previous task's execution time.
+#
+# Examples:
+# - unwind_ratio: 0
+#   Explanation: No wait time between tasks. The next task starts immediately after the previous one finishes.
+#   Total Repair Time: T1 (10s) + T2 (20s) = 30 seconds.
+#
+# - unwind_ratio: 1.0 (100%)
+#   Explanation: The wait time after each task equals its duration.
+#   Total Repair Time: T1 (10s + 10s wait) + T2 (20s + 20s wait) = 60 seconds.
+#
+# - unwind_ratio: 0.5 (50%)
+#   Explanation: The wait time is half of the task's duration.
+#   Total Repair Time: T1 (10s + 5s wait) + T2 (20s + 10s wait) = 45 seconds.
+#
+#  A higher 'unwind_ratio' reduces system load by adding longer waits, but increases total repair time.
+#  A lower 'unwind_ratio' speeds up repairs but may increase system load.
 #
 * unwind_ratio: 0.0
 #
@@ -241,6 +269,17 @@
 # the cache expiration time is reached.
 #
 * cache_expiry_time_in_seconds: 30
+#
+# Allow to override consistency level for LWT (lightweight transactions). Possible values are:
+# "DEFAULT" - Use consistency level based on remoteRouting.
+# "SERIAL" - Use SERIAL consistency for LWT regardless of remoteRouting.
+# "LOCAL" - Use LOCAL_SERIAL consistency for LWT regardless of remoteRouting.
+#
+# if you use remoteRouting: false and LOCAL then all locks will be taken locally
+# in DC. I.e There's a risk that multiple nodes in different datacenters will be able to lock the
+# same nodes causing multiple repairs on the same range/node at the same time.
+#
+* consistencySerial: "DEFAULT"
 
 **run_policy:**
 **time_based:**

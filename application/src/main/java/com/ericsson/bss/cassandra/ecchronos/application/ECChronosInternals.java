@@ -88,6 +88,7 @@ public class ECChronosInternals implements Closeable
                 .withStatementDecorator(statementDecorator)
                 .withKeyspaceName(casLockFactoryConfig.getKeyspaceName())
                 .withCacheExpiryInSeconds(casLockFactoryConfig.getFailureCacheExpiryTimeInSeconds())
+                .withConsistencySerial(casLockFactoryConfig.getConsistencySerial())
                 .build();
 
         Node node = nativeConnectionProvider.getLocalNode();

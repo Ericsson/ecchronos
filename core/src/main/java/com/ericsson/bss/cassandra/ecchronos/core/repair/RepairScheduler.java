@@ -45,4 +45,14 @@ public interface RepairScheduler
      * @return the list of the currently scheduled repair jobs.
      */
     List<ScheduledRepairJobView> getCurrentRepairJobs();
+
+    /**
+     * Retrieves the current status of the job being managed by this scheduler.
+     * <p>
+     * It's intended for monitoring and logging purposes, allowing users to query the job's current state
+     * without affecting its execution.
+     *
+     * @return A {@code String} representing the current status of the job.
+     */
+    String getCurrentJobStatus();
 }

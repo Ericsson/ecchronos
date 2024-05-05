@@ -20,6 +20,11 @@ connection:
     timeout:
       time: 5
       unit: seconds
+    retryPolicy:
+      maxAttempts: 10
+      delay: 10
+      maxDelay: 35
+      unit: minutes
     provider: com.ericsson.bss.cassandra.ecchronos.application.config.TestConfig$TestNativeConnectionProvider
     certificateHandler: com.ericsson.bss.cassandra.ecchronos.application.config.TestConfig$TestCertificateHandler
     decoratorClass: com.ericsson.bss.cassandra.ecchronos.application.config.TestConfig$TestStatementDecorator
@@ -82,6 +87,7 @@ lock_factory:
   cas:
     keyspace: ecc
     cache_expiry_time_in_seconds: 100
+    consistencySerial: "LOCAL"
 
 
 run_policy:
