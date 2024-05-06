@@ -174,6 +174,7 @@ public class TestConfig
         assertThat(restServerConfig.getHost()).isEqualTo("127.0.0.2");
         assertThat(restServerConfig.getPort()).isEqualTo(8081);
     }
+
     @Test
     public void testInitialDelayDefaultValue() throws Exception
     {

@@ -298,6 +298,7 @@ public class RepairConfiguration
          * Set the initial delay period for a new table job.
          *
          * @param initialDelay The time to use as initial delay
+         * @param timeUnit The time unit
          * @return The builder
          */
         public Builder withInitialDelay(final long initialDelay, final TimeUnit timeUnit)
