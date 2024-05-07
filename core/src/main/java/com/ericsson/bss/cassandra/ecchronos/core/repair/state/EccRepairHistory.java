@@ -243,7 +243,7 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
             }
             if (nodes == null)
             {
-                LOG.debug("Token range {} was not found in metadata", tokenRange);
+                LOG.trace("Token range {} was not found in metadata", tokenRange);
                 return null;
             }
             String status = row.getString(COLUMN_STATUS);

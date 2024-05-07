@@ -83,7 +83,7 @@ public final class LockCache
 
     private void throwCachedLockException(final LockException e) throws LockException
     {
-        LOG.debug("Encountered cached locking failure, throwing exception", e);
+        LOG.trace("Encountered cached locking failure, throwing exception", e);
         throw e;
     }
 

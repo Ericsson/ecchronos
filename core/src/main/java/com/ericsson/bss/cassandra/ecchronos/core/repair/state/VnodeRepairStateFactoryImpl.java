@@ -63,13 +63,13 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
 
         if (lastRepairedAt == VnodeRepairState.UNREPAIRED)
         {
-            LOG.debug("No last repaired at found for {}, iterating over all repair entries", tableReference);
+            LOG.trace("No last repaired at found for {}, iterating over all repair entries", tableReference);
             repairEntryIterator = myRepairHistoryProvider.iterate(tableReference, iterateToTime,
                     (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
         }
         else
         {
-            LOG.debug("Table {} snapshot created at {}, iterating repair entries until that time", tableReference,
+            LOG.trace("Table {} snapshot created at {}, iterating repair entries until that time", tableReference,
                     previous.getCreatedAt());
             repairEntryIterator = myRepairHistoryProvider.iterate(tableReference, iterateToTime,
                     previous.getCreatedAt(), (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
@@ -213,7 +213,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
 
         if (!nodes.equals(repairEntry.getParticipants()))
         {
-            LOG.debug("Ignoring entry {}, replicas {} not matching participants", repairEntry, nodes);
+            LOG.trace("Ignoring entry {}, replicas {} not matching participants", repairEntry, nodes);
             return false;
         }
 

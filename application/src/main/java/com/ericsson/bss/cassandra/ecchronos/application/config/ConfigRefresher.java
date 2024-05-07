@@ -81,7 +81,7 @@ public class ConfigRefresher implements Closeable
         }
 
         knownConfigs.put(absoluteFilePath.getFileName(), onChange);
-        LOG.debug("Watching for changes in {}", absoluteFilePath);
+        LOG.trace("Watching for changes in {}", absoluteFilePath);
     }
 
     @Override
@@ -127,7 +127,7 @@ public class ConfigRefresher implements Closeable
             }
             catch (ClosedWatchServiceException e)
             {
-                LOG.debug("Watch service has been closed");
+                LOG.trace("Watch service has been closed");
                 return;
             }
             catch (Exception e)
@@ -170,7 +170,7 @@ public class ConfigRefresher implements Closeable
 
     private void handleEvent(final Path file)
     {
-        LOG.debug("Received event for {}/{}", baseDirectory, file);
+        LOG.trace("Received event for {}/{}", baseDirectory, file);
 
         Runnable onChange = knownConfigs.get(file);
         if (onChange != null)

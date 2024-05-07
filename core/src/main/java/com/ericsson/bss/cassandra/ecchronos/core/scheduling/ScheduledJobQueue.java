@@ -92,13 +92,13 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
      */
     public synchronized void remove(final ScheduledJob job)
     {
-        LOG.debug("Removing job: {}", job);
+        LOG.trace("Removing job: {}", job);
         myJobQueues.get(job.getPriority()).remove(job);
     }
 
     private void addJobInternal(final ScheduledJob job)
     {
-        LOG.debug("Adding job: {}, Priority: {}", job, job.getPriority());
+        LOG.trace("Adding job: {}, Priority: {}", job, job.getPriority());
         myJobQueues.get(job.getPriority()).add(job);
     }
 
@@ -149,7 +149,7 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
                 }
                 else if (state != ScheduledJob.State.PARKED)
                 {
-                    LOG.debug("Retrieving job: {}, Priority: {}", job, job.getPriority());
+                    LOG.trace("Retrieving job: {}, Priority: {}", job, job.getPriority());
                     return job;
                 }
             }

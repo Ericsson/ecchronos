@@ -75,13 +75,13 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     }
     public boolean addRunPolicy(final RunPolicy runPolicy)
     {
-        LOG.debug("Run policy {} added", runPolicy);
+        LOG.trace("Run policy {} added", runPolicy);
         return myRunPolicies.add(runPolicy);
     }
 
     public boolean removeRunPolicy(final RunPolicy runPolicy)
     {
-        LOG.debug("Run policy {} removed", runPolicy);
+        LOG.trace("Run policy {} removed", runPolicy);
         return myRunPolicies.remove(runPolicy);
     }
 

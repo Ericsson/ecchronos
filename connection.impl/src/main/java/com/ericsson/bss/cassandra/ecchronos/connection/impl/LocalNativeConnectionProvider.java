@@ -195,7 +195,7 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
 
             InitialContact initialContact = resolveInitialContact(contactEndPoint, builder);
 
-            LOG.debug("Connecting to {}({}), local data center: {}", contactEndPoint, initialContact.getHostId(),
+            LOG.trace("Connecting to {}({}), local data center: {}", contactEndPoint, initialContact.getHostId(),
                     initialContact.getDataCenter());
 
             CqlSessionBuilder sessionBuilder = fromBuilder(builder);
@@ -222,7 +222,7 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
                 sessionBuilder.withMetricRegistry(builder.myMeterRegistry);
             }
             DriverConfigLoader driverConfigLoader = loaderBuilder.build();
-            LOG.debug("Driver configuration: {}", driverConfigLoader.getInitialConfig().getDefaultProfile().entrySet());
+            LOG.trace("Driver configuration: {}", driverConfigLoader.getInitialConfig().getDefaultProfile().entrySet());
             sessionBuilder.withConfigLoader(driverConfigLoader);
             return sessionBuilder.build();
         }

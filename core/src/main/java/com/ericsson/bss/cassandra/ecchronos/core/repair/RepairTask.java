@@ -220,7 +220,7 @@ public abstract class RepairTask implements NotificationListener
     @Override
     public void handleNotification(final Notification notification, final Object handback)
     {
-        LOG.debug("Notification {}", notification.toString());
+        LOG.trace("Notification {}", notification.toString());
         switch (notification.getType())
         {
         case "progress":
@@ -248,7 +248,7 @@ public abstract class RepairTask implements NotificationListener
             myLatch.countDown();
             break;
         default:
-            LOG.debug("Unknown JMXConnectionNotification type: {}", notification.getType());
+            LOG.trace("Unknown JMXConnectionNotification type: {}", notification.getType());
             break;
         }
     }

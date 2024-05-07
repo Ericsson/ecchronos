@@ -170,7 +170,7 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
             {
                 long diskSpaceUsed = jmxProxy.liveDiskSpaceUsed(tableReference);
 
-                LOG.debug("{} -> {}", tableReference, diskSpaceUsed);
+                LOG.trace("{} -> {}", tableReference, diskSpaceUsed);
                 dataSizes.put(tableReference, diskSpaceUsed);
             }
         }

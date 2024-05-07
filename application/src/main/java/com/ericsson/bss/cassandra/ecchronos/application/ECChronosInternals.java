@@ -216,13 +216,13 @@ public class ECChronosInternals implements Closeable
         @Override
         public void lastRepairedAt(final TableReference tableReference, final long lastRepairedAt)
         {
-            LOG.debug("Table {} last repaired at {}", tableReference, lastRepairedAt);
+            LOG.trace("Table {} last repaired at {}", tableReference, lastRepairedAt);
         }
 
         @Override
         public void remainingRepairTime(final TableReference tableReference, final long remainingRepairTime)
         {
-            LOG.debug("Table {} remaining repair time {}", tableReference, remainingRepairTime);
+            LOG.trace("Table {} remaining repair time {}", tableReference, remainingRepairTime);
         }
 
         @Override

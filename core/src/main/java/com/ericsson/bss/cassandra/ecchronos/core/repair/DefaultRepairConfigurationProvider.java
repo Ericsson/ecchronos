@@ -429,7 +429,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     {
         if (mySession == null)
         {
-            LOG.debug("Session during setupConfiguration call was null.");
+            LOG.trace("Session during setupConfiguration call was null.");
             return;
         }
 

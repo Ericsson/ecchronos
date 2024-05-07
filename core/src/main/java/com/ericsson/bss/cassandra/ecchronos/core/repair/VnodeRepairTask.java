@@ -94,8 +94,8 @@ public class VnodeRepairTask extends RepairTask
         Set<LongTokenRange> unknownRanges = Sets.difference(myTokenRanges, completedRanges);
         if (!unknownRanges.isEmpty())
         {
-            LOG.debug("Unknown ranges: {}", unknownRanges);
-            LOG.debug("Completed ranges: {}", completedRanges);
+            LOG.trace("Unknown ranges: {}", unknownRanges);
+            LOG.trace("Completed ranges: {}", completedRanges);
             myUnknownRanges = Collections.unmodifiableSet(unknownRanges);
             proxy.forceTerminateAllRepairSessions();
             throw new ScheduledJobException(String.format("Unknown status of some ranges for %s", this));

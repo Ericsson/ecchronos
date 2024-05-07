@@ -102,7 +102,7 @@ public class RepairGroup extends ScheduledTask
     @Override
     public boolean execute()
     {
-        LOG.debug("Table {} running repair job {}", myTableReference, myReplicaRepairGroup);
+        LOG.trace("Table {} running repair job {}", myTableReference, myReplicaRepairGroup);
         boolean successful = true;
 
         for (RepairTask repairTask : getRepairTasks())
@@ -120,7 +120,7 @@ public class RepairGroup extends ScheduledTask
             catch (ScheduledJobException e)
             {
                 LOG.warn("Encountered issue when running repair task {}, {}", repairTask, e.getMessage());
-                LOG.debug("", e);
+                LOG.trace("", e);
                 successful = false;
                 if (e.getCause() instanceof InterruptedException)
                 {

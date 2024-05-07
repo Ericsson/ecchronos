@@ -190,7 +190,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
     {
         if (myTotalTokens == 0)
         {
-            LOG.debug("Total tokens for this job are 0");
+            LOG.trace("Total tokens for this job are 0");
             return 0;
         }
 

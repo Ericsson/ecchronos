@@ -53,7 +53,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
     private void setLastSuccessfulRun()
     {
         myLastSuccessfulRun = myCassandraMetrics.getMaxRepairedAt(getTableReference());
-        LOG.debug("{} - last successful run: {}", this, myLastSuccessfulRun);
+        LOG.trace("{} - last successful run: {}", this, myLastSuccessfulRun);
     }
 
     /**

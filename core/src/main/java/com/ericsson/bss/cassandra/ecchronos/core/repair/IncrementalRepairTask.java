@@ -60,7 +60,7 @@ public class IncrementalRepairTask extends RepairTask
     protected final void onRangeFinished(final LongTokenRange range, final RepairStatus repairStatus)
     {
         super.onRangeFinished(range, repairStatus);
-        LOG.debug("{} for range {}", repairStatus, range);
+        LOG.trace("{} for range {}", repairStatus, range);
     }
 
     /**
