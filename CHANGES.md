@@ -1,5 +1,8 @@
 # Changes
+## Version 5.0.3
 
+* Possibility for repairs to never be triggered - Issue #264
+ 
 ## Version 5.0.2
 
 * Containerized ecchronos restarting tomcat when Cassandra peer is overloaded - Issue #650

@@ -55,9 +55,9 @@ public class TestFileBasedRepairConfiguration
     public void testNoSchedule() throws Exception
     {
         AbstractRepairConfigurationProvider repairConfigProvider = withSchedule("schedule.yml");
-
         assertThat(repairConfigProvider.get(tableReference("any", "table"))).containsExactly(RepairConfiguration.DEFAULT);
     }
+
 
     @Test
     public void testAllSchedules() throws Exception
@@ -76,6 +76,7 @@ public class TestFileBasedRepairConfiguration
 
         RepairConfiguration ks2Tb1 = RepairConfiguration.newBuilder()
                 .withRepairInterval(1, TimeUnit.DAYS)
+                .withInitialDelay(1, TimeUnit.HOURS)
                 .build();
         RepairConfiguration ks2Tb2 = RepairConfiguration.newBuilder()
                 .withRepairInterval(2, TimeUnit.DAYS)

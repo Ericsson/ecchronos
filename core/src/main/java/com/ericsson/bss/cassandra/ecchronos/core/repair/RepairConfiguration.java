@@ -38,6 +38,7 @@ public class RepairConfiguration
 
     private static final long DEFAULT_BACKOFF_IN_MS = TimeUnit.MINUTES.toMillis(30);
     private static final boolean DEFAULT_IGNORE_TWCS_TABLES = false;
+    private static final long DEFAULT_INITIAL_DELAY_IN_MS = TimeUnit.DAYS.toMillis(1);
 
     public static final RepairConfiguration DEFAULT = newBuilder().build();
     public static final RepairConfiguration DISABLED = newBuilder()
@@ -56,6 +57,8 @@ public class RepairConfiguration
 
     private final RepairOptions.RepairType myRepairType;
 
+    private final long myInitialDelayInMs;
+
     private RepairConfiguration(final Builder builder)
     {
         myRepairParallelism = builder.myRepairParallelism;
@@ -68,6 +71,7 @@ public class RepairConfiguration
         myBackoffInMs = builder.myBackoffInMs;
         myRepairType = builder.myRepairType;
         myPriorityGranularityUnit = builder.myPriorityGranularityUnit;
+        myInitialDelayInMs = builder.myInitialDelayInMs;
     }
 
     public TimeUnit getPriorityGranularityUnit()
@@ -83,6 +87,11 @@ public class RepairConfiguration
     public long getRepairIntervalInMs()
     {
         return myRepairIntervalInMs;
+    }
+
+    public long getInitialDelayInMs()
+    {
+        return myInitialDelayInMs;
     }
 
     public long getRepairWarningTimeInMs()
@@ -134,10 +143,26 @@ public class RepairConfiguration
     public String toString()
     {
         return String.format(
-                "RepairConfiguration(interval=%dms,warning=%dms,error=%dms,parallelism=%s,unwindRatio=%.2f"
-                        + ",ignoreTWCS=%b,backoff=%dms,repairType=%s)",
-                myRepairIntervalInMs, myRepairWarningTimeInMs, myRepairErrorTimeInMs, myRepairParallelism,
-                myRepairUnwindRatio, myIgnoreTWCSTables, myBackoffInMs, myRepairType, myPriorityGranularityUnit);
+                "RepairConfiguration(interval=%dms,"
+                        + "initialDelay=%dms,"
+                        + "warning=%dms,"
+                        + "error=%dms,"
+                        + "parallelism=%s,"
+                        + "unwindRatio=%.2f,"
+                        + "ignoreTWCS=%b,"
+                        + "backoff=%dms,"
+                        + "repairType=%s,"
+                        + "priorityGranularityUnit=%s))",
+                        myRepairIntervalInMs,
+                        myInitialDelayInMs,
+                        myRepairWarningTimeInMs,
+                        myRepairErrorTimeInMs,
+                        myRepairParallelism,
+                        myRepairUnwindRatio,
+                        myIgnoreTWCSTables,
+                        myBackoffInMs,
+                        myRepairType,
+                        myPriorityGranularityUnit);
     }
 
     @Override
@@ -153,6 +178,7 @@ public class RepairConfiguration
         }
         RepairConfiguration that = (RepairConfiguration) o;
         return myRepairIntervalInMs == that.myRepairIntervalInMs
+                && myInitialDelayInMs == that.myInitialDelayInMs
                 && myRepairWarningTimeInMs == that.myRepairWarningTimeInMs
                 && myRepairErrorTimeInMs == that.myRepairErrorTimeInMs
                 && Double.compare(that.myRepairUnwindRatio, myRepairUnwindRatio) == 0
@@ -167,7 +193,7 @@ public class RepairConfiguration
     @Override
     public int hashCode()
     {
-        return Objects.hash(myRepairParallelism, myRepairIntervalInMs, myRepairWarningTimeInMs,
+        return Objects.hash(myRepairParallelism, myRepairIntervalInMs, myInitialDelayInMs, myRepairWarningTimeInMs,
                 myRepairErrorTimeInMs, myRepairUnwindRatio, myTargetRepairSizeInBytes, myIgnoreTWCSTables,
                 myBackoffInMs, myRepairType, myPriorityGranularityUnit);
     }
@@ -184,6 +210,9 @@ public class RepairConfiguration
         private long myBackoffInMs = DEFAULT_BACKOFF_IN_MS;
         private boolean myIgnoreTWCSTables = DEFAULT_IGNORE_TWCS_TABLES;
         private TimeUnit myPriorityGranularityUnit = TimeUnit.HOURS;
+
+
+        private long myInitialDelayInMs = DEFAULT_INITIAL_DELAY_IN_MS;
 
         /**
          * Constructor.
@@ -203,6 +232,7 @@ public class RepairConfiguration
             myRepairParallelism = from.getRepairParallelism();
             myRepairType = from.getRepairType();
             myRepairIntervalInMs = from.getRepairIntervalInMs();
+            myInitialDelayInMs = from.getInitialDelayInMs();
             myRepairWarningTimeInMs = from.getRepairWarningTimeInMs();
             myRepairErrorTimeInMs = from.getRepairErrorTimeInMs();
             myRepairUnwindRatio = from.getRepairUnwindRatio();
@@ -261,6 +291,19 @@ public class RepairConfiguration
         public Builder withRepairWarningTime(final long repairWarningTime, final TimeUnit timeUnit)
         {
             myRepairWarningTimeInMs = timeUnit.toMillis(repairWarningTime);
+            return this;
+        }
+
+        /**
+         * Set the initial delay period for a new table job.
+         *
+         * @param initialDelay The time to use as initial delay
+         * @param timeUnit The time unit
+         * @return The builder
+         */
+        public Builder withInitialDelay(final long initialDelay, final TimeUnit timeUnit)
+        {
+            myInitialDelayInMs = timeUnit.toMillis(initialDelay);
             return this;
         }
 

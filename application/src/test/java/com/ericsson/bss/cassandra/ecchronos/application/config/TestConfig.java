@@ -113,6 +113,7 @@ public class TestConfig
                 .withBackoff(13, TimeUnit.SECONDS)
                 .withTargetRepairSizeInBytes(UnitConverter.toBytes("5m"))
                 .withPriorityGranularityUnit(TimeUnit.MINUTES)
+                .withInitialDelay(1, TimeUnit.HOURS)
                 .build();
 
         GlobalRepairConfig repairConfig = config.getRepairConfig();
@@ -175,6 +176,30 @@ public class TestConfig
     }
 
     @Test
+    public void testInitialDelayDefaultValue() throws Exception
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("nothing_set.yml").getFile());
+
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
+        Config config = objectMapper.readValue(file, Config.class);
+        GlobalRepairConfig repair = config.getRepairConfig();
+        Interval interval = repair.getInitialDelay();
+        assertThat(interval.getInterval(TimeUnit.DAYS)).isEqualTo(1);
+    }
+
+    @Test
+    public void testInitialDelayLongerThanRepairInterval() throws Exception
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("initial_delay_greater_than_repair.yml").getFile());
+
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        assertThatExceptionOfType(JsonMappingException.class).isThrownBy(() -> objectMapper.readValue(file, Config.class));
+    }
+
+    @Test
     public void testWithDefaultFile() throws Exception
     {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -229,6 +254,7 @@ public class TestConfig
         assertThat(repairConfig.getIgnoreTWCSTables()).isFalse();
         assertThat(repairConfig.getBackoff().getInterval(TimeUnit.MINUTES)).isEqualTo(30);
         assertThat(repairConfig.getPriority().getPriorityGranularityUnit()).isEqualTo(TimeUnit.HOURS);
+        assertThat(repairConfig.getInitialDelay().getInterval(TimeUnit.DAYS)).isEqualTo(1);
 
         StatisticsConfig statisticsConfig = config.getStatisticsConfig();
         assertThat(statisticsConfig.isEnabled()).isTrue();
