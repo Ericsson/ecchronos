@@ -7,7 +7,8 @@ import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class StatusLogger {
+public class StatusLogger
+{
     private static final Logger LOG = LoggerFactory.getLogger(StatusLogger.class);
 
     static final String NODE_REPAIR_SESSIONS = "node.repair.sessions";
@@ -25,39 +26,44 @@ in configuration in ecc.yml
 //
 
  */
-    public static void log(MeterRegistry myMeterRegistry)
+    public static void log(final MeterRegistry myMeterRegistry)
     {
         Timer failedRepairSessions = myMeterRegistry.find(NODE_REPAIR_SESSIONS)
                 .tags("successful", "false")
                 .timer();
-        if (failedRepairSessions != null){
-            LOG.debug("Total repair failures in node till now is: {} ", failedRepairSessions.count());
+        if (failedRepairSessions != null)
+        {
+            LOG.debug("Total repair failures in node till now is: {}", failedRepairSessions.count());
         }
 
         Timer successfulRepairSessions = myMeterRegistry.find(NODE_REPAIR_SESSIONS)
                 .tags("successful", "true")
                 .timer();
-        if (successfulRepairSessions != null){
-            LOG.debug("Total repair success in node till now is: {} ", successfulRepairSessions.count());
+        if (successfulRepairSessions != null)
+        {
+            LOG.debug("Total repair success in node till now is:{}", successfulRepairSessions.count());
         }
 
         Gauge nodeTimeSinceLastRepaired = myMeterRegistry.find(NODE_TIME_SINCE_LAST_REPAIRED)
                 .gauge();
 
-        if(nodeTimeSinceLastRepaired != null){
-            LOG.debug("Node last repaired at: {} ", nodeTimeSinceLastRepaired.value());
+        if(nodeTimeSinceLastRepaired != null)
+        {
+            LOG.debug("Node last repaired at: {}", nodeTimeSinceLastRepaired.value());
         }
 
         Gauge nodeRemainingRepairTime = myMeterRegistry.find(NODE_REMAINING_REPAIR_TIME)
                 .gauge();
-        if(nodeRemainingRepairTime != null){
-            LOG.debug("Remaining time for node repair : {} ", nodeRemainingRepairTime.value());
+        if(nodeRemainingRepairTime != null)
+        {
+            LOG.debug("Remaining time for node repair :{}", nodeRemainingRepairTime.value());
         }
 
         Gauge nodeRepairedRatio = myMeterRegistry.find(NODE_REPAIRED_RATIO)
                 .gauge();
-        if(nodeRepairedRatio != null){
-            LOG.debug("Node Repair Ratio : {} ", nodeRepairedRatio.value());
+        if(nodeRepairedRatio != null)
+        {
+            LOG.debug("Node Repair Ratio is :: {}", nodeRepairedRatio.value());
         }
 
     }

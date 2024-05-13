@@ -1,67 +1,87 @@
 package com.ericsson.bss.cassandra.ecchronos.core.metrics;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.StatusLogger;
+import com.google.common.annotations.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MetricInspector {
+public final class MetricInspector
+{
 
-    private static final Logger LOG = LoggerFactory.getLogger(MetricInspector.class);
     private final MeterRegistry myMeterRegistry;
+    private long myRepairFailureCountSinceLastReport = 0;
 
-    private long repair_failure_count_since_last_report= 0;
+    private static final int REPEAT_INTERVAL_PERIOD = 5000;
 
-    private long total_recorded_failures = 0;
+     @VisibleForTesting
+     long getMyRepairFailureCountSinceLastReport() {
+        return myRepairFailureCountSinceLastReport;
+    }
 
-    private int myrepairFailureThreshold = 0;
+    @VisibleForTesting
+    long getMyTotalRecordFailures() {
+        return myTotalRecordFailures;
+    }
 
-    private int myRepairFailureTimeWindow = 30;
+    @VisibleForTesting
+    LocalDateTime getRecordingStartTimestamp() {
+        return recordingStartTimestamp;
+    }
+
+    private long myTotalRecordFailures = 0;
+
+    private final int myRepairFailureThreshold;
+
+    private final int myRepairFailureTimeWindow;
+
 
     private LocalDateTime recordingStartTimestamp = LocalDateTime.now();
 
 
-    public MetricInspector(MeterRegistry myMeterRegistry, int repairFailureThreshold, int repairFailureTimeWindow) {
-        this.myMeterRegistry = myMeterRegistry;
-        this.myrepairFailureThreshold = repairFailureThreshold;
+    public MetricInspector(final MeterRegistry meterRegistry,
+                           final int repairFailureThreshold,
+                           final int repairFailureTimeWindow)
+    {
+        this.myMeterRegistry = meterRegistry;
+        this.myRepairFailureThreshold = repairFailureThreshold;
         this.myRepairFailureTimeWindow = repairFailureTimeWindow;
     }
 
 
-
-    /**
-     * @return
-     */
-
-    public void startInspection() {
+    public void startInspection()
+    {
         java.util.Timer timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
+        timer.scheduleAtFixedRate(new TimerTask()
+        {
             @Override
-            public void run() {
-                insepectMeterRegistryForRepairFailures();
+            public void run()
+            {
+                inspectMeterRegistryForRepairFailures();
             }
-        }, 0, myRepairFailureTimeWindow * 1000);
+        }, 0, REPEAT_INTERVAL_PERIOD);
     }
 
 
-        private void insepectMeterRegistryForRepairFailures() {
+        @VisibleForTesting
+        void inspectMeterRegistryForRepairFailures()
+        {
 
             io.micrometer.core.instrument.Timer nodeRepairSessions = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REPAIR_SESSIONS)
                     .tags("successful", "false")
                     .timer();
-            if(nodeRepairSessions != null){
-                total_recorded_failures = nodeRepairSessions.count();
+            if (nodeRepairSessions != null)
+            {
+                myTotalRecordFailures = nodeRepairSessions.count();
             }
 
-            if(total_recorded_failures - repair_failure_count_since_last_report > myrepairFailureThreshold)
+            if (myTotalRecordFailures - myRepairFailureCountSinceLastReport > myRepairFailureThreshold)
             {
                 //reset count failure and reinitialize time window
-                repair_failure_count_since_last_report = total_recorded_failures;
+                myRepairFailureCountSinceLastReport = myTotalRecordFailures;
                 recordingStartTimestamp = LocalDateTime.now();
                 StatusLogger.log(myMeterRegistry);
 
@@ -72,17 +92,21 @@ public class MetricInspector {
 
     }
 
-    /**
+    /*
      * If in defined time window, number of repair failure has not crossed the configured number, then
-     * reset failure count for new timed window.Also reinitialize timewindow
+     * reset failure count for new timed window. Reinitialize time window.
      */
-        private void resetRepairFailureCount() {
+
+    @VisibleForTesting
+    void resetRepairFailureCount()
+        {
 
             LocalDateTime currentTimeStamp = LocalDateTime.now();
-            LocalDateTime thirtyMinutesAgo = currentTimeStamp.minus(30, ChronoUnit.MINUTES);
+            LocalDateTime thirtyMinutesAgo = currentTimeStamp.minus(myRepairFailureTimeWindow, ChronoUnit.MINUTES);
 
-            if(recordingStartTimestamp.isBefore(thirtyMinutesAgo)){
-                repair_failure_count_since_last_report = total_recorded_failures;
+            if (recordingStartTimestamp.isBefore(thirtyMinutesAgo))
+            {
+                myRepairFailureCountSinceLastReport = myTotalRecordFailures;
                 recordingStartTimestamp = LocalDateTime.now();
             }
 
