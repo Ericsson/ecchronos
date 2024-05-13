@@ -1,14 +1,18 @@
 package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
-import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetricsImpl;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class StatusLogger
+public final class StatusLogger
 {
+
+    private StatusLogger()
+    {
+        throw new AssertionError("Utility classes should not be instantiated");
+    }
     private static final Logger LOG = LoggerFactory.getLogger(StatusLogger.class);
 
     static final String NODE_REPAIR_SESSIONS = "node.repair.sessions";
@@ -47,21 +51,21 @@ in configuration in ecc.yml
         Gauge nodeTimeSinceLastRepaired = myMeterRegistry.find(NODE_TIME_SINCE_LAST_REPAIRED)
                 .gauge();
 
-        if(nodeTimeSinceLastRepaired != null)
+        if (nodeTimeSinceLastRepaired != null)
         {
             LOG.debug("Node last repaired at: {}", nodeTimeSinceLastRepaired.value());
         }
 
         Gauge nodeRemainingRepairTime = myMeterRegistry.find(NODE_REMAINING_REPAIR_TIME)
                 .gauge();
-        if(nodeRemainingRepairTime != null)
+        if (nodeRemainingRepairTime != null)
         {
             LOG.debug("Remaining time for node repair :{}", nodeRemainingRepairTime.value());
         }
 
         Gauge nodeRepairedRatio = myMeterRegistry.find(NODE_REPAIRED_RATIO)
                 .gauge();
-        if(nodeRepairedRatio != null)
+        if (nodeRepairedRatio != null)
         {
             LOG.debug("Node Repair Ratio is :: {}", nodeRepairedRatio.value());
         }

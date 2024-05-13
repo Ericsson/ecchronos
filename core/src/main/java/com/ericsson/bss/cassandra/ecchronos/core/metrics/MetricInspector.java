@@ -18,17 +18,20 @@ public final class MetricInspector
     private static final int REPEAT_INTERVAL_PERIOD = 5000;
 
      @VisibleForTesting
-     long getMyRepairFailureCountSinceLastReport() {
+     long getMyRepairFailureCountSinceLastReport()
+     {
         return myRepairFailureCountSinceLastReport;
     }
 
     @VisibleForTesting
-    long getMyTotalRecordFailures() {
+    long getMyTotalRecordFailures()
+    {
         return myTotalRecordFailures;
     }
 
     @VisibleForTesting
-    LocalDateTime getRecordingStartTimestamp() {
+    LocalDateTime getRecordingStartTimestamp()
+    {
         return recordingStartTimestamp;
     }
 
@@ -70,7 +73,8 @@ public final class MetricInspector
         void inspectMeterRegistryForRepairFailures()
         {
 
-            io.micrometer.core.instrument.Timer nodeRepairSessions = myMeterRegistry.find(TableRepairMetricsImpl.NODE_REPAIR_SESSIONS)
+            io.micrometer.core.instrument.Timer nodeRepairSessions = myMeterRegistry
+                     .find(TableRepairMetricsImpl.NODE_REPAIR_SESSIONS)
                     .tags("successful", "false")
                     .timer();
             if (nodeRepairSessions != null)
