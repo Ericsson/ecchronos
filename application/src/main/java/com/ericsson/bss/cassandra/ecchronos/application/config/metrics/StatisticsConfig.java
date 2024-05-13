@@ -25,10 +25,9 @@ public class StatisticsConfig
     private ReportingConfigs myReportingConfigs = new ReportingConfigs();
     private String myMetricsPrefix = "";
 
-    private int myRepairFailureCountForReporting =0;
+    private int myRepairFailureCountForReporting = 0;
 
-    private int myTimeWindowSizeinMinsForReporting = 30;
-
+    private int myTimeWindowSizeinMinsForReporting = 0;
 
 
 
@@ -63,7 +62,7 @@ public class StatisticsConfig
     @JsonProperty("repair_failures_count")
     public final int getMyRepairFailureCountForReporting()
     {
-        return myRepairFailureCountForReporting ;
+        return myRepairFailureCountForReporting;
     }
 
     @JsonProperty("repair_failure_time_window")
@@ -98,15 +97,15 @@ public class StatisticsConfig
     }
 
     @JsonProperty("repair_failures_count")
-    public final void setMyRepairFailureCountForReporting(final int repair_failure_count  )
+    public final void setMyRepairFailureCountForReporting(final int repairFailureCount)
     {
-        myRepairFailureCountForReporting =  repair_failure_count;
+        myRepairFailureCountForReporting =  repairFailureCount;
     }
 
     @JsonProperty("repair_failure_time_window")
-    public final void setMyTimeWindowSizeinMinsForReporting(final int repair_failure_time_window)
+    public final void setMyTimeWindowSizeinMinsForReporting(final int repairFailureTimeWindow)
     {
-        myTimeWindowSizeinMinsForReporting = repair_failure_time_window;
+        myTimeWindowSizeinMinsForReporting = repairFailureTimeWindow;
     }
 }
 
