@@ -109,10 +109,6 @@ public class MetricBeans
 
     private void createStatusLoggerMeterRegistry(final StatisticsConfig metricConfig)
     {
-        MeterFilter meterFilter = new MeterFilterImpl(metricConfig.getMetricsPrefix(), metricConfig
-                .getReportingConfigs()
-                .getFileReportingConfig()
-                .getExcludedMetrics());
         SimpleMeterRegistry simpleMeterRegistry = new SimpleMeterRegistry();
         myCompositeMeterRegistry.add(simpleMeterRegistry);
 
