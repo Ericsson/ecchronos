@@ -1,6 +1,7 @@
 # Changes
 ## Version 5.0.3
 
+* Spring Framework URL Parsing with Host Validation is vulnerable - Issue #661
 * Possibility for repairs to never be triggered - Issue #264
  
 ## Version 5.0.2
