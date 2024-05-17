@@ -278,11 +278,11 @@ statistics:
   prefix: ''
   ##
   ## Number of repair failures before status logger logs metrics in debug logs
-  ## The number is used to trigger a status once number of failures is breached in a timewindow mentioned below
+  ## The number is used to trigger a status once number of failures is breached in a time window mentioned below
   ##
   repair_failures_count: 5
   ##
-  ## Timewindow in minutes over which to track repair failures in node for trigger statuslogger messages in debug log
+  ## Time window in minutes over which to track repair failures in node for trigger status logger messages in debug log
   ##
   repair_failure_time_window: 30
 

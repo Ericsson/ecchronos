@@ -45,28 +45,23 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
-public class TestMetricInspector {
+public class TestMetricInspector
+{
 
     private static final String TEST_KEYSPACE = "test_keyspace";
     private static final String TEST_TABLE1 = "test_table1";
     private static final String TEST_TABLE2 = "test_table2";
     @Mock
     private TableStorageStates myTableStorageStates;
-
-
     private MeterRegistry myMeterRegistry;
     private TableRepairMetricsImpl myTableRepairMetricsImpl;
-
     private MetricInspector myMetericInspector;
-
     private LoggerContext loggerContext;
     private ListAppender<ILoggingEvent> listAppender;
 
-
-
-
     @Before
-    public void init() {
+    public void init()
+    {
         loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
         listAppender = new ListAppender<>();
         listAppender.start();
@@ -76,14 +71,12 @@ public class TestMetricInspector {
         // Need at least one registry present in composite to record metrics
         compositeMeterRegistry.add(new SimpleMeterRegistry());
        myMeterRegistry = compositeMeterRegistry;
-        myTableRepairMetricsImpl = TableRepairMetricsImpl.builder()
+       myTableRepairMetricsImpl = TableRepairMetricsImpl.builder()
                 .withTableStorageStates(myTableStorageStates)
                 .withMeterRegistry(myMeterRegistry)
                 .build();
-        myMetericInspector = new MetricInspector(myMeterRegistry,
+       myMetericInspector = new MetricInspector(myMeterRegistry,
                 1, 1);
-
-
     }
 
     @Test
@@ -95,15 +88,9 @@ public class TestMetricInspector {
         TableReference tableReference1 = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         expectedRepairTime = 12345L;
         myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
-
         myMetericInspector.inspectMeterRegistryForRepairFailures();
-
-
         List<ILoggingEvent> logsList = listAppender.list;
-
-        long count = logsList.stream()
-                .count();
-
+        long count = logsList.stream().count();
         String logMessage = logsList.get(0).getFormattedMessage();
         Level logLevel = logsList.get(0).getLevel();
         assertEquals("Total repair failures in node till now is: 2", logMessage);
@@ -117,16 +104,31 @@ public class TestMetricInspector {
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         long expectedRepairTime = 12345L;
         myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
-
         myMetericInspector.inspectMeterRegistryForRepairFailures();
-
-
         List<ILoggingEvent> logsList = listAppender.list;
-
-        long count = logsList.stream()
-                .count();
-
-       assertEquals(0, count);
+        long count = logsList.stream().count();
+        assertEquals(0, count);
     }
 
+    @Test
+    public void testStartInspectionMethod() throws InterruptedException
+    {
+        assertEquals(0,myMetericInspector.getMyTotalRecordFailures());
+        TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
+        long expectedRepairTime = 12345L;
+        myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
+        TableReference tableReference1 = tableReference(TEST_KEYSPACE, TEST_TABLE1);
+        myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
+        List<ILoggingEvent> logsList = listAppender.list;
+        myMetericInspector.startInspection();
+        Thread.sleep(5000);
+        long count = logsList.stream().count();
+        String logMessage = logsList.get(0).getFormattedMessage();
+        Level logLevel = logsList.get(0).getLevel();
+        assertEquals("Total repair failures in node till now is: 2", logMessage);
+        assertEquals(Level.DEBUG, logLevel);
+        assertEquals(1, count);
+        assertEquals(2,myMetericInspector.getMyTotalRecordFailures());
+        myMetericInspector.stopInspection();
+    }
 }

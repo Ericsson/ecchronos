@@ -24,12 +24,8 @@ public class StatisticsConfig
     private File myOutputDirectory = new File("./statistics");
     private ReportingConfigs myReportingConfigs = new ReportingConfigs();
     private String myMetricsPrefix = "";
-
     private int myRepairFailureCountForReporting = 0;
-
     private int myTimeWindowSizeinMinsForReporting = 0;
-
-
 
     @JsonProperty("enabled")
     public final boolean isEnabled()
@@ -60,13 +56,13 @@ public class StatisticsConfig
 
 
     @JsonProperty("repair_failures_count")
-    public final int getMyRepairFailureCountForReporting()
+    public final int getRepairFailureCountForReporting()
     {
         return myRepairFailureCountForReporting;
     }
 
     @JsonProperty("repair_failure_time_window")
-    public final int getMyTimeWindowSizeinMinsForReporting()
+    public final int getTimeWindowSizeinMinsForReporting()
     {
         return myTimeWindowSizeinMinsForReporting;
     }

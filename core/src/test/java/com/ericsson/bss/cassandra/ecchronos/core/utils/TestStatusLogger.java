@@ -69,7 +69,8 @@ public class TestStatusLogger
     }
 
     @After
-    public void cleanup() {
+    public void cleanup()
+    {
         myMeterRegistry.close();
         myTableRepairMetricsImpl.close();
     }
@@ -79,14 +80,9 @@ public class TestStatusLogger
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         long expectedRepairTime = 12345L;
         myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
-
         StatusLogger.log(myMeterRegistry);
-
         List<ILoggingEvent> logsList = listAppender.list;
-
-        long count = logsList.stream()
-                .count();
-
+        long count = logsList.stream().count();
         String logMessage = logsList.get(0).getFormattedMessage();
         Level logLevel = logsList.get(0).getLevel();
         assertEquals("Total repair failures in node till now is: 1", logMessage);
@@ -100,15 +96,9 @@ public class TestStatusLogger
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         long expectedRepairTime = 12345L;
         myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, true);
-
         StatusLogger.log(myMeterRegistry);
-
-
         List<ILoggingEvent> logsList = listAppender.list;
-
-        long count = logsList.stream()
-                .count();
-
+        long count = logsList.stream().count();
         String logMessage = logsList.get(0).getFormattedMessage();
         Level logLevel = logsList.get(0).getLevel();
         assertEquals("Total repair success in node till now is:1", logMessage);
@@ -123,12 +113,8 @@ public class TestStatusLogger
         myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
         // Call the method to be tested
         StatusLogger.log(myMeterRegistry);
-
         List<ILoggingEvent> logsList = listAppender.list;
-
-        long count = logsList.stream()
-                .count();
-
+        long count = logsList.stream().count();
         String logMessage = logsList.get(0).getFormattedMessage();
         Level logLevel = logsList.get(0).getLevel();
         assertEquals("Node Repair Ratio is :: 1.0", logMessage);
@@ -143,20 +129,15 @@ public void testLogForLastRepairedAtStatusLogs()
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         TableReference tableReference2 = tableReference(TEST_KEYSPACE, TEST_TABLE2);
         long timeNow = System.currentTimeMillis();
-
         long timeDiff = 1000L;
         long expectedLastRepaired = timeNow - timeDiff;
         long timeDiff2 = 5000L;
         long expectedLastRepaired2 = timeNow - timeDiff2;
-
         myTableRepairMetricsImpl.lastRepairedAt(tableReference, expectedLastRepaired);
         myTableRepairMetricsImpl.lastRepairedAt(tableReference2, expectedLastRepaired2);
         StatusLogger.log(myMeterRegistry);
         List<ILoggingEvent> logsList = listAppender.list;
-
-        long count = logsList.stream()
-                .count();
-
+        long count = logsList.stream().count();
         String logMessage = logsList.get(0).getFormattedMessage();
         Level logLevel = logsList.get(0).getLevel();
         assertEquals("Node last repaired at",logMessage.substring(0, 21));
@@ -171,15 +152,11 @@ public void testLogForLastRepairedAtStatusLogs()
         TableReference tableReference2 = tableReference(TEST_KEYSPACE, TEST_TABLE2);
         long expectedRemainingRepairTime = 10L;
         long expectedRemainingRepairTime2 = 20L;
-
         myTableRepairMetricsImpl.remainingRepairTime(tableReference, expectedRemainingRepairTime);
         myTableRepairMetricsImpl.remainingRepairTime(tableReference2, expectedRemainingRepairTime2);
         StatusLogger.log(myMeterRegistry);
         List<ILoggingEvent> logsList = listAppender.list;
-
-        long count = logsList.stream()
-                .count();
-
+        long count = logsList.stream().count();
         String logMessage = logsList.get(0).getFormattedMessage();
         Level logLevel = logsList.get(0).getLevel();
         Double expectedRepairTime = (double) (expectedRemainingRepairTime+expectedRemainingRepairTime2)/1000;
@@ -187,8 +164,6 @@ public void testLogForLastRepairedAtStatusLogs()
         assertEquals(Level.DEBUG, logLevel);
         assertEquals(1, count);
     }
-
-
 }
 
 

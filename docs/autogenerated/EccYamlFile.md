@@ -84,7 +84,7 @@
 * unit: days
 #
 # Initial delay for new tables. New tables are always assumed to have been repaired in the past, however a delay
-#  can be set for the first repair. This will not affect subsequent repairs and defaults to one day.
+# can be set for the first repair. This will not affect subsequent repairs and defaults to one day.
 #
 **initial_delay:**
 * time: 1
@@ -262,6 +262,16 @@
 # The prefix cannot start or end with a dot or any other path separator.
 #
 * prefix: ''
+#
+# Number of repair failures before status logger logs metrics in debug logs
+# The number is used to trigger a status once number of failures is breached in a time window mentioned below
+#
+* repair_failures_count: 5
+#
+# Time window in minutes over which to track repair failures in node for trigger status logger messages in debug log
+#
+* repair_failure_time_window: 30
+
 
 **lock_factory:**
 **cas:**

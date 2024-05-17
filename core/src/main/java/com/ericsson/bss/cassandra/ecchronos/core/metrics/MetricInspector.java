@@ -50,13 +50,10 @@ public final class MetricInspector
     }
 
     private long myTotalRecordFailures = 0;
-
     private final int myRepairFailureThreshold;
-
     private final int myRepairFailureTimeWindow;
-
-
     private LocalDateTime recordingStartTimestamp = LocalDateTime.now();
+    private java.util.Timer timer;
 
 
     public MetricInspector(final MeterRegistry meterRegistry,
@@ -71,7 +68,7 @@ public final class MetricInspector
 
     public void startInspection()
     {
-        java.util.Timer timer = new Timer();
+        timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask()
         {
             @Override
@@ -80,6 +77,14 @@ public final class MetricInspector
                 inspectMeterRegistryForRepairFailures();
             }
         }, 0, REPEAT_INTERVAL_PERIOD);
+    }
+
+    public void stopInspection()
+    {
+        if (timer != null)
+        {
+            timer.cancel();
+        }
     }
 
 
@@ -118,18 +123,14 @@ public final class MetricInspector
     @VisibleForTesting
     void resetRepairFailureCount()
         {
-
             LocalDateTime currentTimeStamp = LocalDateTime.now();
-            LocalDateTime thirtyMinutesAgo = currentTimeStamp.minus(myRepairFailureTimeWindow, ChronoUnit.MINUTES);
-
-            if (recordingStartTimestamp.isBefore(thirtyMinutesAgo))
+            LocalDateTime timeWindowMinsAgo = currentTimeStamp.minus(myRepairFailureTimeWindow, ChronoUnit.MINUTES);
+            if (recordingStartTimestamp.isBefore(timeWindowMinsAgo))
             {
                 myRepairFailureCountSinceLastReport = myTotalRecordFailures;
                 recordingStartTimestamp = LocalDateTime.now();
             }
-
-
-        }
+        };
 
 
 }
