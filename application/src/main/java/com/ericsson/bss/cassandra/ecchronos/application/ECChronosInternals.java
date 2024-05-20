@@ -39,6 +39,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProviderIm
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 public class ECChronosInternals implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ECChronosInternals.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
     private static final NoOpRepairMetrics NO_OP_REPAIR_METRICS = new NoOpRepairMetrics();
     private static final NoOpTableStorageState NO_OP_TABLE_STORAGE_STATE = new NoOpTableStorageState();
 
@@ -216,13 +218,13 @@ public class ECChronosInternals implements Closeable
         @Override
         public void lastRepairedAt(final TableReference tableReference, final long lastRepairedAt)
         {
-            LOG.trace("Table {} last repaired at {}", tableReference, lastRepairedAt);
+            THROTTLED_LOGGER.info("Table {} last repaired at {}", tableReference, lastRepairedAt);
         }
 
         @Override
         public void remainingRepairTime(final TableReference tableReference, final long remainingRepairTime)
         {
-            LOG.trace("Table {} remaining repair time {}", tableReference, remainingRepairTime);
+            THROTTLED_LOGGER.info("Table {} remaining repair time {}", tableReference, remainingRepairTime);
         }
 
         @Override
