@@ -17,17 +17,20 @@ package com.ericsson.bss.cassandra.ecchronos.core.utils;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(ReplicatedTableProviderImpl.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
 
     private static final String STRATEGY_CLASS = "class";
     private static final String SIMPLE_STRATEGY = "org.apache.cassandra.locator.SimpleStrategy";
@@ -115,7 +118,7 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
 
         if (!replication.containsKey(localDc))
         {
-            LOG.trace("Keyspace {} not replicated by local node, ignoring.", keyspace);
+            THROTTLED_LOGGER.info("Keyspace {} not replicated by local node, ignoring.", keyspace);
             return false;
         }
 

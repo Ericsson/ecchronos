@@ -21,6 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
@@ -36,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 public class IncrementalRepairJob extends ScheduledRepairJob
 {
     private static final Logger LOG = LoggerFactory.getLogger(IncrementalRepairJob.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
     private static final int DAYS_IN_A_WEEK = 7;
     private final ReplicationState myReplicationState;
     private final CassandraMetrics myCassandraMetrics;
@@ -53,7 +55,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
     private void setLastSuccessfulRun()
     {
         myLastSuccessfulRun = myCassandraMetrics.getMaxRepairedAt(getTableReference());
-        LOG.trace("{} - last successful run: {}", this, myLastSuccessfulRun);
+        THROTTLED_LOGGER.info("{} - last successful run: {}", this, myLastSuccessfulRun);
     }
 
     /**

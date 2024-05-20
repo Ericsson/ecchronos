@@ -27,6 +27,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -55,6 +56,7 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 public final class EccRepairHistory implements RepairHistory, RepairHistoryProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(EccRepairHistory.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
 
     private static final String COLUMN_TABLE_ID = "table_id";
     private static final String COLUMN_NODE_ID = "node_id";
@@ -243,7 +245,7 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
             }
             if (nodes == null)
             {
-                LOG.trace("Token range {} was not found in metadata", tokenRange);
+                THROTTLED_LOGGER.info("Token range {} was not found in metadata", tokenRange);
                 return null;
             }
             String status = row.getString(COLUMN_STATUS);

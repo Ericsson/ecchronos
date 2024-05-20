@@ -19,7 +19,9 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.PriorityQueue;
+import java.util.concurrent.TimeUnit;
 
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import com.google.common.collect.AbstractIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +39,7 @@ import com.google.common.annotations.VisibleForTesting;
 public class ScheduledJobQueue implements Iterable<ScheduledJob>
 {
     private static final Logger LOG = LoggerFactory.getLogger(ScheduledJobQueue.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
 
     private final Comparator<ScheduledJob> myComparator;
 
@@ -92,13 +95,13 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
      */
     public synchronized void remove(final ScheduledJob job)
     {
-        LOG.trace("Removing job: {}", job);
+        THROTTLED_LOGGER.info("Removing job: {}", job);
         myJobQueues.get(job.getPriority()).remove(job);
     }
 
     private void addJobInternal(final ScheduledJob job)
     {
-        LOG.trace("Adding job: {}, Priority: {}", job, job.getPriority());
+        THROTTLED_LOGGER.info("Adding job: {}, Priority: {}", job, job.getPriority());
         myJobQueues.get(job.getPriority()).add(job);
     }
 
@@ -149,7 +152,7 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
                 }
                 else if (state != ScheduledJob.State.PARKED)
                 {
-                    LOG.trace("Retrieving job: {}, Priority: {}", job, job.getPriority());
+                    THROTTLED_LOGGER.info("Retrieving job: {}, Priority: {}", job, job.getPriority());
                     return job;
                 }
             }

@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ import com.google.common.base.Preconditions;
 public class ConfigRefresher implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigRefresher.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
 
     private static final int TEN_SECONDS = 10;
 
@@ -81,7 +83,7 @@ public class ConfigRefresher implements Closeable
         }
 
         knownConfigs.put(absoluteFilePath.getFileName(), onChange);
-        LOG.trace("Watching for changes in {}", absoluteFilePath);
+        THROTTLED_LOGGER.info("Watching for changes in {}", absoluteFilePath);
     }
 
     @Override
@@ -127,7 +129,7 @@ public class ConfigRefresher implements Closeable
             }
             catch (ClosedWatchServiceException e)
             {
-                LOG.trace("Watch service has been closed");
+                THROTTLED_LOGGER.info("Watch service has been closed");
                 return;
             }
             catch (Exception e)
@@ -170,7 +172,7 @@ public class ConfigRefresher implements Closeable
 
     private void handleEvent(final Path file)
     {
-        LOG.trace("Received event for {}/{}", baseDirectory, file);
+        THROTTLED_LOGGER.info("Received event for {}/{}", baseDirectory, file);
 
         Runnable onChange = knownConfigs.get(file);
         if (onChange != null)

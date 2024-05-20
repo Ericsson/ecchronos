@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A repair state factory which uses a {@link RepairHistoryProvider} to determine repair state.
@@ -34,6 +36,7 @@ import java.util.Set;
 public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(VnodeRepairStateFactoryImpl.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
 
     private final ReplicationState myReplicationState;
     private final RepairHistoryProvider myRepairHistoryProvider;
@@ -63,13 +66,15 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
 
         if (lastRepairedAt == VnodeRepairState.UNREPAIRED)
         {
-            LOG.trace("No last repaired at found for {}, iterating over all repair entries", tableReference);
+            THROTTLED_LOGGER.info("No last repaired at found for {}, iterating over all repair entries",
+                                    tableReference);
             repairEntryIterator = myRepairHistoryProvider.iterate(tableReference, iterateToTime,
                     (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
         }
         else
         {
-            LOG.trace("Table {} snapshot created at {}, iterating repair entries until that time", tableReference,
+            THROTTLED_LOGGER.info("Table {} snapshot created at {}, iterating repair entries until that time",
+                                    tableReference,
                     previous.getCreatedAt());
             repairEntryIterator = myRepairHistoryProvider.iterate(tableReference, iterateToTime,
                     previous.getCreatedAt(), (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
@@ -116,7 +121,8 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
                 allRepairEntries.add(repairEntry);
             }
         }
-        return generateVnodeRepairStates(VnodeRepairState.UNREPAIRED, null, allRepairEntries.iterator(), tokenRanges);
+        return generateVnodeRepairStates(VnodeRepairState.UNREPAIRED, null, allRepairEntries.iterator(),
+                                            tokenRanges);
     }
 
     private VnodeRepairStates generateVnodeRepairStates(final long lastRepairedAt,
@@ -207,13 +213,15 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         ImmutableSet<DriverNode> nodes = getReplicasForRange(repairedRange, tokenRangeToReplicaMap);
         if (nodes == null)
         {
-            LOG.trace("Ignoring entry {}, replicas not present in tokenRangeToReplicas", repairEntry);
+            THROTTLED_LOGGER.info("Ignoring entry {}, replicas not present in tokenRangeToReplicas",
+                                    repairEntry);
             return false;
         }
 
         if (!nodes.equals(repairEntry.getParticipants()))
         {
-            LOG.trace("Ignoring entry {}, replicas {} not matching participants", repairEntry, nodes);
+            THROTTLED_LOGGER.info("Ignoring entry {}, replicas {} not matching participants",
+                                    repairEntry, nodes);
             return false;
         }
 

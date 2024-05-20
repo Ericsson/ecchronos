@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.connection.impl;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -25,6 +26,7 @@ import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +35,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 public class LocalJmxConnectionProvider implements JmxConnectionProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(LocalJmxConnectionProvider.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
 
     private static final String JMX_FORMAT_URL = "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi";
 
@@ -123,9 +126,9 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
         boolean authEnabled = credentials != null;
         boolean tlsEnabled = !tls.isEmpty();
 
-        LOG.trace("Connecting JMX through {}, credentials: {}, tls: {}", jmxUrl, authEnabled, tlsEnabled);
+        THROTTLED_LOGGER.info("Connecting JMX through {}, credentials: {}, tls: {}", jmxUrl, authEnabled, tlsEnabled);
         JMXConnector jmxConnector = JMXConnectorFactory.connect(jmxUrl, env);
-        LOG.trace("Connected JMX for {}", jmxUrl);
+        THROTTLED_LOGGER.info("Connected JMX for {}", jmxUrl);
 
         switchJmxConnection(jmxConnector);
     }

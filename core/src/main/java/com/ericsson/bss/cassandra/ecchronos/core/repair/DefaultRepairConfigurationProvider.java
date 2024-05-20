@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -38,6 +39,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +51,7 @@ import org.slf4j.LoggerFactory;
 public class DefaultRepairConfigurationProvider extends NodeStateListenerBase implements SchemaChangeListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultRepairConfigurationProvider.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
 
     private CqlSession mySession;
     private ReplicatedTableProvider myReplicatedTableProvider;
@@ -429,7 +432,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     {
         if (mySession == null)
         {
-            LOG.trace("Session during setupConfiguration call was null.");
+            THROTTLED_LOGGER.info("Session during setupConfiguration call was null.");
             return;
         }
 

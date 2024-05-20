@@ -27,6 +27,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
@@ -52,6 +53,7 @@ import java.util.function.Consumer;
 public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
 {
     private static final Logger LOG = LoggerFactory.getLogger(VnodeOnDemandRepairJob.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
     private final RepairHistory myRepairHistory;
     private final Map<ScheduledTask, Set<LongTokenRange>> myTasks;
     private final int myTotalTokens;
@@ -190,7 +192,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
     {
         if (myTotalTokens == 0)
         {
-            LOG.trace("Total tokens for this job are 0");
+            THROTTLED_LOGGER.info("Total tokens for this job are 0");
             return 0;
         }
 

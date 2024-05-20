@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,7 @@ import com.google.common.collect.ImmutableMap;
 public final class TableStorageStatesImpl implements TableStorageStates, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(TableStorageStatesImpl.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
 
     private static final long DEFAULT_UPDATE_DELAY_IN_MS = TimeUnit.SECONDS.toMillis(60);
 
@@ -170,7 +172,7 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
             {
                 long diskSpaceUsed = jmxProxy.liveDiskSpaceUsed(tableReference);
 
-                LOG.trace("{} -> {}", tableReference, diskSpaceUsed);
+                THROTTLED_LOGGER.info("{} -> {}", tableReference, diskSpaceUsed);
                 dataSizes.put(tableReference, diskSpaceUsed);
             }
         }

@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
 public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ScheduleManagerImpl.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
 
     static final long DEFAULT_RUN_DELAY_IN_MS = TimeUnit.SECONDS.toMillis(30);
 
@@ -75,13 +77,13 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     }
     public boolean addRunPolicy(final RunPolicy runPolicy)
     {
-        LOG.trace("Run policy {} added", runPolicy);
+        THROTTLED_LOGGER.info("Run policy {} added", runPolicy);
         return myRunPolicies.add(runPolicy);
     }
 
     public boolean removeRunPolicy(final RunPolicy runPolicy)
     {
-        LOG.trace("Run policy {} removed", runPolicy);
+        THROTTLED_LOGGER.info("Run policy {} removed", runPolicy);
         return myRunPolicies.remove(runPolicy);
     }
 

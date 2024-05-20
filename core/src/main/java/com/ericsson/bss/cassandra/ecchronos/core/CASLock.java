@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +40,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory.Distribu
 class CASLock implements DistributedLock, Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CASLock.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
 
     private final String myDataCenter;
     private final String myResource;
@@ -147,7 +149,7 @@ class CASLock implements DistributedLock, Runnable
             }
             else
             {
-                LOG.debug("Locally highest priority ({}) is higher than current ({}), will not remove",
+                THROTTLED_LOGGER.info("Locally highest priority ({}) is higher than current ({}), will not remove",
                         myLocallyHighestPriority, myPriority);
             }
         }

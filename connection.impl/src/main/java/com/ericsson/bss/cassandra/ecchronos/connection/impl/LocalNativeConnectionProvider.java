@@ -31,6 +31,7 @@ import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 import com.datastax.oss.driver.internal.core.loadbalancing.DcInferringLoadBalancingPolicy;
 import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import com.google.common.collect.ImmutableList;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
@@ -39,12 +40,14 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 public final class LocalNativeConnectionProvider implements NativeConnectionProvider
 {
     private static final List<String> SCHEMA_REFRESHED_KEYSPACES = ImmutableList.of("/.*/", "!system",
             "!system_distributed", "!system_schema", "!system_traces", "!system_views", "!system_virtual_schema");
     private static final Logger LOG = LoggerFactory.getLogger(LocalNativeConnectionProvider.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
     private static final List<String> NODE_METRICS = Arrays.asList(DefaultNodeMetric.OPEN_CONNECTIONS.getPath(),
             DefaultNodeMetric.AVAILABLE_STREAMS.getPath(), DefaultNodeMetric.IN_FLIGHT.getPath(),
             DefaultNodeMetric.ORPHANED_STREAMS.getPath(), DefaultNodeMetric.BYTES_SENT.getPath(),
@@ -195,8 +198,8 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
 
             InitialContact initialContact = resolveInitialContact(contactEndPoint, builder);
 
-            LOG.trace("Connecting to {}({}), local data center: {}", contactEndPoint, initialContact.getHostId(),
-                    initialContact.getDataCenter());
+            THROTTLED_LOGGER.info("Connecting to {}({}), local data center: {}", contactEndPoint,
+                                    initialContact.getHostId(), initialContact.getDataCenter());
 
             CqlSessionBuilder sessionBuilder = fromBuilder(builder);
             sessionBuilder = sessionBuilder.withLocalDatacenter(initialContact.dataCenter);
@@ -222,7 +225,8 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
                 sessionBuilder.withMetricRegistry(builder.myMeterRegistry);
             }
             DriverConfigLoader driverConfigLoader = loaderBuilder.build();
-            LOG.trace("Driver configuration: {}", driverConfigLoader.getInitialConfig().getDefaultProfile().entrySet());
+            THROTTLED_LOGGER.info("Driver configuration: {}",
+                                    driverConfigLoader.getInitialConfig().getDefaultProfile().entrySet());
             sessionBuilder.withConfigLoader(driverConfigLoader);
             return sessionBuilder.build();
         }

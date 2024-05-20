@@ -24,6 +24,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
@@ -39,11 +40,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class VnodeRepairTask extends RepairTask
 {
     private static final Logger LOG = LoggerFactory.getLogger(VnodeRepairTask.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
     private final ConcurrentMap<LongTokenRange, RepairHistory.RepairSession> myRepairSessions =
             new ConcurrentHashMap<>();
     private final Set<LongTokenRange> myTokenRanges;
@@ -94,8 +97,8 @@ public class VnodeRepairTask extends RepairTask
         Set<LongTokenRange> unknownRanges = Sets.difference(myTokenRanges, completedRanges);
         if (!unknownRanges.isEmpty())
         {
-            LOG.trace("Unknown ranges: {}", unknownRanges);
-            LOG.trace("Completed ranges: {}", completedRanges);
+            THROTTLED_LOGGER.info("Unknown ranges: {}", unknownRanges);
+            THROTTLED_LOGGER.info("Completed ranges: {}", completedRanges);
             myUnknownRanges = Collections.unmodifiableSet(unknownRanges);
             proxy.forceTerminateAllRepairSessions();
             throw new ScheduledJobException(String.format("Unknown status of some ranges for %s", this));

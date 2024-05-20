@@ -25,6 +25,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TokenSubRangeUtil;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
@@ -41,10 +42,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 public class RepairGroup extends ScheduledTask
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairGroup.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
     private static final String LOCK_METADATA_KEYSPACE = "keyspace";
     private static final String LOCK_METADATA_TABLE = "table";
 
@@ -102,7 +105,7 @@ public class RepairGroup extends ScheduledTask
     @Override
     public boolean execute()
     {
-        LOG.trace("Table {} running repair job {}", myTableReference, myReplicaRepairGroup);
+        THROTTLED_LOGGER.info("Table {} running repair job {}", myTableReference, myReplicaRepairGroup);
         boolean successful = true;
 
         for (RepairTask repairTask : getRepairTasks())
@@ -120,7 +123,6 @@ public class RepairGroup extends ScheduledTask
             catch (ScheduledJobException e)
             {
                 LOG.warn("Encountered issue when running repair task {}, {}", repairTask, e.getMessage());
-                LOG.trace("", e);
                 successful = false;
                 if (e.getCause() instanceof InterruptedException)
                 {

@@ -23,6 +23,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxy;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.health.Health;
@@ -31,11 +32,13 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class CassandraHealthIndicator implements HealthIndicator
 {
     private static final Logger LOG = LoggerFactory.getLogger(CassandraHealthIndicator.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
     private final NativeConnectionProvider myNativeConnectionProvider;
     private final JmxConnectionProvider myJmxConnectionProvider;
 
@@ -72,7 +75,7 @@ public class CassandraHealthIndicator implements HealthIndicator
         }
         catch (Exception e)
         {
-            LOG.error("Unable to connect over JMX", e);
+            THROTTLED_LOGGER.error("Unable to connect over JMX", e);
             details.put("JMX connection error:", e.getMessage());
         }
         return false;
@@ -92,7 +95,7 @@ public class CassandraHealthIndicator implements HealthIndicator
         }
         catch (Exception e)
         {
-            LOG.error("Unable to connect over CQL", e);
+            THROTTLED_LOGGER.error("Unable to connect over CQL", e);
             details.put("CQL connection error:", e.getMessage());
         }
         return false;

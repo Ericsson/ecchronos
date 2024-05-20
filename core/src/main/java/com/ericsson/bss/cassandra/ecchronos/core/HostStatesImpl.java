@@ -119,7 +119,7 @@ public final class HostStatesImpl implements HostStates, Closeable
 
                 if (changeHostState(host, true))
                 {
-                    LOG.trace("Host {} marked as up", host);
+                    THROTTLED_LOGGER.info("Host {} marked as up", host);
                 }
             }
 
@@ -129,7 +129,7 @@ public final class HostStatesImpl implements HostStates, Closeable
 
                 if (changeHostState(host, false))
                 {
-                    LOG.trace("Host {} marked as down", host);
+                    THROTTLED_LOGGER.info("Host {} marked as down", host);
                 }
             }
 

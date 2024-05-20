@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory.DistributedLock;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.slf4j.Logger;
@@ -31,6 +32,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public final class LockCache
 {
     private static final Logger LOG = LoggerFactory.getLogger(LockCache.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
 
     private final Cache<LockKey, LockException> myFailureCache;
     private final LockSupplier myLockSupplier;
@@ -83,7 +85,7 @@ public final class LockCache
 
     private void throwCachedLockException(final LockException e) throws LockException
     {
-        LOG.trace("Encountered cached locking failure, throwing exception", e);
+        THROTTLED_LOGGER.info("Encountered cached locking failure, throwing exception", e);
         throw e;
     }
 

@@ -21,6 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.logging.ThrottlingLogger;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -45,6 +46,7 @@ import java.util.regex.Pattern;
 public abstract class RepairTask implements NotificationListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairTask.class);
+    private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
     private static final Pattern RANGE_PATTERN = Pattern.compile("\\((-?[0-9]+),(-?[0-9]+)\\]");
     private static final int HEALTH_CHECK_INTERVAL = 10;
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
@@ -220,7 +222,7 @@ public abstract class RepairTask implements NotificationListener
     @Override
     public void handleNotification(final Notification notification, final Object handback)
     {
-        LOG.trace("Notification {}", notification.toString());
+        THROTTLED_LOGGER.info("Notification {}", notification.toString());
         switch (notification.getType())
         {
         case "progress":
@@ -248,7 +250,7 @@ public abstract class RepairTask implements NotificationListener
             myLatch.countDown();
             break;
         default:
-            LOG.trace("Unknown JMXConnectionNotification type: {}", notification.getType());
+            THROTTLED_LOGGER.info("Unknown JMXConnectionNotification type: {}", notification.getType());
             break;
         }
     }
