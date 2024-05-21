@@ -20,7 +20,7 @@
     <parent>
         <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
         <artifactId>parent</artifactId>
-        <version>5.0.3</version>
+        <version>4.0.4-SNAPSHOT</version>
     </parent>
     <artifactId>standalone-integration</artifactId>
     <description>Integration tests for a standalone environment</description>
