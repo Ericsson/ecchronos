@@ -41,9 +41,21 @@ public class Interval
     }
 
     @JsonProperty("time")
+    public final long getTime()
+    {
+        return myTime;
+    }
+
+    @JsonProperty("time")
     public final void setTime(final long time)
     {
         myTime = time;
+    }
+
+    @JsonProperty("unit")
+    public final TimeUnit getUnit()
+    {
+        return myUnit;
     }
 
     @JsonProperty("unit")
