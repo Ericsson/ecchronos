@@ -196,7 +196,13 @@ public class TestConfig
         File file = new File(classLoader.getResource("initial_delay_greater_than_repair.yml").getFile());
 
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-        assertThatExceptionOfType(JsonMappingException.class).isThrownBy(() -> objectMapper.readValue(file, Config.class));
+        Config config = objectMapper.readValue(file, Config.class);
+        GlobalRepairConfig repair = config.getRepairConfig();
+        Interval repint = repair.getRepairInterval();
+        Interval intdel = repair.getInitialDelay();
+
+        assertThat(repint.getTime()).isEqualTo(intdel.getTime());
+        assertThat(repint.getUnit()).isEqualTo(intdel.getUnit());
     }
 
     @Test
