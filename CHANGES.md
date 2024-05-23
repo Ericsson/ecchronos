@@ -1,4 +1,6 @@
 # Changes
+## Version 5.0.5
+
 ## Version 5.0.4
 
 * ecChronos will break if repair interval is shorter than the initial delay - Issue #667
