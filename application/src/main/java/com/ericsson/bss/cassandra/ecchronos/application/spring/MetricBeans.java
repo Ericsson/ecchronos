@@ -67,7 +67,6 @@ public class MetricBeans
                 createPrometheusMeterRegistry(metricConfig);
             }
         }
-
         createStatusLoggerMeterRegistry();
     }
 
@@ -106,12 +105,10 @@ public class MetricBeans
         myCompositeMeterRegistry.add(myPrometheusMeterRegistry);
     }
 
-
     private void createStatusLoggerMeterRegistry()
     {
         SimpleMeterRegistry simpleMeterRegistry = new SimpleMeterRegistry();
         myCompositeMeterRegistry.add(simpleMeterRegistry);
-
     }
 
     @Bean

@@ -28,17 +28,21 @@ public final class MetricInspector
 
     private final MeterRegistry myMeterRegistry;
     private long myRepairFailureCountSinceLastReport = 0;
+    private static final int REPEAT_INTERVAL_PERIOD_IN_MILLISECONDS = 5000;
+    private long myTotalRecordFailures = 0;
+    private final int myRepairFailureThreshold;
+    private final int myRepairFailureTimeWindow;
+    private LocalDateTime myRecordingStartTimestamp = LocalDateTime.now();
+    private Timer timer;
 
-    private static final int REPEAT_INTERVAL_PERIOD = 5000;
-
-     @VisibleForTesting
-     long getMyRepairFailureCountSinceLastReport()
+    @VisibleForTesting
+    long getRepairFailuresCountSinceLastReport()
      {
         return myRepairFailureCountSinceLastReport;
     }
 
     @VisibleForTesting
-    long getMyTotalRecordFailures()
+    long getTotalRecordFailures()
     {
         return myTotalRecordFailures;
     }
@@ -46,15 +50,8 @@ public final class MetricInspector
     @VisibleForTesting
     LocalDateTime getRecordingStartTimestamp()
     {
-        return recordingStartTimestamp;
+        return myRecordingStartTimestamp;
     }
-
-    private long myTotalRecordFailures = 0;
-    private final int myRepairFailureThreshold;
-    private final int myRepairFailureTimeWindow;
-    private LocalDateTime recordingStartTimestamp = LocalDateTime.now();
-    private java.util.Timer timer;
-
 
     public MetricInspector(final MeterRegistry meterRegistry,
                            final int repairFailureThreshold,
@@ -64,7 +61,6 @@ public final class MetricInspector
         this.myRepairFailureThreshold = repairFailureThreshold;
         this.myRepairFailureTimeWindow = repairFailureTimeWindow;
     }
-
 
     public void startInspection()
     {
@@ -76,9 +72,9 @@ public final class MetricInspector
             {
                 inspectMeterRegistryForRepairFailures();
             }
-        }, 0, REPEAT_INTERVAL_PERIOD);
+        }, 0, REPEAT_INTERVAL_PERIOD_IN_MILLISECONDS);
     }
-
+    
     public void stopInspection()
     {
         if (timer != null)
@@ -86,33 +82,25 @@ public final class MetricInspector
             timer.cancel();
         }
     }
-
-
-        @VisibleForTesting
-        void inspectMeterRegistryForRepairFailures()
-        {
-
-            io.micrometer.core.instrument.Timer nodeRepairSessions = myMeterRegistry
+    @VisibleForTesting
+    void inspectMeterRegistryForRepairFailures()
+    {
+        io.micrometer.core.instrument.Timer nodeRepairSessions = myMeterRegistry
                      .find(TableRepairMetricsImpl.NODE_REPAIR_SESSIONS)
                     .tags("successful", "false")
                     .timer();
-            if (nodeRepairSessions != null)
+        if (nodeRepairSessions != null)
             {
                 myTotalRecordFailures = nodeRepairSessions.count();
             }
-
-            if (myTotalRecordFailures - myRepairFailureCountSinceLastReport > myRepairFailureThreshold)
+        if (myTotalRecordFailures - myRepairFailureCountSinceLastReport > myRepairFailureThreshold)
             {
                 //reset count failure and reinitialize time window
                 myRepairFailureCountSinceLastReport = myTotalRecordFailures;
-                recordingStartTimestamp = LocalDateTime.now();
+                myRecordingStartTimestamp = LocalDateTime.now();
                 StatusLogger.log(myMeterRegistry);
-
             }
-
-            resetRepairFailureCount();
-
-
+        resetRepairFailureCount();
     }
 
     /*
@@ -124,13 +112,11 @@ public final class MetricInspector
     void resetRepairFailureCount()
         {
             LocalDateTime currentTimeStamp = LocalDateTime.now();
-            LocalDateTime timeWindowMinsAgo = currentTimeStamp.minus(myRepairFailureTimeWindow, ChronoUnit.MINUTES);
-            if (recordingStartTimestamp.isBefore(timeWindowMinsAgo))
+            LocalDateTime timeRepairWindowMinutesAgo = currentTimeStamp.minus(myRepairFailureTimeWindow, ChronoUnit.MINUTES);
+            if (myRecordingStartTimestamp.isBefore(timeRepairWindowMinutesAgo))
             {
                 myRepairFailureCountSinceLastReport = myTotalRecordFailures;
-                recordingStartTimestamp = LocalDateTime.now();
+                myRecordingStartTimestamp = LocalDateTime.now();
             }
         };
-
-
 }

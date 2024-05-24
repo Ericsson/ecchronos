@@ -22,32 +22,23 @@ import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.StatusLogger;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.LoggerFactory;
-
-import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
-
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.*;
+
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestMetricInspector
 {
-
     private static final String TEST_KEYSPACE = "test_keyspace";
     private static final String TEST_TABLE1 = "test_table1";
     private static final String TEST_TABLE2 = "test_table2";
@@ -55,7 +46,7 @@ public class TestMetricInspector
     private TableStorageStates myTableStorageStates;
     private MeterRegistry myMeterRegistry;
     private TableRepairMetricsImpl myTableRepairMetricsImpl;
-    private MetricInspector myMetericInspector;
+    private MetricInspector myMetricInspector;
     private LoggerContext loggerContext;
     private ListAppender<ILoggingEvent> listAppender;
 
@@ -70,12 +61,12 @@ public class TestMetricInspector
         CompositeMeterRegistry compositeMeterRegistry = new CompositeMeterRegistry();
         // Need at least one registry present in composite to record metrics
         compositeMeterRegistry.add(new SimpleMeterRegistry());
-       myMeterRegistry = compositeMeterRegistry;
-       myTableRepairMetricsImpl = TableRepairMetricsImpl.builder()
+        myMeterRegistry = compositeMeterRegistry;
+        myTableRepairMetricsImpl = TableRepairMetricsImpl.builder()
                 .withTableStorageStates(myTableStorageStates)
                 .withMeterRegistry(myMeterRegistry)
                 .build();
-       myMetericInspector = new MetricInspector(myMeterRegistry,
+        myMetricInspector = new MetricInspector(myMeterRegistry,
                 1, 1);
     }
 
@@ -88,7 +79,7 @@ public class TestMetricInspector
         TableReference tableReference1 = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         expectedRepairTime = 12345L;
         myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
-        myMetericInspector.inspectMeterRegistryForRepairFailures();
+        myMetricInspector.inspectMeterRegistryForRepairFailures();
         List<ILoggingEvent> logsList = listAppender.list;
         long count = logsList.stream().count();
         String logMessage = logsList.get(0).getFormattedMessage();
@@ -104,7 +95,7 @@ public class TestMetricInspector
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         long expectedRepairTime = 12345L;
         myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
-        myMetericInspector.inspectMeterRegistryForRepairFailures();
+        myMetricInspector.inspectMeterRegistryForRepairFailures();
         List<ILoggingEvent> logsList = listAppender.list;
         long count = logsList.stream().count();
         assertEquals(0, count);
@@ -113,14 +104,14 @@ public class TestMetricInspector
     @Test
     public void testStartInspectionMethod() throws InterruptedException
     {
-        assertEquals(0,myMetericInspector.getMyTotalRecordFailures());
+        assertEquals(0, myMetricInspector.getTotalRecordFailures());
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         long expectedRepairTime = 12345L;
         myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
         TableReference tableReference1 = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
         List<ILoggingEvent> logsList = listAppender.list;
-        myMetericInspector.startInspection();
+        myMetricInspector.startInspection();
         Thread.sleep(5000);
         long count = logsList.stream().count();
         String logMessage = logsList.get(0).getFormattedMessage();
@@ -128,7 +119,7 @@ public class TestMetricInspector
         assertEquals("Total repair failures in node till now is: 2", logMessage);
         assertEquals(Level.DEBUG, logLevel);
         assertEquals(1, count);
-        assertEquals(2,myMetericInspector.getMyTotalRecordFailures());
-        myMetericInspector.stopInspection();
+        assertEquals(2, myMetricInspector.getTotalRecordFailures());
+        myMetricInspector.stopInspection();
     }
 }

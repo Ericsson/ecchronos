@@ -24,8 +24,8 @@ public class StatisticsConfig
     private File myOutputDirectory = new File("./statistics");
     private ReportingConfigs myReportingConfigs = new ReportingConfigs();
     private String myMetricsPrefix = "";
-    private int myRepairFailureCountForReporting = 0;
-    private int myTimeWindowSizeinMinsForReporting = 0;
+    private int myRepairFailuresCount = 0;
+    private int myRepairFailuresTimeWindowInMinutes = 0;
 
     @JsonProperty("enabled")
     public final boolean isEnabled()
@@ -54,19 +54,17 @@ public class StatisticsConfig
         return myMetricsPrefix;
     }
 
-
     @JsonProperty("repair_failures_count")
-    public final int getRepairFailureCountForReporting()
+    public final int getRepairFailuresCount()
     {
-        return myRepairFailureCountForReporting;
+        return myRepairFailuresCount;
     }
 
     @JsonProperty("repair_failure_time_window")
-    public final int getTimeWindowSizeinMinsForReporting()
+    public final int getRepairFailuresTimeWindowInMinutes()
     {
-        return myTimeWindowSizeinMinsForReporting;
+        return myRepairFailuresTimeWindowInMinutes;
     }
-
 
     @JsonProperty("enabled")
     public final void setEnabled(final boolean enabled)
@@ -93,16 +91,17 @@ public class StatisticsConfig
     }
 
     @JsonProperty("repair_failures_count")
-    public final void setMyRepairFailureCountForReporting(final int repairFailureCount)
+    public final void setRepairFailuresCount(final int repairFailureCount)
     {
-        myRepairFailureCountForReporting =  repairFailureCount;
+        myRepairFailuresCount = repairFailureCount;
     }
 
-    @JsonProperty("repair_failure_time_window")
-    public final void setMyTimeWindowSizeinMinsForReporting(final int repairFailureTimeWindow)
+    @JsonProperty("repair_failures_time_window_in_minutes")
+    public final void setRepairFailuresTimeWindowInMinutes(final int repairFailureTimeWindow)
     {
-        myTimeWindowSizeinMinsForReporting = repairFailureTimeWindow;
+        myRepairFailuresTimeWindowInMinutes = repairFailureTimeWindow;
     }
 }
+
 
 
