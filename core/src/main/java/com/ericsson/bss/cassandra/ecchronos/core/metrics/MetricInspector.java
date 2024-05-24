@@ -74,7 +74,7 @@ public final class MetricInspector
             }
         }, 0, REPEAT_INTERVAL_PERIOD_IN_MILLISECONDS);
     }
-    
+
     public void stopInspection()
     {
         if (timer != null)
@@ -82,6 +82,7 @@ public final class MetricInspector
             timer.cancel();
         }
     }
+
     @VisibleForTesting
     void inspectMeterRegistryForRepairFailures()
     {
@@ -112,7 +113,8 @@ public final class MetricInspector
     void resetRepairFailureCount()
         {
             LocalDateTime currentTimeStamp = LocalDateTime.now();
-            LocalDateTime timeRepairWindowMinutesAgo = currentTimeStamp.minus(myRepairFailureTimeWindow, ChronoUnit.MINUTES);
+            LocalDateTime timeRepairWindowMinutesAgo = currentTimeStamp.
+                    minus(myRepairFailureTimeWindow, ChronoUnit.MINUTES);
             if (myRecordingStartTimestamp.isBefore(timeRepairWindowMinutesAgo))
             {
                 myRepairFailureCountSinceLastReport = myTotalRecordFailures;

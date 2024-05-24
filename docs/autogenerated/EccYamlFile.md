@@ -270,7 +270,7 @@
 #
 # Time window in minutes over which to track repair failures in node for trigger status logger messages in debug log
 #
-* repair_failure_time_window: 30
+* repair_failures_time_window_in_minutes: 30
 
 
 **lock_factory:**
