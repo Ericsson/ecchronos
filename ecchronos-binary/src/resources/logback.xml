@@ -25,6 +25,10 @@
             <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
 
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>DEBUG</level>
+        </filter>
+
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
@@ -65,6 +69,5 @@
     <root level="DEBUG">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE_INFO" />
-        <appender-ref ref="FILE_DEBUG" />
     </root>
 </configuration>
