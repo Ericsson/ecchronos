@@ -107,7 +107,7 @@ public class StatisticsConfig
         myRepairFailuresCount = repairFailureCount;
     }
 
-    @JsonProperty("repair_failures_time_window_in_minutes")
+    @JsonProperty("repair_failures_time_window")
     public final void setRepairFailuresTimeWindow(final Interval repairFailureTimeWindow)
     {
         myRepairFailuresTimeWindow = repairFailureTimeWindow;

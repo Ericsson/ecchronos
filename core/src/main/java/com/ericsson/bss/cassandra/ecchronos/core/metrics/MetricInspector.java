@@ -26,16 +26,12 @@ import java.util.TimerTask;
 
 public final class MetricInspector
 {
-
     private final MeterRegistry myMeterRegistry;
     private long myRepairFailureCountSinceLastReport = 0;
-    private static final long REPEAT_INTERVAL_PERIOD_IN_MILLISECONDS = 5000;
-    private static final long  DEFAULT_TIME_WINDOW = 30;
-    private static final int DEFAULT_REPAIR_FAILURES_THRESHOLD = 5;
     private long myTotalRecordFailures = 0;
-    private int myRepairFailureThreshold = DEFAULT_REPAIR_FAILURES_THRESHOLD;
-    private long myRepairFailureTimeWindow = DEFAULT_TIME_WINDOW;
-    private long myTriggerIntervalForMetricInspection = REPEAT_INTERVAL_PERIOD_IN_MILLISECONDS;
+    private final int myRepairFailureThreshold;
+    private final long myRepairFailureTimeWindow;
+    private final long myTriggerIntervalForMetricInspection;
     private LocalDateTime myRecordingStartTimestamp = LocalDateTime.now();
     private Timer timer;
 
@@ -57,16 +53,7 @@ public final class MetricInspector
         return myRecordingStartTimestamp;
     }
 
-    public MetricInspector(final MeterRegistry meterRegistry,
-                           final int repairFailureThreshold,
-                           final long repairFailureTimeWindow)
-    {
-        this.myMeterRegistry = meterRegistry;
-        this.myRepairFailureThreshold = repairFailureThreshold;
-        this.myRepairFailureTimeWindow = repairFailureTimeWindow;
-    }
-
-    public MetricInspector(final MeterRegistry meterRegistry,
+       public MetricInspector(final MeterRegistry meterRegistry,
                     final int repairFailureThreshold,
                     final long repairFailureTimeWindow,
                     final long triggerIntervalForMetricInspection)
@@ -87,7 +74,7 @@ public final class MetricInspector
             {
                 inspectMeterRegistryForRepairFailures();
             }
-        }, 0, REPEAT_INTERVAL_PERIOD_IN_MILLISECONDS);
+        }, 0, myTriggerIntervalForMetricInspection);
     }
 
     public void stopInspection()

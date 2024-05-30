@@ -67,7 +67,7 @@ public class TestMetricInspector
                 .withMeterRegistry(myMeterRegistry)
                 .build();
         myMetricInspector = new MetricInspector(myMeterRegistry,
-                1, 1);
+                1, 1,5000);
     }
 
     @Test

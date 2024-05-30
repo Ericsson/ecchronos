@@ -89,7 +89,7 @@ statistics:
   repair_failures_time_window:
     time: 30
     unit: minutes
-  trigger_interval_status_logger:
+  trigger_interval_for_metric_inspection:
     time: 5
     unit: seconds
 
