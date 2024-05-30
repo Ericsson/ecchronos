@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2024 Telefonaktiebolaget LM Ericsson
  *
@@ -28,10 +29,13 @@ public final class MetricInspector
 
     private final MeterRegistry myMeterRegistry;
     private long myRepairFailureCountSinceLastReport = 0;
-    private static final int REPEAT_INTERVAL_PERIOD_IN_MILLISECONDS = 5000;
+    private static final long REPEAT_INTERVAL_PERIOD_IN_MILLISECONDS = 5000;
+    private static final long  DEFAULT_TIME_WINDOW = 30;
+    private static final int DEFAULT_REPAIR_FAILURES_THRESHOLD = 5;
     private long myTotalRecordFailures = 0;
-    private final int myRepairFailureThreshold;
-    private final int myRepairFailureTimeWindow;
+    private int myRepairFailureThreshold = DEFAULT_REPAIR_FAILURES_THRESHOLD;
+    private long myRepairFailureTimeWindow = DEFAULT_TIME_WINDOW;
+    private long myTriggerIntervalForMetricInspection = REPEAT_INTERVAL_PERIOD_IN_MILLISECONDS;
     private LocalDateTime myRecordingStartTimestamp = LocalDateTime.now();
     private Timer timer;
 
@@ -55,11 +59,22 @@ public final class MetricInspector
 
     public MetricInspector(final MeterRegistry meterRegistry,
                            final int repairFailureThreshold,
-                           final int repairFailureTimeWindow)
+                           final long repairFailureTimeWindow)
     {
         this.myMeterRegistry = meterRegistry;
         this.myRepairFailureThreshold = repairFailureThreshold;
         this.myRepairFailureTimeWindow = repairFailureTimeWindow;
+    }
+
+    public MetricInspector(final MeterRegistry meterRegistry,
+                    final int repairFailureThreshold,
+                    final long repairFailureTimeWindow,
+                    final long triggerIntervalForMetricInspection)
+    {
+        this.myMeterRegistry = meterRegistry;
+        this.myRepairFailureThreshold = repairFailureThreshold;
+        this.myRepairFailureTimeWindow = repairFailureTimeWindow;
+        this.myTriggerIntervalForMetricInspection = triggerIntervalForMetricInspection;
     }
 
     public void startInspection()

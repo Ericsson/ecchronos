@@ -282,10 +282,18 @@ statistics:
   ##
   repair_failures_count: 5
   ##
-  ## Time window in minutes over which to track repair failures in node for trigger status logger messages in debug log
+  ## Time window over which to track repair failures in node for trigger status logger messages in debug log
   ##
-  repair_failures_time_window_in_minutes: 30
-
+  repair_failures_time_window:
+      time: 30
+      unit: minutes
+  ##
+  ## Trigger interval for metric inspection.
+  ## This time should always be lesser than repair_failures_time_window
+  ##
+  trigger_interval_for_metric_inspection:
+       time: 5
+       unit: seconds
 
 lock_factory:
   cas:

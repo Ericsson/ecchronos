@@ -114,7 +114,8 @@ public class ECChronosInternals implements Closeable
 
             myMetricInspector = new MetricInspector(meterRegistry,
                     configuration.getStatisticsConfig().getRepairFailuresCount(),
-                    configuration.getStatisticsConfig().getRepairFailuresTimeWindowInMinutes());
+                    configuration.getStatisticsConfig().getRepairFailuresTimeWindowInMinutes(),
+                    configuration.getStatisticsConfig().getTriggerIntervalForMetricInspectionInMillSeconds());
             myMetricInspector.startInspection();
         }
         else

@@ -160,6 +160,13 @@ public class TestConfig
         assertThat(httpReportingConfig.getExcludedMetrics()).hasSize(1);
         assertThat(httpReportingConfig.getExcludedMetrics()).contains(expectedHttpExcludedMetric);
 
+        assertThat(statisticsConfig.getRepairFailuresTimeWindow().getInterval(TimeUnit.MINUTES)).isEqualTo(30);
+        assertThat(statisticsConfig.getTriggerIntervalForMetricInspection().getInterval(TimeUnit.SECONDS)).isEqualTo(5);
+        assertThat(statisticsConfig.getRepairFailuresCount()).isEqualTo(5);
+
+        assertThat(statisticsConfig.getRepairFailuresTimeWindowInMinutes()).isEqualTo(30);
+        assertThat(statisticsConfig.getTriggerIntervalForMetricInspectionInMillSeconds()).isEqualTo(5000);
+
         LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCasLockFactoryConfig().getKeyspaceName()).isEqualTo("ecc");
         assertThat(lockFactoryConfig.getCasLockFactoryConfig().getConsistencySerial().equals(ConsistencyType.LOCAL)).isTrue();
@@ -364,6 +371,13 @@ public class TestConfig
         assertThat(httpReportingConfig.isEnabled()).isTrue();
         assertThat(httpReportingConfig.getExcludedMetrics()).isEmpty();
 
+        assertThat(statisticsConfig.getRepairFailuresTimeWindow().getInterval(TimeUnit.MINUTES)).isEqualTo(30);
+        assertThat(statisticsConfig.getTriggerIntervalForMetricInspection().getInterval(TimeUnit.SECONDS)).isEqualTo(5);
+        assertThat(statisticsConfig.getRepairFailuresCount()).isEqualTo(5);
+
+        assertThat(statisticsConfig.getRepairFailuresTimeWindowInMinutes()).isEqualTo(30);
+        assertThat(statisticsConfig.getTriggerIntervalForMetricInspectionInMillSeconds()).isEqualTo(5000);
+
         LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCasLockFactoryConfig().getKeyspaceName()).isEqualTo("ecchronos");
         assertThat(lockFactoryConfig.getCasLockFactoryConfig().getConsistencySerial().equals(ConsistencyType.DEFAULT)).isTrue();
@@ -378,6 +392,8 @@ public class TestConfig
         assertThat(restServerConfig.getHost()).isEqualTo("localhost");
         assertThat(restServerConfig.getPort()).isEqualTo(8080);
     }
+
+
 
     @Test
     public void testRepairIntervalLongerThanWarn()
@@ -402,7 +418,7 @@ public class TestConfig
     }
 
     @Test
-    public void testStatisticsDisabledIfNoReporting() throws Exception
+    public void testStatisticsEnabledIfNoReporting() throws Exception
     {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         File file = new File(classLoader.getResource("all_reporting_disabled.yml").getFile());
@@ -415,7 +431,7 @@ public class TestConfig
         assertThat(statisticsConfig.getReportingConfigs().isJmxReportingEnabled()).isFalse();
         assertThat(statisticsConfig.getReportingConfigs().isFileReportingEnabled()).isFalse();
         assertThat(statisticsConfig.getReportingConfigs().isHttpReportingEnabled()).isFalse();
-        assertThat(statisticsConfig.isEnabled()).isFalse();
+        assertThat(statisticsConfig.isEnabled()).isTrue();
     }
 
     public static class TestNativeConnectionProvider implements NativeConnectionProvider
