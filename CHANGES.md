@@ -1,4 +1,7 @@
 # Changes
+## Version 5.0.3
+
+* Define logging levels formally - Issue #666
 
 ## Version 5.0.2
 
