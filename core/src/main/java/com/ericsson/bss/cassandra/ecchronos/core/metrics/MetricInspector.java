@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2024 Telefonaktiebolaget LM Ericsson
  *
@@ -27,18 +26,18 @@ import java.util.TimerTask;
 public final class MetricInspector
 {
     private final MeterRegistry myMeterRegistry;
-    private long myRepairFailureCountSinceLastReport = 0;
+    private long myRepairFailuresCountSinceLastReport = 0;
     private long myTotalRecordFailures = 0;
     private final int myRepairFailureThreshold;
-    private final long myRepairFailureTimeWindow;
+    private final long myRepairFailuresTimeWindow;
     private final long myTriggerIntervalForMetricInspection;
     private LocalDateTime myRecordingStartTimestamp = LocalDateTime.now();
     private Timer timer;
 
     @VisibleForTesting
     long getRepairFailuresCountSinceLastReport()
-     {
-        return myRepairFailureCountSinceLastReport;
+    {
+        return myRepairFailuresCountSinceLastReport;
     }
 
     @VisibleForTesting
@@ -55,13 +54,13 @@ public final class MetricInspector
 
        public MetricInspector(final MeterRegistry meterRegistry,
                     final int repairFailureThreshold,
-                    final long repairFailureTimeWindow,
+                    final long repairFailuresTimeWindow,
                     final long triggerIntervalForMetricInspection)
     {
-        this.myMeterRegistry = meterRegistry;
-        this.myRepairFailureThreshold = repairFailureThreshold;
-        this.myRepairFailureTimeWindow = repairFailureTimeWindow;
-        this.myTriggerIntervalForMetricInspection = triggerIntervalForMetricInspection;
+        myMeterRegistry = meterRegistry;
+        myRepairFailureThreshold = repairFailureThreshold;
+        myRepairFailuresTimeWindow = repairFailuresTimeWindow;
+        myTriggerIntervalForMetricInspection = triggerIntervalForMetricInspection;
     }
 
     public void startInspection()
@@ -96,10 +95,10 @@ public final class MetricInspector
             {
                 myTotalRecordFailures = nodeRepairSessions.count();
             }
-        if (myTotalRecordFailures - myRepairFailureCountSinceLastReport > myRepairFailureThreshold)
+        if (myTotalRecordFailures - myRepairFailuresCountSinceLastReport > myRepairFailureThreshold)
             {
                 //reset count failure and reinitialize time window
-                myRepairFailureCountSinceLastReport = myTotalRecordFailures;
+                myRepairFailuresCountSinceLastReport = myTotalRecordFailures;
                 myRecordingStartTimestamp = LocalDateTime.now();
                 StatusLogger.log(myMeterRegistry);
             }
@@ -110,17 +109,16 @@ public final class MetricInspector
      * If in defined time window, number of repair failure has not crossed the configured number, then
      * reset failure count for new timed window. Reinitialize time window.
      */
-
     @VisibleForTesting
     void resetRepairFailureCount()
+    {
+        LocalDateTime currentTimeStamp = LocalDateTime.now();
+        LocalDateTime timeRepairWindowMinutesAgo = currentTimeStamp.
+                minus(myRepairFailuresTimeWindow, ChronoUnit.MINUTES);
+        if (myRecordingStartTimestamp.isBefore(timeRepairWindowMinutesAgo))
         {
-            LocalDateTime currentTimeStamp = LocalDateTime.now();
-            LocalDateTime timeRepairWindowMinutesAgo = currentTimeStamp.
-                    minus(myRepairFailureTimeWindow, ChronoUnit.MINUTES);
-            if (myRecordingStartTimestamp.isBefore(timeRepairWindowMinutesAgo))
-            {
-                myRepairFailureCountSinceLastReport = myTotalRecordFailures;
-                myRecordingStartTimestamp = LocalDateTime.now();
-            }
-        };
+            myRepairFailuresCountSinceLastReport = myTotalRecordFailures;
+            myRecordingStartTimestamp = LocalDateTime.now();
+        }
+    }
 }

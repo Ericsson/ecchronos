@@ -113,13 +113,12 @@ public class TestStatusLogger
     {
         TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         myTableRepairMetricsImpl.repairState(tableReference, 1, 0);
-        // Call the method to be tested
         StatusLogger.log(myMeterRegistry);
         List<ILoggingEvent> logsList = listAppender.list;
         long count = logsList.stream().count();
         String logMessage = logsList.get(0).getFormattedMessage();
         Level logLevel = logsList.get(0).getLevel();
-        assertEquals("Node Repair Ratio is: 1.0", logMessage);
+        assertEquals("Node repair ratio is: 1.0", logMessage);
         assertEquals(Level.DEBUG, logLevel);
         assertEquals(1, count);
     }
@@ -151,16 +150,16 @@ public class TestStatusLogger
     {
         TableReference tableReference1 = tableReference(TEST_KEYSPACE, TEST_TABLE1);
         TableReference tableReference2 = tableReference(TEST_KEYSPACE, TEST_TABLE2);
-        long expectedRemainingRepairTime = 10L;
+        long expectedRemainingRepairTime1 = 10L;
         long expectedRemainingRepairTime2 = 20L;
-        myTableRepairMetricsImpl.remainingRepairTime(tableReference1, expectedRemainingRepairTime);
+        myTableRepairMetricsImpl.remainingRepairTime(tableReference1, expectedRemainingRepairTime1);
         myTableRepairMetricsImpl.remainingRepairTime(tableReference2, expectedRemainingRepairTime2);
         StatusLogger.log(myMeterRegistry);
         List<ILoggingEvent> logsList = listAppender.list;
         long count = logsList.stream().count();
         String logMessage = logsList.get(0).getFormattedMessage();
         Level logLevel = logsList.get(0).getLevel();
-        Double expectedRepairTime = (double) (expectedRemainingRepairTime+expectedRemainingRepairTime2) / 1000;
+        Double expectedRepairTime = (double) (expectedRemainingRepairTime1 + expectedRemainingRepairTime2) / 1000;
         assertEquals("Remaining time for node repair: ".concat(expectedRepairTime.toString()), logMessage);
         assertEquals(Level.DEBUG, logLevel);
         assertEquals(1, count);

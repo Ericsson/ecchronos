@@ -160,12 +160,9 @@ public class TestConfig
         assertThat(httpReportingConfig.getExcludedMetrics()).hasSize(1);
         assertThat(httpReportingConfig.getExcludedMetrics()).contains(expectedHttpExcludedMetric);
 
-        assertThat(statisticsConfig.getRepairFailuresTimeWindow().getInterval(TimeUnit.MINUTES)).isEqualTo(30);
-        assertThat(statisticsConfig.getTriggerIntervalForMetricInspection().getInterval(TimeUnit.SECONDS)).isEqualTo(5);
+        assertThat(statisticsConfig.getRepairFailuresTimeWindow().getInterval(TimeUnit.MINUTES)).isEqualTo(5);
+        assertThat(statisticsConfig.getTriggerIntervalForMetricInspection().getInterval(TimeUnit.SECONDS)).isEqualTo(30);
         assertThat(statisticsConfig.getRepairFailuresCount()).isEqualTo(5);
-
-        assertThat(statisticsConfig.getRepairFailuresTimeWindowInMinutes()).isEqualTo(30);
-        assertThat(statisticsConfig.getTriggerIntervalForMetricInspectionInMillSeconds()).isEqualTo(5000);
 
         LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCasLockFactoryConfig().getKeyspaceName()).isEqualTo("ecc");
@@ -375,10 +372,7 @@ public class TestConfig
         assertThat(statisticsConfig.getTriggerIntervalForMetricInspection().getInterval(TimeUnit.SECONDS)).isEqualTo(5);
         assertThat(statisticsConfig.getRepairFailuresCount()).isEqualTo(5);
 
-        assertThat(statisticsConfig.getRepairFailuresTimeWindowInMinutes()).isEqualTo(30);
-        assertThat(statisticsConfig.getTriggerIntervalForMetricInspectionInMillSeconds()).isEqualTo(5000);
-
-        LockFactoryConfig lockFactoryConfig = config.getLockFactory();
+       LockFactoryConfig lockFactoryConfig = config.getLockFactory();
         assertThat(lockFactoryConfig.getCasLockFactoryConfig().getKeyspaceName()).isEqualTo("ecchronos");
         assertThat(lockFactoryConfig.getCasLockFactoryConfig().getConsistencySerial().equals(ConsistencyType.DEFAULT)).isTrue();
 
@@ -392,8 +386,6 @@ public class TestConfig
         assertThat(restServerConfig.getHost()).isEqualTo("localhost");
         assertThat(restServerConfig.getPort()).isEqualTo(8080);
     }
-
-
 
     @Test
     public void testRepairIntervalLongerThanWarn()
@@ -432,6 +424,17 @@ public class TestConfig
         assertThat(statisticsConfig.getReportingConfigs().isFileReportingEnabled()).isFalse();
         assertThat(statisticsConfig.getReportingConfigs().isHttpReportingEnabled()).isFalse();
         assertThat(statisticsConfig.isEnabled()).isTrue();
+    }
+
+    @Test
+    public void testTriggerIntervalBiggerThanRepairFailuresWindow()
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource("trigger_interval_bigger_than_repair_failures_window.yml").getFile());
+
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+
+        assertThatExceptionOfType(JsonMappingException.class).isThrownBy(() -> objectMapper.readValue(file, Config.class));
     }
 
     public static class TestNativeConnectionProvider implements NativeConnectionProvider

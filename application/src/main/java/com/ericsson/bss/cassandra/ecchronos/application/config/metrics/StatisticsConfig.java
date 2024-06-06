@@ -23,9 +23,10 @@ import java.util.concurrent.TimeUnit;
 public class StatisticsConfig
 {
     private static final int DEFAULT_FAILURE_TIME_WINDOW_IN_MINUTES = 30;
-    private static final int DEFAULT_TRIGGER_INTERVAL_FOR_METRIC_INSPECTION = 5;
+    private static final int DEFAULT_TRIGGER_INTERVAL_FOR_METRIC_INSPECTION_IN_SECONDS = 5;
     private static final int DEFAULT_REPAIR_FAILURE_COUNT = 5;
     private boolean myIsEnabled = true;
+
     private File myOutputDirectory = new File("./statistics");
     private ReportingConfigs myReportingConfigs = new ReportingConfigs();
     private String myMetricsPrefix = "";
@@ -33,7 +34,7 @@ public class StatisticsConfig
     private Interval myRepairFailuresTimeWindow = new Interval(DEFAULT_FAILURE_TIME_WINDOW_IN_MINUTES,
             TimeUnit.MINUTES);
     private Interval myTriggerIntervalForMetricInspection = new
-            Interval(DEFAULT_TRIGGER_INTERVAL_FOR_METRIC_INSPECTION, TimeUnit.SECONDS);
+            Interval(DEFAULT_TRIGGER_INTERVAL_FOR_METRIC_INSPECTION_IN_SECONDS, TimeUnit.SECONDS);
 
     @JsonProperty("enabled")
     public final boolean isEnabled()
@@ -65,7 +66,7 @@ public class StatisticsConfig
         return myRepairFailuresCount;
     }
 
-    @JsonProperty("repair_failure_time_window")
+    @JsonProperty("repair_failures_time_window")
     public final Interval getRepairFailuresTimeWindow()
     {
         return myRepairFailuresTimeWindow;
@@ -102,15 +103,15 @@ public class StatisticsConfig
     }
 
     @JsonProperty("repair_failures_count")
-    public final void setRepairFailuresCount(final int repairFailureCount)
+    public final void setRepairFailuresCount(final int repairFailuresCount)
     {
-        myRepairFailuresCount = repairFailureCount;
+        myRepairFailuresCount = repairFailuresCount;
     }
 
     @JsonProperty("repair_failures_time_window")
-    public final void setRepairFailuresTimeWindow(final Interval repairFailureTimeWindow)
+    public final void setRepairFailuresTimeWindow(final Interval repairFailuresTimeWindow)
     {
-        myRepairFailuresTimeWindow = repairFailureTimeWindow;
+        myRepairFailuresTimeWindow = repairFailuresTimeWindow;
     }
     @JsonProperty("trigger_interval_for_metric_inspection")
     public final void setTriggerIntervalForMetricInspection(final Interval triggerIntervalForStatusLogger)
@@ -118,24 +119,14 @@ public class StatisticsConfig
         myTriggerIntervalForMetricInspection = triggerIntervalForStatusLogger;
      }
 
-     public final long getRepairFailuresTimeWindowInMinutes()
-     {
-        return myRepairFailuresTimeWindow.getInterval(TimeUnit.MINUTES);
-     }
-
-     public final long getTriggerIntervalForMetricInspectionInMillSeconds()
-     {
-        return myTriggerIntervalForMetricInspection.getInterval(TimeUnit.MILLISECONDS);
-     }
-
-    public final void validate()
+     public final void validate()
     {
-        long repairTimeWindowInSeconds = myRepairFailuresTimeWindow.getInterval(TimeUnit.SECONDS);
-        long triggerIntervalForMetricInspection = this.myTriggerIntervalForMetricInspection
+        long repairTimeWindowInSeconds = getRepairFailuresTimeWindow().getInterval(TimeUnit.SECONDS);
+        long triggerIntervalForMetricInspection = getTriggerIntervalForMetricInspection()
                 .getInterval(TimeUnit.SECONDS);
         if (triggerIntervalForMetricInspection >= repairTimeWindowInSeconds)
         {
-            throw new IllegalArgumentException(String.format("Repair Window time must be greater than trigger interval."
+            throw new IllegalArgumentException(String.format("Repair window time must be greater than trigger interval."
                             + " Current repair window time: %d seconds,"
                             + " trigger interval for metric inspection: %d seconds",
                     repairTimeWindowInSeconds, triggerIntervalForMetricInspection));
@@ -143,6 +134,4 @@ public class StatisticsConfig
      }
 
 }
-
-
 

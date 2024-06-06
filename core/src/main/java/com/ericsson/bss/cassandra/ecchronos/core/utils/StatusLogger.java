@@ -22,16 +22,16 @@ import org.slf4j.LoggerFactory;
 
 public final class StatusLogger
 {
-
-    private StatusLogger()
-    {
-        throw new AssertionError("Utility classes should not be instantiated");
-    }
     private static final Logger LOG = LoggerFactory.getLogger(StatusLogger.class);
     static final String NODE_REPAIR_SESSIONS = "node.repair.sessions";
     static final String NODE_REMAINING_REPAIR_TIME = "node.remaining.repair.time";
     static final String NODE_TIME_SINCE_LAST_REPAIRED = "node.time.since.last.repaired";
     static final String NODE_REPAIRED_RATIO = "node.repaired.ratio";
+
+    private StatusLogger()
+    {
+        throw new AssertionError("Utility classes should not be instantiated");
+    }
 
     public static void log(final MeterRegistry myMeterRegistry)
     {
@@ -70,7 +70,7 @@ public final class StatusLogger
                 .gauge();
         if (nodeRepairedRatio != null)
         {
-            LOG.debug("Node Repair Ratio is: {}", nodeRepairedRatio.value());
+            LOG.debug("Node repair ratio is: {}", nodeRepairedRatio.value());
         }
 
     }

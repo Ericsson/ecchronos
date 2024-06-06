@@ -42,6 +42,7 @@ public class TestMetricInspector
     private static final String TEST_KEYSPACE = "test_keyspace";
     private static final String TEST_TABLE1 = "test_table1";
     private static final String TEST_TABLE2 = "test_table2";
+
     @Mock
     private TableStorageStates myTableStorageStates;
     private MeterRegistry myMeterRegistry;
@@ -57,28 +58,22 @@ public class TestMetricInspector
         listAppender = new ListAppender<>();
         listAppender.start();
         loggerContext.getLogger(StatusLogger.class).addAppender(listAppender);
-        // Use composite registry here to simulate real world scenario where we have multiple registries
         CompositeMeterRegistry compositeMeterRegistry = new CompositeMeterRegistry();
-        // Need at least one registry present in composite to record metrics
         compositeMeterRegistry.add(new SimpleMeterRegistry());
         myMeterRegistry = compositeMeterRegistry;
         myTableRepairMetricsImpl = TableRepairMetricsImpl.builder()
                 .withTableStorageStates(myTableStorageStates)
                 .withMeterRegistry(myMeterRegistry)
                 .build();
-        myMetricInspector = new MetricInspector(myMeterRegistry,
-                1, 1,5000);
-    }
+        myMetricInspector = new MetricInspector(myMeterRegistry, 1,  1, 5000);    }
 
     @Test
     public void testInspectMeterRegistryForRepairFailuresWhenFailureThresholdIsBroken()
     {
-        TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
-        long expectedRepairTime = 12345L;
-        myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
         TableReference tableReference1 = tableReference(TEST_KEYSPACE, TEST_TABLE1);
-        expectedRepairTime = 12345L;
-        myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
+        long expectedRepairTime = 12345L;
+        myTableRepairMetricsImpl.repairSession(tableReference1, expectedRepairTime, TimeUnit.MILLISECONDS, false);
+        myTableRepairMetricsImpl.repairSession(tableReference1, expectedRepairTime, TimeUnit.MILLISECONDS, false);
         myMetricInspector.inspectMeterRegistryForRepairFailures();
         List<ILoggingEvent> logsList = listAppender.list;
         long count = logsList.stream().count();
@@ -105,11 +100,10 @@ public class TestMetricInspector
     public void testStartInspectionMethod() throws InterruptedException
     {
         assertEquals(0, myMetricInspector.getTotalRecordFailures());
-        TableReference tableReference = tableReference(TEST_KEYSPACE, TEST_TABLE1);
-        long expectedRepairTime = 12345L;
-        myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
         TableReference tableReference1 = tableReference(TEST_KEYSPACE, TEST_TABLE1);
-        myTableRepairMetricsImpl.repairSession(tableReference, expectedRepairTime, TimeUnit.MILLISECONDS, false);
+        long expectedRepairTime = 12345L;
+        myTableRepairMetricsImpl.repairSession(tableReference1, expectedRepairTime, TimeUnit.MILLISECONDS, false);
+        myTableRepairMetricsImpl.repairSession(tableReference1, expectedRepairTime, TimeUnit.MILLISECONDS, false);
         List<ILoggingEvent> logsList = listAppender.list;
         myMetricInspector.startInspection();
         Thread.sleep(5000);
