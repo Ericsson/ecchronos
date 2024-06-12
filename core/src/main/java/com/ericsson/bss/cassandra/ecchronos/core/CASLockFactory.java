@@ -177,7 +177,7 @@ public final class CASLockFactory implements LockFactory, Closeable
             int quorum = nodes.size() / 2 + 1;
             int liveNodes = liveNodes(nodes);
 
-            LOG.trace("Live nodes {}, quorum: {}", liveNodes, quorum);
+            LOG.debug("Live nodes {}, quorum: {}", liveNodes, quorum);
 
             return liveNodes >= quorum;
         }
@@ -246,7 +246,7 @@ public final class CASLockFactory implements LockFactory, Closeable
                                       final int priority,
                                       final Map<String, String> metadata) throws LockException
     {
-        LOG.trace("Trying lock for {} - {}", dataCenter, resource);
+        LOG.debug("Trying lock for {} - {}", dataCenter, resource);
 
         if (!sufficientNodesForLocking(dataCenter, resource))
         {

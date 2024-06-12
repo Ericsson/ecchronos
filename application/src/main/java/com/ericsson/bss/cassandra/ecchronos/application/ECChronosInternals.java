@@ -209,7 +209,7 @@ public class ECChronosInternals implements Closeable
                                 final int repairedRanges,
                                 final int notRepairedRanges)
         {
-            LOG.trace("Updated repair state of {}, {}/{} repaired ranges", tableReference, repairedRanges,
+            LOG.debug("Updated repair state of {}, {}/{} repaired ranges", tableReference, repairedRanges,
                     notRepairedRanges);
         }
 
@@ -231,9 +231,9 @@ public class ECChronosInternals implements Closeable
                                   final TimeUnit timeUnit,
                                   final boolean successful)
         {
-            if (LOG.isTraceEnabled())
+            if (LOG.isDebugEnabled())
             {
-                LOG.trace("Repair timing for table {} {}ms, it was {}", tableReference,
+                LOG.debug("Repair timing for table {} {}ms, it was {}", tableReference,
                         timeUnit.toMillis(timeTaken), successful ? "successful" : "not successful");
             }
         }

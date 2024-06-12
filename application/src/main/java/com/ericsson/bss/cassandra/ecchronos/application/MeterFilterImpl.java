@@ -82,7 +82,7 @@ public class MeterFilterImpl implements MeterFilter
             // If no tags, then exclude on name
             if (excludeOnTags == null || excludeOnTags.isEmpty())
             {
-                LOG.trace("Excluding metric '{}' with tags '{}' it matches name regex '{}'",
+                LOG.debug("Excluding metric '{}' with tags '{}' it matches name regex '{}'",
                         metricName, tags, excludeOnNameRegexp);
                 return true;
             }
@@ -90,7 +90,7 @@ public class MeterFilterImpl implements MeterFilter
             // I.e, metric matching only name but not tags should not be excluded.
             if (shouldExcludeOnTags(tags, excludeOnTags))
             {
-                LOG.trace("Excluding metric '{}' with tags '{}' it matches exclude [name regex '{}', tags '{}']",
+                LOG.debug("Excluding metric '{}' with tags '{}' it matches exclude [name regex '{}', tags '{}']",
                         metricName, tags, excludeOnNameRegexp, excludeOnTags);
                 return true;
             }

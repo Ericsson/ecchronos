@@ -207,7 +207,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         ImmutableSet<DriverNode> nodes = getReplicasForRange(repairedRange, tokenRangeToReplicaMap);
         if (nodes == null)
         {
-            LOG.trace("Ignoring entry {}, replicas not present in tokenRangeToReplicas", repairEntry);
+            LOG.debug("Ignoring entry {}, replicas not present in tokenRangeToReplicas", repairEntry);
             return false;
         }
 

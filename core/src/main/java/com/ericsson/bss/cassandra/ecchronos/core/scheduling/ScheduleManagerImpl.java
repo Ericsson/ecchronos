@@ -183,7 +183,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
         private boolean validate(final ScheduledJob job)
         {
-            LOG.trace("Validating job {}", job);
+            LOG.debug("Validating job {}", job);
             long nextRun = validateJob(job);
 
             if (nextRun != -1)

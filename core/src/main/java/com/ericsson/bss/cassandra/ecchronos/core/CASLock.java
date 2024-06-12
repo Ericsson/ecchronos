@@ -88,11 +88,11 @@ class CASLock implements DistributedLock, Runnable
     {
         if (compete())
         {
-            LOG.trace("Trying to acquire lock for resource {}", myResource);
+            LOG.debug("Trying to acquire lock for resource {}", myResource);
             if (tryLock())
             {
                 ScheduledExecutorService executor = myCasLockStatement.getCasLockProperties().getExecutor();
-                LOG.trace("Lock for resource {} acquired", myResource);
+                LOG.debug("Lock for resource {} acquired", myResource);
                 ScheduledFuture<?> future = executor.scheduleAtFixedRate(this,
                 myCasLockStatement.getCasLockFactoryCacheContext().getLockUpdateTimeInSeconds(),
                 myCasLockStatement.getCasLockFactoryCacheContext().getLockUpdateTimeInSeconds(), TimeUnit.SECONDS);
@@ -171,7 +171,7 @@ class CASLock implements DistributedLock, Runnable
             insertPriority();
         }
 
-        LOG.trace("Highest priority for resource {}: {}", myResource, globalHighPriority);
+        LOG.debug("Highest priority for resource {}: {}", myResource, globalHighPriority);
         return myPriority >= globalHighPriority;
     }
 
