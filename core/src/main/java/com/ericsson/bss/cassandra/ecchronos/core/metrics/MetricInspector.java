@@ -52,7 +52,7 @@ public final class MetricInspector
         return myRecordingStartTimestamp;
     }
 
-       public MetricInspector(final MeterRegistry meterRegistry,
+    public MetricInspector(final MeterRegistry meterRegistry,
                     final int repairFailureThreshold,
                     final long repairFailuresTimeWindow,
                     final long triggerIntervalForMetricInspection)
@@ -92,16 +92,15 @@ public final class MetricInspector
                     .tags("successful", "false")
                     .timer();
         if (nodeRepairSessions != null)
-            {
-                myTotalRecordFailures = nodeRepairSessions.count();
-            }
+        {
+            myTotalRecordFailures = nodeRepairSessions.count();
+        }
         if (myTotalRecordFailures - myRepairFailuresCountSinceLastReport > myRepairFailureThreshold)
-            {
-                //reset count failure and reinitialize time window
-                myRepairFailuresCountSinceLastReport = myTotalRecordFailures;
-                myRecordingStartTimestamp = LocalDateTime.now();
-                StatusLogger.log(myMeterRegistry);
-            }
+        {
+             myRepairFailuresCountSinceLastReport = myTotalRecordFailures;
+             myRecordingStartTimestamp = LocalDateTime.now();
+             StatusLogger.log(myMeterRegistry);
+        }
         resetRepairFailureCount();
     }
 

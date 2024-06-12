@@ -745,9 +745,9 @@ repair_sessions_seconds_max{keyspace="ks1",successful="false",table="tbl1",} 0.0
 ```
 
 ## Metric Status Logger
-Whenever metric is enabled, a logger is triggered which monitors metrics for
+Whenever metric is enabled, a logger is triggered which monitor metrics for
 repair failures within a defined time window. If number of repair failures 
-overshoot the number(`repair_failures_count`) configured in ecc.yml within a time
+overshoot the number(`repair_failures_count`) configured in ecc.yml within the time
 window then ecchronos metrics are printed in debug logs. 
 
 Repair failures threshold is handled by a property `statistics.repair_failures_count`. The

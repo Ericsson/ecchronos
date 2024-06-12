@@ -22,16 +22,16 @@ import java.util.concurrent.TimeUnit;
 
 public class StatisticsConfig
 {
-    private static final int DEFAULT_FAILURE_TIME_WINDOW_IN_MINUTES = 30;
+    private static final int DEFAULT_FAILURES_TIME_WINDOW_IN_MINUTES = 30;
     private static final int DEFAULT_TRIGGER_INTERVAL_FOR_METRIC_INSPECTION_IN_SECONDS = 5;
-    private static final int DEFAULT_REPAIR_FAILURE_COUNT = 5;
+    private static final int DEFAULT_REPAIR_FAILURES_COUNT = 5;
     private boolean myIsEnabled = true;
 
     private File myOutputDirectory = new File("./statistics");
     private ReportingConfigs myReportingConfigs = new ReportingConfigs();
     private String myMetricsPrefix = "";
-    private int myRepairFailuresCount = DEFAULT_REPAIR_FAILURE_COUNT;
-    private Interval myRepairFailuresTimeWindow = new Interval(DEFAULT_FAILURE_TIME_WINDOW_IN_MINUTES,
+    private int myRepairFailuresCount = DEFAULT_REPAIR_FAILURES_COUNT;
+    private Interval myRepairFailuresTimeWindow = new Interval(DEFAULT_FAILURES_TIME_WINDOW_IN_MINUTES,
             TimeUnit.MINUTES);
     private Interval myTriggerIntervalForMetricInspection = new
             Interval(DEFAULT_TRIGGER_INTERVAL_FOR_METRIC_INSPECTION_IN_SECONDS, TimeUnit.SECONDS);
