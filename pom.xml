@@ -20,7 +20,7 @@
 
     <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
     <artifactId>parent</artifactId>
-    <version>5.0.3-SNAPSHOT</version>
+    <version>5.0.5-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Ericsson Cassandra Chronos</name>
@@ -97,6 +97,7 @@
         <io.prometheus.simpleclient>0.16.0</io.prometheus.simpleclient>
         <jakarta.validation-api.version>2.0.2</jakarta.validation-api.version>
         <swagger-annotations.version>2.2.11</swagger-annotations.version>
+        <org.springframework.web.version>5.3.34</org.springframework.web.version>
 
         <!-- Plugin versions -->
         <org.apache.maven.plugins.maven-compiler-plugin.version>3.8.0</org.apache.maven.plugins.maven-compiler-plugin.version>
@@ -398,6 +399,12 @@
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-ui</artifactId>
                 <version>${org.springdoc.openapi-ui.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-web</artifactId>
+                <version>${org.springframework.web.version}</version>
             </dependency>
 
             <!-- OpenAPI annotations -->
