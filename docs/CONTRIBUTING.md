@@ -31,17 +31,18 @@ This will make it quicker to perform reviews and merging the pull requests.
 
 Use this as a guideline for what to log for each level.
 
-| Log level | Description                                                                                                                                                                                                                                                                                                                                                                                                     |
-|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| all       | All levels will be logged  <br> Example: -                                                                                                                                                                                                                                                                                                                                                                      |
-| debug     | Simple debug logging which can be turned on and used in production if necessary (should have no impact on performance). The logs at this level should be of the type a developer might need to spot a quick fix to a problem or to at least isolate the problem further. <br> Use isDebugEnabled if the message requires any calculations<br> Example: Specific events with contextual details.                 |
-| info      | For logging the normal flow and operation of the service(s). <br>Use isInfoEnabled if the message requires any calculations <br> Example: Service health, progress of requests/responses etc.                                                                                                                                                                                                                   |
-| warn      | Behavior in the service(s) which are unexpected and potentially could lead to problems but were handled for the moment. However, service(s) as such are working normally and as expected. <br>Use isWarnEnabled if the message requires any calculations <br>Example: A primary service switching to a secondary one, connection retries, reverting to defaults etc. Should always be investigated.             |
-| error     | A service fail in the sense it cannot response to requests or data processed cannot be trusted/used.  <br>Use isErrorEnabled if the message requires any calculations <br>Example: Connection attempts that ultimate fail. Crucial resources not available.                                                                                                                                                     |
-| off       | No levels will be logged <br> Example: -                                                                                                                                                                                                                                                                                                                                                                        |                                                                                                                                                                                                                                                |
+| Log level | Description                                                                                                                                                                                                                                                                                                                                    |
+|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| all       | All levels will be logged  <br> Example: -                                                                                                                                                                                                                                                                                                     |
+| debug     | Simple debug logging which can be turned on and used in production if necessary (should have no impact on performance). The logs at this level should be of the type a developer might need to spot a quick fix to a problem or to at least isolate the problem further. <br> Example: Specific events with contextual details.                |
+| trace     | Detailed debugging (flows, request/response, details, etc.). Will have a performance impact and is therefore not for production unless it is a planned trouble shooting activity. Mainly used during development. <br>  Example: Every method call is logged in detail for a certain request and response flow. Used data is logged in detail. |
+| info      | For logging the normal flow and operation of the service(s). <br> Example: Service health, progress of requests/responses etc.                                                                                                                                                                                                                 |
+| warn      | Behavior in the service(s) which are unexpected and potentially could lead to problems but were handled for the moment. However, service(s) as such are working normally and as expected.<br>Example: A primary service switching to a secondary one, connection retries, reverting to defaults etc. Should always be investigated.            |
+| error     | A service fail in the sense it cannot response to requests or data processed cannot be trusted/used.  <br>Example: Connection attempts that ultimate fail. Crucial resources not available.                                                                                                                                                    |
+| off       | No levels will be logged <br> Example: -                                                                                                                                                                                                                                                                                                       |                                                                                                                                                                                                                                                |
 
-This is a code examples where to use isEnabled functions
- ```
+If the log message requires any calculations or other method calls to collect data use a is<b>LogType</b>Enabled block here are two code examples, see the <b>Bold</b> parts.
+<pre>
 if (LOG.isDebugEnabled())
 {
       long next = repairedAt + runIntervalInMs;
@@ -50,9 +51,17 @@ if (LOG.isDebugEnabled())
          next -= old.getEstimatedRepairTime();
       }
       LOG.debug("Table {} partially repaired at {}, next repair at/after {}", myTableReference,
-      MY_DATE_FORMAT.get().format(new Date(repairedAt)), MY_DATE_FORMAT.get().format(new Date(next)));
+     <b>MY_DATE_FORMAT.get().format(new Date(repairedAt))</b>, <b>MY_DATE_FORMAT.get().format(new Date(next))</b>);
 }
-```
+</pre>
+<pre>
+if (LOG.isInfoEnabled())
+{
+    LOG.info("Ignoring table repair job with id {} of table {} as it was for table {}.{}({})", jobId,
+            tableReference, keyspace, table, <b>uDTTableReference.getUuid(UDT_ID_NAME)</b>);
+}
+</pre>
+
 ### Builds
 
 The builds required to merge a pull request are contained within the [Github configuration](../.github/workflows/actions.yml) and include tests, code coverage as well as PMD checks.
