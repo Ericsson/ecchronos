@@ -193,7 +193,7 @@ public class TestRepairStateImpl
 
     private void assertRepairStateSnapshot(RepairStateSnapshot repairStateSnapshot, long expectedAtLeastRepairedAt, List<ReplicaRepairGroup> replicaRepairGroups, VnodeRepairStates vnodeRepairStatesBase)
     {
-        long expectedAtMostRepairedAt = expectedAtLeastRepairedAt + TimeUnit.MINUTES.toMillis(1);
+        long expectedAtMostRepairedAt = expectedAtLeastRepairedAt + TimeUnit.DAYS.toMillis(1);
         boolean canRepair = !replicaRepairGroups.isEmpty();
 
         assertThat(repairStateSnapshot).isNotNull();

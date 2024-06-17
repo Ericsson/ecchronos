@@ -22,13 +22,18 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.UnitConverter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RepairConfig
 {
+    private static final Logger LOG = LoggerFactory.getLogger(RepairConfig.class);
+
     private static final int DAYS_INTERVAL = 7;
     private static final int DAYS_WARNING = 8;
     private static final int DAYS_ERROR = 10;
     private static final int BACKOFF_MINUTES = 30;
+    private static final int DAYS_INITIAL_DELAY = 1;
 
     private Interval myRepairInterval = new Interval(DAYS_INTERVAL, TimeUnit.DAYS);
     private Alarm myAlarm = new Alarm(new Interval(DAYS_WARNING, TimeUnit.DAYS),
@@ -41,6 +46,8 @@ public class RepairConfig
 
     private Priority myPriority = new Priority();
 
+    private Interval myInitialDelay = new Interval(DAYS_INITIAL_DELAY, TimeUnit.DAYS);
+
     public final Priority getPriority()
     {
         return  myPriority;
@@ -50,6 +57,12 @@ public class RepairConfig
     public final void setPriority(final Priority priority)
     {
         myPriority = priority;
+    }
+
+    @JsonProperty("interval")
+    public final Interval getRepairInterval()
+    {
+        return myRepairInterval;
     }
 
     @JsonProperty("interval")
@@ -129,12 +142,21 @@ public class RepairConfig
     {
         long repairIntervalSeconds = myRepairInterval.getInterval(TimeUnit.SECONDS);
         long warningIntervalSeconds = myAlarm.getWarningInverval().getInterval(TimeUnit.SECONDS);
+        long initialDelaySeconds = myInitialDelay.getInterval(TimeUnit.SECONDS);
         if (repairIntervalSeconds >= warningIntervalSeconds)
         {
             throw new IllegalArgumentException(String.format("%s repair interval must be shorter than warning interval."
                     + " Current repair interval: %d seconds, warning interval: %d seconds", repairConfigType,
                     repairIntervalSeconds, warningIntervalSeconds));
         }
+
+        if (repairIntervalSeconds < initialDelaySeconds)
+        {
+            LOG.warn("{} repair interval ({}s) is shorter than initial delay ({}s). Will use {}s as initial delay.",
+                    repairConfigType, repairIntervalSeconds, initialDelaySeconds, repairIntervalSeconds);
+            myInitialDelay = new Interval(myRepairInterval.getTime(), myRepairInterval.getUnit());
+        }
+
         long errorIntervalSeconds = myAlarm.getErrorInterval().getInterval(TimeUnit.SECONDS);
         if (warningIntervalSeconds >= errorIntervalSeconds)
         {
@@ -142,6 +164,18 @@ public class RepairConfig
                     + " Current warning interval: %d seconds, error interval: %d seconds", repairConfigType,
                     warningIntervalSeconds, errorIntervalSeconds));
         }
+    }
+
+    @JsonProperty("initial_delay")
+    public final Interval getInitialDelay()
+    {
+        return myInitialDelay;
+    }
+
+    @JsonProperty("initial_delay")
+    public final void setInitialDelay(final Interval initialDelay)
+    {
+        myInitialDelay = initialDelay;
     }
 
     /**
@@ -163,6 +197,7 @@ public class RepairConfig
                 .withBackoff(myBackoff.getInterval(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .withRepairType(myRepairType)
                 .withPriorityGranularityUnit(myPriority.getPriorityGranularityUnit())
+                .withInitialDelay(myInitialDelay.getInterval(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .build();
     }
 }

@@ -86,6 +86,7 @@ public class Config
         if (statisticsConfig != null)
         {
             myStatisticsConfig = statisticsConfig;
+            myStatisticsConfig.validate();
         }
     }
 

@@ -1,5 +1,5 @@
 #
-# Copyright 2023 Telefonaktiebolaget LM Ericsson
+# Copyright 2024 Telefonaktiebolaget LM Ericsson
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,18 +13,10 @@
 # limitations under the License.
 #
 
-keyspaces:
-  - name: ".*"
-    tables:
-      - name: ".*"
-        interval:
-          time: 6
-          unit: days
-      - name: ".*"
-        interval:
-          time: 1
-          unit: days
-        initial_delay:
-          time: 1
-          unit: hours
-        repair_type: incremental
+statistics:
+  repair_failures_time_window:
+    time: 30
+    unit: seconds
+  trigger_interval_for_metric_inspection:
+    time: 5
+    unit: minutes

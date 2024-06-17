@@ -30,16 +30,16 @@ Tune these parameters to fit your use case in [ecc.yml](../application/src/main/
 Installation information can be found in [SETUP.md](SETUP.md).
 
 When ecChronos is started, it will read repair history to see the status of the repairs.
-If repair history exists for a table, ecChronos will use the last time repair was run and add the repair interval to calculate the next repair time.
-On the other hand, if there's no repair history present for a table, the ecChronos will assume that the table has been repaired in the past.
+If repair history exists for a table, ecChronos will use the last time repair was run and add the repair interval to calculate the next repair time. 
+On the other hand, if there's no repair history present for a table, ecChronos will assume the table has been repaired in the past, but an initial delay (defaults to one day) will then offset the first repair.
+If the repair interval is shorter than the configured initial delay, initial delay will be set to the same value as the repair interval.
 
 The assumption is done in the following way:
-* Repair delay in days = min(repair interval, 1)
-* Completed at = (start time - repair interval + repair delay)
-* Next repair = (start time + repair delay)
+* Initial delay = min(initial delay, repair interval)
+* Completed at = (start time - repair interval + initial delay)
+* Next repair = (completed at + repair interval)
 
-Given the formulas above and *start time = 2023-08-25 10:00:00, repair interval = 7 days* the calculation looks like this:
-* Repair delay in days = 1 day
+Given the formulas above and *start time = 2023-08-25 10:00:00, repair interval = 7 days*, initial delay = 1 days (default value) the calculation looks like this:
 * Completed at = 2023-08-19 10:00:00
 * Next repair = 2023-08-26 10:00:00
 
