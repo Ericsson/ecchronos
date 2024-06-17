@@ -405,7 +405,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     @Override
     public void onUp(final Node node)
     {
-        LOG.debug("{} switched state to UP.", node);
+        LOG.info("{} switched state to UP.", node);
         setupConfiguration();
     }
 
@@ -417,7 +417,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     @Override
     public void onDown(final Node node)
     {
-        LOG.debug("{} switched state to DOWN.", node);
+        LOG.info("{} switched state to DOWN.", node);
         setupConfiguration();
     }
 

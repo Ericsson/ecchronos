@@ -183,7 +183,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
         private boolean validate(final ScheduledJob job)
         {
-            LOG.debug("Validating job {}", job);
+            LOG.info("Validating job {}", job);
             long nextRun = validateJob(job);
 
             if (nextRun != -1)
@@ -214,7 +214,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
         private boolean tryRunTask(final ScheduledJob job, final ScheduledTask task)
         {
-            LOG.debug("Trying to acquire lock for {}", task);
+            LOG.info("Trying to acquire lock for {}", task);
             try (LockFactory.DistributedLock lock = task.getLock(myLockFactory))
             {
                 boolean successful = runTask(task);

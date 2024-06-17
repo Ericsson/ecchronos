@@ -92,13 +92,13 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
      */
     public synchronized void remove(final ScheduledJob job)
     {
-        LOG.debug("Removing job: {}", job);
+        LOG.info("Removing job: {}", job);
         myJobQueues.get(job.getPriority()).remove(job);
     }
 
     private void addJobInternal(final ScheduledJob job)
     {
-        LOG.debug("Adding job: {}, Priority: {}", job, job.getPriority());
+        LOG.info("Adding job: {}, Priority: {}", job, job.getPriority());
         myJobQueues.get(job.getPriority()).add(job);
     }
 
