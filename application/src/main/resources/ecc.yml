@@ -276,6 +276,24 @@ statistics:
   ## The prefix cannot start or end with a dot or any other path separator.
   ##
   prefix: ''
+  ##
+  ## Number of repair failures before status logger logs metrics in debug logs
+  ## The number is used to trigger a status once number of failures is breached in a time window mentioned below
+  ##
+  repair_failures_count: 5
+  ##
+  ## Time window over which to track repair failures in node for trigger status logger messages in debug log
+  ##
+  repair_failures_time_window:
+      time: 30
+      unit: minutes
+  ##
+  ## Trigger interval for metric inspection.
+  ## This time should always be lesser than repair_failures_time_window
+  ##
+  trigger_interval_for_metric_inspection:
+       time: 5
+       unit: seconds
 
 lock_factory:
   cas:

@@ -14,24 +14,32 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config.metrics;
 
+import com.ericsson.bss.cassandra.ecchronos.application.config.Interval;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 public class StatisticsConfig
 {
+    private static final int DEFAULT_FAILURES_TIME_WINDOW_IN_MINUTES = 30;
+    private static final int DEFAULT_TRIGGER_INTERVAL_FOR_METRIC_INSPECTION_IN_SECONDS = 5;
+    private static final int DEFAULT_REPAIR_FAILURES_COUNT = 5;
     private boolean myIsEnabled = true;
+
     private File myOutputDirectory = new File("./statistics");
     private ReportingConfigs myReportingConfigs = new ReportingConfigs();
     private String myMetricsPrefix = "";
+    private int myRepairFailuresCount = DEFAULT_REPAIR_FAILURES_COUNT;
+    private Interval myRepairFailuresTimeWindow = new Interval(DEFAULT_FAILURES_TIME_WINDOW_IN_MINUTES,
+            TimeUnit.MINUTES);
+    private Interval myTriggerIntervalForMetricInspection = new
+            Interval(DEFAULT_TRIGGER_INTERVAL_FOR_METRIC_INSPECTION_IN_SECONDS, TimeUnit.SECONDS);
 
     @JsonProperty("enabled")
     public final boolean isEnabled()
     {
-        boolean isAnyReportingEnabled = myReportingConfigs.isFileReportingEnabled()
-                || myReportingConfigs.isJmxReportingEnabled()
-                || myReportingConfigs.isHttpReportingEnabled();
-        return myIsEnabled && isAnyReportingEnabled;
+       return myIsEnabled;
     }
 
     @JsonProperty("directory")
@@ -50,6 +58,24 @@ public class StatisticsConfig
     public final String getMetricsPrefix()
     {
         return myMetricsPrefix;
+    }
+
+    @JsonProperty("repair_failures_count")
+    public final int getRepairFailuresCount()
+    {
+        return myRepairFailuresCount;
+    }
+
+    @JsonProperty("repair_failures_time_window")
+    public final Interval getRepairFailuresTimeWindow()
+    {
+        return myRepairFailuresTimeWindow;
+    }
+
+    @JsonProperty("trigger_interval_for_metric_inspection")
+    public final Interval getTriggerIntervalForMetricInspection()
+    {
+        return myTriggerIntervalForMetricInspection;
     }
 
     @JsonProperty("enabled")
@@ -75,4 +101,37 @@ public class StatisticsConfig
     {
         myMetricsPrefix = metricsPrefix;
     }
+
+    @JsonProperty("repair_failures_count")
+    public final void setRepairFailuresCount(final int repairFailuresCount)
+    {
+        myRepairFailuresCount = repairFailuresCount;
+    }
+
+    @JsonProperty("repair_failures_time_window")
+    public final void setRepairFailuresTimeWindow(final Interval repairFailuresTimeWindow)
+    {
+        myRepairFailuresTimeWindow = repairFailuresTimeWindow;
+    }
+    @JsonProperty("trigger_interval_for_metric_inspection")
+    public final void setTriggerIntervalForMetricInspection(final Interval triggerIntervalForStatusLogger)
+    {
+        myTriggerIntervalForMetricInspection = triggerIntervalForStatusLogger;
+     }
+
+     public final void validate()
+    {
+        long repairTimeWindowInSeconds = getRepairFailuresTimeWindow().getInterval(TimeUnit.SECONDS);
+        long triggerIntervalForMetricInspection = getTriggerIntervalForMetricInspection()
+                .getInterval(TimeUnit.SECONDS);
+        if (triggerIntervalForMetricInspection >= repairTimeWindowInSeconds)
+        {
+            throw new IllegalArgumentException(String.format("Repair window time must be greater than trigger interval."
+                            + " Current repair window time: %d seconds,"
+                            + " trigger interval for metric inspection: %d seconds",
+                    repairTimeWindowInSeconds, triggerIntervalForMetricInspection));
+        }
+     }
+
 }
+

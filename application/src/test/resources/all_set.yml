@@ -85,6 +85,13 @@ statistics:
       excludedMetrics:
         - name: '.*httpExcluded'
   prefix: "unittest"
+  repair_failures_count: 5
+  repair_failures_time_window:
+    time: 5
+    unit: minutes
+  trigger_interval_for_metric_inspection:
+    time: 30
+    unit: seconds
 
 lock_factory:
   cas:
