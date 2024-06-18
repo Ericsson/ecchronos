@@ -13,6 +13,7 @@
     - [Example](#example)
         - [Repair history](#repair-history)
 - [Incremental repairs](#incremental-repairs)
+- [Ecchronos as an Agent](#ecchronos-as-an-agent)
 - [References](#references)
 
 ## Overview
@@ -223,6 +224,35 @@ When the RepairGroup is executed it will generate one [IncrementalRepairTask](..
 The IncrementalRepairTask is the class that will perform the incremental repair [\[3\]](#references).
 
 [i96]: https://github.com/Ericsson/ecchronos/issues/96
+
+## Ecchronos as an Agent
+The default implementation of EcChronos was designed to be a Side-car for Cassandra, the new approach is to enable EcChronos instances to be responsible for more than one Cassandra node, at the rack, datacenter, or even entire cluster level.
+
+### Connection
+Once the instance establishes its initial connection with the node in the specified datacenter, this instance should register its control over the contact points, whether JMX or CQL, to make it clear that a single instance will be responsible for managing multiple nodes.
+Then it would be possible to keep track of what was the last time that the EcChronos instances was able to connect with a node, also for others EcChronos instances keep track about each other's health.
+
+Configuration is available on ecc.yml in the below format.
+
+```yaml
+connection:
+  cql:
+    datacenterAware:
+      enabled: true
+      datacenters:
+        - name: datacenter1
+          hosts:
+            - host: 127.0.0.1
+              port: 9042
+            - host: 127.0.0.2
+              port: 9042
+        - name: datacenter2
+          hosts:
+            - host: 127.0.0.1
+              port: 9042
+            - host: 127.0.0.2
+              port: 9042
+```
 
 ## References
  [1\]: [Consensus on Cassandra](https://www.datastax.com/blog/consensus-cassandra);

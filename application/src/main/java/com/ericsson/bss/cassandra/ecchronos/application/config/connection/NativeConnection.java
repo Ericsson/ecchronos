@@ -32,6 +32,7 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
 
     private Class<? extends StatementDecorator> myDecoratorClass = NoopStatementDecorator.class;
     private boolean myRemoteRouting = true;
+    private DatacenterAwareConfig myDatacenterAwareConfig = new DatacenterAwareConfig();
 
     public NativeConnection()
     {
@@ -45,6 +46,18 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
         {
             // Do something useful ...
         }
+    }
+
+    @JsonProperty("datacenterAware")
+    public final DatacenterAwareConfig getDatacenterAwareConfig()
+    {
+        return myDatacenterAwareConfig;
+    }
+
+    @JsonProperty("datacenterAware")
+    public final void setDatacenterAwareConfig(final DatacenterAwareConfig datacenterAwareConfig)
+    {
+        myDatacenterAwareConfig = datacenterAwareConfig;
     }
 
     @JsonProperty("decoratorClass")

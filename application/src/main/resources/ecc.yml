@@ -20,6 +20,24 @@
 ##
 connection:
   cql:
+    ## Configuration to define datacenters and hosts for ecchronos
+    ## to connect to. The 'enabled' property, set to false by default,
+    ## indicates whether the "datacenter aware" functionality will be active.
+    ## When 'enabled' is true, the application will use the configurations
+    ## specified in 'datacenters', connecting to the listed hosts.
+    datacenterAware:
+      enabled: false
+      datacenters:
+      - name: datacenter1
+        hosts:
+        - host: 127.0.0.1
+          port: 9042
+        - host: 127.0.0.2
+          port: 9042
+        - host: 127.0.0.3
+          port: 9042
+        - host: 127.0.0.4
+          port: 9042
     ##
     ## Host and port properties for CQL.
     ## Primarily used by the default connection provider

@@ -1,4 +1,8 @@
 # Changes
+## Version 6.0.0
+
+* Create DatacenterAwareConfig to add Hosts in CQL Session Through ecc.yml - Issue #671
+
 ## Version 5.0.5
 
 * Metric status logger for troubleshooting - Issue #397
