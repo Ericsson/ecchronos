@@ -15,31 +15,21 @@
 
 connection:
   cql:
-    agent:
-      enabled: false
-      type: datacenterAware
-      contactPoints:
-      - host: 127.0.0.1
-        port: 9042
-      - host: 127.0.0.2
-        port: 9042
-      datacenterAware:
-        datacenters:
+    datacenterAware:
+      enabled: true
+      datacenters:
         - name: datacenter1
-      rackAware:
-        racks:
-        - datacenterName: datacenter1
-          rackName: rack1
-      hostAware:
-        hosts:
-          - host: 127.0.0.1
-            port: 9042
-          - host: 127.0.0.2
-            port: 9042
-          - host: 127.0.0.3
-            port: 9042
-          - host: 127.0.0.4
-            port: 9042
+          hosts:
+            - host: 127.0.0.1
+              port: 9042
+            - host: 127.0.0.2
+              port: 9042
+        - name: datacenter2
+          hosts:
+            - host: 127.0.0.1
+              port: 9042
+            - host: 127.0.0.2
+              port: 9042
   jmx:
 
 repair:
