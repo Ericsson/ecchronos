@@ -34,11 +34,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.ericsson.bss.cassandra.ecchronos.application.ConfigurationException;
+import com.ericsson.bss.cassandra.ecchronos.application.DatacenterNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.DefaultNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.ReflectionUtils;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.ConfigRefresher;
 import com.ericsson.bss.cassandra.ecchronos.application.config.ConfigurationHelper;
+import com.ericsson.bss.cassandra.ecchronos.application.config.connection.DatacenterAwareConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
@@ -129,24 +131,30 @@ public class BeanConfigurator
     }
 
     @Bean
-    public NativeConnectionProvider nativeConnectionProvider(final Config config,
-            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
-            final MeterRegistry eccCompositeMeterRegistry) throws ConfigurationException
+    public NativeConnectionProvider nativeConnectionProvider(
+        final Config config,
+        final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
+        final MeterRegistry eccCompositeMeterRegistry,
+        final StatementDecorator statementDecorator) throws ConfigurationException
     {
         return getNativeConnectionProvider(config, cqlSecurity::get, defaultRepairConfigurationProvider,
-                eccCompositeMeterRegistry);
+                eccCompositeMeterRegistry, statementDecorator);
     }
 
     public static NativeConnectionProvider getNativeConnectionProvider(
         final Config configuration,
         final Supplier<Security.CqlSecurity> securitySupplier,
         final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
-        final MeterRegistry meterRegistry) throws ConfigurationException
+        final MeterRegistry meterRegistry,
+        final StatementDecorator statementDecorator) throws ConfigurationException
     {
 
         Supplier tlsSupplier = () -> securitySupplier.get().getCqlTlsConfig();
         CertificateHandler certificateHandler = createCertificateHandler(configuration, tlsSupplier);
-
+        boolean datacenterAware = configuration.getConnectionConfig()
+            .getCqlConnection().getDatacenterAwareConfig().isEnabled();
+        DatacenterAwareConfig datacenterAwareConfig = configuration
+            .getConnectionConfig().getCqlConnection().getDatacenterAwareConfig();
         Class<?> providerClass = configuration.getConnectionConfig().getCqlConnection().getProviderClass();
 
         try
@@ -155,11 +163,23 @@ public class BeanConfigurator
             if (DefaultNativeConnectionProvider.class.equals(providerClass))
             {
                 constructorArgs = new Object[] {
-                        configuration,
-                        securitySupplier,
-                        certificateHandler,
-                        defaultRepairConfigurationProvider,
-                        meterRegistry
+                    configuration,
+                    securitySupplier,
+                    certificateHandler,
+                    defaultRepairConfigurationProvider,
+                    meterRegistry
+                };
+            }
+            else if (DatacenterNativeConnectionProvider.class.equals(providerClass) & datacenterAware)
+            {
+                constructorArgs = new Object[] {
+                    configuration,
+                    securitySupplier,
+                    certificateHandler,
+                    defaultRepairConfigurationProvider,
+                    meterRegistry,
+                    datacenterAwareConfig,
+                    statementDecorator
                 };
             }
             else
@@ -176,9 +196,8 @@ public class BeanConfigurator
 
             return (NativeConnectionProvider) ReflectionUtils.construct(
                     providerClass,
-                    getConstructorParameterTypes(providerClass),
+                    getConstructorParameterTypes(providerClass, datacenterAware),
                     constructorArgs);
-
         }
         catch (ConfigurationException ex)
         {
@@ -208,16 +227,30 @@ public class BeanConfigurator
         }
     }
 
-    private static Class<?>[] getConstructorParameterTypes(final Class<?> providerClass)
+    private static Class<?>[] getConstructorParameterTypes(
+        final Class<?> providerClass,
+        final boolean datacenterAware)
     {
         if (DefaultNativeConnectionProvider.class.equals(providerClass))
         {
             return new Class<?>[] {
-                    Config.class,
-                    Supplier.class,
-                    CertificateHandler.class,
-                    DefaultRepairConfigurationProvider.class,
-                    MeterRegistry.class
+                Config.class,
+                Supplier.class,
+                CertificateHandler.class,
+                DefaultRepairConfigurationProvider.class,
+                MeterRegistry.class
+            };
+        }
+        else if (DatacenterNativeConnectionProvider.class.equals(providerClass) & datacenterAware)
+        {
+            return new Class<?>[] {
+                Config.class,
+                Supplier.class,
+                CertificateHandler.class,
+                DefaultRepairConfigurationProvider.class,
+                MeterRegistry.class,
+                DatacenterAwareConfig.class,
+                StatementDecorator.class
             };
         }
         else
