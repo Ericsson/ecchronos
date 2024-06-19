@@ -43,23 +43,10 @@ Use this as a guideline for what to log for each level.
 
 If the log message requires any calculations or other method calls to collect data use a is<b>LogType</b>Enabled block here are two code examples, see the <b>Bold</b> parts.
 <pre>
-if (LOG.isDebugEnabled())
-{
-      long next = repairedAt + runIntervalInMs;
-      if (old != null)
-      {
-         next -= old.getEstimatedRepairTime();
-      }
-      LOG.debug("Table {} partially repaired at {}, next repair at/after {}", myTableReference,
-     <b>MY_DATE_FORMAT.get().format(new Date(repairedAt))</b>, <b>MY_DATE_FORMAT.get().format(new Date(next))</b>);
-}
-</pre>
-<pre>
-if (LOG.isInfoEnabled())
-{
-    LOG.info("Ignoring table repair job with id {} of table {} as it was for table {}.{}({})", jobId,
-            tableReference, keyspace, table, <b>uDTTableReference.getUuid(UDT_ID_NAME)</b>);
-}
+   if (LOG.isDebugEnabled())
+   {
+       LOG.debug("Environment status: {}", <b>getAsyncEnvironmentStatus()</b>);
+   }
 </pre>
 
 ### Builds
