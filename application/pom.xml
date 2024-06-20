@@ -202,7 +202,7 @@
                             <goal>java</goal>
                         </goals>
                         <configuration>
-                            <mainClass>com.ericsson.bss.cassandra.ecchronos.application.EccYamlToMarkdownConverter</mainClass>
+                            <mainClass>com.ericsson.bss.cassandra.ecchronos.application.YamlToMarkdownConverter</mainClass>
                         </configuration>
                     </execution>
                 </executions>
