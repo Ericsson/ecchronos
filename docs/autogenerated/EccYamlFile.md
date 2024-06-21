@@ -6,24 +6,56 @@
 #
 **connection:**
 **cql:**
-# Configuration to define datacenters and hosts for ecchronos
+# Configuration to define Agent Strategy and hosts for ecchronos
 # to connect to. The 'enabled' property, set to false by default,
-# indicates whether the "datacenter aware" functionality will be active.
+# indicates whether the "Agent" functionality will be active.
 # When 'enabled' is true, the application will use the configurations
-# specified in 'datacenters', connecting to the listed hosts.
-**datacenterAware:**
-* enabled: false
-**datacenters:**
-* - name: datacenter1
-**hosts:**
-* - host: 127.0.0.1
-* port: 9042
-* - host: 127.0.0.2
-* port: 9042
-* - host: 127.0.0.3
-* port: 9042
-* - host: 127.0.0.4
-* port: 9042
+# specified below, connecting to the listed hosts; The agent configuration
+# overrides the Side-car, and the listed hosts overrides the host and port defined
+# in connection.cql.host and connection.cql.port
+agent:
+enabled: false
+## Define the Agent strategy, it can be
+## - datacenterAware;
+## - rackAware; and
+## - hostAware.
+type: datacenterAware
+# Initial contact points list for ecChronos
+# to stablish first connection with Cassandra.
+contactPoints:
+- host: 127.0.0.1
+port: 9042
+- host: 127.0.0.2
+port: 9042
+## Configuration to define datacenters for ecchronos
+## to connect to, datacenterAware enable means that
+## ecChronos will be responsible for all nodes in the
+## datacenter list.
+datacenterAware:
+datacenters:
+- name: datacenter1
+## Configuration to define racks for ecchronos
+## to connect to, rackAware enable means that
+## ecChronos will be responsible for all nodes in the
+## rack list.
+rackAware:
+racks:
+- datacenterName: datacenter1
+rackName: rack1
+## Configuration to define hosts for ecchronos
+## to connect to, hostAware enable means that
+## ecChronos will be responsible just for the
+## specified hosts list.
+hostAware:
+hosts:
+- host: 127.0.0.1
+port: 9042
+- host: 127.0.0.2
+port: 9042
+- host: 127.0.0.3
+port: 9042
+- host: 127.0.0.4
+port: 9042
 #
 # Host and port properties for CQL.
 # Primarily used by the default connection provider

@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config;
 
+import com.ericsson.bss.cassandra.ecchronos.application.config.connection.AgentConnectionConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.ConnectionConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.NativeConnection;
 
@@ -53,28 +54,75 @@ public class TestAgentConfig
     }
 
     @Test
-    public void testDatacenterProperties() throws Exception
+    public void testAgentDefaultConfigFalse()
     {
-        assertThat(nativeConnection.getDatacenterAwareConfig().getDatacenterConfig().size()).isEqualTo(2);
+        assertThat(nativeConnection.getAgentConnectionConfig().isEnabled()).isFalse();
+    }
+
+    @Test
+    public void testDefaultAgentType()
+    {
+        assertThat(nativeConnection.getAgentConnectionConfig().getType()).isEqualTo(AgentConnectionConfig.ConnectionType.datacenterAware);
+    }
+
+    @Test
+    public void testDefaultContactPoints()
+    {
+        assertThat(nativeConnection.getAgentConnectionConfig()).isNotNull();
+        assertThat(nativeConnection.getAgentConnectionConfig().getContactPoints().get("127.0.0.1").getPort()).isEqualTo(9042);
+        assertThat(nativeConnection.getAgentConnectionConfig().getContactPoints().get("127.0.0.2").getPort()).isEqualTo(9042);
+        assertThat(nativeConnection.getAgentConnectionConfig().getContactPoints().size()).isEqualTo(2);
+    }
+
+    @Test
+    public void testDefaultDatacenterAware()
+    {
+        assertThat(nativeConnection.getAgentConnectionConfig().getDatacenterAware()).isNotNull();
+        assertThat(nativeConnection
+            .getAgentConnectionConfig()
+            .getDatacenterAware()
+            .getDatacenterAware()
+            .get("datacenter1").getName()).isEqualTo("datacenter1");
+    }
+
+    @Test
+    public void testDefaultRackAware()
+    {
+        assertThat(nativeConnection.getAgentConnectionConfig().getRackAware()).isNotNull();
+        assertThat(nativeConnection
+            .getAgentConnectionConfig()
+            .getRackAware()
+            .getRackAware().get("rack1")
+            .getDatacenterName()
+            ).isEqualTo("datacenter1");
+    }
+
+    @Test
+    public void testDefaultHostAware()
+    {
+        assertThat(nativeConnection.getAgentConnectionConfig().getHostAware()).isNotNull();
+        assertThat(nativeConnection
+            .getAgentConnectionConfig()
+            .getHostAware().getHosts()
+            .get("127.0.0.1").getPort())
+        .isEqualTo(9042);
 
         assertThat(nativeConnection
-            .getDatacenterAwareConfig()
-            .getDatacenterConfig().get("datacenter1").getHosts().get(0).getHost()).isEqualTo("127.0.0.1");
-        assertThat(nativeConnection
-                .getDatacenterAwareConfig()
-                .getDatacenterConfig().get("datacenter1").getHosts().get(0).getPort()).isEqualTo(9042);
-        assertThat(nativeConnection
-                        .getDatacenterAwareConfig()
-                        .getDatacenterConfig().get("datacenter1").getHosts().size()).isEqualTo(2);
+            .getAgentConnectionConfig()
+            .getHostAware().getHosts()
+            .get("127.0.0.2").getPort())
+        .isEqualTo(9042);
 
         assertThat(nativeConnection
-                .getDatacenterAwareConfig()
-                .getDatacenterConfig().get("datacenter2").getHosts().get(0).getHost()).isEqualTo("127.0.0.1");
+            .getAgentConnectionConfig()
+            .getHostAware().getHosts()
+            .get("127.0.0.3").getPort())
+        .isEqualTo(9042);
+
         assertThat(nativeConnection
-                .getDatacenterAwareConfig()
-                .getDatacenterConfig().get("datacenter2").getHosts().get(0).getPort()).isEqualTo(9042);
-        assertThat(nativeConnection
-                .getDatacenterAwareConfig()
-                .getDatacenterConfig().get("datacenter2").getHosts().size()).isEqualTo(2);
+            .getAgentConnectionConfig()
+            .getHostAware().getHosts()
+            .get("127.0.0.4").getPort())
+        .isEqualTo(9042);
     }
 }

@@ -226,32 +226,48 @@ The IncrementalRepairTask is the class that will perform the incremental repair 
 [i96]: https://github.com/Ericsson/ecchronos/issues/96
 
 ## Ecchronos as an Agent
-The default implementation of EcChronos was designed to be a Side-car for Cassandra, the new approach is to enable EcChronos instances to be responsible for more than one Cassandra node, at the rack, datacenter, or even entire cluster level.
+
+The default implementation of ecChronos was designed to be a Side-car for Cassandra, the new approach is to enable ecChronos instances to be responsible for more than one Cassandra node, at the rack, datacenter, or even entire cluster level.
 
 ### Connection
-Once the instance establishes its initial connection with the node in the specified datacenter, this instance should register its control over the contact points, whether JMX or CQL, to make it clear that a single instance will be responsible for managing multiple nodes.
-Then it would be possible to keep track of what was the last time that the EcChronos instances was able to connect with a node, also for others EcChronos instances keep track about each other's health.
+
+Once ecChronos establishes its initial connection with the `contactPoints`, it must register its control over the nodes based on the `type` property, whether JMX or CQL, to make it clear that a single instance will be responsible for managing multiple nodes. Then it would be possible to keep track of what was the last time that the EcChronos instances was able to connect with a node, also for others EcChronos instances keep track about each other's health.
+
+If type is `datacenterAware`, ecChronos will register its control over all the nodes in the specified datacenter; The `rackAware` declares that ecChronos is responsible just for a sub-set of racks in the declared list; The `hostAware` funcionality declares that ecChronos is resposible just for the specified hosts list.
 
 Configuration is available on ecc.yml in the below format.
 
 ```yaml
 connection:
   cql:
-    datacenterAware:
-      enabled: true
-      datacenters:
+    agent:
+      enabled: false
+      type: datacenterAware
+      contactPoints:
+      - host: 127.0.0.1
+        port: 9042
+      - host: 127.0.0.2
+        port: 9042
+      datacenterAware:
+        datacenters:
         - name: datacenter1
-          hosts:
-            - host: 127.0.0.1
-              port: 9042
-            - host: 127.0.0.2
-              port: 9042
         - name: datacenter2
-          hosts:
-            - host: 127.0.0.1
-              port: 9042
-            - host: 127.0.0.2
-              port: 9042
+      rackAware:
+        racks:
+        - datacenterName: datacenter1
+          rackName: rack1
+        - datacenterName: datacenter1
+          rackName: rack2
+      hostAware:
+        hosts:
+          - host: 127.0.0.1
+            port: 9042
+          - host: 127.0.0.2
+            port: 9042
+          - host: 127.0.0.3
+            port: 9042
+          - host: 127.0.0.4
+            port: 9042
 ```
 
 ## References
