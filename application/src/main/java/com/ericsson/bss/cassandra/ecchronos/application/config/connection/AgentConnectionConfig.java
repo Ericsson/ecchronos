@@ -273,6 +273,7 @@ public final class AgentConnectionConfig
     public static final class Host
     {
         private static final int DEFAULT_PORT = 9042;
+
         private String myHost = "localhost";
 
         private int myPort = DEFAULT_PORT;
