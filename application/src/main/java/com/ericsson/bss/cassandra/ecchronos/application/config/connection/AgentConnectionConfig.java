@@ -151,7 +151,7 @@ public final class AgentConnectionConfig
 
         public static final class Datacenter
         {
-            private String myName = "datacenter1";
+            private String myName;
 
             public Datacenter()
             {
@@ -204,8 +204,8 @@ public final class AgentConnectionConfig
 
         public static final class Rack
         {
-            private String myDatacenterName = "datacenter1";
-            private String myRackName = "rack1";
+            private String myDatacenterName;
+            private String myRackName;
 
             public Rack()
             {
@@ -273,6 +273,7 @@ public final class AgentConnectionConfig
     public static final class Host
     {
         private static final int DEFAULT_PORT = 9042;
+
         private String myHost = "localhost";
 
         private int myPort = DEFAULT_PORT;

@@ -6,7 +6,7 @@
 #
 **connection:**
 **cql:**
-# Configuration to define Agent Strategy and hosts for ecchronos
+# Configuration to define Agent Strategy and hosts for ecChronos
 # to connect to. The 'enabled' property, set to false by default,
 # indicates whether the "Agent" functionality will be active.
 # When 'enabled' is true, the application will use the configurations
@@ -21,7 +21,7 @@ enabled: false
 ## - hostAware.
 type: datacenterAware
 # Initial contact points list for ecChronos
-# to stablish first connection with Cassandra.
+# to establish first connection with Cassandra.
 contactPoints:
 - host: 127.0.0.1
 port: 9042
@@ -34,6 +34,7 @@ port: 9042
 datacenterAware:
 datacenters:
 - name: datacenter1
+- name: datacenter2
 ## Configuration to define racks for ecchronos
 ## to connect to, rackAware enable means that
 ## ecChronos will be responsible for all nodes in the
@@ -42,6 +43,8 @@ rackAware:
 racks:
 - datacenterName: datacenter1
 rackName: rack1
+- datacenterName: datacenter1
+rackName: rack2
 ## Configuration to define hosts for ecchronos
 ## to connect to, hostAware enable means that
 ## ecChronos will be responsible just for the
