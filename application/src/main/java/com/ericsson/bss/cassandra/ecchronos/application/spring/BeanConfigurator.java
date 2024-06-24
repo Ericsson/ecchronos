@@ -40,7 +40,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.ReflectionUtils;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.ConfigRefresher;
 import com.ericsson.bss.cassandra.ecchronos.application.config.ConfigurationHelper;
-import com.ericsson.bss.cassandra.ecchronos.application.config.connection.DatacenterAwareConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.connection.AgentConnectionConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
@@ -152,9 +152,9 @@ public class BeanConfigurator
         Supplier tlsSupplier = () -> securitySupplier.get().getCqlTlsConfig();
         CertificateHandler certificateHandler = createCertificateHandler(configuration, tlsSupplier);
         boolean datacenterAware = configuration.getConnectionConfig()
-            .getCqlConnection().getDatacenterAwareConfig().isEnabled();
-        DatacenterAwareConfig datacenterAwareConfig = configuration
-            .getConnectionConfig().getCqlConnection().getDatacenterAwareConfig();
+            .getCqlConnection().getAgentConnectionConfig().isEnabled();
+        AgentConnectionConfig agentConnectionConfig = configuration
+            .getConnectionConfig().getCqlConnection().getAgentConnectionConfig();
         Class<?> providerClass = configuration.getConnectionConfig().getCqlConnection().getProviderClass();
 
         try
@@ -178,7 +178,7 @@ public class BeanConfigurator
                     certificateHandler,
                     defaultRepairConfigurationProvider,
                     meterRegistry,
-                    datacenterAwareConfig,
+                    agentConnectionConfig,
                     statementDecorator
                 };
             }
@@ -249,7 +249,7 @@ public class BeanConfigurator
                 CertificateHandler.class,
                 DefaultRepairConfigurationProvider.class,
                 MeterRegistry.class,
-                DatacenterAwareConfig.class,
+                AgentConnectionConfig.class,
                 StatementDecorator.class
             };
         }

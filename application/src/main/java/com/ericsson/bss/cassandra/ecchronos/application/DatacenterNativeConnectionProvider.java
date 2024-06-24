@@ -37,7 +37,6 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.AgentNativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.application.config.connection.DatacenterAwareConfig;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.NativeConnection;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
@@ -60,7 +59,7 @@ public class DatacenterNativeConnectionProvider implements NativeConnectionProvi
             final CertificateHandler certificateHandler,
             final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
             final MeterRegistry meterRegistry,
-            final DatacenterAwareConfig datacenterAwareConfig,
+            final AgentNativeConnectionProvider agentNativeConnectionProvider,
             final StatementDecorator statementDecorator)
     {
         NativeConnection nativeConfig = config.getConnectionConfig().getCqlConnection();
@@ -82,19 +81,19 @@ public class DatacenterNativeConnectionProvider implements NativeConnectionProvi
         }
 
         String dcName = "";
-        for (DatacenterAwareConfig.Datacenter datacenter : datacenterAwareConfig.getDatacenterConfig().values())
-        {
-            dcName = datacenter.getName();
-            LOG.info("Establishing first connection with Datacenter: {}.", dcName);
-            for (DatacenterAwareConfig.Host host : datacenter.getHosts())
-            {
-                String hostIp = host.getHost();
-                Integer port = host.getPort();
-                LOG.info("Connecting through CQL using {}:{}, authentication: {}, tls: {}",
-                        hostIp, port, authEnabled, tlsEnabled);
-                convertFromDCObjectToMap(dcList, dcName, hostIp, port);
-            }
-        }
+        // for (DatacenterAwareConfig.Datacenter datacenter : datacenterAwareConfig.getDatacenterConfig().values())
+        // {
+        //     dcName = datacenter.getName();
+        //     LOG.info("Establishing first connection with Datacenter: {}.", dcName);
+        //     for (DatacenterAwareConfig.Host host : datacenter.getHosts())
+        //     {
+        //         String hostIp = host.getHost();
+        //         Integer port = host.getPort();
+        //         LOG.info("Connecting through CQL using {}:{}, authentication: {}, tls: {}",
+        //                 hostIp, port, authEnabled, tlsEnabled);
+        //         convertFromDCObjectToMap(dcList, dcName, hostIp, port);
+        //     }
+        // }
         AgentNativeConnectionProvider.Builder nativeConnectionBuilder = AgentNativeConnectionProvider.builder()
                 .withLocalDatacenter(dcName)
                 .withDatacenterList(dcList)

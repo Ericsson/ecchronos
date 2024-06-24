@@ -40,7 +40,7 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
     {
         try
         {
-            if (myDatacenterAwareConfig.isEnabled())
+            if (myAgentConnectionConfig.isEnabled())
             {
                 setProvider(DatacenterNativeConnectionProvider.class);
             }
@@ -99,7 +99,7 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
     @Override
     protected final Class<?>[] expectedConstructor()
     {
-        if (myDatacenterAwareConfig.isEnabled())
+        if (myAgentConnectionConfig.isEnabled())
         {
             return new Class<?>[] {
                 Config.class,
@@ -107,7 +107,7 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
                 CertificateHandler.class,
                 DefaultRepairConfigurationProvider.class,
                 MeterRegistry.class,
-                DatacenterAwareConfig.class,
+                AgentConnectionConfig.class,
                 StatementDecorator.class
             };
         }
