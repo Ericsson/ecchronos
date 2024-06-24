@@ -102,7 +102,7 @@ public class ScheduleManagerService implements ScheduleManager
     {
         if (myRunPolicies.add(runPolicy))
         {
-            LOG.trace("Run policy {} added", runPolicy);
+            LOG.debug("Run policy {} added", runPolicy);
             if (myDelegateSchedulerManager != null)
             {
                 myDelegateSchedulerManager.addRunPolicy(runPolicy);
@@ -118,7 +118,7 @@ public class ScheduleManagerService implements ScheduleManager
     {
         if (myRunPolicies.remove(runPolicy))
         {
-            LOG.trace("Run policy {} removed", runPolicy);
+            LOG.debug("Run policy {} removed", runPolicy);
             if (myDelegateSchedulerManager != null)
             {
                 myDelegateSchedulerManager.removeRunPolicy(runPolicy);

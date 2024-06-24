@@ -27,6 +27,28 @@ Formatting rules for eclipse can be found [here](../code_style.xml).
 Provided patches should be contained and should not modify code outside of the scope of the patch.
 This will make it quicker to perform reviews and merging the pull requests.
 
+## Logging
+
+Use this as a guideline for what to log for each level.
+
+| Log level | Description                                                                                                                                                                                                                                                                                                                                    |
+|-----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| all       | All levels will be logged  <br> Example: -                                                                                                                                                                                                                                                                                                     |
+| debug     | Simple debug logging which can be turned on and used in production if necessary (should have no impact on performance). The logs at this level should be of the type a developer might need to spot a quick fix to a problem or to at least isolate the problem further. <br> Example: Specific events with contextual details.                |
+| trace     | Detailed debugging (flows, request/response, details, etc.). Will have a performance impact and is therefore not for production unless it is a planned trouble shooting activity. Mainly used during development. <br>  Example: Every method call is logged in detail for a certain request and response flow. Used data is logged in detail. |
+| info      | For logging the normal flow and operation of the service(s). <br> Example: Service health, progress of requests/responses etc.                                                                                                                                                                                                                 |
+| warn      | Behavior in the service(s) which are unexpected and potentially could lead to problems but were handled for the moment. However, service(s) as such are working normally and as expected.<br>Example: A primary service switching to a secondary one, connection retries, reverting to defaults etc. Should always be investigated.            |
+| error     | A service fail in the sense it cannot response to requests or data processed cannot be trusted/used.  <br>Example: Connection attempts that ultimate fail. Crucial resources not available.                                                                                                                                                    |
+| off       | No levels will be logged <br> Example: -                                                                                                                                                                                                                                                                                                       |                                                                                                                                                                                                                                                |
+
+If the log message requires any calculations or other method calls to collect data use a is<b>LogType</b>Enabled block here are two code examples, see the <b>Bold</b> parts.
+<pre>
+   if (LOG.isDebugEnabled())
+   {
+       LOG.debug("Environment status: {}", <b>getAsyncEnvironmentStatus()</b>);
+   }
+</pre>
+
 ### Builds
 
 The builds required to merge a pull request are contained within the [Github configuration](../.github/workflows/actions.yml) and include tests, code coverage as well as PMD checks.

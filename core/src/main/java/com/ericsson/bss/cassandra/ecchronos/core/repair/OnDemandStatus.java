@@ -280,8 +280,11 @@ public class OnDemandStatus
         }
         else
         {
-            LOG.info("Ignoring table repair job with id {} of table {} as it was for table {}.{}({})", jobId,
-                    tableReference, keyspace, table, uDTTableReference.getUuid(UDT_ID_NAME));
+            if (LOG.isInfoEnabled())
+            {
+                LOG.info("Ignoring table repair job with id {} of table {} as it was for table {}.{}({})", jobId,
+                        tableReference, keyspace, table, uDTTableReference.getUuid(UDT_ID_NAME));
+            }
         }
     }
 

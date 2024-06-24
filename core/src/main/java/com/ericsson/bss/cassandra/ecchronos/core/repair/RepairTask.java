@@ -138,7 +138,7 @@ public abstract class RepairTask implements NotificationListener
                     LOG.warn(msg);
                     throw new ScheduledJobException(msg);
                 }
-                LOG.debug("{} completed successfully", this);
+                LOG.info("{} completed successfully", this);
             }
             catch (InterruptedException e)
             {

@@ -25,6 +25,10 @@
             <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
 
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>DEBUG</level>
+        </filter>
+
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
@@ -62,9 +66,8 @@
     <logger name="io.netty" level="WARN" />
     <logger name="org.springframework.boot.autoconfigure.logging" level="INFO" />
 
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE_INFO" />
-        <appender-ref ref="FILE_DEBUG" />
     </root>
 </configuration>

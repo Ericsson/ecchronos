@@ -65,7 +65,7 @@ public class CassandraMetrics implements Closeable
         {
             long maxRepairedAt = jmxProxy.getMaxRepairedAt(tableReference);
             double percentRepaired = jmxProxy.getPercentRepaired(tableReference);
-            LOG.trace("{}, maxRepairedAt: {}, percentRepaired: {}", tableReference, maxRepairedAt, percentRepaired);
+            LOG.debug("{}, maxRepairedAt: {}, percentRepaired: {}", tableReference, maxRepairedAt, percentRepaired);
             return new CassandraMetric(percentRepaired, maxRepairedAt);
         }
         catch (IOException e)

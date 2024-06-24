@@ -19,6 +19,28 @@ During repair operations in a cassandra instance, triggered by ecChronos, it can
 
 *Furthermore, one common problem is when repair is taking too much time or is overdue. This can be caused by too many vnodes, nodes going down while holding a lock and Cassandra nodes being down.*
 
+## Logging
+
+By default the configured logging level is INFO. if more logging info is needed DEBUG can be added by configuring it in [logback.xml](../ecchronos-binary/src/resources/logback.xml).
+
+modify
+
+```
+<root level="INFO">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE_INFO" />
+</root>
+```
+to
+```
+<root level="DEBUG">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE_DEBUG" />
+</root>
+```
+
+and restart ecchronos.
+
 ## Metrics
 
 If you have Cassandra metrics reporting to a centralized location such as Graphite or Grafana you can typically use those to narrow down the problem. Also, ecChronos can be monitored, as described in the [repair monitoring documentation](REPAIR_MONITORING.md). Using metrics, it is possible to identify problems in the cluster and evaluate some basic things, like overload, network issues, cassandra rejections, etc.
