@@ -71,7 +71,7 @@ import java.util.function.Supplier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-public class TestConfig
+public class TestDefaultConfig
 {
     @Test
     public void testAllValues() throws Exception

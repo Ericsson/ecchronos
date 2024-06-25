@@ -32,6 +32,7 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
 
     private Class<? extends StatementDecorator> myDecoratorClass = NoopStatementDecorator.class;
     private boolean myRemoteRouting = true;
+    private AgentConnectionConfig myAgentConnectionConfig = new AgentConnectionConfig();
 
     public NativeConnection()
     {
@@ -45,6 +46,18 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
         {
             // Do something useful ...
         }
+    }
+
+    @JsonProperty("agent")
+    public final AgentConnectionConfig getAgentConnectionConfig()
+    {
+        return myAgentConnectionConfig;
+    }
+
+    @JsonProperty("agent")
+    public final void setDatacenterAwareConfig(final AgentConnectionConfig agentConnectionConfig)
+    {
+        myAgentConnectionConfig = agentConnectionConfig;
     }
 
     @JsonProperty("decoratorClass")

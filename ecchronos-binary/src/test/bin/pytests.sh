@@ -31,6 +31,9 @@ pip install requests
 pip install jsonschema
 pip install cassandra-driver
 
+echo "Installing yq"
+sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && sudo chmod +x /usr/bin/yq
+
 BASE_DIR="$TEST_DIR"/ecchronos-binary-${project.version}
 CONF_DIR="$BASE_DIR"/conf
 PYLIB_DIR="$BASE_DIR"/pylib
@@ -45,7 +48,7 @@ sed '/^\s*#.*/d' -i "$CONF_DIR"/ecc.yml
 # Uncomment heap options
 sed 's/^#\s*-X/-X/g' -i "$CONF_DIR"/jvm.options
 # Replace native/jmx host (it's important not to change the REST host)
-sed "/cql:/{n;s/host: .*/host: $CASSANDRA_IP/}" -i "$CONF_DIR"/ecc.yml
+yq e ".connection.cql.host = \"$CASSANDRA_IP\"" -i "$CONF_DIR"/ecc.yml
 sed "/jmx:/{n;s/host: .*/host: $CASSANDRA_IP/}" -i "$CONF_DIR"/ecc.yml
 # Replace native/jmx ports
 sed "s/port: 9042/port: $CASSANDRA_NATIVE_PORT/g" -i "$CONF_DIR"/ecc.yml
