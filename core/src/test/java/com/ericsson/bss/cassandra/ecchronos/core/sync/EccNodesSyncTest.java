@@ -43,29 +43,22 @@ public class EccNodesSyncTest
 {
     @Mock
     private CqlSession mockSession;
-
     @Mock
     private PreparedStatement mockPreparedStatement;
-
     @Mock
     private BoundStatement mockBoundStatement;
-
     @Mock
     private StatementDecorator mockStatementDecorator;
-
     @Mock
     private Node mockNode;
-
     @Mock
     private ResultSet mockResultSet;
-
     private EccNodesSync eccNodesSync;
 
     @Before
     public void setup()
     {
         MockitoAnnotations.initMocks(this);
-
         when(mockSession.prepare(any(SimpleStatement.class))).thenReturn(mockPreparedStatement);
         when(mockPreparedStatement.bind(any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(mockBoundStatement);
@@ -74,14 +67,10 @@ public class EccNodesSyncTest
         when(mockNode.getDatacenter()).thenReturn("datacenter1");
         when(mockNode.getState()).thenReturn(NodeState.UP);
         when(mockNode.getHostId()).thenReturn(UUID.randomUUID());
-
         EccNodesSync.Builder builder = EccNodesSync.newBuilder()
                 .withSession(mockSession)
                 .withStatementDecorator(mockStatementDecorator);
-
         eccNodesSync = builder.build();
-
-
     }
 
     @Test
@@ -89,7 +78,6 @@ public class EccNodesSyncTest
     {
         String endpoint = "127.0.0.1";
         ResultSet result = eccNodesSync.acquireNode(endpoint, mockNode);
-
         assertNotNull(result);
         verify(mockSession, times(1)).prepare(any(SimpleStatement.class));
         verify(mockPreparedStatement, times(1)).bind(any(), any(), any(), any(), any(), any(), any());
@@ -106,7 +94,6 @@ public class EccNodesSyncTest
         Instant lastConnection = Instant.now();
         Instant nextConnection = lastConnection.plus(30, ChronoUnit.MINUTES);
         UUID nodeID = UUID.randomUUID();
-
         ResultSet result = eccNodesSync.insertNodeInfo(ecchronosID, datacenterName, nodeEndpoint,
                 nodeStatus, lastConnection, nextConnection, nodeID);
         assertNotNull(result);

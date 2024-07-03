@@ -44,18 +44,18 @@ public final class EccNodesSync
     private static final String COLUMN_LAST_CONNECTION = "last_connection";
     private static final String COLUMN_NEXT_CONNECTION = "next_connection";
     private static final String ECCHORONS_ID_PRE_STRING = "ecchronos-";
-
+    private static final  String KEYSPACE_NAME = "ecchronos";
+    private static final  String TABLE_NAME = "nodes_sync";
     private final CqlSession mySession;
     private final PreparedStatement myInsertStatement;
     private final StatementDecorator myStatementDecorator;
-
 
     private EccNodesSync(final Builder builder)
     {
         this.mySession = Preconditions.checkNotNull(builder.mySession, "Session cannot be null");
         this.myStatementDecorator = Preconditions
                 .checkNotNull(builder.myStatementDecorator, "StatementDecorator cannot be null");
-        this.myInsertStatement = mySession.prepare(QueryBuilder.insertInto(builder.myKeyspaceName, builder.myTableName)
+        this.myInsertStatement = mySession.prepare(QueryBuilder.insertInto(KEYSPACE_NAME, TABLE_NAME)
                 .value(COLUMN_ECCHRONOS_ID, bindMarker())
                 .value(COLUMN_DC_NAME, bindMarker())
                 .value(COLUMN_NODE_ENDPOINT, bindMarker())
@@ -102,8 +102,6 @@ public final class EccNodesSync
     public static class Builder
     {
         private CqlSession mySession;
-        private final String myKeyspaceName = "ecchronos";
-        private final String myTableName = "nodes_sync";
         private StatementDecorator myStatementDecorator;
 
         /**
