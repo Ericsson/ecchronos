@@ -36,7 +36,6 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 public final class EccNodesSync
 {
     private static final Integer DEFAULT_CONNECTION_DELAY_IN_MINUTES = 30;
-    private static final String DEFAULT_TABLE_NAME = "nodes_sync";
     private static final String COLUMN_ECCHRONOS_ID = "ecchronos_id";
     private static final String COLUMN_DC_NAME = "datacenter_name";
     private static final String COLUMN_NODE_ID = "node_id";
@@ -49,17 +48,14 @@ public final class EccNodesSync
     private final CqlSession mySession;
     private final PreparedStatement myInsertStatement;
     private final StatementDecorator myStatementDecorator;
-    private final String myKeySpaceName;
-    private final String myTableName;
+
 
     private EccNodesSync(final Builder builder)
     {
         this.mySession = Preconditions.checkNotNull(builder.mySession, "Session cannot be null");
         this.myStatementDecorator = Preconditions
                 .checkNotNull(builder.myStatementDecorator, "StatementDecorator cannot be null");
-        this.myKeySpaceName = builder.myKeyspaceName;
-        this.myTableName = builder.myTableName;
-        this.myInsertStatement = mySession.prepare(QueryBuilder.insertInto(myKeySpaceName, myTableName)
+        this.myInsertStatement = mySession.prepare(QueryBuilder.insertInto(builder.myKeyspaceName, builder.myTableName)
                 .value(COLUMN_ECCHRONOS_ID, bindMarker())
                 .value(COLUMN_DC_NAME, bindMarker())
                 .value(COLUMN_NODE_ENDPOINT, bindMarker())
@@ -106,8 +102,8 @@ public final class EccNodesSync
     public static class Builder
     {
         private CqlSession mySession;
-        private String myKeyspaceName = "ecchronos";
-        private String myTableName = DEFAULT_TABLE_NAME;
+        private final String myKeyspaceName = "ecchronos";
+        private final String myTableName = "nodes_sync";
         private StatementDecorator myStatementDecorator;
 
         /**
@@ -119,30 +115,6 @@ public final class EccNodesSync
         public Builder withSession(final CqlSession session)
         {
             mySession = session;
-            return this;
-        }
-
-        /**
-         * Builds EccNodesSync with keyspace.
-         *
-         * @param keyspaceName The keyspace name
-         * @return Builder
-         */
-        public Builder withKeyspace(final String keyspaceName)
-        {
-            myKeyspaceName = keyspaceName;
-            return this;
-        }
-
-        /**
-         * Builds EccNodesSync with table name.
-         *
-         * @param tableName The table name
-         * @return Builder
-         */
-        public Builder withTable(final String tableName)
-        {
-            myTableName = tableName;
             return this;
         }
 
