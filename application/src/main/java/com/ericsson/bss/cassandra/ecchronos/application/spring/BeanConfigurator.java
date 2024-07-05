@@ -33,8 +33,8 @@ import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerF
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.ericsson.bss.cassandra.ecchronos.application.AgentNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.ConfigurationException;
-import com.ericsson.bss.cassandra.ecchronos.application.DatacenterNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.DefaultNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.ReflectionUtils;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
@@ -138,23 +138,20 @@ public class BeanConfigurator
         final StatementDecorator statementDecorator) throws ConfigurationException
     {
         return getNativeConnectionProvider(config, cqlSecurity::get, defaultRepairConfigurationProvider,
-                eccCompositeMeterRegistry, statementDecorator);
+                eccCompositeMeterRegistry);
     }
 
     public static NativeConnectionProvider getNativeConnectionProvider(
         final Config configuration,
         final Supplier<Security.CqlSecurity> securitySupplier,
         final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
-        final MeterRegistry meterRegistry,
-        final StatementDecorator statementDecorator) throws ConfigurationException
+        final MeterRegistry meterRegistry) throws ConfigurationException
     {
 
         Supplier tlsSupplier = () -> securitySupplier.get().getCqlTlsConfig();
         CertificateHandler certificateHandler = createCertificateHandler(configuration, tlsSupplier);
-        boolean datacenterAware = configuration.getConnectionConfig()
+        boolean agentEnabled = configuration.getConnectionConfig()
             .getCqlConnection().getAgentConnectionConfig().isEnabled();
-        AgentConnectionConfig agentConnectionConfig = configuration
-            .getConnectionConfig().getCqlConnection().getAgentConnectionConfig();
         Class<?> providerClass = configuration.getConnectionConfig().getCqlConnection().getProviderClass();
 
         try
@@ -170,16 +167,14 @@ public class BeanConfigurator
                     meterRegistry
                 };
             }
-            else if (DatacenterNativeConnectionProvider.class.equals(providerClass) & datacenterAware)
+            else if (AgentNativeConnectionProvider.class.equals(providerClass) & agentEnabled)
             {
                 constructorArgs = new Object[] {
                     configuration,
                     securitySupplier,
                     certificateHandler,
                     defaultRepairConfigurationProvider,
-                    meterRegistry,
-                    agentConnectionConfig,
-                    statementDecorator
+                    meterRegistry
                 };
             }
             else
@@ -196,7 +191,7 @@ public class BeanConfigurator
 
             return (NativeConnectionProvider) ReflectionUtils.construct(
                     providerClass,
-                    getConstructorParameterTypes(providerClass, datacenterAware),
+                    getConstructorParameterTypes(providerClass, agentEnabled),
                     constructorArgs);
         }
         catch (ConfigurationException ex)
@@ -241,7 +236,7 @@ public class BeanConfigurator
                 MeterRegistry.class
             };
         }
-        else if (DatacenterNativeConnectionProvider.class.equals(providerClass) & datacenterAware)
+        else if (AgentNativeConnectionProvider.class.equals(providerClass) & datacenterAware)
         {
             return new Class<?>[] {
                 Config.class,

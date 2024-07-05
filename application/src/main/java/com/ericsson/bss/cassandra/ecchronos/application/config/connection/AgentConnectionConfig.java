@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.ericsson.bss.cassandra.ecchronos.application.ConfigurationException;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -26,6 +27,7 @@ public final class AgentConnectionConfig
 {
     private boolean enabled = false;
     private ConnectionType myType = ConnectionType.datacenterAware;
+    private String myLocalDatacenter;
     private Map<String, Host> myContactPoints = new HashMap<>();
     private DatacenterAware myDatacenterAware = new DatacenterAware();
     private RackAware myRackAware = new RackAware();
@@ -44,15 +46,15 @@ public final class AgentConnectionConfig
     }
 
     @JsonProperty("enabled")
-    public boolean isEnabled()
-    {
-        return enabled;
-    }
-
-    @JsonProperty("enabled")
     public void setEnabled(final boolean enableAgent)
     {
         enabled = enableAgent;
+    }
+
+    @JsonProperty("enabled")
+    public boolean isEnabled()
+    {
+        return enabled;
     }
 
     @JsonProperty("type")
@@ -62,9 +64,33 @@ public final class AgentConnectionConfig
     }
 
     @JsonProperty("type")
-    public void setType(final String type)
+    public void setType(final String type) throws ConfigurationException
     {
-        myType = ConnectionType.valueOf(type);
+        try
+        {
+            myType = ConnectionType.valueOf(type);
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new ConfigurationException(
+                "Invalid connection type: "
+                +
+                type
+                +
+                "\nAccepted configurations are: datacenterAware, rackAware, hostAware", e);
+        }
+    }
+
+    @JsonProperty("localDatacenter")
+    public void setLocalDatacenter(final String localDatacenter)
+    {
+        myLocalDatacenter = localDatacenter;
+    }
+
+    @JsonProperty("localDatacenter")
+    public String getLocalDatacenter()
+    {
+        return myLocalDatacenter;
     }
 
     @JsonProperty("contactPoints")
@@ -74,7 +100,7 @@ public final class AgentConnectionConfig
     }
 
     @JsonProperty("contactPoints")
-    public void setMyContactPoints(final List<Host> contactPoints)
+    public void setContactPoints(final List<Host> contactPoints)
     {
         if (contactPoints != null)
         {
@@ -134,7 +160,7 @@ public final class AgentConnectionConfig
         }
 
         @JsonProperty("datacenters")
-        public Map<String, Datacenter> getDatacenterAware()
+        public Map<String, Datacenter> getDatacenters()
         {
             return myDatacenters;
         }
@@ -187,13 +213,13 @@ public final class AgentConnectionConfig
         }
 
         @JsonProperty("racks")
-        public Map<String, Rack> getRackAware()
+        public Map<String, Rack> getRacks()
         {
             return myRackAware;
         }
 
         @JsonProperty("racks")
-        public void setMyRackAware(final List<Rack> rackAware)
+        public void setRacks(final List<Rack> rackAware)
         {
             if (rackAware != null)
             {

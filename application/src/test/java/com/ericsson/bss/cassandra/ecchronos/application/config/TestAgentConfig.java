@@ -14,6 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config;
 
+import com.ericsson.bss.cassandra.ecchronos.application.AgentNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.application.ConfigurationException;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.AgentConnectionConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.ConnectionConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.NativeConnection;
@@ -23,6 +25,7 @@ import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
+import org.assertj.core.matcher.AssertionMatcher;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -30,6 +33,7 @@ import java.io.File;
 import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertThrows;
 
 public class TestAgentConfig
 {
@@ -56,13 +60,19 @@ public class TestAgentConfig
     @Test
     public void testAgentDefaultConfigFalse()
     {
-        assertThat(nativeConnection.getAgentConnectionConfig().isEnabled()).isFalse();
+        assertThat(nativeConnection.getAgentConnectionConfig().isEnabled()).isTrue();
     }
 
     @Test
     public void testDefaultAgentType()
     {
         assertThat(nativeConnection.getAgentConnectionConfig().getType()).isEqualTo(AgentConnectionConfig.ConnectionType.datacenterAware);
+    }
+
+    @Test
+    public void testLocalDatacenter()
+    {
+        assertThat(nativeConnection.getAgentConnectionConfig().getLocalDatacenter()).isEqualTo("datacenter1");
     }
 
     @Test
@@ -81,7 +91,7 @@ public class TestAgentConfig
         assertThat(nativeConnection
             .getAgentConnectionConfig()
             .getDatacenterAware()
-            .getDatacenterAware()
+            .getDatacenters()
             .get("datacenter1").getName()).isEqualTo("datacenter1");
     }
 
@@ -92,7 +102,7 @@ public class TestAgentConfig
         assertThat(nativeConnection
             .getAgentConnectionConfig()
             .getRackAware()
-            .getRackAware().get("rack1")
+            .getRacks().get("rack1")
             .getDatacenterName()
             ).isEqualTo("datacenter1");
     }
@@ -124,5 +134,20 @@ public class TestAgentConfig
             .getHostAware().getHosts()
             .get("127.0.0.4").getPort())
         .isEqualTo(9042);
+    }
+
+    @Test
+    public void testAgentProviderConfig()
+    {
+        Class<?> providerClass = nativeConnection.getProviderClass();
+        assertThat(providerClass).isEqualTo(AgentNativeConnectionProvider.class);
+    }
+
+    @Test
+    public void testConfigurationExceptionForWrongAgentType()
+    {
+        assertThrows(ConfigurationException.class, () -> {
+            nativeConnection.getAgentConnectionConfig().setType("wrongType");
+        });
     }
 }

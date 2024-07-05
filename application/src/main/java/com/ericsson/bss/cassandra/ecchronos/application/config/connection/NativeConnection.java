@@ -14,7 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config.connection;
 
-import com.ericsson.bss.cassandra.ecchronos.application.DatacenterNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.application.AgentNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.DefaultNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.NoopStatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.application.ReloadingCertificateHandler;
@@ -42,7 +42,7 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
         {
             if (myAgentConnectionConfig.isEnabled())
             {
-                setProvider(DatacenterNativeConnectionProvider.class);
+                setProvider(AgentNativeConnectionProvider.class);
             }
             else
             {
@@ -64,7 +64,7 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
     }
 
     @JsonProperty("agent")
-    public final void setDatacenterAwareConfig(final AgentConnectionConfig agentConnectionConfig)
+    public final void setAgentConnectionConfig(final AgentConnectionConfig agentConnectionConfig)
     {
         myAgentConnectionConfig = agentConnectionConfig;
     }
@@ -106,9 +106,7 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
                 Supplier.class,
                 CertificateHandler.class,
                 DefaultRepairConfigurationProvider.class,
-                MeterRegistry.class,
-                AgentConnectionConfig.class,
-                StatementDecorator.class
+                MeterRegistry.class
             };
         }
         return new Class<?>[]

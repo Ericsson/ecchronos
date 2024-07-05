@@ -20,11 +20,11 @@ import com.datastax.oss.driver.api.core.auth.AuthProvider;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.config.ProgrammaticDriverConfigLoaderBuilder;
-import com.datastax.oss.driver.api.core.metadata.EndPoint;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.NodeStateListener;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
+import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.datastax.oss.driver.api.core.metrics.DefaultNodeMetric;
 import com.datastax.oss.driver.api.core.metrics.DefaultSessionMetric;
 import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
@@ -32,17 +32,20 @@ import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.google.common.collect.ImmutableList;
 import io.micrometer.core.instrument.MeterRegistry;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class AgentNativeConnectionProvider implements NativeConnectionProvider
+public final class DistributedNativeConnectionProvider implements NativeConnectionProvider // CPD-OFF
 {
     private static final List<String> SCHEMA_REFRESHED_KEYSPACES = ImmutableList.of("/.*/", "!system",
             "!system_distributed", "!system_schema", "!system_traces", "!system_views", "!system_virtual_schema");
@@ -67,32 +70,24 @@ public final class AgentNativeConnectionProvider implements NativeConnectionProv
             DefaultSessionMetric.CQL_PREPARED_CACHE_SIZE.getPath(), DefaultSessionMetric.THROTTLING_DELAY.getPath(),
             DefaultSessionMetric.THROTTLING_QUEUE_SIZE.getPath(), DefaultSessionMetric.THROTTLING_ERRORS.getPath());
 
-    private static final Logger LOG = LoggerFactory.getLogger(AgentNativeConnectionProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DistributedNativeConnectionProvider.class);
     private final CqlSession mySession;
     private final Node myLocalNode;
     private final boolean myRemoteRouting;
-    private final List<EndPoint> myEndPoints;
-    private final Map<String, Node> myNodes;
+    private final List<Node> myNodes;
 
-    private AgentNativeConnectionProvider(
+    private DistributedNativeConnectionProvider(
         final CqlSession session,
         final boolean remoteRouting,
-        final Map<String, Node> nodesMap,
-        final List<EndPoint> endPoints)
+        final List<Node> nodesList)
     {
         mySession = session;
         myRemoteRouting = remoteRouting;
+        myNodes = nodesList;
         myLocalNode = null;
-        myNodes = nodesMap;
-        myEndPoints = endPoints;
     }
 
-    public List<EndPoint> getEndPoints()
-    {
-        return myEndPoints;
-    }
-
-    public Map<String, Node>  getNodes()
+    public List<Node> getNodes()
     {
         return myNodes;
     }
@@ -126,12 +121,21 @@ public final class AgentNativeConnectionProvider implements NativeConnectionProv
         mySession.close();
     }
 
+    public enum AgentConnectionType
+    {
+        datacenterAware, rackAware, hostAware
+    }
+
     public static class Builder
     {
         private static final int MAX_NODES_PER_DC = 999;
-        private List<Map<String, String>> myDatacenterList;
-        private List<EndPoint> myEndPoints;
-        private String myLocalDatacenter;
+        private AgentConnectionType myType = AgentConnectionType.datacenterAware;
+        private List<InetSocketAddress> myInitialContactPoints = new ArrayList<>();
+        private String myLocalDatacenter = "datacenter1";
+
+        private List<String> myDatacenterAware = new ArrayList<>();
+        private List<Map<String, String>> myRackAware = new ArrayList<>();
+        private List<InetSocketAddress> myHostAware = new ArrayList<>();
 
         private boolean myRemoteRouting = true;
         private boolean myIsMetricsEnabled = true;
@@ -141,16 +145,39 @@ public final class AgentNativeConnectionProvider implements NativeConnectionProv
         private NodeStateListener myNodeStateListener = null;
         private MeterRegistry myMeterRegistry = null;
 
-        public final Builder withLocalDatacenter(final String datacenterName)
+        public final Builder withInitialContactPoints(final List<InetSocketAddress> initialContactPoints)
         {
-            myLocalDatacenter = datacenterName;
+            myInitialContactPoints = initialContactPoints;
             return this;
         }
 
-        public final Builder withDatacenterList(final List<Map<String, String>> datacenterList)
+        public final Builder withAgentType(final String type)
         {
-            myDatacenterList = datacenterList;
-            myEndPoints = createEndPointList();
+            myType = AgentConnectionType.valueOf(type);
+            return this;
+        }
+
+        public final Builder withLocalDatacenter(final String localDatacenter)
+        {
+            myLocalDatacenter = localDatacenter;
+            return this;
+        }
+
+        public final Builder withDatacenterAware(final List<String> datacentersInfo)
+        {
+            myDatacenterAware = datacentersInfo;
+            return this;
+        }
+
+        public final Builder withRackAware(final List<Map<String, String>> racksInfo)
+        {
+            myRackAware = racksInfo;
+            return this;
+        }
+
+        public final Builder withHostAware(final List<InetSocketAddress> hostsInfo)
+        {
+            myHostAware = hostsInfo;
             return this;
         }
 
@@ -196,12 +223,36 @@ public final class AgentNativeConnectionProvider implements NativeConnectionProv
             return this;
         }
 
-        public final AgentNativeConnectionProvider build()
+        public final DistributedNativeConnectionProvider build()
         {
+            LOG.info("Creating Session With Initial Contact Points");
             CqlSession session = createSession(this);
-            Map<String, Node> nodesMap = createNodeMap(session);
-            return new AgentNativeConnectionProvider(
-                session, myRemoteRouting, nodesMap, myEndPoints);
+            LOG.info("Requesting Nodes List");
+            List<Node> nodesList = createNodesList(session);
+            return new DistributedNativeConnectionProvider(
+                session, myRemoteRouting, nodesList);
+        }
+
+        private List<Node> createNodesList(final CqlSession session)
+        {
+            List<Node> tmpNodeList = new ArrayList<>();
+            switch (myType)
+            {
+                case datacenterAware:
+                    tmpNodeList = resolveDatacenterNodes(session, myDatacenterAware);
+                    return tmpNodeList;
+
+                case rackAware:
+                    tmpNodeList = resolveRackNodes(session, myRackAware);
+                    return tmpNodeList;
+
+                case hostAware:
+                    tmpNodeList = resolveHostAware(session, myHostAware);
+                    return tmpNodeList;
+
+                default:
+            }
+            return tmpNodeList;
         }
 
         private CqlSession createSession(final Builder builder)
@@ -214,52 +265,55 @@ public final class AgentNativeConnectionProvider implements NativeConnectionProv
             return sessionBuilder.build();
         }
 
-        private List<EndPoint> createEndPointList()
+        private List<Node> resolveDatacenterNodes(final CqlSession session, final List<String> datacenterNames)
         {
-            List<EndPoint> endPoints = new ArrayList<>();
-            for (Map<String, String> host : myDatacenterList)
+            Set<String> datacenterNameSet = new HashSet<>(datacenterNames);
+            List<Node> nodesList = new ArrayList<>();
+            Collection<Node> nodes = session.getMetadata().getNodes().values();
+
+            for (Node node : nodes)
             {
-                ContactEndPoint endPoint = new ContactEndPoint(host.get("host"), Integer.valueOf(host.get("port")));
-                endPoint.resolve();
-                endPoints.add(endPoint);
+                if (datacenterNameSet.contains(node.getDatacenter()))
+                {
+                    nodesList.add(node);
+                }
             }
-            return endPoints;
+            return nodesList;
         }
 
-        private Map<String, Node> createNodeMap(final CqlSession session)
+        private List<Node> resolveRackNodes(final CqlSession session, final List<Map<String, String>> rackInfo)
         {
-            Map<String, Node> nodeMap = new HashMap<>();
-            for (EndPoint endPoint: myEndPoints)
+            Set<Map<String, String>> racksInfoSet = new HashSet<>(rackInfo);
+            List<Node> nodesList = new ArrayList<>();
+            Collection<Node> nodes = session.getMetadata().getNodes().values();
+
+            for (Node node : nodes)
             {
-                Node node = searchNode(endPoint.toString(), session);
-                if (node != null)
+                Map<String, String> tmpRackInfo = new HashMap<>();
+                tmpRackInfo.put("datacenterName", node.getDatacenter());
+                tmpRackInfo.put("rackName", node.getRack());
+                if (racksInfoSet.contains(tmpRackInfo))
                 {
-                    nodeMap.put(endPoint.toString(), node);
-                }
-                else
-                {
-                    nodeMap.put(endPoint.toString(), null);
+                    nodesList.add(node);
                 }
             }
-            return nodeMap;
+            return nodesList;
         }
 
-        public final Node searchNode(
-            final String endpoint,
-            final CqlSession session)
+        private List<Node> resolveHostAware(final CqlSession session, final List<InetSocketAddress> hostsInfo)
         {
-            Collection<Node> nodeList = session.getMetadata().getNodes().values();
-
-            Node tmpNode = null;
-            for (Node node : nodeList)
+            Set<InetSocketAddress> hostsInfoSet = new HashSet<>(hostsInfo);
+            List<Node> nodesList = new ArrayList<>();
+            Collection<Node> nodes = session.getMetadata().getNodes().values();
+            for (Node node : nodes)
             {
-                if (node.getEndPoint().toString().equals(endpoint))
+                InetSocketAddress tmpAddress = (InetSocketAddress) node.getEndPoint().resolve();
+                if (hostsInfoSet.contains(tmpAddress))
                 {
-                    tmpNode = node;
-                    return tmpNode;
+                    nodesList.add(node);
                 }
             }
-            return tmpNode;
+            return nodesList;
         }
 
         private static ProgrammaticDriverConfigLoaderBuilder loaderBuilder(
@@ -293,12 +347,30 @@ public final class AgentNativeConnectionProvider implements NativeConnectionProv
         private static CqlSessionBuilder fromBuilder(final Builder builder)
         {
             return CqlSession.builder()
-                    .addContactEndPoints(builder.myEndPoints)
+                    .addContactPoints(builder.myInitialContactPoints)
                     .withLocalDatacenter(builder.myLocalDatacenter)
                     .withAuthProvider(builder.myAuthProvider)
                     .withSslEngineFactory(builder.mySslEngineFactory)
                     .withSchemaChangeListener(builder.mySchemaChangeListener)
                     .withNodeStateListener(builder.myNodeStateListener);
+        }
+
+        @VisibleForTesting
+        public final List<Node> testResolveDatacenterNodes(final CqlSession session, final List<String> datacenterNames)
+        {
+            return resolveDatacenterNodes(session, datacenterNames);
+        }
+
+        @VisibleForTesting
+        public final List<Node> testResolveRackNodes(final CqlSession session, final List<Map<String, String>> rackInfo)
+        {
+            return resolveRackNodes(session, rackInfo);
+        }
+
+        @VisibleForTesting
+        public final List<Node> testResolveHostAware(final CqlSession session, final List<InetSocketAddress> hostsInfo)
+        {
+            return resolveHostAware(session, hostsInfo);
         }
     }
 }

@@ -40,7 +40,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-public final class LocalNativeConnectionProvider implements NativeConnectionProvider
+public final class LocalNativeConnectionProvider implements NativeConnectionProvider // CPD-OFF
 {
     private static final List<String> SCHEMA_REFRESHED_KEYSPACES = ImmutableList.of("/.*/", "!system",
             "!system_distributed", "!system_schema", "!system_traces", "!system_views", "!system_virtual_schema");

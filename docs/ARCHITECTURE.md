@@ -233,7 +233,7 @@ The default implementation of ecChronos was designed to be a Side-car for Cassan
 
 Once ecChronos establishes its initial connection with the `contactPoints`, it must register its control over the nodes based on the `type` property, whether JMX or CQL, to make it clear that a single instance will be responsible for managing multiple nodes. Then it would be possible to keep track of what was the last time that the EcChronos instances was able to connect with a node, also for others EcChronos instances keep track about each other's health.
 
-If type is `datacenterAware`, ecChronos will register its control over all the nodes in the specified datacenter; The `rackAware` declares that ecChronos is responsible just for a sub-set of racks in the declared list; The `hostAware` funcionality declares that ecChronos is resposible just for the specified hosts list.
+If type is `datacenterAware`, ecChronos will register its control over all the nodes in the specified datacenter; The `rackAware` declares that ecChronos is responsible just for a sub-set of racks in the declared list; The `hostAware` funcionality declares that ecChronos is resposible just for the specified hosts list. When `connection.cql.agent.enabled` is true, it must use the AgentNativeConnectionProvider class as default provider.
 
 Configuration is available on ecc.yml in the below format.
 
@@ -268,6 +268,7 @@ connection:
             port: 9042
           - host: 127.0.0.4
             port: 9042
+    provider: com.ericsson.bss.cassandra.ecchronos.application.AgentNativeConnectionProvider
 ```
 
 ## References
