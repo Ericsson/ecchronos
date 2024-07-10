@@ -1,6 +1,7 @@
 # Changes
 ## Version 6.0.0
 
+* Expose AgentNativeConnectionProvider on Connection and Application Module - Issue #673
 * Create DatacenterAwareConfig to add Hosts in CQL Session Through ecc.yml - Issue #671
 
 ## Version 5.0.5
