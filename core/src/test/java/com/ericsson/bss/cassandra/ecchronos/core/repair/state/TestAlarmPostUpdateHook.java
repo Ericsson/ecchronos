@@ -21,7 +21,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.time.Clock;
 import java.util.HashMap;
@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)

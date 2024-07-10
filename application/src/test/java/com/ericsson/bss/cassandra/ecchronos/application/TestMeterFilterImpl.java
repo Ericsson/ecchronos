@@ -22,7 +22,7 @@ import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.config.MeterFilterReply;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TestMeterFilterImpl

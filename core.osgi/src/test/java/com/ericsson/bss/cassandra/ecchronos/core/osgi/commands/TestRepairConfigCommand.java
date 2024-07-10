@@ -29,7 +29,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.osgi.commands.TestRepairStatusCommand.createTableRef;
 import static java.util.Arrays.asList;
