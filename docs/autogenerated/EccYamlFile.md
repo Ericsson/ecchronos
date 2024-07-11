@@ -20,8 +20,11 @@ enabled: false
 ## - rackAware; and
 ## - hostAware.
 type: datacenterAware
-# Initial contact points list for ecChronos
-# to establish first connection with Cassandra.
+## Specifies the datacenter that is considered "local" by the load balancing policy,
+## The specified datacenter should match with the contact point datacenter
+localDatacenter: datacenter1
+## Initial contact points list for ecChronos
+## to establish first connection with Cassandra.
 contactPoints:
 - host: 127.0.0.1
 port: 9042
@@ -88,6 +91,8 @@ port: 9042
 #
 # The class used to provide CQL connections to Apache Cassandra.
 # The default provider will be used unless another is specified.
+# When connection.cql.agent.enabled is true, it must use class
+# com.ericsson.bss.cassandra.ecchronos.application.AgentNativeConnectionProvider
 #
 * provider: com.ericsson.bss.cassandra.ecchronos.application.DefaultNativeConnectionProvider
 #

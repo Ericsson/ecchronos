@@ -16,8 +16,9 @@
 connection:
   cql:
     agent:
-      enabled: false
+      enabled: true
       type: datacenterAware
+      localDatacenter: datacenter1
       contactPoints:
       - host: 127.0.0.1
         port: 9042
@@ -40,6 +41,7 @@ connection:
             port: 9042
           - host: 127.0.0.4
             port: 9042
+    provider: com.ericsson.bss.cassandra.ecchronos.application.AgentNativeConnectionProvider
   jmx:
 
 repair:

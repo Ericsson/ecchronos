@@ -14,10 +14,12 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config.connection;
 
+import com.ericsson.bss.cassandra.ecchronos.application.AgentNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.DefaultNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.NoopStatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.application.ReloadingCertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
+import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
@@ -38,7 +40,14 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
     {
         try
         {
-            setProvider(DefaultNativeConnectionProvider.class);
+            if (myAgentConnectionConfig.isEnabled())
+            {
+                setProvider(AgentNativeConnectionProvider.class);
+            }
+            else
+            {
+                setProvider(DefaultNativeConnectionProvider.class);
+            }
             setCertificateHandler(ReloadingCertificateHandler.class);
             setPort(DEFAULT_PORT);
         }
@@ -55,7 +64,7 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
     }
 
     @JsonProperty("agent")
-    public final void setDatacenterAwareConfig(final AgentConnectionConfig agentConnectionConfig)
+    public final void setAgentConnectionConfig(final AgentConnectionConfig agentConnectionConfig)
     {
         myAgentConnectionConfig = agentConnectionConfig;
     }
@@ -90,9 +99,22 @@ public class NativeConnection extends Connection<NativeConnectionProvider>
     @Override
     protected final Class<?>[] expectedConstructor()
     {
+        if (myAgentConnectionConfig.isEnabled())
+        {
+            return new Class<?>[] {
+                Config.class,
+                Supplier.class,
+                CertificateHandler.class,
+                DefaultRepairConfigurationProvider.class,
+                MeterRegistry.class
+            };
+        }
         return new Class<?>[]
                 {
-                        Config.class, Supplier.class, DefaultRepairConfigurationProvider.class, MeterRegistry.class
+                        Config.class,
+                        Supplier.class,
+                        DefaultRepairConfigurationProvider.class,
+                        MeterRegistry.class
                 };
     }
 
