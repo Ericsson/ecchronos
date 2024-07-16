@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
+import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
@@ -31,6 +32,7 @@ import org.springframework.boot.convert.ApplicationConversionService;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
 import com.ericsson.bss.cassandra.ecchronos.application.AgentNativeConnectionProvider;
@@ -40,13 +42,13 @@ import com.ericsson.bss.cassandra.ecchronos.application.ReflectionUtils;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.ConfigRefresher;
 import com.ericsson.bss.cassandra.ecchronos.application.config.ConfigurationHelper;
-import com.ericsson.bss.cassandra.ecchronos.application.config.connection.AgentConnectionConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationStateImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.sync.EccNodesSync;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolverImpl;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
@@ -243,9 +245,7 @@ public class BeanConfigurator
                 Supplier.class,
                 CertificateHandler.class,
                 DefaultRepairConfigurationProvider.class,
-                MeterRegistry.class,
-                AgentConnectionConfig.class,
-                StatementDecorator.class
+                MeterRegistry.class
             };
         }
         else
@@ -335,5 +335,34 @@ public class BeanConfigurator
                 ApplicationConversionService.configure(registry);
             }
         };
+    }
+
+    @Bean
+    @Conditional(NodesSyncBeanCondition.class)
+    public EccNodesSync eccNodesSync(
+        final NativeConnectionProvider nativeConnectionProvider,
+        final StatementDecorator statementDecorator) throws UnknownHostException, EcChronosException
+    {
+        return getEccNodesSync(nativeConnectionProvider, statementDecorator);
+    }
+
+    private EccNodesSync getEccNodesSync(
+        final NativeConnectionProvider nativeConnectionProvider,
+        final StatementDecorator statementDecorator
+    ) throws UnknownHostException, EcChronosException
+    {
+        AgentNativeConnectionProvider agentNativeConnectionProvider =
+            (AgentNativeConnectionProvider) nativeConnectionProvider;
+        LOG.info("Creating ecChronos nodes_sync bean");
+        EccNodesSync myEccNodesSync = EccNodesSync.newBuilder()
+            .withInitialNodesList(agentNativeConnectionProvider.getNodesList())
+            .withSession(agentNativeConnectionProvider.getSession())
+            .withStatementDecorator(statementDecorator)
+            .build();
+        LOG.info("ecChronos nodes_sync bean created with success");
+        LOG.info("Starting to acquire nodes");
+        myEccNodesSync.acquireNodes();
+        LOG.info("Nodes acquired with success");
+        return myEccNodesSync;
     }
 }

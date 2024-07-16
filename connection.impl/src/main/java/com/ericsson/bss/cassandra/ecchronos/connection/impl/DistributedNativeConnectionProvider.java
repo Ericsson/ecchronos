@@ -84,7 +84,7 @@ public final class DistributedNativeConnectionProvider implements NativeConnecti
         mySession = session;
         myRemoteRouting = remoteRouting;
         myNodes = nodesList;
-        myLocalNode = null;
+        myLocalNode = myNodes.get(0); // Temp node to avoid changing EcChronosInternals and CAS Configs
     }
 
     public List<Node> getNodes()
@@ -229,6 +229,7 @@ public final class DistributedNativeConnectionProvider implements NativeConnecti
             CqlSession session = createSession(this);
             LOG.info("Requesting Nodes List");
             List<Node> nodesList = createNodesList(session);
+            LOG.info("Nodes list was created with success");
             return new DistributedNativeConnectionProvider(
                 session, myRemoteRouting, nodesList);
         }
