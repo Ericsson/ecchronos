@@ -21,6 +21,7 @@ import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.google.common.base.Preconditions;
@@ -107,7 +108,7 @@ public final class EccNodesSync
         return resultSets;
     }
 
-    public ResultSet acquireNode(final Node node)
+    private ResultSet acquireNode(final Node node)
     {
         return insertNodeInfo(
             ecChronosID,
@@ -119,16 +120,46 @@ public final class EccNodesSync
             node.getHostId());
     }
 
-    public ResultSet insertNodeInfo(final String ecchronosID, final String datacenterName,
-                             final String nodeEndpoint, final String nodeStatus,
-                             final Instant lastConnection, final Instant nextConnection,
-                             final UUID nodeID)
+    @VisibleForTesting
+    public ResultSet verifyAquireNode(final Node node)
+    {
+        return acquireNode(node);
+    }
+
+    private ResultSet insertNodeInfo(
+        final String ecchronosID,
+        final String datacenterName,
+        final String nodeEndpoint,
+        final String nodeStatus,
+        final Instant lastConnection,
+        final Instant nextConnection,
+        final UUID nodeID)
     {
         BoundStatement insertNodeSyncInfo = myCreateStatement.bind(ecchronosID,
                 datacenterName, nodeEndpoint, nodeStatus, lastConnection, nextConnection, nodeID);
         return execute(insertNodeSyncInfo);
     }
 
+    @VisibleForTesting
+    ResultSet verifyInsertNodeInfo(
+        final String ecchronosID,
+        final String datacenterName,
+        final String nodeEndpoint,
+        final String nodeStatus,
+        final Instant lastConnection,
+        final Instant nextConnection,
+        final UUID nodeID)
+    {
+        return insertNodeInfo(
+            ecchronosID,
+            datacenterName,
+            nodeEndpoint,
+            nodeStatus,
+            lastConnection,
+            nextConnection,
+            nodeID
+        );
+    }
     public ResultSet execute(final BoundStatement statement)
     {
         return mySession.execute(myStatementDecorator.apply(statement));

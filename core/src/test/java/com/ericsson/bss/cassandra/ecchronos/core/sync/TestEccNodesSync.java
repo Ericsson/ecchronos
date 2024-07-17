@@ -81,7 +81,7 @@ public class TestEccNodesSync extends AbstractCassandraTest
     @Test
     public void testAcquireNode() throws UnknownHostException
     {
-        ResultSet result = eccNodesSync.acquireNode(nodesList.get(0));
+        ResultSet result = eccNodesSync.verifyAquireNode(nodesList.get(0));
         assertNotNull(result);
     }
 
@@ -95,7 +95,7 @@ public class TestEccNodesSync extends AbstractCassandraTest
         Instant lastConnection = Instant.now();
         Instant nextConnection = lastConnection.plus(30, ChronoUnit.MINUTES);
         UUID nodeID = UUID.randomUUID();
-        ResultSet result = eccNodesSync.insertNodeInfo(ecchronosID, datacenterName, nodeEndpoint,
+        ResultSet result = eccNodesSync.verifyInsertNodeInfo(ecchronosID, datacenterName, nodeEndpoint,
                 nodeStatus, lastConnection, nextConnection, nodeID);
         assertNotNull(result);
     }
