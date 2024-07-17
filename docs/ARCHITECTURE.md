@@ -271,6 +271,32 @@ connection:
     provider: com.ericsson.bss.cassandra.ecchronos.application.AgentNativeConnectionProvider
 ```
 
+### Nodes Sync
+
+To keep track about nodes and instances, the Agent implementation uses the table nodes_sync, that declared nodes by specific ecChronos instances, so to use the Agent is mandatory to create the table below:
+
+```cql
+CREATE TABLE ecchronos.nodes_sync
+(
+    ecchronos_id TEXT,
+    datacenter_name TEXT,
+    node_id UUID,
+    node_endpoint TEXT,
+    node_status TEXT,
+    last_connection TIMESTAMP,
+    next_connection TIMESTAMP,
+    PRIMARY KEY
+    (
+        ecchronos_id,
+        datacenter_name,
+        node_id
+    )
+) WITH CLUSTERING ORDER BY(
+    datacenter_name DESC,
+    node_id DESC
+);
+```
+
 ## References
  [1\]: [Consensus on Cassandra](https://www.datastax.com/blog/consensus-cassandra);
 

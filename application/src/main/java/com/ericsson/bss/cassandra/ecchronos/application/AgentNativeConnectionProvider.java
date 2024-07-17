@@ -214,4 +214,9 @@ public class AgentNativeConnectionProvider implements NativeConnectionProvider
     {
         myDistributedNativeConnectionProvider.close();
     }
+
+    public final List<Node> getNodesList()
+    {
+        return myDistributedNativeConnectionProvider.getNodes();
+    }
 }
