@@ -69,7 +69,7 @@ public final class EccNodesSync
         myStatementDecorator = Preconditions
                 .checkNotNull(builder.myStatementDecorator, "StatementDecorator cannot be null");
         myNodesList = Preconditions
-            .checkNotNull(builder.initialNodesList, "StatementDecorator cannot be null");
+            .checkNotNull(builder.initialNodesList, "Nodes list cannot be null");
         myCreateStatement = mySession.prepare(QueryBuilder.insertInto(KEYSPACE_NAME, TABLE_NAME)
                 .value(COLUMN_ECCHRONOS_ID, bindMarker())
                 .value(COLUMN_DC_NAME, bindMarker())
@@ -83,10 +83,10 @@ public final class EccNodesSync
         ecChronosID = ECCHORONS_ID_PRE_STRING.concat(InetAddress.getLocalHost().getHostName());
     }
 
-    public List<ResultSet> acquireNodes() throws UnknownHostException, EcChronosException
+    public List<ResultSet> acquireNodes() throws EcChronosException
     {
         List<ResultSet> resultSets = new ArrayList<>();
-        if (myNodesList != null && !myNodesList.isEmpty())
+        if (!myNodesList.isEmpty())
         {
             for (Node node : myNodesList)
             {
@@ -107,7 +107,7 @@ public final class EccNodesSync
         return resultSets;
     }
 
-    public ResultSet acquireNode(final Node node) throws UnknownHostException
+    public ResultSet acquireNode(final Node node)
     {
         return insertNodeInfo(
             ecChronosID,
@@ -119,7 +119,7 @@ public final class EccNodesSync
             node.getHostId());
     }
 
-    ResultSet insertNodeInfo(final String ecchronosID, final String datacenterName,
+    public ResultSet insertNodeInfo(final String ecchronosID, final String datacenterName,
                              final String nodeEndpoint, final String nodeStatus,
                              final Instant lastConnection, final Instant nextConnection,
                              final UUID nodeID)
@@ -193,4 +193,3 @@ public final class EccNodesSync
         }
     }
 }
-

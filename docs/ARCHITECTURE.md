@@ -273,7 +273,7 @@ connection:
 
 ### Nodes Sync
 
-To keep track about nodes and instance, the Agent implementation uses the table nodes_sync, that declared nodes by specific ecChronos instances, so to use the Agent is mandatory to create the table below:
+To keep track about nodes and instances, the Agent implementation uses the table nodes_sync, that declared nodes by specific ecChronos instances, so to use the Agent is mandatory to create the table below:
 
 ```cql
 CREATE TABLE ecchronos.nodes_sync

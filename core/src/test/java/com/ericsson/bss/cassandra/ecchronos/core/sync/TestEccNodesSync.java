@@ -18,6 +18,7 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.AbstractCassandraTest;
+import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 
 import org.junit.After;
 import org.junit.Before;
@@ -30,7 +31,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
+
 import net.jcip.annotations.NotThreadSafe;
 
 @NotThreadSafe
@@ -46,7 +50,21 @@ public class TestEccNodesSync extends AbstractCassandraTest
     {
         nodesList = new ArrayList<>(mySession.getMetadata().getNodes().values());
         mySession.execute(String.format("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {'class': 'NetworkTopologyStrategy', 'DC1': 1}", ECCHRONOS_KEYSPACE));
-        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.nodes_sync(ecchronos_id TEXT,datacenter_name TEXT,node_id UUID,node_endpoint TEXT,node_status TEXT,last_connection TIMESTAMP,next_connection TIMESTAMP,PRIMARY KEY(ecchronos_id,datacenter_name,node_id));", ECCHRONOS_KEYSPACE));
+        String query = String.format(
+            "CREATE TABLE IF NOT EXISTS %s.nodes_sync(" +
+            "ecchronos_id TEXT, " +
+            "datacenter_name TEXT, " +
+            "node_id UUID, " +
+            "node_endpoint TEXT, " +
+            "node_status TEXT, " +
+            "last_connection TIMESTAMP, " +
+            "next_connection TIMESTAMP, " +
+            "PRIMARY KEY(ecchronos_id, datacenter_name, node_id));",
+            ECCHRONOS_KEYSPACE
+        );
+        
+        mySession.execute(query);
+        
         eccNodesSync = EccNodesSync.newBuilder()
                                     .withSession(mySession)
                                     .withStatementDecorator(s -> s)
@@ -82,4 +100,53 @@ public class TestEccNodesSync extends AbstractCassandraTest
         assertNotNull(result);
     }
 
+    @Test
+    public void testEccNodesWithNullList() throws UnknownHostException
+    {
+        EccNodesSync.Builder tmpEccNodesSyncBuilder = EccNodesSync.newBuilder()
+                                    .withSession(mySession)
+                                    .withStatementDecorator(s -> s)
+                                    .withInitialNodesList(null);
+        NullPointerException exception = assertThrows(
+                NullPointerException.class, () -> tmpEccNodesSyncBuilder.build());
+        assertEquals("Nodes list cannot be null", exception.getMessage());
+    }
+
+    @Test
+    public void testAcquiredNodesWithEmptyList() throws UnknownHostException
+    {
+        EccNodesSync tmpEccNodesSync = EccNodesSync.newBuilder()
+                                    .withSession(mySession)
+                                    .withStatementDecorator(s -> s)
+                                    .withInitialNodesList(new ArrayList<>()).build();
+        EcChronosException exception = assertThrows(
+            EcChronosException.class, () -> tmpEccNodesSync.acquireNodes());
+        assertEquals(
+            "Cannot Acquire Nodes because there is no nodes to be acquired",
+                        exception.getMessage());
+    }
+
+    @Test
+    public void testEccNodesWithNullStatementDecorator()
+    {
+        EccNodesSync.Builder tmpEccNodesSyncBuilder = EccNodesSync.newBuilder()
+                                                    .withSession(mySession)
+                                                    .withStatementDecorator(null)
+                                                    .withInitialNodesList(nodesList);
+        NullPointerException exception = assertThrows(
+        NullPointerException.class, () -> tmpEccNodesSyncBuilder.build());
+        assertEquals("StatementDecorator cannot be null", exception.getMessage());
+    }
+
+    @Test
+    public void testEccNodesWithNullSession()
+    {
+        EccNodesSync.Builder tmpEccNodesSyncBuilder = EccNodesSync.newBuilder()
+                                                    .withSession(null)
+                                                    .withStatementDecorator(s -> s)
+                                                    .withInitialNodesList(nodesList);
+        NullPointerException exception = assertThrows(
+        NullPointerException.class, () -> tmpEccNodesSyncBuilder.build());
+        assertEquals("Session cannot be null", exception.getMessage());
+    }
 }
