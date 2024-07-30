@@ -90,7 +90,7 @@
         <awaitility.version>3.0.0</awaitility.version>
         <jcip.version>1.0</jcip.version>
         <junitparams.version>1.1.1</junitparams.version>
-        <equalsverifier.version>3.5</equalsverifier.version>
+        <equalsverifier.version>3.16.1</equalsverifier.version>
         <tomcat.version>9.0.90</tomcat.version>
         <org.springframework.boot.version>2.7.18</org.springframework.boot.version>
         <org.springdoc.openapi-ui.version>1.7.0</org.springdoc.openapi-ui.version>
@@ -103,7 +103,7 @@
         <!-- Plugin versions -->
         <org.apache.maven.plugins.maven-compiler-plugin.version>3.11.0</org.apache.maven.plugins.maven-compiler-plugin.version>
         <org.apache.maven.plugins.maven-install-plugin.version>2.5.2</org.apache.maven.plugins.maven-install-plugin.version>
-        <org.apache.maven.plugins.maven-surefire-plugin.version>3.0.0-M5</org.apache.maven.plugins.maven-surefire-plugin.version>
+        <org.apache.maven.plugins.maven-surefire-plugin.version>3.3.1</org.apache.maven.plugins.maven-surefire-plugin.version>
         <org.apache.maven.plugins.maven-failsafe-plugin.version>2.22.1</org.apache.maven.plugins.maven-failsafe-plugin.version>
         <org.apache.maven.plugins.maven-assembly-plugin.version>3.6.0</org.apache.maven.plugins.maven-assembly-plugin.version>
         <org.apache.maven.plugins-maven-checkstyle-plugin.version>3.2.0</org.apache.maven.plugins-maven-checkstyle-plugin.version>
