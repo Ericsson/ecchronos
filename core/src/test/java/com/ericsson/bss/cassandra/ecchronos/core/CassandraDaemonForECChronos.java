@@ -250,7 +250,7 @@ public class CassandraDaemonForECChronos implements Runnable
      */
     public boolean isSSLEnabled()
     {
-        return DatabaseDescriptor.getNativeProtocolEncryptionOptions().isEnabled();
+        return DatabaseDescriptor.getNativeProtocolEncryptionOptions().getEnabled();
     }
 
     /**
@@ -353,7 +353,7 @@ public class CassandraDaemonForECChronos implements Runnable
         }
         catch (NoSuchAlgorithmException e)
         {
-            LOG.error("Environment does support {} - Proceeding without SSL/TLS", DatabaseDescriptor.getNativeProtocolEncryptionOptions().acceptedProtocols());
+            LOG.error("Environment does support {} - Proceeding without SSL/TLS", DatabaseDescriptor.getNativeProtocolEncryptionOptions().getAcceptedProtocols());
         }
         catch (KeyManagementException e)
         {
