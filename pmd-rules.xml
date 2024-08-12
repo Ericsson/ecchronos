@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!--
 
-    Copyright 2018 Telefonaktiebolaget LM Ericsson
+    Copyright 2024 Telefonaktiebolaget LM Ericsson
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -23,30 +23,31 @@
         ecChronos mandatory ruleset.
     </description>
     <rule ref="category/java/design.xml">
-        <exclude name="TooManyMethods" />
-        <exclude name="LawOfDemeter" />
-        <exclude name="AvoidCatchingGenericException" /> <!-- Should consider fixing this -->
-        <exclude name="LoosePackageCoupling" />
-        <exclude name="DataClass" />
-        <exclude name="ExcessiveImports" />
-        <exclude name="AvoidUncheckedExceptionsInSignatures" />
+        <exclude name="CouplingBetweenObjects"/>
+        <exclude name="TooManyMethods"/>
+        <exclude name="LawOfDemeter"/>
+        <exclude name="AvoidCatchingGenericException"/> <!-- Should consider fixing this -->
+        <exclude name="AvoidUncheckedExceptionsInSignatures"/>
+        <exclude name="ExcessiveImports"/>
+        <exclude name="ExceptionAsFlowControl"/>
+        <exclude name="SimplifyBooleanReturns"/>
     </rule>
 
     <rule ref="category/java/bestpractices.xml">
+        <exclude name="LooseCoupling"/>
+        <exclude name="GuardLogStatement"/>
     </rule>
 
     <rule ref="category/java/errorprone.xml">
-        <exclude name="BeanMembersShouldSerialize" />
-        <exclude name="DataflowAnomalyAnalysis" />
-        <exclude name="AvoidBranchingStatementAsLastInLoop" />
-        <exclude name="AvoidFieldNameMatchingMethodName" />
-        <exclude name="CloseResource" />
+        <exclude name="CloseResource"/>
+        <exclude name="AvoidFieldNameMatchingMethodName"/>
+        <exclude name="ReturnEmptyCollectionRatherThanNull"/>
     </rule>
 
     <!-- Skip avoidDuplicateLiterals for annotations -->
     <rule ref="category/java/errorprone.xml/AvoidDuplicateLiterals">
         <properties>
-            <property name="skipAnnotations" value="true" />
+            <property name="skipAnnotations" value="true"/>
         </properties>
     </rule>
 </ruleset>
