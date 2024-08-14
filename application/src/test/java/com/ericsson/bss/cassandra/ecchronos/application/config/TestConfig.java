@@ -19,7 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.connection.Connec
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.DistributedNativeConnection;
 import com.ericsson.bss.cassandra.ecchronos.application.exceptions.ConfigurationException;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentNativeConnectionProvider;
-
+import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
 import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -149,5 +149,11 @@ public class TestConfig
     {
         assertThat(config.getRestServer().getHost()).isEqualTo("127.0.0.2");
         assertThat(config.getRestServer().getPort()).isEqualTo(8081);
+    }
+
+    @Test
+    public void testDefaultLoadBalancingPolicy()
+    {
+        assertThat(nativeConnection.getAgentConnectionConfig().getDatacenterAwarePolicy()).isEqualTo(DataCenterAwarePolicy.class);
     }
 }

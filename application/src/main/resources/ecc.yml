@@ -32,6 +32,10 @@ connection:
       ## Specifies the datacenter that is considered "local" by the load balancing policy,
       ## The specified datacenter should match with the contact point datacenter
       localDatacenter: datacenter1
+      ## A custom load balancing policy extended to allow the local
+      ## datacenter to be replaced with a specified data center when
+      ## creating a new plan, this is used just if the agent.type is datacenterAware
+      datacenterAwarePolicy: com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy
       ## Initial contact points list for ecChronos
       ## to establish first connection with Cassandra.
       contactPoints:
@@ -50,7 +54,8 @@ connection:
       ## Configuration to define racks for ecchronos
       ## to connect to, rackAware enable means that
       ## ecChronos will be responsible for all nodes in the
-      ## rack list.
+      ## rack list, this configuration is designed to manage
+      ## racks on the same datacenter.
       rackAware:
         racks:
           - datacenterName: datacenter1

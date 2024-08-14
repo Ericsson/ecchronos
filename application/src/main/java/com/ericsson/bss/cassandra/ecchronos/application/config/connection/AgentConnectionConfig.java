@@ -19,7 +19,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.datastax.oss.driver.internal.core.loadbalancing.DefaultLoadBalancingPolicy;
 import com.ericsson.bss.cassandra.ecchronos.application.exceptions.ConfigurationException;
+import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -33,6 +35,7 @@ public final class AgentConnectionConfig
     private DatacenterAware myDatacenterAware = new DatacenterAware();
     private RackAware myRackAware = new RackAware();
     private HostAware myHostAware = new HostAware();
+    private Class<? extends DefaultLoadBalancingPolicy> myDatacenterAwarePolicy = DataCenterAwarePolicy.class;
 
     /**
      * Default constructor for AgentConnectionConfig.
@@ -100,6 +103,29 @@ public final class AgentConnectionConfig
     public String getLocalDatacenter()
     {
         return myLocalDatacenter;
+    }
+
+    /**
+     * Gets the DataCenterAwarePolicy used for load-balancing policy.
+     *
+     * @return the DataCenterAwarePolicy.
+     */
+    @JsonProperty("datacenterAwarePolicy")
+    public final Class<? extends DefaultLoadBalancingPolicy> getDatacenterAwarePolicy()
+    {
+        return myDatacenterAwarePolicy;
+    }
+
+    /**
+     * Sets the DataCenterAwarePolicy used for load-balancing policy.
+     *
+     * @param datacenterAwarePolicy
+     *         the DataCenterAwarePolicy to set.
+     */
+    @JsonProperty("datacenterAwarePolicy")
+    public final void setDatacenterAwarePolicy(final Class<? extends DefaultLoadBalancingPolicy> datacenterAwarePolicy) throws NoSuchMethodException
+    {
+        myDatacenterAwarePolicy = datacenterAwarePolicy;
     }
 
     /**

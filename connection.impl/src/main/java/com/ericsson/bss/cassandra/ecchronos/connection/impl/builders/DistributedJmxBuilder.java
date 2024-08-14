@@ -14,10 +14,12 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection.impl.builders;
 
+import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.servererrors.QueryExecutionException;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedJmxConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.data.enums.NodeStatus;
 import com.ericsson.bss.cassandra.ecchronos.data.exceptions.EcChronosException;
@@ -152,26 +154,36 @@ public class DistributedJmxBuilder
 
     private void reconnect(final Node node) throws IOException, EcChronosException
     {
-        String host = node.getBroadcastRpcAddress().get().getHostString();
-        Integer port = getJMXPort(node);
-        if (host.contains(":"))
+        try
         {
-            // Use square brackets to surround IPv6 addresses
-            host = "[" + host + "]";
-        }
+            String host = node.getBroadcastRpcAddress().get().getHostString();
+            Integer port = getJMXPort(node);
+            if (host.contains(":"))
+            {
+                // Use square brackets to surround IPv6 addresses
+                host = "[" + host + "]";
+            }
 
-        LOG.info("Starting to instantiate JMXService with host: {} and port: {}", host, port);
-        JMXServiceURL jmxUrl = new JMXServiceURL(String.format(JMX_FORMAT_URL, host, port));
-        LOG.debug("Connecting JMX through {}, credentials: {}, tls: {}", jmxUrl, isAuthEnabled(), isTLSEnabled());
-        JMXConnector jmxConnector = JMXConnectorFactory.connect(jmxUrl, createJMXEnv());
-        if (isConnected(jmxConnector))
-        {
-            LOG.info("Connected JMX for {}", jmxUrl);
-            myEccNodesSync.updateNodeStatus(NodeStatus.AVAILABLE, node.getDatacenter(), node.getHostId());
-            myJMXConnections.put(Objects.requireNonNull(node.getHostId()), jmxConnector);
+            LOG.info("Starting to instantiate JMXService with host: {} and port: {}", host, port);
+            JMXServiceURL jmxUrl = new JMXServiceURL(String.format(JMX_FORMAT_URL, host, port));
+            LOG.debug("Connecting JMX through {}, credentials: {}, tls: {}", jmxUrl, isAuthEnabled(), isTLSEnabled());
+            JMXConnector jmxConnector = JMXConnectorFactory.connect(jmxUrl, createJMXEnv());
+            if (isConnected(jmxConnector))
+            {
+                LOG.info("Connected JMX for {}", jmxUrl);
+                myEccNodesSync.updateNodeStatus(NodeStatus.AVAILABLE, node.getDatacenter(), node.getHostId());
+                myJMXConnections.put(Objects.requireNonNull(node.getHostId()), jmxConnector);
+            }
+            else
+            {
+                myEccNodesSync.updateNodeStatus(NodeStatus.UNAVAILABLE, node.getDatacenter(), node.getHostId());
         }
-        else
+        }
+        catch
+        (
+            AllNodesFailedException|QueryExecutionException|IOException|SecurityException e)
         {
+            LOG.error("Failed to create JMX connection with node {} because of {}", node.getHostId(), e.getMessage());
             myEccNodesSync.updateNodeStatus(NodeStatus.UNAVAILABLE, node.getDatacenter(), node.getHostId());
         }
     }

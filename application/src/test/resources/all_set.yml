@@ -18,6 +18,7 @@ connection:
     agent:
       type: datacenterAware
       localDatacenter: datacenter1
+      datacenterAwarePolicy: com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy
       contactPoints:
         - host: 127.0.0.1
           port: 9042
