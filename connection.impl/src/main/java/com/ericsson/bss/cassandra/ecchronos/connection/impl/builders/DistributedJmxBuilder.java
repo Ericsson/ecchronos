@@ -181,7 +181,7 @@ public class DistributedJmxBuilder
         }
         catch
         (
-            AllNodesFailedException|QueryExecutionException|IOException|SecurityException e)
+            AllNodesFailedException | QueryExecutionException | IOException | SecurityException e)
         {
             LOG.error("Failed to create JMX connection with node {} because of {}", node.getHostId(), e.getMessage());
             myEccNodesSync.updateNodeStatus(NodeStatus.UNAVAILABLE, node.getDatacenter(), node.getHostId());

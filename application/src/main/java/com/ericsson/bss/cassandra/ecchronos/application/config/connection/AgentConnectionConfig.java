@@ -111,7 +111,7 @@ public final class AgentConnectionConfig
      * @return the DataCenterAwarePolicy.
      */
     @JsonProperty("datacenterAwarePolicy")
-    public final Class<? extends DefaultLoadBalancingPolicy> getDatacenterAwarePolicy()
+    public Class<? extends DefaultLoadBalancingPolicy> getDatacenterAwarePolicy()
     {
         return myDatacenterAwarePolicy;
     }
@@ -123,7 +123,9 @@ public final class AgentConnectionConfig
      *         the DataCenterAwarePolicy to set.
      */
     @JsonProperty("datacenterAwarePolicy")
-    public final void setDatacenterAwarePolicy(final Class<? extends DefaultLoadBalancingPolicy> datacenterAwarePolicy) throws NoSuchMethodException
+    public void setDatacenterAwarePolicy(
+        final Class<? extends DefaultLoadBalancingPolicy> datacenterAwarePolicy
+    ) throws NoSuchMethodException
     {
         myDatacenterAwarePolicy = datacenterAwarePolicy;
     }
