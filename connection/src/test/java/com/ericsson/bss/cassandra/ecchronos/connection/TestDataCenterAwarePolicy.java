@@ -122,18 +122,20 @@ public class TestDataCenterAwarePolicy
         when(myDriverContextMock.getMetadataManager()).thenReturn(myMetadataManagerMock);
         when(myMetadataManagerMock.getMetadata()).thenReturn(myMetadataMock);
         when(myDriverConfigMock.getProfile(any(String.class))).thenReturn(myDriverExecutionProfileMock);
+        when(myDriverConfigMock.getDefaultProfile()).thenReturn(myDriverExecutionProfileMock);
         when(myDriverExecutionProfileMock.getName()).thenReturn("unittest");
         when(myDriverExecutionProfileMock.getInt(DefaultDriverOption.LOAD_BALANCING_DC_FAILOVER_MAX_NODES_PER_REMOTE_DC)).thenReturn(999);
         when(myDriverExecutionProfileMock.getBoolean(DefaultDriverOption.LOAD_BALANCING_DC_FAILOVER_ALLOW_FOR_LOCAL_CONSISTENCY_LEVELS)).thenReturn(false);
         when(myDriverExecutionProfileMock.getString(DefaultDriverOption.REQUEST_CONSISTENCY)).thenReturn("LOCAL_QUORUM");
         when(myDriverContextMock.getConsistencyLevelRegistry()).thenReturn(myConsistencyLevelRegistryMock);
         when(myConsistencyLevelRegistryMock.nameToLevel(any(String.class))).thenReturn(ConsistencyLevel.LOCAL_QUORUM);
+        when(myDriverConfigMock.getDefaultProfile().getStringList(CustomDriverOption.PartitionAwarePolicyAllowedDCs)).thenReturn(null);
     }
 
     @Test
     public void testDistanceHost()
     {
-        DataCenterAwarePolicy.setAllowedDcs(null);
+//        DataCenterAwarePolicy.setAllowedDcs(null);
         DataCenterAwarePolicy policy = new DataCenterAwarePolicy(myDriverContextMock, "");
         policy.init(myNodes, myDistanceReporterMock);
 
@@ -153,7 +155,7 @@ public class TestDataCenterAwarePolicy
     @Test
     public void testDistanceHostWithAllowedDcs()
     {
-        DataCenterAwarePolicy.setAllowedDcs(List.of(myAllowedDcs));
+        when(myDriverConfigMock.getDefaultProfile().getStringList(CustomDriverOption.PartitionAwarePolicyAllowedDCs)).thenReturn(List.of(myAllowedDcs));
 
         DataCenterAwarePolicy policy = new DataCenterAwarePolicy(myDriverContextMock, "");
         policy.init(myNodes, myDistanceReporterMock);

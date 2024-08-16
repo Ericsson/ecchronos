@@ -14,9 +14,9 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection.impl.builders;
 
+import com.ericsson.bss.cassandra.ecchronos.connection.CustomDriverOption;
 import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.enums.ConnectionType;
-
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.auth.AuthProvider;
@@ -339,7 +339,7 @@ public class DistributedNativeBuilder
                         SCHEMA_REFRESHED_KEYSPACES);
         if (builder.myType.equals(ConnectionType.datacenterAware))
         {
-            DataCenterAwarePolicy.setAllowedDcs(builder.myDatacenterAware);
+            loaderBuilder.withStringList(CustomDriverOption.PartitionAwarePolicyAllowedDCs, builder.myDatacenterAware);
             loaderBuilder.withString(DefaultDriverOption.LOAD_BALANCING_POLICY_CLASS,
                 builder.myDatacenterAwarePolicy.getCanonicalName());
             loaderBuilder.withInt(DefaultDriverOption.LOAD_BALANCING_DC_FAILOVER_MAX_NODES_PER_REMOTE_DC,

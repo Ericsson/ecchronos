@@ -52,19 +52,14 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
 
     private final ConcurrentMap<String, CopyOnWriteArrayList<Node>> myPerDcLiveNodes = new ConcurrentHashMap<>();
     private final AtomicInteger myIndex = new AtomicInteger();
-    private static List<String> myAllowedDcs;
+    private final List<String> myAllowedDcs;
 
     public DataCenterAwarePolicy(final DriverContext context, final String profileName)
     {
         super(context, profileName);
-    }
-
-    public static void setAllowedDcs(final List<String> allowedDcs)
-    {
-        if (allowedDcs != null)
-        {
-            myAllowedDcs = allowedDcs;
-        }
+        myAllowedDcs = context.getConfig()
+                        .getDefaultProfile()
+                        .getStringList(CustomDriverOption.PartitionAwarePolicyAllowedDCs);
     }
 
     @Override
