@@ -52,10 +52,19 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
 
     private final ConcurrentMap<String, CopyOnWriteArrayList<Node>> myPerDcLiveNodes = new ConcurrentHashMap<>();
     private final AtomicInteger myIndex = new AtomicInteger();
+    private static List<String> myAllowedDcs;
 
     public DataCenterAwarePolicy(final DriverContext context, final String profileName)
     {
         super(context, profileName);
+    }
+
+    public static void setAllowedDcs(final List<String> allowedDcs)
+    {
+        if (allowedDcs != null)
+        {
+            myAllowedDcs = allowedDcs;
+        }
     }
 
     @Override
@@ -168,6 +177,10 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
     public NodeDistance distance(final Node node, final String dataCenter)
     {
         String dc = getDc(node);
+        if (!getLocalDatacenter().equals(dc) && myAllowedDcs != null && !myAllowedDcs.contains(dc))
+        {
+            return NodeDistance.IGNORED;
+        }
         if (dc.equals(dataCenter))
         {
             return NodeDistance.LOCAL;
@@ -184,7 +197,11 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
 
     private Queue<Node> getFallbackQueryPlan(final String dataCenter)
     {
-        CopyOnWriteArrayList<Node> localLiveNodes = myPerDcLiveNodes.get(dataCenter);
+        CopyOnWriteArrayList<Node> localLiveNodes = null;
+        if (getLocalDatacenter().equals(dataCenter) || myAllowedDcs == null || myAllowedDcs.contains(dataCenter))
+        {
+            localLiveNodes = myPerDcLiveNodes.get(dataCenter);
+        }
         final List<Node> nodes = localLiveNodes == null ? Collections.emptyList() : cloneList(localLiveNodes);
         final int startIndex = myIndex.getAndIncrement();
         int index = startIndex;

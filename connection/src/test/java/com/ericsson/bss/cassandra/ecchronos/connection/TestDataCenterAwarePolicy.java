@@ -31,6 +31,7 @@ import com.datastax.oss.driver.api.core.session.Session;
 import com.datastax.oss.driver.internal.core.ConsistencyLevelRegistry;
 import com.datastax.oss.driver.internal.core.context.InternalDriverContext;
 import com.datastax.oss.driver.internal.core.metadata.MetadataManager;
+import java.util.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,13 +39,6 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Queue;
-import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,6 +51,7 @@ public class TestDataCenterAwarePolicy
 {
     private final String myLocalDc = "DC1";
     private final String myRemoteDc = "DC2";
+    private final String[] myAllowedDcs = {"DC1", "DC2"};
 
     @Mock
     private Session mySessionMock;
@@ -138,6 +133,7 @@ public class TestDataCenterAwarePolicy
     @Test
     public void testDistanceHost()
     {
+        DataCenterAwarePolicy.setAllowedDcs(null);
         DataCenterAwarePolicy policy = new DataCenterAwarePolicy(myDriverContextMock, "");
         policy.init(myNodes, myDistanceReporterMock);
 
@@ -152,6 +148,23 @@ public class TestDataCenterAwarePolicy
         assertThat(distance3).isEqualTo(NodeDistance.REMOTE);
         assertThat(distance4).isEqualTo(NodeDistance.IGNORED);
         assertThat(distance5).isEqualTo(NodeDistance.IGNORED);
+    }
+
+    @Test
+    public void testDistanceHostWithAllowedDcs()
+    {
+        DataCenterAwarePolicy.setAllowedDcs(List.of(myAllowedDcs));
+
+        DataCenterAwarePolicy policy = new DataCenterAwarePolicy(myDriverContextMock, "");
+        policy.init(myNodes, myDistanceReporterMock);
+
+        NodeDistance distance1 = policy.distance(myNodeDC3Mock, myLocalDc);
+        NodeDistance distance2 = policy.distance(myNodeDC1Mock, myLocalDc);
+        NodeDistance distance3 = policy.distance(myNodeDC2Mock, myLocalDc);
+
+        assertThat(distance1).isEqualTo(NodeDistance.IGNORED);
+        assertThat(distance2).isEqualTo(NodeDistance.LOCAL);
+        assertThat(distance3).isEqualTo(NodeDistance.REMOTE);
     }
 
     @Test

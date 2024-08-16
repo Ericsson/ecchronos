@@ -339,6 +339,7 @@ public class DistributedNativeBuilder
                         SCHEMA_REFRESHED_KEYSPACES);
         if (builder.myType.equals(ConnectionType.datacenterAware))
         {
+            DataCenterAwarePolicy.setAllowedDcs(builder.myDatacenterAware);
             loaderBuilder.withString(DefaultDriverOption.LOAD_BALANCING_POLICY_CLASS,
                 builder.myDatacenterAwarePolicy.getCanonicalName());
             loaderBuilder.withInt(DefaultDriverOption.LOAD_BALANCING_DC_FAILOVER_MAX_NODES_PER_REMOTE_DC,
