@@ -159,7 +159,7 @@ public final class EccNodesSync
         ResultSet tmpResultSet = updateNodeStateStatement(nodeStatus, datacenterName, nodeID);
         if (tmpResultSet.wasApplied())
         {
-            LOG.info("Node {} successfully upgraded", nodeID);
+            LOG.info("Node {} successfully updated", nodeID);
         }
         else
         {

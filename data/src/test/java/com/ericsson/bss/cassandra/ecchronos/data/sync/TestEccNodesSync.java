@@ -62,7 +62,8 @@ public class TestEccNodesSync extends AbstractCassandraTest
                         "node_status TEXT, " +
                         "last_connection TIMESTAMP, " +
                         "next_connection TIMESTAMP, " +
-                        "PRIMARY KEY(ecchronos_id, datacenter_name, node_id));",
+                        "PRIMARY KEY(ecchronos_id, datacenter_name, node_id)) " +
+                        "WITH CLUSTERING ORDER BY( datacenter_name DESC, node_id DESC);",
                 ECCHRONOS_KEYSPACE
         );
 

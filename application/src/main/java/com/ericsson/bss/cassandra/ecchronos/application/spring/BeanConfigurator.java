@@ -266,14 +266,11 @@ public class BeanConfigurator
             final DistributedNativeConnectionProvider distributedNativeConnectionProvider
     ) throws UnknownHostException, EcChronosException
     {
-        LOG.info("Creating ecChronos nodes_sync bean");
         EccNodesSync myEccNodesSync = EccNodesSync.newBuilder()
                 .withInitialNodesList(distributedNativeConnectionProvider.getNodes())
                 .withSession(distributedNativeConnectionProvider.getCqlSession())
                 .withEcchronosID(ecChronosID)
                 .build();
-        LOG.info("ecChronos nodes_sync bean created with success");
-        LOG.info("Starting to acquire nodes");
         myEccNodesSync.acquireNodes();
         LOG.info("Nodes acquired with success");
         return myEccNodesSync;
