@@ -1,89 +1,49 @@
-# name: Test report
+name: Test report
 
-# on:
-#   workflow_dispatch:
-#     paths-ignore:
-#       - '**.md'
-#   pull_request:
-#     paths-ignore:
-#       - '**.md'
-#   push:
-#     paths-ignore:
-#       - '**.md'
+on:
+  workflow_dispatch:
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+  push:
+    paths-ignore:
+      - '**.md'
 
-# env:
-#   MAVEN_OPTS: -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3 -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120
+env:
+  MAVEN_OPTS: -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3 -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120
 
-# permissions: read-all
+permissions: read-all
 
-# jobs:
-#   tests:
-#     runs-on: ubuntu-20.04
-#     strategy:
-#       fail-fast: false
-#       matrix:
-#        include:
-#          - name: "Unit tests"
-#            test_suite: 'test jacoco:report'
-#          - name: "Style check"
-#            test_suite: 'compile com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
-#          - name: "OSGi integration"
-#            test_suite: 'install -P docker-integration-test,osgi-integration-tests -DskipUTs'
-#            artifacts_dir: "osgi-integration/target"
-#          - name: "Standalone integration 4.0"
-#            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -DskipUTs'
-#            artifacts_dir: "standalone-integration/target"
-#          - name: "Standalone integration 4.1"
-#            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=4.1 -DskipUTs'
-#            artifacts_dir: "standalone-integration/target"
-#          - name: "Standalone integration 5.0-alpha1"
-#            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=5.0-alpha1 -DskipUTs'
-#            artifacts_dir: "standalone-integration/target"
-#          - name: "Python integration"
-#            test_suite: 'verify -P docker-integration-test,python-integration-tests -DskipUTs'
-#            artifacts_dir: "ecchronos-binary/target"
-#     steps:
-#       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-#       - name: Cache local Maven repository
-#         uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
-#         with:
-#           path: ~/.m2/repository
-#           key: build-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-#           restore-keys: |
-#             build-${{ runner.os }}-maven-
-#       - name: Set up JDK
-#         uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # v4.0.0
-#         with:
-#           java-version: 11
-#           distribution: 'temurin'
-#       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-#       - name: Set up Python 3.8
-#         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
-#         with:
-#           python-version: 3.8
-#       - name: install dependencies
-#         run: mvn install -DskipTests=true
-#       - run: mvn $TEST_SUITE -B
-#         id: tests
-#         env:
-#           TEST_SUITE: ${{ matrix.test_suite }}
-#       - name: Upload artifacts
-#         if: ${{ failure() && steps.tests.conclusion == 'failure' }}
-#         uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
-#         with:
-#           name: ${{ matrix.name }}-cassandra-logs
-#           path: ${{ matrix.artifacts_dir }}/cassandra*.log
-#           if-no-files-found: 'ignore'
-#       - name: Upload coverage to Codecov
-#         uses: codecov/codecov-action@54bcd8715eee62d40e33596ef5e8f0f48dbbccab # v4.1.0
-#         with:
-#           token: ${{ secrets.CODECOV_TOKEN }}
-#           fail_ci_if_error: false
-#           files: >
-#             ./rest/target/site/jacoco/jacoco.xml,
-#             ./core.osgi/target/site/jacoco/jacoco.xml,
-#             ./application/target/site/jacoco/jacoco.xml,
-#             ./osgi-integration/target/site/jacoco/jacoco.xml,
-#             ./core/target/site/jacoco/jacoco.xml,
-#             ./fm.impl/target/site/jacoco/jacoco.xml,
-#             ./connection/target/site/jacoco/jacoco.xml
+jobs:
+  tests:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+       include:
+         - name: "Unit tests"
+           test_suite: 'test jacoco:report'
+         - name: "Style check"
+           test_suite: 'compile com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Cache local Maven repository
+        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+        with:
+          path: ~/.m2/repository
+          key: build-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            build-${{ runner.os }}-maven-
+      - name: Set up JDK
+        uses: actions/setup-java@387ac29b308b003ca37ba93a6cab5eb57c8f5f93 # v4.0.0
+        with:
+          java-version: 17
+          distribution: 'temurin'
+      - name: install dependencies
+        run: mvn install -DskipTests=true
+      - run: mvn $TEST_SUITE -B
+        id: tests
+        env:
+          TEST_SUITE: ${{ matrix.test_suite }}

@@ -9,7 +9,7 @@ For keeping track of the history it is recommended that most communication is pe
 ### Prerequisites
 
 * Maven
-* JDK11
+* JDK17
 * Docker (for test setup)
 * Python
 
@@ -38,7 +38,6 @@ If you encounter a PMD rule that seems odd or non-relevant feel free to discuss 
 #### Built with
 
 * [Maven](https://maven.apache.org) - Dependency and build management
-* [docker-maven-plugin](https://github.com/fabric8io/docker-maven-plugin) - For integration tests
 
 ### REST API
 
