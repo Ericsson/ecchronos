@@ -18,7 +18,7 @@ import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
-import com.ericsson.bss.cassandra.ecchronos.core.AbstractCassandraTest;
+import com.ericsson.bss.cassandra.ecchronos.core.AbstractCassandraContainerTest;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
@@ -55,7 +55,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @NotThreadSafe
-public class TestRepairHistoryProviderImpl extends AbstractCassandraTest
+public class TestRepairHistoryProviderImpl extends AbstractCassandraContainerTest
 {
     private static final String KEYSPACE = "keyspace";
     private static final String TABLE = "table";

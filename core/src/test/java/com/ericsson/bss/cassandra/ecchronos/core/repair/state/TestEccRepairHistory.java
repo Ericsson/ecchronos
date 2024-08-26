@@ -18,7 +18,7 @@ import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
-import com.ericsson.bss.cassandra.ecchronos.core.AbstractCassandraTest;
+import com.ericsson.bss.cassandra.ecchronos.core.AbstractCassandraContainerTest;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
@@ -51,7 +51,7 @@ import static org.mockito.Mockito.when;
 
 @NotThreadSafe
 @RunWith(Parameterized.class)
-public class TestEccRepairHistory extends AbstractCassandraTest
+public class TestEccRepairHistory extends AbstractCassandraContainerTest
 {
     private static final String COLUMN_TABLE_ID = "table_id";
     private static final String COLUMN_NODE_ID = "node_id";
