@@ -56,6 +56,7 @@
     <properties>
         <bundle.symbolicName>${project.groupId}.${project.artifactId}</bundle.symbolicName>
         <bundle.namespace>${project.groupId}.${project.artifactId}</bundle.namespace>
+        <java.version>11</java.version>
 
         <!-- Dependency versions -->
         <io.netty.version>4.1.94.Final</io.netty.version>
@@ -633,8 +634,8 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${org.apache.maven.plugins.maven-compiler-plugin.version}</version>
                     <configuration>
-                        <source>17</source>
-                        <target>17</target>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
                     </configuration>
                 </plugin>
 
