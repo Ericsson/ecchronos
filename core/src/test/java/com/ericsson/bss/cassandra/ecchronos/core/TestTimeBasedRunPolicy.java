@@ -28,8 +28,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.time.Clock;
-import java.time.Duration;
 import java.time.*;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,7 +41,7 @@ import static org.mockito.Mockito.*;
 
 @NotThreadSafe
 @RunWith(Parameterized.class)
-public class TestTimeBasedRunPolicy extends AbstractCassandraTest
+public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
 {
     @Parameterized.Parameters
     public static Collection<String> keyspaceNames() {

@@ -23,6 +23,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,8 +36,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import javax.management.AttributeNotFoundException;
+import javax.management.InstanceNotFoundException;
+import javax.management.MBeanException;
+import javax.management.MalformedObjectNameException;
+import javax.management.ReflectionException;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import com.datastax.oss.driver.api.core.AllNodesFailedException;
@@ -53,8 +61,6 @@ import com.datastax.oss.driver.api.core.metrics.Metrics;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.internal.core.context.InternalDriverContext;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
-import org.apache.cassandra.db.Keyspace;
-import org.apache.cassandra.metrics.TableMetrics;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -69,7 +75,7 @@ import org.junit.runners.Parameterized;
 
 @NotThreadSafe
 @RunWith(Parameterized.class)
-public class TestCASLockFactory extends AbstractCassandraTest
+public class TestCASLockFactory extends AbstractCassandraContainerTest
 {
     @Parameterized.Parameters
     public static Collection<String> keyspaceNames() {
@@ -175,8 +181,8 @@ public class TestCASLockFactory extends AbstractCassandraTest
         assertThat(myLockFactory.getCachedFailure(null, "lock")).isNotEmpty();
     }
 
-    @Test(timeout = 1000)
-    public void testGlobalLockTakenIsCachedOnSecondTry() throws InterruptedException
+    @Test
+    public void testGlobalLockTakenIsCachedOnSecondTry() throws AttributeNotFoundException, InstanceNotFoundException, MalformedObjectNameException, MBeanException, ReflectionException, UnsupportedOperationException, IOException, InterruptedException
     {
         execute(myLockStatement.bind("lock", UUID.randomUUID(), new HashMap<>()));
         InternalDriverContext driverContext = (InternalDriverContext) mySession.getContext();
@@ -186,9 +192,9 @@ public class TestCASLockFactory extends AbstractCassandraTest
         {
             Thread.sleep(100);
         }
-        long expectedLockReadCount = getReadCount(TABLE_LOCK) + 1; // We do a read due to CAS
-        long expectedLockWriteCount = getWriteCount(TABLE_LOCK); // No writes as the lock is already held
-        long expectedLockPriorityReadCount = getReadCount(TABLE_LOCK_PRIORITY) + 1; // We read the priorities
+        long expectedLockReadCount = getReadCount(TABLE_LOCK) + 2; // We do a read due to CAS and execCommandOnContainer
+        long expectedLockWriteCount = getWriteCount(TABLE_LOCK) + 1; // No writes as the lock is already held
+        long expectedLockPriorityReadCount = getReadCount(TABLE_LOCK_PRIORITY) + 2; // We read the priorities
         long expectedLockPriorityWriteCount = getWriteCount(TABLE_LOCK_PRIORITY) + 1; // We update our local priority once
 
         assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(null, "lock", 2, new HashMap<>()));
@@ -199,7 +205,6 @@ public class TestCASLockFactory extends AbstractCassandraTest
 
         assertThat(getReadCount(TABLE_LOCK)).isEqualTo(expectedLockReadCount);
         assertThat(getWriteCount(TABLE_LOCK)).isEqualTo(expectedLockWriteCount);
-
         assertPrioritiesInList("lock", 2);
         assertThat(myLockFactory.getCachedFailure(null, "lock")).isNotEmpty();
     }
@@ -538,17 +543,44 @@ public class TestCASLockFactory extends AbstractCassandraTest
         return mySession.execute(statement);
     }
 
-    private long getReadCount(String tableName)
+    private long getReadCount(String tableName) throws AttributeNotFoundException, InstanceNotFoundException, MBeanException, ReflectionException, IOException, MalformedObjectNameException, UnsupportedOperationException, InterruptedException
     {
-        TableMetrics tableMetrics = Keyspace.open(myKeyspaceName).getColumnFamilyStore(tableName).metric;
-
-        return tableMetrics.readLatency.latency.getCount();
+        return getReadCountFromTableStats(tableName);
     }
 
-    private long getWriteCount(String tableName)
+    private long getWriteCount(String tableName) throws AttributeNotFoundException, InstanceNotFoundException, MBeanException, ReflectionException, IOException, MalformedObjectNameException, UnsupportedOperationException, InterruptedException
     {
-        TableMetrics tableMetrics = Keyspace.open(myKeyspaceName).getColumnFamilyStore(tableName).metric;
-
-        return tableMetrics.writeLatency.latency.getCount();
+        return getWriteCountFromTableStats(tableName);
     }
+
+    private long getReadCountFromTableStats(String tableName) throws UnsupportedOperationException, IOException, InterruptedException
+    {
+        String tableStatsOutput = getContainerNode().execInContainer("nodetool", "tablestats", myKeyspaceName + "." + tableName).getStdout();
+        long readCount = 0;
+        Pattern readCountPattern = Pattern.compile("Read Count:\\s+(\\d+)");
+        Matcher readCountMatcher = readCountPattern.matcher(tableStatsOutput);
+
+        if (readCountMatcher.find())
+        {
+            readCount = Long.parseLong(readCountMatcher.group(1));
+        }
+
+        return readCount;
+    }
+
+    private long getWriteCountFromTableStats(String tableName) throws UnsupportedOperationException, IOException, InterruptedException
+    {
+        String tableStatsOutput = getContainerNode().execInContainer("nodetool", "tablestats", myKeyspaceName + "." + tableName).getStdout();
+        long writeCount = 0;
+        Pattern writeCountPattern = Pattern.compile("Write Count:\\s+(\\d+)");
+        Matcher writeCountMatcher = writeCountPattern.matcher(tableStatsOutput);
+
+        if (writeCountMatcher.find())
+        {
+            writeCount = Long.parseLong(writeCountMatcher.group(1));
+        }
+
+        return writeCount;
+    }
+
 }

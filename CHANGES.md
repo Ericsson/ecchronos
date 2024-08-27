@@ -1,6 +1,7 @@
 # Changes
 ## Version 5.0.5
 
+* Deprecate cassandra-all to use testContainers instead - Issue #701
 * Updata Mockito and JUnit versions - Issue #687
 * Metric status logger for troubleshooting - Issue #397
 
