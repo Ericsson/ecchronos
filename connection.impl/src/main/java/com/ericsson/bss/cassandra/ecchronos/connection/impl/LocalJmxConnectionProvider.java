@@ -123,9 +123,8 @@ public class LocalJmxConnectionProvider implements JmxConnectionProvider
         boolean authEnabled = credentials != null;
         boolean tlsEnabled = !tls.isEmpty();
 
-        LOG.debug("Connecting JMX through {}, credentials: {}, tls: {}", jmxUrl, authEnabled, tlsEnabled);
         JMXConnector jmxConnector = JMXConnectorFactory.connect(jmxUrl, env);
-        LOG.debug("Connected JMX for {}", jmxUrl);
+        LOG.debug("Connected JMX for {}, credentials: {}, tls: {}", jmxUrl, authEnabled, tlsEnabled);
 
         switchJmxConnection(jmxConnector);
     }

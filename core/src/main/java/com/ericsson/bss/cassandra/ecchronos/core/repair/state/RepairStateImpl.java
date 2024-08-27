@@ -202,17 +202,15 @@ public class RepairStateImpl implements RepairState
         return repairedAt;
     }
 
+    @SuppressWarnings("PMD.GuardLogStatement")
     private long newTableRepairedAt()
     {
         long runIntervalInMs = myRepairConfiguration.getRepairIntervalInMs();
         long initialDelayInMs = myRepairConfiguration.getInitialDelayInMs();
         long assumedRepairedAt = System.currentTimeMillis() - runIntervalInMs + initialDelayInMs;
-        if (LOG.isInfoEnabled())
-        {
-            LOG.info("Assuming the table {} is new. Next repair will occur at {}.",
-                    myTableReference,
-                    MY_DATE_FORMAT.get().format(new Date(assumedRepairedAt + runIntervalInMs)));
-        }
+        LOG.info("Assuming the table {} is new. Next repair will occur at {}.",
+                myTableReference,
+                MY_DATE_FORMAT.get().format(new Date(assumedRepairedAt + runIntervalInMs)));
         return assumedRepairedAt;
     }
 
@@ -222,7 +220,7 @@ public class RepairStateImpl implements RepairState
         {
             if (!myHostStates.isUp(node))
             {
-                LOG.trace("{} not repairable, host {} is not up", vnodeRepairState, node);
+                LOG.trace("{} not repairable, host {} is NOT UP", vnodeRepairState, node);
                 return false;
             }
         }

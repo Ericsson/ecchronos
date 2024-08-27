@@ -193,7 +193,10 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
                         FORCE_TERMINATE_ALL_REPAIR_SESSIONS_METHOD,
                         null, null);
             }
-            catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
+            catch (InstanceNotFoundException
+                   | MBeanException
+                   | ReflectionException
+                   | IOException e)
             {
                 LOG.error("Unable to terminate repair sessions");
             }
@@ -214,7 +217,9 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
                 myJmxConnector.removeConnectionNotificationListener(listener);
                 myMbeanServerConnection.removeNotificationListener(myStorageServiceObject, listener);
             }
-            catch (InstanceNotFoundException | ListenerNotFoundException | IOException e)
+            catch (InstanceNotFoundException
+                   | ListenerNotFoundException
+                   | IOException e)
             {
                 LOG.error("Unable to remove StorageService listener", e);
             }
@@ -232,8 +237,7 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
         {
             try
             {
-                ObjectName objectName
-                        = new ObjectName(String
+                ObjectName objectName = new ObjectName(String
                         .format("org.apache.cassandra.metrics:type=Table,keyspace=%s,scope=%s,name=LiveDiskSpaceUsed",
                                 tableReference.getKeyspace(), tableReference.getTable()));
 
@@ -277,7 +281,10 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
                     return maxRepaired;
                 }
             }
-            catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
+            catch (InstanceNotFoundException
+                   | MBeanException
+                   | ReflectionException
+                   | IOException e)
             {
                 LOG.error("Unable to get maxRepaired for {}", tableReference, e);
             }
@@ -289,8 +296,7 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
         {
             try
             {
-                ObjectName objectName
-                        = new ObjectName(String
+                ObjectName objectName = new ObjectName(String
                         .format("org.apache.cassandra.metrics:type=Table,keyspace=%s,scope=%s,name=PercentRepaired",
                                 tableReference.getKeyspace(), tableReference.getTable()));
 
@@ -317,10 +323,10 @@ public class JmxProxyFactoryImpl implements JmxProxyFactory
                 return (String) myMbeanServerConnection.getAttribute(myStorageServiceObject, "OperationMode");
             }
             catch (InstanceNotFoundException
-                    | AttributeNotFoundException
-                    | MBeanException
-                    | ReflectionException
-                    | IOException e)
+                   | AttributeNotFoundException
+                   | MBeanException
+                   | ReflectionException
+                   | IOException e)
             {
                 LOG.error("Unable to retrieve node status {}", e.getMessage());
                 return "Unknown";

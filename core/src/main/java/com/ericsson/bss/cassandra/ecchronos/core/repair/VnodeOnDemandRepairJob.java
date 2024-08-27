@@ -157,13 +157,13 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         if (myTasks.isEmpty())
         {
             getOngoingJob().finishJob();
-            LOG.info("Completed On Demand Repair: {}", id);
+            LOG.info("Completed on demand repair: {}", id);
         }
 
         if (hasFailed())
         {
             getOngoingJob().failJob();
-            LOG.error("Failed On Demand Repair: {}", id);
+            LOG.error("Failed on demand repair: {}", id);
         }
         super.finishJob();
     }
@@ -178,7 +178,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         }
         if (getOngoingJob().hasTopologyChanged())
         {
-            LOG.error("Repair job with id {} failed, token Ranges have changed since repair has was triggered",
+            LOG.error("Repair job with id {} failed. Token ranges have changed since repair has was triggered",
                     getId());
             setFailed(true);
             return ScheduledJob.State.FAILED;

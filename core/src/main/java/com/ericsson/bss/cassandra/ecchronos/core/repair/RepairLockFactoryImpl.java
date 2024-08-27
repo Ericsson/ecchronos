@@ -78,7 +78,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
             {
                 LockException e = cachedException.get();
                 LOG.debug("Found cached locking failure for {}, rethrowing", repairResource, e);
-                throw cachedException.get();
+                throw e;
             }
         }
     }
@@ -139,7 +139,10 @@ public class RepairLockFactoryImpl implements RepairLockFactory
         }
         catch (LockException e)
         {
-            LOG.debug("Lock ({} in datacenter {}) got error {}", resource, dataCenter, e.getMessage());
+            LOG.debug("Lock ({} in datacenter {}) got error {}",
+                    resource,
+                    dataCenter,
+                    e.getMessage());
             throw e;
         }
     }

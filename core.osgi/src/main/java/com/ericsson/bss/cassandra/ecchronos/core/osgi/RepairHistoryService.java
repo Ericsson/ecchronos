@@ -91,8 +91,9 @@ public class RepairHistoryService implements RepairHistory, RepairHistoryProvide
         Optional<DriverNode> localNode = nodeResolver.fromUUID(node.getHostId());
         if (!localNode.isPresent())
         {
-            LOG.error("Local node ({}) not found in resolver", node.getHostId());
-            throw new IllegalStateException("Local node (" + node.getHostId() + ") not found in resolver");
+            String msg = String.format("Local node (%s) not found in resolver", node.getHostId());
+            LOG.error(msg);
+            throw new IllegalStateException(msg);
         }
 
         long lookbackTimeInMillis = configuration.lookbackTimeSeconds() * ONE_SECOND_MILLIS;

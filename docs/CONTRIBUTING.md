@@ -24,8 +24,34 @@ New features should, in general, be added to the master branch.
 This project uses the cassandra code style which is based on Sun’s Java coding conventions.
 Formatting rules for eclipse can be found [here](../code_style.xml).
 
-Provided patches should be contained and should not modify code outside of the scope of the patch.
+Provided patches should be contained and should not modify code outside the scope of the patch.
 This will make it quicker to perform reviews and merging the pull requests.
+
+### Logging
+
+The table below describe the main criteria(s) for each debugging level. The levels are in the order of (from most to least):
+<br>
+<pre>
+  all > trace > debug > info > warn > error > off
+</pre>
+
+| Log&nbsp;level | Description                                                                                                                                                                                                                                                                                                                                          |
+|----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| all            | All levels will be logged <br> <b>Example:</b> -                                                                                                                                                                                                                                                                                                     |
+| trace          | Detailed debugging (flows, request/response, details, etc). Will have a performance impact and is therefore not for production, unless it is a planned troubleshooting activity. Mainly used during development. <br>  <b>Example:</b> Every method call is logged in detail for a certain request and response flow. Used data is logged in detail. |
+| debug          | Simple debug logging which can be turned on and used in production if necessary (should have no impact on performance). The logs at this level should be of the type a developer might need to spot a quick fix to a problem or to at least isolate the problem further. <br> <b>Example:</b> Specific events with contextual details.               |
+| info           | For logging the normal flow and operation of the service(s). <br> <b>Example:</b> Service health, progress of requests/responses etc.                                                                                                                                                                                                                |
+| warn           | Behaviors in the service(s) which are unexpected and potentially could lead to errors, but were handled for the moment. However, the service(s) as such are still working normally and as expected. <br> <b>Example:</b> A primary service switching to a secondary one, connection retries, reverting to defaults etc.                              |
+| error          | A service or dependency have failed in the sense no requests can be served and/or data processed cannot be trusted. <br> <b>Example:</b> Connection attempts that ultimate fail. Crucial resources not available.                                                                                                                                    |
+| off            | No levels will be logged at all. <br> <b>Example:</b> -                                                                                                                                                                                                                                                                                              |                                                                                                                                                                                                                                                |
+
+If the log message may require lengthy calculations, method calls to collect data or concatenations, use an <i>is...Enabled</i> block to guard it. An example would be:
+<pre>
+  if (LOG.isDebugEnabled())
+  {
+    LOG.debug("Environment status: {}", <b>getSyncEnvironmentStatus()</b>);
+  }
+</pre>
 
 ### Builds
 

@@ -124,7 +124,7 @@ public class RepairGroup extends ScheduledTask
                 successful = false;
                 if (e.getCause() instanceof InterruptedException)
                 {
-                    LOG.info("{} thread was interrupted", this);
+                    LOG.warn("{} thread was interrupted", this);
                     break;
                 }
             }

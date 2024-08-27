@@ -9,7 +9,7 @@ The first step to troubleshooting an ecChronos issue is to use error messages, m
 
 ## Client Logs and Errors
 
-During repair operations in a cassandra instance, triggered by ecChronos, it can return erros logs, like below:
+During repair operations in a cassandra instance, triggered by ecChronos, it can return error logs, like below:
 
 |Error                                                                   | Possible cause                                                                                     |
 |------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
@@ -18,6 +18,19 @@ During repair operations in a cassandra instance, triggered by ecChronos, it can
 |"Unable to get maxRepaired for {<table_reference>}"                     | Cassandra Node Overloaded, Instance Not Found, Table does not Exists Anymore, etc.                 |
 
 *Furthermore, one common problem is when repair is taking too much time or is overdue. This can be caused by too many vnodes, nodes going down while holding a lock and Cassandra nodes being down.*
+
+## Logging
+
+By default the configured logging level is set to INFO. If needed though, DEBUG can be set by configuring it in [logback.xml](../ecchronos-binary/src/resources/logback.xml).
+
+Change the level to the following (and then restart ecChronos):
+
+```
+<root level="DEBUG">
+    <appender-ref ref="STDOUT" />
+    <appender-ref ref="FILE_DEBUG" />
+</root>
+```
 
 ## Metrics
 

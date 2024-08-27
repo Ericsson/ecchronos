@@ -168,7 +168,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
             }
             catch (Exception e)
             {
-                LOG.error("Unexpected error during schedule change of {}:", tableReference, e);
+                LOG.error("Unexpected error during schedule change of {}", tableReference, e);
             }
         }
     }
@@ -230,7 +230,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
             }
             catch (Exception e)
             {
-                LOG.error("Unexpected error during schedule removal of {}:", tableReference, e);
+                LOG.error("Unexpected error during schedule removal of {}", tableReference, e);
             }
         }
     }

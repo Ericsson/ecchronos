@@ -361,14 +361,11 @@ public final class EccRepairHistory implements RepairHistory, RepairHistoryProvi
                 catch (ExecutionException | TimeoutException e)
                 {
                     UUID participant = entry.getKey();
+                    LOG.warn("Unable to update repair history for {} - {}, retrying", participant, this);
                     if (!loggedException)
                     {
-                        LOG.warn("Unable to update repair history for {} - {}, retrying", participant, this, e);
+                        LOG.warn("", e);
                         loggedException = true;
-                    }
-                    else
-                    {
-                        LOG.warn("Unable to update repair history for {} - {}, retrying", participant, this);
                     }
                     insertFunction.apply(participant);
                 }

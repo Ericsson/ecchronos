@@ -70,7 +70,8 @@ public class CassandraMetrics implements Closeable
         }
         catch (IOException e)
         {
-            THROTTLED_LOGGER.warn("Unable to fetch metrics from Cassandra, future metrics might contain stale values",
+            THROTTLED_LOGGER.warn(
+                    "Unable to fetch metrics from Cassandra, future metrics might contain stale values",
                     e);
             throw e;
         }

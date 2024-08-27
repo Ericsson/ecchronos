@@ -88,7 +88,8 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         }
         catch (Exception e)
         {
-            LOG.info("Failed to get ongoing ondemand jobs: {}, automatic retry in {}s", e.getMessage(),
+            LOG.warn("Failed to get ongoing on demand jobs: {}, automatic retry in {}s",
+                    e.getMessage(),
                     ONGOING_JOBS_PERIOD_SECONDS);
         }
     }

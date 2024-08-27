@@ -311,33 +311,33 @@ public final class CASLockFactory implements LockFactory, Closeable
     private void verifySchemasExists()
     {
         Optional<KeyspaceMetadata> keyspaceMetadata = myCasLockProperties
-            .getSession().getMetadata()
+                .getSession().getMetadata()
                 .getKeyspace(myCasLockProperties.getKeyspaceName());
+
         if (!keyspaceMetadata.isPresent())
         {
-            LOG.error("Keyspace {} does not exist, it needs to be created",
-                myCasLockProperties.getKeyspaceName());
-            throw new IllegalStateException(
-                    String.format("Keyspace %s does not exist, it needs to be created",
-                        myCasLockProperties.getKeyspaceName()));
+            String msg = String.format("Keyspace %s does not exist, it needs to be created",
+                    myCasLockProperties.getKeyspaceName());
+            LOG.error(msg);
+            throw new IllegalStateException(msg);
         }
 
         if (!keyspaceMetadata.get().getTable(TABLE_LOCK).isPresent())
         {
-            LOG.error("Table {}.{} does not exist, it needs to be created",
-                myCasLockProperties.getKeyspaceName(), TABLE_LOCK);
-            throw new IllegalStateException(
-                    String.format("Table %s.%s does not exist, it needs to be created",
-                        myCasLockProperties.getKeyspaceName(), TABLE_LOCK));
+            String msg = String.format("Table %s.%s does not exist, it needs to be created",
+                    myCasLockProperties.getKeyspaceName(),
+                    TABLE_LOCK);
+            LOG.error(msg);
+            throw new IllegalStateException(msg);
         }
 
         if (!keyspaceMetadata.get().getTable(TABLE_LOCK_PRIORITY).isPresent())
         {
-            LOG.error("Table {}.{} does not exist, it needs to be created",
-                        myCasLockProperties.getKeyspaceName(), TABLE_LOCK_PRIORITY);
-            throw new IllegalStateException(
-                    String.format("Table %s.%s does not exist, it needs to be created",
-                        myCasLockProperties.getKeyspaceName(), TABLE_LOCK_PRIORITY));
+            String msg = String.format("Table %s.%s does not exist, it needs to be created",
+                    myCasLockProperties.getKeyspaceName(),
+                    TABLE_LOCK_PRIORITY);
+            LOG.error(msg);
+            throw new IllegalStateException(msg);
         }
     }
 

@@ -115,12 +115,12 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
         if (myTasks.isEmpty())
         {
             getOngoingJob().finishJob();
-            LOG.info("Completed Incremental On Demand Repair: {}", id);
+            LOG.info("Completed incremental on demand repair: {}", id);
         }
         if (hasFailed())
         {
             getOngoingJob().failJob();
-            LOG.error("Failed Incremental On Demand Repair: {}", id);
+            LOG.error("Failed incremental on demand repair: {}", id);
         }
         super.finishJob();
     }

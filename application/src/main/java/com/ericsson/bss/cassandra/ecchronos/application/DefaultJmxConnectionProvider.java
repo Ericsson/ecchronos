@@ -46,7 +46,10 @@ public class DefaultJmxConnectionProvider implements JmxConnectionProvider
         int port = jmxConfig.getPort();
         boolean authEnabled = jmxSecurity.get().getJmxCredentials().isEnabled();
         boolean tlsEnabled = jmxSecurity.get().getJmxTlsConfig().isEnabled();
-        LOG.info("Connecting through JMX using {}:{}, authentication: {}, tls: {}", host, port, authEnabled,
+        LOG.info("Connecting through JMX using {}:{}, authentication: {}, tls: {}",
+                host,
+                port,
+                authEnabled,
                 tlsEnabled);
 
         Supplier<String[]> credentials = () -> convertCredentials(jmxSecurity);
