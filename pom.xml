@@ -56,7 +56,6 @@
     <properties>
         <bundle.symbolicName>${project.groupId}.${project.artifactId}</bundle.symbolicName>
         <bundle.namespace>${project.groupId}.${project.artifactId}</bundle.namespace>
-        <datastax.driver.extra_config_options>jamm.use_static_fields=true</datastax.driver.extra_config_options>
 
         <!-- Dependency versions -->
         <io.netty.version>4.1.94.Final</io.netty.version>

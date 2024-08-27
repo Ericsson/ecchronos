@@ -27,10 +27,6 @@
     <description>Core package for scheduling and repairs</description>
     <name>EcChronos Core</name>
 
-    <properties>
-        <datastax.driver.extra_config_options>jamm.use_static_fields=true</datastax.driver.extra_config_options>
-    </properties>
-
     <dependencies>
         <!-- Internal -->
         <dependency>
