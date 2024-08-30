@@ -17,7 +17,10 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.google.common.collect.Sets;
+
+import org.junit.Before;
 import org.junit.Test;
+import org.mockito.MockitoAnnotations;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -39,6 +42,11 @@ public class TestFullyRepairedRepairEntryPredicate
     private static final String STARTED = "STARTED";
     private static final String FAILED = "FAILED";
     private static final String SUCCESS = "SUCCESS";
+
+    @Before
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
 
     @Test
     public void testAcceptUnknown() throws UnknownHostException
@@ -68,7 +76,7 @@ public class TestFullyRepairedRepairEntryPredicate
     public void testAcceptSuccessMultipleRanges() throws UnknownHostException
     {
         List<LongTokenRange> expectedRepairedTokenRanges = new ArrayList<>();
-        Set<InetAddress> expectedRepairedNodeAddresses = Sets.newHashSet(InetAddress.getLocalHost());
+        Set<InetAddressWrapper> expectedRepairedNodeAddresses = Sets.newHashSet(new InetAddressWrapper(InetAddress.getLocalHost()));
         Set<DriverNode> expectedRepairedNodes = expectedRepairedNodeAddresses.stream().map(this::mockNode).collect(Collectors.toSet());
 
         Map<LongTokenRange, Collection<DriverNode>> tokenToNodeMap = new HashMap<>();
@@ -90,11 +98,12 @@ public class TestFullyRepairedRepairEntryPredicate
     public void testAcceptPartialSuccess() throws UnknownHostException
     {
         LongTokenRange expectedRepairedTokenRange = new LongTokenRange(0, 1);
-        DriverNode repairedNode = mockNode(InetAddress.getLocalHost());
+        InetAddressWrapper addressWrapper = new InetAddressWrapper(InetAddress.getLocalHost());
+        DriverNode repairedNode = mockNode(addressWrapper);
         Set<DriverNode> repairedNodes = Sets.newHashSet(repairedNode);
         Set<DriverNode> allNodes = new HashSet<>();
         allNodes.add(repairedNode);
-        allNodes.add(mockNode(mock(InetAddress.class)));
+        allNodes.add(mockNode(mock(InetAddressWrapper.class)));
 
         Map<LongTokenRange, Collection<DriverNode>> tokenToNodeMap = new HashMap<>();
         tokenToNodeMap.put(expectedRepairedTokenRange, allNodes);
@@ -107,7 +116,7 @@ public class TestFullyRepairedRepairEntryPredicate
     {
         LongTokenRange repairedTokenRange = new LongTokenRange(0, 1);
         LongTokenRange actualTokenRange = new LongTokenRange(0, 2);
-        Set<InetAddress> expectedRepairedNodeAddresses = Sets.newHashSet(InetAddress.getLocalHost());
+        Set<InetAddressWrapper> expectedRepairedNodeAddresses = Sets.newHashSet(new InetAddressWrapper(InetAddress.getLocalHost()));
         Set<DriverNode> expectedRepairedNodes = expectedRepairedNodeAddresses.stream().map(this::mockNode).collect(Collectors.toSet());
 
         Map<LongTokenRange, Collection<DriverNode>> tokenToNodeMap = new HashMap<>();
@@ -119,7 +128,7 @@ public class TestFullyRepairedRepairEntryPredicate
     private boolean applyWith(String status) throws UnknownHostException
     {
         LongTokenRange expectedRepairedTokenRange = new LongTokenRange(0, 1);
-        Set<InetAddress> expectedRepairedNodeAddresses = Sets.newHashSet(InetAddress.getLocalHost());
+        Set<InetAddressWrapper> expectedRepairedNodeAddresses = Sets.newHashSet(new InetAddressWrapper(InetAddress.getLocalHost()));
         Set<DriverNode> expectedRepairedNodes = expectedRepairedNodeAddresses.stream().map(this::mockNode).collect(Collectors.toSet());
 
         Map<LongTokenRange, Collection<DriverNode>> tokenToNodeMap = new HashMap<>();
@@ -136,12 +145,30 @@ public class TestFullyRepairedRepairEntryPredicate
         return fullyRepairedRepairEntryPredicate.apply(repairEntry);
     }
 
-    private DriverNode mockNode(InetAddress inetAddress)
+    private DriverNode mockNode(InetAddressWrapper inetAddressWrapper)
     {
         DriverNode node = mock(DriverNode.class);
+
+        InetAddress inetAddress = inetAddressWrapper.getInetAddress();
 
         when(node.getPublicAddress()).thenReturn(inetAddress);
 
         return node;
     }
+
+    private class InetAddressWrapper
+    {
+        private final InetAddress inetAddress;
+
+        public InetAddressWrapper(InetAddress inetAddress)
+        {
+            this.inetAddress = inetAddress;
+        }
+
+        public InetAddress getInetAddress()
+        {
+            return inetAddress;
+        }
+    }
+
 }

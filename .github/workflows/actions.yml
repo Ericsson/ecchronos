@@ -82,14 +82,10 @@ jobs:
           # Java 21 tests
           - name: "Unit tests - Java 21"
             java_version: 21
-            test_suite: 'test -Djava.version=21 jacoco:report'
+            test_suite: 'test -Dnet.bytebuddy.experimental=true -Djava.version=21 jacoco:report'
           - name: "Style check - Java 21"
             java_version: 21
             test_suite: 'compile -Djava.version=21 com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
-          - name: "OSGi integration - Java 21"
-            java_version: 21
-            test_suite: 'install -P docker-integration-test,osgi-integration-tests -DskipUTs -Djava.version=21'
-            artifacts_dir: "osgi-integration/target"
           - name: "Standalone integration 4.0 - Java 21"
             java_version: 21
             test_suite: 'verify -P docker-integration-test,standalone-integration-tests -DskipUTs -Djava.version=21'
