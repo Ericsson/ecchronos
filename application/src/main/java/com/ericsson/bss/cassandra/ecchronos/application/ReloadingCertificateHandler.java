@@ -117,8 +117,13 @@ public class ReloadingCertificateHandler implements CertificateHandler
                 tlsConfig = myCqlTLSConfigSupplier.get();
             }
         }
-        catch (NoSuchAlgorithmException | IOException | UnrecoverableKeyException | CertificateException
-                | KeyStoreException | KeyManagementException e)
+        catch (NoSuchAlgorithmException
+               | IOException
+               | UnrecoverableKeyException
+               | CertificateException
+               | KeyStoreException
+               | KeyManagementException
+                e)
         {
             LOG.warn("Unable to create new SSL Context after configuration changed. Trying with the old one", e);
         }

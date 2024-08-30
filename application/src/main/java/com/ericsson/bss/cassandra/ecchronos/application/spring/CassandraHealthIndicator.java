@@ -72,7 +72,7 @@ public class CassandraHealthIndicator implements HealthIndicator
         }
         catch (Exception e)
         {
-            LOG.debug("Unable to connect over JMX", e);
+            LOG.error("Unable to connect over JMX", e);
             details.put("JMX connection error:", e.getMessage());
         }
         return false;
@@ -92,7 +92,7 @@ public class CassandraHealthIndicator implements HealthIndicator
         }
         catch (Exception e)
         {
-            LOG.debug("Unable to connect over CQL", e);
+            LOG.error("Unable to connect over CQL", e);
             details.put("CQL connection error:", e.getMessage());
         }
         return false;

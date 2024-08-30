@@ -195,7 +195,9 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
 
             InitialContact initialContact = resolveInitialContact(contactEndPoint, builder);
 
-            LOG.debug("Connecting to {}({}), local data center: {}", contactEndPoint, initialContact.getHostId(),
+            LOG.debug("Connecting to {} ({}), local data center: {}",
+                    contactEndPoint,
+                    initialContact.getHostId(),
                     initialContact.getDataCenter());
 
             CqlSessionBuilder sessionBuilder = fromBuilder(builder);

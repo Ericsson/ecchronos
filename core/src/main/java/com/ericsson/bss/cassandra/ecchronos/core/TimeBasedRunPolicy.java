@@ -203,17 +203,18 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
             Optional<KeyspaceMetadata> keyspaceMetadata = mySession.getMetadata().getKeyspace(myKeyspaceName);
             if (!keyspaceMetadata.isPresent())
             {
-                LOG.error("Keyspace {} does not exist, it needs to be created", myKeyspaceName);
-                throw new IllegalStateException("Keyspace " + myKeyspaceName
-                        + " does not exist, it needs to be created");
+                String msg = String.format("Keyspace %s does not exist, it needs to be created", myKeyspaceName);
+                LOG.error(msg);
+                throw new IllegalStateException(msg);
             }
 
             if (!keyspaceMetadata.get().getTable(TABLE_REJECT_CONFIGURATION).isPresent())
             {
-                LOG.error("Table {}.{} does not exist, it needs to be created",
-                        myKeyspaceName, TABLE_REJECT_CONFIGURATION);
-                throw new IllegalStateException("Table " + myKeyspaceName + "."
-                        + TABLE_REJECT_CONFIGURATION + " does not exist, it needs to be created");
+                String msg = String.format("Table %s.%s does not exist, it needs to be created",
+                        myKeyspaceName,
+                        TABLE_REJECT_CONFIGURATION);
+                LOG.error(msg);
+                throw new IllegalStateException(msg);
             }
         }
     }
@@ -338,7 +339,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         }
         catch (Exception e)
         {
-            LOG.error("Unable to parse/fetch rejection time for {}", tableReference, e);
+            LOG.warn("Unable to parse/fetch rejection time for {}", tableReference, e);
             rejectTime = DEFAULT_REJECT_TIME;
         }
 

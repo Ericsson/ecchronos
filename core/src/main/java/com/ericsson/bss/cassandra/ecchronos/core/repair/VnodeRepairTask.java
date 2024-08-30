@@ -132,7 +132,10 @@ public class VnodeRepairTask extends RepairTask
         if (repairSession == null)
         {
             LOG.error("{}: Finished range {} - but not included in the known repair sessions {}, all ranges are {}",
-                    this, range, myRepairSessions.keySet(), myTokenRanges);
+                    this,
+                    range,
+                    myRepairSessions.keySet(),
+                    myTokenRanges);
         }
         else
         {

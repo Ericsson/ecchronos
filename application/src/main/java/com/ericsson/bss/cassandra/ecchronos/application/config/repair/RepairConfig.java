@@ -153,7 +153,10 @@ public class RepairConfig
         if (repairIntervalSeconds < initialDelaySeconds)
         {
             LOG.warn("{} repair interval ({}s) is shorter than initial delay ({}s). Will use {}s as initial delay.",
-                    repairConfigType, repairIntervalSeconds, initialDelaySeconds, repairIntervalSeconds);
+                    repairConfigType,
+                    repairIntervalSeconds,
+                    initialDelaySeconds,
+                    repairIntervalSeconds);
             myInitialDelay = new Interval(myRepairInterval.getTime(), myRepairInterval.getUnit());
         }
 

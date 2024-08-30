@@ -148,7 +148,8 @@ class CASLock implements DistributedLock, Runnable
             else
             {
                 LOG.debug("Locally highest priority ({}) is higher than current ({}), will not remove",
-                        myLocallyHighestPriority, myPriority);
+                        myLocallyHighestPriority,
+                        myPriority);
             }
         }
     }

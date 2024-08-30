@@ -55,7 +55,10 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
         Security.CqlSecurity cqlSecurity = cqlSecuritySupplier.get();
         boolean authEnabled = cqlSecurity.getCqlCredentials().isEnabled();
         boolean tlsEnabled = cqlSecurity.getCqlTlsConfig().isEnabled();
-        LOG.info("Connecting through CQL using {}:{}, authentication: {}, tls: {}", host, port, authEnabled,
+        LOG.info("Connecting through CQL using {}:{}, authentication: {}, tls: {}",
+                host,
+                port,
+                authEnabled,
                 tlsEnabled);
         AuthProvider authProvider = null;
         if (authEnabled)
@@ -151,11 +154,11 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
         {
             Thread.sleep(delay);
         }
-        catch (InterruptedException e1)
+        catch (InterruptedException ie)
         {
             LOG.error(
                 "InterruptedException caught during the delay time, while trying to reconnect to Cassandra. Reason: ",
-                e1);
+                ie);
         }
     }
 

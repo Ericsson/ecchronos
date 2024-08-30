@@ -53,7 +53,7 @@ public final class YamlToMarkdownConverter
         }
         catch (IOException e)
         {
-            LOG.error("Error converting Ecc YAML file to markdown file", e);
+            LOG.error("Error converting ecc YAML file to markdown file", e);
         }
     }
 

@@ -89,12 +89,14 @@ public class TokenSubRangeUtil
         if (subRangeSize.compareTo(totalRangeSize) != 0)
         {
             BigInteger difference = totalRangeSize.subtract(subRangeSize).abs();
-            String message = String.format(
-                    "Unexpected sub-range generation for %s. Difference of %s. Sub-ranges generated: %s",
-                    tokenRange, difference, subRanges);
+            String msg = String.format(
+                    "Unexpected sub-range generation for %s. Difference: %s. Sub-ranges generated: %s",
+                    tokenRange,
+                    difference,
+                    subRanges);
 
-            LOG.error(message);
-            throw new InternalException(message);
+            LOG.error(msg);
+            throw new InternalException(msg);
         }
     }
 
