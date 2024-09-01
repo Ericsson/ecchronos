@@ -24,9 +24,29 @@ They are running simple tests that sometimes utilize a single embedded Cassandra
 
 ### Docker tests
 
-The acceptance tests and integration tests use docker instances by default.
-The docker containers gets started when the `-P docker-integration-test` flag is used in maven.
-The docker command must be runnable without *sudo* for the user running the tests.
+The current test setup employs Testcontainers to create a simplified Cassandra instance for unit testing and a full Cassandra cluster for integration and manual tests. To conduct manual tests, you can utilize the template provided in the [cassandra-test-image](../cassandra-test-image/src/main/docker/docker-compose.yml). To set up the cluster, navigate to the directory containing the docker-compose.yml file and execute the following command:
+
+```bash
+docker-compose -f docker-compose.yml up --build
+```
+
+For integration tests, the system uses the [AbstractCassandraCluster](../cassandra-test-image/src/test/java/cassandracluster/AbstractCassandraCluster.java) class. This class can be imported into other modules by including the cassandra-test-image test package in the `pom.xml`, as follows:
+
+```xml
+<dependency>
+    <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
+    <artifactId>cassandra-test-image</artifactId>
+    <classifier>tests</classifier>
+    <version>${project.version}</version>
+    <scope>test</scope>
+</dependency>
+```
+
+Before executing tests in other modules, ensure that the cassandra-test-image JAR file has been generated. This can be done by running the following Maven command:
+
+```bash
+mvn package -Dbuild-cassandra-test-jar -DskipTests
+```
 
 ### Integration tests
 
