@@ -22,10 +22,13 @@ import java.nio.file.Paths;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.testcontainers.containers.DockerComposeContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AbstractCassandraCluster
 {
     private static DockerComposeContainer<?> composeContainer;
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractCassandraCluster.class);
     protected static String containerIP;
     protected static CqlSession mySession;
 
@@ -36,11 +39,10 @@ public class AbstractCassandraCluster
                 .toAbsolutePath()
                 .getParent()
                 .resolve("cassandra-test-image/src/main/docker/docker-compose.yml");
-        System.out.println("DockerComposePath que veio foi" + dockerComposePath.toFile());
         composeContainer = new DockerComposeContainer<>(dockerComposePath.toFile());
         composeContainer.start();
 
-        System.out.println("Waiting Cassandra Cluster finish to start");
+        LOG.info("Waiting for the Cassandra cluster to finish starting up.");
         Thread.sleep(50000);
 
         containerIP = composeContainer.getContainerByServiceName("cassandra-seed-dc1-rack1-node1").get()

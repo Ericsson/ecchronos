@@ -40,9 +40,9 @@ ecChronos is built to be continuously repairing data in the background. Each ecC
 
 ### Connection
 
-Once ecChronos establishes its initial connection with the `contactPoints`, it must register its control over the nodes based on the `type` property, whether JMX or CQL, to make it clear that a single instance will be responsible for managing multiple nodes. Then it would be possible to keep track of what was the last time that the EcChronos instances was able to connect with a node, also for others EcChronos instances keep track about each other's health.
+Once ecChronos establishes its initial connection with the `contactPoints`, it must register its control over the nodes based on the `type` property, whether JMX or CQL, to make it clear that a single instance will be responsible for managing multiple nodes. Then it would be possible to keep track of what was the last time that the ecChronos instances was able to connect with a node, also for others ecChronos instances keep track about each other's health.
 
-If type is `datacenterAware`, ecChronos will register its control over all the nodes in the specified datacenter; The `rackAware` declares that ecChronos is responsible just for a sub-set of racks in the declared list; The `hostAware` funcionality declares that ecChronos is resposible just for the specified hosts list. When connection.cql.agent.enabled is true, it must use the AgentNativeConnectionProvider class as default provider.
+If type is `datacenterAware`, ecChronos will register its control over all the nodes in the specified datacenter; The `rackAware` declares ecChronos is responsible just for a sub-set of racks in the declared list; The `hostAware` funcionality declares ecChronos is resposible just for the specified hosts list. When connection.cql.agent.enabled is true, it must use the AgentNativeConnectionProvider class as default provider.
 
 Configuration is available on ecc.yml in the below format.
 
@@ -81,7 +81,7 @@ connection:
 
 ### Nodes Sync
 
-To keep track about nodes and instances, the Agent implementation uses the table nodes_sync, that declared nodes by specific ecChronos instances, so to use the Agent is mandatory to create the table below:
+To keep track about nodes and instances, the Agent implementation uses the table nodes_sync, that declare nodes by specific ecChronos instances, so to use the Agent is mandatory to create the table below:
 
 ```cql
 CREATE TABLE ecchronos.nodes_sync
@@ -107,7 +107,7 @@ CREATE TABLE ecchronos.nodes_sync
 
 ### Leases
 
-A lock table in cassandra makes sure that only a subset of repairs run at any one time. Repairs can be configured to run only during certain time periods or not at all. Settings for backpressure are provided to make sure repair is spread out over the interval time while alarms are provided to signal when a job has not run for longer than expected.
+A lock table in Cassandra makes sure only a subset of repairs run at any one time. Repairs can be configured to run only during certain time periods or not at all. Settings for backpressure are provided to make sure repair is spread out over the interval time while alarms are provided to signal when a job has not run for longer than expected.
 
 <div align="center">
 
