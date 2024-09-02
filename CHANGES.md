@@ -2,7 +2,9 @@
 
 ## Version 1.0.0 (Not yet Release)
 
-* Investigate Introduction of testContainers Issue #682
+* Update Architecture and Tests Documentations to Add the Agent Features and The cassandra-test-image - Issue #707
+* Enhance Test Infrastructure by Adding Cassandra-Test-Image Module With Multi-Datacenter Cluster and Abstract Integration Test Class - Issue #706
+* Investigate Introduction of testContainers - Issue #682
 * Create EccNodesSync Object to Represent Table nodes_sync - Issue #672
 * Expose AgentJMXConnectionProvider on Connection and Application Module - Issue #676
 * Create JMXAgentConfig to add Hosts in JMX Session Through ecc.yml - Issue #675

@@ -1,53 +1,113 @@
 # Architecture
 
 ## Summary
+
 - [Overview](#overview)
 - [Concepts](#concepts)
-    - [Leases](#leases)
-    - [Scheduling flow](#scheduling-flow)
-    - [Scheduled jobs](#scheduled-jobs)
-    - [Run policies](#run-policies)
-    - [Repair scheduling](#repair-scheduling)
-        - [Vnode repairs](#vnode-repairs)
+  - [Leases](#leases)
+  - [Scheduling flow](#scheduling-flow)
+  - [Scheduled jobs](#scheduled-jobs)
+  - [Run policies](#run-policies)
+  - [Repair scheduling](#repair-scheduling)
+    - [Vnode repairs](#vnode-repairs)
 - [Sub-range repairs](#sub-range-repairs)
-    - [Example](#example)
-        - [Repair history](#repair-history)
+  - [Example](#example)
+    - [Repair history](#repair-history)
 - [Incremental repairs](#incremental-repairs)
 - [References](#references)
 
 ## Overview
-ecChronos is built to be continuously repairing data in the background. Each ecChronos instance keeps track of the repairs
-of a single cassandra node. A lock table in cassandra makes sure that only a subset of repairs run at any one time. Repairs
-can be configured to run only during certain time periods or not at all. Settings for backpressure are provided to
-make sure repair is spread out over the interval time while alarms are provided to signal when a job has not run for
-longer than expected.
+
+ecChronos is built to be continuously repairing data in the background. Each ecChronos instance keeps track of the repairs of a group of specified Cassandra nodes, based on the agent type.
 
 <div align="center">
 
 ```mermaid
   graph TB
-      c[ecChronos Instance]---C((Cassandra Node));
-
-      a[ecChronos Instance]---A((Cassandra Node));
-
-      A((Cassandra Node))===B((Cassandra Node));
-
-      A((Cassandra Node))===C((Cassandra Node));
-
-      C((Cassandra Node))===D((Cassandra Node))
-
-      b[ecChronos Instance]---B((Cassandra Node))
-
-      B((Cassandra Node))===D((Cassandra Node))
-
-      D((Cassandra Node))---d[ecChronos Instance]
+      a[datacenter1]---A((Cassandra Node));
+      a[datacenter1]---B((Cassandra Node));
+      b[datacenter2]---C((Cassandra Node));
+      b[datacenter2]---D((Cassandra Node));
+      A((Cassandra Node))---d[ecChronos Agent];
+      B((Cassandra Node))---d[ecChronos Agent];
+      C((Cassandra Node))---d[ecChronos Agent];
+      D((Cassandra Node))---d[ecChronos Agent];
   ```
   <figcaption>Figure 1: ecChronos and Cassandra Nodes.</figcaption>
 </div>
 
 ## Concepts
 
+### Connection
+
+Once ecChronos establishes its initial connection with the `contactPoints`, it must register its control over the nodes based on the `type` property, whether JMX or CQL, to make it clear that a single instance will be responsible for managing multiple nodes. Then it would be possible to keep track of what was the last time that the ecChronos instances was able to connect with a node, also for others ecChronos instances keep track about each other's health.
+
+If type is `datacenterAware`, ecChronos will register its control over all the nodes in the specified datacenter; The `rackAware` declares ecChronos is responsible just for a sub-set of racks in the declared list; The `hostAware` funcionality declares ecChronos is resposible just for the specified hosts list. When connection.cql.agent.enabled is true, it must use the AgentNativeConnectionProvider class as default provider.
+
+Configuration is available on ecc.yml in the below format.
+
+```yaml
+connection:
+  cql:
+    agent:
+      type: datacenterAware
+      contactPoints:
+      - host: 127.0.0.1
+        port: 9042
+      - host: 127.0.0.2
+        port: 9042
+      datacenterAware:
+        datacenters:
+        - name: datacenter1
+        - name: datacenter2
+      rackAware:
+        racks:
+        - datacenterName: datacenter1
+          rackName: rack1
+        - datacenterName: datacenter1
+          rackName: rack2
+      hostAware:
+        hosts:
+          - host: 127.0.0.1
+            port: 9042
+          - host: 127.0.0.2
+            port: 9042
+          - host: 127.0.0.3
+            port: 9042
+          - host: 127.0.0.4
+            port: 9042
+    provider: com.ericsson.bss.cassandra.ecchronos.application.AgentNativeConnectionProvider
+```
+
+### Nodes Sync
+
+To keep track about nodes and instances, the Agent implementation uses the table nodes_sync, that declare nodes by specific ecChronos instances, so to use the Agent is mandatory to create the table below:
+
+```cql
+CREATE TABLE ecchronos.nodes_sync
+(
+    ecchronos_id TEXT,
+    datacenter_name TEXT,
+    node_id UUID,
+    node_endpoint TEXT,
+    node_status TEXT,
+    last_connection TIMESTAMP,
+    next_connection TIMESTAMP,
+    PRIMARY KEY
+    (
+        ecchronos_id,
+        datacenter_name,
+        node_id
+    )
+) WITH CLUSTERING ORDER BY(
+    datacenter_name DESC,
+    node_id DESC
+);
+```
+
 ### Leases
+
+A lock table in Cassandra makes sure only a subset of repairs run at any one time. Repairs can be configured to run only during certain time periods or not at all. Settings for backpressure are provided to make sure repair is spread out over the interval time while alarms are provided to signal when a job has not run for longer than expected.
 
 <div align="center">
 
@@ -175,10 +235,11 @@ This is activated by specifying a target repair size in the [RepairConfiguration
 For the standalone version the option is called `repair.size.target` in the configuration file.
 Each sub-range repair session will aim to handle the target amount of data.
 
-*Note: Without this option specified the repair mechanism will handle full virtual nodes only (including how it interprets the repair history)*  
-*Note: The target repair size is assuming a uniform data distribution across partitions on the local node*
+_Note: Without this option specified the repair mechanism will handle full virtual nodes only (including how it interprets the repair history)*  
+_Note: The target repair size is assuming a uniform data distribution across partitions on the local node*
 
-### Example  
+### Example
+
 With a local table containing 100 bytes of data and a total of 100 tokens locally in a continuous range (0, 100].
 When the repair target is set to 2 bytes the range will be divided into 50 sub ranges, each handling two tokens.
 The sub ranges would be:  
@@ -204,9 +265,9 @@ In a larger context this also works for repairs covering the full virtual node.
 Given a virtual node (0, 30] that was repaired at timestamp X and a repair history entry containing the sub range (15, 20] repaired at Y.
 Assuming that X is more than one hour before Y this will produce three sub ranges in the internal representation:
 
-* (0, 15] repaired at X.
-* (15, 20] repaired at Y
-* (20, 30] repaired at X
+- (0, 15] repaired at X.
+- (15, 20] repaired at Y
+- (20, 30] repaired at X
 
 ## Incremental repairs
 
@@ -225,6 +286,7 @@ The IncrementalRepairTask is the class that will perform the incremental repair 
 [i96]: https://github.com/Ericsson/ecchronos/issues/96
 
 ## References
+
  [1\]: [Consensus on Cassandra](https://www.datastax.com/blog/consensus-cassandra);
 
  [2\]: [Incremental and Full Repairs](https://cassandra.apache.org/doc/latest/cassandra/operating/repair.html#incremental-and-full-repairs)

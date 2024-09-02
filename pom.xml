@@ -69,6 +69,7 @@
 
 
     <modules>
+        <module>cassandra-test-image</module>
         <module>connection</module>
         <module>connection.impl</module>
         <module>application</module>
@@ -541,6 +542,7 @@ limitations under the License.
                             <exclude>check_style.xml</exclude>
                             <exclude>.github/workflows/actions.yml</exclude>
                             <exclude>.github/workflows/scorecard.yml</exclude>
+                            <exclude>**/docker/*</exclude>
                         </excludes>
                     </configuration>
                 </plugin>
