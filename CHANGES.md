@@ -1,6 +1,7 @@
 # Changes
 ## Version 5.0.5
 
+* RetryPolicy: After failing the last connection attempt, the retry time is still applied - Issue #702
 * Define logging levels formally - Issue #666
 * Deprecate cassandra-all to use testContainers instead - Issue #701
 * Update Mockito and JUnit versions - Issue #687

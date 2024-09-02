@@ -140,7 +140,7 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
         final int port,
         final long timeout)
     {
-        LOG.warn("Unable to connect through CQL using {}:{}, retrying.", host, port);
+        LOG.warn("Unable to connect through CQL using {}:{}.", host, port);
         long delay = retryPolicy.currentDelay(attempt);
         long currentTime = System.currentTimeMillis();
         long endTime = currentTime + timeout;
@@ -148,18 +148,27 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
         {
             delay = timeout;
         }
-        LOG.warn("Connection failed in attempt {} of {}. Retrying in {} seconds.",
-        attempt, retryPolicy.getMaxAttempts(), TimeUnit.MILLISECONDS.toSeconds(delay));
-        try
+
+        if (attempt == retryPolicy.getMaxAttempts())
         {
-            Thread.sleep(delay);
+            LOG.error("All connection attempts failed ({} were made)!", attempt);
         }
-        catch (InterruptedException ie)
+        else
         {
-            LOG.error(
-                "InterruptedException caught during the delay time, while trying to reconnect to Cassandra. Reason: ",
-                ie);
+            LOG.warn("Connection attempt {} of {} failed. Retrying in {} seconds.",
+                    attempt,
+                    retryPolicy.getMaxAttempts(),
+                    TimeUnit.MILLISECONDS.toSeconds(delay));
+            try
+            {
+                Thread.sleep(delay);
+            }
+            catch (InterruptedException ie)
+            {
+                LOG.error("Exception caught during the delay time, while trying to reconnect to Cassandra.", ie);
+            }
         }
+
     }
 
     @Override
