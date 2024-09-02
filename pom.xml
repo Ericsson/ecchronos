@@ -56,6 +56,7 @@
     <properties>
         <bundle.symbolicName>${project.groupId}.${project.artifactId}</bundle.symbolicName>
         <bundle.namespace>${project.groupId}.${project.artifactId}</bundle.namespace>
+        <java.version>11</java.version>
 
         <!-- Dependency versions -->
         <io.netty.version>4.1.94.Final</io.netty.version>
@@ -89,7 +90,7 @@
         <awaitility.version>3.0.0</awaitility.version>
         <jcip.version>1.0</jcip.version>
         <junitparams.version>1.1.1</junitparams.version>
-        <equalsverifier.version>3.5</equalsverifier.version>
+        <equalsverifier.version>3.16.1</equalsverifier.version>
         <tomcat.version>9.0.90</tomcat.version>
         <org.springframework.boot.version>2.7.18</org.springframework.boot.version>
         <org.springdoc.openapi-ui.version>1.7.0</org.springdoc.openapi-ui.version>
@@ -100,9 +101,9 @@
         <testcontainers.version>1.18.3</testcontainers.version>
 
         <!-- Plugin versions -->
-        <org.apache.maven.plugins.maven-compiler-plugin.version>3.8.0</org.apache.maven.plugins.maven-compiler-plugin.version>
+        <org.apache.maven.plugins.maven-compiler-plugin.version>3.11.0</org.apache.maven.plugins.maven-compiler-plugin.version>
         <org.apache.maven.plugins.maven-install-plugin.version>2.5.2</org.apache.maven.plugins.maven-install-plugin.version>
-        <org.apache.maven.plugins.maven-surefire-plugin.version>2.22.1</org.apache.maven.plugins.maven-surefire-plugin.version>
+        <org.apache.maven.plugins.maven-surefire-plugin.version>3.3.1</org.apache.maven.plugins.maven-surefire-plugin.version>
         <org.apache.maven.plugins.maven-failsafe-plugin.version>2.22.1</org.apache.maven.plugins.maven-failsafe-plugin.version>
         <org.apache.maven.plugins.maven-assembly-plugin.version>3.6.0</org.apache.maven.plugins.maven-assembly-plugin.version>
         <org.apache.maven.plugins-maven-checkstyle-plugin.version>3.2.0</org.apache.maven.plugins-maven-checkstyle-plugin.version>
@@ -110,14 +111,14 @@
         <org.apache.maven.plugin.maven-jxr-plugin.version>3.0.0</org.apache.maven.plugin.maven-jxr-plugin.version>
         <org.apache.maven.plugins-maven-resources-plugin.version>3.1.0</org.apache.maven.plugins-maven-resources-plugin.version>
         <org.apache.maven.plugins-maven-dependency-plugin.version>3.5.0</org.apache.maven.plugins-maven-dependency-plugin.version>
-        <org.apache.maven.plugins-maven-jar-plugin.version>2.6</org.apache.maven.plugins-maven-jar-plugin.version>
+        <org.apache.maven.plugins-maven-jar-plugin.version>3.3.0</org.apache.maven.plugins-maven-jar-plugin.version>
         <org.apache.maven.plugins-maven-shade-plugin.version>3.4.1</org.apache.maven.plugins-maven-shade-plugin.version>
         <org.apache.felix.maven-bundle-plugin.version>5.1.8</org.apache.felix.maven-bundle-plugin.version>
         <com.mycila.license-maven-plugin.version>3.0</com.mycila.license-maven-plugin.version>
-        <io.fabric8.docker-maven-plugin.version>0.35.0</io.fabric8.docker-maven-plugin.version>
+        <io.fabric8.docker-maven-plugin.version>0.43.0</io.fabric8.docker-maven-plugin.version>
         <org.apache.servicemix.tooling.depends-maven-plugin.version>1.2</org.apache.servicemix.tooling.depends-maven-plugin.version>
-        <org.apache.karaf.tooling.karaf-maven-plugin.version>4.2.1</org.apache.karaf.tooling.karaf-maven-plugin.version>
-        <org.jacoco.jacoco-maven-plugin.version>0.8.4</org.jacoco.jacoco-maven-plugin.version>
+        <org.apache.karaf.tooling.karaf-maven-plugin.version>4.4.0</org.apache.karaf.tooling.karaf-maven-plugin.version>
+        <org.jacoco.jacoco-maven-plugin.version>0.8.9</org.jacoco.jacoco-maven-plugin.version>
         <org.codehaus.mojo.exec-maven-plugin.version>3.0.0</org.codehaus.mojo.exec-maven-plugin.version>
         <org.codehaus.mojo.license-maven-plugin.version>1.19</org.codehaus.mojo.license-maven-plugin.version>
 
@@ -614,6 +615,12 @@
                             --add-opens java.base/jdk.internal.module=ALL-UNNAMED
                             --add-opens java.base/jdk.internal.util.jar=ALL-UNNAMED
                             --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED
+                            --add-opens=java.base/java.io=ALL-UNNAMED
+                            --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+                            --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+                            --add-opens=java.base/java.util=ALL-UNNAMED
+                            --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
+                            --add-opens=java.base/java.lang=ALL-UNNAMED
                         </argLine>
                     </configuration>
                 </plugin>
@@ -627,8 +634,8 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${org.apache.maven.plugins.maven-compiler-plugin.version}</version>
                     <configuration>
-                        <source>11</source>
-                        <target>11</target>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
                     </configuration>
                 </plugin>
 
@@ -642,6 +649,7 @@
                     <version>${org.apache.maven.plugins.maven-assembly-plugin.version}</version>
                     <configuration>
                         <skipAssembly>true</skipAssembly>
+                        <tarLongFileMode>posix</tarLongFileMode>
                     </configuration>
                 </plugin>
 
