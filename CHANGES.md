@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Release)
 
+* Retry Policy for Jmx Connection - Issue #700
 * Update Architecture and Tests Documentations to Add the Agent Features and The cassandra-test-image - Issue #707
 * Enhance Test Infrastructure by Adding Cassandra-Test-Image Module With Multi-Datacenter Cluster and Abstract Integration Test Class - Issue #706
 * Investigate Introduction of testContainers - Issue #682
@@ -10,4 +11,4 @@
 * Create JMXAgentConfig to add Hosts in JMX Session Through ecc.yml - Issue #675
 * Expose AgentNativeConnectionProvider on Connection and Application Module - Issue #673
 * Create DatacenterAwareConfig to add Hosts in CQL Session Through ecc.yml - Issue #671
-* Create Initial project Structure for Agent - Issue #695
+* Create Initial project Structure for Agent - Issue #695 

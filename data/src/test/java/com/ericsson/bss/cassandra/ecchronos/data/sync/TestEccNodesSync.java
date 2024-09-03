@@ -145,4 +145,13 @@ public class TestEccNodesSync extends AbstractCassandraTest
                 NullPointerException.class, tmpEccNodesSyncBuilder::build);
         assertEquals("Session cannot be null", exception.getMessage());
     }
+
+    @Test
+    public void testGetAllNodes()
+    {
+        eccNodesSync.verifyInsertNodeInfo(datacenterName, "127.0.0.1", NodeStatus.AVAILABLE.name(), Instant.now(), Instant.now().plus(30, ChronoUnit.MINUTES), UUID.randomUUID());
+        eccNodesSync.verifyInsertNodeInfo(datacenterName, "127.0.0.2", NodeStatus.UNAVAILABLE.name(), Instant.now(), Instant.now().plus(30, ChronoUnit.MINUTES), UUID.randomUUID());
+        ResultSet resultSet = eccNodesSync.getResultSet();
+        assertNotNull(resultSet);
+    }
 }

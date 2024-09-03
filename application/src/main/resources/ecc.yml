@@ -93,6 +93,32 @@ connection:
     ## The default provider will be used unless another is specified.
     ##
     provider: com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider
+    retryPolicy:
+      ## Max number of attempts ecChronos will try to connect with Cassandra.
+      maxAttempts: 5
+      ## Delay use to wait between an attempt and another, this value will be multiplied by the current attempt count powered by two.
+      ## If the current attempt is 4 and the default delay is 5 seconds, so ((4(attempt) x 2) x 5(default delay)) = 40 seconds.
+      ## If the calculated delay is greater than maxDelay, maxDelay will be used instead of the calculated delay.
+      delay:
+        start: 5
+        ## Maximum delay before the next connection attempt is made.
+        ## Setting it as 0 will disable maxDelay and the delay interval will
+        ## be calculated based on the attempt count and the default delay.
+        max: 30
+        ## unit can be milliseconds, seconds, minutes, hours, days.
+        unit: seconds
+      # RetrySchedulerService schedule starts after the application launches.
+      retrySchedule:
+        ## Initial delay before the RetrySchedulerService starts after the application launches.
+        ## By default, this service would trigger after 1 day and represents the wait time before the service first runs
+        initialDelay: 1
+        ## Fixed delay between subsequent executions of the RetrySchedulerService.
+        ## This value represents the delay time (by default 1 day) between when the service completes one execution
+        ## and the time it will be triggered again for another execution.
+        ## During each execution, the service will check for unavailable nodes and attempt reconnections as per the retry logic.
+        fixedDelay: 1
+        ## unit can be milliseconds, seconds, minutes, hours, days.
+        unit: days
 
 rest_server:
   ##

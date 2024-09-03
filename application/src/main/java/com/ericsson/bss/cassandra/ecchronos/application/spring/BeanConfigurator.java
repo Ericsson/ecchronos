@@ -208,6 +208,15 @@ public class BeanConfigurator
                 jmxSecurity::get, distributedNativeConnectionProvider, eccNodesSync);
     }
 
+    @Bean
+    public RetrySchedulerService retrySchedulerService(final Config config,
+                                                       final DistributedJmxConnectionProvider jmxConnectionProvider,
+                                                       final EccNodesSync eccNodesSync,
+                                                       final DistributedNativeConnectionProvider nativeConnectionProvider)
+    {
+        return new RetrySchedulerService(eccNodesSync, config, jmxConnectionProvider, nativeConnectionProvider);
+    }
+
     private Security getSecurityConfig() throws ConfigurationException
     {
         return ConfigurationHelper.DEFAULT_INSTANCE.getConfiguration(SECURITY_FILE, Security.class);

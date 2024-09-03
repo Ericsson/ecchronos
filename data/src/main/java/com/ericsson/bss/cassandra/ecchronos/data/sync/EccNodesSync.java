@@ -16,8 +16,8 @@ package com.ericsson.bss.cassandra.ecchronos.data.sync;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
@@ -35,8 +35,8 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
 
 /**
  * CQL Definition for nodes_sync table. CREATE TABLE ecchronos_agent.nodes_sync ( ecchronos_id TEXT, datacenter_name
@@ -66,6 +66,7 @@ public final class EccNodesSync
 
     private final PreparedStatement myCreateStatement;
     private final PreparedStatement myUpdateStatusStatement;
+    private final PreparedStatement mySelectStatusStatement;
 
     private EccNodesSync(final Builder builder) throws UnknownHostException
     {
@@ -91,7 +92,18 @@ public final class EccNodesSync
                 .whereColumn(COLUMN_NODE_ID).isEqualTo(bindMarker())
                 .build()
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
+        mySelectStatusStatement = mySession.prepare(selectFrom(KEYSPACE_NAME, TABLE_NAME)
+                .columns(COLUMN_NODE_ID, COLUMN_NODE_ENDPOINT, COLUMN_DC_NAME, COLUMN_NODE_STATUS)
+                .whereColumn(COLUMN_ECCHRONOS_ID).isEqualTo(bindMarker())
+                .build());
         ecChronosID = builder.myEcchronosID;
+    }
+
+    public ResultSet getResultSet()
+    {
+        // Bind the parameters
+        BoundStatement boundStatement = mySelectStatusStatement.bind(ecChronosID);
+        return mySession.execute(boundStatement);
     }
 
     public void acquireNodes() throws EcChronosException
