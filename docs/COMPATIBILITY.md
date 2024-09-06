@@ -1,9 +1,9 @@
 # Compatibility
 
-Below matrix defines which ecChronos versions have been tested and verified with which Cassandra version.
 
-| ecchronos version      | Cassandra 3.0.X | Cassandra 3.11.X | Cassandra 4.0.X | Cassandra 4.1.X | Cassandra 5.0-alpha1 |
-|------------------------|-----------------|------------------|-----------------|-----------------|----------------------|
-| &lt;= 2.0.5            | X               | X                |                 |                 |                      |
-| &gt; 2.0.5  &lt; 5.0.0 | X               | X                | X               |                 |                      |
-| &gt;= 5.0.0            |                 |                  | X               | X               | X                    |
+The table below shows what versions of Cassandra have been verified with ecChronos releases. 
+
+| ecChronos  | 3.0.x | 3.11.x | 4.0.x | 4.1.x | 5.0-alpha1 |
+|:----------:|:-----:|:------:|:-----:|:-----:|:----------:|
+|   4.x.x    |   X   |   X    |   X   |   -   |     -      |
+|   5.x.x    |   -   |   -    |   X   |   X   |     X      |
