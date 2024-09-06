@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
+import com.ericsson.bss.cassandra.ecchronos.application.config.Interval;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.CqlTLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.ReloadingCertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider;
@@ -178,11 +179,13 @@ public class BeanConfigurator
      *         if the local host name cannot be determined.
      * @throws EcChronosException
      *         if there is an error during node synchronization.
+     * @throws ConfigurationException
+     *         if there is an error during node synchronization.
      */
     @Bean
     public EccNodesSync eccNodesSync(
             final DistributedNativeConnectionProvider distributedNativeConnectionProvider
-    ) throws UnknownHostException, EcChronosException
+    ) throws UnknownHostException, EcChronosException, ConfigurationException
     {
         return getEccNodesSync(distributedNativeConnectionProvider);
     }
@@ -264,12 +267,15 @@ public class BeanConfigurator
 
     private EccNodesSync getEccNodesSync(
             final DistributedNativeConnectionProvider distributedNativeConnectionProvider
-    ) throws UnknownHostException, EcChronosException
+    ) throws UnknownHostException, EcChronosException, ConfigurationException
     {
+        Interval connectionDelay = config().getConnectionConfig().getConnectionDelay();
         EccNodesSync myEccNodesSync = EccNodesSync.newBuilder()
                 .withInitialNodesList(distributedNativeConnectionProvider.getNodes())
                 .withSession(distributedNativeConnectionProvider.getCqlSession())
                 .withEcchronosID(ecChronosID)
+                .withConnectionDelayValue(connectionDelay.getTime())
+                .withConnectionDelayUnit(connectionDelay.getUnit())
                 .build();
         myEccNodesSync.acquireNodes();
         LOG.info("Nodes acquired with success");
