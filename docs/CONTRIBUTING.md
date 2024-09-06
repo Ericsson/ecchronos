@@ -66,6 +66,18 @@ If you encounter a PMD rule that seems odd or non-relevant feel free to discuss 
 * [Maven](https://maven.apache.org) - Dependency and build management
 * [docker-maven-plugin](https://github.com/fabric8io/docker-maven-plugin) - For integration tests
 
+### Maintained versions
+
+The following table state what versions of ecChronos is still under active maintenance.
+
+| Version | First Release | Status |
+|:-------:|:-------------:|:------:|
+|  1.x.x  |  2019-Jan-25  |   -    |
+|  2.x.x  |  2021-Feb-25  |   -    |
+|  3.x.x  |  2022-Jun-30  |   -    |
+|  4.x.x  |  2022-Dec-15  |   X    |
+|  5.x.x  |  2023-Dec-06  |   X    |
+
 ### REST API
 
 Whenever there are any changes to the REST API, the OpenAPI specification must be generated.
