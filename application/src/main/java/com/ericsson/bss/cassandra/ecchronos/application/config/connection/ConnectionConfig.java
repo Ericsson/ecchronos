@@ -21,7 +21,7 @@ public class ConnectionConfig
 {
     private DistributedNativeConnection myCqlConnection = new DistributedNativeConnection();
     private DistributedJmxConnection myJmxConnection = new DistributedJmxConnection();
-    private Interval myConnectionDelay;
+    private Interval myConnectionDelay = new Interval();
 
     @JsonProperty("cql")
     public final DistributedNativeConnection getCqlConnection()

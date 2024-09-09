@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Telefonaktiebolaget LM Ericsson
+ * Copyright 2024 Telefonaktiebolaget LM Ericsson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 
 public class Interval
 {
-    static final int DEFAULT_TIME = 60;
-    private long myTime = DEFAULT_TIME;
+    static final int DEFAULT_TIME_IN_MINUTES = 60;
+    private long myTime = DEFAULT_TIME_IN_MINUTES;
     private TimeUnit myUnit = TimeUnit.MINUTES;
 
     public Interval()

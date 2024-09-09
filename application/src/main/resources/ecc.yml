@@ -91,9 +91,9 @@ connection:
     ## Specify the interval until the next connection to a node
     ## Unit can be SECONDS, MINUTES, HOURS, DAYS
     ##
-  connectionDelay:
-    time: 45
-    unit: MINUTES
+    connectionDelay:
+      time: 45
+      unit: MINUTES
   jmx:
     ##
     ## The class used to provide JMX connections to Apache Cassandra.

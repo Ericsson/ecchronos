@@ -255,6 +255,7 @@ public final class EccNodesSync
             this.initialNodesList = nodes;
             return this;
         }
+
         /**
          * Builds EccNodesSync with Connection Delay.
          *
@@ -267,6 +268,7 @@ public final class EccNodesSync
             this.myConnectionDelayValue = connectionDelayValue;
             return this;
         }
+
         /**
          * Builds EccNodesSync with Connection Delay Unit.
          *
@@ -279,6 +281,7 @@ public final class EccNodesSync
             this.myConnectionDelayUnit = ChronoUnit.valueOf(connectionDelayUnit.toString().toUpperCase(Locale.US));
             return this;
         }
+
         /**
          * Builds EccNodesSync with ecchronosID.
          *
