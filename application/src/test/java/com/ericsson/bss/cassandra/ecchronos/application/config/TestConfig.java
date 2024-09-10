@@ -14,10 +14,9 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config;
 
-import com.ericsson.bss.cassandra.ecchronos.application.config.connection.AgentConnectionConfig;
-import com.ericsson.bss.cassandra.ecchronos.application.config.connection.ConnectionConfig;
-import com.ericsson.bss.cassandra.ecchronos.application.config.connection.DistributedNativeConnection;
+import com.ericsson.bss.cassandra.ecchronos.application.config.connection.*;
 import com.ericsson.bss.cassandra.ecchronos.application.exceptions.ConfigurationException;
+import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
 import com.fasterxml.jackson.core.exc.StreamReadException;
@@ -25,6 +24,7 @@ import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
+import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -32,13 +32,18 @@ import java.io.File;
 import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 
 public class TestConfig
 {
     private static final String DEFAULT_AGENT_FILE_NAME = "all_set.yml";
+    private static final String NOTHING_SET_AGENT_FILE_NAME = "nothing_set.yml";
+    private static final TimeUnit TIME_UNIT_IN_SECONDS = TimeUnit.SECONDS;
     private static Config config;
     private static DistributedNativeConnection nativeConnection;
+    private static DistributedJmxConnection distributedJmxConnection;
 
     @Before
     public void setup() throws StreamReadException, DatabindException, IOException
@@ -54,6 +59,7 @@ public class TestConfig
         ConnectionConfig connection = config.getConnectionConfig();
 
         nativeConnection = connection.getCqlConnection();
+        distributedJmxConnection = connection.getJmxConnection();
     }
 
     @Test
@@ -85,7 +91,8 @@ public class TestConfig
                 .getAgentConnectionConfig()
                 .getDatacenterAware()
                 .getDatacenters()
-                .get("datacenter1").getName()).isEqualTo("datacenter1");
+                .get("datacenter1")
+                .getName()).isEqualTo("datacenter1");
     }
 
     @Test
@@ -95,9 +102,9 @@ public class TestConfig
         assertThat(nativeConnection
                 .getAgentConnectionConfig()
                 .getRackAware()
-                .getRacks().get("rack1")
-                .getDatacenterName()
-        ).isEqualTo("datacenter1");
+                .getRacks()
+                .get("rack1")
+                .getDatacenterName()).isEqualTo("datacenter1");
     }
 
     @Test
@@ -106,26 +113,34 @@ public class TestConfig
         assertThat(nativeConnection.getAgentConnectionConfig().getHostAware()).isNotNull();
         assertThat(nativeConnection
                 .getAgentConnectionConfig()
-                .getHostAware().getHosts()
-                .get("127.0.0.1").getPort())
+                .getHostAware()
+                .getHosts()
+                .get("127.0.0.1")
+                .getPort())
                 .isEqualTo(9042);
 
         assertThat(nativeConnection
                 .getAgentConnectionConfig()
-                .getHostAware().getHosts()
-                .get("127.0.0.2").getPort())
+                .getHostAware()
+                .getHosts()
+                .get("127.0.0.2")
+                .getPort())
                 .isEqualTo(9042);
 
         assertThat(nativeConnection
                 .getAgentConnectionConfig()
-                .getHostAware().getHosts()
-                .get("127.0.0.3").getPort())
+                .getHostAware()
+                .getHosts()
+                .get("127.0.0.3")
+                .getPort())
                 .isEqualTo(9042);
 
         assertThat(nativeConnection
                 .getAgentConnectionConfig()
-                .getHostAware().getHosts()
-                .get("127.0.0.4").getPort())
+                .getHostAware()
+                .getHosts()
+                .get("127.0.0.4")
+                .getPort())
                 .isEqualTo(9042);
     }
 
@@ -139,7 +154,8 @@ public class TestConfig
     @Test
     public void testConfigurationExceptionForWrongAgentType()
     {
-        assertThrows(ConfigurationException.class, () -> {
+        assertThrows(ConfigurationException.class, () ->
+        {
             nativeConnection.getAgentConnectionConfig().setType("wrongType");
         });
     }
@@ -155,5 +171,69 @@ public class TestConfig
     public void testDefaultLoadBalancingPolicy()
     {
         assertThat(nativeConnection.getAgentConnectionConfig().getDatacenterAwarePolicy()).isEqualTo(DataCenterAwarePolicy.class);
+    }
+
+    @Test
+    public void testRetryPolicyConfig()
+    {
+        Class<?> providerClass = distributedJmxConnection.getProviderClass();
+        assertThat(providerClass).isEqualTo(AgentJmxConnectionProvider.class);
+        RetryPolicyConfig retryPolicyConfig = distributedJmxConnection.getRetryPolicyConfig();
+        assertNotNull(retryPolicyConfig);
+        assertThat(5).isEqualTo(retryPolicyConfig.getMaxAttempts());
+        assertThat(5000).isEqualTo(retryPolicyConfig.getRetryDelay().getStartDelay());
+        assertThat(30000).isEqualTo(retryPolicyConfig.getRetryDelay().getMaxDelay());
+        assertThat(TIME_UNIT_IN_SECONDS).isEqualTo(retryPolicyConfig.getRetryDelay().getUnit());
+        assertThat(86400000).isEqualTo(retryPolicyConfig.getRetrySchedule().getInitialDelay());
+        assertThat(86400000).isEqualTo(retryPolicyConfig.getRetrySchedule().getFixedDelay());
+        assertThat(TIME_UNIT_IN_SECONDS).isEqualTo(retryPolicyConfig.getRetrySchedule().getUnit());
+    }
+
+    @Test
+    public void testRetryPolicyConfigWhenNothingSet() throws IOException
+    {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        File file = new File(classLoader.getResource(NOTHING_SET_AGENT_FILE_NAME).getFile());
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        Config config = objectMapper.readValue(file, Config.class);
+
+        ConnectionConfig connection = config.getConnectionConfig();
+        distributedJmxConnection = connection.getJmxConnection();
+        Class<?> providerClass = distributedJmxConnection.getProviderClass();
+        assertThat(providerClass).isEqualTo(AgentJmxConnectionProvider.class);
+        RetryPolicyConfig retryPolicyConfig = distributedJmxConnection.getRetryPolicyConfig();
+        assertNotNull(retryPolicyConfig);
+        assertThat(5).isEqualTo(retryPolicyConfig.getMaxAttempts());
+        assertThat(5000).isEqualTo(retryPolicyConfig.getRetryDelay().getStartDelay());
+        assertThat(30000).isEqualTo(retryPolicyConfig.getRetryDelay().getMaxDelay());
+        assertThat(TIME_UNIT_IN_SECONDS).isEqualTo(retryPolicyConfig.getRetryDelay().getUnit());
+        assertThat(86400000).isEqualTo(retryPolicyConfig.getRetrySchedule().getInitialDelay());
+        assertThat(86400000).isEqualTo(retryPolicyConfig.getRetrySchedule().getFixedDelay());
+        assertThat(TIME_UNIT_IN_SECONDS).isEqualTo(retryPolicyConfig.getRetrySchedule().getUnit());
+    }
+
+    @Test
+    public void testStartDelayGreaterThanMaxDelayThrowsException()
+    {
+        RetryPolicyConfig.RetryDelay retryDelay = new RetryPolicyConfig.RetryDelay();
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+        {
+            retryDelay.setMaxDelay(1000L);
+            retryDelay.setStartDelay(2000L);
+        });
+        assertEquals("Start delay cannot be greater than max delay.", exception.getMessage());
+    }
+
+    @Test
+    public void testMaxDelayLessThanStartDelayThrowsException()
+    {
+        RetryPolicyConfig.RetryDelay retryDelay = new RetryPolicyConfig.RetryDelay();
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+        {
+            retryDelay.setMaxDelay(3000L);
+            retryDelay.setStartDelay(2000L);
+            retryDelay.setMaxDelay(1000L);
+        });
+        assertEquals("Max delay cannot be less than start delay.", exception.getMessage());
     }
 }

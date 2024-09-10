@@ -19,10 +19,14 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionP
 
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.function.Supplier;
 
 public class DistributedJmxConnection extends Connection<DistributedJmxConnectionProvider>
 {
+    private RetryPolicyConfig myRetryPolicyConfig = new RetryPolicyConfig();
+
     public DistributedJmxConnection()
     {
         try
@@ -35,6 +39,18 @@ public class DistributedJmxConnection extends Connection<DistributedJmxConnectio
         }
     }
 
+    @JsonProperty("retryPolicy")
+    public final RetryPolicyConfig getRetryPolicyConfig()
+    {
+        return myRetryPolicyConfig;
+    }
+
+    @JsonProperty("retryPolicy")
+    public final void setRetryPolicyConfig(final RetryPolicyConfig retryPolicyConfig)
+    {
+        myRetryPolicyConfig = retryPolicyConfig;
+    }
+
     /**
      * @return
      */
@@ -42,9 +58,9 @@ public class DistributedJmxConnection extends Connection<DistributedJmxConnectio
     protected Class<?>[] expectedConstructor()
     {
         return new Class<?>[] {
-                Supplier.class,
-                DistributedNativeConnectionProvider.class,
-                EccNodesSync.class
+                                Supplier.class,
+                                DistributedNativeConnectionProvider.class,
+                                EccNodesSync.class
         };
     }
 }

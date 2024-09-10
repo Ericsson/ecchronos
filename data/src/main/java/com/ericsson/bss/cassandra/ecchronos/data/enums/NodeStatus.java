@@ -20,5 +20,6 @@ package com.ericsson.bss.cassandra.ecchronos.data.enums;
 public enum NodeStatus
 {
     UNAVAILABLE,
-    AVAILABLE
+    AVAILABLE,
+    UNREACHABLE
 }
