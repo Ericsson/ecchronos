@@ -42,6 +42,9 @@ connection:
           - host: 127.0.0.4
             port: 9042
     provider: com.ericsson.bss.cassandra.ecchronos.application.providers.AgentNativeConnectionProvider
+  connectionDelay:
+    time: 45
+    unit: minutes
   jmx:
     provider: com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider
     retryPolicy:

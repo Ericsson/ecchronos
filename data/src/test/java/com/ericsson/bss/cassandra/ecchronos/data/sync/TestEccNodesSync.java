@@ -33,6 +33,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 
 import static org.junit.Assert.*;
@@ -72,6 +73,8 @@ public class TestEccNodesSync extends AbstractCassandraTest
         eccNodesSync = EccNodesSync.newBuilder()
                 .withSession(mySession)
                 .withInitialNodesList(nodesList)
+                .withConnectionDelayValue(Long.valueOf(10))
+                .withConnectionDelayUnit(TimeUnit.MINUTES)
                 .withEcchronosID("ecchronos-test").build();
     }
 
