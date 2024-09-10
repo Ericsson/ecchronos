@@ -28,9 +28,9 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
-public class TestMissingConnectionDelay
+public class TestDefaultConfig
 {
-    private static final String DEFAULT_AGENT_FILE_NAME = "missing_connection_delay.yml";
+    private static final String DEFAULT_AGENT_FILE_NAME = "nothing_set.yml";
     private static Config config;
 
 
@@ -48,8 +48,9 @@ public class TestMissingConnectionDelay
     }
 
 
+
     @Test
-    public void testConnectionDelay()
+    public void testConnectionDelayDefault()
     {
         Interval connectionDelay = config.getConnectionConfig().getConnectionDelay();
         assertThat(connectionDelay.getUnit()).isEqualTo(TimeUnit.MINUTES);
