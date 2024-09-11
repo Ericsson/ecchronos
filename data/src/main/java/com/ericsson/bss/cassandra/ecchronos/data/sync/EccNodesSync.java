@@ -30,7 +30,9 @@ import java.net.UnknownHostException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +69,8 @@ public final class EccNodesSync
     private final PreparedStatement myCreateStatement;
     private final PreparedStatement myUpdateStatusStatement;
     private final PreparedStatement mySelectStatusStatement;
+    private final Long connectionDelayValue;
+    private final ChronoUnit connectionDelayUnit;
 
     private EccNodesSync(final Builder builder) throws UnknownHostException
     {
@@ -97,6 +101,9 @@ public final class EccNodesSync
                 .whereColumn(COLUMN_ECCHRONOS_ID).isEqualTo(bindMarker())
                 .build());
         ecChronosID = builder.myEcchronosID;
+
+        connectionDelayValue = builder.myConnectionDelayValue;
+        connectionDelayUnit = builder.myConnectionDelayUnit;
     }
 
     public ResultSet getResultSet()
@@ -138,7 +145,7 @@ public final class EccNodesSync
                 node.getEndPoint().toString(),
                 node.getState().toString(),
                 Instant.now(),
-                Instant.now().plus(DEFAULT_CONNECTION_DELAY_IN_MINUTES, ChronoUnit.MINUTES),
+                Instant.now().plus(connectionDelayValue, connectionDelayUnit),
                 node.getHostId());
     }
 
@@ -232,6 +239,8 @@ public final class EccNodesSync
         private CqlSession mySession;
         private List<Node> initialNodesList;
         private String myEcchronosID;
+        private Long myConnectionDelayValue;
+        private ChronoUnit myConnectionDelayUnit;
 
         /**
          * Builds EccNodesSync with session.
@@ -256,6 +265,32 @@ public final class EccNodesSync
         public Builder withInitialNodesList(final List<Node> nodes)
         {
             this.initialNodesList = nodes;
+            return this;
+        }
+
+        /**
+         * Builds EccNodesSync with Connection Delay.
+         *
+         * @param connectionDelayValue
+         *          delay before connecting, in the unit specified in withConnectionDelayUnit
+         * @return Builder
+         */
+        public Builder withConnectionDelayValue(final Long connectionDelayValue)
+        {
+            this.myConnectionDelayValue = connectionDelayValue;
+            return this;
+        }
+
+        /**
+         * Builds EccNodesSync with Connection Delay Unit.
+         *
+         * @param connectionDelayUnit
+         *          Unit of the delay before connecting
+         * @return Builder
+         */
+        public Builder withConnectionDelayUnit(final TimeUnit connectionDelayUnit)
+        {
+            this.myConnectionDelayUnit = ChronoUnit.valueOf(connectionDelayUnit.toString().toUpperCase(Locale.US));
             return this;
         }
 

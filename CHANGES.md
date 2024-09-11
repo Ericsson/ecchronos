@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Release)
 
+* Specify Interval for Next Connection - Issue #674
 * Retry Policy for Jmx Connection - Issue #700
 * Update Architecture and Tests Documentations to Add the Agent Features and The cassandra-test-image - Issue #707
 * Enhance Test Infrastructure by Adding Cassandra-Test-Image Module With Multi-Datacenter Cluster and Abstract Integration Test Class - Issue #706

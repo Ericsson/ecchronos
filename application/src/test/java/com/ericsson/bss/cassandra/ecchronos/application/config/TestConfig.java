@@ -30,6 +30,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -236,4 +237,12 @@ public class TestConfig
         });
         assertEquals("Max delay cannot be less than start delay.", exception.getMessage());
     }
+    public void testConnectionDelay()
+    {
+        Interval connectionDelay = config.getConnectionConfig().getConnectionDelay();
+        assertThat(connectionDelay.getUnit()).isEqualTo(TimeUnit.MINUTES);
+        assertThat(connectionDelay.getTime()).isEqualTo(45l);
+    }
+
 }
+
