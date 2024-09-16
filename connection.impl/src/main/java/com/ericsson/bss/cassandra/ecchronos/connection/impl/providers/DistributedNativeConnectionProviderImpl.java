@@ -19,6 +19,7 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.DistributedNativeBuilder;
 
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import java.io.IOException;
 import java.util.List;
 
@@ -27,6 +28,7 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
     private final CqlSession mySession;
     private final List<Node> myNodes;
     private final DistributedNativeBuilder myDistributedNativeBuilder;
+    private final ConnectionType myConnectionType;
 
     /**
      * Constructs a new {@code DistributedNativeConnectionProviderImpl} with the specified {@link CqlSession} and list
@@ -38,14 +40,15 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
      *         the list of {@link Node} instances representing the nodes in the cluster.
      */
     public DistributedNativeConnectionProviderImpl(
-            final CqlSession session,
-            final List<Node> nodesList,
-            final DistributedNativeBuilder distributedNativeBuilder
-    )
+                                                   final CqlSession session,
+                                                   final List<Node> nodesList,
+                                                   final DistributedNativeBuilder distributedNativeBuilder,
+                                                   final ConnectionType connectionType)
     {
         mySession = session;
         myNodes = nodesList;
         myDistributedNativeBuilder = distributedNativeBuilder;
+        myConnectionType = connectionType;
     }
 
     /**
@@ -69,8 +72,6 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
     {
         return myNodes;
     }
-
-
 
     /**
      * Closes the {@link CqlSession} associated with this connection provider.
@@ -124,5 +125,18 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
     public Boolean confirmNodeValid(final Node node)
     {
         return myDistributedNativeBuilder.confirmNodeValid(node);
+    }
+
+    /**
+     * Retrieves the type of connection being used by this connection provider.
+     * to determine the current {@link ConnectionType}.
+     *
+     * @return The {@link ConnectionType} of the connection managed by
+     *         {@code myDistributedNativeConnectionProviderImpl}.
+     */
+    @Override
+    public ConnectionType getConnectionType()
+    {
+        return myConnectionType;
     }
 }

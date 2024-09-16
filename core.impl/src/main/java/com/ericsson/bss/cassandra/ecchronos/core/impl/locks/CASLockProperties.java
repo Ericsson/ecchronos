@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.impl.locks;
 
 import com.ericsson.bss.cassandra.ecchronos.core.impl.utils.ConsistencyType;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import java.util.concurrent.ScheduledExecutorService;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
@@ -27,18 +28,21 @@ import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
  */
 public class CASLockProperties
 {
+    private final ConnectionType myConnectionType;
     private final String myKeyspaceName;
     private final ScheduledExecutorService myExecutor;
     private final ConsistencyLevel mySerialConsistencyLevel;
     private final CqlSession mySession;
     private final StatementDecorator myStatementDecorator;
 
-    CASLockProperties(final String keyspaceName,
+    CASLockProperties(final ConnectionType connectionType,
+                      final String keyspaceName,
                       final ScheduledExecutorService executor,
                       final ConsistencyType consistencyType,
                       final CqlSession session,
                       final StatementDecorator statementDecorator)
     {
+        myConnectionType = connectionType;
         myKeyspaceName = keyspaceName;
         myExecutor = executor;
         mySerialConsistencyLevel = defineSerialConsistencyLevel(consistencyType);
@@ -49,9 +53,18 @@ public class CASLockProperties
     public final ConsistencyLevel defineSerialConsistencyLevel(final ConsistencyType consistencyType)
     {
         ConsistencyLevel serialConsistencyLevel;
-        serialConsistencyLevel = ConsistencyType.LOCAL.equals(consistencyType)
+        if (ConsistencyType.DEFAULT.equals(consistencyType))
+        {
+            serialConsistencyLevel = myConnectionType == ConnectionType.datacenterAware
                     ? ConsistencyLevel.LOCAL_SERIAL
                     : ConsistencyLevel.SERIAL;
+        }
+        else
+        {
+            serialConsistencyLevel = ConsistencyType.LOCAL.equals(consistencyType)
+                    ? ConsistencyLevel.LOCAL_SERIAL
+                    : ConsistencyLevel.SERIAL;
+        }
         return serialConsistencyLevel;
     }
 

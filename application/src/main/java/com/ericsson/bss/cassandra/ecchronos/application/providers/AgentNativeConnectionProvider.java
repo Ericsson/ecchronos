@@ -28,6 +28,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnecti
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.DistributedNativeBuilder;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedNativeConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -296,5 +297,19 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
     public Boolean confirmNodeValid(final Node node)
     {
         return myDistributedNativeConnectionProviderImpl.confirmNodeValid(node);
+    }
+
+    /**
+     * Retrieves the type of connection being used by this connection provider.
+     * This method delegates the call to the underlying {@code DistributedNativeConnectionProviderImpl}
+     * to determine the current {@link ConnectionType}.
+     *
+     * @return The {@link ConnectionType} of the connection managed by
+     *         {@code myDistributedNativeConnectionProviderImpl}.
+     */
+    @Override
+    public ConnectionType getConnectionType()
+    {
+        return myDistributedNativeConnectionProviderImpl.getConnectionType();
     }
 }

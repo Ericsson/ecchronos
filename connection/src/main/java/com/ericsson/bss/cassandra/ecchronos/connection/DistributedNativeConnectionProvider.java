@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection;
 
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
@@ -35,4 +36,5 @@ public interface DistributedNativeConnectionProvider extends Closeable
     void addNode(Node myNode);
     void removeNode(Node myNode);
     Boolean confirmNodeValid(Node node);
+    ConnectionType getConnectionType();
 }
