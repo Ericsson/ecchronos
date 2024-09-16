@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.impl;
 
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import java.net.InetSocketAddress;
 
 import java.util.List;
@@ -88,6 +89,12 @@ public class AbstractCassandraContainerTest
             public Boolean confirmNodeValid(Node node)
             {
                 return false;
+            }
+
+            @Override
+            public ConnectionType getConnectionType()
+            {
+                return ConnectionType.hostAware;
             }
         };
     }

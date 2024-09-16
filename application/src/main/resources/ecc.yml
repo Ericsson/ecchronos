@@ -291,14 +291,16 @@ rest_server:
       ## the cache expiration time is reached.
       ##
       cache_expiry_time_in_seconds: 30
-      ##
-      ## Allow to override consistency level for LWT (lightweight transactions). Possible values are:
-      ## "DEFAULT" - Use consistency level based on remoteRouting.
-      ## "SERIAL" - Use SERIAL consistency for LWT regardless of remoteRouting.
-      ## "LOCAL" - Use LOCAL_SERIAL consistency for LWT regardless of remoteRouting.
-      ##
-      ## if you use remoteRouting: false and LOCAL then all locks will be taken locally
-      ## in DC. I.e There's a risk that multiple nodes in different datacenters will be able to lock the
-      ## same nodes causing multiple repairs on the same range/node at the same time.
-      ##
-      consistencySerial: "DEFAULT"
+    ##
+    ## Allow to override consistency level for LWT (lightweight transactions). Possible values are:
+    ## "DEFAULT" - Use consistency level based on the `datacenterAware` agent type.
+    ##  If the agent type is `datacenterAware`, LOCAL_SERIAL consistency will be used. Otherwise,
+    ##  SERIAL consistency will be applied.
+    ## "SERIAL" - Use SERIAL consistency for LWT regardless of agent type.
+    ## "LOCAL" - Use LOCAL_SERIAL consistency for LWT regardless agent type.
+    ##
+    ## If an agent type other than datacenterAware and LOCAL is used, all locks will be managed locally within each datacenter.
+    ## I.e There's a risk that multiple nodes in different datacenters will be able to lock the
+    ## same nodes causing multiple repairs on the same range/node at the same time.
+    ##
+    consistencySerial: "DEFAULT"

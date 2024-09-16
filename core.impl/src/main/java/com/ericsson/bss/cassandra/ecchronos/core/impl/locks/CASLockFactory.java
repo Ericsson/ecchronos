@@ -24,8 +24,8 @@ import com.datastax.oss.driver.api.core.metadata.TokenMap;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.state.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
-import com.ericsson.bss.cassandra.ecchronos.core.locks.HostStates;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
@@ -84,7 +84,9 @@ public final class CASLockFactory implements LockFactory, Closeable
 
     CASLockFactory(final CASLockFactoryBuilder builder)
     {
-        myCasLockProperties = new CASLockProperties(builder.getKeyspaceName(),
+        myCasLockProperties = new CASLockProperties(
+                builder.getNativeConnectionProvider().getConnectionType(),
+                builder.getKeyspaceName(),
                 Executors.newSingleThreadScheduledExecutor(
                         new ThreadFactoryBuilder().setNameFormat("LockRefresher-%d").build()),
                 builder.getConsistencyType(),

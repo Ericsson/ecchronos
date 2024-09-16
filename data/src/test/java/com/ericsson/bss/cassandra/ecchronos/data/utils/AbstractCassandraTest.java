@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.data.utils;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.testcontainers.containers.CassandraContainer;
@@ -74,6 +75,12 @@ public class AbstractCassandraTest
             @Override
             public Boolean confirmNodeValid(Node node) {
                 return false;
+            }
+
+            @Override
+            public ConnectionType getConnectionType()
+            {
+                return ConnectionType.datacenterAware;
             }
         };
     }

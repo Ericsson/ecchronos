@@ -26,8 +26,9 @@ import static org.mockito.Mockito.when;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.AbstractCassandraContainerTest;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.utils.ConsistencyType;
-import com.ericsson.bss.cassandra.ecchronos.core.locks.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.state.HostStates;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import java.io.IOException;
 import java.util.Arrays;
@@ -484,11 +485,62 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
                             {
                                 return false;
                             }
+
+                            @Override
+                            public ConnectionType getConnectionType()
+                            {
+                                return null;
+                            }
                         })
                         .withHostStates(hostStates)
                         .withStatementDecorator(s -> s)
                         .withKeyspaceName(myKeyspaceName)
                         .build());
+    }
+
+    @Test
+    public void testDataCenterAwareAgentTypeWithDefaultSerialConsistency()
+    {
+        Node nodeMock = mock(Node.class);
+        DistributedNativeConnectionProvider connectionProviderMock = mock(DistributedNativeConnectionProvider.class);
+
+        when(nodeMock.getHostId()).thenReturn(UUID.randomUUID());
+        when(connectionProviderMock.getCqlSession()).thenReturn(mySession);
+        when(connectionProviderMock.getNodes()).thenReturn(Arrays.asList(nodeMock));
+        when(connectionProviderMock.getConnectionType()).thenReturn(ConnectionType.datacenterAware);
+
+        myLockFactory = new CASLockFactoryBuilder()
+                .withNativeConnectionProvider(getDataCenterAwareConnectionTypeProvider())
+                .withHostStates(hostStates)
+                .withStatementDecorator(s -> s)
+                .withKeyspaceName(myKeyspaceName)
+                .withConsistencySerial(ConsistencyType.DEFAULT)
+                .withNode(nodeMock)
+                .build();
+
+        assertEquals(ConsistencyLevel.LOCAL_SERIAL, myLockFactory.getSerialConsistencyLevel());
+    }
+
+    @Test
+    public void testOtherThanDataCenterAwareAgentTypeWithDefaultSerialConsistency()
+    {
+        Node nodeMock = mock(Node.class);
+        DistributedNativeConnectionProvider connectionProviderMock = mock(DistributedNativeConnectionProvider.class);
+
+        when(nodeMock.getHostId()).thenReturn(UUID.randomUUID());
+        when(connectionProviderMock.getCqlSession()).thenReturn(mySession);
+        when(connectionProviderMock.getNodes()).thenReturn(Arrays.asList(nodeMock));
+
+        myLockFactory = new CASLockFactoryBuilder()
+                .withNativeConnectionProvider(connectionProviderMock)
+                .withHostStates(hostStates)
+                .withStatementDecorator(s -> s)
+                .withKeyspaceName(myKeyspaceName)
+                .withConsistencySerial(ConsistencyType.DEFAULT)
+                .withNode(nodeMock)
+                .build();
+
+        assertEquals(ConsistencyLevel.SERIAL, myLockFactory.getSerialConsistencyLevel());
     }
 
     @Test
@@ -612,4 +664,43 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
         return writeCount;
     }
 
+    private DistributedNativeConnectionProvider getDataCenterAwareConnectionTypeProvider()
+    {
+        return new DistributedNativeConnectionProvider()
+        {
+            @Override
+            public CqlSession getCqlSession()
+            {
+                return mySession;
+            }
+
+            @Override
+            public List<Node> getNodes()
+            {
+                return mySession.getMetadata().getNodes().values().stream().toList();
+            }
+
+            @Override
+            public void addNode(Node myNode)
+            {
+            }
+
+            @Override
+            public void removeNode(Node myNode)
+            {
+            }
+
+            @Override
+            public Boolean confirmNodeValid(Node node)
+            {
+                return false;
+            }
+
+            @Override
+            public ConnectionType getConnectionType()
+            {
+                return ConnectionType.datacenterAware;
+            }
+        };
+    }
 }

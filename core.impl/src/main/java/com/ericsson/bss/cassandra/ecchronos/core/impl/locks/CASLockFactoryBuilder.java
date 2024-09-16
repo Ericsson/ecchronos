@@ -18,7 +18,7 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.utils.ConsistencyType;
-import com.ericsson.bss.cassandra.ecchronos.core.locks.HostStates;
+import com.ericsson.bss.cassandra.ecchronos.core.state.HostStates;
 
 /**
  * Represents a container for builder configurations and state for the CASLockFactory.
