@@ -69,6 +69,7 @@ public final class EccNodesSync
     private final PreparedStatement myCreateStatement;
     private final PreparedStatement myUpdateStatusStatement;
     private final PreparedStatement mySelectStatusStatement;
+    private final PreparedStatement myDeleteStatement;
     private final Long connectionDelayValue;
     private final ChronoUnit connectionDelayUnit;
 
@@ -85,6 +86,12 @@ public final class EccNodesSync
                 .value(COLUMN_LAST_CONNECTION, bindMarker())
                 .value(COLUMN_NEXT_CONNECTION, bindMarker())
                 .value(COLUMN_NODE_ID, bindMarker())
+                .build()
+                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
+        myDeleteStatement = mySession.prepare(QueryBuilder.deleteFrom(KEYSPACE_NAME, TABLE_NAME)
+                .whereColumn(COLUMN_ECCHRONOS_ID).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_DC_NAME).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_NODE_ID).isEqualTo(bindMarker())
                 .build()
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
         myUpdateStatusStatement = mySession.prepare(QueryBuilder.update(KEYSPACE_NAME, TABLE_NAME)
@@ -186,7 +193,22 @@ public final class EccNodesSync
         }
         return tmpResultSet;
     }
-
+    public ResultSet deleteNodeStatus(
+            final String datacenterName,
+            final UUID nodeID
+    )
+    {
+        ResultSet tmpResultSet = deleteNodeStateStatement(datacenterName, nodeID);
+        if (tmpResultSet.wasApplied())
+        {
+            LOG.info("Node {} successfully deleted", nodeID);
+        }
+        else
+        {
+            LOG.error("Unable to delete node {}", nodeID);
+        }
+        return tmpResultSet;
+    }
     private ResultSet updateNodeStateStatement(
             final NodeStatus nodeStatus,
             final String datacenterName,
@@ -202,6 +224,18 @@ public final class EccNodesSync
                 nodeID
         );
         return execute(updateNodeStatus);
+    }
+    private ResultSet deleteNodeStateStatement(
+            final String datacenterName,
+            final UUID nodeID
+    )
+    {
+        BoundStatement deleteNodeStatus = myDeleteStatement.bind(
+                ecChronosID,
+                datacenterName,
+                nodeID
+        );
+        return execute(deleteNodeStatus);
     }
 
     @VisibleForTesting

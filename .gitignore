@@ -18,3 +18,5 @@ dependency-reduced-pom.xml
 *htmlcov
 application/statistics/
 statistics/
+.vscode/
+

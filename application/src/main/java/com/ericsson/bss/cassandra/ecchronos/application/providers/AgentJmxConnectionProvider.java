@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.providers;
 
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Credentials;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.JmxTLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
@@ -157,6 +158,18 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
     public void close(final UUID nodeID) throws IOException
     {
         myDistributedJmxConnectionProviderImpl.close(nodeID);
+    }
+
+    /**
+     * Creates a new connection a node.
+     * @param node
+     *
+     * @throws IOException
+     */
+    @Override
+    public void add(final Node node) throws IOException
+    {
+        myDistributedJmxConnectionProviderImpl.add(node);
     }
 
     /**

@@ -25,11 +25,16 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionP
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.DistributedJmxBuilder;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DistributedJmxConnectionProviderImpl implements DistributedJmxConnectionProvider
 {
+    private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxConnectionProviderImpl.class);
     private final List<Node> myNodesList;
     private final ConcurrentHashMap<UUID, JMXConnector> myJMXConnections;
+    private final DistributedJmxBuilder myDistributedJmxBuilder;
 
     /**
      * Constructs a DistributedJmxConnectionProviderImpl with the specified list of nodes and JMX connections.
@@ -41,11 +46,13 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
      */
     public DistributedJmxConnectionProviderImpl(
             final List<Node> nodesList,
-            final ConcurrentHashMap<UUID, JMXConnector> jmxConnections
+            final ConcurrentHashMap<UUID, JMXConnector> jmxConnections,
+            final DistributedJmxBuilder distributedJmxBuilder
     )
     {
         myNodesList = nodesList;
         myJMXConnections = jmxConnections;
+        myDistributedJmxBuilder = distributedJmxBuilder;
     }
 
     /**
@@ -143,6 +150,25 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
     public void close(final UUID nodeID) throws IOException
     {
         myJMXConnections.get(nodeID).close();
+    }
+
+    /**
+     * Add a node and create a JMXconnection.
+     * @param node
+     * @throws IOException
+     */
+    @Override
+    public void add(final Node node) throws IOException
+    {
+        try
+        {
+            myDistributedJmxBuilder.reconnect(node);
+        }
+        catch (EcChronosException e)
+        {
+            LOG.warn("Unable to connect with node {} connection refused: {}", node.getHostId(), e.getMessage());
+        }
+
     }
 
 }

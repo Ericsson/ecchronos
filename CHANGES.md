@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Hot Reload of Nodes List - Issue #699
 * Investigate Creation of RepairScheduler and ScheduleManager #714
 * Implement ScheduledJobQueue for Prioritized Job Management and Execution - Issue #740
 * Implement RepairGroup Class for Managing and Executing Repair Tasks - Issue #738

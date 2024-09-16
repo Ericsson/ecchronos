@@ -26,6 +26,7 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
 {
     private final CqlSession mySession;
     private final List<Node> myNodes;
+    private final DistributedNativeBuilder myDistributedNativeBuilder;
 
     /**
      * Constructs a new {@code DistributedNativeConnectionProviderImpl} with the specified {@link CqlSession} and list
@@ -38,11 +39,13 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
      */
     public DistributedNativeConnectionProviderImpl(
             final CqlSession session,
-            final List<Node> nodesList
+            final List<Node> nodesList,
+            final DistributedNativeBuilder distributedNativeBuilder
     )
     {
         mySession = session;
         myNodes = nodesList;
+        myDistributedNativeBuilder = distributedNativeBuilder;
     }
 
     /**
@@ -67,6 +70,8 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
         return myNodes;
     }
 
+
+
     /**
      * Closes the {@link CqlSession} associated with this connection provider.
      *
@@ -88,6 +93,37 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
     public static DistributedNativeBuilder builder()
     {
         return new DistributedNativeBuilder();
+    }
+
+    /**
+     * Add a nw node to the list of nodes.
+     * @param node
+     */
+    @Override
+    public void addNode(final Node node)
+    {
+        myNodes.add(node);
+    }
+
+    /**
+     * Remove node for the list of nodes.
+     * @param node
+     */
+    @Override
+    public void removeNode(final Node node)
+    {
+        myNodes.remove(node);
+    }
+
+    /**
+     * Checks the node is on the list of specified dc's/racks/nodes.
+     * @param node
+     * @return
+     */
+    @Override
+    public Boolean confirmNodeValid(final Node node)
+    {
+        return myDistributedNativeBuilder.confirmNodeValid(node);
     }
 
 }
