@@ -19,6 +19,7 @@ import java.math.BigInteger;
 /**
  * A representation of a token range in Cassandra.
  */
+@SuppressWarnings("VisibilityModifier")
 public class LongTokenRange
 {
     private static final int HASH_THIRTYONE = 31;
