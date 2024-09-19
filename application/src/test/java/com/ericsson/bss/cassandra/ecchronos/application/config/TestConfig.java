@@ -313,5 +313,11 @@ public class TestConfig
         RepairType repairType = repairConfig.getRepairType();
         assertThat(repairType).isEqualTo(RepairType.VNODE);
     }
+
+    @Test
+    public void testInstanceName()
+    {
+        assertThat(nativeConnection.getAgentConnectionConfig().getInstanceName()).isEqualTo("unique_identifier");
+    }
 }
 

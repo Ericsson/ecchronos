@@ -37,6 +37,7 @@ public final class AgentConnectionConfig
     private RackAware myRackAware = new RackAware();
     private HostAware myHostAware = new HostAware();
     private Class<? extends DefaultLoadBalancingPolicy> myDatacenterAwarePolicy = DataCenterAwarePolicy.class;
+    private String myInstanceName;
 
     /**
      * Default constructor for AgentConnectionConfig.
@@ -44,6 +45,40 @@ public final class AgentConnectionConfig
     public AgentConnectionConfig()
     {
 
+    }
+
+    /**
+     * Gets unique ecchronos instance name.
+     *
+     * @return the instance name.
+     */
+    @JsonProperty("instanceName")
+    public String getInstanceName()
+    {
+        return myInstanceName;
+    }
+
+    /**
+     * Sets unique instance name.
+     *
+     * @param  instanceName
+     *         the instance name as a string.
+     * @throws ConfigurationException
+     *         if the provided instance name is invalid.
+     */
+    @JsonProperty("instanceName")
+    public void setInstanceName(final String instanceName) throws ConfigurationException
+    {
+        if (instanceName == null || instanceName.isBlank())
+        {
+            throw new ConfigurationException(
+                    "Invalid instance name: "
+                            +
+                            instanceName
+                            +
+                            "\nInstance name must not be null or empty");
+        }
+        myInstanceName = instanceName;
     }
 
     /**

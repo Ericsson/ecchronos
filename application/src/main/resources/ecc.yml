@@ -24,6 +24,10 @@ connection:
     ## to connect to. The application will use the configurations
     ## specified below, connecting to the listed hosts;
     agent:
+      ## Each ecchronos instance must have unique name.
+      ## (instanceName: unique identifier), that will be used
+      ## as ecchronos_id (partition key in nodes_sync table).
+      instanceName: unique_identifier
       ## Define the Agent strategy, it can be
       ## - datacenterAware;
       ## - rackAware; and

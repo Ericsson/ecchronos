@@ -16,6 +16,7 @@
 connection:
   cql:
     agent:
+      instanceName: unique_identifier
       type: datacenterAware
       localDatacenter: datacenter1
       datacenterAwarePolicy: com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy
