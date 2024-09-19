@@ -74,6 +74,8 @@
         <module>connection.impl</module>
         <module>application</module>
         <module>data</module>
+        <module>core</module>
+        <module>core.impl</module>
     </modules>
 
     <properties>

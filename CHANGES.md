@@ -2,6 +2,8 @@
 
 ## Version 1.0.0 (Not yet Release)
 
+* Implement ReplicationStateImpl to Manage and Cache Token Range to Replica Mappings - Issue #719
+* Implement NodeResolverImpl to Resolve Nodes by IP Address and UUID - Issue #718
 * Specify Interval for Next Connection - Issue #674
 * Retry Policy for Jmx Connection - Issue #700
 * Update Architecture and Tests Documentations to Add the Agent Features and The cassandra-test-image - Issue #707
