@@ -14,11 +14,16 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Interval;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.CqlTLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.ReloadingCertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.metadata.NodeResolverImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.state.ReplicationStateImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.metadata.NodeResolver;
+import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.data.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 
@@ -218,6 +223,22 @@ public class BeanConfigurator
                                                        final DistributedNativeConnectionProvider nativeConnectionProvider)
     {
         return new RetrySchedulerService(eccNodesSync, config, jmxConnectionProvider, nativeConnectionProvider);
+    }
+
+    @Bean
+    public NodeResolver nodeResolver(final DistributedNativeConnectionProvider distributedNativeConnectionProvider)
+    {
+        CqlSession session = distributedNativeConnectionProvider.getCqlSession();
+        return new NodeResolverImpl(session);
+    }
+
+    @Bean
+    public ReplicationState replicationState(
+            final DistributedNativeConnectionProvider distributedNativeConnectionProvider,
+            final NodeResolver nodeResolver)
+    {
+        CqlSession session = distributedNativeConnectionProvider.getCqlSession();
+        return new ReplicationStateImpl(nodeResolver, session);
     }
 
     private Security getSecurityConfig() throws ConfigurationException

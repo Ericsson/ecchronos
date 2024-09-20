@@ -50,6 +50,18 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
+            <artifactId>core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
+            <artifactId>core.impl</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Spring boot -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
