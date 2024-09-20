@@ -12,27 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.exceptions;
-
 /**
- * Generic exception thrown by schedulers to signal that something went wrong.
+ * Contains the enums related with ecChronos connections.
  */
-public class EcChronosException extends Exception
-{
-    private static final long serialVersionUID = 1148561336907867613L;
-
-    public EcChronosException(final String message)
-    {
-        super(message);
-    }
-
-    public EcChronosException(final Throwable t)
-    {
-        super(t);
-    }
-
-    public EcChronosException(final String message, final Throwable t)
-    {
-        super(message, t);
-    }
-}
+package com.ericsson.bss.cassandra.ecchronos.utils.enums.connection;

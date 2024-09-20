@@ -23,8 +23,8 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.connection.Distri
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.RetryPolicyConfig;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.data.enums.NodeStatus;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;

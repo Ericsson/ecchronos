@@ -14,9 +14,9 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.table;
 
-import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;

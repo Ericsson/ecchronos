@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-
 public class TestDefaultConfig
 {
     private static final String DEFAULT_AGENT_FILE_NAME = "nothing_set.yml";
@@ -46,8 +45,6 @@ public class TestDefaultConfig
         config = objectMapper.readValue(file, Config.class);
 
     }
-
-
 
     @Test
     public void testConnectionDelayDefault()

@@ -12,7 +12,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.ericsson.bss.cassandra.ecchronos.utils.enums.connection;
+
 /**
- * Contains custom ecChronos exceptions.
+ * Enum representing the connection types.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.exceptions;
+public enum ConnectionType
+{
+    /**
+     * ecChronos will register its control over all the nodes in the specified datacenter.
+     */
+    datacenterAware,
+
+    /**
+     * ecChronos is responsible only for a subset of racks specified in the declared list.
+     */
+    rackAware,
+
+    /**
+     * ecChronos is responsible only for the specified list of hosts.
+     */
+    hostAware
+}

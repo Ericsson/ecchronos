@@ -12,14 +12,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.data.enums;
+package com.ericsson.bss.cassandra.ecchronos.utils.exceptions;
 
-/**
- * The status of nodes after creating jmx connection.
- */
-public enum NodeStatus
+public class ConfigurationException extends Exception
 {
-    UNAVAILABLE,
-    AVAILABLE,
-    UNREACHABLE
+    private static final long serialVersionUID = -2269440899665538081L;
+
+    public ConfigurationException()
+    {
+    }
+
+    public ConfigurationException(final String message)
+    {
+        super(message);
+    }
+
+    public ConfigurationException(final String message, final Throwable cause)
+    {
+        super(message, cause);
+    }
+
+    public ConfigurationException(final Throwable cause)
+    {
+        super(cause);
+    }
 }

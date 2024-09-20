@@ -76,6 +76,7 @@
         <module>data</module>
         <module>core</module>
         <module>core.impl</module>
+        <module>utils</module>
     </modules>
 
     <properties>

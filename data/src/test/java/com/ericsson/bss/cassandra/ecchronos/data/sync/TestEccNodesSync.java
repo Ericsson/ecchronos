@@ -18,9 +18,9 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Node;
 
-import com.ericsson.bss.cassandra.ecchronos.data.enums.NodeStatus;
-import com.ericsson.bss.cassandra.ecchronos.data.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.data.utils.AbstractCassandraTest;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
 import java.io.IOException;
 import net.jcip.annotations.NotThreadSafe;
 import org.junit.After;

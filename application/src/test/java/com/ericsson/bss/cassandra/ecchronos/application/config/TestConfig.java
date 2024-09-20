@@ -15,12 +15,11 @@
 package com.ericsson.bss.cassandra.ecchronos.application.config;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.*;
-import com.ericsson.bss.cassandra.ecchronos.application.exceptions.ConfigurationException;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
-import com.fasterxml.jackson.core.exc.StreamReadException;
-import com.fasterxml.jackson.databind.DatabindException;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ConfigurationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
@@ -30,7 +29,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -47,7 +45,7 @@ public class TestConfig
     private static DistributedJmxConnection distributedJmxConnection;
 
     @Before
-    public void setup() throws StreamReadException, DatabindException, IOException
+    public void setup() throws IOException
     {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 
@@ -66,7 +64,7 @@ public class TestConfig
     @Test
     public void testDefaultAgentType()
     {
-        assertThat(nativeConnection.getAgentConnectionConfig().getType()).isEqualTo(AgentConnectionConfig.ConnectionType.datacenterAware);
+        assertThat(nativeConnection.getAgentConnectionConfig().getType()).isEqualTo(ConnectionType.datacenterAware);
     }
 
     @Test
@@ -237,12 +235,13 @@ public class TestConfig
         });
         assertEquals("Max delay cannot be less than start delay.", exception.getMessage());
     }
+
+    @Test
     public void testConnectionDelay()
     {
         Interval connectionDelay = config.getConnectionConfig().getConnectionDelay();
         assertThat(connectionDelay.getUnit()).isEqualTo(TimeUnit.MINUTES);
         assertThat(connectionDelay.getTime()).isEqualTo(45l);
     }
-
 }
 

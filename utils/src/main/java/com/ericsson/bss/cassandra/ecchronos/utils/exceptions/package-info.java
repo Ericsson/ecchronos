@@ -13,6 +13,6 @@
  * limitations under the License.
  */
 /**
- * Contains enums definitions for connections configs (CQL and JMX).
+ * Contains exceptions related to outbound with ecChronos operations.
  */
-package com.ericsson.bss.cassandra.ecchronos.connection.impl.enums;
+package com.ericsson.bss.cassandra.ecchronos.utils.exceptions;
