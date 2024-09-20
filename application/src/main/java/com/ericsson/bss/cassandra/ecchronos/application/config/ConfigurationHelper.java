@@ -14,13 +14,13 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config;
 
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ConfigurationException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 
-import com.ericsson.bss.cassandra.ecchronos.application.exceptions.ConfigurationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 

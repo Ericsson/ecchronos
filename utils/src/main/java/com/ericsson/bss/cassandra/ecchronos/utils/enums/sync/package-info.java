@@ -13,6 +13,6 @@
  * limitations under the License.
  */
 /**
- * Contains enums definitions for data configs.
+ * Contains the enums related with nodes_sync table.
  */
-package com.ericsson.bss.cassandra.ecchronos.data.enums;
+package com.ericsson.bss.cassandra.ecchronos.utils.enums.sync;

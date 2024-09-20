@@ -16,7 +16,6 @@ package com.ericsson.bss.cassandra.ecchronos.connection.impl.builders;
 
 import com.ericsson.bss.cassandra.ecchronos.connection.CustomDriverOption;
 import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
-import com.ericsson.bss.cassandra.ecchronos.connection.impl.enums.ConnectionType;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.auth.AuthProvider;
@@ -31,6 +30,7 @@ import com.datastax.oss.driver.internal.core.loadbalancing.DefaultLoadBalancingP
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.datastax.oss.driver.api.core.metrics.DefaultSessionMetric;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedNativeConnectionProviderImpl;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import com.google.common.collect.ImmutableList;
 
 import java.net.InetSocketAddress;
@@ -95,9 +95,9 @@ public class DistributedNativeBuilder
      *         the type of the agent as a {@link String}.
      * @return the current instance of {@link DistributedNativeBuilder}.
      */
-    public final DistributedNativeBuilder withAgentType(final String type)
+    public final DistributedNativeBuilder withAgentType(final ConnectionType type)
     {
-        myType = ConnectionType.valueOf(type);
+        myType = type;
         return this;
     }
 

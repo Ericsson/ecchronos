@@ -22,8 +22,8 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
-import com.ericsson.bss.cassandra.ecchronos.data.enums.NodeStatus;
-import com.ericsson.bss.cassandra.ecchronos.data.exceptions.EcChronosException;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
 import com.google.common.base.Preconditions;
 
 import java.net.UnknownHostException;

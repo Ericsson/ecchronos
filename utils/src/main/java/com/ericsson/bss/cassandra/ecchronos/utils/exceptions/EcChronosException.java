@@ -12,7 +12,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.ericsson.bss.cassandra.ecchronos.utils.exceptions;
+
 /**
- * Contains exceptions related to outbound connections (CQL and JMX).
+ * Generic exception thrown by schedulers to signal that something went wrong.
  */
-package com.ericsson.bss.cassandra.ecchronos.application.exceptions;
+public class EcChronosException extends Exception
+{
+    private static final long serialVersionUID = 1148561336907867613L;
+
+    public EcChronosException(final String message)
+    {
+        super(message);
+    }
+
+    public EcChronosException(final Throwable t)
+    {
+        super(t);
+    }
+
+    public EcChronosException(final String message, final Throwable t)
+    {
+        super(message, t);
+    }
+}

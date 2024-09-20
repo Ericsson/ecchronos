@@ -40,6 +40,13 @@
             <artifactId>data</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
+            <artifactId>utils</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Cassandra driver -->
         <dependency>
             <groupId>com.datastax.oss</groupId>

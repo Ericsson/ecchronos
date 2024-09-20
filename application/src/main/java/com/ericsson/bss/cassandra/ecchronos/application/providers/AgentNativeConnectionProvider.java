@@ -86,7 +86,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
         DistributedNativeBuilder nativeConnectionBuilder =
                 DistributedNativeConnectionProviderImpl.builder()
                         .withInitialContactPoints(resolveInitialContactPoints(agentConnectionConfig.getContactPoints()))
-                        .withAgentType(agentConnectionConfig.getType().toString())
+                        .withAgentType(agentConnectionConfig.getType())
                         .withLocalDatacenter(agentConnectionConfig.getLocalDatacenter())
                         .withAuthProvider(authProvider)
                         .withSslEngineFactory(sslEngineFactory);

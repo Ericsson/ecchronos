@@ -41,12 +41,12 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- Cassandra driver -->
         <dependency>
             <groupId>com.datastax.oss</groupId>
             <artifactId>java-driver-core</artifactId>
         </dependency>
 
-        <!-- Cassandra driver -->
         <dependency>
             <groupId>com.datastax.oss</groupId>
             <artifactId>java-driver-query-builder</artifactId>

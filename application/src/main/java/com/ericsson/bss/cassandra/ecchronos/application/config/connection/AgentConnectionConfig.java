@@ -14,13 +14,14 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config.connection;
 
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ConfigurationException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.datastax.oss.driver.internal.core.loadbalancing.DefaultLoadBalancingPolicy;
-import com.ericsson.bss.cassandra.ecchronos.application.exceptions.ConfigurationException;
 import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -225,27 +226,6 @@ public final class AgentConnectionConfig
     public HostAware getHostAware()
     {
         return myHostAware;
-    }
-
-    /**
-     * Enum representing the connection types.
-     */
-    public enum ConnectionType
-    {
-        /**
-         * ecChronos will register its control over all the nodes in the specified datacenter.
-         */
-        datacenterAware,
-
-        /**
-         * ecChronos is responsible only for a subset of racks specified in the declared list.
-         */
-        rackAware,
-
-        /**
-         * ecChronos is responsible only for the specified list of hosts.
-         */
-        hostAware
     }
 
     /**

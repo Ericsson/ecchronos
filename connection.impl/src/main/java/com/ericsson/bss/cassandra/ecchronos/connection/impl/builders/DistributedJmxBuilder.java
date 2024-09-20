@@ -21,9 +21,9 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.QueryExecutionException;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedJmxConnectionProviderImpl;
-import com.ericsson.bss.cassandra.ecchronos.data.enums.NodeStatus;
-import com.ericsson.bss.cassandra.ecchronos.data.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

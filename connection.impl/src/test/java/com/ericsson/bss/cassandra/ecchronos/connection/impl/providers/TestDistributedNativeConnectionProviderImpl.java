@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.connection.impl.providers;
 
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.ContactEndPoint;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.DistributedNativeBuilder;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -136,7 +137,7 @@ public class TestDistributedNativeConnectionProviderImpl
 
         DistributedNativeBuilder provider = DistributedNativeConnectionProviderImpl.builder()
                 .withInitialContactPoints(contactPoints)
-                .withAgentType("rackAware")
+                .withAgentType(ConnectionType.rackAware)
                 .withRackAware(rackList);
 
         List<Node> realNodesList = provider.testResolveRackNodes(mySessionMock, rackList);
@@ -155,7 +156,7 @@ public class TestDistributedNativeConnectionProviderImpl
         hostList.add(new InetSocketAddress("127.0.0.3", 9042));
         DistributedNativeBuilder provider = DistributedNativeConnectionProviderImpl.builder()
                 .withInitialContactPoints(contactPoints)
-                .withAgentType("hostAware")
+                .withAgentType(ConnectionType.hostAware)
                 .withHostAware(hostList);
         List<Node> realNodesList = provider.testResolveHostAware(mySessionMock, hostList);
         assertEquals(3, realNodesList.size());
