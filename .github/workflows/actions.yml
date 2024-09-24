@@ -29,10 +29,6 @@ jobs:
            test_suite: 'compile com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
            python: 3.6
            java: 8
-         - name: "OSGi integration"
-           test_suite: 'install -P docker-integration-test,osgi-integration-tests -Dit.cassandra.version=3.0 -DskipUTs'
-           python: 3.6
-           java: 8
          - name: "Standalone integration 3.0"
            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=3.0 -DskipUTs'
            python: 3.6
@@ -100,9 +96,7 @@ jobs:
           fail_ci_if_error: false
           files: >
             ./rest/target/site/jacoco/jacoco.xml,
-            ./core.osgi/target/site/jacoco/jacoco.xml,
             ./application/target/site/jacoco/jacoco.xml,
-            ./osgi-integration/target/site/jacoco/jacoco.xml,
             ./core/target/site/jacoco/jacoco.xml,
             ./fm.impl/target/site/jacoco/jacoco.xml,
             ./connection/target/site/jacoco/jacoco.xml
