@@ -39,17 +39,13 @@
     <modules>
         <module>fm</module>
         <module>core</module>
-        <module>core.osgi</module>
         <module>connection</module>
         <module>connection.impl</module>
         <module>fm.impl</module>
         <module>rest</module>
-        <module>rest.osgi</module>
         <module>application</module>
         <module>cassandra-test-image</module>
         <module>ecchronos-binary</module>
-        <module>karaf-feature</module>
-        <module>osgi-integration</module>
         <module>standalone-integration</module>
     </modules>
 
@@ -80,7 +76,6 @@
 
         <pax-exam.version>4.13.1</pax-exam.version>
         <pax-logging-logback.version>1.8.4</pax-logging-logback.version>
-        <apache.karaf.version>4.3.8</apache.karaf.version>
         <org.apache.felix.scr.version>2.1.14</org.apache.felix.scr.version>
         <pax-url.version>2.4.7</pax-url.version>
         <javax.inject.version>1</javax.inject.version>
@@ -111,7 +106,6 @@
         <com.mycila.license-maven-plugin.version>3.0</com.mycila.license-maven-plugin.version>
         <io.fabric8.docker-maven-plugin.version>0.35.0</io.fabric8.docker-maven-plugin.version>
         <org.apache.servicemix.tooling.depends-maven-plugin.version>1.2</org.apache.servicemix.tooling.depends-maven-plugin.version>
-        <org.apache.karaf.tooling.karaf-maven-plugin.version>4.2.1</org.apache.karaf.tooling.karaf-maven-plugin.version>
         <org.jacoco.jacoco-maven-plugin.version>0.8.4</org.jacoco.jacoco-maven-plugin.version>
         <org.codehaus.mojo.exec-maven-plugin.version>3.0.0</org.codehaus.mojo.exec-maven-plugin.version>
         <org.codehaus.mojo.license-maven-plugin.version>1.19</org.codehaus.mojo.license-maven-plugin.version>
@@ -434,13 +428,6 @@
             <!-- Pax exam -->
             <dependency>
                 <groupId>org.ops4j.pax.exam</groupId>
-                <artifactId>pax-exam-container-karaf</artifactId>
-                <version>${pax-exam.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.ops4j.pax.exam</groupId>
                 <artifactId>pax-exam-cm</artifactId>
                 <version>${pax-exam.version}</version>
                 <scope>test</scope>
@@ -451,29 +438,6 @@
                 <artifactId>pax-exam-junit4</artifactId>
                 <version>${pax-exam.version}</version>
                 <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.karaf</groupId>
-                <artifactId>apache-karaf</artifactId>
-                <version>${apache.karaf.version}</version>
-                <scope>test</scope>
-                <type>zip</type>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.karaf.features</groupId>
-                <artifactId>standard</artifactId>
-                <version>${apache.karaf.version}</version>
-                <scope>test</scope>
-                <classifier>features</classifier>
-                <type>xml</type>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.karaf.shell</groupId>
-                <artifactId>org.apache.karaf.shell.core</artifactId>
-                <version>${apache.karaf.version}</version>
             </dependency>
 
             <dependency>
@@ -579,12 +543,6 @@
                     <configuration>
                         <skipAssembly>true</skipAssembly>
                     </configuration>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.karaf.tooling</groupId>
-                    <artifactId>karaf-maven-plugin</artifactId>
-                    <version>${org.apache.karaf.tooling.karaf-maven-plugin.version}</version>
                 </plugin>
 
                 <plugin>

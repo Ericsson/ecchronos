@@ -1,5 +1,9 @@
 # Changes
 
+## Version 4.0.7
+
+* Removes OSGI/Karaf support - Issue #657
+
 ## Version 4.0.6
 
 * Separate serial consistency configuration from remoteRouting functionality - Issue #633

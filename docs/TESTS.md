@@ -2,7 +2,7 @@
 
 Make sure to add tests to the relevant phase(s) when possible.
 If mocks or a single Apache Cassandra instance is necessary it may be run as a unit test.
-If multiple Apache Cassandra instances are necessary then test cases should be added to `standalone-integration` and/or `osgi-integration` tests.
+If multiple Apache Cassandra instances are necessary then test cases should be added to the `standalone-integration` tests.
 If HTTP related functionality is changed then `ecchronos-binary` test cases should be changed.
 
 ## Running the tests
@@ -30,10 +30,8 @@ The docker command must be runnable without *sudo* for the user running the test
 
 ### Integration tests
 
-The integration tests tries to start ecChronos with a cluster of nodes and verfiy that repairs are run.
-They are activated by using `-P osgi-integration-tests` or `-P standalone-integration-tests`.
-It is possible to run either OSGi integration tests or the standalone tests without the other.
-This can be done by running either `mvn clean install -P docker-integration-test,osgi-integration-tests` or `mvn clean install -P docker-integration-test,standalone-integration-tests`.
+The integration tests tries to start ecChronos with a cluster of nodes and verify that repairs are run.
+It is activated by using `-P standalone-integration-tests`.
 
 ### Acceptance tests
 
@@ -73,17 +71,12 @@ Standalone integration tests
 mvn clean install -P local-standalone-integration-tests
 ```
 
-OSGi integration tests
-```
-mvn clean install -P local-osgi-integration-tests
-```
-
 All the above in one property.
 ```
 mvn clean install -Dlocalprecommit.tests
 ```
 
-### Running acceptance tests towards local ecChronos&Cassandra
+### Running acceptance tests towards local ecChronos & Cassandra
 
 For development, it's much faster to run behave tests without needing to do the ecChronos/Cassandra setup each time.
 Running behave tests manually is roughly 7x faster than running through `python-integration-tests`.
@@ -207,4 +200,3 @@ The test cases needs to be run with the following system properties set:
 ### Break down into end to end tests
 
 The `standalone-integration` tests runs a setup similar to the standalone application to verify automated repairs.
-The `osgi-integration` tests runs in a OSGi environment to verify that all services are available and verifies automated repairs.
