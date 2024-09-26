@@ -62,7 +62,6 @@ import java.util.concurrent.TimeUnit;
 @Service
 public final class RetrySchedulerService implements DisposableBean
 {
-
     private static final Logger LOG = LoggerFactory.getLogger(RetrySchedulerService.class);
     private static final String COLUMN_NODE_ID = "node_id";
     private static final String COLUMN_NODE_STATUS = "node_status";

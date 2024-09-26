@@ -12,27 +12,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.connection;
+package com.ericsson.bss.cassandra.ecchronos.utils.enums.repair;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
-import javax.management.remote.JMXConnector;
-
-public interface DistributedJmxConnectionProvider extends Closeable
+/**
+ * The type of repair parallelism used.
+ */
+public enum RepairParallelism
 {
-    ConcurrentHashMap<UUID, JMXConnector> getJmxConnections();
+    /**
+     * All nodes are repaired in parallel.
+     */
+    PARALLEL("parallel");
 
-    JMXConnector getJmxConnector(UUID nodeID);
+    private final String myName;
 
-    boolean isConnected(JMXConnector jmxConnector);
-
-    @Override
-    default void close() throws IOException
+    RepairParallelism(final String name)
     {
+        myName = name;
     }
 
-    void close(UUID nodeID) throws IOException;
+    /**
+     * Get the name of the repair parallelism.
+     *
+     * @return The repair parallelism name.
+     */
+    public String getName()
+    {
+        return myName;
+    }
 }

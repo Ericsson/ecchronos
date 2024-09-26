@@ -12,27 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.connection;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
-import javax.management.remote.JMXConnector;
-
-public interface DistributedJmxConnectionProvider extends Closeable
-{
-    ConcurrentHashMap<UUID, JMXConnector> getJmxConnections();
-
-    JMXConnector getJmxConnector(UUID nodeID);
-
-    boolean isConnected(JMXConnector jmxConnector);
-
-    @Override
-    default void close() throws IOException
-    {
-    }
-
-    void close(UUID nodeID) throws IOException;
-}
+/**
+ * Contains the Interfaces and resources for jmx operations.
+ */
+package com.ericsson.bss.cassandra.ecchronos.core.jmx;

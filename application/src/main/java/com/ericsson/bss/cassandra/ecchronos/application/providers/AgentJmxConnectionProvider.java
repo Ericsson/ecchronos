@@ -134,6 +134,18 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
     }
 
     /**
+     * validate if the given JMXConnector is available.
+     *
+     * @param jmxConnector
+     *            The jmxConnector to validate
+     * @return A boolean representing the node's connection status.
+     */
+    @Override
+    public boolean isConnected(final JMXConnector jmxConnector)
+    {
+        return myDistributedJmxConnectionProviderImpl.isConnected(jmxConnector);
+    }
+    /**
      * Closes the JMX connection associated with the specified node ID.
      *
      * @param nodeID

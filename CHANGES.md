@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Create DistributedJmxProxy and DistributedJmxProxyFactory - Issue #715
 * Create a New Maven Module "utils" for Common Code Reuse - Issue #720
 * Implement ReplicationStateImpl to Manage and Cache Token Range to Replica Mappings - Issue #719
 * Implement NodeResolverImpl to Resolve Nodes by IP Address and UUID - Issue #718
