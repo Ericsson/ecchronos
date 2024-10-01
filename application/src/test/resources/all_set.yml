@@ -58,6 +58,35 @@ connection:
         fixedDelay: 86400
         unit: seconds
 
+repair:
+  provider: com.ericsson.bss.cassandra.ecchronos.application.config.repair.FileBasedRepairConfiguration
+  interval:
+    time: 1
+    unit: HOURS
+  initial_delay:
+    time: 1
+    unit: MINUTES
+  priority:
+    granularity_unit: MINUTES
+  history_lookback:
+    time: 30
+    unit: days
+  unwind_ratio: 0.5
+  size_target: 1
+  history:
+    provider: ecc
+    keyspace: ecchronos
+  ignore_twcs_tables: true
+  backoff:
+    time: 35
+    unit: SECONDS
+  repair_type: vnode
+
+scheduler:
+  frequency:
+    time: 30
+    unit: SECONDS
+
 rest_server:
   host: 127.0.0.2
   port: 8081

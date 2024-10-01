@@ -15,10 +15,18 @@
 package com.ericsson.bss.cassandra.ecchronos.application.config;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.*;
+import com.ericsson.bss.cassandra.ecchronos.application.config.repair.FileBasedRepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.application.config.repair.GlobalRepairConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Interval;
+import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Priority;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.application.spring.AbstractRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairHistoryProvider;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ConfigurationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -38,9 +46,9 @@ import static org.junit.Assert.assertThrows;
 public class TestConfig
 {
     private static final String DEFAULT_AGENT_FILE_NAME = "all_set.yml";
-    private static final String NOTHING_SET_AGENT_FILE_NAME = "nothing_set.yml";
     private static final TimeUnit TIME_UNIT_IN_SECONDS = TimeUnit.SECONDS;
     private static Config config;
+    private static GlobalRepairConfig repairConfig;
     private static DistributedNativeConnection nativeConnection;
     private static DistributedJmxConnection distributedJmxConnection;
 
@@ -59,6 +67,7 @@ public class TestConfig
 
         nativeConnection = connection.getCqlConnection();
         distributedJmxConnection = connection.getJmxConnection();
+        repairConfig = config.getRepairConfig();
     }
 
     @Test
@@ -189,29 +198,6 @@ public class TestConfig
     }
 
     @Test
-    public void testRetryPolicyConfigWhenNothingSet() throws IOException
-    {
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        File file = new File(classLoader.getResource(NOTHING_SET_AGENT_FILE_NAME).getFile());
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-        Config config = objectMapper.readValue(file, Config.class);
-
-        ConnectionConfig connection = config.getConnectionConfig();
-        distributedJmxConnection = connection.getJmxConnection();
-        Class<?> providerClass = distributedJmxConnection.getProviderClass();
-        assertThat(providerClass).isEqualTo(AgentJmxConnectionProvider.class);
-        RetryPolicyConfig retryPolicyConfig = distributedJmxConnection.getRetryPolicyConfig();
-        assertNotNull(retryPolicyConfig);
-        assertThat(5).isEqualTo(retryPolicyConfig.getMaxAttempts());
-        assertThat(5000).isEqualTo(retryPolicyConfig.getRetryDelay().getStartDelay());
-        assertThat(30000).isEqualTo(retryPolicyConfig.getRetryDelay().getMaxDelay());
-        assertThat(TIME_UNIT_IN_SECONDS).isEqualTo(retryPolicyConfig.getRetryDelay().getUnit());
-        assertThat(86400000).isEqualTo(retryPolicyConfig.getRetrySchedule().getInitialDelay());
-        assertThat(86400000).isEqualTo(retryPolicyConfig.getRetrySchedule().getFixedDelay());
-        assertThat(TIME_UNIT_IN_SECONDS).isEqualTo(retryPolicyConfig.getRetrySchedule().getUnit());
-    }
-
-    @Test
     public void testStartDelayGreaterThanMaxDelayThrowsException()
     {
         RetryPolicyConfig.RetryDelay retryDelay = new RetryPolicyConfig.RetryDelay();
@@ -241,7 +227,91 @@ public class TestConfig
     {
         Interval connectionDelay = config.getConnectionConfig().getConnectionDelay();
         assertThat(connectionDelay.getUnit()).isEqualTo(TimeUnit.MINUTES);
-        assertThat(connectionDelay.getTime()).isEqualTo(45l);
+        assertThat(connectionDelay.getTime()).isEqualTo(45L);
+    }
+
+    @Test
+    public void testRepairProvider()
+    {
+        Class<?> providerClass = repairConfig.getRepairConfigurationClass();
+        assertEquals(FileBasedRepairConfiguration.class, providerClass);
+    }
+
+    @Test
+    public void testRepairInterval()
+    {
+        Interval repairInterval = repairConfig.getRepairInterval();
+        assertThat(repairInterval.getUnit()).isEqualTo(TimeUnit.HOURS);
+        assertThat(repairInterval.getTime()).isEqualTo(1L);
+    }
+
+    @Test
+    public void testRepairInitialDelay()
+    {
+        Interval repairInitialDelay = repairConfig.getInitialDelay();
+        assertThat(repairInitialDelay.getUnit()).isEqualTo(TimeUnit.MINUTES);
+        assertThat(repairInitialDelay.getTime()).isEqualTo(1L);
+    }
+
+    @Test
+    public void testRepairPriority()
+    {
+        Priority priority = repairConfig.getPriority();
+        assertEquals(priority.getPriorityGranularityUnit(), TimeUnit.MINUTES);
+    }
+
+    @Test
+    public void testRepairUnwindRatio()
+    {
+        Double repairUnwindRatio = repairConfig.asRepairConfiguration().getRepairUnwindRatio();
+        assertEquals(repairUnwindRatio, Double.valueOf(0.5));
+    }
+
+    @Test
+    public void testRepairHistoryLookback()
+    {
+        Interval repairHistoryLookback = repairConfig.getRepairHistoryLookback();
+        assertThat(repairHistoryLookback.getUnit()).isEqualTo(TimeUnit.DAYS);
+        assertThat(repairHistoryLookback.getTime()).isEqualTo(30L);
+    }
+
+    @Test
+    public void testRepairSizeTarget()
+    {
+        long repairSizeTarget = repairConfig
+                .asRepairConfiguration().getTargetRepairSizeInBytes();
+        assertEquals(repairSizeTarget, 1L);
+    }
+
+    @Test
+    public void testRepairIgnoreTWCSTables()
+    {
+        boolean repairIgnoreTWCSTables = repairConfig.getIgnoreTWCSTables();
+        assertThat(repairIgnoreTWCSTables).isTrue();
+    }
+
+    @Test
+    public void testRepairHistoryProvider()
+    {
+        RepairHistoryProvider repairHistoryProvider = repairConfig.getRepairHistory().getProvider();
+        String keyspace = repairConfig.getRepairHistory().getKeyspaceName();
+        assertEquals(repairHistoryProvider, RepairHistoryProvider.ECC);
+        assertEquals(keyspace, "ecchronos");
+    }
+
+    @Test
+    public void testRepairBackoff()
+    {
+        Interval repairBackoff = repairConfig.getBackoff();
+        assertThat(repairBackoff.getUnit()).isEqualTo(TimeUnit.SECONDS);
+        assertThat(repairBackoff.getTime()).isEqualTo(35L);
+    }
+
+    @Test
+    public void testRepairType()
+    {
+        RepairType repairType = repairConfig.getRepairType();
+        assertThat(repairType).isEqualTo(RepairType.VNODE);
     }
 }
 

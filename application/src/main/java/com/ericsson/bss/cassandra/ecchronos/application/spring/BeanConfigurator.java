@@ -15,7 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.ericsson.bss.cassandra.ecchronos.application.config.Interval;
+import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Interval;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.CqlTLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.ReloadingCertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider;

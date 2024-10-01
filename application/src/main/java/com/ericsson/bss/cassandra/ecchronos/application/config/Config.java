@@ -15,12 +15,16 @@
 package com.ericsson.bss.cassandra.ecchronos.application.config;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.ConnectionConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.repair.GlobalRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.rest.RestServerConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.scheduler.SchedulerConfig;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Config
 {
     private ConnectionConfig myConnectionConfig = new ConnectionConfig();
+    private GlobalRepairConfig myRepairConfig = new GlobalRepairConfig();
+    private SchedulerConfig mySchedulerConfig = new SchedulerConfig();
     private RestServerConfig myRestServerConfig = new RestServerConfig();
 
     @JsonProperty("connection")
@@ -35,6 +39,52 @@ public class Config
         if (connectionConfig != null)
         {
             myConnectionConfig = connectionConfig;
+        }
+    }
+
+    /**
+     * Get the global repair configuration.
+     *
+     * @return GlobalRepairConfig
+     */
+    @JsonProperty("repair")
+    public GlobalRepairConfig getRepairConfig()
+    {
+        return myRepairConfig;
+    }
+
+    /**
+     * Set repair configuration.
+     *
+     * @param repairConfig The repair configuration.
+     */
+    @JsonProperty("repair")
+    public void setRepairConfig(final GlobalRepairConfig repairConfig)
+    {
+        if (repairConfig != null)
+        {
+            myRepairConfig = repairConfig;
+            myRepairConfig.validate("Global");
+        }
+    }
+
+    @JsonProperty("scheduler")
+    public final SchedulerConfig getSchedulerConfig()
+    {
+        return mySchedulerConfig;
+    }
+
+    /**
+     * Set the scheduler.
+     *
+     * @param schedulerConfig The scheduler.
+     */
+    @JsonProperty("scheduler")
+    public void setSchedulerConfig(final SchedulerConfig schedulerConfig)
+    {
+        if (schedulerConfig != null)
+        {
+            mySchedulerConfig = schedulerConfig;
         }
     }
 

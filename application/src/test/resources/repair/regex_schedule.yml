@@ -13,12 +13,27 @@
 # limitations under the License.
 #
 
-connection:
-  cql:
-  jmx:
-
-repair:
-
-scheduler:
-
-rest_server:
+keyspaces:
+  - name: ".*"
+    tables:
+      - name: "[a-zA-Z0-9]+_abc"
+        interval:
+          time: 8
+          unit: days
+      - name: tb2
+        interval:
+          time: 5
+          unit: days
+  - name: ks2
+    tables:
+      - name: tb1
+        interval:
+          time: 1
+          unit: days
+        initial_delay:
+          time: 1
+          unit: hours
+      - name: tb2
+        interval:
+          time: 2
+          unit: days
