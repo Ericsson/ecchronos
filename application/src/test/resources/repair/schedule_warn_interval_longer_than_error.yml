@@ -13,12 +13,17 @@
 # limitations under the License.
 #
 
-connection:
-  cql:
-  jmx:
-
-repair:
-
-scheduler:
-
-rest_server:
+keyspaces:
+  - name: ks1
+    tables:
+      - name: tb1
+        interval:
+          time: 7
+          unit: days
+        alarm:
+          warn:
+            time: 200
+            unit: days
+          error:
+            time: 11
+            unit: days

@@ -13,12 +13,18 @@
 # limitations under the License.
 #
 
-connection:
-  cql:
-  jmx:
-
-repair:
-
-scheduler:
-
-rest_server:
+keyspaces:
+  - name: ".*"
+    tables:
+      - name: ".*"
+        interval:
+          time: 6
+          unit: days
+      - name: ".*"
+        interval:
+          time: 1
+          unit: days
+        initial_delay:
+          time: 1
+          unit: hours
+        repair_type: incremental

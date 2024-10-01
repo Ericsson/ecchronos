@@ -14,7 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config.connection;
 
-import com.ericsson.bss.cassandra.ecchronos.application.config.Interval;
+import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Interval;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class ConnectionConfig
