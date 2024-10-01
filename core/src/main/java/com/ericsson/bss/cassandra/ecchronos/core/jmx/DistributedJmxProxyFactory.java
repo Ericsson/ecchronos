@@ -12,27 +12,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.connection;
+package com.ericsson.bss.cassandra.ecchronos.core.jmx;
 
-import java.io.Closeable;
 import java.io.IOException;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
-import javax.management.remote.JMXConnector;
-
-public interface DistributedJmxConnectionProvider extends Closeable
+public interface DistributedJmxProxyFactory
 {
-    ConcurrentHashMap<UUID, JMXConnector> getJmxConnections();
-
-    JMXConnector getJmxConnector(UUID nodeID);
-
-    boolean isConnected(JMXConnector jmxConnector);
-
-    @Override
-    default void close() throws IOException
-    {
-    }
-
-    void close(UUID nodeID) throws IOException;
+    /**
+     * Connect to the local Cassandra node and get a proxy instance.
+     * <p>
+     * The returned {@link DistributedJmxProxy} must be closed by the caller.
+     *
+     * @return The connected {@link DistributedJmxProxy}.
+     * @throws IOException Thrown when unable to connect.
+     */
+    DistributedJmxProxy connect() throws IOException;
 }
+

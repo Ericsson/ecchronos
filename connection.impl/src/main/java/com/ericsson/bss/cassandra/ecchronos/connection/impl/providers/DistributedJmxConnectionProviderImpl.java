@@ -48,7 +48,15 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
         myJMXConnections = jmxConnections;
     }
 
-    private static boolean isConnected(final JMXConnector jmxConnector)
+    /**
+     * validate if the given JMXConnector is available.
+     *
+     * @param jmxConnector
+     *            The jmxConnector to validate
+     * @return A boolean representing the node's connection status.
+     */
+    @Override
+    public boolean isConnected(final JMXConnector jmxConnector)
     {
         try
         {

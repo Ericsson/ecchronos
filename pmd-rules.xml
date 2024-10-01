@@ -42,6 +42,7 @@
         <exclude name="CloseResource"/>
         <exclude name="AvoidFieldNameMatchingMethodName"/>
         <exclude name="ReturnEmptyCollectionRatherThanNull"/>
+        <exclude name="AvoidBranchingStatementAsLastInLoop"/>
     </rule>
 
     <!-- Skip avoidDuplicateLiterals for annotations -->
