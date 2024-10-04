@@ -2,6 +2,7 @@
 
 ## Version 5.0.5
 
+* Bump commons-io:commons-io to 2.17.0 - Issue #732
 * State what versions are maintained - Issue #658
 * Investigate Java 17 - Issue #607
 * RetryPolicy: After failing the last connection attempt, the retry time is still applied - Issue #702
