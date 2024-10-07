@@ -2,6 +2,7 @@
 
 ## Version 5.0.5
 
+* Bump org.springframework:spring-web from 5.3.34 to 5.3.39 - Issue #733
 * Bump commons-io:commons-io to 2.17.0 - Issue #732
 * State what versions are maintained - Issue #658
 * Investigate Java 17 - Issue #607
