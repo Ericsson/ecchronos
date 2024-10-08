@@ -30,10 +30,6 @@ jobs:
           - name: "Style check - Java 11"
             java_version: 11
             test_suite: 'compile com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
-          - name: "OSGi integration - Java 11"
-            java_version: 11
-            test_suite: 'install -P docker-integration-test,osgi-integration-tests -DskipUTs'
-            artifacts_dir: "osgi-integration/target"
           - name: "Standalone integration 4.0 - Java 11"
             java_version: 11
             test_suite: 'verify -P docker-integration-test,standalone-integration-tests -DskipUTs'
@@ -58,10 +54,6 @@ jobs:
           - name: "Style check - Java 17"
             java_version: 17
             test_suite: 'compile -Djava.version=17 com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
-          - name: "OSGi integration - Java 17"
-            java_version: 17
-            test_suite: 'install -P docker-integration-test,osgi-integration-tests -Djava.version=17 -DskipUTs'
-            artifacts_dir: "osgi-integration/target"
           - name: "Standalone integration 4.0 - Java 17"
             java_version: 17
             test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Djava.version=17 -DskipUTs'
@@ -141,9 +133,7 @@ jobs:
           fail_ci_if_error: false
           files: >
             ./rest/target/site/jacoco/jacoco.xml,
-            ./core.osgi/target/site/jacoco/jacoco.xml,
             ./application/target/site/jacoco/jacoco.xml,
-            ./osgi-integration/target/site/jacoco/jacoco.xml,
             ./core/target/site/jacoco/jacoco.xml,
             ./fm.impl/target/site/jacoco/jacoco.xml,
             ./connection/target/site/jacoco/jacoco.xml
