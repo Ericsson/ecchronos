@@ -24,7 +24,6 @@ public class ConnectionConfig
     private Interval myConnectionDelay = new Interval();
     private Interval myReloadPolicy = new Interval();
 
-
     @JsonProperty("cql")
     public final DistributedNativeConnection getCqlConnection()
     {
