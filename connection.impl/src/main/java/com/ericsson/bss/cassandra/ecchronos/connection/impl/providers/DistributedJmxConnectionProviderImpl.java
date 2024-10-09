@@ -25,11 +25,13 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionP
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.DistributedJmxBuilder;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
+import com.ericsson.bss.cassandra.ecchronos.data.exceptions.EcChronosException;
 
 public class DistributedJmxConnectionProviderImpl implements DistributedJmxConnectionProvider
 {
     private final List<Node> myNodesList;
     private final ConcurrentHashMap<UUID, JMXConnector> myJMXConnections;
+    private final DistributedJmxBuilder myDistributedJmxBuilder;
 
     /**
      * Constructs a DistributedJmxConnectionProviderImpl with the specified list of nodes and JMX connections.
@@ -41,11 +43,13 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
      */
     public DistributedJmxConnectionProviderImpl(
             final List<Node> nodesList,
-            final ConcurrentHashMap<UUID, JMXConnector> jmxConnections
+            final ConcurrentHashMap<UUID, JMXConnector> jmxConnections,
+            final DistributedJmxBuilder distributedJmxBuilder
     )
     {
         myNodesList = nodesList;
         myJMXConnections = jmxConnections;
+        myDistributedJmxBuilder = distributedJmxBuilder;
     }
 
     private static boolean isConnected(final JMXConnector jmxConnector)
@@ -135,6 +139,17 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
     public void close(final UUID nodeID) throws IOException
     {
         myJMXConnections.get(nodeID).close();
+    }
+    @Override
+    public void add(final Node node) throws IOException
+    {
+        try {
+            myDistributedJmxBuilder.reconnect(node);
+        } catch (EcChronosException e) {
+            throw new RuntimeException(e);
+        }
+
+
     }
 
 }

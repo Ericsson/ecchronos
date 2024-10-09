@@ -25,7 +25,8 @@ import java.util.List;
 public class DistributedNativeConnectionProviderImpl implements DistributedNativeConnectionProvider
 {
     private final CqlSession mySession;
-    private final List<Node> myNodes;
+    private List<Node> myNodes;
+    private final DistributedNativeBuilder myDistributedNativeBuilder;
 
     /**
      * Constructs a new {@code DistributedNativeConnectionProviderImpl} with the specified {@link CqlSession} and list
@@ -38,11 +39,13 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
      */
     public DistributedNativeConnectionProviderImpl(
             final CqlSession session,
-            final List<Node> nodesList
+            final List<Node> nodesList,
+            final DistributedNativeBuilder distributedNativeBuilder
     )
     {
         mySession = session;
         myNodes = nodesList;
+        myDistributedNativeBuilder = distributedNativeBuilder;
     }
 
     /**
@@ -65,6 +68,15 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
     public List<Node> getNodes()
     {
         return myNodes;
+    }
+    @Override
+    public void setNodes(List<Node> nodes)
+    {
+         myNodes = nodes;
+    }
+    @Override
+    public List<Node> reloadNodes(){
+        return myDistributedNativeBuilder.createNodesList(mySession);
     }
 
     /**

@@ -22,6 +22,8 @@ public class ConnectionConfig
     private DistributedNativeConnection myCqlConnection = new DistributedNativeConnection();
     private DistributedJmxConnection myJmxConnection = new DistributedJmxConnection();
     private Interval myConnectionDelay = new Interval();
+    private Interval myReloadPolicy = new Interval();
+
 
     @JsonProperty("cql")
     public final DistributedNativeConnection getCqlConnection()
@@ -78,6 +80,27 @@ public class ConnectionConfig
     public Interval getConnectionDelay()
     {
         return myConnectionDelay;
+    }
+    /**
+     * Sets the connectionDelay used to specify the time until the next connection.
+     *
+     * @param reloadPolicy
+     *         the local datacenter to set.
+     */
+    @JsonProperty("reloadPolicy")
+    public void setReloadPolicy(final Interval reloadPolicy)
+    {
+        myReloadPolicy = reloadPolicy;
+    }
+    /**
+     * Gets the connectionDelay used to specify the time until the next connection.
+     *
+     * @return the reloadPolicy.
+     */
+    @JsonProperty("reloadPolicy")
+    public Interval getReloadPolicy()
+    {
+        return myReloadPolicy;
     }
 
 }

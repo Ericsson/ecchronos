@@ -244,10 +244,10 @@ public class DistributedNativeBuilder
         LOG.info("Requesting Nodes List");
         List<Node> nodesList = createNodesList(session);
         LOG.info("Nodes list was created with success");
-        return new DistributedNativeConnectionProviderImpl(session, nodesList);
+        return new DistributedNativeConnectionProviderImpl(session, nodesList, this );
     }
 
-    private List<Node> createNodesList(final CqlSession session)
+    public List<Node> createNodesList(final CqlSession session)
     {
         List<Node> tmpNodeList = new ArrayList<>();
         switch (myType)

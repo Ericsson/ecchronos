@@ -56,5 +56,12 @@ public class TestDefaultConfig
         assertThat(connectionDelay.getUnit()).isEqualTo(TimeUnit.MINUTES);
         assertThat(connectionDelay.getTime()).isEqualTo(60l);
     }
+    @Test
+    public void testReloadPolicyDefault()
+    {
+        Interval connectionDelay = config.getConnectionConfig().getReloadPolicy();
+        assertThat(connectionDelay.getUnit()).isEqualTo(TimeUnit.MINUTES);
+        assertThat(connectionDelay.getTime()).isEqualTo(60l);
+    }
 
 }

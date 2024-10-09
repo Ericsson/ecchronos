@@ -269,6 +269,16 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
         return myDistributedNativeConnectionProviderImpl.getNodes();
     }
 
+    @Override
+    public void setNodes(List<Node> nodes) {
+        myDistributedNativeConnectionProviderImpl.setNodes(nodes);
+    }
+
+    public List<Node> reloadNodes()
+    {
+        return myDistributedNativeConnectionProviderImpl.reloadNodes();
+    }
+
     /**
      * Closes all resources and connections managed by this provider.
      *

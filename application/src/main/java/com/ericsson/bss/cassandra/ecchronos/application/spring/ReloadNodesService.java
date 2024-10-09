@@ -14,21 +14,21 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
+import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.data.enums.NodeStatus;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.google.common.annotations.VisibleForTesting;
 import jakarta.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.UUID;
+
+import java.util.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import com.ericsson.bss.cassandra.ecchronos.application.config.Interval;
 
 /**
  * Service responsible for managing and scheduling retry attempts to reconnect to Cassandra nodes that have become unavailable.
@@ -63,42 +64,75 @@ import java.util.concurrent.TimeUnit;
 public final class ReloadNodesService implements DisposableBean
 {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RetrySchedulerService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReloadNodesService.class);
     private static final String COLUMN_NODE_ID = "node_id";
     private static final String COLUMN_NODE_STATUS = "node_status";
     private static final int DEFAULT_SCHEDULER_AWAIT_TERMINATION_IN_SECONDS = 60;
     private final EccNodesSync myEccNodesSync;
     private final DistributedJmxConnectionProvider myJmxConnectionProvider;
     private final DistributedNativeConnectionProvider myDistributedNativeConnectionProvider;
-    private final RetryBackoffStrategy retryBackoffStrategy;
     private final ScheduledExecutorService myScheduler = Executors.newScheduledThreadPool(1);
+    private final Interval reLoadInterval;
+    private final NodeListComparator nodeListComparator = new NodeListComparator();
 
     public ReloadNodesService(final EccNodesSync eccNodesSync,
                                  final Config config,
                                  final DistributedJmxConnectionProvider jmxConnectionProvider,
-                                 final DistributedNativeConnectionProvider distributedNativeConnectionProvider)
+                                 final DistributedNativeConnectionProvider distributedNativeConnectionProvider
+    )
     {
         this.myEccNodesSync = eccNodesSync;
         this.myJmxConnectionProvider = jmxConnectionProvider;
         this.myDistributedNativeConnectionProvider = distributedNativeConnectionProvider;
-        this.retryBackoffStrategy = new RetryBackoffStrategy(config.getConnectionConfig().getJmxConnection().getRetryPolicyConfig());
+        this.reLoadInterval = config.getConnectionConfig().getReloadPolicy();
     }
 
     @PostConstruct
     public void startScheduler()
     {
-        long reLoadInterval = retryBackoffStrategy.getInitialDelay();
+        long reLoadIntervalInMills = reLoadInterval.getInterval(TimeUnit.MILLISECONDS);
         
 
-        LOG.debug("Starting RetrySchedulerService with reLoadInterval={} ms", reLoadInterval);
+        LOG.info("Starting ReloadNodesService with reLoadInterval={} ms", reLoadIntervalInMills);
 
-        myScheduler.schedule(this::reloadNodes, reLoadInterval, TimeUnit.MILLISECONDS);
+        myScheduler.scheduleWithFixedDelay(this::reloadNodes, reLoadIntervalInMills,reLoadIntervalInMills,  TimeUnit.MILLISECONDS);
     }
 
     @VisibleForTesting
-    void reloadNodes()
-    {
-        LOG.warn("Testing ");
+    void reloadNodes()  {
+        List<Node> oldNodes = myDistributedNativeConnectionProvider.getNodes();
+        List<Node> newNodes = myDistributedNativeConnectionProvider.reloadNodes();
+        CqlSession cqlSession = myDistributedNativeConnectionProvider.getCqlSession();
+        if (!nodeListComparator.complareNodeLists(oldNodes,newNodes)){
+            myDistributedNativeConnectionProvider.setNodes(newNodes);
+            Iterator<NodeChangeRecord> iterator = nodeListComparator.getChangesList().iterator();
+            while (iterator.hasNext()){
+                NodeChangeRecord nodeChangeRecord = iterator.next();
+                if ( nodeChangeRecord.getType() == NodeChangeRecord.NodeChangeType.INSERT){
+                    myEccNodesSync.verifyAcquireNode(nodeChangeRecord.getNode());
+                    try {
+                        myJmxConnectionProvider.add(nodeChangeRecord.getNode());
+                    } catch (IOException e) {
+
+                    }
+
+                }
+                if ( nodeChangeRecord.getType() == NodeChangeRecord.NodeChangeType.DELETE){
+                    myEccNodesSync.deleteNodeStatus(nodeChangeRecord.getNode().getDatacenter(),nodeChangeRecord.getNode().getHostId());
+                    try {
+                        myJmxConnectionProvider.close(nodeChangeRecord.getNode().getHostId());
+                    }
+                    catch (IOException e )
+                    {
+
+                    }
+                }
+            }
+        }
+
+
+        
+        
         /* 
         List<Node> unavailableNodes = findUnavailableNodes();
 
@@ -111,6 +145,7 @@ public final class ReloadNodesService implements DisposableBean
         */
     }
 
+/*
     private List<Node> findUnavailableNodes()
     {
         List<Node> unavailableNodes = new ArrayList<>();
@@ -204,7 +239,7 @@ public final class ReloadNodesService implements DisposableBean
             return false;
         }
     }
-
+*/
     @Override
     public void destroy()
     {

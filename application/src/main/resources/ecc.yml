@@ -42,7 +42,7 @@ connection:
         - host: 127.0.0.1
           port: 9042
         - host: 127.0.0.2
-          port: 9042
+          port: 9043
       ## Configuration to define datacenters for ecchronos
       ## to connect to, datacenterAware enable means that
       ## ecChronos will be responsible for all nodes in the
@@ -91,9 +91,13 @@ connection:
     ## Specify the interval until the next connection to a node
     ## Unit can be SECONDS, MINUTES, HOURS, DAYS
     ##
-    connectionDelay:
-      time: 45
-      unit: MINUTES
+  connectionDelay:
+    time: 45
+    unit: MINUTES
+  reloadPolicy:
+    time: 10
+    unit: SECONDS
+
   jmx:
     ##
     ## The class used to provide JMX connections to Apache Cassandra.

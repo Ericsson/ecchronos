@@ -14,6 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection;
 
+import com.datastax.oss.driver.api.core.metadata.Node;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.UUID;
@@ -33,4 +35,6 @@ public interface DistributedJmxConnectionProvider extends Closeable
     }
 
     void close(UUID nodeID) throws IOException;
+
+    public void add(final Node node) throws IOException;
 }

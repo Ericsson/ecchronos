@@ -131,7 +131,8 @@ public class DistributedJmxBuilder
         createConnections();
         return new DistributedJmxConnectionProviderImpl(
                 myNodesList,
-                myJMXConnections
+                myJMXConnections,
+                this
         );
     }
 
@@ -152,7 +153,7 @@ public class DistributedJmxBuilder
         }
     }
 
-    private void reconnect(final Node node) throws IOException, EcChronosException
+    public void reconnect(final Node node) throws IOException, EcChronosException
     {
         try
         {
@@ -246,7 +247,16 @@ public class DistributedJmxBuilder
                 .setNode(node)
                 .build();
         Row row = mySession.execute(simpleStatement).one();
-        if (row != null)
+        if ((row == null) || (row.getString("value") == null))
+        {
+            simpleStatement = SimpleStatement
+                    .builder("SELECT value FROM system_views.system_properties WHERE name = 'cassandra.jmx.local.port';")
+                    .setNode(node)
+                    .build();
+            row = mySession.execute(simpleStatement).one();
+
+        }
+        if ((row != null) && (row.getString("value") != null))
         {
             return Integer.parseInt(Objects.requireNonNull(row.getString("value")));
         }

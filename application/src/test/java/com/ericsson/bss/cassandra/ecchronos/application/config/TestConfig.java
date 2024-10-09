@@ -237,11 +237,19 @@ public class TestConfig
         });
         assertEquals("Max delay cannot be less than start delay.", exception.getMessage());
     }
+    @Test
     public void testConnectionDelay()
     {
         Interval connectionDelay = config.getConnectionConfig().getConnectionDelay();
         assertThat(connectionDelay.getUnit()).isEqualTo(TimeUnit.MINUTES);
         assertThat(connectionDelay.getTime()).isEqualTo(45l);
+    }
+    @Test
+    public void testReloadPolicy()
+    {
+        Interval connectionDelay = config.getConnectionConfig().getReloadPolicy();
+        assertThat(connectionDelay.getUnit()).isEqualTo(TimeUnit.MINUTES);
+        assertThat(connectionDelay.getTime()).isEqualTo(5l);
     }
 
 }

@@ -45,6 +45,9 @@ connection:
   connectionDelay:
     time: 45
     unit: minutes
+  reloadPolicy:
+    time: 5
+    unit: MINUTES
   jmx:
     provider: com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider
     retryPolicy:
