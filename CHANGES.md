@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Generate Unique EcChronos ID #678
 * Create RepairConfiguration class for repair configurations - Issue #716
 * Create DistributedJmxProxy and DistributedJmxProxyFactory - Issue #715
 * Create a New Maven Module "utils" for Common Code Reuse - Issue #720

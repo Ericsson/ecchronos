@@ -96,7 +96,7 @@ public class BeanConfigurator
         Security security = getSecurityConfig();
         cqlSecurity.set(security.getCqlSecurity());
         jmxSecurity.set(security.getJmxSecurity());
-        ecChronosID = ECCHORONS_ID_PRE_STRING.concat(InetAddress.getLocalHost().getHostName());
+        ecChronosID = getConfiguration().getConnectionConfig().getCqlConnection().getAgentConnectionConfig().getInstanceName();
     }
 
     /**

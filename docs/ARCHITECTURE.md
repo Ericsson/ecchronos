@@ -49,6 +49,7 @@ Configuration is available on ecc.yml in the below format.
 connection:
   cql:
     agent:
+      instanceName: Each instance must have unique instance name. This will be used as ecchronos_id (partition key in nodes_sync table)
       type: datacenterAware
       contactPoints:
       - host: 127.0.0.1
@@ -80,7 +81,7 @@ connection:
 
 ### Nodes Sync
 
-To keep track about nodes and instances, the Agent implementation uses the table nodes_sync, that declare nodes by specific ecChronos instances, so to use the Agent is mandatory to create the table below:
+To keep track about nodes and instances, the Agent implementation uses the table nodes_sync, that declare nodes by specific ecChronos instances, each instance must have unique instance name, that must be defined in connection.cql.agent.instanceName in ecc.yml. This will be used as ecchronos_id (partition key in nodes_sync table), to use the agent, is mandatory to create the table below:
 
 ```cql
 CREATE TABLE ecchronos.nodes_sync
