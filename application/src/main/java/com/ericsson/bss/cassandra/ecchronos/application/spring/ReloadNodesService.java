@@ -37,21 +37,9 @@ import java.util.concurrent.TimeUnit;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Interval;
 
 /**
- * Service responsible for managing and scheduling retry attempts to reconnect to Cassandra nodes that have become unavailable.
+ * Service responsible for managing and scheduling checks on the list of nodes to find changes in the cluster
  * <p>
- * This service periodically checks the status of nodes and attempts to reconnect based on a configurable retry policy.
- * It uses a scheduled executor service to perform retries at fixed intervals, with the intervals and the retry logic
- * configurable via external configurations.
- * </p>
- *
- * <p>
- * The retry logic involves calculating the delay between attempts, which increases with each subsequent retry for a node.
- * If the maximum number of retry attempts is reached, the node is marked as unreachable.
- * </p>
- *
- * <p>
- * This service is designed to run continuously in the background, adjusting its behavior based on the state of the
- * Cassandra cluster and the provided configurations. It also ensures that resources are properly cleaned up on shutdown.
+ * This service periodically checks the status of nodes removes or adds nodes depending on the changes.
  * </p>
  */
 
@@ -60,8 +48,6 @@ public final class ReloadNodesService implements DisposableBean
 {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReloadNodesService.class);
-    private static final String COLUMN_NODE_ID = "node_id";
-    private static final String COLUMN_NODE_STATUS = "node_status";
     private static final int DEFAULT_SCHEDULER_AWAIT_TERMINATION_IN_SECONDS = 60;
     private final EccNodesSync myEccNodesSync;
     private final DistributedJmxConnectionProvider myJmxConnectionProvider;
@@ -86,10 +72,7 @@ public final class ReloadNodesService implements DisposableBean
     public void startScheduler()
     {
         long reLoadIntervalInMills = reLoadInterval.getInterval(TimeUnit.MILLISECONDS);
-        
-
         LOG.info("Starting ReloadNodesService with reLoadInterval={} ms", reLoadIntervalInMills);
-
         myScheduler.scheduleWithFixedDelay(this::reloadNodes, reLoadIntervalInMills,reLoadIntervalInMills,  TimeUnit.MILLISECONDS);
     }
 
@@ -99,7 +82,7 @@ public final class ReloadNodesService implements DisposableBean
         List<Node> newNodes = myDistributedNativeConnectionProvider.reloadNodes();
         CqlSession cqlSession = myDistributedNativeConnectionProvider.getCqlSession();
         List<NodeChangeRecord> nodeChangeList = nodeListComparator.compareNodeLists(oldNodes,newNodes);
-        if (nodeChangeList.size() > 0){
+        if (!nodeChangeList.isEmpty()){
             myDistributedNativeConnectionProvider.setNodes(newNodes);
             Iterator<NodeChangeRecord> iterator = nodeChangeList.iterator();
             while (iterator.hasNext()){
@@ -109,7 +92,7 @@ public final class ReloadNodesService implements DisposableBean
                     try {
                         myJmxConnectionProvider.add(nodeChangeRecord.getNode());
                     } catch (IOException e) {
-
+                        LOG.info("Node {} JMX connection failed", nodeChangeRecord.getNode().getHostId() );
                     }
 
                 }
@@ -120,7 +103,7 @@ public final class ReloadNodesService implements DisposableBean
                     }
                     catch (IOException e )
                     {
-
+                        LOG.info("Node {} JMX connection removal failed", nodeChangeRecord.getNode().getHostId() );
                     }
                 }
             }

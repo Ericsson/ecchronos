@@ -27,9 +27,9 @@ public interface DistributedNativeConnectionProvider extends Closeable
 
     List<Node> getNodes();
 
-    public void setNodes(List<Node> nodes);
+    void setNodes(List<Node> nodes);
 
-    public List<Node> reloadNodes();
+    List<Node> reloadNodes();
 
     @Override
     default void close() throws IOException

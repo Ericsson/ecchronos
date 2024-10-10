@@ -1,4 +1,3 @@
-package com.ericsson.bss.cassandra.ecchronos.application.spring;
 /*
  * Copyright 2024 Telefonaktiebolaget LM Ericsson
  *
@@ -13,6 +12,8 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.ericsson.bss.cassandra.ecchronos.application.spring;
+
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 
