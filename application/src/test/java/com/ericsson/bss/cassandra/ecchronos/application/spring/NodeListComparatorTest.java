@@ -4,12 +4,10 @@ import com.datastax.oss.driver.api.core.metadata.EndPoint;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import com.datastax.oss.driver.api.core.metadata.Node;
-import com.datastax.oss.driver.internal.core.metadata.DefaultNode;
 import com.datastax.oss.driver.internal.core.metadata.DefaultEndPoint;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.util.*;
 
@@ -30,8 +28,7 @@ public class NodeListComparatorTest {
         List<Node> newNodes = new LinkedList<Node>();
         oldNodes.add(node1);
         newNodes.add(node2);
-        Assertions.assertTrue(nodeListComparator.complareNodeLists(oldNodes,newNodes), "Node list should be the same");
-        Assertions.assertEquals(0,nodeListComparator.getChangesList().size());
+        Assertions.assertEquals(0,nodeListComparator.compareNodeLists(oldNodes,newNodes).size());
         
 
     }
@@ -45,10 +42,9 @@ public class NodeListComparatorTest {
         List<Node> newNodes = new LinkedList<Node>();
         oldNodes.add(node1);
         newNodes.add(node2);
-        Assertions.assertFalse(nodeListComparator.complareNodeLists(oldNodes,newNodes), "Node list should be different ");
-        Assertions.assertEquals(2,nodeListComparator.getChangesList().size());
-
-        Iterator<NodeChangeRecord> iterator = nodeListComparator.getChangesList().iterator();
+        List<NodeChangeRecord> nodeChangeList = nodeListComparator.compareNodeLists(oldNodes,newNodes);
+        Assertions.assertEquals(2,nodeChangeList.size());
+        Iterator<NodeChangeRecord> iterator = nodeChangeList.iterator();
         NodeChangeRecord record1 = iterator.next();
         NodeChangeRecord record2 = iterator.next();
         Assertions.assertEquals(node2.getListenAddress().toString(),record1.getNode().getListenAddress().toString());
@@ -71,9 +67,8 @@ public class NodeListComparatorTest {
         newNodes.add(node2);
         newNodes.add(node3);
         newNodes.add(node1);
-        Assertions.assertTrue(nodeListComparator.complareNodeLists(oldNodes,newNodes), "Node list should be the same");
-        Assertions.assertEquals(0,nodeListComparator.getChangesList().size());
-
+        List<NodeChangeRecord> nodeChangeList = nodeListComparator.compareNodeLists(oldNodes,newNodes);
+        Assertions.assertEquals(0,nodeChangeList.size());
     }
     @Test
     void testOneNodeRemoved() throws UnknownHostException {
@@ -89,10 +84,10 @@ public class NodeListComparatorTest {
         oldNodes.add(node3);
         newNodes.add(node2);
         newNodes.add(node3);
-        Assertions.assertFalse(nodeListComparator.complareNodeLists(oldNodes,newNodes), "Node list should be different");
-        Assertions.assertEquals(1,nodeListComparator.getChangesList().size());
+        List<NodeChangeRecord> nodeChangeList = nodeListComparator.compareNodeLists(oldNodes,newNodes);
+        Assertions.assertEquals(1,nodeChangeList.size());
+        Iterator<NodeChangeRecord> iterator = nodeChangeList.iterator();
 
-        Iterator<NodeChangeRecord> iterator = nodeListComparator.getChangesList().iterator();
         NodeChangeRecord record1 = iterator.next();
         Assertions.assertEquals(node1.getListenAddress().toString(),record1.getNode().getListenAddress().toString());
         Assertions.assertEquals(NodeChangeRecord.NodeChangeType.DELETE,record1.getType());
@@ -113,10 +108,11 @@ public class NodeListComparatorTest {
         newNodes.add(node2);
         newNodes.add(node3);
         newNodes.add(node1);
-        Assertions.assertFalse(nodeListComparator.complareNodeLists(oldNodes,newNodes), "Node list should be different");
-        Assertions.assertEquals(1,nodeListComparator.getChangesList().size());
 
-        Iterator<NodeChangeRecord> iterator = nodeListComparator.getChangesList().iterator();
+        List<NodeChangeRecord> nodeChangeList = nodeListComparator.compareNodeLists(oldNodes,newNodes);
+        Assertions.assertEquals(1,nodeChangeList.size());
+        Iterator<NodeChangeRecord> iterator = nodeChangeList.iterator();
+
         NodeChangeRecord record1 = iterator.next();
         Assertions.assertEquals(node1.getListenAddress().toString(),record1.getNode().getListenAddress().toString());
         Assertions.assertEquals(NodeChangeRecord.NodeChangeType.INSERT,record1.getType());
@@ -135,10 +131,11 @@ public class NodeListComparatorTest {
         oldNodes.add(node2);
         oldNodes.add(node3);
         oldNodes.add(node1);
-        Assertions.assertFalse(nodeListComparator.complareNodeLists(oldNodes,newNodes), "Node list should be different");
-        Assertions.assertEquals(3,nodeListComparator.getChangesList().size());
 
-        Iterator<NodeChangeRecord> iterator = nodeListComparator.getChangesList().iterator();
+        List<NodeChangeRecord> nodeChangeList = nodeListComparator.compareNodeLists(oldNodes,newNodes);
+        Assertions.assertEquals(3,nodeChangeList.size());
+        Iterator<NodeChangeRecord> iterator = nodeChangeList.iterator();
+
         NodeChangeRecord record1 = iterator.next();
         NodeChangeRecord record2 = iterator.next();
         NodeChangeRecord record3 = iterator.next();
@@ -163,11 +160,11 @@ public class NodeListComparatorTest {
         newNodes.add(node2);
         newNodes.add(node3);
         newNodes.add(node1);
-        Assertions.assertFalse(nodeListComparator.complareNodeLists(oldNodes,newNodes), "Node list should be different");
-        Assertions.assertEquals(3,nodeListComparator.getChangesList().size());
 
+        List<NodeChangeRecord> nodeChangeList = nodeListComparator.compareNodeLists(oldNodes,newNodes);
+        Assertions.assertEquals(3,nodeChangeList.size());
+        Iterator<NodeChangeRecord> iterator = nodeChangeList.iterator();
 
-        Iterator<NodeChangeRecord> iterator = nodeListComparator.getChangesList().iterator();
         NodeChangeRecord record1 = iterator.next();
         NodeChangeRecord record2 = iterator.next();
         NodeChangeRecord record3 = iterator.next();
@@ -196,14 +193,14 @@ public class NodeListComparatorTest {
         newNodes.add(node2);
         newNodes.add(node3a);
         newNodes.add(node1);
-        Assertions.assertFalse(nodeListComparator.complareNodeLists(oldNodes,newNodes), "Node list should be different");
-        Assertions.assertEquals(1,nodeListComparator.getChangesList().size());
 
-        Iterator<NodeChangeRecord> iterator = nodeListComparator.getChangesList().iterator();
+        List<NodeChangeRecord> nodeChangeList = nodeListComparator.compareNodeLists(oldNodes,newNodes);
+        Assertions.assertEquals(1,nodeChangeList.size());
+        Iterator<NodeChangeRecord> iterator = nodeChangeList.iterator();
+
         NodeChangeRecord record1 = iterator.next();
         Assertions.assertEquals(node3.getListenAddress().toString(),record1.getNode().getListenAddress().toString());
         Assertions.assertEquals(NodeChangeRecord.NodeChangeType.UPDATE,record1.getType());
-
     }
     @Test
     void testMiddleNodeRemoved() throws UnknownHostException {
@@ -219,15 +216,14 @@ public class NodeListComparatorTest {
         oldNodes.add(node3);
         newNodes.add(node1);
         newNodes.add(node3);
-        Assertions.assertFalse(nodeListComparator.complareNodeLists(oldNodes,newNodes), "Node list should be different");
-        Assertions.assertEquals(1,nodeListComparator.getChangesList().size());
 
-        Iterator<NodeChangeRecord> iterator = nodeListComparator.getChangesList().iterator();
+        List<NodeChangeRecord> nodeChangeList = nodeListComparator.compareNodeLists(oldNodes,newNodes);
+        Assertions.assertEquals(1,nodeChangeList.size());
+        Iterator<NodeChangeRecord> iterator = nodeChangeList.iterator();
+
         NodeChangeRecord record1 = iterator.next();
         Assertions.assertEquals(node2.getListenAddress().toString(),record1.getNode().getListenAddress().toString());
         Assertions.assertEquals(NodeChangeRecord.NodeChangeType.DELETE,record1.getType());
-
-
     }
     @Test
     void test3NodesAdded() throws UnknownHostException {
@@ -247,11 +243,12 @@ public class NodeListComparatorTest {
         newNodes.add(node3);
         newNodes.add(node4);
         newNodes.add(node5);
-        Assertions.assertFalse(nodeListComparator.complareNodeLists(oldNodes,newNodes), "Node list should be different");
-        Assertions.assertEquals(3,nodeListComparator.getChangesList().size());
 
-        Iterator<NodeChangeRecord> iterator = nodeListComparator.getChangesList().iterator();
-        NodeChangeRecord record1 = iterator.next();
+        List<NodeChangeRecord> nodeChangeList = nodeListComparator.compareNodeLists(oldNodes,newNodes);
+        Assertions.assertEquals(3,nodeChangeList.size());
+        Iterator<NodeChangeRecord> iterator = nodeChangeList.iterator();
+
+         NodeChangeRecord record1 = iterator.next();
         NodeChangeRecord record2 = iterator.next();
         NodeChangeRecord record3 = iterator.next();
         Assertions.assertEquals(node3.getListenAddress().toString(),record1.getNode().getListenAddress().toString());
@@ -281,10 +278,11 @@ public class NodeListComparatorTest {
         newNodes.add(node3);
         newNodes.add(node4);
         newNodes.add(node5);
-        Assertions.assertFalse(nodeListComparator.complareNodeLists(oldNodes,newNodes), "Node list should be different");
-        Assertions.assertEquals(3,nodeListComparator.getChangesList().size());
 
-        Iterator<NodeChangeRecord> iterator = nodeListComparator.getChangesList().iterator();
+        List<NodeChangeRecord> nodeChangeList = nodeListComparator.compareNodeLists(oldNodes,newNodes);
+        Assertions.assertEquals(3,nodeChangeList.size());
+        Iterator<NodeChangeRecord> iterator = nodeChangeList.iterator();
+
         NodeChangeRecord record1 = iterator.next();
         NodeChangeRecord record2 = iterator.next();
         NodeChangeRecord record3 = iterator.next();
@@ -315,10 +313,11 @@ public class NodeListComparatorTest {
         oldNodes.add(node3);
         oldNodes.add(node4);
         oldNodes.add(node5);
-        Assertions.assertFalse(nodeListComparator.complareNodeLists(oldNodes,newNodes), "Node list should be different");
-        Assertions.assertEquals(3,nodeListComparator.getChangesList().size());
 
-        Iterator<NodeChangeRecord> iterator = nodeListComparator.getChangesList().iterator();
+        List<NodeChangeRecord> nodeChangeList = nodeListComparator.compareNodeLists(oldNodes,newNodes);
+        Assertions.assertEquals(3,nodeChangeList.size());
+        Iterator<NodeChangeRecord> iterator = nodeChangeList.iterator();
+
         NodeChangeRecord record1 = iterator.next();
         NodeChangeRecord record2 = iterator.next();
         NodeChangeRecord record3 = iterator.next();

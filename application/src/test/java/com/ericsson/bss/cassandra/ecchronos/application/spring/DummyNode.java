@@ -11,6 +11,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+/***
+ * Dummy node used for testing, only endPoint, listenAddress and hostId are set.
+ */
+
 public class DummyNode implements Node {
 
     EndPoint endPoint;
@@ -22,7 +26,7 @@ public class DummyNode implements Node {
         this.listenAddress = listenAddress;
         this.hostId = hostId;
     }
-                       @Override
+    @Override
     public EndPoint getEndPoint() {
         return endPoint;
     }

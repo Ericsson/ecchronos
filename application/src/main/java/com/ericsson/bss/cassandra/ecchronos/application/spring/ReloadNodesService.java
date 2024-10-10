@@ -15,14 +15,10 @@
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
-import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.data.enums.NodeStatus;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.google.common.annotations.VisibleForTesting;
 import jakarta.annotation.PostConstruct;
@@ -34,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.stereotype.Service;
 
-import javax.management.remote.JMXConnector;
 import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -103,9 +98,10 @@ public final class ReloadNodesService implements DisposableBean
         List<Node> oldNodes = myDistributedNativeConnectionProvider.getNodes();
         List<Node> newNodes = myDistributedNativeConnectionProvider.reloadNodes();
         CqlSession cqlSession = myDistributedNativeConnectionProvider.getCqlSession();
-        if (!nodeListComparator.complareNodeLists(oldNodes,newNodes)){
+        List<NodeChangeRecord> nodeChangeList = nodeListComparator.compareNodeLists(oldNodes,newNodes);
+        if (nodeChangeList.size() > 0){
             myDistributedNativeConnectionProvider.setNodes(newNodes);
-            Iterator<NodeChangeRecord> iterator = nodeListComparator.getChangesList().iterator();
+            Iterator<NodeChangeRecord> iterator = nodeChangeList.iterator();
             while (iterator.hasNext()){
                 NodeChangeRecord nodeChangeRecord = iterator.next();
                 if ( nodeChangeRecord.getType() == NodeChangeRecord.NodeChangeType.INSERT){

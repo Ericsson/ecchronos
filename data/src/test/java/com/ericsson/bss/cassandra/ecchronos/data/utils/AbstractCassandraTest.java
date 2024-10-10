@@ -60,6 +60,16 @@ public class AbstractCassandraTest
             {
                 return nodesList;
             }
+
+            @Override
+            public void setNodes(List<Node> nodes) {
+
+            }
+
+            @Override
+            public List<Node> reloadNodes() {
+                return nodesList;
+            }
         };
     }
 

@@ -151,7 +151,7 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
     /**
      * Creates a new connection a node
      * @param node
-     *         
+     *
      * @throws IOException
      */
     @Override
