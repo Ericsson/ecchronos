@@ -150,8 +150,10 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
      * @throws IOException
      */
     @Override
-    public void add(final Node node) throws IOException {
-        try {
+    public void add(final Node node) throws IOException
+    {
+        try
+        {
             myDistributedJmxBuilder.reconnect(node);
         }
         catch (EcChronosException e)
