@@ -36,5 +36,5 @@ public interface DistributedJmxConnectionProvider extends Closeable
 
     void close(UUID nodeID) throws IOException;
 
-    void add( Node node) throws IOException;
+    void add(Node node) throws IOException;
 }
