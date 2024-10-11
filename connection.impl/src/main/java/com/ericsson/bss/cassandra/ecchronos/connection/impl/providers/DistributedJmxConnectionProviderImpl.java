@@ -142,7 +142,7 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
     }
 
     /**
-     * Add a node and create a JMXconnection
+     * Add a node and create a JMXconnection.
      * @param node
      * @throws IOException
      */

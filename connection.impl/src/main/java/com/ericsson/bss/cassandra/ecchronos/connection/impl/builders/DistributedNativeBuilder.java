@@ -244,9 +244,14 @@ public class DistributedNativeBuilder
         LOG.info("Requesting Nodes List");
         List<Node> nodesList = createNodesList(session);
         LOG.info("Nodes list was created with success");
-        return new DistributedNativeConnectionProviderImpl(session, nodesList, this );
+        return new DistributedNativeConnectionProviderImpl(session, nodesList, this);
     }
 
+    /**
+     * Creates a list of nodes based on the connection type, reads the node list from the database.
+     * @param session the connection information to the database
+     * @return list of nodes
+     */
     public List<Node> createNodesList(final CqlSession session)
     {
         List<Node> tmpNodeList = new ArrayList<>();

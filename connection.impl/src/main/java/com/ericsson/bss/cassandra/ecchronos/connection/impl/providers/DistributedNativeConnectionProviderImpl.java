@@ -71,7 +71,7 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
     }
 
     /***
-     * Replaces the current node list with a new one
+     * Replaces the current node list with a new one.
      * @param nodes
      */
     @Override
@@ -81,7 +81,7 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
     }
 
     /***
-     * Reloads the list of nodes from the database
+     * Reloads the list of nodes from the database.
      * @return list of nodes
      */
     @Override
