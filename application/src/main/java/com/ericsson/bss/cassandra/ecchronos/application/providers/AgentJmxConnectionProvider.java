@@ -149,13 +149,14 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
     }
 
     /**
-     * Creates a new connection a node
+     * Creates a new connection a node.
      * @param node
      *
      * @throws IOException
      */
     @Override
-    public void add(Node node) throws IOException {
+    public void add(final Node node) throws IOException
+    {
         myDistributedJmxConnectionProviderImpl.add(node);
     }
 

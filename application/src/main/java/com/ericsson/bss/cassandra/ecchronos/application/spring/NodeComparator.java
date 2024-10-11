@@ -18,16 +18,22 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
 import com.datastax.oss.driver.api.core.metadata.Node;
 
 import java.util.Comparator;
-import java.util.UUID;
 
 
 /***
- * This will compare 2 nodes based on the Host id of the node
+ * This will compare 2 nodes based on the Host id of the node.
  */
 public class NodeComparator implements Comparator<Node>
 {
+    /**
+     *  This will compare 2 nodes based on the Host id of the node.
+     * @param firstNode
+     * @param secondNode
+     * @return
+     */
     @Override
-    public int compare(Node firstNode, Node secondNode) {
+    public int compare(final Node firstNode, final Node secondNode)
+    {
         return firstNode.getHostId().compareTo( secondNode.getHostId());
     }
 }

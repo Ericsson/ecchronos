@@ -269,11 +269,20 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
         return myDistributedNativeConnectionProviderImpl.getNodes();
     }
 
+    /**
+     * Sets the list of nodes.
+     * @param nodes
+     */
     @Override
-    public void setNodes(List<Node> nodes) {
+    public void setNodes(final List<Node> nodes)
+    {
         myDistributedNativeConnectionProviderImpl.setNodes(nodes);
     }
 
+    /**
+     * Reload the list of nodes from the database.
+     * @return
+     */
     public List<Node> reloadNodes()
     {
         return myDistributedNativeConnectionProviderImpl.reloadNodes();
