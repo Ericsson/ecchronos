@@ -159,7 +159,7 @@ public class DistributedJmxBuilder
      * @throws IOException
      * @throws EcChronosException
      */
-    public void reconnect(final Node node) throws IOException, EcChronosException
+    public void reconnect(final Node node) throws EcChronosException
     {
         try
         {

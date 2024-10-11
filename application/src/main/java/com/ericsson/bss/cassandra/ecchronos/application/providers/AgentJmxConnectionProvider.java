@@ -21,6 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedJmxConnectionProviderImpl;
+import com.ericsson.bss.cassandra.ecchronos.data.exceptions.EcChronosException;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -155,8 +156,7 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
      * @throws IOException
      */
     @Override
-    public void add(final Node node) throws IOException
-    {
+    public void add(final Node node) throws IOException {
         myDistributedJmxConnectionProviderImpl.add(node);
     }
 

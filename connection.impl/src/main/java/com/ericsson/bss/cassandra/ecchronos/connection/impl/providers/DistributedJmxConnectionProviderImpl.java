@@ -26,9 +26,12 @@ import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.Distributed
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.data.exceptions.EcChronosException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DistributedJmxConnectionProviderImpl implements DistributedJmxConnectionProvider
 {
+    private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxConnectionProviderImpl.class);
     private final List<Node> myNodesList;
     private final ConcurrentHashMap<UUID, JMXConnector> myJMXConnections;
     private final DistributedJmxBuilder myDistributedJmxBuilder;
@@ -147,17 +150,14 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
      * @throws IOException
      */
     @Override
-    public void add(final Node node) throws IOException
-    {
-        try
-        {
+    public void add(final Node node) throws IOException {
+        try {
             myDistributedJmxBuilder.reconnect(node);
         }
         catch (EcChronosException e)
         {
-            throw new RuntimeException(e);
+            LOG.info("Unable to connect with node {} connection refused: {}", node.getHostId(), e.getMessage());
         }
-
 
     }
 
