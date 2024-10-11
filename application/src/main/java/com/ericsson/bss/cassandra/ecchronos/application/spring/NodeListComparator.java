@@ -100,10 +100,12 @@ public class NodeListComparator
     private Node getNode(final Iterator<Node> iterator)
     {
         Node node;
-        if ( iterator.hasNext()) {
+        if (iterator.hasNext())
+        {
             node = iterator.next();
         }
-        else {
+        else
+        {
             node = null;
         }
         return node;
