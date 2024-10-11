@@ -69,13 +69,24 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
     {
         return myNodes;
     }
+
+    /***
+     * Replaces the current node list with a new one
+     * @param nodes
+     */
     @Override
-    public void setNodes(List<Node> nodes)
+    public void setNodes(final List<Node> nodes)
     {
          myNodes = nodes;
     }
+
+    /***
+     * Reloads the list of nodes from the database
+     * @return list of nodes
+     */
     @Override
-    public List<Node> reloadNodes(){
+    public List<Node> reloadNodes()
+    {
         return myDistributedNativeBuilder.createNodesList(mySession);
     }
 

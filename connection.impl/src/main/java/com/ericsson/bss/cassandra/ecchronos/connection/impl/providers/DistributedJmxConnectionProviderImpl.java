@@ -140,12 +140,21 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
     {
         myJMXConnections.get(nodeID).close();
     }
+
+    /**
+     * Add a node and create a JMXconnection
+     * @param node
+     * @throws IOException
+     */
     @Override
     public void add(final Node node) throws IOException
     {
-        try {
+        try
+        {
             myDistributedJmxBuilder.reconnect(node);
-        } catch (EcChronosException e) {
+        }
+        catch (EcChronosException e)
+        {
             throw new RuntimeException(e);
         }
 
