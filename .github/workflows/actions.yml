@@ -38,9 +38,9 @@ jobs:
             java_version: 11
             test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=4.1 -DskipUTs'
             artifacts_dir: "standalone-integration/target"
-          - name: "Standalone integration 5.0-alpha1 - Java 11"
+          - name: "Standalone integration 5.0- - Java 11"
             java_version: 11
-            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=5.0-alpha1 -DskipUTs'
+            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=5.0 -DskipUTs'
             artifacts_dir: "standalone-integration/target"
           - name: "Python integration - Java 11"
             java_version: 11
@@ -62,9 +62,9 @@ jobs:
             java_version: 17
             test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=4.1 -Djava.version=17 -DskipUTs'
             artifacts_dir: "standalone-integration/target"
-          - name: "Standalone integration 5.0-alpha1 - Java 17"
+          - name: "Standalone integration 5.0 - Java 17"
             java_version: 17
-            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=5.0-alpha1 -Djava.version=17 -DskipUTs'
+            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -DskipUTs'
             artifacts_dir: "standalone-integration/target"
           - name: "Python integration - Java 17"
             java_version: 17
@@ -86,9 +86,9 @@ jobs:
             java_version: 21
             test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=4.1 -Djava.version=21 -DskipUTs'
             artifacts_dir: "standalone-integration/target"
-          - name: "Standalone integration 5.0-alpha1 - Java 21"
+          - name: "Standalone integration 5.0 - Java 21"
             java_version: 21
-            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=5.0-alpha1 -Djava.version=21 -DskipUTs'
+            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -DskipUTs'
             artifacts_dir: "standalone-integration/target"
           - name: "Python integration - Java 21"
             java_version: 21

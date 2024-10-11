@@ -18,3 +18,4 @@ dependency-reduced-pom.xml
 *htmlcov
 application/statistics/
 statistics/
+.python-version
