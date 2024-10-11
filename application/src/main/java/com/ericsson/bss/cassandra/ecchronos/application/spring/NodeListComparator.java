@@ -24,8 +24,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 
-public class NodeListComparator {
-
+public class NodeListComparator
+{
     private static final Logger LOG = LoggerFactory.getLogger(NodeListComparator.class);
 
     /***
@@ -65,7 +65,7 @@ public class NodeListComparator {
                     // same host id, now check the ipaddress is still the same
                     if (!oldNode.getListenAddress().equals(newNode.getListenAddress()))
                     {
-                        LOG.info("Node id {}, has a different ipaddress, it was {}, it is now {} ", oldNode.getHostId(), oldNode.getListenAddress(), newNode.getListenAddress() );
+                        LOG.info("Node id {}, has a different ipaddress, it was {}, it is now {} ", oldNode.getHostId(), oldNode.getListenAddress(), newNode.getListenAddress());
                         changesList.add(new NodeChangeRecord(oldNode, NodeChangeRecord.NodeChangeType.UPDATE));
                     }
                     oldNode = getNode(oldIterator);
@@ -88,22 +88,24 @@ public class NodeListComparator {
                 }
             }
         }
-        while ( newNode != null)
+        while (newNode != null)
         {
-            changesList.add(new NodeChangeRecord(newNode, NodeChangeRecord.NodeChangeType.INSERT ));
+            changesList.add(new NodeChangeRecord(newNode, NodeChangeRecord.NodeChangeType.INSERT));
             LOG.info("Node has been added, Node id: {}", newNode.getHostId());
             newNode = getNode(newIterator);
         }
         return changesList;
     }
 
-    private Node getNode(Iterator<Node> iterator)
+    private Node getNode(final Iterator<Node> iterator)
     {
         Node node;
-        if ( iterator.hasNext())
+        if ( iterator.hasNext()) {
             node = iterator.next();
-        else
+        }
+        else {
             node = null;
+        }
         return node;
     }
 }

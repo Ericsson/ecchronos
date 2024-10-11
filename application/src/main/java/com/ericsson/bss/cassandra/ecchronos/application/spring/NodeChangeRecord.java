@@ -17,7 +17,8 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 
-public class NodeChangeRecord {
+public class NodeChangeRecord
+{
     enum NodeChangeType
     {
         INSERT,
@@ -35,7 +36,7 @@ public class NodeChangeRecord {
     }
 
     /***
-     * returns the node that has changed
+     * returns the node that has changed.
      *
      * @return
      */
@@ -45,7 +46,7 @@ public class NodeChangeRecord {
     }
 
     /***
-     * Returns the change type can be either INSERT, DELETE or UPDATE
+     * Returns the change type can be either INSERT, DELETE or UPDATE.
      * @return
      */
     public NodeChangeType getType()

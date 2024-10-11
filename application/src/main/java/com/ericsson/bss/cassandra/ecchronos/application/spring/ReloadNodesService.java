@@ -72,7 +72,7 @@ public final class ReloadNodesService implements DisposableBean
     {
         long reLoadIntervalInMills = reLoadInterval.getInterval(TimeUnit.MILLISECONDS);
         LOG.info("Starting ReloadNodesService with reLoadInterval={} ms", reLoadIntervalInMills);
-        myScheduler.scheduleWithFixedDelay(this::reloadNodes, reLoadIntervalInMills,reLoadIntervalInMills, TimeUnit.MILLISECONDS);
+        myScheduler.scheduleWithFixedDelay(this::reloadNodes, reLoadIntervalInMills, reLoadIntervalInMills, TimeUnit.MILLISECONDS);
     }
 
     @VisibleForTesting
@@ -81,7 +81,7 @@ public final class ReloadNodesService implements DisposableBean
         List<Node> oldNodes = myDistributedNativeConnectionProvider.getNodes();
         List<Node> newNodes = myDistributedNativeConnectionProvider.reloadNodes();
         CqlSession cqlSession = myDistributedNativeConnectionProvider.getCqlSession();
-        List<NodeChangeRecord> nodeChangeList = nodeListComparator.compareNodeLists(oldNodes,newNodes);
+        List<NodeChangeRecord> nodeChangeList = nodeListComparator.compareNodeLists(oldNodes, newNodes);
         if (!nodeChangeList.isEmpty())
         {
             myDistributedNativeConnectionProvider.setNodes(newNodes);
@@ -89,17 +89,19 @@ public final class ReloadNodesService implements DisposableBean
             while (iterator.hasNext())
             {
                 NodeChangeRecord nodeChangeRecord = iterator.next();
-                if ( nodeChangeRecord.getType() == NodeChangeRecord.NodeChangeType.INSERT){
+                if (nodeChangeRecord.getType() == NodeChangeRecord.NodeChangeType.INSERT)
+                {
                     myEccNodesSync.verifyAcquireNode(nodeChangeRecord.getNode());
                     try
                     {
                         myJmxConnectionProvider.add(nodeChangeRecord.getNode());
-                    } catch (IOException e) {
-                        LOG.info("Node {} JMX connection failed", nodeChangeRecord.getNode().getHostId() );
+                    } catch (IOException e)
+                    {
+                        LOG.info("Node {} JMX connection failed", nodeChangeRecord.getNode().getHostId());
                     }
                 }
                 if ( nodeChangeRecord.getType() == NodeChangeRecord.NodeChangeType.DELETE){
-                    myEccNodesSync.deleteNodeStatus(nodeChangeRecord.getNode().getDatacenter(),nodeChangeRecord.getNode().getHostId());
+                    myEccNodesSync.deleteNodeStatus(nodeChangeRecord.getNode().getDatacenter(), nodeChangeRecord.getNode().getHostId());
                     try
                     {
                         myJmxConnectionProvider.close(nodeChangeRecord.getNode().getHostId());
@@ -114,7 +116,7 @@ public final class ReloadNodesService implements DisposableBean
     }
 
     /***
-     * Shutsdown the scheduler
+     * Shutsdown the scheduler.
      */
     @Override
     public void destroy()
