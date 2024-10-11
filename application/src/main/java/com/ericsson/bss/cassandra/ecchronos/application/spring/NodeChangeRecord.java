@@ -25,21 +25,31 @@ public class NodeChangeRecord {
         UPDATE
     }
 
-    private final Node node;
-    private final NodeChangeType type;
+    private final Node myNode;
+    private final NodeChangeType myType;
 
-    public NodeChangeRecord(Node node, NodeChangeType type)
+    public NodeChangeRecord(final Node node, final NodeChangeType type)
     {
-        this.node = node;
-        this.type = type;
+        this.myNode = node;
+        this.myType = type;
     }
 
+    /***
+     * returns the node that has changed
+     *
+     * @return
+     */
     public  Node getNode()
     {
-        return node;
+        return myNode;
     }
+
+    /***
+     * Returns the change type can be either INSERT, DELETE or UPDATE
+     * @return
+     */
     public NodeChangeType getType()
     {
-        return type;
+        return myType;
     }
 }

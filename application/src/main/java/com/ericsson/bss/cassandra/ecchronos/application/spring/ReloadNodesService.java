@@ -23,14 +23,13 @@ import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.google.common.annotations.VisibleForTesting;
 import jakarta.annotation.PostConstruct;
 
-import java.util.*;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.stereotype.Service;
-
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -73,32 +72,36 @@ public final class ReloadNodesService implements DisposableBean
     {
         long reLoadIntervalInMills = reLoadInterval.getInterval(TimeUnit.MILLISECONDS);
         LOG.info("Starting ReloadNodesService with reLoadInterval={} ms", reLoadIntervalInMills);
-        myScheduler.scheduleWithFixedDelay(this::reloadNodes, reLoadIntervalInMills,reLoadIntervalInMills,  TimeUnit.MILLISECONDS);
+        myScheduler.scheduleWithFixedDelay(this::reloadNodes, reLoadIntervalInMills,reLoadIntervalInMills, TimeUnit.MILLISECONDS);
     }
 
     @VisibleForTesting
-    void reloadNodes()  {
+    void reloadNodes()
+    {
         List<Node> oldNodes = myDistributedNativeConnectionProvider.getNodes();
         List<Node> newNodes = myDistributedNativeConnectionProvider.reloadNodes();
         CqlSession cqlSession = myDistributedNativeConnectionProvider.getCqlSession();
         List<NodeChangeRecord> nodeChangeList = nodeListComparator.compareNodeLists(oldNodes,newNodes);
-        if (!nodeChangeList.isEmpty()){
+        if (!nodeChangeList.isEmpty())
+        {
             myDistributedNativeConnectionProvider.setNodes(newNodes);
             Iterator<NodeChangeRecord> iterator = nodeChangeList.iterator();
-            while (iterator.hasNext()){
+            while (iterator.hasNext())
+            {
                 NodeChangeRecord nodeChangeRecord = iterator.next();
                 if ( nodeChangeRecord.getType() == NodeChangeRecord.NodeChangeType.INSERT){
                     myEccNodesSync.verifyAcquireNode(nodeChangeRecord.getNode());
-                    try {
+                    try
+                    {
                         myJmxConnectionProvider.add(nodeChangeRecord.getNode());
                     } catch (IOException e) {
                         LOG.info("Node {} JMX connection failed", nodeChangeRecord.getNode().getHostId() );
                     }
-
                 }
                 if ( nodeChangeRecord.getType() == NodeChangeRecord.NodeChangeType.DELETE){
                     myEccNodesSync.deleteNodeStatus(nodeChangeRecord.getNode().getDatacenter(),nodeChangeRecord.getNode().getHostId());
-                    try {
+                    try
+                    {
                         myJmxConnectionProvider.close(nodeChangeRecord.getNode().getHostId());
                     }
                     catch (IOException e )
@@ -108,129 +111,17 @@ public final class ReloadNodesService implements DisposableBean
                 }
             }
         }
-
-
-        
-        
-        /* 
-        List<Node> unavailableNodes = findUnavailableNodes();
-
-        if (unavailableNodes.isEmpty())
-        {
-            return;
-        }
-
-        unavailableNodes.forEach(this::retryConnectionForNode);
-        */
     }
 
-/*
-    private List<Node> findUnavailableNodes()
-    {
-        List<Node> unavailableNodes = new ArrayList<>();
-        ResultSet resultSet = myEccNodesSync.getResultSet();
-
-        for (Row row : resultSet)
-        {
-            UUID nodeId = row.getUuid(COLUMN_NODE_ID);
-            String status = Objects.requireNonNull(row.getString(COLUMN_NODE_STATUS)).toUpperCase(Locale.ENGLISH);
-
-            if (NodeStatus.UNAVAILABLE.name().equals(status))
-            {
-                myDistributedNativeConnectionProvider.getNodes()
-                        .stream()
-                        .filter(node -> Objects.equals(node.getHostId(), nodeId))
-                        .findFirst()
-                        .ifPresent(unavailableNodes::add);
-            }
-        }
-
-        return unavailableNodes;
-    }
-
-    private void retryConnectionForNode(final Node node)
-    {
-        UUID nodeId = node.getHostId();
-        for (int attempt = 1; attempt <= retryBackoffStrategy.getMaxAttempts(); attempt++)
-        {
-            if (tryReconnectToNode(node, nodeId, attempt))
-            {
-                return; // Successfully reconnected, exit method
-            }
-        }
-        markNodeUnreachable(node, nodeId);
-    }
-
-    private boolean tryReconnectToNode(final Node node, final UUID nodeId, final int attempt)
-    {
-        long delayMillis = retryBackoffStrategy.calculateDelay(attempt);
-        LOG.warn("Attempting to reconnect to node: {}, attempt: {}", nodeId, attempt);
-
-        if (establishConnectionToNode(node))
-        {
-            LOG.info("Successfully reconnected to node: {}", nodeId);
-            myEccNodesSync.updateNodeStatus(NodeStatus.AVAILABLE, node.getDatacenter(), nodeId);
-            return true;
-        }
-        else
-        {
-            LOG.warn("Failed to reconnect to node: {}, next retry in {} ms", nodeId, delayMillis);
-            retryBackoffStrategy.sleepBeforeNextRetry(delayMillis);
-            return false;
-        }
-    }
-
-    private void markNodeUnreachable(final Node node, final UUID nodeId)
-    {
-        LOG.error("Max retry attempts reached for node: {}. Marking as UNREACHABLE.", nodeId);
-        myEccNodesSync.updateNodeStatus(NodeStatus.UNREACHABLE, node.getDatacenter(), nodeId);
-    }
-
-    private boolean establishConnectionToNode(final Node node)
-    {
-        UUID nodeId = node.getHostId();
-        JMXConnector jmxConnector = myJmxConnectionProvider.getJmxConnector(nodeId);
-        boolean isConnected = jmxConnector != null && isConnected(jmxConnector);
-
-        if (isConnected)
-        {
-            myJmxConnectionProvider.getJmxConnections().put(nodeId, jmxConnector);
-            LOG.info("Node {} connected successfully.", nodeId);
-        }
-        else
-        {
-            LOG.warn("Failed to connect to node {}.", nodeId);
-        }
-
-        return isConnected;
-    }
-
-    private boolean isConnected(final JMXConnector jmxConnector)
-    {
-        try
-        {
-            jmxConnector.getConnectionId();
-            return true;
-        }
-        catch (IOException e)
-        {
-            LOG.error("Error while checking connection for JMX connector", e);
-            return false;
-        }
-    }
-*/
+    /***
+     * Shutsdown the scheduler
+     */
     @Override
     public void destroy()
     {
         LOG.info("Shutting down RetrySchedulerService...");
         RetryServiceShutdownManager.shutdownExecutorService(myScheduler, DEFAULT_SCHEDULER_AWAIT_TERMINATION_IN_SECONDS, TimeUnit.SECONDS);
         LOG.info("RetrySchedulerService shut down complete.");
-    }
-
-    @VisibleForTesting
-    ScheduledExecutorService getMyScheduler()
-    {
-        return myScheduler;
     }
 }
 

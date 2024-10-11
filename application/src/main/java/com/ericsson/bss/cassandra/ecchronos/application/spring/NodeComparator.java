@@ -34,6 +34,6 @@ public class NodeComparator implements Comparator<Node>
     @Override
     public int compare(final Node firstNode, final Node secondNode)
     {
-        return firstNode.getHostId().compareTo( secondNode.getHostId());
+        return firstNode.getHostId().compareTo(secondNode.getHostId());
     }
 }
