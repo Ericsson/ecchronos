@@ -674,6 +674,7 @@ limitations under the License.
                         </headerSections>
                         <excludes>
                             <exclude>CODEOWNERS</exclude>
+                            <exclude>.python-version</exclude>
                             <exclude>src/test/resources/cassandra.yaml</exclude>
                             <exclude>src/test/resources/cassandra-rackdc.properties</exclude>
                             <exclude>**/*.cql</exclude>
