@@ -95,20 +95,22 @@ public final class ReloadNodesService implements DisposableBean
                     try
                     {
                         myJmxConnectionProvider.add(nodeChangeRecord.getNode());
-                    } catch (IOException e)
+                    }
+                    catch (IOException e)
                     {
                         LOG.info("Node {} JMX connection failed", nodeChangeRecord.getNode().getHostId());
                     }
                 }
-                if ( nodeChangeRecord.getType() == NodeChangeRecord.NodeChangeType.DELETE){
+                if (nodeChangeRecord.getType() == NodeChangeRecord.NodeChangeType.DELETE)
+                {
                     myEccNodesSync.deleteNodeStatus(nodeChangeRecord.getNode().getDatacenter(), nodeChangeRecord.getNode().getHostId());
                     try
                     {
                         myJmxConnectionProvider.close(nodeChangeRecord.getNode().getHostId());
                     }
-                    catch (IOException e )
+                    catch (IOException e)
                     {
-                        LOG.info("Node {} JMX connection removal failed", nodeChangeRecord.getNode().getHostId() );
+                        LOG.info("Node {} JMX connection removal failed", nodeChangeRecord.getNode().getHostId());
                     }
                 }
             }
