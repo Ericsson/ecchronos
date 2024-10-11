@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.utils.enums.converter.UnitConverter;
+import com.ericsson.bss.cassandra.ecchronos.utils.converter.UnitConverter;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import java.io.File;
 import java.util.concurrent.TimeUnit;

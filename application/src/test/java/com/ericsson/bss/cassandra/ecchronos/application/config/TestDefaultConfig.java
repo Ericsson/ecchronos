@@ -60,7 +60,7 @@ public class TestDefaultConfig
     @Test
     public void testConnectionDelayDefault()
     {
-        Interval connectionDelay = config.getConnectionConfig().getConnectionDelay();
+        Interval connectionDelay = config.getConnectionConfig().getCqlConnection().getConnectionDelay();
         assertThat(connectionDelay.getUnit()).isEqualTo(TimeUnit.MINUTES);
         assertThat(connectionDelay.getTime()).isEqualTo(60l);
     }

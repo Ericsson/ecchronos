@@ -27,6 +27,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.DistributedNativeBuilder;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedNativeConnectionProviderImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +64,8 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
     public AgentNativeConnectionProvider(
             final Config config,
             final Supplier<Security.CqlSecurity> cqlSecuritySupplier,
-            final CertificateHandler certificateHandler
+            final CertificateHandler certificateHandler,
+            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider
     )
     {
         AgentConnectionConfig agentConnectionConfig = config.getConnectionConfig().getCqlConnection()
@@ -89,7 +91,9 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
                         .withAgentType(agentConnectionConfig.getType())
                         .withLocalDatacenter(agentConnectionConfig.getLocalDatacenter())
                         .withAuthProvider(authProvider)
-                        .withSslEngineFactory(sslEngineFactory);
+                        .withSslEngineFactory(sslEngineFactory)
+                        .withSchemaChangeListener(defaultRepairConfigurationProvider)
+                        .withNodeStateListener(defaultRepairConfigurationProvider);
         LOG.info("Preparing Agent Connection Config");
         nativeConnectionBuilder = resolveAgentProviderBuilder(nativeConnectionBuilder, agentConnectionConfig);
         LOG.info("Establishing Connection With Nodes");

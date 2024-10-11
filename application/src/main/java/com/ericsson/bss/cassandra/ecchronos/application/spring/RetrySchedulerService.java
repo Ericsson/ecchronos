@@ -35,7 +35,6 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.stereotype.Service;
 
 import javax.management.remote.JMXConnector;
-import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -97,7 +96,6 @@ public final class RetrySchedulerService implements DisposableBean
     @VisibleForTesting
     void retryNodes()
     {
-        LOG.warn("Retrying unavailable nodes");
         List<Node> unavailableNodes = findUnavailableNodes();
 
         if (unavailableNodes.isEmpty())
@@ -134,6 +132,7 @@ public final class RetrySchedulerService implements DisposableBean
     private void retryConnectionForNode(final Node node)
     {
         UUID nodeId = node.getHostId();
+        LOG.warn("Node {} is unavailable, retrying the connection.", nodeId);
         for (int attempt = 1; attempt <= retryBackoffStrategy.getMaxAttempts(); attempt++)
         {
             if (tryReconnectToNode(node, nodeId, attempt))
@@ -173,7 +172,7 @@ public final class RetrySchedulerService implements DisposableBean
     {
         UUID nodeId = node.getHostId();
         JMXConnector jmxConnector = myJmxConnectionProvider.getJmxConnector(nodeId);
-        boolean isConnected = jmxConnector != null && isConnected(jmxConnector);
+        boolean isConnected = jmxConnector != null && myJmxConnectionProvider.isConnected(jmxConnector);
 
         if (isConnected)
         {
@@ -186,20 +185,6 @@ public final class RetrySchedulerService implements DisposableBean
         }
 
         return isConnected;
-    }
-
-    private boolean isConnected(final JMXConnector jmxConnector)
-    {
-        try
-        {
-            jmxConnector.getConnectionId();
-            return true;
-        }
-        catch (IOException e)
-        {
-            LOG.error("Error while checking connection for JMX connector", e);
-            return false;
-        }
     }
 
     @Override

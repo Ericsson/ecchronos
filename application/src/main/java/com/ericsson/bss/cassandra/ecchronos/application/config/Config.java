@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application.config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.ConnectionConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.GlobalRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.rest.RestServerConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.runpolicy.RunPolicyConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.scheduler.SchedulerConfig;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -24,6 +25,7 @@ public class Config
 {
     private ConnectionConfig myConnectionConfig = new ConnectionConfig();
     private GlobalRepairConfig myRepairConfig = new GlobalRepairConfig();
+    private RunPolicyConfig myRunPolicyConfig = new RunPolicyConfig();
     private SchedulerConfig mySchedulerConfig = new SchedulerConfig();
     private RestServerConfig myRestServerConfig = new RestServerConfig();
 
@@ -65,6 +67,21 @@ public class Config
         {
             myRepairConfig = repairConfig;
             myRepairConfig.validate("Global");
+        }
+    }
+
+    @JsonProperty("run_policy")
+    public final RunPolicyConfig getRunPolicy()
+    {
+        return myRunPolicyConfig;
+    }
+
+    @JsonProperty("run_policy")
+    public final void setRunPolicyConfig(final RunPolicyConfig runPolicyConfig)
+    {
+        if (runPolicyConfig != null)
+        {
+            myRunPolicyConfig = runPolicyConfig;
         }
     }
 

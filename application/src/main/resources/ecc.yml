@@ -43,9 +43,9 @@ connection:
       ## Initial contact points list for ecChronos
       ## to establish first connection with Cassandra.
       contactPoints:
-        - host: 127.0.0.1
+        - host: 172.18.0.2
           port: 9042
-        - host: 127.0.0.2
+        - host: 172.18.0.5
           port: 9042
       ## Configuration to define datacenters for ecchronos
       ## to connect to, datacenterAware enable means that
@@ -239,6 +239,13 @@ repair:
   ## incremental = repair vnodes incrementally (incremental repair)
   ##
   repair_type: incremental
+
+run_policy:
+  time_based:
+    ##
+    ## The keyspace used for the time based run policy tables.
+    ##
+    keyspace: ecchronos
 
 scheduler:
   ##
