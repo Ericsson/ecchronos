@@ -2,7 +2,14 @@
 
 ## Version 1.0.0 (Not yet Released)
 
-* Generate Unique EcChronos ID #678
+* Investigate Creation of RepairScheduler and ScheduleManager #714
+* Implement ScheduledJobQueue for Prioritized Job Management and Execution - Issue #740
+* Implement RepairGroup Class for Managing and Executing Repair Tasks - Issue #738
+* Create IncrementalRepairTask Class - Issue #736
+* Implement ScheduledRepairJob, ScheduledJob and ScheduledTask for Automated Recurring Task Scheduling in Cassandra - Issue #737
+* Create RepairTask Abstract Class to Handle Repair Operations - Issue #717
+* Create ReplicationState and ReplicationStateImpl Class for Managing Token-to-Replicas Mapping - Issue #722
+* Generate Unique EcChronos ID - Issue #678
 * Create RepairConfiguration class for repair configurations - Issue #716
 * Create DistributedJmxProxy and DistributedJmxProxyFactory - Issue #715
 * Create a New Maven Module "utils" for Common Code Reuse - Issue #720

@@ -139,7 +139,7 @@ public class ECChronosInternals implements Closeable
         return nodesMap;
     }
 
-    private static class NoOpRepairMetrics implements TableRepairMetrics
+    private static final class NoOpRepairMetrics implements TableRepairMetrics
     {
 
         @Override

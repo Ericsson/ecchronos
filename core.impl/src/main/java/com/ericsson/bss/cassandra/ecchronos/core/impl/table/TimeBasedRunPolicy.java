@@ -74,6 +74,12 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     private final Clock myClock;
     private final LoadingCache<TableKey, TimeRejectionCollection> myTimeRejectionCache;
 
+    /**
+     * Constructs a new instance of {@link TimeBasedRunPolicy} using the specified {@link Builder}.
+     *
+     * @param builder the {@link Builder} containing the configuration settings for the {@link TimeBasedRunPolicy}.
+     *                Must not be {@code null}.
+     */
     public TimeBasedRunPolicy(final Builder builder)
     {
         mySession = builder.mySession;
@@ -126,32 +132,55 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         myTimeRejectionCache.cleanUp();
     }
 
+    /**
+     * Create an instance of Builder class to construct TimeBasedRunPolicy.
+     */
     public static Builder builder()
     {
         return new Builder();
     }
 
+    /**
+     * Builder class to construct TimeBasedRunPolicy.
+     */
     public static class Builder
     {
         private static final String DEFAULT_KEYSPACE_NAME = "ecchronos";
 
         private CqlSession mySession;
         private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
-        private final long myCacheExpireTime = DEFAULT_CACHE_EXPIRE_TIME;
+        private static long myCacheExpireTime = DEFAULT_CACHE_EXPIRE_TIME;
         private final Clock myClock = Clock.systemDefaultZone();
 
+        /**
+         * Sets the {@link CqlSession} to be used by the {@link TimeBasedRunPolicy}.
+         *
+         * @param session the {@link CqlSession} to set. Must not be {@code null}.
+         * @return the current {@link Builder} instance for method chaining.
+         */
         public final Builder withSession(final CqlSession session)
         {
             mySession = session;
             return this;
         }
 
+        /**
+         * Sets the keyspace name to be used by the {@link TimeBasedRunPolicy}.
+         *
+         * @param keyspaceName the name of the keyspace. Must not be {@code null}.
+         * @return the current {@link Builder} instance for method chaining.
+         */
         public final Builder withKeyspaceName(final String keyspaceName)
         {
             myKeyspaceName = keyspaceName;
             return this;
         }
 
+        /**
+         * Builds a new instance of {@link TimeBasedRunPolicy} using the configured parameters.
+         *
+         * @return a new {@link TimeBasedRunPolicy} instance.
+         */
         public final TimeBasedRunPolicy build()
         {
             verifySchemasExists();

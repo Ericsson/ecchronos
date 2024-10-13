@@ -29,10 +29,22 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Class used to run Incremental Repairs in Cassandra.
+ */
 public class IncrementalRepairTask extends RepairTask
 {
     private static final Logger LOG = LoggerFactory.getLogger(IncrementalRepairTask.class);
 
+    /**
+     * Constructs an IncrementalRepairTask for a specific node and table.
+     *
+     * @param currentNode the UUID of the current node where the repair task is running. Must not be {@code null}.
+     * @param jmxProxyFactory the factory to create connections to distributed JMX proxies. Must not be {@code null}.
+     * @param tableReference the reference to the table that is being repaired. Must not be {@code null}.
+     * @param repairConfiguration the configuration specifying how the repair task should be executed. Must not be {@code null}.
+     * @param tableRepairMetrics the metrics associated with table repairs for monitoring and tracking purposes. Must not be {@code null}.
+     */
     public IncrementalRepairTask(
             final UUID currentNode,
             final DistributedJmxProxyFactory jmxProxyFactory,

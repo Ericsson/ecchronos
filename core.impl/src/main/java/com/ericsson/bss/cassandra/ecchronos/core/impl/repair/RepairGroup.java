@@ -32,6 +32,9 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Class used to construct repair groups.
+ */
 public class RepairGroup extends ScheduledTask
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairGroup.class);
@@ -43,6 +46,12 @@ public class RepairGroup extends ScheduledTask
     private final TableRepairMetrics myTableRepairMetrics;
     private final List<TableRepairPolicy> myRepairPolicies;
 
+    /**
+     * Constructs an IncrementalRepairTask for a specific node and table.
+     *
+     * @param priority the priority for job creation.
+     * @param builder the Builder to construct RepairGroup.
+     */
     public RepairGroup(final int priority, final Builder builder)
     {
         super(priority);
@@ -123,7 +132,8 @@ public class RepairGroup extends ScheduledTask
     /**
      * Get repair tasks.
      *
-     * @return Collection<RepairTask>
+     * @param nodeID the Node id.
+     * @return a Collection of RepairTask
      */
     @VisibleForTesting
     public Collection<RepairTask> getRepairTasks(final UUID nodeID)
@@ -139,11 +149,19 @@ public class RepairGroup extends ScheduledTask
         return tasks;
     }
 
+    /**
+     * Create instance of Builder to construct RepairGroup.
+     *
+     * @return Builder
+     */
     public static Builder newBuilder()
     {
         return new Builder();
     }
 
+    /**
+     * Builder used to construct RepairGroup.
+     */
     public static class Builder
     {
         private TableReference myTableReference;

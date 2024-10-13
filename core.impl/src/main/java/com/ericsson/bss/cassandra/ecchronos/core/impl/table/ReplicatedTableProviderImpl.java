@@ -31,6 +31,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of ReplicatedTableProvider for retrieving tables replicated by the local node.
+ * The purpose of this is to abstract away java-driver related mocking from other components
+ * trying to retrieve the tables that should be repaired.
+ */
 public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(ReplicatedTableProviderImpl.class);
@@ -48,6 +53,13 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
     private final CqlSession mySession;
     private final TableReferenceFactory myTableReferenceFactory;
 
+    /**
+     * Constructs a ReplicatedTableProviderImpl to manage table references in a replicated environment.
+     *
+     * @param session the {@link CqlSession} used to connect to the Cassandra cluster. Must not be {@code null}.
+     * @param tableReferenceFactory the factory to create {@link TableReference} instances. Must not be {@code null}.
+     * @param nodes the list of {@link Node} objects representing the nodes in the Cassandra cluster. Must not be {@code null}.
+     */
     public ReplicatedTableProviderImpl(
             final CqlSession session,
             final TableReferenceFactory tableReferenceFactory,

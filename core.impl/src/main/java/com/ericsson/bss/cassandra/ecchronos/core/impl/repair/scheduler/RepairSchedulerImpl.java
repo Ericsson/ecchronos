@@ -49,6 +49,9 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Class used to construct repair scheduler.
+ */
 public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 {
     private static final int TERMINATION_WAIT = 10;
@@ -56,6 +59,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     private static final Logger LOG = LoggerFactory.getLogger(RepairSchedulerImpl.class);
 
     private final Map<UUID, Map<TableReference, Set<ScheduledRepairJob>>> myScheduledJobs = new ConcurrentHashMap<>();
+    private final Object myLock = new Object();
 
     private final ExecutorService myExecutor;
     private final TableRepairMetrics myTableRepairMetrics;
@@ -113,15 +117,18 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
             Thread.currentThread().interrupt();
         }
 
-        myScheduledJobs.entrySet().stream()
-                .flatMap(nodeEntry -> nodeEntry.getValue().entrySet().stream()
-                        .flatMap(tableEntry -> tableEntry.getValue().stream()
-                                .map(job -> new AbstractMap.SimpleEntry<>(nodeEntry.getKey(), job))
-                        )
-                )
-                .forEach(entry -> descheduleTableJob(entry.getKey(), entry.getValue()));
+        synchronized (myLock)
+        {
+            myScheduledJobs.entrySet().stream()
+                    .flatMap(nodeEntry -> nodeEntry.getValue().entrySet().stream()
+                            .flatMap(tableEntry -> tableEntry.getValue().stream()
+                                    .map(job -> new AbstractMap.SimpleEntry<>(nodeEntry.getKey(), job))
+                            )
+                    )
+                    .forEach(entry -> descheduleTableJob(entry.getKey(), entry.getValue()));
 
-        myScheduledJobs.clear();
+            myScheduledJobs.clear();
+        }
     }
 
     @Override
@@ -142,29 +149,36 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     @Override
     public List<ScheduledRepairJobView> getCurrentRepairJobs()
     {
-        return myScheduledJobs.values().stream()
-                .flatMap(tableJobs -> tableJobs.values().stream())
-                .flatMap(Set::stream)
-                .map(ScheduledRepairJob::getView)
-                .collect(Collectors.toList());
+        synchronized (myLock)
+        {
+            return myScheduledJobs.values().stream()
+                    .flatMap(tableJobs -> tableJobs.values().stream())
+                    .flatMap(Set::stream)
+                    .map(ScheduledRepairJob::getView)
+                    .collect(Collectors.toList());
+        }
     }
+
     private void handleTableConfigurationChange(
             final Node node,
             final TableReference tableReference,
             final Set<RepairConfiguration> repairConfigurations)
     {
-        try
+        synchronized (myLock)
         {
-            if (configurationHasChanged(node, tableReference, repairConfigurations))
+            try
             {
-                LOG.info("Creating schedule for table {} in node {}", tableReference, node.getHostId());
-                createTableSchedule(node, tableReference, repairConfigurations);
+                if (configurationHasChanged(node, tableReference, repairConfigurations))
+                {
+                    LOG.info("Creating schedule for table {} in node {}", tableReference, node.getHostId());
+                    createTableSchedule(node, tableReference, repairConfigurations);
+                }
+                LOG.info("No configuration changes for table {} in node {}", tableReference, node.getHostId());
             }
-            LOG.info("No configuration changes for table {} in node {}", tableReference, node.getHostId());
-        }
-        catch (Exception e)
-        {
-            LOG.error("Unexpected error during schedule change of {}:", tableReference, e);
+            catch (Exception e)
+            {
+                LOG.error("Unexpected error during schedule change of {}:", tableReference, e);
+            }
         }
     }
 
@@ -219,18 +233,21 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
     private void handleTableConfigurationRemoved(final Node node, final TableReference tableReference)
     {
-        try
+        synchronized (myLock)
         {
-
-            Set<ScheduledRepairJob> jobs = myScheduledJobs.get(node.getHostId()).remove(tableReference);
-            for (ScheduledRepairJob job : jobs)
+            try
             {
-                descheduleTableJob(node.getHostId(), job);
+
+                Set<ScheduledRepairJob> jobs = myScheduledJobs.get(node.getHostId()).remove(tableReference);
+                for (ScheduledRepairJob job : jobs)
+                {
+                    descheduleTableJob(node.getHostId(), job);
+                }
             }
-        }
-        catch (Exception e)
-        {
-            LOG.error("Unexpected error during schedule removal of {}:", tableReference, e);
+            catch (Exception e)
+            {
+                LOG.error("Unexpected error during schedule removal of {}:", tableReference, e);
+            }
         }
     }
 
@@ -269,11 +286,19 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         return job;
     }
 
+    /**
+     * Create instance of Builder to construct RepairSchedulerImpl.
+     *
+     * @return Builder
+     */
     public static Builder builder()
     {
         return new Builder();
     }
 
+    /**
+     * Builder used to construct RepairSchedulerImpl.
+     */
     public static class Builder
     {
         private DistributedJmxProxyFactory myJmxProxyFactory;

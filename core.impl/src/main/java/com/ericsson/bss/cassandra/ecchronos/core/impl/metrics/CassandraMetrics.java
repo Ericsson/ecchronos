@@ -45,11 +45,24 @@ public class CassandraMetrics implements Closeable
     private final LoadingCache<MetricsKey, CassandraMetric> myCache;
     private final DistributedJmxProxyFactory myJmxProxyFactory;
 
+    /**
+     * Constructs a CassandraMetrics instance with default cache refresh and expiry times.
+     *
+     * @param jmxProxyFactory the factory used to create connections to distributed JMX proxies. Must not be {@code null}.
+     */
     public CassandraMetrics(final DistributedJmxProxyFactory jmxProxyFactory)
     {
         this(jmxProxyFactory, Duration.ofSeconds(DEFAULT_CACHE_REFRESH_TIME_SECONDS),
                 Duration.ofMinutes(DEFAULT_CACHE_EXPIRY_TIME_MINUTES));
     }
+
+    /**
+     * Constructs a CassandraMetrics instance.
+     *
+     * @param jmxProxyFactory the factory used to create connections to distributed JMX proxies. Must not be {@code null}.
+     * @param refreshAfter the duration after which the cache will refresh its entries. Must not be {@code null}.
+     * @param expireAfter the duration after which the cache entries will expire after access. Must not be {@code null}.
+     */
     public CassandraMetrics(final DistributedJmxProxyFactory jmxProxyFactory, final Duration refreshAfter,
             final Duration expireAfter)
     {
@@ -87,6 +100,7 @@ public class CassandraMetrics implements Closeable
 
     /**
      * Return max repaired at for a table.
+     * @param nodeID the node ID
      * @param tableReference The table
      * @return Timestamp or 0 if not available.
      */
@@ -107,6 +121,7 @@ public class CassandraMetrics implements Closeable
 
     /**
      * Return percent repaired for a table.
+     * @param nodeID the node ID
      * @param tableReference The table
      * @return Percent repaired or 0 if not available.
      */

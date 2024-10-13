@@ -92,11 +92,25 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             return ScheduleManagerImpl.NO_RUNNING_JOB;
         }
     }
+
+    /**
+     * Adds a run policy to the collection of run policies.
+     *
+     * @param runPolicy the {@link RunPolicy} to be added. Must not be {@code null}.
+     * @return {@code true} if the run policy was added successfully; {@code false} if it was already present.
+     */
     public boolean addRunPolicy(final RunPolicy runPolicy)
     {
         LOG.debug("Run policy {} added", runPolicy);
         return myRunPolicies.add(runPolicy);
     }
+
+    /**
+     * Removes a run policy from the collection of run policies.
+     *
+     * @param runPolicy the {@link RunPolicy} to be removed. Must not be {@code null}.
+     * @return {@code true} if the run policy was successfully removed; {@code false} if it was not present.
+     */
 
     public boolean removeRunPolicy(final RunPolicy runPolicy)
     {
@@ -136,6 +150,8 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
     /**
      * Made available for testing.
+     *
+     * @param nodeID the node id to run jobs.
      */
     @VisibleForTesting
     public void run(final UUID nodeID)
@@ -146,6 +162,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     /**
      * Made available for testing.
      *
+     * @param nodeID the node id to get queue size.
      * @return int Queue size.
      */
     @VisibleForTesting
@@ -284,11 +301,19 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         }
     }
 
+    /**
+     * Create an instance of Builder to construct ScheduleManagerImpl.
+     *
+     * @return Builder
+     */
     public static Builder builder()
     {
         return new Builder();
     }
 
+    /**
+     * Builder class to construct ScheduleManagerImpl.
+     */
     public static class Builder
     {
         private Collection<UUID> myNodeIDList;
@@ -319,6 +344,11 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             return this;
         }
 
+        /**
+         * Build SchedulerManager with the provided configuration.
+         *
+         * @return ScheduleManagerImpl with provided configuration.
+         */
         public final ScheduleManagerImpl build()
         {
             return new ScheduleManagerImpl(this);

@@ -41,6 +41,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Class used to run Incremental Repairs in Cassandra.
+ */
 public class IncrementalRepairJob extends ScheduledRepairJob
 {
     private static final Logger LOG = LoggerFactory.getLogger(IncrementalRepairJob.class);
@@ -185,6 +188,9 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         return Objects.hash(super.hashCode(), myReplicationState, myCassandraMetrics, myNode);
     }
 
+    /**
+     * Builder class to construct IncrementalRepairJob.
+     */
     @SuppressWarnings("VisibilityModifier")
     public static class Builder
     {

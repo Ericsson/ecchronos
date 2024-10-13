@@ -61,6 +61,9 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
     private TableReferenceFactory myTableReferenceFactory;
 
+    /**
+     * Default constructor.
+     */
     public DefaultRepairConfigurationProvider()
     {
         //NOOP
@@ -257,6 +260,10 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
                 && "org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy".equals(compaction.get("class"));
     }
 
+    /**
+     * Create Builder for DefaultRepairConfigurationProvider.
+     * @return Builder the Builder instance for the class.
+     */
     public static Builder newBuilder()
     {
         return new Builder();
@@ -459,6 +466,9 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         }
     }
 
+    /**
+     * Builder for DefaultRepairConfigurationProvider.
+     */
     public static class Builder
     {
         private CqlSession mySession;

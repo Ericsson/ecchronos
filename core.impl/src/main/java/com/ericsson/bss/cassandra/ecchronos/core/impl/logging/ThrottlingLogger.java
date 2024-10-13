@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * Logger that throttles log messages per interval.
  * A log message uniqueness is based on the string message.
- *
  * This logger is thread safe.
  */
 public class ThrottlingLogger
@@ -32,24 +31,50 @@ public class ThrottlingLogger
     private final Logger myLogger;
     private final long myIntervalNanos;
 
+    /**
+     * Constructs a ThrottlingLogger with the specified logger, interval, and time unit.
+     *
+     * @param logger the logger to which the messages will be sent. Must not be {@code null}.
+     * @param interval the interval duration for throttling messages.
+     * @param timeUnit the time unit for the interval duration. Must not be {@code null}.
+     * @throws NullPointerException if {@code logger} or {@code timeUnit} is {@code null}.
+     */
     public ThrottlingLogger(final Logger logger, final long interval, final TimeUnit timeUnit)
     {
         myLogger = logger;
         myIntervalNanos = timeUnit.toNanos(interval);
     }
 
+    /**
+     * Logs an informational message, throttled according to the specified interval.
+     *
+     * @param message the message to log. Must not be {@code null}.
+     * @param objects optional parameters to include in the log message.
+     */
     public final void info(final String message, final Object... objects)
     {
         ThrottledLogMessage throttledLogMessage = getThrottledLogMessage(message);
         throttledLogMessage.info(myLogger, System.nanoTime(), objects);
     }
 
+    /**
+     * Logs a warning message, throttled according to the specified interval.
+     *
+     * @param message the message to log. Must not be {@code null}.
+     * @param objects optional parameters to include in the log message.
+     */
     public final void warn(final String message, final Object... objects)
     {
         ThrottledLogMessage throttledLogMessage = getThrottledLogMessage(message);
         throttledLogMessage.warn(myLogger, System.nanoTime(), objects);
     }
 
+    /**
+     * Logs an error message, throttled according to the specified interval.
+     *
+     * @param message the message to log. Must not be {@code null}.
+     * @param objects optional parameters to include in the log message.
+     */
     public final void error(final String message, final Object... objects)
     {
         ThrottledLogMessage throttledLogMessage = getThrottledLogMessage(message);

@@ -44,6 +44,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Abstract Class used to represent repair tasks.
+ */
 public abstract class RepairTask implements NotificationListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairTask.class);
@@ -65,6 +68,15 @@ public abstract class RepairTask implements NotificationListener
     private volatile Set<LongTokenRange> myFailedRanges = new HashSet<>();
     private volatile Set<LongTokenRange> mySuccessfulRanges = new HashSet<>();
 
+    /**
+     * Constructs a RepairTask for the specified node and table with the given repair configuration and metrics.
+     *
+     * @param currentNodeID the UUID of the current node where the repair task is running. Must not be {@code null}.
+     * @param jmxProxyFactory the factory to create connections to distributed JMX proxies. Must not be {@code null}.
+     * @param tableReference the reference to the table that is being repaired. Must not be {@code null}.
+     * @param repairConfiguration the configuration specifying how the repair task should be executed. Must not be {@code null}.
+     * @param tableRepairMetrics the metrics associated with table repairs for monitoring and tracking purposes. May be {@code null}.
+     */
     protected RepairTask(
             final UUID currentNodeID,
             final DistributedJmxProxyFactory jmxProxyFactory,
@@ -333,6 +345,9 @@ public abstract class RepairTask implements NotificationListener
         }
     }
 
+    /**
+     * Enum used to provide Event Progress for RepairTask.
+     */
     public enum ProgressEventType
     {
         /**
@@ -413,7 +428,13 @@ public abstract class RepairTask implements NotificationListener
         }
     }
 
-
+    /**
+     * Returns the set of token ranges that have failed during the repair task.
+     *
+     * <p>This method is primarily intended for testing purposes.</p>
+     *
+     * @return a set of {@link LongTokenRange} representing the failed token ranges.
+     */
     @VisibleForTesting
     protected final Set<LongTokenRange> getFailedRanges()
     {
