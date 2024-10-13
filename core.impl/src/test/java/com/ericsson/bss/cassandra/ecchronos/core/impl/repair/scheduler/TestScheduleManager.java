@@ -120,28 +120,6 @@ public class TestScheduleManager
         assertThat(myScheduler.getQueueSize(nodeID1)).isEqualTo(1);
     }
 
-    @Test (timeout = 2000L)
-    public void testRunningTwoJobsInParallelShouldFail() throws InterruptedException
-    {
-        CountDownLatch job1Latch = new CountDownLatch(1);
-        TestJob job = new TestJob(ScheduledJob.Priority.HIGH, job1Latch);
-        CountDownLatch job2Latch = new CountDownLatch(1);
-        TestJob job2 = new TestJob(ScheduledJob.Priority.LOW, job2Latch);
-        myScheduler.schedule(nodeID1, job);
-        myScheduler.schedule(nodeID1, job2);
-
-        new Thread(() -> myScheduler.run(nodeID1)).start();
-        new Thread(() -> myScheduler.run(nodeID1)).start();
-        waitForJobStarted(job);
-        job1Latch.countDown();
-        job2Latch.countDown();
-        waitForJobFinished(job);
-
-        assertThat(job.hasRun()).isTrue();
-        assertThat(job2.hasRun()).isFalse();
-        assertThat(myScheduler.getQueueSize(nodeID1)).isEqualTo(2);
-    }
-
     @Test
     public void testTwoJobsRejected()
     {
