@@ -156,7 +156,6 @@ public class DistributedJmxBuilder
     /***
      * Creates a JMXconnection to the host.
      * @param node
-     * @throws IOException
      * @throws EcChronosException
      */
     public void reconnect(final Node node) throws EcChronosException
