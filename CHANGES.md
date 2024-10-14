@@ -1,5 +1,7 @@
 # Changes
 
+## Version 5.0.6
+
 ## Version 5.0.5
 
 * Update dependencies to C* 5.0 - Issue #734
