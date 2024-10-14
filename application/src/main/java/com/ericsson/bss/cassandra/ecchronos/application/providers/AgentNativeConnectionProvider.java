@@ -283,6 +283,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
      * Reload the list of nodes from the database.
      * @return
      */
+    @Override
     public List<Node> reloadNodes()
     {
         return myDistributedNativeConnectionProviderImpl.reloadNodes();

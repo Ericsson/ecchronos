@@ -76,7 +76,7 @@ public final class ReloadNodesService implements DisposableBean
     }
 
     @VisibleForTesting
-    void reloadNodes()
+    private void reloadNodes()
     {
         List<Node> oldNodes = myDistributedNativeConnectionProvider.getNodes();
         List<Node> newNodes = myDistributedNativeConnectionProvider.reloadNodes();
