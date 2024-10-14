@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Create a RepairHistory to Store Information on Repair Operations Performed by ecChronos Agent #730
 * Generate Unique EcChronos ID #678
 * Create RepairConfiguration class for repair configurations - Issue #716
 * Create DistributedJmxProxy and DistributedJmxProxyFactory - Issue #715
