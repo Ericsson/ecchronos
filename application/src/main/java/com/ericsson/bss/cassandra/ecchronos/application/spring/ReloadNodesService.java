@@ -80,7 +80,6 @@ public final class ReloadNodesService implements DisposableBean
     {
         List<Node> oldNodes = myDistributedNativeConnectionProvider.getNodes();
         List<Node> newNodes = myDistributedNativeConnectionProvider.reloadNodes();
-        CqlSession cqlSession = myDistributedNativeConnectionProvider.getCqlSession();
         List<NodeChangeRecord> nodeChangeList = nodeListComparator.compareNodeLists(oldNodes, newNodes);
         if (!nodeChangeList.isEmpty())
         {
@@ -91,29 +90,37 @@ public final class ReloadNodesService implements DisposableBean
                 NodeChangeRecord nodeChangeRecord = iterator.next();
                 if (nodeChangeRecord.getType() == NodeChangeRecord.NodeChangeType.INSERT)
                 {
-                    myEccNodesSync.verifyAcquireNode(nodeChangeRecord.getNode());
-                    try
-                    {
-                        myJmxConnectionProvider.add(nodeChangeRecord.getNode());
-                    }
-                    catch (IOException e)
-                    {
-                        LOG.info("Node {} JMX connection failed", nodeChangeRecord.getNode().getHostId());
-                    }
+                    processInsertRecord(nodeChangeRecord);
                 }
                 if (nodeChangeRecord.getType() == NodeChangeRecord.NodeChangeType.DELETE)
                 {
-                    myEccNodesSync.deleteNodeStatus(nodeChangeRecord.getNode().getDatacenter(), nodeChangeRecord.getNode().getHostId());
-                    try
-                    {
-                        myJmxConnectionProvider.close(nodeChangeRecord.getNode().getHostId());
-                    }
-                    catch (IOException e)
-                    {
-                        LOG.info("Node {} JMX connection removal failed", nodeChangeRecord.getNode().getHostId());
-                    }
+                    processDeleteRecord(nodeChangeRecord);
                 }
             }
+        }
+    }
+
+    private void processDeleteRecord(NodeChangeRecord nodeChangeRecord) {
+        myEccNodesSync.deleteNodeStatus(nodeChangeRecord.getNode().getDatacenter(), nodeChangeRecord.getNode().getHostId());
+        try
+        {
+            myJmxConnectionProvider.close(nodeChangeRecord.getNode().getHostId());
+        }
+        catch (IOException e)
+        {
+            LOG.info("Node {} JMX connection removal failed", nodeChangeRecord.getNode().getHostId());
+        }
+    }
+
+    private void processInsertRecord(NodeChangeRecord nodeChangeRecord) {
+        myEccNodesSync.verifyAcquireNode(nodeChangeRecord.getNode());
+        try
+        {
+            myJmxConnectionProvider.add(nodeChangeRecord.getNode());
+        }
+        catch (IOException e)
+        {
+            LOG.info("Node {} JMX connection failed", nodeChangeRecord.getNode().getHostId());
         }
     }
 

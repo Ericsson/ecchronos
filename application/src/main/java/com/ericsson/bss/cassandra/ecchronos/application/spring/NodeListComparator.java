@@ -54,59 +54,63 @@ public class NodeListComparator
         {
             if (newNode == null)
             {
-                LOG.info("Node has been removed, Node id: {} ", oldNode.getHostId());
-                changesList.add(new NodeChangeRecord(oldNode, NodeChangeRecord.NodeChangeType.DELETE));
-                oldNode = getNode(oldIterator);
+                oldNode = processNodeRemoved(oldNode, changesList, oldIterator);
             }
             else
             {
                 if (oldNode.getHostId().equals(newNode.getHostId()))
                 {
-                    // same host id, now check the ipaddress is still the same
-                    if (!oldNode.getListenAddress().equals(newNode.getListenAddress()))
-                    {
-                        LOG.info("Node id {}, has a different ipaddress, it was {}, it is now {} ", oldNode.getHostId(), oldNode.getListenAddress(), newNode.getListenAddress());
-                        changesList.add(new NodeChangeRecord(oldNode, NodeChangeRecord.NodeChangeType.UPDATE));
-                    }
+                    checkIPAddress(oldNode, newNode, changesList);
                     oldNode = getNode(oldIterator);
                     newNode = getNode(newIterator);
                 }
                 else
                 {
-                    if (oldNode.getHostId().compareTo(newNode.getHostId()) == 1)
+                    if (oldNode.getHostId().compareTo(newNode.getHostId()) > 0)
                     {
-                        LOG.info("Node has been added, Node id: {}", newNode.getHostId());
-                        changesList.add(new NodeChangeRecord(newNode, NodeChangeRecord.NodeChangeType.INSERT));
-                        newNode = getNode(newIterator);
+                        newNode = processNodeAdded(newNode, changesList, newIterator);
                     }
                     else
                     {
-                        LOG.info("Node has been removed, Node id: {}", oldNode.getHostId());
-                        changesList.add(new NodeChangeRecord(oldNode, NodeChangeRecord.NodeChangeType.DELETE));
-                        oldNode = getNode(oldIterator);
+                        oldNode = processNodeRemoved(oldNode, changesList, oldIterator);
                     }
                 }
             }
         }
         while (newNode != null)
         {
-            changesList.add(new NodeChangeRecord(newNode, NodeChangeRecord.NodeChangeType.INSERT));
-            LOG.info("Node has been added, Node id: {}", newNode.getHostId());
-            newNode = getNode(newIterator);
+            newNode = processNodeAdded(newNode, changesList, newIterator);
         }
         return changesList;
     }
 
+    private Node processNodeRemoved(Node oldNode, List<NodeChangeRecord> changesList, Iterator<Node> oldIterator) {
+        LOG.info("Node has been removed, Node id: {}", oldNode.getHostId());
+        changesList.add(new NodeChangeRecord(oldNode, NodeChangeRecord.NodeChangeType.DELETE));
+        return getNode(oldIterator);
+    }
+
+    private Node processNodeAdded(Node newNode, List<NodeChangeRecord> changesList, Iterator<Node> newIterator) {
+        LOG.info("Node has been added, Node id: {}", newNode.getHostId());
+        changesList.add(new NodeChangeRecord(newNode, NodeChangeRecord.NodeChangeType.INSERT));
+        return getNode(newIterator);
+    }
+
+    private static void checkIPAddress(Node oldNode, Node newNode, List<NodeChangeRecord> changesList) {
+        // same host id, now check the ipaddress is still the same
+        if (!oldNode.getListenAddress().equals(newNode.getListenAddress()))
+        {
+            LOG.info("Node id {}, has a different ipaddress, it was {}, it is now {} ", oldNode.getHostId(), oldNode.getListenAddress(), newNode.getListenAddress());
+            changesList.add(new NodeChangeRecord(oldNode, NodeChangeRecord.NodeChangeType.UPDATE));
+        }
+    }
+
     private Node getNode(final Iterator<Node> iterator)
     {
-        Node node;
+        Node node = null;
         if (iterator.hasNext())
         {
             node = iterator.next();
-        }
-        else
-        {
-            node = null;
         }
         return node;
     }
