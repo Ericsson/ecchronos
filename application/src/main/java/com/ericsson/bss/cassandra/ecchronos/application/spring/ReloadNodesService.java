@@ -14,7 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
-import com.datastax.oss.driver.api.core.CqlSession;
+
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
@@ -100,7 +100,8 @@ public final class ReloadNodesService implements DisposableBean
         }
     }
 
-    private void processDeleteRecord(NodeChangeRecord nodeChangeRecord) {
+    private void processDeleteRecord(final NodeChangeRecord nodeChangeRecord)
+    {
         myEccNodesSync.deleteNodeStatus(nodeChangeRecord.getNode().getDatacenter(), nodeChangeRecord.getNode().getHostId());
         try
         {
@@ -111,8 +112,8 @@ public final class ReloadNodesService implements DisposableBean
             LOG.info("Node {} JMX connection removal failed", nodeChangeRecord.getNode().getHostId());
         }
     }
-
-    private void processInsertRecord(NodeChangeRecord nodeChangeRecord) {
+    private void processInsertRecord(final NodeChangeRecord nodeChangeRecord)
+    {
         myEccNodesSync.verifyAcquireNode(nodeChangeRecord.getNode());
         try
         {

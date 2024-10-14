@@ -84,19 +84,22 @@ public class NodeListComparator
         return changesList;
     }
 
-    private Node processNodeRemoved(Node oldNode, List<NodeChangeRecord> changesList, Iterator<Node> oldIterator) {
+    private Node processNodeRemoved(final Node oldNode, final List<NodeChangeRecord> changesList, final Iterator<Node> oldIterator)
+    {
         LOG.info("Node has been removed, Node id: {}", oldNode.getHostId());
         changesList.add(new NodeChangeRecord(oldNode, NodeChangeRecord.NodeChangeType.DELETE));
         return getNode(oldIterator);
     }
 
-    private Node processNodeAdded(Node newNode, List<NodeChangeRecord> changesList, Iterator<Node> newIterator) {
+    private Node processNodeAdded(final Node newNode, final List<NodeChangeRecord> changesList, final Iterator<Node> newIterator)
+    {
         LOG.info("Node has been added, Node id: {}", newNode.getHostId());
         changesList.add(new NodeChangeRecord(newNode, NodeChangeRecord.NodeChangeType.INSERT));
         return getNode(newIterator);
     }
 
-    private static void checkIPAddress(Node oldNode, Node newNode, List<NodeChangeRecord> changesList) {
+    private static void checkIPAddress(final Node oldNode, final Node newNode, final List<NodeChangeRecord> changesList)
+    {
         // same host id, now check the ipaddress is still the same
         if (!oldNode.getListenAddress().equals(newNode.getListenAddress()))
         {
