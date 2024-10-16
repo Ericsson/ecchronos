@@ -9,7 +9,8 @@
 * Implement ScheduledRepairJob, ScheduledJob and ScheduledTask for Automated Recurring Task Scheduling in Cassandra - Issue #737
 * Create RepairTask Abstract Class to Handle Repair Operations - Issue #717
 * Create ReplicationState and ReplicationStateImpl Class for Managing Token-to-Replicas Mapping - Issue #722
-* Generate Unique EcChronos ID - Issue #678
+* Create a RepairHistory to Store Information on Repair Operations Performed by ecChronos Agent #730
+* Generate Unique EcChronos ID #678
 * Create RepairConfiguration class for repair configurations - Issue #716
 * Create DistributedJmxProxy and DistributedJmxProxyFactory - Issue #715
 * Create a New Maven Module "utils" for Common Code Reuse - Issue #720
