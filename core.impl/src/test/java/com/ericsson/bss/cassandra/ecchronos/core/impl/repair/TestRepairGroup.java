@@ -54,13 +54,13 @@ import com.google.common.collect.ImmutableSet;
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class TestRepairGroup
 {
-    private static final String keyspaceName = "keyspace";
-    private static final String tableName = "table";
-    private static final TableReference tableReference = tableReference(keyspaceName, tableName);
-    private static final int priority = 1;
+    private static final String KEYSPACE_NAME = "keyspace";
+    private static final String TABLE_NAME = "table";
+    private static final TableReference TABLE_REFERENCE = tableReference(KEYSPACE_NAME, TABLE_NAME);
+    private static final int PRIORITY = 1;
 
     private static final long RUN_INTERVAL_IN_DAYS = 1;
-    private static final long GC_GRACE_DAYS = 10;
+    private static final long GC_GRACE_DAYS_IN_DAYS = 10;
 
     @Mock
     private DistributedJmxProxyFactory myJmxProxyFactory;
@@ -78,7 +78,7 @@ public class TestRepairGroup
         myRepairConfiguration = RepairConfiguration.newBuilder()
                 .withParallelism(RepairParallelism.PARALLEL)
                 .withRepairWarningTime(RUN_INTERVAL_IN_DAYS * 2, TimeUnit.DAYS)
-                .withRepairErrorTime(GC_GRACE_DAYS, TimeUnit.DAYS)
+                .withRepairErrorTime(GC_GRACE_DAYS_IN_DAYS, TimeUnit.DAYS)
                 .build();
     }
 
@@ -99,18 +99,19 @@ public class TestRepairGroup
         RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
                 .withParallelism(RepairParallelism.PARALLEL)
                 .withRepairWarningTime(RUN_INTERVAL_IN_DAYS * 2, TimeUnit.DAYS)
-                .withRepairErrorTime(GC_GRACE_DAYS, TimeUnit.DAYS)
+                .withRepairErrorTime(GC_GRACE_DAYS_IN_DAYS, TimeUnit.DAYS)
                 .withRepairType(RepairType.INCREMENTAL)
                 .build();
 
-        RepairGroup repairGroup = builderFor(replicaRepairGroup).withRepairConfiguration(repairConfiguration).build(priority);
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).withRepairConfiguration(repairConfiguration).build(
+                PRIORITY);
 
         Collection<RepairTask> repairTasks = repairGroup.getRepairTasks(myNodeID);
 
         assertThat(repairTasks).hasSize(1);
         IncrementalRepairTask repairTask = (IncrementalRepairTask) repairTasks.iterator().next();
 
-        assertThat(repairTask.getTableReference()).isEqualTo(tableReference);
+        assertThat(repairTask.getTableReference()).isEqualTo(TABLE_REFERENCE);
         assertThat(repairTask.getRepairConfiguration().getRepairParallelism()).isEqualTo(RepairParallelism.PARALLEL);
         assertThat(repairTask.getRepairConfiguration().getRepairType()).isEqualTo(RepairType.INCREMENTAL);
     }
@@ -124,7 +125,7 @@ public class TestRepairGroup
         ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range), System.currentTimeMillis());
 
-        RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).build(priority));
+        RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).build(PRIORITY));
         RepairTask repairTask1 = mock(RepairTask.class);
         RepairTask repairTask2 = mock(RepairTask.class);
         RepairTask repairTask3 = mock(RepairTask.class);
@@ -150,7 +151,7 @@ public class TestRepairGroup
         ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range), System.currentTimeMillis());
 
-        RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).build(priority));
+        RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).build(PRIORITY));
         RepairTask repairTask1 = mock(RepairTask.class);
         RepairTask repairTask2 = mock(RepairTask.class);
         RepairTask repairTask3 = mock(RepairTask.class);
@@ -176,7 +177,7 @@ public class TestRepairGroup
         ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range), System.currentTimeMillis());
 
-        RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).build(priority));
+        RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).build(PRIORITY));
         RepairTask repairTask1 = mock(RepairTask.class);
         RepairTask repairTask2 = mock(RepairTask.class);
         RepairTask repairTask3 = mock(RepairTask.class);
@@ -196,7 +197,7 @@ public class TestRepairGroup
     private RepairGroup.Builder builderFor(ReplicaRepairGroup replicaRepairGroup)
     {
         return RepairGroup.newBuilder()
-                .withTableReference(tableReference)
+                .withTableReference(TABLE_REFERENCE)
                 .withRepairConfiguration(myRepairConfiguration)
                 .withReplicaRepairGroup(replicaRepairGroup)
                 .withJmxProxyFactory(myJmxProxyFactory)

@@ -29,7 +29,7 @@ public class ThrottlingLogger
 {
     private final Map<String, ThrottledLogMessage> myThrottledLogMessages = new ConcurrentHashMap<>();
     private final Logger myLogger;
-    private final long myIntervalNanos;
+    private final long myIntervalInNanos;
 
     /**
      * Constructs a ThrottlingLogger with the specified logger, interval, and time unit.
@@ -42,7 +42,7 @@ public class ThrottlingLogger
     public ThrottlingLogger(final Logger logger, final long interval, final TimeUnit timeUnit)
     {
         myLogger = logger;
-        myIntervalNanos = timeUnit.toNanos(interval);
+        myIntervalInNanos = timeUnit.toNanos(interval);
     }
 
     /**
@@ -86,7 +86,7 @@ public class ThrottlingLogger
         ThrottledLogMessage throttledLogMessage = myThrottledLogMessages.get(message);
         if (throttledLogMessage == null)
         {
-            throttledLogMessage = new ThrottledLogMessage(message, myIntervalNanos);
+            throttledLogMessage = new ThrottledLogMessage(message, myIntervalInNanos);
             ThrottledLogMessage addedMessage = myThrottledLogMessages.putIfAbsent(message, throttledLogMessage);
             if (addedMessage != null)
             {

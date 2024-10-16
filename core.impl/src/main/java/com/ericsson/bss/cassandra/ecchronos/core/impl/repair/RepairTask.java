@@ -51,7 +51,7 @@ public abstract class RepairTask implements NotificationListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairTask.class);
     private static final Pattern RANGE_PATTERN = Pattern.compile("\\((-?[0-9]+),(-?[0-9]+)\\]");
-    private static final int HEALTH_CHECK_INTERVAL = 10;
+    private static final int HEALTH_CHECK_INTERVAL_IN_MINUTES = 10;
 
     private final UUID nodeID;
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
@@ -102,7 +102,7 @@ public abstract class RepairTask implements NotificationListener
     {
         long start = System.nanoTime();
         long end;
-        long executionNanos;
+        long total;
         boolean successful = true;
         onExecute();
         try (DistributedJmxProxy proxy = myJmxProxyFactory.connect())
@@ -124,10 +124,10 @@ public abstract class RepairTask implements NotificationListener
                 myHangPreventFuture.cancel(false);
             }
             end = System.nanoTime();
-            executionNanos = end - start;
-            myTableRepairMetrics.repairSession(myTableReference, executionNanos, TimeUnit.NANOSECONDS, successful);
+            total = end - start;
+            myTableRepairMetrics.repairSession(myTableReference, total, TimeUnit.NANOSECONDS, successful);
         }
-        lazySleep(executionNanos);
+        lazySleep(total);
     }
 
     /**
@@ -163,9 +163,10 @@ public abstract class RepairTask implements NotificationListener
             }
             catch (InterruptedException e)
             {
-                LOG.warn("{} was interrupted", this, e);
+                String msg = this + " was interrupted";
+                LOG.warn(msg, e);
                 Thread.currentThread().interrupt();
-                throw new ScheduledJobException(e);
+                throw new ScheduledJobException(msg, e);
             }
         }
     }
@@ -202,16 +203,16 @@ public abstract class RepairTask implements NotificationListener
      */
     protected abstract void onFinish(RepairStatus repairStatus);
 
-    private void lazySleep(final long executionNanos) throws ScheduledJobException
+    private void lazySleep(final long executionInNanos) throws ScheduledJobException
     {
         if (myRepairConfiguration.getRepairUnwindRatio() != RepairConfiguration.NO_UNWIND)
         {
-            double sleepDurationNanos = executionNanos * myRepairConfiguration.getRepairUnwindRatio();
-            long sleepDurationMs = TimeUnit.NANOSECONDS.toMillis((long) sleepDurationNanos);
-            sleepDurationMs = Math.max(sleepDurationMs, 1);
+            double sleepDurationInNanos = executionInNanos * myRepairConfiguration.getRepairUnwindRatio();
+            long sleepDurationInMs = TimeUnit.NANOSECONDS.toMillis((long) sleepDurationInNanos);
+            sleepDurationInMs = Math.max(sleepDurationInMs, 1);
             try
             {
-                Thread.sleep(sleepDurationMs);
+                Thread.sleep(sleepDurationInMs);
             }
             catch (InterruptedException e)
             {
@@ -264,8 +265,9 @@ public abstract class RepairTask implements NotificationListener
 
         case JMXConnectionNotification.FAILED:
         case JMXConnectionNotification.CLOSED:
-            myLastError = new ScheduledJobException(
-                    String.format("Unable to repair %s, error: %s", myTableReference, notification.getType()));
+            String errorMessage = String.format("Unable to repair %s, error: %s", myTableReference, notification.getType());
+            LOG.error(errorMessage);
+            myLastError = new ScheduledJobException(errorMessage);
             myLatch.countDown();
             break;
         default:
@@ -281,7 +283,7 @@ public abstract class RepairTask implements NotificationListener
             myHangPreventFuture.cancel(false);
         }
         // Schedule the first check to happen after 10 minutes
-        myHangPreventFuture = myExecutor.schedule(new HangPreventingTask(), HEALTH_CHECK_INTERVAL,
+        myHangPreventFuture = myExecutor.schedule(new HangPreventingTask(), HEALTH_CHECK_INTERVAL_IN_MINUTES,
                 TimeUnit.MINUTES);
     }
 
@@ -411,7 +413,7 @@ public abstract class RepairTask implements NotificationListener
                     else
                     {
                         checkCount++;
-                        myHangPreventFuture = myExecutor.schedule(this, HEALTH_CHECK_INTERVAL, TimeUnit.MINUTES);
+                        myHangPreventFuture = myExecutor.schedule(this, HEALTH_CHECK_INTERVAL_IN_MINUTES, TimeUnit.MINUTES);
                     }
                 }
                 else

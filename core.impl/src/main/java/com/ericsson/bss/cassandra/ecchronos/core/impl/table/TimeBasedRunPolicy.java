@@ -65,9 +65,9 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
 
     private static final String TABLE_REJECT_CONFIGURATION = "reject_configuration";
 
-    private static final long DEFAULT_REJECT_TIME = TimeUnit.MINUTES.toMillis(1);
+    private static final long DEFAULT_REJECT_TIME_IN_MS = TimeUnit.MINUTES.toMillis(1);
 
-    static final long DEFAULT_CACHE_EXPIRE_TIME = TimeUnit.SECONDS.toMillis(10);
+    static final long DEFAULT_CACHE_EXPIRE_TIME_IN_MS = TimeUnit.SECONDS.toMillis(10);
 
     private final PreparedStatement myGetRejectionsStatement;
     private final CqlSession mySession;
@@ -96,10 +96,10 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         myTimeRejectionCache = createConfigCache(builder.myCacheExpireTime);
     }
 
-    private LoadingCache<TableKey, TimeRejectionCollection> createConfigCache(final long expireAfter)
+    private LoadingCache<TableKey, TimeRejectionCollection> createConfigCache(final long expireAfterInMs)
     {
         return Caffeine.newBuilder()
-                .expireAfterWrite(expireAfter, TimeUnit.MILLISECONDS)
+                .expireAfterWrite(expireAfterInMs, TimeUnit.MILLISECONDS)
                 .executor(Runnable::run)
                 .build(key -> load(key));
     }
@@ -116,7 +116,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     @Override
     public final long validate(final ScheduledJob job)
     {
-        return -1;
+        return -1L;
     }
 
     @Override
@@ -149,7 +149,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
 
         private CqlSession mySession;
         private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
-        private static long myCacheExpireTime = DEFAULT_CACHE_EXPIRE_TIME;
+        private static long myCacheExpireTime = DEFAULT_CACHE_EXPIRE_TIME_IN_MS;
         private final Clock myClock = Clock.systemDefaultZone();
 
         /**
@@ -190,19 +190,20 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         private void verifySchemasExists()
         {
             Optional<KeyspaceMetadata> keyspaceMetadata = mySession.getMetadata().getKeyspace(myKeyspaceName);
-            if (!keyspaceMetadata.isPresent())
+
+            if (keyspaceMetadata.isEmpty())
             {
-                LOG.error("Keyspace {} does not exist, it needs to be created", myKeyspaceName);
-                throw new IllegalStateException("Keyspace " + myKeyspaceName
-                        + " does not exist, it needs to be created");
+                String msg = String.format("Keyspace %s does not exist, it needs to be created", myKeyspaceName);
+                LOG.error(msg);
+                throw new IllegalStateException(msg);
             }
 
-            if (!keyspaceMetadata.get().getTable(TABLE_REJECT_CONFIGURATION).isPresent())
+            if (keyspaceMetadata.get().getTable(TABLE_REJECT_CONFIGURATION).isEmpty())
             {
-                LOG.error("Table {}.{} does not exist, it needs to be created",
+                String msg = String.format("Table %s.%s does not exist, it needs to be created",
                         myKeyspaceName, TABLE_REJECT_CONFIGURATION);
-                throw new IllegalStateException("Table " + myKeyspaceName + "."
-                        + TABLE_REJECT_CONFIGURATION + " does not exist, it needs to be created");
+                LOG.error(msg);
+                throw new IllegalStateException(msg);
             }
         }
     }
@@ -265,7 +266,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
                     && myEnd.getHour() == 0
                     && myEnd.getMinute() == 0)
             {
-                return DEFAULT_REJECT_TIME;
+                return DEFAULT_REJECT_TIME_IN_MS;
             }
 
             return calculateRejectTime();
@@ -328,7 +329,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         catch (Exception e)
         {
             LOG.error("Unable to parse/fetch rejection time for {}", tableReference, e);
-            rejectTime = DEFAULT_REJECT_TIME;
+            rejectTime = DEFAULT_REJECT_TIME_IN_MS;
         }
 
         return rejectTime;
@@ -351,23 +352,23 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
 
     static class TableKey
     {
-        private final String keyspace;
-        private final String table;
+        private final String myKeyspace;
+        private final String myTable;
 
-        TableKey(final String aKeyspace, final String aTable)
+        TableKey(final String keyspace, final String table)
         {
-            this.keyspace = aKeyspace;
-            this.table = aTable;
+            myKeyspace = keyspace;
+            myTable = table;
         }
 
         String getKeyspace()
         {
-            return keyspace;
+            return myKeyspace;
         }
 
         String getTable()
         {
-            return table;
+            return myTable;
         }
 
         @Override
@@ -382,13 +383,13 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
                 return false;
             }
             TableKey tableKey = (TableKey) o;
-            return keyspace.equals(tableKey.keyspace) && table.equals(tableKey.table);
+            return  myTable.equals(tableKey.myTable) && myKeyspace.equals(tableKey.myKeyspace);
         }
 
         @Override
         public int hashCode()
         {
-            return Objects.hash(keyspace, table);
+            return Objects.hash(myKeyspace, myTable);
         }
     }
 }

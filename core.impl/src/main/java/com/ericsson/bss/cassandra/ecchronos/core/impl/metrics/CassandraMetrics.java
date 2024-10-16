@@ -39,8 +39,8 @@ public class CassandraMetrics implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CassandraMetrics.class);
     private static final ThrottlingLogger THROTTLED_LOGGER = new ThrottlingLogger(LOG, 5, TimeUnit.MINUTES);
-    private static final long DEFAULT_CACHE_EXPIRY_TIME_MINUTES = 60;
-    private static final long DEFAULT_CACHE_REFRESH_TIME_SECONDS = 30;
+    private static final long DEFAULT_CACHE_EXPIRY_TIME_IN_MINUTES = 60;
+    private static final long DEFAULT_CACHE_REFRESH_TIME_IN_SECONDS = 30;
 
     private final LoadingCache<MetricsKey, CassandraMetric> myCache;
     private final DistributedJmxProxyFactory myJmxProxyFactory;
@@ -52,8 +52,8 @@ public class CassandraMetrics implements Closeable
      */
     public CassandraMetrics(final DistributedJmxProxyFactory jmxProxyFactory)
     {
-        this(jmxProxyFactory, Duration.ofSeconds(DEFAULT_CACHE_REFRESH_TIME_SECONDS),
-                Duration.ofMinutes(DEFAULT_CACHE_EXPIRY_TIME_MINUTES));
+        this(jmxProxyFactory, Duration.ofSeconds(DEFAULT_CACHE_REFRESH_TIME_IN_SECONDS),
+                Duration.ofMinutes(DEFAULT_CACHE_EXPIRY_TIME_IN_MINUTES));
     }
 
     /**

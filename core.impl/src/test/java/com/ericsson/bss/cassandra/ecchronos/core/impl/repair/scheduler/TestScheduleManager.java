@@ -69,70 +69,70 @@ public class TestScheduleManager
     @Test
     public void testRunningOneJob()
     {
-        DummyJob job = new DummyJob(ScheduledJob.Priority.LOW);
-        myScheduler.schedule(nodeID1, job);
+        DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW);
+        myScheduler.schedule(nodeID1, job1);
 
         myScheduler.run(nodeID1);
 
-        assertThat(job.hasRun()).isTrue();
+        assertThat(job1.hasRun()).isTrue();
         assertThat(myScheduler.getQueueSize(nodeID1)).isEqualTo(1);
     }
 
     @Test
     public void testRunningJobWithFailingRunPolicy()
     {
-        DummyJob job = new DummyJob(ScheduledJob.Priority.LOW);
-        myScheduler.schedule(nodeID1, job);
+        DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW);
+        myScheduler.schedule(nodeID1, job1);
 
         when(myRunPolicy.validate(any(ScheduledJob.class))).thenReturn(1L);
 
         myScheduler.run(nodeID1);
 
-        assertThat(job.hasRun()).isFalse();
+        assertThat(job1.hasRun()).isFalse();
         assertThat(myScheduler.getQueueSize(nodeID1)).isEqualTo(1);
     }
 
     @Test
     public void testRunningTwoTasksStoppedAfterFirstByPolicy()
     {
-        TestJob job = new TestJob(ScheduledJob.Priority.LOW, 2, () -> {
+        TestJob job1 = new TestJob(ScheduledJob.Priority.LOW, 2, () -> {
             when(myRunPolicy.validate(any(ScheduledJob.class))).thenReturn(1L);
         });
-        myScheduler.schedule(nodeID1, job);
+        myScheduler.schedule(nodeID1, job1);
 
         myScheduler.run(nodeID1);
 
-        assertThat(job.getTaskRuns()).isEqualTo(1);
+        assertThat(job1.getTaskRuns()).isEqualTo(1);
         assertThat(myScheduler.getQueueSize(nodeID1)).isEqualTo(1);
     }
 
     @Test
     public void testRunningJobWithThrowingRunPolicy()
     {
-        DummyJob job = new DummyJob(ScheduledJob.Priority.LOW);
-        myScheduler.schedule(nodeID1, job);
+        DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW);
+        myScheduler.schedule(nodeID1, job1);
 
         when(myRunPolicy.validate(any(ScheduledJob.class))).thenThrow(new IllegalStateException());
 
         myScheduler.run(nodeID1);
 
-        assertThat(job.hasRun()).isFalse();
+        assertThat(job1.hasRun()).isFalse();
         assertThat(myScheduler.getQueueSize(nodeID1)).isEqualTo(1);
     }
 
     @Test
     public void testTwoJobsRejected()
     {
-        DummyJob job = new DummyJob(ScheduledJob.Priority.LOW);
+        DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW);
         DummyJob job2 = new DummyJob(ScheduledJob.Priority.LOW);
-        myScheduler.schedule(nodeID1, job);
+        myScheduler.schedule(nodeID1, job1);
         myScheduler.schedule(nodeID1, job2);
 
         when(myRunPolicy.validate(any(ScheduledJob.class))).thenReturn(1L);
 
         myScheduler.run(nodeID1);
 
-        assertThat(job.hasRun()).isFalse();
+        assertThat(job1.hasRun()).isFalse();
         assertThat(job2.hasRun()).isFalse();
         assertThat(myScheduler.getQueueSize(nodeID1)).isEqualTo(2);
         verify(myRunPolicy, times(2)).validate(any(ScheduledJob.class));
@@ -142,17 +142,17 @@ public class TestScheduleManager
     public void testDescheduleRunningJob() throws InterruptedException
     {
         CountDownLatch jobCdl = new CountDownLatch(1);
-        TestJob job = new TestJob(ScheduledJob.Priority.HIGH, jobCdl);
-        myScheduler.schedule(nodeID1, job);
+        TestJob job1 = new TestJob(ScheduledJob.Priority.HIGH, jobCdl);
+        myScheduler.schedule(nodeID1, job1);
 
         new Thread(() -> myScheduler.run(nodeID1)).start();
 
-        waitForJobStarted(job);
-        myScheduler.deschedule(nodeID1, job);
+        waitForJobStarted(job1);
+        myScheduler.deschedule(nodeID1, job1);
         jobCdl.countDown();
-        waitForJobFinished(job);
+        waitForJobFinished(job1);
 
-        assertThat(job.hasRun()).isTrue();
+        assertThat(job1.hasRun()).isTrue();
         assertThat(myScheduler.getQueueSize(nodeID1)).isEqualTo(0);
     }
 
@@ -161,14 +161,14 @@ public class TestScheduleManager
     {
         CountDownLatch latch = new CountDownLatch(1);
         UUID jobId = UUID.randomUUID();
-        ScheduledJob testJob = new TestScheduledJob(
+        ScheduledJob job1 = new TestScheduledJob(
                 new ScheduledJob.ConfigurationBuilder()
                         .withPriority(ScheduledJob.Priority.LOW)
                         .withRunInterval(1, TimeUnit.SECONDS)
                         .build(),
                 jobId,
                 latch);
-        myScheduler.schedule(nodeID1, testJob);
+        myScheduler.schedule(nodeID1, job1);
         new Thread(() -> myScheduler.run(nodeID1)).start();
         Thread.sleep(50);
         assertThat(myScheduler.getCurrentJobStatus()).isEqualTo("Job ID: " + jobId.toString() + ", Status: Running");
@@ -180,14 +180,14 @@ public class TestScheduleManager
     {
         CountDownLatch latch = new CountDownLatch(1);
         UUID jobId = UUID.randomUUID();
-        ScheduledJob testJob = new TestScheduledJob(
+        ScheduledJob job1 = new TestScheduledJob(
                 new ScheduledJob.ConfigurationBuilder()
                         .withPriority(ScheduledJob.Priority.LOW)
                         .withRunInterval(1, TimeUnit.SECONDS)
                         .build(),
                 jobId,
                 latch);
-        myScheduler.schedule(nodeID1, testJob);
+        myScheduler.schedule(nodeID1, job1);
         new Thread(() -> myScheduler.run(nodeID1)).start();
         assertThat(myScheduler.getCurrentJobStatus()).isNotEqualTo("Job ID: " + jobId.toString() + ", Status: Running");
         latch.countDown();

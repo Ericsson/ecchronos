@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 {
-    private static final int TERMINATION_WAIT = 10;
+    private static final int DEFAULT_TERMINATION_WAIT_IN_SECONDS = 10;
 
     private static final Logger LOG = LoggerFactory.getLogger(RepairSchedulerImpl.class);
 
@@ -106,7 +106,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         myExecutor.shutdown();
         try
         {
-            if (!myExecutor.awaitTermination(TERMINATION_WAIT, TimeUnit.SECONDS))
+            if (!myExecutor.awaitTermination(DEFAULT_TERMINATION_WAIT_IN_SECONDS, TimeUnit.SECONDS))
             {
                 LOG.warn("Waited 10 seconds for executor to shutdown, still not shut down");
             }
@@ -143,7 +143,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     @Override
     public void removeConfiguration(final Node node, final TableReference tableReference)
     {
-        myExecutor.execute(() -> handleTableConfigurationRemoved(node, tableReference));
+        myExecutor.execute(() -> tableConfigurationRemoved(node, tableReference));
     }
 
     @Override
@@ -188,11 +188,18 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
             final Set<RepairConfiguration> repairConfigurations)
     {
         Set<ScheduledRepairJob> jobs = validateScheduleMap(node.getHostId(), tableReference);
+        if (repairConfigurations == null || repairConfigurations.isEmpty())
+        {
+            return false;
+        }
+
         if (jobs == null || jobs.isEmpty())
         {
             return true;
         }
+
         int matching = 0;
+
         for (ScheduledRepairJob job : jobs)
         {
             for (RepairConfiguration repairConfiguration : repairConfigurations)
@@ -211,11 +218,11 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
             final TableReference tableReference,
             final Set<RepairConfiguration> repairConfigurations)
     {
-        Set<ScheduledRepairJob> jobs = myScheduledJobs.get(node.getHostId()).get(tableReference);
+        Set<ScheduledRepairJob> currentJobs = myScheduledJobs.get(node.getHostId()).get(tableReference);
         Map<TableReference, Set<ScheduledRepairJob>> tableJob = new HashMap<>();
-        if (jobs != null)
+        if (currentJobs != null)
         {
-            for (ScheduledRepairJob job : jobs)
+            for (ScheduledRepairJob job : currentJobs)
             {
                 descheduleTableJob(node.getHostId(), job);
             }
@@ -231,13 +238,12 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         myScheduledJobs.put(node.getHostId(), tableJob);
     }
 
-    private void handleTableConfigurationRemoved(final Node node, final TableReference tableReference)
+    private void tableConfigurationRemoved(final Node node, final TableReference tableReference)
     {
         synchronized (myLock)
         {
             try
             {
-
                 Set<ScheduledRepairJob> jobs = myScheduledJobs.get(node.getHostId()).remove(tableReference);
                 for (ScheduledRepairJob job : jobs)
                 {

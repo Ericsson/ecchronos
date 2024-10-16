@@ -132,7 +132,7 @@ public final class RetrySchedulerService implements DisposableBean
     private void retryConnectionForNode(final Node node)
     {
         UUID nodeId = node.getHostId();
-        LOG.warn("Node {} is unavailable, retrying the connection.", nodeId);
+        LOG.warn("Node {} is unavailable. Will retry to connect.", nodeId);
         for (int attempt = 1; attempt <= retryBackoffStrategy.getMaxAttempts(); attempt++)
         {
             if (tryReconnectToNode(node, nodeId, attempt))

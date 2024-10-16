@@ -43,7 +43,7 @@ import static org.mockito.Mockito.*;
 @RunWith (MockitoJUnitRunner.class)
 public class TestRepairSchedulerImpl
 {
-    private static final TableReference TABLE_REFERENCE = tableReference("keyspace", "table");
+    private static final TableReference TABLE_REFERENCE1 = tableReference("keyspace", "table1");
     private static final TableReference TABLE_REFERENCE2 = tableReference("keyspace", "table2");
 
     @Mock
@@ -78,12 +78,12 @@ public class TestRepairSchedulerImpl
         RepairSchedulerImpl repairSchedulerImpl = defaultRepairSchedulerImplBuilder()
                 .withReplicationState(myReplicationState).build();
 
-        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE,
+        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE1,
                 Collections.singleton(RepairConfiguration.DEFAULT));
 
         verify(scheduleManager, timeout(1000)).schedule(eq(mockNodeID), any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(eq(mockNodeID), any(ScheduledJob.class));
-        assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
+        assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE1, RepairConfiguration.DEFAULT);
 
         repairSchedulerImpl.close();
         verify(scheduleManager).deschedule(eq(mockNodeID), any(ScheduledJob.class));
@@ -98,7 +98,7 @@ public class TestRepairSchedulerImpl
         RepairSchedulerImpl repairSchedulerImpl = defaultRepairSchedulerImplBuilder()
                 .withReplicationState(myReplicationState).build();
 
-        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE, Collections.singleton(RepairConfiguration.DEFAULT));
+        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE1, Collections.singleton(RepairConfiguration.DEFAULT));
         repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE2, Collections.singleton(RepairConfiguration.DEFAULT));
 
         verify(scheduleManager, timeout(1000).times(2)).schedule(eq(mockNodeID), any(ScheduledJob.class));
@@ -117,13 +117,13 @@ public class TestRepairSchedulerImpl
         RepairSchedulerImpl repairSchedulerImpl = defaultRepairSchedulerImplBuilder()
                 .withReplicationState(myReplicationState).build();
 
-        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE, Collections.singleton(RepairConfiguration.DEFAULT));
+        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE1, Collections.singleton(RepairConfiguration.DEFAULT));
 
         verify(scheduleManager, timeout(1000)).schedule(eq(mockNodeID), any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(eq(mockNodeID), any(ScheduledJob.class));
-        assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
+        assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE1, RepairConfiguration.DEFAULT);
 
-        repairSchedulerImpl.removeConfiguration(mockNode, TABLE_REFERENCE);
+        repairSchedulerImpl.removeConfiguration(mockNode, TABLE_REFERENCE1);
         verify(scheduleManager, timeout(1000)).deschedule(eq(mockNodeID), any(ScheduledJob.class));
         assertThat(repairSchedulerImpl.getCurrentRepairJobs()).isEmpty();
 
@@ -144,17 +144,17 @@ public class TestRepairSchedulerImpl
                 .withRepairInterval(expectedUpdatedRepairInterval, TimeUnit.MILLISECONDS)
                 .build();
 
-        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE, Collections.singleton(RepairConfiguration.DEFAULT));
+        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE1, Collections.singleton(RepairConfiguration.DEFAULT));
 
         verify(scheduleManager, timeout(1000)).schedule(eq(mockNodeID), any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(eq(mockNodeID), any(ScheduledJob.class));
-        assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
+        assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE1, RepairConfiguration.DEFAULT);
 
-        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE, Collections.singleton(updatedRepairConfiguration));
+        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE1, Collections.singleton(updatedRepairConfiguration));
 
         verify(scheduleManager, timeout(1000).times(2)).schedule(eq(mockNodeID), any(ScheduledJob.class));
         verify(scheduleManager, timeout(1000)).deschedule(eq(mockNodeID), any(ScheduledJob.class));
-        assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, updatedRepairConfiguration);
+        assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE1, updatedRepairConfiguration);
 
         repairSchedulerImpl.close();
         verify(scheduleManager, times(2)).deschedule(eq(mockNodeID), any(ScheduledJob.class));
@@ -170,15 +170,15 @@ public class TestRepairSchedulerImpl
         RepairSchedulerImpl repairSchedulerImpl = defaultRepairSchedulerImplBuilder()
                 .withReplicationState(myReplicationState).build();
 
-        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE, Collections.singleton(RepairConfiguration.DEFAULT));
+        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE1, Collections.singleton(RepairConfiguration.DEFAULT));
 
         verify(scheduleManager, timeout(1000)).schedule(eq(mockNodeID), any(ScheduledJob.class));
         verify(scheduleManager, never()).deschedule(eq(mockNodeID), any(ScheduledJob.class));
-        assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
+        assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE1, RepairConfiguration.DEFAULT);
 
-        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE, Collections.singleton(RepairConfiguration.DEFAULT));
+        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE1, Collections.singleton(RepairConfiguration.DEFAULT));
 
-        assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
+        assertOneTableViewExist(repairSchedulerImpl, TABLE_REFERENCE1, RepairConfiguration.DEFAULT);
 
         repairSchedulerImpl.close();
         verify(scheduleManager).deschedule(eq(mockNodeID), any(ScheduledJob.class));
@@ -198,12 +198,12 @@ public class TestRepairSchedulerImpl
         Set<RepairConfiguration> repairConfigurations = new HashSet<>();
         repairConfigurations.add(RepairConfiguration.DEFAULT);
         repairConfigurations.add(incrementalRepairConfiguration);
-        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE, repairConfigurations);
+        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE1, repairConfigurations);
 
         verify(scheduleManager, timeout(1000).times(2)).schedule(eq(mockNodeID), any(IncrementalRepairJob.class));
         verify(scheduleManager, never()).deschedule(eq(mockNodeID), any(ScheduledJob.class));
 
-        assertTableViewsExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT, incrementalRepairConfiguration);
+        assertTableViewsExist(repairSchedulerImpl, TABLE_REFERENCE1, RepairConfiguration.DEFAULT, incrementalRepairConfiguration);
 
         repairSchedulerImpl.close();
         verify(scheduleManager, times(2)).deschedule(eq(mockNodeID), any(ScheduledJob.class));
@@ -217,21 +217,21 @@ public class TestRepairSchedulerImpl
     public void testScheduleChangesToIncremental()
     {
         RepairSchedulerImpl repairSchedulerImpl = defaultRepairSchedulerImplBuilder().withReplicationState(myReplicationState).build();
-        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE, Collections.singleton(RepairConfiguration.DEFAULT));
+        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE1, Collections.singleton(RepairConfiguration.DEFAULT));
 
         // Should change to TableRepairJob.class when implemented
         verify(scheduleManager, timeout(1000)).schedule(eq(mockNodeID), any(IncrementalRepairJob.class));
         verify(scheduleManager, never()).deschedule(eq(mockNodeID), any(ScheduledJob.class));
 
-        assertTableViewsExist(repairSchedulerImpl, TABLE_REFERENCE, RepairConfiguration.DEFAULT);
+        assertTableViewsExist(repairSchedulerImpl, TABLE_REFERENCE1, RepairConfiguration.DEFAULT);
 
         RepairConfiguration incrementalRepairConfiguration = RepairConfiguration.newBuilder().withRepairType(
                 RepairType.INCREMENTAL).build();
-        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE, Collections.singleton(incrementalRepairConfiguration));
+        repairSchedulerImpl.putConfigurations(mockNode, TABLE_REFERENCE1, Collections.singleton(incrementalRepairConfiguration));
 
         verify(scheduleManager, timeout(1000).times(2)).schedule(eq(mockNodeID), any(IncrementalRepairJob.class));
 
-        assertTableViewsExist(repairSchedulerImpl, TABLE_REFERENCE, incrementalRepairConfiguration);
+        assertTableViewsExist(repairSchedulerImpl, TABLE_REFERENCE1, incrementalRepairConfiguration);
 
         repairSchedulerImpl.close();
         verify(scheduleManager, times(2)).deschedule(eq(mockNodeID), any(IncrementalRepairJob.class));

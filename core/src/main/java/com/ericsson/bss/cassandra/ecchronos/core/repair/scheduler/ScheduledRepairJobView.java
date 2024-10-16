@@ -171,7 +171,7 @@ public class ScheduledRepairJobView
         {
             return true;
         }
-        if (o == null || getClass() != o.getClass())
+        else if (o == null || getClass() != o.getClass())
         {
             return false;
         }
@@ -198,5 +198,3 @@ public class ScheduledRepairJobView
                 myNextRepair, myRepairType);
     }
 }
-
-

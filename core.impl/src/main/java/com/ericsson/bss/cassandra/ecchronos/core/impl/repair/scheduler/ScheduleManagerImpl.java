@@ -176,7 +176,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         for (RunPolicy runPolicy : myRunPolicies)
         {
             long nextRun = runPolicy.validate(job);
-            if (nextRun != -1)
+            if (nextRun != -1L)
             {
                 LOG.debug("Job {} rejected for {} ms by {}", job, nextRun, runPolicy);
                 return nextRun;
@@ -210,7 +210,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             }
             catch (Exception e)
             {
-                LOG.error("Unexpected exception while running job in node {}", nodeID, e);
+                LOG.error("Exception while running job in node {}", nodeID, e);
             }
         }
 
@@ -235,7 +235,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             LOG.trace("Validating job {}", job);
             long nextRun = validateJob(job);
 
-            if (nextRun != -1)
+            if (nextRun != -1L)
             {
                 job.setRunnableIn(nextRun);
                 return false;
@@ -253,7 +253,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             {
                 if (!validate(next))
                 {
-                    LOG.info("Job {} was stopped, will continue later", next);
+                    LOG.debug("Job {} was stopped, will continue later", next);
                     break;
                 }
                 hasRun |= tryRunTask(next, task);
@@ -267,7 +267,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 final ScheduledTask task)
         {
             LOG.debug("Trying to run task {} in node {}", task, nodeID);
-            // need to implement lock mechanism
+            // TODO need to implement lock mechanism
             try
             {
                 boolean successful = runTask(task);

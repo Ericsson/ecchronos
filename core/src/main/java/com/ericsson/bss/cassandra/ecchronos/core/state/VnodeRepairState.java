@@ -222,5 +222,3 @@ public class VnodeRepairState
         return Objects.hash(myTokenRange, myReplicas, myStartedAt, myFinishedAt, myRepairTime);
     }
 }
-
-

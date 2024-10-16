@@ -30,8 +30,8 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     private final long myBackoffInMs;
     protected final long myRunIntervalInMs;
 
-    protected volatile long myLastSuccessfulRun = -1;
-    private volatile long myNextRunTime = -1;
+    protected volatile long myLastSuccessfulRun = -1L;
+    private volatile long myNextRunTimeInMs = -1L;
     private volatile long myRunOffset = 0;
     private final UUID myId;
     private final TimeUnit myPriorityGranularity;
@@ -64,11 +64,11 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         if (successful)
         {
             myLastSuccessfulRun = System.currentTimeMillis();
-            myNextRunTime = -1;
+            myNextRunTimeInMs = -1L;
         }
         else
         {
-            myNextRunTime = System.currentTimeMillis() + myBackoffInMs;
+            myNextRunTimeInMs = System.currentTimeMillis() + myBackoffInMs;
         }
     }
 
@@ -98,7 +98,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
      */
     public final void setRunnableIn(final long delay)
     {
-        myNextRunTime = System.currentTimeMillis() + delay;
+        myNextRunTimeInMs = System.currentTimeMillis() + delay;
     }
 
     /**
@@ -108,7 +108,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
      */
     public boolean runnable()
     {
-        return myNextRunTime <= System.currentTimeMillis() && getRealPriority() > -1;
+        return myNextRunTimeInMs <= System.currentTimeMillis() && getRealPriority() > -1;
     }
 
     /**
@@ -217,7 +217,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         return myBackoffInMs == that.myBackoffInMs
                 && myRunIntervalInMs == that.myRunIntervalInMs
                 && myLastSuccessfulRun == that.myLastSuccessfulRun
-                && myNextRunTime == that.myNextRunTime
+                && myNextRunTimeInMs == that.myNextRunTimeInMs
                 && myRunOffset == that.myRunOffset
                 && myPriority == that.myPriority
                 && Objects.equals(myId, that.myId)
@@ -231,7 +231,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     public int hashCode()
     {
         return Objects.hash(myPriority, myBackoffInMs, myRunIntervalInMs, myLastSuccessfulRun,
-                myNextRunTime, myRunOffset, myId, myPriorityGranularity);
+                myNextRunTimeInMs, myRunOffset, myId, myPriorityGranularity);
     }
 
     /**

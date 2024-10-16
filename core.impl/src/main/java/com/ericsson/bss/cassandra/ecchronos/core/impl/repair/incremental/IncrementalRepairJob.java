@@ -159,7 +159,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
     @Override
     public String toString()
     {
-        return String.format("Incremental repair job of %s", getTableReference());
+        return String.format("Incremental repair job of %s in node %s", getTableReference(), myNode.getHostId());
     }
 
     @Override
@@ -169,7 +169,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         {
             return true;
         }
-        if (o == null || getClass() != o.getClass())
+        else if (o == null || getClass() != o.getClass())
         {
             return false;
         }
