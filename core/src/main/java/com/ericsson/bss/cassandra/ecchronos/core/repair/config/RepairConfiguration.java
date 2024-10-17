@@ -317,6 +317,40 @@ public final class RepairConfiguration
         }
 
         /**
+         * Set the time used to send a <b>warning</b> alarm that repair has not been running correctly.
+         *
+         * Normally this warning would be sent <b>before gc_grace_seconds</b> has passed to notify the
+         * user that some action might need to be taken to continue.
+         *
+         * @param repairWarningTime The time to use
+         * @param timeUnit The time unit
+         * @return The builder
+         * @see #withRepairErrorTime(long, TimeUnit)
+         */
+        public Builder withRepairWarningTime(final long repairWarningTime, final TimeUnit timeUnit)
+        {
+            myRepairWarningTimeInMs = timeUnit.toMillis(repairWarningTime);
+            return this;
+        }
+
+        /**
+         * Set the time used to send an <b>error</b> alarm that repair has not been running correctly.
+         *
+         * Normally this error would be sent <b>after gc_grace_seconds</b> has passed to notify the
+         * user.
+         *
+         * @param repairErrorTime The time to use
+         * @param timeUnit The time unit
+         * @return The builder
+         * @see #withRepairWarningTime(long, TimeUnit)
+         */
+        public Builder withRepairErrorTime(final long repairErrorTime, final TimeUnit timeUnit)
+        {
+            myRepairErrorTimeInMs = timeUnit.toMillis(repairErrorTime);
+            return this;
+        }
+
+        /**
          * Build with ignore TWCS tables.
          *
          * @param ignore Ignore flag.

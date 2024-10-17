@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.impl.state;
+package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.NodeResolver;

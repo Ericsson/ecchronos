@@ -14,6 +14,9 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.utils.enums.repair;
 
+/**
+ * Enum containing the different statuses a repair session can have.
+ */
 public enum RepairStatus
 {
     STARTED,

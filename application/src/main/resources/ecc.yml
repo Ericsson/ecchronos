@@ -240,6 +240,13 @@ repair:
   ##
   repair_type: incremental
 
+run_policy:
+  time_based:
+    ##
+    ## The keyspace used for the time based run policy tables.
+    ##
+    keyspace: ecchronos
+
 scheduler:
   ##
   ## Specifies the frequency the scheduler checks for work to be done

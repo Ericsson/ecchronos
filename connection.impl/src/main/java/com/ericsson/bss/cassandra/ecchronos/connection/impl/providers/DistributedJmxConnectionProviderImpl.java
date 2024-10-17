@@ -125,9 +125,9 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
     @Override
     public void close() throws IOException
     {
-        for (int i = 0; i <= myNodesList.size(); i++)
+        for (Node node : myNodesList)
         {
-            close(myNodesList.get(i).getHostId());
+            close(node.getHostId());
         }
     }
 

@@ -13,6 +13,6 @@
  * limitations under the License.
  */
 /**
- * Contains the implementations and resources for repair operations.
+ * Contains the interfaces and resources for repair operations.
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair;

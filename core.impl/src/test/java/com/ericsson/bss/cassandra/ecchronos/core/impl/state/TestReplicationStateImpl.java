@@ -19,6 +19,7 @@ import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.TokenMap;
 import com.datastax.oss.driver.api.core.metadata.token.TokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;

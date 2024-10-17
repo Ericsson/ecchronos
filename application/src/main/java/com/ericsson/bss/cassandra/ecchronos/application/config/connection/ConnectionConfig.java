@@ -14,14 +14,12 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config.connection;
 
-import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Interval;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class ConnectionConfig
 {
     private DistributedNativeConnection myCqlConnection = new DistributedNativeConnection();
     private DistributedJmxConnection myJmxConnection = new DistributedJmxConnection();
-    private Interval myConnectionDelay = new Interval();
 
     @JsonProperty("cql")
     public final DistributedNativeConnection getCqlConnection()
@@ -57,27 +55,6 @@ public class ConnectionConfig
     public final String toString()
     {
         return String.format("Connection(cql=%s, jmx=%s)", myCqlConnection, myJmxConnection);
-    }
-    /**
-     * Sets the connectionDelay used to specify the time until the next connection.
-     *
-     * @param connectionDelay
-     *         the local datacenter to set.
-     */
-    @JsonProperty("connectionDelay")
-    public void setConnectionDelay(final Interval connectionDelay)
-    {
-        myConnectionDelay = connectionDelay;
-    }
-    /**
-     * Gets the connectionDelay used to specify the time until the next connection.
-     *
-     * @return the connectionDelay.
-     */
-    @JsonProperty("connectionDelay")
-    public Interval getConnectionDelay()
-    {
-        return myConnectionDelay;
     }
 
 }

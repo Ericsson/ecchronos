@@ -12,7 +12,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.ericsson.bss.cassandra.ecchronos.core.table;
+
 /**
- * Contains the enums related with ecChronos operations.
+ * Interface for policies that can be used to control if repairs should run.
  */
-package com.ericsson.bss.cassandra.ecchronos.utils.enums.converter;
+public interface TableRepairPolicy
+{
+    /**
+     * Check with the policy if a repair of the provided table should run now.
+     *
+     * @param tableReference The table to verify.
+     * @return True if the repair should continue.
+     */
+    boolean shouldRun(TableReference tableReference);
+}

@@ -12,7 +12,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Contains the implementation and resources for stateful declarations.
- */
-package com.ericsson.bss.cassandra.ecchronos.core.impl.state;
+package com.ericsson.bss.cassandra.ecchronos.application.config.runpolicy;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public class RunPolicyConfig
+{
+    private TimeBasedConfig myTimeBasedConfig = new TimeBasedConfig();
+
+    @JsonProperty("time_based")
+    public final TimeBasedConfig getTimeBasedConfig()
+    {
+        return myTimeBasedConfig;
+    }
+
+    @JsonProperty("time_based")
+    public final void setTimeBasedConfig(final TimeBasedConfig timeBasedConfig)
+    {
+        myTimeBasedConfig = timeBasedConfig;
+    }
+}

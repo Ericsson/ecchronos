@@ -21,7 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.security.Reloadin
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metadata.NodeResolverImpl;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.state.ReplicationStateImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
@@ -42,6 +42,8 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
@@ -142,6 +144,17 @@ public class BeanConfigurator
     }
 
     /**
+     * Provides a {@link DefaultRepairConfigurationProvider} bean.
+     *
+     * @return a {@link DefaultRepairConfigurationProvider} object.
+     */
+    @Bean
+    public DefaultRepairConfigurationProvider defaultRepairConfigurationProvider()
+    {
+        return new DefaultRepairConfigurationProvider();
+    }
+
+    /**
      * Configures the embedded web server factory with the host and port specified in the application configuration.
      *
      * @param config
@@ -168,10 +181,11 @@ public class BeanConfigurator
      */
     @Bean
     public DistributedNativeConnectionProvider distributedNativeConnectionProvider(
-            final Config config
+            final Config config,
+            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider
     )
     {
-        return getDistributedNativeConnection(config, cqlSecurity::get);
+        return getDistributedNativeConnection(config, cqlSecurity::get, defaultRepairConfigurationProvider);
     }
 
     /**
@@ -253,12 +267,17 @@ public class BeanConfigurator
 
     private DistributedNativeConnectionProvider getDistributedNativeConnection(
             final Config config,
-            final Supplier<Security.CqlSecurity> securitySupplier
+            final Supplier<Security.CqlSecurity> securitySupplier,
+            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider
     )
     {
         Supplier<CqlTLSConfig> tlsSupplier = () -> securitySupplier.get().getCqlTlsConfig();
         CertificateHandler certificateHandler = createCertificateHandler(tlsSupplier);
-        return new AgentNativeConnectionProvider(config, securitySupplier, certificateHandler);
+        return new AgentNativeConnectionProvider(
+                config,
+                securitySupplier,
+                certificateHandler,
+                defaultRepairConfigurationProvider);
     }
 
     private DistributedJmxConnectionProvider getDistributedJmxConnection(
@@ -299,7 +318,7 @@ public class BeanConfigurator
             final DistributedNativeConnectionProvider distributedNativeConnectionProvider
     ) throws UnknownHostException, EcChronosException, ConfigurationException
     {
-        Interval connectionDelay = config().getConnectionConfig().getConnectionDelay();
+        Interval connectionDelay = config().getConnectionConfig().getCqlConnection().getConnectionDelay();
         EccNodesSync myEccNodesSync = EccNodesSync.newBuilder()
                 .withInitialNodesList(distributedNativeConnectionProvider.getNodes())
                 .withSession(distributedNativeConnectionProvider.getCqlSession())

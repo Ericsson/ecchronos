@@ -21,9 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Interval;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Priority;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentNativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.application.spring.AbstractRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairHistoryProvider;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
@@ -225,7 +223,7 @@ public class TestConfig
     @Test
     public void testConnectionDelay()
     {
-        Interval connectionDelay = config.getConnectionConfig().getConnectionDelay();
+        Interval connectionDelay = nativeConnection.getConnectionDelay();
         assertThat(connectionDelay.getUnit()).isEqualTo(TimeUnit.MINUTES);
         assertThat(connectionDelay.getTime()).isEqualTo(45L);
     }

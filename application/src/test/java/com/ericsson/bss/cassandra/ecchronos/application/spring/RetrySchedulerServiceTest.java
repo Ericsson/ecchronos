@@ -130,7 +130,7 @@ class RetrySchedulerServiceTest
         // Mock JMX connector behavior
         JMXConnector mockJmxConnector = mock(JMXConnector.class);
         when(jmxConnectionProvider.getJmxConnector(nodeId)).thenReturn(mockJmxConnector);
-        when(mockJmxConnector.getConnectionId()).thenReturn("connected");
+        when(jmxConnectionProvider.isConnected(eq(mockJmxConnector))).thenReturn(true);
 
         // Mock the JMX connections map
         ConcurrentHashMap<UUID, JMXConnector> mockJmxConnections = mock(ConcurrentHashMap.class);

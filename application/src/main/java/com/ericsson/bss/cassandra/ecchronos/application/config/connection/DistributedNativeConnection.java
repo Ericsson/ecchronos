@@ -15,9 +15,11 @@
 package com.ericsson.bss.cassandra.ecchronos.application.config.connection;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
+import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Interval;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.function.Supplier;
@@ -25,6 +27,7 @@ import java.util.function.Supplier;
 public class DistributedNativeConnection extends Connection<DistributedNativeConnectionProvider>
 {
     private AgentConnectionConfig myAgentConnectionConfig = new AgentConnectionConfig();
+    private Interval myConnectionDelay = new Interval();
 
     public DistributedNativeConnection()
     {
@@ -51,6 +54,28 @@ public class DistributedNativeConnection extends Connection<DistributedNativeCon
     }
 
     /**
+     * Sets the connectionDelay used to specify the time until the next connection.
+     *
+     * @param connectionDelay
+     *         the local datacenter to set.
+     */
+    @JsonProperty("connectionDelay")
+    public void setConnectionDelay(final Interval connectionDelay)
+    {
+        myConnectionDelay = connectionDelay;
+    }
+    /**
+     * Gets the connectionDelay used to specify the time until the next connection.
+     *
+     * @return the connectionDelay.
+     */
+    @JsonProperty("connectionDelay")
+    public Interval getConnectionDelay()
+    {
+        return myConnectionDelay;
+    }
+
+    /**
      * @return Class<?>[]
      */
     @Override
@@ -60,7 +85,8 @@ public class DistributedNativeConnection extends Connection<DistributedNativeCon
                 {
                         Config.class,
                         Supplier.class,
-                        CertificateHandler.class
+                        CertificateHandler.class,
+                        DefaultRepairConfigurationProvider.class,
                 };
     }
 }
