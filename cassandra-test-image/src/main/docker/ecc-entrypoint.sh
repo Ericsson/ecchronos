@@ -41,7 +41,8 @@ if [ -f /etc/certificates/.keystore ]; then
   sed -i "/client_encryption_options:/{n;s/enabled: false/enabled: true/}" "$CASSANDRA_CONF"/cassandra.yaml
 
   sed -i "s;keystore: .*;keystore: /etc/certificates/.keystore;g" "$CASSANDRA_CONF"/cassandra.yaml
-  sed -i "s/keystore_password: .*/keystore_password: ecctest/g" "$CASSANDRA_CONF"/cassandra.yaml
+  # Cassandra 5: 'keystore_password' must not be empty, e.g. remove comment if present
+  sed -ri "s/( *)(# *)?keystore_password: .*/\1keystore_password: ecctest/g" "$CASSANDRA_CONF"/cassandra.yaml
 
   sed -ri "s;(# )?truststore: .*;truststore: /etc/certificates/.truststore;g" "$CASSANDRA_CONF"/cassandra.yaml
   sed -ri "s/(# )?truststore_password: .*/truststore_password: ecctest/g" "$CASSANDRA_CONF"/cassandra.yaml
