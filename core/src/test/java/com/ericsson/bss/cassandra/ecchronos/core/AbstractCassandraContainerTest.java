@@ -37,7 +37,14 @@ public class AbstractCassandraContainerTest
     @BeforeClass
     public static void setUpCluster()
     {
-        node = new CassandraContainer<>(DockerImageName.parse("cassandra:4.1.5"))
+        // This is set as an environment variable ('it.cassandra.version') in maven using the '-D' flag.
+        String cassandraVersion = System.getProperty("it.cassandra.version");
+        if (cassandraVersion == null)
+        {
+            // No environment version set, just use latest.
+            cassandraVersion = "latest";
+        }
+        node = new CassandraContainer<>(DockerImageName.parse("cassandra:" + cassandraVersion))
                 .withExposedPorts(9042, 7000, 7199)
                 .withEnv("CASSANDRA_DC", "DC1")
                 .withEnv("CASSANDRA_ENDPOINT_SNITCH", "GossipingPropertyFileSnitch")
