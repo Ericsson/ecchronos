@@ -60,6 +60,21 @@ public class AbstractCassandraTest
             {
                 return nodesList;
             }
+
+            @Override
+            public void addNode(Node myNode) {
+                nodesList.add(myNode);
+            }
+
+            @Override
+            public void removeNode(Node myNode) {
+                nodesList.remove(myNode);
+            }
+
+            @Override
+            public Boolean confirmNodeValid(Node node) {
+                return false;
+            }
         };
     }
 

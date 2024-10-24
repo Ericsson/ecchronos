@@ -273,11 +273,17 @@ public class BeanConfigurator
     {
         Supplier<CqlTLSConfig> tlsSupplier = () -> securitySupplier.get().getCqlTlsConfig();
         CertificateHandler certificateHandler = createCertificateHandler(tlsSupplier);
-        return new AgentNativeConnectionProvider(
+
+        AgentNativeConnectionProvider distributedNativeConnectionProvider =  new AgentNativeConnectionProvider(
                 config,
                 securitySupplier,
                 certificateHandler,
                 defaultRepairConfigurationProvider);
+
+        distributedNativeConnectionProvider.getNodeStateListener().setAgentNativeConnectionProvider(distributedNativeConnectionProvider);
+
+        return distributedNativeConnectionProvider;
+
     }
 
     private DistributedJmxConnectionProvider getDistributedJmxConnection(
@@ -286,8 +292,14 @@ public class BeanConfigurator
             final EccNodesSync eccNodesSync
     ) throws IOException
     {
-        return new AgentJmxConnectionProvider(
+        AgentJmxConnectionProvider agentJmxConnectionProvider = new AgentJmxConnectionProvider(
                 securitySupplier, distributedNativeConnectionProvider, eccNodesSync);
+        EccNodeStateListener nodeStateListener = ((AgentNativeConnectionProvider) distributedNativeConnectionProvider).getNodeStateListener();
+
+        nodeStateListener.setJmxConnectionProvider(agentJmxConnectionProvider);
+        nodeStateListener.setEccNodesSync(eccNodesSync);
+
+        return agentJmxConnectionProvider;
     }
 
     private void refreshSecurityConfig(

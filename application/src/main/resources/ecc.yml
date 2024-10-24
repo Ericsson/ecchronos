@@ -98,6 +98,7 @@ connection:
     connectionDelay:
       time: 45
       unit: MINUTES
+
   jmx:
     ##
     ## The class used to provide JMX connections to Apache Cassandra.

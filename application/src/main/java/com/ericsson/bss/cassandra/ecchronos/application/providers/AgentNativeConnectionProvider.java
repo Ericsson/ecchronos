@@ -23,6 +23,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.AgentConnectionConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.ReloadingAuthProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
+import com.ericsson.bss.cassandra.ecchronos.application.spring.EccNodeStateListener;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.DistributedNativeBuilder;
@@ -49,6 +50,8 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
     private static final Logger LOG = LoggerFactory.getLogger(AgentNativeConnectionProvider.class);
 
     private final DistributedNativeConnectionProviderImpl myDistributedNativeConnectionProviderImpl;
+
+    private final EccNodeStateListener myNodeStateListener;
 
     /**
      * Constructs an {@code AgentNativeConnectionProvider} with the specified configuration, security supplier, and
@@ -85,6 +88,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
             sslEngineFactory = certificateHandler;
         }
 
+        myNodeStateListener = new EccNodeStateListener();
         DistributedNativeBuilder nativeConnectionBuilder =
                 DistributedNativeConnectionProviderImpl.builder()
                         .withInitialContactPoints(resolveInitialContactPoints(agentConnectionConfig.getContactPoints()))
@@ -93,7 +97,8 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
                         .withAuthProvider(authProvider)
                         .withSslEngineFactory(sslEngineFactory)
                         .withSchemaChangeListener(defaultRepairConfigurationProvider)
-                        .withNodeStateListener(defaultRepairConfigurationProvider);
+                        .withNodeStateListener(myNodeStateListener);
+
         LOG.info("Preparing Agent Connection Config");
         nativeConnectionBuilder = resolveAgentProviderBuilder(nativeConnectionBuilder, agentConnectionConfig);
         LOG.info("Establishing Connection With Nodes");
@@ -273,6 +278,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
         return myDistributedNativeConnectionProviderImpl.getNodes();
     }
 
+
     /**
      * Closes all resources and connections managed by this provider.
      *
@@ -283,5 +289,42 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
     public void close() throws IOException
     {
         myDistributedNativeConnectionProviderImpl.close();
+    }
+    /**
+     * Add a nw node to the list of nodes.
+     * @param myNode
+     */
+    @Override
+    public void addNode(final Node myNode)
+    {
+        myDistributedNativeConnectionProviderImpl.addNode(myNode);
+    }
+    /**
+     * Remove node for the list of nodes.
+     * @param myNode
+     */
+    @Override
+    public void removeNode(final Node myNode)
+    {
+        myDistributedNativeConnectionProviderImpl.removeNode(myNode);
+    }
+    /**
+     * Checks the node is on the list of specified dc's/racks/nodes.
+     * @param node
+     * @return
+     */
+    @Override
+    public Boolean confirmNodeValid(final Node node)
+    {
+        return myDistributedNativeConnectionProviderImpl.confirmNodeValid(node);
+    }
+
+    /**
+     * getter for the NodeStateListener.
+     * @return
+     */
+    public EccNodeStateListener getNodeStateListener()
+    {
+        return myNodeStateListener;
     }
 }

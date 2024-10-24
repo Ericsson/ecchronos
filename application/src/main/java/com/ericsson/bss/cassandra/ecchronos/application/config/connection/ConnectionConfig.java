@@ -56,5 +56,4 @@ public class ConnectionConfig
     {
         return String.format("Connection(cql=%s, jmx=%s)", myCqlConnection, myJmxConnection);
     }
-
 }

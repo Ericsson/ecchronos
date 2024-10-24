@@ -27,8 +27,13 @@ public interface DistributedNativeConnectionProvider extends Closeable
 
     List<Node> getNodes();
 
+
     @Override
     default void close() throws IOException
     {
     }
+    void addNode(Node myNode);
+
+    void removeNode(Node myNode);
+    Boolean confirmNodeValid(Node node);
 }
