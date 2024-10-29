@@ -106,7 +106,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         myRepairPolicies = new ArrayList<>(builder.myRepairPolicies);
         myCassandraMetrics = builder.myCassandraMetrics;
         myRepairHistoryService = builder.myRepairHistoryService;
-        myTableStorageStates = builder().myTableStorageStates;
+        myTableStorageStates = builder.myTableStorageStates;
     }
 
     @Override
@@ -309,7 +309,8 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         }
         else
         {
-            LOG.info("Creating TableRepairJob for node {}", node.getHostId());
+            LOG.info("Creating TableRepairJob for table {}.{} in node {}",
+                    tableReference.getKeyspace(), tableReference.getTable(), node.getHostId());
             AlarmPostUpdateHook alarmPostUpdateHook = new AlarmPostUpdateHook(tableReference, repairConfiguration,
                     myFaultReporter);
             RepairState repairState = myRepairStateFactory.create(node, tableReference, repairConfiguration,
