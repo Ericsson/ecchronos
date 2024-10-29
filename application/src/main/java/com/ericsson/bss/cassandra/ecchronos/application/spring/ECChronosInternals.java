@@ -22,15 +22,19 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnecti
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.DistributedJmxProxyFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.ScheduleManagerImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.HostStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.ReplicatedTableProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableReferenceFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableStorageStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
+import com.ericsson.bss.cassandra.ecchronos.core.state.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.table.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import java.io.Closeable;
 import java.util.HashMap;
@@ -51,6 +55,8 @@ public class ECChronosInternals implements Closeable
     private final TableReferenceFactory myTableReferenceFactory;
     private final DistributedJmxProxyFactory myJmxProxyFactory;
     private final CassandraMetrics myCassandraMetrics;
+    private final HostStatesImpl myHostStatesImpl;
+    private final TableStorageStatesImpl myTableStorageStatesImpl;
 
     public ECChronosInternals(
             final Config configuration,
@@ -69,10 +75,19 @@ public class ECChronosInternals implements Closeable
 
         myTableReferenceFactory = new TableReferenceFactoryImpl(session);
 
+        myHostStatesImpl = HostStatesImpl.builder()
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .build();
+
         myReplicatedTableProvider = new ReplicatedTableProviderImpl(
                 session,
                 myTableReferenceFactory,
                 nativeConnectionProvider.getNodes());
+
+        myTableStorageStatesImpl = TableStorageStatesImpl.builder()
+                .withReplicatedTableProvider(myReplicatedTableProvider)
+                .withJmxProxyFactory(myJmxProxyFactory)
+                .build();
 
         myCassandraMetrics = new CassandraMetrics(myJmxProxyFactory);
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
@@ -110,6 +125,16 @@ public class ECChronosInternals implements Closeable
     public final TableRepairMetrics getTableRepairMetrics()
     {
         return NO_OP_REPAIR_METRICS;
+    }
+
+    public final HostStates getHostStates()
+    {
+        return myHostStatesImpl;
+    }
+
+    public final TableStorageStates getTableStorageStates()
+    {
+        return myTableStorageStatesImpl;
     }
 
     public final boolean addRunPolicy(final RunPolicy runPolicy)

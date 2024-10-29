@@ -29,7 +29,7 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 public class NodeResolverImpl implements NodeResolver
 {
     private final ConcurrentMap<InetAddress, DriverNode> addressToNodeMap = new ConcurrentHashMap<>();
-    private final ConcurrentMap<UUID, DriverNode> idToNodeMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, DriverNode> idToDriverNodeMap = new ConcurrentHashMap<>();
 
     private final CqlSession session;
 
@@ -65,10 +65,10 @@ public class NodeResolverImpl implements NodeResolver
 
     private DriverNode resolve(final UUID nodeId)
     {
-        DriverNode node = idToNodeMap.get(nodeId);
+        DriverNode node = idToDriverNodeMap.get(nodeId);
         if (node == null)
         {
-            node = idToNodeMap.computeIfAbsent(nodeId, this::lookup);
+            node = idToDriverNodeMap.computeIfAbsent(nodeId, this::lookup);
         }
 
         return node;

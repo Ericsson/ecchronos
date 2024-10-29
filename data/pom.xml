@@ -37,6 +37,12 @@
 
         <dependency>
             <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
+            <artifactId>core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
             <artifactId>utils</artifactId>
             <version>${project.version}</version>
         </dependency>
