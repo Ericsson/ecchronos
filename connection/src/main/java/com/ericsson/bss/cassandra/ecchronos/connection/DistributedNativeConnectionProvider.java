@@ -33,7 +33,6 @@ public interface DistributedNativeConnectionProvider extends Closeable
     {
     }
     void addNode(Node myNode);
-
     void removeNode(Node myNode);
     Boolean confirmNodeValid(Node node);
 }

@@ -221,5 +221,4 @@ public class CASLockStatement
     {
         return myCasLockProperties;
     }
-
 }

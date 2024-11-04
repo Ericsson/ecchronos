@@ -18,7 +18,7 @@ import java.io.Closeable;
 import java.util.Map;
 import java.util.Optional;
 
-import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LockException;
 
 /**
  * Interface for distributed lock factories.

@@ -14,7 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.locks;
 
-import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory.DistributedLock;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;

@@ -23,7 +23,7 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.TokenMap;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.locks.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
 import com.google.common.annotations.VisibleForTesting;
