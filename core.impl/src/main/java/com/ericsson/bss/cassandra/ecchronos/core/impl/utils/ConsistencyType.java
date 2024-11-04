@@ -12,8 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Contains configurations related to outbound connections (CQL and JMX).
- */
-package com.ericsson.bss.cassandra.ecchronos.application.config.connection;
+package com.ericsson.bss.cassandra.ecchronos.core.impl.utils;
 
+public enum ConsistencyType
+{
+    DEFAULT,
+    LOCAL,
+    SERIAL
+}

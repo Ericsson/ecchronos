@@ -12,8 +12,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Contains configurations related to outbound connections (CQL and JMX).
- */
-package com.ericsson.bss.cassandra.ecchronos.application.config.connection;
+package com.ericsson.bss.cassandra.ecchronos.core.exceptions;
 
+/**
+ * Exception thrown when a lock factory is unable to get a lock.
+ */
+public class LockException extends Exception
+{
+    private static final long serialVersionUID = 1699712279389641954L;
+
+    public LockException(final String message)
+    {
+        super(message);
+    }
+
+    public LockException(final String message, final Throwable t)
+    {
+        super(message, t);
+    }
+
+    public LockException(final Throwable t)
+    {
+        super(t);
+    }
+}
