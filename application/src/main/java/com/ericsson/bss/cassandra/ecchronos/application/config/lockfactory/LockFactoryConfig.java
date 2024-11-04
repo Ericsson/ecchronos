@@ -12,8 +12,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Contains configurations related to outbound connections (CQL and JMX).
- */
-package com.ericsson.bss.cassandra.ecchronos.application.config.connection;
+package com.ericsson.bss.cassandra.ecchronos.application.config.lockfactory;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public class LockFactoryConfig
+{
+    private CasLockFactoryConfig myCasLockFactoryConfig = new CasLockFactoryConfig();
+
+    @JsonProperty("cas")
+    public final CasLockFactoryConfig getCasLockFactoryConfig()
+    {
+        return myCasLockFactoryConfig;
+    }
+
+    @JsonProperty("cas")
+    public final void setCasLockFactoryConfig(final CasLockFactoryConfig casLockFactoryConfig)
+    {
+        myCasLockFactoryConfig = casLockFactoryConfig;
+    }
+}

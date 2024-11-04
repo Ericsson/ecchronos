@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 /**
- * Contains configurations related to outbound connections (CQL and JMX).
+ * Contains locks related exceptions.
  */
-package com.ericsson.bss.cassandra.ecchronos.application.config.connection;
+package com.ericsson.bss.cassandra.ecchronos.core.exceptions;
 
