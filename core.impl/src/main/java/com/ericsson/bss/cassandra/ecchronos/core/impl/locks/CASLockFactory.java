@@ -23,9 +23,9 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.TokenMap;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LockException;
-import com.ericsson.bss.cassandra.ecchronos.core.locks.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
+import com.ericsson.bss.cassandra.ecchronos.core.locks.HostStates;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
@@ -140,9 +140,9 @@ public final class CASLockFactory implements LockFactory, Closeable
 
     @Override
     public DistributedLock tryLock(final String dataCenter,
-                                   final String resource,
-                                   final int priority,
-                                   final Map<String, String> metadata)
+                                               final String resource,
+                                               final int priority,
+                                               final Map<String, String> metadata)
                                                                        throws LockException
     {
         return myCasLockFactoryCacheContext.getLockCache()

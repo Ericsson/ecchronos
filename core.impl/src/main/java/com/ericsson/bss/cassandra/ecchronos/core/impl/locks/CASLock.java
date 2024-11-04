@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LockException;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 
 /**
  * Represents a container for builder configurations and state for the CASLock.
@@ -213,5 +213,4 @@ class CASLock implements DistributedLock, Runnable
     {
         return myFailedUpdateAttempts.get();
     }
-
 }

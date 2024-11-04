@@ -2,9 +2,11 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Cassandra-Based Distributed Locks #741
 * Create New Repair Type Called "VNODE" - Issue #755
 * Create ReplicaRepairGroup Class for Grouping Replicas and Token Ranges - Issue #721
 * Hot Reload of Nodes List - Issue #699
+* Update nodes when cluster changes, nodes removed or added  #699
 * Investigate Creation of RepairScheduler and ScheduleManager #714
 * Implement ScheduledJobQueue for Prioritized Job Management and Execution - Issue #740
 * Implement RepairGroup Class for Managing and Executing Repair Tasks - Issue #738

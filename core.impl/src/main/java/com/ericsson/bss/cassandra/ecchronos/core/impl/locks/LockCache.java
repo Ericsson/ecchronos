@@ -15,8 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.impl.locks;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory.DistributedLock;
-
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LockException;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.slf4j.Logger;

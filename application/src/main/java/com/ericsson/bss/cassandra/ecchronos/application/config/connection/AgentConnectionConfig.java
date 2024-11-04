@@ -38,7 +38,6 @@ public final class AgentConnectionConfig
     private HostAware myHostAware = new HostAware();
     private Class<? extends DefaultLoadBalancingPolicy> myDatacenterAwarePolicy = DataCenterAwarePolicy.class;
     private String myInstanceName;
-    private boolean myRemoteRouting = true;
 
     /**
      * Default constructor for AgentConnectionConfig.

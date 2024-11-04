@@ -16,3 +16,4 @@
  * Contains utilities classes.
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.utils;
+
