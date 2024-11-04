@@ -28,6 +28,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.AbstractCassandraContainer
 import com.ericsson.bss.cassandra.ecchronos.core.impl.utils.ConsistencyType;
 import com.ericsson.bss.cassandra.ecchronos.core.locks.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -68,8 +69,6 @@ import com.datastax.oss.driver.internal.core.context.InternalDriverContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.ericsson.bss.cassandra.ecchronos.core.utils.LockException;
 
 import net.jcip.annotations.NotThreadSafe;
 import org.junit.runner.RunWith;
