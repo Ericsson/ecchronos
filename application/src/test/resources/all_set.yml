@@ -42,6 +42,7 @@ connection:
             port: 9042
           - host: 127.0.0.4
             port: 9042
+      remoteRouting: false
     provider: com.ericsson.bss.cassandra.ecchronos.application.providers.AgentNativeConnectionProvider
     connectionDelay:
       time: 45
@@ -91,3 +92,9 @@ scheduler:
 rest_server:
   host: 127.0.0.2
   port: 8081
+
+lock_factory:
+  cas:
+    keyspace: ecc
+    cache_expiry_time_in_seconds: 100
+    consistencySerial: "LOCAL"

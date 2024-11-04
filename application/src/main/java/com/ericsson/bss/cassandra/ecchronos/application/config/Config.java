@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.application.config;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.ConnectionConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.lockfactory.LockFactoryConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.GlobalRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.rest.RestServerConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.runpolicy.RunPolicyConfig;
@@ -28,6 +29,7 @@ public class Config
     private RunPolicyConfig myRunPolicyConfig = new RunPolicyConfig();
     private SchedulerConfig mySchedulerConfig = new SchedulerConfig();
     private RestServerConfig myRestServerConfig = new RestServerConfig();
+    private LockFactoryConfig myLockFactoryConfig = new LockFactoryConfig();
 
     @JsonProperty("connection")
     public final ConnectionConfig getConnectionConfig()
@@ -117,6 +119,21 @@ public class Config
         if (restServerConfig != null)
         {
             myRestServerConfig = restServerConfig;
+        }
+    }
+
+    @JsonProperty("lock_factory")
+    public final LockFactoryConfig getLockFactory()
+    {
+        return myLockFactoryConfig;
+    }
+
+    @JsonProperty("lock_factory")
+    public final void setLockFactoryConfig(final LockFactoryConfig lockFactoryConfig)
+    {
+        if (lockFactoryConfig != null)
+        {
+            myLockFactoryConfig = lockFactoryConfig;
         }
     }
 }

@@ -317,5 +317,11 @@ public class TestConfig
     {
         assertThat(nativeConnection.getAgentConnectionConfig().getInstanceName()).isEqualTo("unique_identifier");
     }
+
+    @Test
+    public void testRemoteRouting()
+    {
+        assertThat(nativeConnection.getAgentConnectionConfig().getRemoteRouting()).isEqualTo(false);
+    }
 }
 
