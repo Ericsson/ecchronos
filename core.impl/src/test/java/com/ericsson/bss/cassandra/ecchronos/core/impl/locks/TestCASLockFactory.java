@@ -69,7 +69,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.LockException;
 
 import net.jcip.annotations.NotThreadSafe;
 import org.junit.runner.RunWith;

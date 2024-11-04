@@ -49,7 +49,6 @@ public class CASLockProperties
     public final ConsistencyLevel defineSerialConsistencyLevel(final ConsistencyType consistencyType)
     {
         ConsistencyLevel serialConsistencyLevel;
-
         serialConsistencyLevel = ConsistencyType.LOCAL.equals(consistencyType)
                     ? ConsistencyLevel.LOCAL_SERIAL
                     : ConsistencyLevel.SERIAL;

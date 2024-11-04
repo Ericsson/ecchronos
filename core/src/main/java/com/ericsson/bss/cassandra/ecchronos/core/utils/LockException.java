@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.exceptions;
+package com.ericsson.bss.cassandra.ecchronos.core.utils;
 
 /**
  * Exception thrown when a lock factory is unable to get a lock.

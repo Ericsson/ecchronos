@@ -48,17 +48,6 @@ public final class AgentConnectionConfig
 
     }
 
-    @JsonProperty("remoteRouting")
-    public boolean getRemoteRouting()
-    {
-        return myRemoteRouting;
-    }
-
-    @JsonProperty("remoteRouting")
-    public void setRemoteRouting(final boolean remoteRouting)
-    {
-        myRemoteRouting = remoteRouting;
-    }
     /**
      * Gets unique ecchronos instance name.
      *

@@ -28,13 +28,6 @@ connection:
       ## (instanceName: unique identifier), that will be used
       ## as ecchronos_id (partition key in nodes_sync table).
       instanceName: unique_identifier
-      ##
-      ## Allow routing requests directly to a remote datacenter.
-      ## This allows locks for other datacenters to be taken in that datacenter instead of via the local datacenter.
-      ## If clients are prevented from connecting directly to Cassandra nodes in other sites this is not possible.
-      ## If remote routing is disabled, instead SERIAL consistency will be used for those request.
-      ##
-      remoteRouting: true
       ## Define the Agent strategy, it can be
       ## - datacenterAware;
       ## - rackAware; and

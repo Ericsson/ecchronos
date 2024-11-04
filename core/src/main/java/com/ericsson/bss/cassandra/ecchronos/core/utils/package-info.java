@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 /**
- * Contains locks related exceptions.
+ * Contains utilities classes.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.exceptions;
-
+package com.ericsson.bss.cassandra.ecchronos.core.utils;
