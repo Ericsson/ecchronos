@@ -125,5 +125,4 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
     {
         return myDistributedNativeBuilder.confirmNodeValid(node);
     }
-
 }

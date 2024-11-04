@@ -49,7 +49,6 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
     private static final Logger LOG = LoggerFactory.getLogger(AgentNativeConnectionProvider.class);
 
     private final DistributedNativeConnectionProviderImpl myDistributedNativeConnectionProviderImpl;
-    private final boolean myRemoteRouting;
 
     /**
      * Constructs an {@code AgentNativeConnectionProvider} with the specified configuration, security supplier, and
@@ -71,7 +70,6 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
         AgentConnectionConfig agentConnectionConfig = config.getConnectionConfig()
                 .getCqlConnection()
                 .getAgentConnectionConfig();
-        myRemoteRouting = agentConnectionConfig.getRemoteRouting();
         Security.CqlSecurity cqlSecurity = cqlSecuritySupplier.get();
         boolean authEnabled = cqlSecurity.getCqlCredentials().isEnabled();
         boolean tlsEnabled = cqlSecurity.getCqlTlsConfig().isEnabled();
@@ -96,7 +94,6 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
                         .withSslEngineFactory(sslEngineFactory)
                         .withSchemaChangeListener(defaultRepairConfigurationProvider)
                         .withNodeStateListener(defaultRepairConfigurationProvider);
-
         LOG.info("Preparing Agent Connection Config");
         nativeConnectionBuilder = resolveAgentProviderBuilder(nativeConnectionBuilder, agentConnectionConfig);
         LOG.info("Establishing Connection With Nodes");

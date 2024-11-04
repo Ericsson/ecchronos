@@ -74,6 +74,7 @@ public class DistributedNativeBuilder
     private SslEngineFactory mySslEngineFactory = null;
     private SchemaChangeListener mySchemaChangeListener = null;
     private NodeStateListener myNodeStateListener = null;
+    private boolean myRemoteRouting;
 
     /**
      * Sets the initial contact points for the distributed native connection.
