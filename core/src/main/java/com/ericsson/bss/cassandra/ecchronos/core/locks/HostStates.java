@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.locks;
 
+import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
 import java.net.InetAddress;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
