@@ -282,7 +282,7 @@ public class TestRepairManagementRESTImpl
         }
         catch (ResponseStatusException e)
         {
-            assertThat(e.getRawStatusCode()).isEqualTo(BAD_REQUEST.value());
+            assertThat(e.getStatusCode().value()).isEqualTo(BAD_REQUEST.value());
         }
         assertThat(response).isNull();
     }
@@ -317,7 +317,7 @@ public class TestRepairManagementRESTImpl
         }
         catch (ResponseStatusException e)
         {
-            assertThat(e.getRawStatusCode()).isEqualTo(BAD_REQUEST.value());
+            assertThat(e.getStatusCode().value()).isEqualTo(BAD_REQUEST.value());
         }
         assertThat(response).isNull();
     }
@@ -333,7 +333,7 @@ public class TestRepairManagementRESTImpl
         }
         catch (ResponseStatusException e)
         {
-            assertThat(e.getRawStatusCode()).isEqualTo(BAD_REQUEST.value());
+            assertThat(e.getStatusCode().value()).isEqualTo(BAD_REQUEST.value());
         }
         assertThat(response).isNull();
     }

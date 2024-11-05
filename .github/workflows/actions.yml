@@ -23,30 +23,6 @@ jobs:
       fail-fast: false
       matrix:
        include:
-         # Java 11 tests
-          - name: "Unit tests - Java 11"
-            java_version: 11
-            test_suite: 'test jacoco:report'
-          - name: "Style check - Java 11"
-            java_version: 11
-            test_suite: 'compile com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
-          - name: "Standalone integration 4.0 - Java 11"
-            java_version: 11
-            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -DskipUTs'
-            artifacts_dir: "standalone-integration/target"
-          - name: "Standalone integration 4.1 - Java 11"
-            java_version: 11
-            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=4.1 -DskipUTs'
-            artifacts_dir: "standalone-integration/target"
-          - name: "Standalone integration 5.0- - Java 11"
-            java_version: 11
-            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=5.0 -DskipUTs'
-            artifacts_dir: "standalone-integration/target"
-          - name: "Python integration - Java 11"
-            java_version: 11
-            test_suite: 'verify -P docker-integration-test,python-integration-tests -DskipUTs'
-            artifacts_dir: "ecchronos-binary/target"
-
           # Java 17 tests
           - name: "Unit tests - Java 17"
             java_version: 17
@@ -56,7 +32,7 @@ jobs:
             test_suite: 'compile -Djava.version=17 com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
           - name: "Standalone integration 4.0 - Java 17"
             java_version: 17
-            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Djava.version=17 -DskipUTs'
+            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=4.0 -Djava.version=17 -DskipUTs'
             artifacts_dir: "standalone-integration/target"
           - name: "Standalone integration 4.1 - Java 17"
             java_version: 17
@@ -68,7 +44,7 @@ jobs:
             artifacts_dir: "standalone-integration/target"
           - name: "Python integration - Java 17"
             java_version: 17
-            test_suite: 'verify -P docker-integration-test,python-integration-tests -DskipUTs -Djava.version=17'
+            test_suite: 'verify -P docker-integration-test,python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
 
           # Java 21 tests
@@ -80,7 +56,7 @@ jobs:
             test_suite: 'compile -Djava.version=21 com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
           - name: "Standalone integration 4.0 - Java 21"
             java_version: 21
-            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -DskipUTs -Djava.version=21'
+            test_suite: 'verify -P docker-integration-test,standalone-integration-tests -Dit.cassandra.version=4.0 -Djava.version=21 -DskipUTs'
             artifacts_dir: "standalone-integration/target"
           - name: "Standalone integration 4.1 - Java 21"
             java_version: 21
@@ -92,7 +68,7 @@ jobs:
             artifacts_dir: "standalone-integration/target"
           - name: "Python integration - Java 21"
             java_version: 21
-            test_suite: 'verify -P docker-integration-test,python-integration-tests -Djava.version=21 -DskipUTs'
+            test_suite: 'verify -P docker-integration-test,python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1

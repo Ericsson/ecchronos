@@ -19,13 +19,14 @@ import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.ssl.SSLContextBuilder;
-import org.awaitility.Duration;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.*;
+import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.ssl.SSLContextBuilder;
+import org.awaitility.Durations;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -43,8 +44,8 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.time.Instant;
+import java.time.Duration;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,13 +69,13 @@ public abstract class TestTomcatWebServerCustomizer
     protected static final String EXPIRED_METRICS_CLIENT_COMMON_NAME = "expiredMetricsClient";
     protected static final String KEYSTORE_PASSWORD = "ecctest";
 
-    protected static final int REFRESH_RATE = 100;
-    protected static final int METRICS_REFRESH_RATE = 50;
+    protected static final int REFRESH_RATE_IN_MS = 100;
+    protected static final int METRICS_REFRESH_RATE_IN_MS = 50;
     protected static final int INVOCATION_COUNT = 1;
 
-    private static final Duration RELOAD_TIMEOUT = Duration.TEN_SECONDS;
+    private static final Duration RELOAD_TIMEOUT = Durations.TEN_SECONDS;
 
-    //These must be set in @BeforeClass
+    // These must be set in @BeforeClass
     protected static String serverCaCert;
     protected static String serverCaCertKey;
     protected static String serverCert;
@@ -186,7 +187,7 @@ public abstract class TestTomcatWebServerCustomizer
         Date notBefore = Date.from(Instant.now());
         Date notAfter = Date.from(Instant.now().plus(java.time.Duration.ofHours(1)));
 
-        //Server
+        // Server
         certUtils.createSelfSignedCACertificate(SERVER_CA_COMMON_NAME, notBefore, notAfter, algorithm, serverCaCert, serverCaCertKey);
         certUtils.createCertificate(SERVER_COMMON_NAME, notBefore, notAfter, serverCaCert, serverCaCertKey, serverCert,
                 serverCertKey);
@@ -200,7 +201,7 @@ public abstract class TestTomcatWebServerCustomizer
                 expiredClientKeyStore);
         certUtils.createTrustStore(serverCaCert, "PKCS12", KEYSTORE_PASSWORD, clientTrustStore);
 
-        //Metrics server
+        // Metrics server
         certUtils.createSelfSignedCACertificate(METRICS_SERVER_CA_COMMON_NAME, notBefore, notAfter, algorithm, metricsServerCaCert, metricsServerCaCertKey);
         certUtils.createCertificate(METRICS_SERVER_COMMON_NAME, notBefore, notAfter, metricsServerCaCert, metricsServerCaCertKey, metricsServerCert,
                 metricsServerCertKey);
@@ -249,10 +250,10 @@ public abstract class TestTomcatWebServerCustomizer
     public void testSuccessfulResponseWhenValidCertificate() throws IOException, GeneralSecurityException
     {
         HttpResponse response = configureHttpClient(clientKeyStore, clientTrustStore, KEYSTORE_PASSWORD).execute(new HttpGet(httpsUrl));
-        assertThat(response.getStatusLine().getStatusCode()).isEqualTo(HTTP_OK);
+        assertThat(response.getCode()).isEqualTo(HTTP_OK);
         HttpResponse metricsResponse = configureHttpClient(metricsClientKeyStore, metricsClientTrustStore,
                 KEYSTORE_PASSWORD).execute(new HttpGet(metricsServerHttpsUrl));
-        assertThat(metricsResponse.getStatusLine().getStatusCode()).isEqualTo(HTTP_OK);
+        assertThat(metricsResponse.getCode()).isEqualTo(HTTP_OK);
     }
 
     @Test
@@ -287,8 +288,13 @@ public abstract class TestTomcatWebServerCustomizer
                 .build();
 
         return HttpClients.custom()
-                .setSSLContext(sslContext)
-                .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+                .setConnectionManager(
+                        PoolingHttpClientConnectionManagerBuilder.create()
+                                .setSSLSocketFactory(SSLConnectionSocketFactoryBuilder.create()
+                                        .setSslContext(sslContext).setHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+                                        .build()
+                                ).build()
+                )
                 .build();
     }
 
@@ -309,12 +315,12 @@ public abstract class TestTomcatWebServerCustomizer
             addInlinedPropertiesToEnvironment(configurableApplicationContext,
                     "server.ssl.enabled=true",
                     "server.ssl.client-auth=need",
-                    "server.ssl.refresh-rate-in-ms=" + REFRESH_RATE,
+                    "server.ssl.refresh-rate-in-ms=" + REFRESH_RATE_IN_MS,
                     "metricsServer.enabled=true",
                     "metricsServer.port=0",
                     "metricsServer.ssl.enabled=true",
                     "metricsServer.ssl.client-auth=need",
-                    "metricsServer.ssl.refresh-rate-in-ms=" + METRICS_REFRESH_RATE);
+                    "metricsServer.ssl.refresh-rate-in-ms=" + METRICS_REFRESH_RATE_IN_MS);
         }
     }
 }

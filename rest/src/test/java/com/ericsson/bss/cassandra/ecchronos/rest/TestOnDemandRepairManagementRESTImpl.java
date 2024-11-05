@@ -184,7 +184,7 @@ public class TestOnDemandRepairManagementRESTImpl
         }
         catch (ResponseStatusException e)
         {
-            assertThat(e.getRawStatusCode()).isEqualTo(NOT_FOUND.value());
+            assertThat(e.getStatusCode().value()).isEqualTo(NOT_FOUND.value());
         }
         assertThat(response).isNull();
         response = OnDemandRest.getRepairs(expectedId.toString(), expectedHostId.toString());
@@ -198,7 +198,7 @@ public class TestOnDemandRepairManagementRESTImpl
         }
         catch (ResponseStatusException e)
         {
-            assertThat(e.getRawStatusCode()).isEqualTo(NOT_FOUND.value());
+            assertThat(e.getStatusCode().value()).isEqualTo(NOT_FOUND.value());
         }
         assertThat(response).isNull();
         response = OnDemandRest.getRepairs(expectedId.toString(), null);
@@ -460,7 +460,7 @@ public class TestOnDemandRepairManagementRESTImpl
         }
         catch (ResponseStatusException e)
         {
-            assertThat(e.getRawStatusCode()).isEqualTo(BAD_REQUEST.value());
+            assertThat(e.getStatusCode().value()).isEqualTo(BAD_REQUEST.value());
         }
         assertThat(response).isNull();
     }

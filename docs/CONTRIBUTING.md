@@ -9,9 +9,9 @@ For keeping track of the history it is recommended that most communication is pe
 ### Prerequisites
 
 * Maven
-* JDK11
+* Java 17 / 21
 * Docker (for test setup)
-* Python
+* Python 3
 
 ### Branches
 
@@ -75,8 +75,9 @@ The following table state what versions of ecChronos is still under active maint
 |  1.x.x  |  2019-Jan-25  |   -    |
 |  2.x.x  |  2021-Feb-25  |   -    |
 |  3.x.x  |  2022-Jun-30  |   -    |
-|  4.x.x  |  2022-Dec-15  |   X    |
+|  4.x.x  |  2022-Dec-15  |   -    |
 |  5.x.x  |  2023-Dec-06  |   X    |
+|  6.x.x  |  2024-???-??  |   X    |
 
 ### REST API
 

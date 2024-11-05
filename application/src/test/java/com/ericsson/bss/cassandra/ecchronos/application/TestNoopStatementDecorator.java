@@ -19,6 +19,8 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.MockMakers;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,8 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunWith(MockitoJUnitRunner.class)
 public class TestNoopStatementDecorator
 {
-    @Mock
-    private Statement mockStatement;
+    @Mock(mockMaker = MockMakers.SUBCLASS)
+    private Statement mockStatement = Mockito.mock(Statement.class, Mockito.withSettings().mockMaker(MockMakers.SUBCLASS));
 
     @Test
     public void testApplyPreservesStatement()

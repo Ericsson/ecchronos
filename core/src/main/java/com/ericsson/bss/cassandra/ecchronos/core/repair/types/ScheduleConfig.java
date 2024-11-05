@@ -18,8 +18,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions.RepairParallelism;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.ScheduledRepairJobView;
 
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import java.util.Objects;
 
 /**

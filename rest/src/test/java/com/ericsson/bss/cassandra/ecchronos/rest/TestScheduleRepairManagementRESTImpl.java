@@ -176,7 +176,7 @@ public class TestScheduleRepairManagementRESTImpl
         }
         catch (ResponseStatusException e)
         {
-            assertThat(e.getRawStatusCode()).isEqualTo(NOT_FOUND.value());
+            assertThat(e.getStatusCode().value()).isEqualTo(NOT_FOUND.value());
         }
 
         assertThat(response).isNull();
@@ -196,7 +196,7 @@ public class TestScheduleRepairManagementRESTImpl
         }
         catch (ResponseStatusException e)
         {
-            assertThat(e.getRawStatusCode()).isEqualTo(NOT_FOUND.value());
+            assertThat(e.getStatusCode().value()).isEqualTo(NOT_FOUND.value());
         }
         assertThat(response).isNull();
 

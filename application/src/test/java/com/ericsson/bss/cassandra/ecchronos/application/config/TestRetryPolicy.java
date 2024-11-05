@@ -21,10 +21,13 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.mockito.Mock;
+import org.mockito.MockMakers;
 
 public class TestRetryPolicy {
 
-    RetryPolicy retryPolicy = Mockito.mock(RetryPolicy.class);
+    @Mock(mockMaker = MockMakers.SUBCLASS)
+    RetryPolicy retryPolicy = Mockito.mock(RetryPolicy.class, Mockito.withSettings().mockMaker(MockMakers.SUBCLASS));
 
     @Before
     public void setup()

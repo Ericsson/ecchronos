@@ -16,7 +16,7 @@
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
 import com.ericsson.bss.cassandra.ecchronos.application.utils.CertUtils;
-import org.awaitility.Duration;
+import java.time.Duration;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,7 +26,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.atLeast;
@@ -47,11 +46,16 @@ public class TestTomcatWebServerCustomizerPEMEC extends TestTomcatWebServerCusto
     @Test
     public void testSuccessfulCertificateReloadingWithTrustCertificate()
     {
-        await().atMost(new Duration(REFRESH_RATE * (INVOCATION_COUNT + 10), TimeUnit.MILLISECONDS)).untilAsserted(
-                () -> verify(tomcatWebServerCustomizer, atLeast(INVOCATION_COUNT)).reloadDefaultTrustStore());
-        await().atMost(new Duration(METRICS_REFRESH_RATE * (INVOCATION_COUNT + 10), TimeUnit.MILLISECONDS))
-                .untilAsserted(
-                        () -> verify(tomcatWebServerCustomizer, atLeast(INVOCATION_COUNT)).reloadMetricsTrustStore());
+        await().atMost(
+                Duration.ofMillis(REFRESH_RATE_IN_MS * (INVOCATION_COUNT + 10)))
+                .untilAsserted(() -> verify(tomcatWebServerCustomizer, atLeast(INVOCATION_COUNT))
+                        .reloadDefaultTrustStore()
+                );
+        await().atMost(
+                Duration.ofMillis(METRICS_REFRESH_RATE_IN_MS * (INVOCATION_COUNT + 10)))
+                .untilAsserted(() -> verify(tomcatWebServerCustomizer, atLeast(INVOCATION_COUNT))
+                        .reloadMetricsTrustStore()
+                );
     }
 
     static class PropertyOverrideContextInitializer

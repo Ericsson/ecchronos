@@ -29,6 +29,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import java.util.concurrent.TimeUnit;
 
@@ -92,6 +93,7 @@ public class RepairHistoryBean
     }
 
     @Bean
+    @Primary
     public RepairHistoryProvider repairHistoryProvider()
     {
         return repairHistoryProvider;
