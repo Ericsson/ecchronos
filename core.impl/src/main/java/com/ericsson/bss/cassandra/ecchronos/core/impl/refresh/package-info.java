@@ -12,28 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.connection;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.List;
-
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.metadata.Node;
-
-public interface DistributedNativeConnectionProvider extends Closeable
-{
-    CqlSession getCqlSession();
-
-    List<Node> getNodes();
-
-
-    @Override
-    default void close() throws IOException
-    {
-    }
-    void addNode(Node myNode);
-
-    void removeNode(Node myNode);
-    Boolean confirmNodeValid(Node node);
-}
+/**
+ * Contains the implementations and resources for repair operations.
+ */
+package com.ericsson.bss.cassandra.ecchronos.core.impl.refresh;

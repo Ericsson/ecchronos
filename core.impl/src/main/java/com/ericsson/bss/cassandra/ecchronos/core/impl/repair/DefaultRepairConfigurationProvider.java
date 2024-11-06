@@ -14,6 +14,10 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 
+import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.refresh.NodeAddedAction;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.refresh.NodeRemovedAction;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairScheduler;
@@ -23,6 +27,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.HashSet;
@@ -41,6 +47,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.ViewMetadata;
 import com.datastax.oss.driver.api.core.session.Session;
 import com.datastax.oss.driver.api.core.type.UserDefinedType;
 
+import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +60,7 @@ import org.slf4j.LoggerFactory;
 public class DefaultRepairConfigurationProvider extends NodeStateListenerBase implements SchemaChangeListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultRepairConfigurationProvider.class);
+    private static final Integer NO_OF_THREADS = 1;
 
     private CqlSession mySession;
     private List<Node> myNodes;
@@ -60,13 +68,17 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     private RepairScheduler myRepairScheduler;
     private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
     private TableReferenceFactory myTableReferenceFactory;
+    private final ExecutorService myService;
+    private EccNodesSync myEccNodesSync;
+    private DistributedJmxConnectionProvider myJmxConnectionProvider;
+    private DistributedNativeConnectionProvider myAgentNativeConnectionProvider;
 
     /**
      * Default constructor.
      */
     public DefaultRepairConfigurationProvider()
     {
-        //NOOP
+        myService = Executors.newFixedThreadPool(NO_OF_THREADS);
     }
 
     private DefaultRepairConfigurationProvider(final Builder builder)
@@ -78,8 +90,12 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         myRepairConfigurationFunction = builder.myRepairConfigurationFunction;
         myTableReferenceFactory = Preconditions.checkNotNull(builder.myTableReferenceFactory,
                 "Table reference factory must be set");
+        myEccNodesSync = builder.myEccNodesSync;
+        myJmxConnectionProvider = builder.myJmxConnectionProvider;
+        myAgentNativeConnectionProvider = builder.myAgentNativeConnectionProvider;
 
         setupConfiguration();
+        myService = Executors.newFixedThreadPool(NO_OF_THREADS);
     }
 
     /**
@@ -96,6 +112,9 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         myRepairConfigurationFunction = builder.myRepairConfigurationFunction;
         myTableReferenceFactory = Preconditions.checkNotNull(builder.myTableReferenceFactory,
                 "Table reference factory must be set");
+        myEccNodesSync = builder.myEccNodesSync;
+        myJmxConnectionProvider = builder.myJmxConnectionProvider;
+        myAgentNativeConnectionProvider = builder.myAgentNativeConnectionProvider;
 
         setupConfiguration();
     }
@@ -441,6 +460,30 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     }
 
     /**
+     * Callback for when a new node is added to the cluster.
+     * @param node
+     */
+    @Override
+    public void onAdd(final Node node)
+    {
+        LOG.info("Node added {}", node.getHostId());
+        NodeAddedAction callable = new NodeAddedAction(myEccNodesSync, myJmxConnectionProvider, myAgentNativeConnectionProvider, node);
+        myService.submit(callable);
+    }
+
+    /**
+     * callback for when a node is removed from the cluster.
+     * @param node
+     */
+    @Override
+    public void onRemove(final Node node)
+    {
+        LOG.info("Node removed {}", node.getHostId());
+        NodeRemovedAction callable = new NodeRemovedAction(myEccNodesSync, myJmxConnectionProvider, myAgentNativeConnectionProvider, node);
+        myService.submit(callable);
+    }
+
+    /**
      * This will go through all the configuration, given mySession is set, otherwise it will just silently
      * return.
      */
@@ -477,6 +520,10 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         private RepairScheduler myRepairScheduler;
         private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
         private TableReferenceFactory myTableReferenceFactory;
+        private EccNodesSync myEccNodesSync;
+        private DistributedJmxConnectionProvider myJmxConnectionProvider;
+        private DistributedNativeConnectionProvider myAgentNativeConnectionProvider;
+
 
         /**
          * Build with session.
@@ -560,6 +607,39 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         public Builder withNodesList(final List<Node> nodesList)
         {
             myNodesList = nodesList;
+            return this;
+        }
+
+        /**
+         * Build with EccNodesSync.
+         * @param eccNodesSync
+         * @return Builder with EccNodesSync
+         */
+        public Builder withEccNodesSync(final EccNodesSync eccNodesSync)
+        {
+            myEccNodesSync = eccNodesSync;
+            return this;
+        }
+
+        /**
+         * Build with DistributedNativeConnectionProvider.
+         * @param agentNativeConnectionProvider
+         * @return
+         */
+        public Builder withDistributedNativeConnectionProvider(final DistributedNativeConnectionProvider agentNativeConnectionProvider)
+        {
+            myAgentNativeConnectionProvider = agentNativeConnectionProvider;
+            return this;
+        }
+
+        /**
+         * Build with DistributedJmxConnectionProvider.
+         * @param jmxConnectionProvider
+         * @return Builder with DistributedJmxConnectionProvider
+         */
+        public Builder withJmxConnectionProvider(final DistributedJmxConnectionProvider jmxConnectionProvider)
+        {
+            myJmxConnectionProvider = jmxConnectionProvider;
             return this;
         }
 

@@ -85,7 +85,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
             sslEngineFactory = certificateHandler;
         }
 
-        DistributedNativeBuilder nativeConnectionBuilder =
+       DistributedNativeBuilder nativeConnectionBuilder =
                 DistributedNativeConnectionProviderImpl.builder()
                         .withInitialContactPoints(resolveInitialContactPoints(agentConnectionConfig.getContactPoints()))
                         .withAgentType(agentConnectionConfig.getType())
@@ -94,6 +94,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
                         .withSslEngineFactory(sslEngineFactory)
                         .withSchemaChangeListener(defaultRepairConfigurationProvider)
                         .withNodeStateListener(defaultRepairConfigurationProvider);
+
         LOG.info("Preparing Agent Connection Config");
         nativeConnectionBuilder = resolveAgentProviderBuilder(nativeConnectionBuilder, agentConnectionConfig);
         LOG.info("Establishing Connection With Nodes");
@@ -283,5 +284,33 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
     public void close() throws IOException
     {
         myDistributedNativeConnectionProviderImpl.close();
+    }
+    /**
+     * Add a nw node to the list of nodes.
+     * @param myNode
+     */
+    @Override
+    public void addNode(final Node myNode)
+    {
+        myDistributedNativeConnectionProviderImpl.addNode(myNode);
+    }
+    /**
+     * Remove node for the list of nodes.
+     * @param myNode
+     */
+    @Override
+    public void removeNode(final Node myNode)
+    {
+        myDistributedNativeConnectionProviderImpl.removeNode(myNode);
+    }
+    /**
+     * Checks the node is on the list of specified dc's/racks/nodes.
+     * @param node
+     * @return
+     */
+    @Override
+    public Boolean confirmNodeValid(final Node node)
+    {
+        return myDistributedNativeConnectionProviderImpl.confirmNodeValid(node);
     }
 }

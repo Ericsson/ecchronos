@@ -81,6 +81,9 @@ public class ECChronos implements Closeable
                 .withNodesList(nativeConnectionProvider.getNodes())
                 .withReplicatedTableProvider(myECChronosInternals.getReplicatedTableProvider())
                 .withRepairConfiguration(repairConfigurationProvider::get)
+                .withEccNodesSync(eccNodesSync)
+                .withJmxConnectionProvider(jmxConnectionProvider)
+                .withDistributedNativeConnectionProvider(nativeConnectionProvider)
                 .withTableReferenceFactory(myECChronosInternals.getTableReferenceFactory()));
 
         myECChronosInternals.addRunPolicy(myTimeBasedRunPolicy);
