@@ -16,18 +16,26 @@ package cassandracluster;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.StartContainerCmd;
+import com.github.dockerjava.api.command.StopContainerCmd;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.DockerComposeContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.node.BooleanNode;
 
 public class AbstractCassandraCluster
 {
-    private static DockerComposeContainer<?> composeContainer;
+    protected static DockerComposeContainer<?> composeContainer;
     private static final Logger LOG = LoggerFactory.getLogger(AbstractCassandraCluster.class);
     protected static String containerIP;
     protected static CqlSession mySession;
@@ -41,7 +49,6 @@ public class AbstractCassandraCluster
                 .resolve("cassandra-test-image/src/main/docker/docker-compose.yml");
         composeContainer = new DockerComposeContainer<>(dockerComposePath.toFile());
         composeContainer.start();
-
         LOG.info("Waiting for the Cassandra cluster to finish starting up.");
         Thread.sleep(50000);
 
@@ -63,6 +70,35 @@ public class AbstractCassandraCluster
             mySession.close();
         }
         composeContainer.stop();
+    }
+
+    protected void decommissionNode ( String node) throws IOException, InterruptedException
+    {
+        String stdout = composeContainer.getContainerByServiceName(node).get()
+                .execInContainer("nodetool", "-u", "cassandra", "-pw", "cassandra", "decommission").getStdout();
+    }
+
+    protected void startContainer ( String node)
+    {
+        DockerClient dockerClient = DockerClientFactory.instance().client();
+        String container = composeContainer
+                .getContainerByServiceName(node).get().getContainerId();
+
+        try (StartContainerCmd startCmd3 = dockerClient.startContainerCmd(container))
+        {
+            startCmd3.exec();
+        }
+    }
+
+    protected void stopContainer ( String node)
+    {
+        DockerClient dockerClient = DockerClientFactory.instance().client();
+        String container = composeContainer
+                .getContainerByServiceName(node).get().getContainerId();
+        try (StopContainerCmd stopCmd = dockerClient.stopContainerCmd(container))
+        {
+            stopCmd.exec();
+        }
     }
 }
 
