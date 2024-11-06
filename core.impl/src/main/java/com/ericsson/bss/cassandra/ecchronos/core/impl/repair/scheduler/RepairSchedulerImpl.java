@@ -17,6 +17,8 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.AlarmPostUpdateHook;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairScheduler;
@@ -24,10 +26,16 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManage
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
+import com.ericsson.bss.cassandra.ecchronos.core.state.RepairState;
+import com.ericsson.bss.cassandra.ecchronos.core.state.RepairStateFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairPolicy;
+import com.ericsson.bss.cassandra.ecchronos.core.table.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryService;
+import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.Closeable;
 
@@ -63,12 +71,15 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
     private final ExecutorService myExecutor;
     private final TableRepairMetrics myTableRepairMetrics;
-
+    private final RepairHistoryService myRepairHistoryService;
+    private final RepairFaultReporter myFaultReporter;
     private final DistributedJmxProxyFactory myJmxProxyFactory;
     private final ScheduleManager myScheduleManager;
+    private final RepairStateFactory myRepairStateFactory;
     private final ReplicationState myReplicationState;
     private final CassandraMetrics myCassandraMetrics;
     private final List<TableRepairPolicy> myRepairPolicies;
+    private final TableStorageStates myTableStorageStates;
 
     private Set<ScheduledRepairJob> validateScheduleMap(final UUID nodeID, final TableReference tableReference)
     {
@@ -86,12 +97,16 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     {
         myExecutor = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder().setNameFormat("RepairScheduler-%d").build());
+        myFaultReporter = builder.myFaultReporter;
         myTableRepairMetrics = builder.myTableRepairMetrics;
         myJmxProxyFactory = builder.myJmxProxyFactory;
         myScheduleManager = builder.myScheduleManager;
+        myRepairStateFactory = builder.myRepairStateFactory;
         myReplicationState = builder.myReplicationState;
         myRepairPolicies = new ArrayList<>(builder.myRepairPolicies);
         myCassandraMetrics = builder.myCassandraMetrics;
+        myRepairHistoryService = builder.myRepairHistoryService;
+        myTableStorageStates = builder.myTableStorageStates;
     }
 
     @Override
@@ -277,17 +292,42 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
                 .withPriorityGranularity(repairConfiguration.getPriorityGranularityUnit())
                 .build();
         ScheduledRepairJob job;
-        job = new IncrementalRepairJob.Builder()
-                .withConfiguration(configuration)
-                .withNode(node)
-                .withJmxProxyFactory(myJmxProxyFactory)
-                .withTableReference(tableReference)
-                .withRepairConfiguration(repairConfiguration)
-                .withTableRepairMetrics(myTableRepairMetrics)
-                .withCassandraMetrics(myCassandraMetrics)
-                .withReplicationState(myReplicationState)
-                .withRepairPolices(myRepairPolicies)
-                .build();
+        if (repairConfiguration.getRepairType().equals(RepairType.INCREMENTAL))
+        {
+            LOG.info("Creating IncrementalRepairJob for node {}", node.getHostId());
+            job = new IncrementalRepairJob.Builder()
+                    .withConfiguration(configuration)
+                    .withNode(node)
+                    .withJmxProxyFactory(myJmxProxyFactory)
+                    .withTableReference(tableReference)
+                    .withRepairConfiguration(repairConfiguration)
+                    .withTableRepairMetrics(myTableRepairMetrics)
+                    .withCassandraMetrics(myCassandraMetrics)
+                    .withReplicationState(myReplicationState)
+                    .withRepairPolices(myRepairPolicies)
+                    .build();
+        }
+        else
+        {
+            LOG.info("Creating TableRepairJob for table {}.{} in node {}",
+                    tableReference.getKeyspace(), tableReference.getTable(), node.getHostId());
+            AlarmPostUpdateHook alarmPostUpdateHook = new AlarmPostUpdateHook(tableReference, repairConfiguration,
+                    myFaultReporter);
+            RepairState repairState = myRepairStateFactory.create(node, tableReference, repairConfiguration,
+                    alarmPostUpdateHook);
+            job = new TableRepairJob.Builder()
+                    .withConfiguration(configuration)
+                    .withJmxProxyFactory(myJmxProxyFactory)
+                    .withTableReference(tableReference)
+                    .withRepairState(repairState)
+                    .withTableRepairMetrics(myTableRepairMetrics)
+                    .withRepairConfiguration(repairConfiguration)
+                    .withTableStorageStates(myTableStorageStates)
+                    .withRepairPolices(myRepairPolicies)
+                    .withRepairHistory(myRepairHistoryService)
+                    .withNode(node)
+                    .build();
+        }
         job.refreshState();
         return job;
     }
@@ -308,12 +348,51 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     public static class Builder
     {
         private DistributedJmxProxyFactory myJmxProxyFactory;
+        private RepairFaultReporter myFaultReporter;
+        private RepairStateFactory myRepairStateFactory;
         private ScheduleManager myScheduleManager;
         private ReplicationState myReplicationState;
         private CassandraMetrics myCassandraMetrics;
         private final List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
         private TableRepairMetrics myTableRepairMetrics;
+        private RepairHistoryService myRepairHistoryService;
+        private TableStorageStates myTableStorageStates;
 
+        /**
+         * RepairSchedulerImpl build with fault reporter.
+         *
+         * @param repairFaultReporter Repair fault reporter.
+         * @return Builder
+         */
+        public Builder withFaultReporter(final RepairFaultReporter repairFaultReporter)
+        {
+            myFaultReporter = repairFaultReporter;
+            return this;
+        }
+
+        /**
+         * RepairSchedulerImpl build with repair history.
+         *
+         * @param repairHistory Repair history.
+         * @return Builder
+         */
+        public Builder withRepairHistory(final RepairHistoryService repairHistory)
+        {
+            myRepairHistoryService = repairHistory;
+            return this;
+        }
+
+        /**
+         * RepairSchedulerImpl build with table storage states.
+         *
+         * @param tableStorageStates Table storage states.
+         * @return Builder
+         */
+        public Builder withTableStorageStates(final TableStorageStates tableStorageStates)
+        {
+            myTableStorageStates = tableStorageStates;
+            return this;
+        }
 
         /**
          * RepairSchedulerImpl build with JMX proxy factory.
@@ -336,6 +415,18 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         public Builder withScheduleManager(final ScheduleManager scheduleManager)
         {
             myScheduleManager = scheduleManager;
+            return this;
+        }
+
+        /**
+         * RepairSchedulerImpl build with repair state factory.
+         *
+         * @param repairStateFactory Repair state factory.
+         * @return Builder
+         */
+        public Builder withRepairStateFactory(final RepairStateFactory repairStateFactory)
+        {
+            myRepairStateFactory = repairStateFactory;
             return this;
         }
 

@@ -444,7 +444,7 @@ public abstract class RepairTask implements NotificationListener
     }
 
     @VisibleForTesting
-    final Set<LongTokenRange> getSuccessfulRanges()
+    protected final Set<LongTokenRange> getSuccessfulRanges()
     {
         return mySuccessfulRanges;
     }

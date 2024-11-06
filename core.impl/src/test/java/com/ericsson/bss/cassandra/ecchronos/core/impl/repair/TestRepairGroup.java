@@ -23,16 +23,20 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
 
 
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairTask;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
+import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryService;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairParallelism;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobException;
@@ -68,13 +72,26 @@ public class TestRepairGroup
     @Mock
     private TableRepairMetrics myTableRepairMetrics;
 
+    @Mock
+    private RepairHistoryService myRepairHistoryService;
+
+    @Mock
+    private RepairHistory.RepairSession myRepairSession;
+
+    @Mock
+    private Node mockNode;
+
     private final UUID myNodeID = UUID.randomUUID();
+
+    private final UUID myJobId = UUID.randomUUID();
 
     private RepairConfiguration myRepairConfiguration;
 
     @Before
     public void init()
     {
+        when(mockNode.getHostId()).thenReturn(myNodeID);
+        when(myRepairHistoryService.newSession(any(), any(), any(), any(), any())).thenReturn(myRepairSession);
         myRepairConfiguration = RepairConfiguration.newBuilder()
                 .withParallelism(RepairParallelism.PARALLEL)
                 .withRepairWarningTime(RUN_INTERVAL_IN_DAYS * 2, TimeUnit.DAYS)
@@ -125,7 +142,7 @@ public class TestRepairGroup
         ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range), System.currentTimeMillis());
 
-        RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).build(PRIORITY));
+        RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).withNode(mockNode).build(PRIORITY));
         RepairTask repairTask1 = mock(RepairTask.class);
         RepairTask repairTask2 = mock(RepairTask.class);
         RepairTask repairTask3 = mock(RepairTask.class);
@@ -151,7 +168,7 @@ public class TestRepairGroup
         ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range), System.currentTimeMillis());
 
-        RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).build(PRIORITY));
+        RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).withNode(mockNode).build(PRIORITY));
         RepairTask repairTask1 = mock(RepairTask.class);
         RepairTask repairTask2 = mock(RepairTask.class);
         RepairTask repairTask3 = mock(RepairTask.class);
@@ -177,7 +194,7 @@ public class TestRepairGroup
         ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range), System.currentTimeMillis());
 
-        RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).build(PRIORITY));
+        RepairGroup repairGroup = spy(builderFor(replicaRepairGroup).withNode(mockNode).build(PRIORITY));
         RepairTask repairTask1 = mock(RepairTask.class);
         RepairTask repairTask2 = mock(RepairTask.class);
         RepairTask repairTask3 = mock(RepairTask.class);
@@ -201,7 +218,9 @@ public class TestRepairGroup
                 .withRepairConfiguration(myRepairConfiguration)
                 .withReplicaRepairGroup(replicaRepairGroup)
                 .withJmxProxyFactory(myJmxProxyFactory)
-                .withTableRepairMetrics(myTableRepairMetrics);
+                .withTableRepairMetrics(myTableRepairMetrics)
+                .withRepairHistory(myRepairHistoryService)
+                .withJobId(myJobId);
     }
 
     private DriverNode mockNode(String dataCenter)

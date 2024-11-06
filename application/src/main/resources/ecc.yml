@@ -238,7 +238,7 @@ repair:
   ## parallel_vnode = repair vnodes in parallel, this will combine vnodes into a single repair session per repair group
   ## incremental = repair vnodes incrementally (incremental repair)
   ##
-  repair_type: incremental
+  repair_type: vnode
 
 run_policy:
   time_based:

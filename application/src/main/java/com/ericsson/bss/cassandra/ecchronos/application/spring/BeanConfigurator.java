@@ -24,13 +24,17 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.metadata.NodeResolverImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
+import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryService;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 
+import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
+import com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ConfigurationException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
 import java.net.InetAddress;
 import java.io.IOException;
 import java.net.UnknownHostException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -172,6 +176,12 @@ public class BeanConfigurator
         return factory;
     }
 
+    @Bean
+    public RepairFaultReporter repairFaultReporter() throws ConfigurationException
+    {
+        return new LoggingFaultReporter();
+    }
+
     /**
      * Provides a {@link DistributedNativeConnectionProvider} bean to manage Cassandra native connections.
      *
@@ -255,6 +265,17 @@ public class BeanConfigurator
         return new ReplicationStateImpl(nodeResolver, session);
     }
 
+    @Bean
+    public RepairHistoryService repairHistoryService(
+            final DistributedNativeConnectionProvider distributedNativeConnectionProvider,
+            final NodeResolver nodeResolver,
+            final ReplicationState replicationState,
+            final Config config
+    )
+    {
+        return getRepairHistoryService(distributedNativeConnectionProvider, nodeResolver, replicationState, config);
+    }
+
     private Security getSecurityConfig() throws ConfigurationException
     {
         return ConfigurationHelper.DEFAULT_INSTANCE.getConfiguration(SECURITY_FILE, Security.class);
@@ -329,5 +350,22 @@ public class BeanConfigurator
         myEccNodesSync.acquireNodes();
         LOG.info("Nodes acquired with success");
         return myEccNodesSync;
+    }
+
+    private RepairHistoryService getRepairHistoryService(
+            final DistributedNativeConnectionProvider distributedNativeConnectionProvider,
+            final NodeResolver nodeResolver,
+            final ReplicationState replicationState,
+            final Config config
+    )
+    {
+        long interval = config.getRepairConfig().getRepairHistoryLookback().getInterval(TimeUnit.MILLISECONDS);
+        long repairHistoryLookBack = TimeUnit.MILLISECONDS.convert(interval, TimeUnit.MILLISECONDS);
+        return new RepairHistoryService(
+                distributedNativeConnectionProvider.getCqlSession(),
+                replicationState,
+                nodeResolver,
+                repairHistoryLookBack
+        );
     }
 }

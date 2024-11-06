@@ -77,6 +77,8 @@
         <module>core</module>
         <module>core.impl</module>
         <module>utils</module>
+        <module>fault.manager</module>
+        <module>fault.manager.impl</module>
     </modules>
 
     <properties>
