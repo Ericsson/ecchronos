@@ -14,6 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.table;
 
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
@@ -47,11 +49,15 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
 
     private final ReplicatedTableProvider myReplicatedTableProvider;
     private final DistributedJmxProxyFactory myJmxProxyFactory;
+    private final DistributedNativeConnectionProvider myNativeConnectionProvider;
 
     private TableStorageStatesImpl(final Builder builder)
     {
         myReplicatedTableProvider = builder.myReplicatedTableProvider;
         myJmxProxyFactory = builder.myJmxProxyFactory;
+        myNativeConnectionProvider = builder.myNativeConnectionProvider;
+
+        initializeEmptyTableSizeMap();
 
         myScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder().setNameFormat("TableStateUpdater-%d").build());
@@ -61,12 +67,35 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
                 TimeUnit.MILLISECONDS);
     }
 
+    private void initializeEmptyTableSizeMap()
+    {
+        for (Node node : myNativeConnectionProvider.getNodes())
+        {
+            UUID nodeID = node.getHostId();
+            initializeEmptyNodeMap(nodeID);
+        }
+    }
+
+    private void initializeEmptyNodeMap(final UUID nodeID)
+    {
+        Map<UUID, ImmutableMap<TableReference, Long>> emptyNewEntry = new HashMap<>();
+        Map<TableReference, Long> emptyDataSizes = new HashMap<>();
+        ImmutableMap<TableReference, Long> emptyTableSize = ImmutableMap.copyOf(emptyDataSizes);
+        emptyNewEntry.put(nodeID, emptyTableSize);
+        myTableSizes.set(emptyNewEntry);
+    }
+
     @Override
     public long getDataSize(final UUID nodeID, final TableReference tableReference)
     {
         Map<UUID, ImmutableMap<TableReference, Long>> dataSizes = myTableSizes.get();
 
-        if (dataSizes != null && dataSizes.containsKey(nodeID) && dataSizes.get(nodeID).containsKey(tableReference))
+        if (!dataSizes.containsKey(nodeID))
+        {
+            initializeEmptyNodeMap(nodeID);
+        }
+
+        if (dataSizes.get(nodeID).containsKey(tableReference))
         {
                 return dataSizes.get(nodeID).get(tableReference);
         }
@@ -77,9 +106,15 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
     public long getDataSize(final UUID nodeID)
     {
         Map<UUID, ImmutableMap<TableReference, Long>> dataSizesMap = myTableSizes.get();
+
+        if (!dataSizesMap.containsKey(nodeID))
+        {
+            initializeEmptyNodeMap(nodeID);
+        }
+
         ImmutableMap<TableReference, Long> dataSizes = dataSizesMap.get(nodeID);
 
-        if (dataSizes != null)
+        if (dataSizes != null && !dataSizes.isEmpty())
         {
             return dataSizes.values().stream().mapToLong(e -> e).sum();
         }
@@ -104,6 +139,7 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
     {
         private ReplicatedTableProvider myReplicatedTableProvider;
         private DistributedJmxProxyFactory myJmxProxyFactory;
+        private DistributedNativeConnectionProvider myNativeConnectionProvider;
 
         private long myInitialDelayInMs = 0;
         private long myUpdateDelayInMs = DEFAULT_UPDATE_DELAY_IN_MS;
@@ -117,6 +153,12 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
         public final Builder withJmxProxyFactory(final DistributedJmxProxyFactory jmxProxyFactory)
         {
             myJmxProxyFactory = jmxProxyFactory;
+            return this;
+        }
+
+        public final Builder withConnectionProvider(final DistributedNativeConnectionProvider nativeConnectionProvider)
+        {
+            myNativeConnectionProvider = nativeConnectionProvider;
             return this;
         }
 
@@ -142,6 +184,11 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
             if (myJmxProxyFactory == null)
             {
                 throw new IllegalArgumentException("JMX proxy factory cannot be null");
+            }
+
+            if (myNativeConnectionProvider == null)
+            {
+                throw new IllegalArgumentException("Native connection provider cannot be null");
             }
 
             return new TableStorageStatesImpl(this);

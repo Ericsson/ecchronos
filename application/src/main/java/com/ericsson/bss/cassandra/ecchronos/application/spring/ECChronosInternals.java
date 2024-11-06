@@ -87,6 +87,7 @@ public class ECChronosInternals implements Closeable
         myTableStorageStatesImpl = TableStorageStatesImpl.builder()
                 .withReplicatedTableProvider(myReplicatedTableProvider)
                 .withJmxProxyFactory(myJmxProxyFactory)
+                .withConnectionProvider(nativeConnectionProvider)
                 .build();
 
         myCassandraMetrics = new CassandraMetrics(myJmxProxyFactory);

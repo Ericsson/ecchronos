@@ -82,12 +82,13 @@ public class RepairGroup extends ScheduledTask
                 .checkNotNull(builder.myTableRepairMetrics, "Table repair metrics must be set");
         myRepairPolicies = new ArrayList<>(Preconditions
                 .checkNotNull(builder.myRepairPolicies, "Repair policies must be set"));
-        if (!myRepairConfiguration.getRepairType().equals(RepairType.INCREMENTAL))
+
+        if (!RepairType.INCREMENTAL.equals(myRepairConfiguration.getRepairType()))
         {
             myRepairHistory = Preconditions
                     .checkNotNull(builder.myRepairHistory, "Repair History must be set");
         }
-        if (myRepairConfiguration.getRepairType().equals(RepairType.VNODE))
+        if (RepairType.VNODE.equals(myRepairConfiguration.getRepairType()))
         {
             myNode = Preconditions
                     .checkNotNull(builder.myNode, "Node must be set");
