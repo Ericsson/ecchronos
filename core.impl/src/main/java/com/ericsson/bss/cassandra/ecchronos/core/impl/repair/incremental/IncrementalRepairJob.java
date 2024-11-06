@@ -132,7 +132,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .withTableRepairMetrics(getTableRepairMetrics())
                 .withReplicaRepairGroup(replicaRepairGroup)
-                .withRepairPolicies(getRepairPolicies());
+                .withRepairPolicies(getRepairPolicies()).withJobId(getId());
         List<ScheduledTask> taskList = new ArrayList<>();
         taskList.add(builder.build(getRealPriority()));
         return taskList.iterator();

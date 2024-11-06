@@ -18,6 +18,8 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.uuid.Uuids;
+import com.ericsson.bss.cassandra.ecchronos.core.metadata.NodeResolver;
+import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.data.utils.AbstractCassandraTest;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairStatus;
 import java.io.IOException;
@@ -28,6 +30,7 @@ import java.util.UUID;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
 
 import static com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryData.Builder;
 import static com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryData.copyOf;
@@ -37,7 +40,6 @@ import static org.junit.Assert.assertTrue;
 
 public class TestRepairHistoryService extends AbstractCassandraTest
 {
-
     private static final String ECCHRONOS_KEYSPACE = "ecchronos";
     private static final String COLUMN_NODE_ID = "node_id";
     private static final String COLUMN_TABLE_ID = "table_id";
@@ -46,6 +48,12 @@ public class TestRepairHistoryService extends AbstractCassandraTest
     private static final String COLUMN_STATUS = "status";
 
     private RepairHistoryService myRepairHistoryService;
+
+    @Mock
+    NodeResolver mockNodeResolver;
+
+    @Mock
+    ReplicationState mockReplicationState;
 
     @Before
     public void setup() throws IOException
@@ -70,7 +78,11 @@ public class TestRepairHistoryService extends AbstractCassandraTest
                         "WITH CLUSTERING ORDER BY (repair_id DESC);",
                 ECCHRONOS_KEYSPACE);
         AbstractCassandraTest.mySession.execute(query);
-        myRepairHistoryService = new RepairHistoryService(AbstractCassandraTest.mySession);
+        myRepairHistoryService = new RepairHistoryService(
+                AbstractCassandraTest.mySession,
+                mockReplicationState,
+                mockNodeResolver,
+                1L);
     }
 
     @After

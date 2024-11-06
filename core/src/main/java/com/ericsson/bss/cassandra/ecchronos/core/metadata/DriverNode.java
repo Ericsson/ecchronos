@@ -65,6 +65,15 @@ public class DriverNode
     }
 
     /**
+     * Get the whole node object.
+     *
+     * @return the node.
+     */
+    public Node getNode()
+    {
+        return node;
+    }
+    /**
      * Check for equality.
      */
     @Override

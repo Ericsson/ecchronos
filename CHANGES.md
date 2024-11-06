@@ -2,6 +2,8 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Create New Repair Type Called "VNODE" - Issue #755
+* Create ReplicaRepairGroup Class for Grouping Replicas and Token Ranges - Issue #721
 * Hot Reload of Nodes List - Issue #699
 * Investigate Creation of RepairScheduler and ScheduleManager #714
 * Implement ScheduledJobQueue for Prioritized Job Management and Execution - Issue #740

@@ -64,6 +64,18 @@
 
         <dependency>
             <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
+            <artifactId>fault.manager</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
+            <artifactId>fault.manager.impl</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
             <artifactId>utils</artifactId>
             <version>${project.version}</version>
         </dependency>
