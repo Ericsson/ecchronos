@@ -82,7 +82,7 @@
         <org.apache.commons.io.version>2.17.0</org.apache.commons.io.version>
         <org.apache.felix.scr.version>2.2.12</org.apache.felix.scr.version>
         <org.apache.httpcomponents.client.version>5.3.1</org.apache.httpcomponents.client.version>
-        <org.bouncycastle.bcpkix-jdk18on.version>1.78.1</org.bouncycastle.bcpkix-jdk18on.version>
+        <org.bouncycastle.bcpkix-jdk18on.version>1.79</org.bouncycastle.bcpkix-jdk18on.version>
         <org.hdrhistogram.version>2.2.2</org.hdrhistogram.version>
         <org.springframework.boot.version>3.3.5</org.springframework.boot.version>
         <org.springframework.web.version>6.1.14</org.springframework.web.version>
@@ -798,7 +798,7 @@ limitations under the License.
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>${org.apache.maven.plugins-maven-checkstyle-plugin.version}</version>
                 <configuration>
-                    <encoding>UTF-8</encoding>
+                    <inputEncoding>UTF-8</inputEncoding>
                     <consoleOutput>true</consoleOutput>
                     <configLocation>check_style.xml</configLocation>
                     <failOnViolation>true</failOnViolation>
