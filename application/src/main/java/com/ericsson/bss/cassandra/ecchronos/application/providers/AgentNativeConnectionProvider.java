@@ -28,6 +28,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnecti
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.DistributedNativeBuilder;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedNativeConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,13 +63,13 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
      *         the handler for managing SSL/TLS certificates.
      */
     public AgentNativeConnectionProvider(
-            final Config config,
-            final Supplier<Security.CqlSecurity> cqlSecuritySupplier,
-            final CertificateHandler certificateHandler,
-            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider
-    )
+                                         final Config config,
+                                         final Supplier<Security.CqlSecurity> cqlSecuritySupplier,
+                                         final CertificateHandler certificateHandler,
+                                         final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
     {
-        AgentConnectionConfig agentConnectionConfig = config.getConnectionConfig().getCqlConnection()
+        AgentConnectionConfig agentConnectionConfig = config.getConnectionConfig()
+                .getCqlConnection()
                 .getAgentConnectionConfig();
         Security.CqlSecurity cqlSecurity = cqlSecuritySupplier.get();
         boolean authEnabled = cqlSecurity.getCqlCredentials().isEnabled();
@@ -94,7 +95,6 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
                         .withSslEngineFactory(sslEngineFactory)
                         .withSchemaChangeListener(defaultRepairConfigurationProvider)
                         .withNodeStateListener(defaultRepairConfigurationProvider);
-
         LOG.info("Preparing Agent Connection Config");
         nativeConnectionBuilder = resolveAgentProviderBuilder(nativeConnectionBuilder, agentConnectionConfig);
         LOG.info("Establishing Connection With Nodes");
@@ -112,25 +112,24 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
      * @return the configured {@link DistributedNativeBuilder}.
      */
     public final DistributedNativeBuilder resolveAgentProviderBuilder(
-            final DistributedNativeBuilder builder,
-            final AgentConnectionConfig agentConnectionConfig
-    )
+                                                                      final DistributedNativeBuilder builder,
+                                                                      final AgentConnectionConfig agentConnectionConfig)
     {
         switch (agentConnectionConfig.getType())
         {
-        case datacenterAware:
-            LOG.info("Using DatacenterAware as Agent Config");
-            return builder.withDatacenterAware(resolveDatacenterAware(
-                    agentConnectionConfig.getDatacenterAware()));
-        case rackAware:
-            LOG.info("Using RackAware as Agent Config");
-            return builder.withRackAware(resolveRackAware(
-                    agentConnectionConfig.getRackAware()));
-        case hostAware:
-            LOG.info("Using HostAware as Agent Config");
-            return builder.withHostAware(resolveHostAware(
-                    agentConnectionConfig.getHostAware()));
-        default:
+            case datacenterAware:
+                LOG.info("Using DatacenterAware as Agent Config");
+                return builder.withDatacenterAware(resolveDatacenterAware(
+                        agentConnectionConfig.getDatacenterAware()));
+            case rackAware:
+                LOG.info("Using RackAware as Agent Config");
+                return builder.withRackAware(resolveRackAware(
+                        agentConnectionConfig.getRackAware()));
+            case hostAware:
+                LOG.info("Using HostAware as Agent Config");
+                return builder.withHostAware(resolveHostAware(
+                        agentConnectionConfig.getHostAware()));
+            default:
         }
         return builder;
     }
@@ -143,8 +142,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
      * @return a list of {@link InetSocketAddress} representing the resolved contact points.
      */
     public final List<InetSocketAddress> resolveInitialContactPoints(
-            final Map<String, AgentConnectionConfig.Host> contactPoints
-    )
+                                                                     final Map<String, AgentConnectionConfig.Host> contactPoints)
     {
         List<InetSocketAddress> resolvedContactPoints = new ArrayList<>();
         for (AgentConnectionConfig.Host host : contactPoints.values())
@@ -166,11 +164,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
     public final List<String> resolveDatacenterAware(final AgentConnectionConfig.DatacenterAware datacenterAware)
     {
         List<String> datacenterNames = new ArrayList<>();
-        for
-        (
-                AgentConnectionConfig.DatacenterAware.Datacenter datacenter
-                :
-                datacenterAware.getDatacenters().values())
+        for (AgentConnectionConfig.DatacenterAware.Datacenter datacenter : datacenterAware.getDatacenters().values())
         {
             datacenterNames.add(datacenter.getName());
         }
@@ -187,12 +181,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
     public final List<Map<String, String>> resolveRackAware(final AgentConnectionConfig.RackAware rackAware)
     {
         List<Map<String, String>> rackList = new ArrayList<>();
-        for
-        (
-                AgentConnectionConfig.RackAware.Rack rack
-                :
-                rackAware.getRacks().values()
-        )
+        for (AgentConnectionConfig.RackAware.Rack rack : rackAware.getRacks().values())
         {
             Map<String, String> rackInfo = new HashMap<>();
             rackInfo.put("datacenterName", rack.getDatacenterName());
@@ -212,12 +201,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
     public final List<InetSocketAddress> resolveHostAware(final AgentConnectionConfig.HostAware hostAware)
     {
         List<InetSocketAddress> resolvedHosts = new ArrayList<>();
-        for
-        (
-                AgentConnectionConfig.Host host
-                :
-                hostAware.getHosts().values()
-        )
+        for (AgentConnectionConfig.Host host : hostAware.getHosts().values())
         {
             InetSocketAddress tmpAddress = new InetSocketAddress(host.getHost(), host.getPort());
             resolvedHosts.add(tmpAddress);
@@ -238,8 +222,8 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
      *         if the connection is in an illegal state.
      */
     public final DistributedNativeConnectionProviderImpl tryEstablishConnection(
-            final DistributedNativeBuilder builder
-    ) throws AllNodesFailedException, IllegalStateException
+                                                                                final DistributedNativeBuilder builder) throws AllNodesFailedException,
+                                                                                                                        IllegalStateException
     {
         try
         {
@@ -285,6 +269,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
     {
         myDistributedNativeConnectionProviderImpl.close();
     }
+
     /**
      * Add a nw node to the list of nodes.
      * @param myNode
@@ -312,5 +297,19 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
     public Boolean confirmNodeValid(final Node node)
     {
         return myDistributedNativeConnectionProviderImpl.confirmNodeValid(node);
+    }
+
+    /**
+     * Retrieves the type of connection being used by this connection provider.
+     * This method delegates the call to the underlying {@code DistributedNativeConnectionProviderImpl}
+     * to determine the current {@link ConnectionType}.
+     *
+     * @return The {@link ConnectionType} of the connection managed by
+     *         {@code myDistributedNativeConnectionProviderImpl}.
+     */
+    @Override
+    public ConnectionType getConnectionType()
+    {
+        return myDistributedNativeConnectionProviderImpl.getConnectionType();
     }
 }

@@ -12,42 +12,55 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.data.utils;
+package com.ericsson.bss.cassandra.ecchronos.core.impl;
 
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
+import java.net.InetSocketAddress;
+
+import java.util.List;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.utility.DockerImageName;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Node;
 
-public class AbstractCassandraTest
+public class AbstractCassandraContainerTest
 {
-    private static final List<CassandraContainer<?>> nodes = new ArrayList<>();
     protected static CqlSession mySession;
 
     private static DistributedNativeConnectionProvider myNativeConnectionProvider;
+    private static CassandraContainer<?> node;
 
+    @SuppressWarnings ("resource")
     @BeforeClass
     public static void setUpCluster()
     {
-        CassandraContainer<?> node = new CassandraContainer<>(DockerImageName.parse("cassandra:4.1.5"))
-                .withExposedPorts(9042, 7000)
+        // This is set as an environment variable ('it.cassandra.version') in maven using the '-D' flag.
+        String cassandraVersion = System.getProperty("it.cassandra.version");
+        if (cassandraVersion == null)
+        {
+            // No environment version set, just use latest.
+            cassandraVersion = "latest";
+        }
+        node = new CassandraContainer<>(DockerImageName.parse("cassandra:" + cassandraVersion))
+                .withExposedPorts(9042, 7000, 7199)
                 .withEnv("CASSANDRA_DC", "DC1")
                 .withEnv("CASSANDRA_ENDPOINT_SNITCH", "GossipingPropertyFileSnitch")
-                .withEnv("CASSANDRA_CLUSTER_NAME", "TestCluster");
-        nodes.add(node);
+                .withEnv("CASSANDRA_CLUSTER_NAME", "TestCluster")
+                .withEnv("JMX_PORT", "7199");
         node.start();
+        String containerIpAddress = node.getHost();
+        Integer containerPort = node.getMappedPort(9042);
+
         mySession = CqlSession.builder()
-                .addContactPoint(node.getContactPoint())
-                .withLocalDatacenter(node.getLocalDatacenter())
+                .addContactPoint(new InetSocketAddress(containerIpAddress, containerPort))
+                .withLocalDatacenter("DC1")
                 .build();
-        List<Node> nodesList = new ArrayList<>(mySession.getMetadata().getNodes().values());
+
+        List<Node> nodesList = mySession.getMetadata().getNodes().values().stream().toList();
         myNativeConnectionProvider = new DistributedNativeConnectionProvider()
         {
             @Override
@@ -63,24 +76,25 @@ public class AbstractCassandraTest
             }
 
             @Override
-            public void addNode(Node myNode) {
-                nodesList.add(myNode);
+            public void addNode(Node myNode)
+            {
             }
 
             @Override
-            public void removeNode(Node myNode) {
-                nodesList.remove(myNode);
+            public void removeNode(Node myNode)
+            {
             }
 
             @Override
-            public Boolean confirmNodeValid(Node node) {
+            public Boolean confirmNodeValid(Node node)
+            {
                 return false;
             }
 
             @Override
             public ConnectionType getConnectionType()
             {
-                return ConnectionType.datacenterAware;
+                return ConnectionType.hostAware;
             }
         };
     }
@@ -88,15 +102,20 @@ public class AbstractCassandraTest
     @AfterClass
     public static void tearDownCluster()
     {
-        // Stop all nodes
-        for (CassandraContainer<?> node : nodes)
+        if (mySession != null)
         {
-            node.stop();
+            mySession.close();
         }
+        node.stop();
     }
 
     public static DistributedNativeConnectionProvider getNativeConnectionProvider()
     {
         return myNativeConnectionProvider;
+    }
+
+    public static CassandraContainer<?> getContainerNode()
+    {
+        return node;
     }
 }
