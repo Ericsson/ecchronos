@@ -158,11 +158,10 @@ public class TestScheduleManager
     @Test (timeout = 2000L)
     public void testRunningTwoJobsInParallelShouldFail() throws InterruptedException
     {
-
         CountDownLatch job1Latch = new CountDownLatch(1);
         TestJob job1 = new TestJob(ScheduledJob.Priority.HIGH, job1Latch);
-        CountDownLatch job2Latch = new CountDownLatch(1);
-        TestJob job2 = new TestJob(ScheduledJob.Priority.LOW, job2Latch);
+        TestJob job2 = new TestJob(ScheduledJob.Priority.LOW, new CountDownLatch(1));
+
         myScheduler.schedule(job1);
         myScheduler.schedule(job2);
 
@@ -170,72 +169,13 @@ public class TestScheduleManager
         new Thread(() -> myScheduler.run()).start();
 
         waitForJobStarted(job1);
-
         assertThat(job2.hasStarted()).isFalse();
-
         job1Latch.countDown();
-
         waitForJobFinished(job1);
 
         assertThat(job1.hasRun()).isTrue();
         assertThat(job2.hasRun()).isFalse();
-
         assertThat(myScheduler.getQueueSize()).isEqualTo(2);
-
-
-
-
-
-
-/*
-        // Prep jobs and make sure job1 is always picked first
-        CountDownLatch job1Latch = new CountDownLatch(1);
-        TestJob job1 = new TestJob(ScheduledJob.Priority.HIGH, job1Latch);
-        CountDownLatch job2Latch = new CountDownLatch(1);
-        TestJob job2 = new TestJob(ScheduledJob.Priority.LOW, job2Latch);
-
-        LOG.info("1111 >>>> job1: (latch={}, started={}, run={})", job1.countDownLatch.getCount(), job1.hasStarted, job1.hasRun);
-        LOG.info("          job2: (latch={}, started={}, run={})", job2.countDownLatch.getCount(), job2.hasStarted, job2.hasRun);
-
-        // Schedule both jobs
-        myScheduler.schedule(job1);
-        myScheduler.schedule(job2);
-
-        LOG.info("2222 >>>> job1: (latch={}, started={}, run={})", job1.countDownLatch.getCount(), job1.hasStarted, job1.hasRun);
-        LOG.info("          job2: (latch={}, started={}, run={})", job2.countDownLatch.getCount(), job2.hasStarted, job2.hasRun);
-
-        // Start job1 thread and wait for it to start
-        new Thread(() -> myScheduler.run()).start();
-        waitForJobStarted(job1);
-        // Start job2 thread
-        new Thread(() -> myScheduler.run()).start();
-
-        Thread.sleep(5000L);
-
-        waitForJobStarted(job2);
-
-        LOG.info("3333 >>>> job1: (latch={}, started={}, run={})", job1.countDownLatch.getCount(), job1.hasStarted, job1.hasRun);
-        LOG.info("          job2: (latch={}, started={}, run={})", job2.countDownLatch.getCount(), job2.hasStarted, job2.hasRun);
-
-        // Make sure job2 still has not started and release job1 and wait for it to finish
-        job1Latch.countDown();
-        waitForJobFinished(job1);
-
-
-
-        LOG.info("4444 >>>> job1: (latch={}, started={}, run={})", job1.countDownLatch.getCount(), job1.hasStarted, job1.hasRun);
-        LOG.info("          job2: (latch={}, started={}, run={})", job2.countDownLatch.getCount(), job2.hasStarted, job2.hasRun);
-
-        // job1 should have run and job2 not
-        assertThat(job1.hasRun()).isTrue();
-        assertThat(job2.hasRun()).isFalse();
-        assertThat(myScheduler.getQueueSize()).isEqualTo(2);
-
-        LOG.info("5555 >>>> job1: (latch={}, started={}, run={})", job1.countDownLatch.getCount(), job1.hasStarted, job1.hasRun);
-        LOG.info("          job2: (latch={}, started={}, run={})", job2.countDownLatch.getCount(), job2.hasStarted, job2.hasRun);
-*/
-
-        fail("FAIL: MAKE SURE WE ALWAYS BOMB ON THIS TEST CASE!!!!");
     }
 
     @Test
