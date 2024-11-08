@@ -15,7 +15,6 @@
 package com.ericsson.bss.cassandra.ecchronos.core.scheduling;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -34,7 +33,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.assertj.core.api.Fail;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,14 +41,10 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @RunWith (MockitoJUnitRunner.Silent.class)
 public class TestScheduleManager
 {
-    private static final Logger LOG = LoggerFactory.getLogger(TestScheduleManager.class);
-
     @Mock
     private LockFactory myLockFactory;
 
