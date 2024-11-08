@@ -92,4 +92,10 @@ public class CASLockProperties
     {
         return myStatementDecorator;
     }
+
+    public final boolean isDatacenterAwareAgentType()
+
+    {
+        return myConnectionType == ConnectionType.datacenterAware;
+    }
 }

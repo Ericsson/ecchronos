@@ -69,7 +69,7 @@ public class CASLockStatement
     {
         Statement executeStatement;
 
-        if (dataCenter != null)
+        if (dataCenter != null && myCasLockProperties.isDatacenterAwareAgentType())
         {
             executeStatement = new DataCenterAwareStatement(statement, dataCenter);
         }

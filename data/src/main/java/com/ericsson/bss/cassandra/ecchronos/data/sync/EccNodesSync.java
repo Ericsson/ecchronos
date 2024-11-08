@@ -106,7 +106,8 @@ public final class EccNodesSync
         mySelectStatusStatement = mySession.prepare(selectFrom(KEYSPACE_NAME, TABLE_NAME)
                 .columns(COLUMN_NODE_ID, COLUMN_NODE_ENDPOINT, COLUMN_DC_NAME, COLUMN_NODE_STATUS)
                 .whereColumn(COLUMN_ECCHRONOS_ID).isEqualTo(bindMarker())
-                .build());
+                .build()
+                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
         ecChronosID = builder.myEcchronosID;
 
         connectionDelayValue = builder.myConnectionDelayValue;
