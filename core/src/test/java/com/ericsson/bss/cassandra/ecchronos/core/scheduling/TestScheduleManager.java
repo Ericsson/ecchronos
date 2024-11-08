@@ -152,21 +152,29 @@ public class TestScheduleManager
     @Test (timeout = 2000L)
     public void testRunningTwoJobsInParallelShouldFail() throws InterruptedException
     {
+        // Prep jobs and make sure job1 is always picked first
         CountDownLatch job1Latch = new CountDownLatch(1);
-        TestJob job = new TestJob(ScheduledJob.Priority.HIGH, job1Latch);
-        CountDownLatch job2Latch = new CountDownLatch(1);
-        TestJob job2 = new TestJob(ScheduledJob.Priority.LOW, job2Latch);
-        myScheduler.schedule(job);
+        TestJob job1 = new TestJob(ScheduledJob.Priority.HIGH, job1Latch);
+        TestJob job2 = new TestJob(ScheduledJob.Priority.LOW, new CountDownLatch(0));
+
+        // Schedule both jobs
+        myScheduler.schedule(job1);
         myScheduler.schedule(job2);
 
+        // Start threads trying to pick the jobs
         new Thread(() -> myScheduler.run()).start();
         new Thread(() -> myScheduler.run()).start();
-        waitForJobStarted(job);
-        job1Latch.countDown();
-        job2Latch.countDown();
-        waitForJobFinished(job);
 
-        assertThat(job.hasRun()).isTrue();
+        // Wait for job1 to start
+        waitForJobStarted(job1);
+        // Make sure job2 still has not started
+        assertThat(job2.hasStarted()).isFalse();
+        // Release job1 and wait for it to finish
+        job1Latch.countDown();
+        waitForJobFinished(job1);
+
+        // job1 should have run and job2 not
+        assertThat(job1.hasRun()).isTrue();
         assertThat(job2.hasRun()).isFalse();
         assertThat(myScheduler.getQueueSize()).isEqualTo(2);
     }
