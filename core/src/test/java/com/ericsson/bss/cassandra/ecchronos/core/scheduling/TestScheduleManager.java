@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.scheduling;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -33,6 +34,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.assertj.core.api.Fail;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,10 +43,14 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RunWith (MockitoJUnitRunner.Silent.class)
 public class TestScheduleManager
 {
+    private static final Logger LOG = LoggerFactory.getLogger(TestScheduleManager.class);
+
     @Mock
     private LockFactory myLockFactory;
 
@@ -149,7 +155,7 @@ public class TestScheduleManager
         assertThat(myScheduler.getQueueSize()).isEqualTo(1);
     }
 
-    @Test (timeout = 2000L)
+    @Test (timeout = 10000L)
     public void testRunningTwoJobsInParallelShouldFail() throws InterruptedException
     {
         // Prep jobs and make sure job1 is always picked first
@@ -157,26 +163,47 @@ public class TestScheduleManager
         TestJob job1 = new TestJob(ScheduledJob.Priority.HIGH, job1Latch);
         TestJob job2 = new TestJob(ScheduledJob.Priority.LOW, new CountDownLatch(0));
 
+        LOG.info("1111 >>>> job1: (latch={}, started={}, run={})", job1.countDownLatch.getCount(), job1.hasStarted, job1.hasRun);
+        LOG.info("          job2: (latch={}, started={}, run={})", job2.countDownLatch.getCount(), job2.hasStarted, job2.hasRun);
+
         // Schedule both jobs
         myScheduler.schedule(job1);
         myScheduler.schedule(job2);
 
-        // Start threads trying to pick the jobs
+        LOG.info("2222 >>>> job1: (latch={}, started={}, run={})", job1.countDownLatch.getCount(), job1.hasStarted, job1.hasRun);
+        LOG.info("          job2: (latch={}, started={}, run={})", job2.countDownLatch.getCount(), job2.hasStarted, job2.hasRun);
+
+        // Start job1 thread and wait for it to start
         new Thread(() -> myScheduler.run()).start();
+        waitForJobStarted(job1);
+        // Start job2 thread
         new Thread(() -> myScheduler.run()).start();
 
-        // Wait for job1 to start
-        waitForJobStarted(job1);
-        // Make sure job2 still has not started
+        Thread.sleep(5000L);
+
+        LOG.info("3333 >>>> job1: (latch={}, started={}, run={})", job1.countDownLatch.getCount(), job1.hasStarted, job1.hasRun);
+        LOG.info("          job2: (latch={}, started={}, run={})", job2.countDownLatch.getCount(), job2.hasStarted, job2.hasRun);
+
+        // Make sure job2 still has not started and release job1 and wait for it to finish
         assertThat(job2.hasStarted()).isFalse();
-        // Release job1 and wait for it to finish
         job1Latch.countDown();
         waitForJobFinished(job1);
+
+
+
+        LOG.info("4444 >>>> job1: (latch={}, started={}, run={})", job1.countDownLatch.getCount(), job1.hasStarted, job1.hasRun);
+        LOG.info("          job2: (latch={}, started={}, run={})", job2.countDownLatch.getCount(), job2.hasStarted, job2.hasRun);
 
         // job1 should have run and job2 not
         assertThat(job1.hasRun()).isTrue();
         assertThat(job2.hasRun()).isFalse();
         assertThat(myScheduler.getQueueSize()).isEqualTo(2);
+
+        LOG.info("5555 >>>> job1: (latch={}, started={}, run={})", job1.countDownLatch.getCount(), job1.hasStarted, job1.hasRun);
+        LOG.info("          job2: (latch={}, started={}, run={})", job2.countDownLatch.getCount(), job2.hasStarted, job2.hasRun);
+
+
+        fail("FAIL: MAKE SURE WE ALWAYS BOMB ON THIS TEST CASE!!!!");
     }
 
     @Test
