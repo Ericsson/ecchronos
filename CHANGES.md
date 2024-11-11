@@ -2,6 +2,8 @@
 
 ## Version 6.0.0
 
+* Bump Spring, Tomcat, Java, SnakeYaml, Jackson and various other dependencies - Issues #704, #754
+
 ## Version 5.0.5
 
 * Update dependencies to C* 5.0 - Issue #734

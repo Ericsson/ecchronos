@@ -54,7 +54,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/OnDemandRepair'
+                  $ref: "#/components/schemas/OnDemandRepair"
     post:
       tags:
       - Repair-Management
@@ -100,7 +100,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/OnDemandRepair'
+                  $ref: "#/components/schemas/OnDemandRepair"
   /repair-management/v2/schedules:
     get:
       tags:
@@ -130,7 +130,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Schedule'
+                  $ref: "#/components/schemas/Schedule"
   /repair-management/v2/schedules/{id}:
     get:
       tags:
@@ -157,7 +157,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Schedule'
+                $ref: "#/components/schemas/Schedule"
   /repair-management/v2/running-job:
     get:
       tags:
@@ -198,7 +198,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/OnDemandRepair'
+                  $ref: "#/components/schemas/OnDemandRepair"
   /repair-management/v2/repairInfo:
     get:
       tags:
@@ -251,7 +251,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RepairInfo'
+                $ref: "#/components/schemas/RepairInfo"
   /metrics:
     get:
       tags:
@@ -283,7 +283,13 @@ paths:
             text/plain;version=0.0.4;charset=utf-8:
               schema:
                 type: string
+            application/openmetrics-text; version=1.0.0; charset=utf-8:
+              schema:
+                type: string
             application/openmetrics-text;version=1.0.0;charset=utf-8:
+              schema:
+                type: string
+            text/plain; version=0.0.4; charset=utf-8:
               schema:
                 type: string
   /actuator:
@@ -302,21 +308,21 @@ paths:
                 additionalProperties:
                   type: object
                   additionalProperties:
-                    $ref: '#/components/schemas/Link'
-            application/vnd.spring-boot.actuator.v2+json:
-              schema:
-                type: object
-                additionalProperties:
-                  type: object
-                  additionalProperties:
-                    $ref: '#/components/schemas/Link'
+                    $ref: "#/components/schemas/Link"
             application/json:
               schema:
                 type: object
                 additionalProperties:
                   type: object
                   additionalProperties:
-                    $ref: '#/components/schemas/Link'
+                    $ref: "#/components/schemas/Link"
+            application/vnd.spring-boot.actuator.v2+json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  additionalProperties:
+                    $ref: "#/components/schemas/Link"
   /actuator/health:
     get:
       tags:
@@ -330,10 +336,10 @@ paths:
             application/vnd.spring-boot.actuator.v3+json:
               schema:
                 type: object
-            application/vnd.spring-boot.actuator.v2+json:
+            application/json:
               schema:
                 type: object
-            application/json:
+            application/vnd.spring-boot.actuator.v2+json:
               schema:
                 type: object
   /actuator/health/**:
@@ -349,10 +355,10 @@ paths:
             application/vnd.spring-boot.actuator.v3+json:
               schema:
                 type: object
-            application/vnd.spring-boot.actuator.v2+json:
+            application/json:
               schema:
                 type: object
-            application/json:
+            application/vnd.spring-boot.actuator.v2+json:
               schema:
                 type: object
 components:
@@ -442,7 +448,7 @@ components:
           type: integer
           format: int64
         config:
-          $ref: '#/components/schemas/ScheduleConfig'
+          $ref: "#/components/schemas/ScheduleConfig"
         repairType:
           type: string
           enum:
@@ -452,7 +458,7 @@ components:
         virtualNodeStates:
           type: array
           items:
-            $ref: '#/components/schemas/VirtualNodeState'
+            $ref: "#/components/schemas/VirtualNodeState"
     ScheduleConfig:
       required:
       - errorTimeInMs
@@ -528,7 +534,7 @@ components:
         repairStats:
           type: array
           items:
-            $ref: '#/components/schemas/RepairStats'
+            $ref: "#/components/schemas/RepairStats"
     RepairStats:
       required:
       - keyspace

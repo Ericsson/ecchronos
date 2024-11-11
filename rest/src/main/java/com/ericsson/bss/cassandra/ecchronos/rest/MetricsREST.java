@@ -14,8 +14,9 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
-import io.micrometer.prometheus.PrometheusMeterRegistry;
-import io.prometheus.client.exporter.common.TextFormat;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
+import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
+import io.prometheus.metrics.expositionformats.OpenMetricsTextFormatWriter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -45,10 +46,11 @@ public class MetricsREST
         myPrometheusMeterRegistry = prometheusMeterRegistry;
     }
 
-    @GetMapping(value = "/metrics", produces = { TextFormat.CONTENT_TYPE_004, TextFormat.CONTENT_TYPE_OPENMETRICS_100 })
+    @GetMapping(value = "/metrics", produces = { PrometheusTextFormatWriter.CONTENT_TYPE,
+            OpenMetricsTextFormatWriter.CONTENT_TYPE })
     @Operation(operationId = "metrics", description = "Get metrics in the specified format", summary = "Get metrics")
     public final ResponseEntity<String> getMetrics(@RequestHeader(value = HttpHeaders.ACCEPT, required = false,
-            defaultValue = TextFormat.CONTENT_TYPE_004)
+            defaultValue = PrometheusTextFormatWriter.CONTENT_TYPE)
             final String acceptHeader,
             @RequestParam(value = "name[]", required = false, defaultValue = "")
             @Parameter(description = "Filter metrics based on these names.")
@@ -58,7 +60,14 @@ public class MetricsREST
         {
             throw new ResponseStatusException(NOT_FOUND);
         }
-        String contentType = TextFormat.chooseContentType(acceptHeader);
+
+        // Check the content type, but default to PrometheusTextFormat
+        String contentType = PrometheusTextFormatWriter.CONTENT_TYPE;
+        if (acceptHeader != null && acceptHeader.contains("application/openmetrics-text"))
+        {
+            contentType = OpenMetricsTextFormatWriter.CONTENT_TYPE;
+        }
+
         return ResponseEntity.ok()
                 .header(CONTENT_TYPE, contentType)
                 .body(myPrometheusMeterRegistry.scrape(contentType, includedMetrics));

@@ -14,8 +14,9 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
-import io.micrometer.prometheus.PrometheusMeterRegistry;
-import io.prometheus.client.exporter.common.TextFormat;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
+import io.prometheus.metrics.expositionformats.OpenMetricsTextFormatWriter;
+import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -62,7 +63,7 @@ public class TestMetricsREST
         }
         catch (ResponseStatusException e)
         {
-            assertThat(e.getRawStatusCode()).isEqualTo(NOT_FOUND.value());
+            assertThat(e.getStatusCode().value()).isEqualTo(NOT_FOUND.value());
         }
         assertThat(response).isNull();
         verify(myPrometheusMeterRegistryMock, never()).scrape(any(String.class), any(Set.class));
@@ -76,8 +77,8 @@ public class TestMetricsREST
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
         List<String> contentTypeHeaders = response.getHeaders().get(HttpHeaders.CONTENT_TYPE);
         assertThat(contentTypeHeaders).hasSize(1);
-        assertThat(contentTypeHeaders.get(0)).isEqualTo(TextFormat.CONTENT_TYPE_004);
-        verify(myPrometheusMeterRegistryMock).scrape(TextFormat.CONTENT_TYPE_004, Collections.emptySet());
+        assertThat(contentTypeHeaders.get(0)).isEqualTo(PrometheusTextFormatWriter.CONTENT_TYPE);
+        verify(myPrometheusMeterRegistryMock).scrape(PrometheusTextFormatWriter.CONTENT_TYPE, Collections.emptySet());
     }
 
     @Test
@@ -88,8 +89,8 @@ public class TestMetricsREST
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
         List<String> contentTypeHeaders = response.getHeaders().get(HttpHeaders.CONTENT_TYPE);
         assertThat(contentTypeHeaders).hasSize(1);
-        assertThat(contentTypeHeaders.get(0)).isEqualTo(TextFormat.CONTENT_TYPE_OPENMETRICS_100);
-        verify(myPrometheusMeterRegistryMock).scrape(TextFormat.CONTENT_TYPE_OPENMETRICS_100, Collections.emptySet());
+        assertThat(contentTypeHeaders.get(0)).isEqualTo(OpenMetricsTextFormatWriter.CONTENT_TYPE);
+        verify(myPrometheusMeterRegistryMock).scrape(OpenMetricsTextFormatWriter.CONTENT_TYPE, Collections.emptySet());
     }
 
     @Test
@@ -100,7 +101,7 @@ public class TestMetricsREST
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
         List<String> contentTypeHeaders = response.getHeaders().get(HttpHeaders.CONTENT_TYPE);
         assertThat(contentTypeHeaders).hasSize(1);
-        assertThat(contentTypeHeaders.get(0)).isEqualTo(TextFormat.CONTENT_TYPE_004);
-        verify(myPrometheusMeterRegistryMock).scrape(TextFormat.CONTENT_TYPE_004, Collections.singleton("fooMetrics"));
+        assertThat(contentTypeHeaders.get(0)).isEqualTo(PrometheusTextFormatWriter.CONTENT_TYPE);
+        verify(myPrometheusMeterRegistryMock).scrape(PrometheusTextFormatWriter.CONTENT_TYPE, Collections.singleton("fooMetrics"));
     }
 }

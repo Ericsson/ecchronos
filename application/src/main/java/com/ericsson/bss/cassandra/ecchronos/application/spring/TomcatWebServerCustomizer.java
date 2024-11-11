@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
 import org.apache.catalina.connector.Connector;
 import org.apache.coyote.http11.Http11NioProtocol;
 import org.apache.tomcat.util.net.SSLHostConfig;
+import org.apache.tomcat.util.net.SSLHostConfigCertificate;
 import org.apache.tomcat.util.net.jsse.PEMFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,18 +127,21 @@ public class TomcatWebServerCustomizer implements WebServerFactoryCustomizer<Tom
 
     private void setCertificates(final SSLHostConfig sslHostConfig, final Ssl ssl)
     {
+        SSLHostConfigCertificate sslHostConfigCertificate =
+                new SSLHostConfigCertificate(sslHostConfig, SSLHostConfigCertificate.Type.UNDEFINED);
+        sslHostConfig.addCertificate(sslHostConfigCertificate);
         if (ssl.getCertificate() != null && ssl.getCertificatePrivateKey() != null)
         {
-            sslHostConfig.setCertificateFile(getFilePath(ssl.getCertificate()));
-            sslHostConfig.setCertificateKeyFile(getFilePath(ssl.getCertificatePrivateKey()));
+            sslHostConfigCertificate.setCertificateFile(getFilePath(ssl.getCertificate()));
+            sslHostConfigCertificate.setCertificateKeyFile(getFilePath(ssl.getCertificatePrivateKey()));
         }
         else if (ssl.getKeyStore() != null)
         {
-            sslHostConfig.setCertificateKeystoreFile(getFilePath(ssl.getKeyStore()));
-            sslHostConfig.setCertificateKeystorePassword(ssl.getKeyStorePassword());
-            sslHostConfig.setCertificateKeystoreType(ssl.getKeyStoreType());
-            sslHostConfig.setCertificateKeyAlias(ssl.getKeyAlias());
-            sslHostConfig.setCertificateKeyPassword(ssl.getKeyPassword());
+            sslHostConfigCertificate.setCertificateKeystoreFile(getFilePath(ssl.getKeyStore()));
+            sslHostConfigCertificate.setCertificateKeystorePassword(ssl.getKeyStorePassword());
+            sslHostConfigCertificate.setCertificateKeystoreType(ssl.getKeyStoreType());
+            sslHostConfigCertificate.setCertificateKeyAlias(ssl.getKeyAlias());
+            sslHostConfigCertificate.setCertificateKeyPassword(ssl.getKeyPassword());
         }
         else
         {
