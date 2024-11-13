@@ -34,11 +34,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.any;
 
-public class TestNodeAddition extends AbstractCassandraCluster
+public class ITNodeAddition extends AbstractCassandraCluster
 {
-    private static final Logger LOG = LoggerFactory.getLogger(TestNodeAddition.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ITNodeAddition.class);
     @BeforeClass
-    public static void setup() throws InterruptedException {
+    public static void setup() throws InterruptedException
+    {
         Path dockerComposePath = Paths.get("")
                 .toAbsolutePath()
                 .getParent()

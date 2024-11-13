@@ -29,9 +29,9 @@ import java.net.InetSocketAddress;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-public class TestNodeRemoval extends AbstractCassandraCluster
+public class ITNodeRemoval extends AbstractCassandraCluster
 {
-    private static final Logger LOG = LoggerFactory.getLogger(TestNodeRemoval.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ITNodeRemoval.class);
     @Test
     public void testNodeDecommissionedFromCluster() throws InterruptedException, IOException, ConfigurationException, EcChronosException
     {
