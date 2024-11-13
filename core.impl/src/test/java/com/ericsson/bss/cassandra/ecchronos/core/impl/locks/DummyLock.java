@@ -12,16 +12,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.connection;
+package com.ericsson.bss.cassandra.ecchronos.core.impl.locks;
 
-import com.datastax.oss.driver.api.core.cql.Statement;
+import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
 
-public interface StatementDecorator
+public class DummyLock implements LockFactory.DistributedLock
 {
-    /**
-     * Decorates a statement before sending it over to the server.
-     * @param statement The original statement
-     * @return The decorated statement
-     */
-    Statement apply(Statement statement);
+    public volatile boolean closed = false;
+
+    @Override
+    public void close() {
+        closed = true;
+    }
 }

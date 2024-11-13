@@ -14,9 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.locks;
 
-import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.utils.ConsistencyType;
 import com.ericsson.bss.cassandra.ecchronos.core.state.HostStates;
 
@@ -32,11 +30,9 @@ public class CASLockFactoryBuilder
 
     private DistributedNativeConnectionProvider myNativeConnectionProvider;
     private HostStates myHostStates;
-    private StatementDecorator myStatementDecorator;
     private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
     private long myCacheExpiryTimeInSeconds = DEFAULT_EXPIRY_TIME_IN_SECONDS;
     private ConsistencyType myConsistencyType = DEFAULT_CONSISTENCY_SERIAL;
-    private Node myNode;
 
     public final CASLockFactoryBuilder withNativeConnectionProvider(final DistributedNativeConnectionProvider nativeConnectionProvider)
     {
@@ -47,12 +43,6 @@ public class CASLockFactoryBuilder
     public final CASLockFactoryBuilder withHostStates(final HostStates hostStates)
     {
         myHostStates = hostStates;
-        return this;
-    }
-
-    public final CASLockFactoryBuilder withStatementDecorator(final StatementDecorator statementDecorator)
-    {
-        myStatementDecorator = statementDecorator;
         return this;
     }
 
@@ -74,12 +64,6 @@ public class CASLockFactoryBuilder
         return this;
     }
 
-    public final CASLockFactoryBuilder withNode(final Node node)
-    {
-        myNode = node;
-        return this;
-    }
-
     public final CASLockFactory build()
     {
         if (myNativeConnectionProvider == null)
@@ -90,11 +74,6 @@ public class CASLockFactoryBuilder
         if (myHostStates == null)
         {
             throw new IllegalArgumentException("Host states cannot be null");
-        }
-
-        if (myStatementDecorator == null)
-        {
-            throw new IllegalArgumentException("Statement decorator cannot be null");
         }
 
         return new CASLockFactory(this);
@@ -110,11 +89,6 @@ public class CASLockFactoryBuilder
         return myHostStates;
     }
 
-    public final StatementDecorator getStatementDecorator()
-    {
-        return myStatementDecorator;
-    }
-
     public final String getKeyspaceName()
     {
         return myKeyspaceName;
@@ -128,10 +102,5 @@ public class CASLockFactoryBuilder
     public final ConsistencyType getConsistencyType()
     {
         return myConsistencyType;
-    }
-
-    public final Node getNode()
-    {
-        return myNode;
     }
 }

@@ -75,7 +75,6 @@ public final class CASLockFactory implements LockFactory, Closeable
     private static final int REFRESH_INTERVAL_RATIO = 10;
     private static final int DEFAULT_LOCK_TIME_IN_SECONDS = 600;
 
-    private final UUID myUuid;
     private final HostStates myHostStates;
     private final CASLockFactoryCacheContext myCasLockFactoryCacheContext;
 
@@ -90,22 +89,12 @@ public final class CASLockFactory implements LockFactory, Closeable
                 Executors.newSingleThreadScheduledExecutor(
                         new ThreadFactoryBuilder().setNameFormat("LockRefresher-%d").build()),
                 builder.getConsistencyType(),
-                builder.getNativeConnectionProvider().getCqlSession(),
-                builder.getStatementDecorator());
+                builder.getNativeConnectionProvider().getCqlSession());
 
         myHostStates = builder.getHostStates();
 
         verifySchemasExists();
 
-        UUID hostId = builder.getNode().getHostId();
-
-        if (hostId == null)
-        {
-            hostId = UUID.randomUUID();
-            LOG.warn("Unable to determine local nodes host id, using {} instead", hostId);
-        }
-
-        myUuid = hostId;
         myCasLockFactoryCacheContext = buildCasLockFactoryCacheContext(builder.getCacheExpiryTimeInSecond());
 
         myCasLockStatement = new CASLockStatement(myCasLockProperties, myCasLockFactoryCacheContext);
@@ -144,11 +133,11 @@ public final class CASLockFactory implements LockFactory, Closeable
     public DistributedLock tryLock(final String dataCenter,
                                                final String resource,
                                                final int priority,
-                                               final Map<String, String> metadata)
-                                                                       throws LockException
+                                               final Map<String, String> metadata,
+                                               final UUID nodeId) throws LockException
     {
         return myCasLockFactoryCacheContext.getLockCache()
-                .getLock(dataCenter, resource, priority, metadata);
+                .getLock(dataCenter, resource, priority, metadata, nodeId);
     }
 
     @Override
@@ -215,12 +204,6 @@ public final class CASLockFactory implements LockFactory, Closeable
     }
 
     @VisibleForTesting
-    UUID getHostId()
-    {
-        return myUuid;
-    }
-
-    @VisibleForTesting
     CASLockFactoryCacheContext getCasLockFactoryCacheContext()
     {
         return myCasLockFactoryCacheContext;
@@ -246,7 +229,8 @@ public final class CASLockFactory implements LockFactory, Closeable
     private DistributedLock doTryLock(final String dataCenter,
                                       final String resource,
                                       final int priority,
-                                      final Map<String, String> metadata) throws LockException
+                                      final Map<String, String> metadata,
+                                      final UUID nodeId) throws LockException
     {
         LOG.trace("Trying lock for {} - {}", dataCenter, resource);
 
@@ -255,7 +239,7 @@ public final class CASLockFactory implements LockFactory, Closeable
             LOG.warn("Not sufficient nodes to lock resource {} in datacenter {}", resource, dataCenter);
             throw new LockException("Not sufficient nodes to lock");
         }
-        CASLock casLock = new CASLock(dataCenter, resource, priority, metadata, myUuid, myCasLockStatement); // NOSONAR
+        CASLock casLock = new CASLock(dataCenter, resource, priority, metadata, nodeId, myCasLockStatement); // NOSONAR
         if (casLock.lock())
         {
             return casLock;

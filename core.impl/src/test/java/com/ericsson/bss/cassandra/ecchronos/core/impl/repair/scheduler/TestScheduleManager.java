@@ -16,13 +16,24 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactoryBuilder;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.DummyLock;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.state.HostStates;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +50,15 @@ import org.mockito.junit.MockitoJUnitRunner;
 public class TestScheduleManager
 {
     @Mock
+    private CASLockFactoryBuilder myLockFactoryBuilder;
+    @Mock
+    private CASLockFactory myLockFactory;
+    @Mock
+    private DistributedNativeConnectionProvider myNativeConnectionProvider;
+    @Mock
+    private HostStates myHostStates;
+
+    @Mock
     private RunPolicy myRunPolicy;
 
     private ScheduleManagerImpl myScheduler;
@@ -50,20 +70,32 @@ public class TestScheduleManager
     private final Collection<UUID> myNodes = Arrays.asList(nodeID1, nodeID2);
 
     @Before
-    public void startup()
+    public void startup() throws LockException
     {
         myScheduler = ScheduleManagerImpl.builder()
                 .withNodeIDList(myNodes)
+                .withLockFactory(myLockFactory)
                 .build();
         myScheduler.addRunPolicy(job -> myRunPolicy.validate(job));
 
         when(myRunPolicy.validate(any(ScheduledJob.class))).thenReturn(-1L);
+        doReturn(myLockFactoryBuilder).when(myLockFactoryBuilder).withNativeConnectionProvider(myNativeConnectionProvider);
+        doReturn(myLockFactoryBuilder).when(myLockFactoryBuilder).withHostStates(myHostStates);
+        doReturn(myLockFactory).when(myLockFactoryBuilder).build();
     }
 
     @After
     public void cleanup()
     {
         myScheduler.close();
+    }
+
+    @Test
+    public void testRunningNoJobs() throws LockException
+    {
+        myScheduler.run(nodeID1);
+
+        verify(myLockFactory, never()).tryLock(any(), anyString(), anyInt(), anyMap(), any());
     }
 
     @Test
@@ -93,17 +125,19 @@ public class TestScheduleManager
     }
 
     @Test
-    public void testRunningTwoTasksStoppedAfterFirstByPolicy()
+    public void testRunningTwoTasksStoppedAfterFirstByPolicy() throws LockException
     {
         TestJob job1 = new TestJob(ScheduledJob.Priority.LOW, 2, () -> {
             when(myRunPolicy.validate(any(ScheduledJob.class))).thenReturn(1L);
         });
         myScheduler.schedule(nodeID1, job1);
 
+        when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any())).thenReturn(new DummyLock());
         myScheduler.run(nodeID1);
 
         assertThat(job1.getTaskRuns()).isEqualTo(1);
         assertThat(myScheduler.getQueueSize(nodeID1)).isEqualTo(1);
+        verify(myLockFactory).tryLock(any(), anyString(), anyInt(), anyMap(), any());
     }
 
     @Test
@@ -192,6 +226,57 @@ public class TestScheduleManager
         assertThat(myScheduler.getCurrentJobStatus()).isNotEqualTo("Job ID: " + jobId.toString() + ", Status: Running");
         latch.countDown();
     }
+
+    @Test
+    public void testRunningOneJobWithThrowingLock() throws LockException
+    {
+        DummyJob job = new DummyJob(ScheduledJob.Priority.LOW);
+        myScheduler.schedule(nodeID1, job);
+
+        when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any())).thenThrow(new LockException(""));
+
+        myScheduler.run(nodeID1);
+
+        assertThat(job.hasRun()).isFalse();
+        assertThat(myScheduler.getQueueSize(nodeID1)).isEqualTo(1);
+    }
+
+    @Test
+    public void testTwoJobsThrowingLock() throws LockException
+    {
+        DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW);
+        DummyJob job2 = new DummyJob(ScheduledJob.Priority.LOW);
+        myScheduler.schedule(nodeID1, job1);
+        myScheduler.schedule(nodeID1, job2);
+
+        when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any())).thenThrow(new LockException(""));
+
+        myScheduler.run(nodeID1);
+
+        assertThat(job1.hasRun()).isFalse();
+        assertThat(job2.hasRun()).isFalse();
+        assertThat(myScheduler.getQueueSize(nodeID1)).isEqualTo(2);
+        verify(myLockFactory, times(2)).tryLock(any(), anyString(), anyInt(), anyMap(), any());
+    }
+
+    @Test
+    public void testThreeTasksOneThrowing() throws LockException
+    {
+        TestJob job = new TestJob(ScheduledJob.Priority.LOW, 3);
+        myScheduler.schedule(nodeID1, job);
+
+        when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any()))
+                .thenReturn(new DummyLock())
+                .thenThrow(new LockException(""))
+                .thenReturn(new DummyLock());
+
+        myScheduler.run(nodeID1);
+
+        assertThat(job.getTaskRuns()).isEqualTo(2);
+        assertThat(myScheduler.getQueueSize(nodeID1)).isEqualTo(1);
+        verify(myLockFactory, times(3)).tryLock(any(), anyString(), anyInt(), anyMap(), any());
+    }
+
     private void waitForJobStarted(TestJob job) throws InterruptedException
     {
         while(!job.hasStarted())

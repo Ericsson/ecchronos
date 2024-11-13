@@ -20,7 +20,6 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
 
 /**
  * Represents a container for builder configurations and state for the CASLockStatement.
@@ -33,21 +32,18 @@ public class CASLockProperties
     private final ScheduledExecutorService myExecutor;
     private final ConsistencyLevel mySerialConsistencyLevel;
     private final CqlSession mySession;
-    private final StatementDecorator myStatementDecorator;
 
     CASLockProperties(final ConnectionType connectionType,
                       final String keyspaceName,
                       final ScheduledExecutorService executor,
                       final ConsistencyType consistencyType,
-                      final CqlSession session,
-                      final StatementDecorator statementDecorator)
+                      final CqlSession session)
     {
         myConnectionType = connectionType;
         myKeyspaceName = keyspaceName;
         myExecutor = executor;
         mySerialConsistencyLevel = defineSerialConsistencyLevel(consistencyType);
         mySession = session;
-        myStatementDecorator = statementDecorator;
     }
 
     public final ConsistencyLevel defineSerialConsistencyLevel(final ConsistencyType consistencyType)
@@ -86,11 +82,6 @@ public class CASLockProperties
     public final CqlSession getSession()
     {
         return mySession;
-    }
-
-    public final StatementDecorator getStatementDecorator()
-    {
-        return myStatementDecorator;
     }
 
     public final boolean isDatacenterAwareAgentType()

@@ -14,6 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
 
+import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
@@ -54,6 +56,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private final Set<RunPolicy> myRunPolicies = Sets.newConcurrentHashSet();
     private final Map<UUID, ScheduledFuture<?>> myRunFuture = new ConcurrentHashMap<>();
     private final Map<UUID, JobRunTask> myRunTasks = new ConcurrentHashMap<>();
+    private final CASLockFactory myLockFactory;
 
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
             new ThreadFactoryBuilder().setNameFormat("TaskExecutor-%d").build());
@@ -61,6 +64,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private ScheduleManagerImpl(final Builder builder)
     {
         myNodeIDList = builder.myNodeIDList;
+        myLockFactory = builder.myLockFactory;
         createScheduleFutureForNodeIDList(builder);
     }
 
@@ -267,9 +271,10 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 final ScheduledTask task)
         {
             LOG.debug("Trying to run task {} in node {}", task, nodeID);
-            // TODO need to implement lock mechanism
-            try
+            LOG.debug("Trying to acquire lock for {}", task);
+            try (LockFactory.DistributedLock lock = task.getLock(myLockFactory, nodeID))
             {
+                LOG.debug("Lock has been acquired on node with Id {} with lock {}", nodeID, lock);
                 boolean successful = runTask(task);
                 job.postExecute(successful);
                 return true;
@@ -317,6 +322,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     public static class Builder
     {
         private Collection<UUID> myNodeIDList;
+        private CASLockFactory myLockFactory;
         private long myRunIntervalInMs = DEFAULT_RUN_DELAY_IN_MS;
 
         /**
@@ -341,6 +347,19 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         public Builder withNodeIDList(final Collection<UUID> nodeIDList)
         {
             myNodeIDList = nodeIDList;
+            return this;
+        }
+
+        /**
+         * Sets the {@link CASLockFactory}.
+         *
+         * @param lockFactory The {@link CASLockFactory} to be used.
+         *                    Must not be {@code null}.
+         * @return The current {@code Builder} instance, allowing for method chaining.
+         */
+        public final Builder withLockFactory(final CASLockFactory lockFactory)
+        {
+            myLockFactory = lockFactory;
             return this;
         }
 

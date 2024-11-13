@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Add Locks In SchedulerManager - Issue #768
 * Cassandra-Based Distributed Locks - Issue #741
 * Create New Repair Type Called "VNODE" - Issue #755
 * Create ReplicaRepairGroup Class for Grouping Replicas and Token Ranges - Issue #721

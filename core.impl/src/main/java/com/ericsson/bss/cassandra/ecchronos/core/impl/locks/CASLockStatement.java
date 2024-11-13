@@ -67,21 +67,11 @@ public class CASLockStatement
 
     public final ResultSet execute(final String dataCenter, final BoundStatement statement)
     {
-        Statement executeStatement;
-
-        if (dataCenter != null && myCasLockProperties.isDatacenterAwareAgentType())
-        {
-            executeStatement = new DataCenterAwareStatement(statement, dataCenter);
-        }
-        else
-        {
-            executeStatement = statement;
-        }
-
-        return myCasLockProperties.getSession()
-                .execute(myCasLockProperties
-                        .getStatementDecorator()
-                        .apply(executeStatement));
+        Statement executeStatement = (dataCenter != null
+                && myCasLockProperties.isDatacenterAwareAgentType())
+                ? new DataCenterAwareStatement(statement, dataCenter)
+                : statement;
+        return myCasLockProperties.getSession().execute(executeStatement);
     }
 
     private SimpleStatement insertLockStatement()
