@@ -17,6 +17,9 @@ package cassandracluster;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
+
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ConfigurationException;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,14 +29,14 @@ import java.net.InetSocketAddress;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-
 public class TestNodeRemoval extends AbstractCassandraCluster
 {
     private static final Logger LOG = LoggerFactory.getLogger(TestNodeRemoval.class);
     @Test
-    public void testNodeDecommissionedFromCluster() throws InterruptedException
+    public void testNodeDecommissionedFromCluster() throws InterruptedException, IOException, ConfigurationException, EcChronosException
     {
         DefaultRepairConfigurationProvider listener = mock(DefaultRepairConfigurationProvider.class);
+
         containerIP = composeContainer.getContainerByServiceName("cassandra-seed-dc1-rack1-node1").get()
                 .getContainerInfo()
                 .getNetworkSettings().getNetworks().values().stream().findFirst().get().getIpAddress();
@@ -53,7 +56,7 @@ public class TestNodeRemoval extends AbstractCassandraCluster
             throw new RuntimeException(e);
         }
         LOG.info("Waiting for node to be decommissioned.");
-        Thread.sleep(50000);
+        waitForNodesToBeUp("cassandra-seed-dc2-rack1-node1",4,50000);
 
         verify(listener, times(1)).onRemove(any());
     }

@@ -17,26 +17,28 @@ package cassandracluster;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
-import com.github.dockerjava.api.DockerClient;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.DockerComposeContainer;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.any;
 
 public class TestNodeAddition extends AbstractCassandraCluster
 {
     private static final Logger LOG = LoggerFactory.getLogger(TestNodeAddition.class);
     @BeforeClass
     public static void setup() throws InterruptedException {
-
         Path dockerComposePath = Paths.get("")
                 .toAbsolutePath()
                 .getParent()
@@ -47,12 +49,13 @@ public class TestNodeAddition extends AbstractCassandraCluster
         composeContainer.withScaledService("cassandra-seed-dc1-rack1-node1", 1 );
         composeContainer.withScaledService("cassandra-seed-dc2-rack1-node1", 0 );
         composeContainer.start();
+
         LOG.info("Waiting for the Cassandra cluster to finish starting up.");
-        Thread.sleep(50000);
+        waitForNodesToBeUp("cassandra-seed-dc1-rack1-node1",1,50000);
+
     }
     @Test
-    public void testAdditionalNodesAddedToCluster() throws InterruptedException
-    {
+    public void testAdditionalNodesAddedToCluster() throws InterruptedException, IOException {
         DefaultRepairConfigurationProvider listener = mock(DefaultRepairConfigurationProvider.class);
         containerIP = composeContainer.getContainerByServiceName("cassandra-seed-dc1-rack1-node1").get()
                 .getContainerInfo()
@@ -70,7 +73,10 @@ public class TestNodeAddition extends AbstractCassandraCluster
         composeContainer.withScaledService("cassandra-seed-dc2-rack1-node1", 1 );
         composeContainer.start();
         LOG.info("Waiting for the new nodes to finish starting up.");
-        Thread.sleep(50000);
+        waitForNodesToBeUp("cassandra-seed-dc1-rack1-node1",4,50000);
+
+
+        assertEquals( 4, getNodeCountViaNodetool("cassandra-node-dc1-rack1-node2"));
 
         verify(listener, times(3)).onAdd(any());
         verify(listener, times(0)).onRemove(any());

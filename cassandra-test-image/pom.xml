@@ -27,6 +27,13 @@
     <name>EcChronos Cassandra Test Image</name>
 
     <dependencies>
+        <!-- Internal -->
+        <dependency>
+            <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
+            <artifactId>application</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Cassandra driver -->
         <dependency>
             <groupId>com.datastax.oss</groupId>
@@ -63,22 +70,21 @@
             <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
-
-
-        <dependency>
-            <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-            <artifactId>application</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-            <artifactId>application</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>5.12.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>6.1.11</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
