@@ -17,9 +17,11 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
+import com.ericsson.bss.cassandra.ecchronos.application.config.lockfactory.CasLockFactoryConfig;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.DistributedJmxProxyFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.ScheduleManagerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.HostStatesImpl;
@@ -57,13 +59,13 @@ public class ECChronosInternals implements Closeable
     private final CassandraMetrics myCassandraMetrics;
     private final HostStatesImpl myHostStatesImpl;
     private final TableStorageStatesImpl myTableStorageStatesImpl;
+    private final CASLockFactory myLockFactory;
 
     public ECChronosInternals(
             final Config configuration,
             final DistributedNativeConnectionProvider nativeConnectionProvider,
             final DistributedJmxConnectionProvider jmxConnectionProvider,
-            final EccNodesSync eccNodesSync
-    )
+            final EccNodesSync eccNodesSync)
     {
         myJmxProxyFactory = DistributedJmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(jmxConnectionProvider)
@@ -91,10 +93,23 @@ public class ECChronosInternals implements Closeable
                 .build();
 
         myCassandraMetrics = new CassandraMetrics(myJmxProxyFactory);
+
+        CasLockFactoryConfig casLockFactoryConfig = configuration.getLockFactory()
+                .getCasLockFactoryConfig();
+
+        myLockFactory = CASLockFactory.builder()
+                .withNativeConnectionProvider(nativeConnectionProvider)
+                .withHostStates(myHostStatesImpl)
+                .withKeyspaceName(casLockFactoryConfig.getKeyspaceName())
+                .withCacheExpiryInSeconds(casLockFactoryConfig.getFailureCacheExpiryTimeInSeconds())
+                .withConsistencySerial(casLockFactoryConfig.getConsistencySerial())
+                .build();
+
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withRunInterval(configuration.getSchedulerConfig().getFrequency().getInterval(TimeUnit.MILLISECONDS),
                         TimeUnit.MILLISECONDS)
                 .withNodeIDList(jmxConnectionProvider.getJmxConnections().keySet())
+                .withLockFactory(myLockFactory)
                 .build();
     }
 

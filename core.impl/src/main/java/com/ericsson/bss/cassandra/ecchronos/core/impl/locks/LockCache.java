@@ -18,6 +18,7 @@ import static com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory.Distri
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +59,8 @@ public final class LockCache
     public DistributedLock getLock(final String dataCenter,
                                    final String resource,
                                    final int priority,
-                                   final Map<String, String> metadata)
+                                   final Map<String, String> metadata,
+                                   final UUID hostId)
                                                                        throws LockException
     {
         LockKey lockKey = new LockKey(dataCenter, resource);
@@ -72,7 +74,7 @@ public final class LockCache
 
         try
         {
-            return myLockSupplier.getLock(dataCenter, resource, priority, metadata);
+            return myLockSupplier.getLock(dataCenter, resource, priority, metadata, hostId);
         }
         catch (LockException e)
         {
@@ -95,7 +97,7 @@ public final class LockCache
     @FunctionalInterface
     public interface LockSupplier
     {
-        DistributedLock getLock(String dataCenter, String resource, int priority, Map<String, String> metadata)
+        DistributedLock getLock(String dataCenter, String resource, int priority, Map<String, String> metadata, UUID hostId)
                                                                                                                 throws LockException;
     }
 

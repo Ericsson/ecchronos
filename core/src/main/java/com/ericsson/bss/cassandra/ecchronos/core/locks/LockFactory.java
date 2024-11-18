@@ -18,6 +18,7 @@ import java.io.Closeable;
 import java.util.Map;
 import java.util.Optional;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
+import java.util.UUID;
 
 /**
  * Interface for distributed lock factories.
@@ -35,10 +36,12 @@ public interface LockFactory
      * @param priority
      *            The priority of the lock.
      * @param metadata
-     *            The metadata of the lock.
+     *  The metadata of the lock.
+     *  @param hostId
+     *  The hostId.
      * @return The lock if able to lock the resource.
      */
-    DistributedLock tryLock(String dataCenter, String resource, int priority, Map<String, String> metadata)
+    DistributedLock tryLock(String dataCenter, String resource, int priority, Map<String, String> metadata, UUID hostId)
                                                                                                             throws LockException;
 
     /**

@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.locks;
 
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory.DistributedLock;
+import java.util.UUID;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -40,6 +42,7 @@ public class TestLockCache
     private static final String RESOURCE = "RepairResource-91e32362-7af4-11e9-8f9e-2a86e4085a59-1";
     private static final int PRIORITY = 1;
     private static final Map<String, String> METADATA = new HashMap<>();
+    private static final UUID NODE_ID = UUID.randomUUID();
 
     @Mock
     private LockCache.LockSupplier mockedLockSupplier;
@@ -124,7 +127,7 @@ public class TestLockCache
 
     private void assertGetLockRetrievesExpectedLock(String resource, DistributedLock expectedLock) throws LockException
     {
-        assertThat(myLockCache.getLock(DATA_CENTER, resource, PRIORITY, METADATA)).isSameAs(expectedLock);
+        assertThat(myLockCache.getLock(DATA_CENTER, resource, PRIORITY, METADATA, NODE_ID)).isSameAs(expectedLock);
         assertThat(myLockCache.getCachedFailure(DATA_CENTER, resource)).isEmpty();
     }
 
@@ -135,7 +138,7 @@ public class TestLockCache
 
     private void assertGetLockThrowsException(String resource, LockException expectedException)
     {
-        assertThatThrownBy(() -> myLockCache.getLock(DATA_CENTER, resource, PRIORITY, METADATA)).isSameAs(expectedException);
+        assertThatThrownBy(() -> myLockCache.getLock(DATA_CENTER, resource, PRIORITY, METADATA, NODE_ID)).isSameAs(expectedException);
         assertThat(myLockCache.getCachedFailure(DATA_CENTER, resource)).isNotEmpty();
     }
 
@@ -147,7 +150,7 @@ public class TestLockCache
     private DistributedLock doReturnLockOnGetLock(String resource) throws LockException
     {
         DistributedLock expectedLock = mock(DistributedLock.class);
-        when(mockedLockSupplier.getLock(eq(DATA_CENTER), eq(resource), eq(PRIORITY), eq(METADATA))).thenReturn(expectedLock);
+        when(mockedLockSupplier.getLock(eq(DATA_CENTER), eq(resource), eq(PRIORITY), eq(METADATA), eq(NODE_ID))).thenReturn(expectedLock);
         return expectedLock;
     }
 
@@ -159,7 +162,7 @@ public class TestLockCache
     private LockException doThrowOnGetLock(String resource) throws LockException
     {
         LockException expectedException = new LockException("");
-        when(mockedLockSupplier.getLock(eq(DATA_CENTER), eq(resource), eq(PRIORITY), eq(METADATA))).thenThrow(expectedException);
+        when(mockedLockSupplier.getLock(eq(DATA_CENTER), eq(resource), eq(PRIORITY), eq(METADATA), eq(NODE_ID))).thenThrow(expectedException);
         return expectedException;
     }
 }
