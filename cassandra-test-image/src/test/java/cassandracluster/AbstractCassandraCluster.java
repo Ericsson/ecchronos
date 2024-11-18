@@ -44,6 +44,7 @@ public class AbstractCassandraCluster
     private static final Logger LOG = LoggerFactory.getLogger(AbstractCassandraCluster.class);
     protected static String containerIP;
     protected static CqlSession mySession;
+    private static final long TENSECONDS = 10000;
 
     @BeforeClass
     public static void setup() throws InterruptedException
@@ -82,12 +83,6 @@ public class AbstractCassandraCluster
         composeContainer.getContainerByServiceName(node).get()
                 .execInContainer("nodetool", "-u", "cassandra", "-pw", "cassandra", "decommission").getStdout();
     }
-    protected void setupEcchronosKeyspace ( String node) throws IOException, InterruptedException
-    {
-        composeContainer.getContainerByServiceName(node).get()
-                .execInContainer("nodetool", "-u", "cassandra", "-pw", "cassandra", "decommission").getStdout();
-    }
-
     protected void startContainer ( String node)
     {
         DockerClient dockerClient = DockerClientFactory.instance().client();
@@ -115,16 +110,16 @@ public class AbstractCassandraCluster
         String stdout = composeContainer.getContainerByServiceName(node).get()
                 .execInContainer("nodetool", "-u", "cassandra", "-pw", "cassandra", "status").getStdout();
         return stdout.split("UN",-1).length-1;
-
-
     }
     protected static boolean waitForNodesToBeUp( String node, int expectedNodes, long maxWaitTimeInMillis)
     {
         long startTime = System.currentTimeMillis();
         LOG.info("Waiting 10sec");
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
+        try
+        {
+            Thread.sleep(TENSECONDS);
+        } catch (InterruptedException e)
+        {
             // ignore and retry
         }
         while ( startTime + maxWaitTimeInMillis > System.currentTimeMillis())
@@ -132,13 +127,11 @@ public class AbstractCassandraCluster
             try
             {
                 if (getNodeCountViaNodetool(node) == expectedNodes)
+                {
                     return true;
+                }
             }
-            catch (IOException e)
-            {
-                // ignore and retry
-            }
-            catch (InterruptedException e)
+            catch (IOException | InterruptedException e)
             {
                 // ignore and retry
             }
@@ -146,21 +139,26 @@ public class AbstractCassandraCluster
         LOG.info("Timed out waiting for the Cassandra cluster to finish starting up.");
         return false;
     }
-    protected void loadEcchronosKeyspace () throws InterruptedException {
+    protected void loadEcchronosKeyspace () throws InterruptedException
+    {
         Path cqlfile = Paths.get("")
             .toAbsolutePath()
             .getParent()
             .resolve("cassandra-test-image/src/main/docker/create_keyspaces.cql");
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(cqlfile.toFile()))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(cqlfile.toFile())))
+        {
             String line;
-            while ((line = reader.readLine()) != null) {
+            while ((line = reader.readLine()) != null)
+            {
 
                 System.out.println(line);
                 mySession.execute(line);
                 Thread.sleep(500);
             }
-        } catch (IOException e) {
+        }
+        catch (IOException e)
+        {
             System.err.println("Error reading the file: " + e.getMessage());
         }
 
