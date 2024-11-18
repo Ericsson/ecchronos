@@ -77,7 +77,7 @@ The following table state what versions of ecChronos is still under active maint
 |  3.x.x  |  2022-Jun-30  |   -    |
 |  4.x.x  |  2022-Dec-15  |   -    |
 |  5.x.x  |  2023-Dec-06  |   X    |
-|  6.x.x  |  2024-???-??  |   X    |
+|  6.x.x  |  2024-Nov-18  |   X    |
 
 ### REST API
 

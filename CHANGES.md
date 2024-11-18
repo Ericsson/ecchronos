@@ -1,5 +1,7 @@
 # Changes
 
+## Version 6.0.1
+
 ## Version 6.0.0
 
 * Bump Spring, Tomcat, Java, SnakeYaml, Jackson and various other dependencies - Issues #704, #754
