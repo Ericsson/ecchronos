@@ -14,12 +14,17 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler;
 
+import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobException;
+import java.util.HashMap;
 import java.util.UUID;
 
 @SuppressWarnings("VisibilityModifier")
 public abstract class ScheduledTask
 {
+    private static final String DEFAULT_SCHEDULE_RESOURCE = "SCHEDULE_LOCK";
+
     protected final int myPriority;
 
     protected ScheduledTask()
@@ -52,6 +57,21 @@ public abstract class ScheduledTask
     public void cleanup()
     {
         // Let subclasses override
+    }
+
+    /**
+     * Get the lock used by this scheduled job.
+     *
+     * @param lockFactory
+     *            The lock factory to use.
+      @param nodeId
+     *           The nodeId.
+     * @return The lock used by this scheduled job.
+     * @throws LockException Thrown when it's not possible to get the lock.
+     */
+    public LockFactory.DistributedLock getLock(final LockFactory lockFactory, final UUID nodeId) throws LockException
+    {
+        return lockFactory.tryLock(null, DEFAULT_SCHEDULE_RESOURCE, myPriority, new HashMap<>(), nodeId);
     }
 }
 

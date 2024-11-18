@@ -78,14 +78,3 @@ public class TestLockCollection
         }
     }
 }
-
-class DummyLock implements LockFactory.DistributedLock
-{
-    public volatile boolean closed = false;
-
-    @Override
-    public void close()
-    {
-        closed = true;
-    }
-}

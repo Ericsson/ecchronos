@@ -114,14 +114,10 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
 
         hostStates = mock(HostStates.class);
         when(hostStates.isUp(any(Node.class))).thenReturn(true);
-        Node node = mock(Node.class);
-        when(node.getHostId()).thenReturn(UUID.randomUUID());
         myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(hostStates)
-                .withStatementDecorator(s -> s)
                 .withKeyspaceName(myKeyspaceName)
-                .withNode(node)
                 .build();
 
         myLockStatement = mySession.prepare(QueryBuilder.insertInto(myKeyspaceName, TABLE_LOCK)
@@ -159,9 +155,7 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
         myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(hostStates)
-                .withStatementDecorator(s -> s)
                 .withKeyspaceName(myKeyspaceName)
-                .withNode(node)
                 .build();
         assertThat(myLockFactory.getCasLockFactoryCacheContext().getFailedLockRetryAttempts()).isEqualTo(9);
         assertThat(myLockFactory.getCasLockFactoryCacheContext().getLockUpdateTimeInSeconds()).isEqualTo(120);
@@ -170,7 +164,7 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
     @Test
     public void testGetLock() throws LockException
     {
-        try (LockFactory.DistributedLock lock = myLockFactory.tryLock(DATA_CENTER, "lock", 1, new HashMap<String, String>()))
+        try (LockFactory.DistributedLock lock = myLockFactory.tryLock(DATA_CENTER, "lock", 1, new HashMap<String, String>(), UUID.randomUUID()))
         {
         }
 
@@ -181,7 +175,7 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
     @Test
     public void testGetGlobalLock() throws LockException
     {
-        try (LockFactory.DistributedLock lock = myLockFactory.tryLock(null, "lock", 1, new HashMap<String, String>()))
+        try (LockFactory.DistributedLock lock = myLockFactory.tryLock(null, "lock", 1, new HashMap<String, String>(), UUID.randomUUID()))
         {
         }
         assertPriorityListEmpty("lock");
@@ -191,9 +185,10 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
     @Test
     public void testGlobalLockTakenThrowsException()
     {
-        execute(myLockStatement.bind("lock", UUID.randomUUID(), new HashMap<>()));
+        UUID nodeId= UUID.randomUUID();
+        execute(myLockStatement.bind("lock", nodeId, new HashMap<>()));
 
-        assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(null, "lock", 1, new HashMap<>()));
+        assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(null, "lock", 1, new HashMap<>(), nodeId));
         assertPrioritiesInList("lock", 1);
         assertThat(myLockFactory.getCachedFailure(null, "lock")).isNotEmpty();
     }
@@ -208,7 +203,8 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
                                                          IOException,
                                                          InterruptedException
     {
-        execute(myLockStatement.bind("lock", UUID.randomUUID(), new HashMap<>()));
+        UUID nodeId= UUID.randomUUID();
+        execute(myLockStatement.bind("lock", nodeId, new HashMap<>()));
         InternalDriverContext driverContext = (InternalDriverContext) mySession.getContext();
         //Check that no in-flight queries exist, we want all previous queries to complete before we proceed
         Optional<Node> connectedNode = driverContext.getPoolManager().getPools().keySet().stream().findFirst();
@@ -221,8 +217,8 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
         long expectedLockPriorityReadCount = getReadCount(TABLE_LOCK_PRIORITY) + 2; // We read the priorities
         long expectedLockPriorityWriteCount = getWriteCount(TABLE_LOCK_PRIORITY) + 1; // We update our local priority once
 
-        assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(null, "lock", 2, new HashMap<>()));
-        assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(null, "lock", 1, new HashMap<>()));
+        assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(null, "lock", 2, new HashMap<>(), nodeId));
+        assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(null, "lock", 1, new HashMap<>(), nodeId));
 
         assertThat(getReadCount(TABLE_LOCK_PRIORITY)).isEqualTo(expectedLockPriorityReadCount);
         assertThat(getWriteCount(TABLE_LOCK_PRIORITY)).isEqualTo(expectedLockPriorityWriteCount);
@@ -253,7 +249,7 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
     {
         execute(myCompeteStatement.bind("lock", UUID.randomUUID(), 2));
 
-        assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(DATA_CENTER, "lock", 1, new HashMap<>()));
+        assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(DATA_CENTER, "lock", 1, new HashMap<>(), UUID.randomUUID()));
         assertPrioritiesInList("lock", 1, 2);
         assertThat(myLockFactory.getCachedFailure(DATA_CENTER, "lock")).isNotEmpty();
     }
@@ -261,9 +257,10 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
     @Test
     public void testGetAlreadyTakenLock()
     {
-        execute(myLockStatement.bind("lock", UUID.randomUUID(), new HashMap<>()));
+        UUID nodeId= UUID.randomUUID();
+        execute(myLockStatement.bind("lock", nodeId, new HashMap<>()));
 
-        assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(DATA_CENTER, "lock", 1, new HashMap<>()));
+        assertThatExceptionOfType(LockException.class).isThrownBy(() -> myLockFactory.tryLock(DATA_CENTER, "lock", 1, new HashMap<>(), nodeId));
         assertPrioritiesInList("lock", 1);
         assertThat(myLockFactory.getCachedFailure(DATA_CENTER, "lock")).isNotEmpty();
     }
@@ -276,12 +273,10 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
         CASLockFactory lockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(hostStates)
-                .withStatementDecorator(s -> s)
                 .withKeyspaceName(myKeyspaceName)
-                .withNode(getNativeConnectionProvider().getNodes().get(0))
                 .build();
 
-        try (LockFactory.DistributedLock lock = lockFactory.tryLock(DATA_CENTER, "lock", 1, new HashMap<>()))
+        try (LockFactory.DistributedLock lock = lockFactory.tryLock(DATA_CENTER, "lock", 1, new HashMap<>(), localHostId))
         {
         }
 
@@ -297,11 +292,9 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
         CASLockFactory lockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(hostStates)
-                .withStatementDecorator(s -> s)
                 .withKeyspaceName(myKeyspaceName)
-                .withNode(getNativeConnectionProvider().getNodes().get(0))
                 .build();
-        try (LockFactory.DistributedLock lock = lockFactory.tryLock(DATA_CENTER, "lock", 2, new HashMap<>()))
+        try (LockFactory.DistributedLock lock = lockFactory.tryLock(DATA_CENTER, "lock", 2, new HashMap<>(), localHostId))
         {
         }
 
@@ -312,10 +305,11 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
     @Test
     public void testReadMetadata() throws LockException
     {
+        UUID nodeId= UUID.randomUUID();
         Map<String, String> expectedMetadata = new HashMap<>();
         expectedMetadata.put("data", "something");
 
-        try (LockFactory.DistributedLock lock = myLockFactory.tryLock(DATA_CENTER, "lock", 1, expectedMetadata))
+        try (LockFactory.DistributedLock lock = myLockFactory.tryLock(DATA_CENTER, "lock", 1, expectedMetadata, nodeId))
         {
             Map<String, String> actualMetadata = myLockFactory.getLockMetadata(DATA_CENTER, "lock");
 
@@ -330,6 +324,7 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
     public void testInterruptCasLockUpdate() throws InterruptedException
     {
         Map<String, String> metadata = new HashMap<>();
+        UUID nodeId= UUID.randomUUID();
 
         ExecutorService executorService = Executors.newFixedThreadPool(1);
 
@@ -341,7 +336,7 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
                             "lock",
                             1,
                             metadata,
-                            myLockFactory.getHostId(),
+                            nodeId,
                             myLockFactory.getCasLockStatement()));
 
             Thread.sleep(100);
@@ -364,12 +359,13 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
     public void testFailedLockRetryAttempts()
     {
         Map<String, String> metadata = new HashMap<>();
+        UUID nodeId= UUID.randomUUID();
         try (CASLock lockUpdateTask = new CASLock(
                 DATA_CENTER,
                 "lock",
                 1,
                 metadata,
-                myLockFactory.getHostId(),
+                nodeId,
                 myLockFactory.getCasLockStatement()))
         {
             for (int i = 0; i < 10; i++)
@@ -378,7 +374,7 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
                 assertThat(lockUpdateTask.getFailedAttempts()).isEqualTo(i + 1);
             }
 
-            execute(myLockStatement.bind("lock", myLockFactory.getHostId(), new HashMap<>()));
+            execute(myLockStatement.bind("lock", nodeId, new HashMap<>()));
             lockUpdateTask.run();
             assertThat(lockUpdateTask.getFailedAttempts()).isEqualTo(0);
         }
@@ -395,7 +391,6 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
                 .isThrownBy(() -> new CASLockFactoryBuilder()
                         .withNativeConnectionProvider(getNativeConnectionProvider())
                         .withHostStates(hostStates)
-                        .withStatementDecorator(s -> s)
                         .withKeyspaceName(myKeyspaceName)
                         .build());
 
@@ -418,7 +413,6 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
                 .isThrownBy(() -> new CASLockFactoryBuilder()
                         .withNativeConnectionProvider(getNativeConnectionProvider())
                         .withHostStates(hostStates)
-                        .withStatementDecorator(s -> s)
                         .withKeyspaceName(myKeyspaceName)
                         .build());
 
@@ -436,7 +430,6 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
                 .isThrownBy(() -> new CASLockFactoryBuilder()
                         .withNativeConnectionProvider(getNativeConnectionProvider())
                         .withHostStates(hostStates)
-                        .withStatementDecorator(s -> s)
                         .withKeyspaceName(myKeyspaceName)
                         .build());
 
@@ -493,7 +486,6 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
                             }
                         })
                         .withHostStates(hostStates)
-                        .withStatementDecorator(s -> s)
                         .withKeyspaceName(myKeyspaceName)
                         .build());
     }
@@ -512,10 +504,8 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
         myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(getDataCenterAwareConnectionTypeProvider())
                 .withHostStates(hostStates)
-                .withStatementDecorator(s -> s)
                 .withKeyspaceName(myKeyspaceName)
                 .withConsistencySerial(ConsistencyType.DEFAULT)
-                .withNode(nodeMock)
                 .build();
 
         assertEquals(ConsistencyLevel.LOCAL_SERIAL, myLockFactory.getSerialConsistencyLevel());
@@ -534,10 +524,8 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
         myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(connectionProviderMock)
                 .withHostStates(hostStates)
-                .withStatementDecorator(s -> s)
                 .withKeyspaceName(myKeyspaceName)
                 .withConsistencySerial(ConsistencyType.DEFAULT)
-                .withNode(nodeMock)
                 .build();
 
         assertEquals(ConsistencyLevel.SERIAL, myLockFactory.getSerialConsistencyLevel());
@@ -555,10 +543,8 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
         myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(connectionProviderMock)
                 .withHostStates(hostStates)
-                .withStatementDecorator(s -> s)
                 .withKeyspaceName(myKeyspaceName)
                 .withConsistencySerial(ConsistencyType.LOCAL)
-                .withNode(nodeMock)
                 .build();
 
         assertEquals(ConsistencyLevel.LOCAL_SERIAL, myLockFactory.getSerialConsistencyLevel());
@@ -576,10 +562,8 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
         myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(connectionProviderMock)
                 .withHostStates(hostStates)
-                .withStatementDecorator(s -> s)
                 .withKeyspaceName(myKeyspaceName)
                 .withConsistencySerial(ConsistencyType.SERIAL)
-                .withNode(nodeMock)
                 .build();
 
         assertEquals(ConsistencyLevel.SERIAL, myLockFactory.getSerialConsistencyLevel());
