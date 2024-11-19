@@ -16,10 +16,12 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.RepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.RepairTask;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
@@ -79,6 +81,9 @@ public class TestIncrementalRepairJob
     @Mock
     private Node mockNode;
 
+    @Mock
+    private LockFactory myLockFactory;
+
     private final TableReference myTableReference = tableReference(keyspaceName, tableName);
     private RepairConfiguration myRepairConfiguration;
     private final UUID mockNodeID = UUID.randomUUID();
@@ -102,6 +107,7 @@ public class TestIncrementalRepairJob
         verifyNoMoreInteractions(ignoreStubs(myKeyspaceMetadata));
         verifyNoMoreInteractions(ignoreStubs(myReplicationState));
         verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
+        verifyNoMoreInteractions(ignoreStubs(myLockFactory));
     }
 
     @Test
@@ -300,6 +306,8 @@ public class TestIncrementalRepairJob
                 .withJmxProxyFactory(myJmxProxyFactory).withReplicationState(myReplicationState)
                 .withTableRepairMetrics(myTableRepairMetrics).withRepairConfiguration(myRepairConfiguration)
                 .withCassandraMetrics(myCassandraMetrics)
-                .withNode(mockNode).build();
+                .withNode(mockNode)
+                .withRepairLockType(RepairLockType.VNODE)
+                .build();
     }
 }

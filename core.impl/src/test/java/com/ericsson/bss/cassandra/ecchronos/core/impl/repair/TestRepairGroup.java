@@ -15,21 +15,29 @@
 package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.ignoreStubs;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 
 
 import com.datastax.oss.driver.api.core.metadata.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.DummyLock;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairTask;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairResource;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairResourceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistory;
@@ -39,9 +47,14 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryService;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairParallelism;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobException;
+import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
@@ -81,6 +94,15 @@ public class TestRepairGroup
     @Mock
     private Node mockNode;
 
+    @Mock
+    private RepairResourceFactory myRepairResourceFactory;
+
+    @Mock
+    private RepairLockFactory myRepairLockFactory;
+
+    @Mock
+    private LockFactory myLockFactory;
+
     private final UUID myNodeID = UUID.randomUUID();
 
     private final UUID myJobId = UUID.randomUUID();
@@ -104,6 +126,46 @@ public class TestRepairGroup
     {
         verifyNoMoreInteractions(ignoreStubs(myJmxProxyFactory));
         verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
+    }
+
+    @Test
+    public void testGetLock() throws LockException
+    {
+        Map<String, String> metadata = new HashMap<>();
+        metadata.put("keyspace", KEYSPACE_NAME);
+        metadata.put("table", TABLE_NAME);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(), ImmutableList.of(), System.currentTimeMillis());
+        Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1", "my-resource"));
+
+        doReturn(repairResources).when(myRepairResourceFactory).getRepairResources(eq(replicaRepairGroup));
+        doReturn(new DummyLock()).when(myRepairLockFactory).getLock(eq(myLockFactory), eq(repairResources), eq(metadata), eq(PRIORITY), eq(myNodeID));
+
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).build(PRIORITY);
+
+        repairGroup.getLock(myLockFactory, myNodeID);
+
+        verify(myRepairResourceFactory).getRepairResources(eq(replicaRepairGroup));
+        verify(myRepairLockFactory).getLock(eq(myLockFactory), eq(repairResources), eq(metadata), eq(PRIORITY), eq(myNodeID));
+    }
+
+    @Test
+    public void testGetLockWithThrowingLockingStrategy() throws LockException
+    {
+        Map<String, String> metadata = new HashMap<>();
+        metadata.put("keyspace", KEYSPACE_NAME);
+        metadata.put("table", TABLE_NAME);
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(), ImmutableList.of(), System.currentTimeMillis());
+        Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1", "my-resource"));
+
+        doReturn(repairResources).when(myRepairResourceFactory).getRepairResources(eq(replicaRepairGroup));
+        doThrow(LockException.class).when(myRepairLockFactory).getLock(eq(myLockFactory), eq(repairResources), eq(metadata), eq(PRIORITY), eq(myNodeID));
+
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).build(PRIORITY);
+
+        assertThatExceptionOfType(LockException.class).isThrownBy(() -> repairGroup.getLock(myLockFactory, myNodeID));
+
+        verify(myRepairResourceFactory).getRepairResources(eq(replicaRepairGroup));
+        verify(myRepairLockFactory).getLock(eq(myLockFactory), eq(repairResources), eq(metadata), eq(PRIORITY), eq(myNodeID));
     }
 
     @Test
@@ -220,7 +282,10 @@ public class TestRepairGroup
                 .withJmxProxyFactory(myJmxProxyFactory)
                 .withTableRepairMetrics(myTableRepairMetrics)
                 .withRepairHistory(myRepairHistoryService)
-                .withJobId(myJobId);
+                .withJobId(myJobId)
+                .withRepairResourceFactory(myRepairResourceFactory)
+                .withRepairLockFactory(myRepairLockFactory)
+                .withNode(mockNode);
     }
 
     private DriverNode mockNode(String dataCenter)

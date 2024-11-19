@@ -18,6 +18,10 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairTask;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairTask;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairResource;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairResourceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
@@ -29,6 +33,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairPolicy;
 import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryService;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -36,8 +41,11 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +56,8 @@ import org.slf4j.LoggerFactory;
 public class RepairGroup extends ScheduledTask
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairGroup.class);
+    private static final String LOCK_METADATA_KEYSPACE = "keyspace";
+    private static final String LOCK_METADATA_TABLE = "table";
 
     private final TableReference myTableReference;
     private RepairHistory myRepairHistory;
@@ -59,6 +69,8 @@ public class RepairGroup extends ScheduledTask
     private BigInteger myTokensPerRepair;
     private final UUID myJobId;
     private Node myNode;
+    private final RepairLockFactory myRepairLockFactory;
+    private final RepairResourceFactory myRepairResourceFactory;
 
     /**
      * Constructs an IncrementalRepairTask for a specific node and table.
@@ -82,6 +94,10 @@ public class RepairGroup extends ScheduledTask
                 .checkNotNull(builder.myTableRepairMetrics, "Table repair metrics must be set");
         myRepairPolicies = new ArrayList<>(Preconditions
                 .checkNotNull(builder.myRepairPolicies, "Repair policies must be set"));
+        myRepairLockFactory = Preconditions
+                .checkNotNull(builder.myRepairLockFactory, "Repair lock factory must be set");
+        myRepairResourceFactory = Preconditions
+                .checkNotNull(builder.myRepairResourceFactory, "Repair resource factory must be set");
 
         if (!RepairType.INCREMENTAL.equals(myRepairConfiguration.getRepairType()))
         {
@@ -148,6 +164,24 @@ public class RepairGroup extends ScheduledTask
         return myRepairPolicies.stream().allMatch(repairPolicy -> repairPolicy.shouldRun(myTableReference));
     }
 
+    /**
+     * Get lock for the keyspace and table.
+     *
+     * @param lockFactory The lock factory to use.
+     * @param nodeId
+     * @return LockFactory.DistributedLock
+     * @throws LockException Lock factory unable to get a lock.
+     */
+    @Override
+    public LockFactory.DistributedLock getLock(final LockFactory lockFactory, final UUID nodeId) throws LockException
+    {
+        Map<String, String> metadata = new HashMap<>();
+        metadata.put(LOCK_METADATA_KEYSPACE, myTableReference.getKeyspace());
+        metadata.put(LOCK_METADATA_TABLE, myTableReference.getTable());
+
+        Set<RepairResource> repairResources = myRepairResourceFactory.getRepairResources(myReplicaRepairGroup);
+        return myRepairLockFactory.getLock(lockFactory, repairResources, metadata, myPriority, nodeId);
+    }
     /**
      * String representation.
      *
@@ -219,7 +253,32 @@ public class RepairGroup extends ScheduledTask
         private RepairHistoryService myRepairHistory;
         private Node myNode;
         private UUID myJobId;
+        private RepairLockFactory myRepairLockFactory;
+        private RepairResourceFactory myRepairResourceFactory;
 
+        /**
+         * Build with repair lock factory.
+         *
+         * @param repairLockFactory Repair lock factory.
+         * @return Builder
+         */
+        public Builder withRepairLockFactory(final RepairLockFactory repairLockFactory)
+        {
+            myRepairLockFactory = repairLockFactory;
+            return this;
+        }
+
+        /**
+         * Build with repair resource factory.
+         *
+         * @param repairResourceFactory Repair resource factory.
+         * @return Builder
+         */
+        public Builder withRepairResourceFactory(final RepairResourceFactory repairResourceFactory)
+        {
+            myRepairResourceFactory = repairResourceFactory;
+            return this;
+        }
 
         /**
          * Build with table reference.

@@ -12,10 +12,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler;
+package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 
+import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairPolicy;
@@ -26,11 +30,13 @@ import java.util.UUID;
 
 public abstract class ScheduledRepairJob extends ScheduledJob
 {
+    protected static final RepairLockFactory REPAIR_LOCK_FACTORY = new RepairLockFactoryImpl();
     private final TableReference myTableReference;
     private final DistributedJmxProxyFactory myJmxProxyFactory;
     private final RepairConfiguration myRepairConfiguration;
     private final List<TableRepairPolicy> myRepairPolicies;
     private final TableRepairMetrics myTableRepairMetrics;
+    private final RepairLockType myRepairLockType;
 
     public ScheduledRepairJob(
             final Configuration configuration,
@@ -38,7 +44,8 @@ public abstract class ScheduledRepairJob extends ScheduledJob
             final DistributedJmxProxyFactory jmxProxyFactory,
             final RepairConfiguration repairConfiguration,
             final List<TableRepairPolicy> repairPolicies,
-            final TableRepairMetrics tableRepairMetrics)
+            final TableRepairMetrics tableRepairMetrics,
+            final RepairLockType repairLockType)
     {
         super(configuration);
         myTableReference = Preconditions.checkNotNull(tableReference, "Table reference must be set");
@@ -46,6 +53,7 @@ public abstract class ScheduledRepairJob extends ScheduledJob
         myRepairConfiguration = Preconditions.checkNotNull(repairConfiguration, "Repair configuration must be set");
         myRepairPolicies = Preconditions.checkNotNull(repairPolicies, "Repair policies must be set");
         myTableRepairMetrics = Preconditions.checkNotNull(tableRepairMetrics, "Table repair metrics must be set");
+        myRepairLockType = Preconditions.checkNotNull(repairLockType, "Repair lock type must be set");
     }
 
     public ScheduledRepairJob(
@@ -55,7 +63,8 @@ public abstract class ScheduledRepairJob extends ScheduledJob
             final DistributedJmxProxyFactory jmxProxyFactory,
             final RepairConfiguration repairConfiguration,
             final List<TableRepairPolicy> repairPolicies,
-            final TableRepairMetrics tableRepairMetrics)
+            final TableRepairMetrics tableRepairMetrics,
+            final RepairLockType repairLockType)
     {
         super(configuration, id);
         myTableReference = Preconditions.checkNotNull(tableReference, "Table reference must be set");
@@ -63,6 +72,12 @@ public abstract class ScheduledRepairJob extends ScheduledJob
         myRepairConfiguration = Preconditions.checkNotNull(repairConfiguration, "Repair configuration must be set");
         myRepairPolicies = Preconditions.checkNotNull(repairPolicies, "Repair policies must be set");
         myTableRepairMetrics = Preconditions.checkNotNull(tableRepairMetrics, "Table repair metrics must be set");
+        myRepairLockType = Preconditions.checkNotNull(repairLockType, "Repair lock type must be set");
+    }
+
+    protected final RepairLockType getRepairLockType()
+    {
+        return myRepairLockType;
     }
 
     /**
@@ -123,7 +138,7 @@ public abstract class ScheduledRepairJob extends ScheduledJob
                 myJmxProxyFactory, that.myJmxProxyFactory) && Objects.equals(myRepairConfiguration,
                 that.myRepairConfiguration) && Objects.equals(
                 myRepairPolicies, that.myRepairPolicies) && Objects.equals(myTableRepairMetrics,
-                that.myTableRepairMetrics);
+                that.myTableRepairMetrics)  && myRepairLockType == that.myRepairLockType;
     }
 
     /**
@@ -133,7 +148,7 @@ public abstract class ScheduledRepairJob extends ScheduledJob
     public int hashCode()
     {
         return Objects.hash(super.hashCode(), myTableReference, myJmxProxyFactory, myRepairConfiguration,
-                myRepairPolicies, myTableRepairMetrics);
+                myRepairPolicies, myTableRepairMetrics, myRepairLockType);
     }
 }
 

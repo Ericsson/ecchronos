@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.application.config.repair;
 
 import com.ericsson.bss.cassandra.ecchronos.application.spring.AbstractRepairConfigurationProvider;
+
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Locale;
@@ -47,6 +48,18 @@ public class GlobalRepairConfig extends RepairConfig
         myRepairConfigurationClass = repairConfigurationClass;
     }
 
+    @JsonProperty("lock_type")
+    public final RepairLockType getRepairLockType()
+    {
+        return myRepairLockType;
+    }
+
+    @JsonProperty("lock_type")
+    public final void setRepairLockType(final String repairLockType)
+    {
+        myRepairLockType = RepairLockType.valueOf(repairLockType.toUpperCase(Locale.US));
+    }
+
     @JsonProperty("history_lookback")
     public final Interval getRepairHistoryLookback()
     {
@@ -69,18 +82,6 @@ public class GlobalRepairConfig extends RepairConfig
     public final void setRepairHistory(final RepairHistory repairHistory)
     {
         myRepairHistory = repairHistory;
-    }
-
-    @JsonProperty("lock_type")
-    public final RepairLockType getRepairLockType()
-    {
-        return myRepairLockType;
-    }
-
-    @JsonProperty("lock_type")
-    public final void setRepairLockType(final String repairLockType)
-    {
-        myRepairLockType = RepairLockType.valueOf(repairLockType.toUpperCase(Locale.US));
     }
 }
 

@@ -15,10 +15,11 @@
 package com.ericsson.bss.cassandra.ecchronos.core.impl.table;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.RepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
@@ -65,7 +66,7 @@ public class TableRepairJob extends ScheduledRepairJob
     {
         super(builder.configuration, builder.tableReference.getId(), builder.tableReference, builder.jmxProxyFactory,
                 builder.repairConfiguration, builder.repairPolicies,
-                builder.tableRepairMetrics);
+                builder.tableRepairMetrics, builder.repairLockType);
         myNode = Preconditions.checkNotNull(builder.myNode,
                 "Node must be set");
         myRepairState = Preconditions.checkNotNull(builder.repairState,
@@ -355,6 +356,20 @@ public class TableRepairJob extends ScheduledRepairJob
         private TableStorageStates tableStorageStates;
         private final List<TableRepairPolicy> repairPolicies = new ArrayList<>();
         private RepairHistoryService repairHistory;
+        private RepairLockType repairLockType;
+
+        /**
+         * Build table repair job with repair lock type.
+         *
+         * @param theRepairLockType
+         *         Repair lock type.
+         * @return Builder
+         */
+        public Builder withRepairLockType(final RepairLockType theRepairLockType)
+        {
+            this.repairLockType = theRepairLockType;
+            return this;
+        }
 
         /**
          * Build table repair job with configuration.

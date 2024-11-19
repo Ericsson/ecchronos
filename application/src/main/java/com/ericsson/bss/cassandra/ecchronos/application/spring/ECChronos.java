@@ -87,6 +87,7 @@ public class ECChronos implements Closeable
                 .withRepairHistory(repairHistoryService)
                 .withFaultReporter(repairFaultReporter)
                 .withTableStorageStates(myECChronosInternals.getTableStorageStates())
+                .withRepairLockType(configuration.getRepairConfig().getRepairLockType())
                 .build();
 
         AbstractRepairConfigurationProvider repairConfigurationProvider = new FileBasedRepairConfiguration(applicationContext);
