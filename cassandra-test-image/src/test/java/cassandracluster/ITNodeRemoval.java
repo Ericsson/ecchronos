@@ -27,11 +27,15 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.any;
+
 public class ITNodeRemoval extends AbstractCassandraCluster
 {
     private static final Logger LOG = LoggerFactory.getLogger(ITNodeRemoval.class);
+
     @Test
     public void testNodeDecommissionedFromCluster() throws InterruptedException, IOException, ConfigurationException, EcChronosException
     {
@@ -52,7 +56,8 @@ public class ITNodeRemoval extends AbstractCassandraCluster
         {
             decommissionNode("cassandra-seed-dc1-rack1-node1");
         }
-        catch (IOException e) {
+        catch (IOException e)
+        {
             throw new RuntimeException(e);
         }
         LOG.info("Waiting for node to be decommissioned.");

@@ -56,7 +56,8 @@ public class ITNodeAddition extends AbstractCassandraCluster
 
     }
     @Test
-    public void testAdditionalNodesAddedToCluster() throws InterruptedException, IOException {
+    public void testAdditionalNodesAddedToCluster() throws InterruptedException, IOException
+    {
         DefaultRepairConfigurationProvider listener = mock(DefaultRepairConfigurationProvider.class);
         containerIP = composeContainer.getContainerByServiceName("cassandra-seed-dc1-rack1-node1").get()
                 .getContainerInfo()
@@ -75,8 +76,7 @@ public class ITNodeAddition extends AbstractCassandraCluster
         composeContainer.start();
         LOG.info("Waiting for the new nodes to finish starting up.");
         waitForNodesToBeUp("cassandra-seed-dc1-rack1-node1",4,50000);
-
-
+        
         assertEquals( 4, getNodeCountViaNodetool("cassandra-node-dc1-rack1-node2"));
 
         verify(listener, times(3)).onAdd(any());

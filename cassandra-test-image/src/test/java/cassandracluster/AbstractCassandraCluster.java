@@ -29,14 +29,11 @@ import com.github.dockerjava.api.command.StartContainerCmd;
 import com.github.dockerjava.api.command.StopContainerCmd;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.platform.commons.util.StringUtils;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.DockerComposeContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.node.BooleanNode;
 
-import static org.junit.platform.commons.util.StringUtils.*;
 
 public class AbstractCassandraCluster
 {
@@ -83,6 +80,7 @@ public class AbstractCassandraCluster
         composeContainer.getContainerByServiceName(node).get()
                 .execInContainer("nodetool", "-u", "cassandra", "-pw", "cassandra", "decommission").getStdout();
     }
+
     protected void startContainer ( String node)
     {
         DockerClient dockerClient = DockerClientFactory.instance().client();
@@ -105,12 +103,14 @@ public class AbstractCassandraCluster
             stopCmd.exec();
         }
     }
+
     protected static int getNodeCountViaNodetool( String node) throws IOException, InterruptedException
     {
         String stdout = composeContainer.getContainerByServiceName(node).get()
                 .execInContainer("nodetool", "-u", "cassandra", "-pw", "cassandra", "status").getStdout();
         return stdout.split("UN",-1).length-1;
     }
+
     protected static boolean waitForNodesToBeUp( String node, int expectedNodes, long maxWaitTimeInMillis)
     {
         long startTime = System.currentTimeMillis();
@@ -139,6 +139,7 @@ public class AbstractCassandraCluster
         LOG.info("Timed out waiting for the Cassandra cluster to finish starting up.");
         return false;
     }
+    
     protected void loadEcchronosKeyspace () throws InterruptedException
     {
         Path cqlfile = Paths.get("")
@@ -161,10 +162,6 @@ public class AbstractCassandraCluster
         {
             System.err.println("Error reading the file: " + e.getMessage());
         }
-
-
     }
-
-
 }
 
