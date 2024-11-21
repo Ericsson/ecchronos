@@ -159,6 +159,7 @@
         <org.apache.maven.plugins.maven-javadoc-plugin.version>3.0.1
         </org.apache.maven.plugins.maven-javadoc-plugin.version>
         <org.apache.maven.plugins.maven-gpg-plugin.version>1.6</org.apache.maven.plugins.maven-gpg-plugin.version>
+        <jolokia.adapter.version>1.7.1</jolokia.adapter.version>
 
         <skipTests>false</skipTests>
         <skipUTs>${skipTests}</skipUTs>
@@ -345,6 +346,12 @@
                 <groupId>org.yaml</groupId>
                 <artifactId>snakeyaml</artifactId>
                 <version>${org.yaml.snakeyaml.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jolokia</groupId>
+                <artifactId>jolokia-jsr160</artifactId>
+                <version>${jolokia.adapter.version}</version>
             </dependency>
 
             <!-- test -->

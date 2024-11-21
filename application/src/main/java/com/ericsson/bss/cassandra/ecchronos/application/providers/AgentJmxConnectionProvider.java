@@ -15,6 +15,8 @@
 package com.ericsson.bss.cassandra.ecchronos.application.providers;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
+import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
+import com.ericsson.bss.cassandra.ecchronos.application.config.connection.JolokiaConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Credentials;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.JmxTLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
@@ -39,7 +41,7 @@ import java.util.function.Supplier;
 public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(AgentJmxConnectionProvider.class);
-    private final DistributedJmxConnectionProviderImpl myDistributedJmxConnectionProviderImpl;
+    private final DistributedJmxConnectionProvider myDistributedJmxConnectionProviderImpl;
 
     /**
      * Constructs an {@code AgentJmxConnectionProvider} with the specified parameters.
@@ -54,21 +56,26 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
      *         if an I/O error occurs during the initialization of the JMX connection provider.
      */
     public AgentJmxConnectionProvider(
+            final Config config,
             final Supplier<Security.JmxSecurity> jmxSecurity,
             final DistributedNativeConnectionProvider distributedNativeConnectionProvider,
             final EccNodesSync eccNodesSync
     ) throws IOException
     {
+        JolokiaConfig jolokiaConfig = config.getConnectionConfig().getJmxConnection().getJolokiaConfig();
         Supplier<String[]> credentials = () -> convertCredentials(jmxSecurity);
         Supplier<Map<String, String>> tls = () -> convertTls(jmxSecurity);
 
         LOG.info("Creating DistributedJmxConnectionConfig");
+
         myDistributedJmxConnectionProviderImpl = DistributedJmxConnectionProviderImpl.builder()
                 .withCqlSession(distributedNativeConnectionProvider.getCqlSession())
                 .withNodesList(distributedNativeConnectionProvider.getNodes())
                 .withCredentials(credentials)
                 .withEccNodesSync(eccNodesSync)
                 .withTLS(tls)
+                .withJolokiaEnabled(jolokiaConfig.isEnabled())
+                .withJolokiaPort(jolokiaConfig.getPort())
                 .build();
     }
 

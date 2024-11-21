@@ -47,6 +47,11 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.jolokia</groupId>
+            <artifactId>jolokia-jsr160</artifactId>
+        </dependency>
+
         <!-- Cassandra driver -->
         <dependency>
             <groupId>com.datastax.oss</groupId>

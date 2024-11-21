@@ -232,12 +232,13 @@ public class BeanConfigurator
      */
     @Bean
     public DistributedJmxConnectionProvider distributedJmxConnectionProvider(
+            final Config config,
             final DistributedNativeConnectionProvider distributedNativeConnectionProvider,
             final EccNodesSync eccNodesSync
     ) throws IOException
     {
         return getDistributedJmxConnection(
-                jmxSecurity::get, distributedNativeConnectionProvider, eccNodesSync);
+                config, jmxSecurity::get, distributedNativeConnectionProvider, eccNodesSync);
     }
 
     @Bean
@@ -302,13 +303,14 @@ public class BeanConfigurator
     }
 
     private DistributedJmxConnectionProvider getDistributedJmxConnection(
+            final Config config,
             final Supplier<Security.JmxSecurity> securitySupplier,
             final DistributedNativeConnectionProvider distributedNativeConnectionProvider,
             final EccNodesSync eccNodesSync
     ) throws IOException
     {
         return new AgentJmxConnectionProvider(
-                securitySupplier, distributedNativeConnectionProvider, eccNodesSync);
+                config, securitySupplier, distributedNativeConnectionProvider, eccNodesSync);
     }
 
     private void refreshSecurityConfig(
