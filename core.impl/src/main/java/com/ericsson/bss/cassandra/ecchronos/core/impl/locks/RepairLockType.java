@@ -34,7 +34,7 @@ public enum RepairLockType
         myRepairLockingFactoryProvider = repairLockingProvider;
     }
 
-    RepairResourceFactory getLockFactory()
+    public RepairResourceFactory getLockFactory()
     {
         return myRepairLockingFactoryProvider.get();
     }

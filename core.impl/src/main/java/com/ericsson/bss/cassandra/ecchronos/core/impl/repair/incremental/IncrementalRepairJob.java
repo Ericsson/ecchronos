@@ -15,12 +15,13 @@
 package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.RepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledTask;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicaRepairGroup;
@@ -56,7 +57,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
     IncrementalRepairJob(final Builder builder)
     {
         super(builder.myConfiguration, builder.myTableReference, builder.myJmxProxyFactory,
-                builder.myRepairConfiguration, builder.myRepairPolicies, builder.myTableRepairMetrics);
+                builder.myRepairConfiguration, builder.myRepairPolicies, builder.myTableRepairMetrics, builder.myRepairLockType);
         myNode = Preconditions.checkNotNull(builder.myNode, "Node must be set");
         myReplicationState = Preconditions.checkNotNull(builder.myReplicationState, "Replication state must be set");
         myCassandraMetrics = Preconditions.checkNotNull(builder.myCassandraMetrics, "Cassandra metrics must be set");
@@ -132,6 +133,8 @@ public class IncrementalRepairJob extends ScheduledRepairJob
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .withTableRepairMetrics(getTableRepairMetrics())
                 .withReplicaRepairGroup(replicaRepairGroup)
+                .withRepairLockFactory(REPAIR_LOCK_FACTORY)
+                .withRepairResourceFactory(getRepairLockType().getLockFactory())
                 .withRepairPolicies(getRepairPolicies()).withJobId(getId());
         List<ScheduledTask> taskList = new ArrayList<>();
         taskList.add(builder.build(getRealPriority()));
@@ -205,6 +208,20 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         private RepairConfiguration myRepairConfiguration = RepairConfiguration.DEFAULT;
         private final List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
         private CassandraMetrics myCassandraMetrics;
+        private RepairLockType myRepairLockType;
+
+        /**
+         * Build with repair lock type.
+         *
+         * @param repairLockType
+         *         Repair lock type.
+         * @return Builder
+         */
+        public Builder withRepairLockType(final RepairLockType repairLockType)
+        {
+            myRepairLockType = repairLockType;
+            return this;
+        }
 
         /**
          * Build with configuration.

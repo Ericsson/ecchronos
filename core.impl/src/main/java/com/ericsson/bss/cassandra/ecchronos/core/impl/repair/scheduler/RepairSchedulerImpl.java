@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.AlarmPostUpdateHook;
@@ -23,7 +24,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.ScheduledRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduledJob;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairState;
@@ -80,6 +81,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     private final CassandraMetrics myCassandraMetrics;
     private final List<TableRepairPolicy> myRepairPolicies;
     private final TableStorageStates myTableStorageStates;
+    private final RepairLockType myRepairLockType;
 
     private Set<ScheduledRepairJob> validateScheduleMap(final UUID nodeID, final TableReference tableReference)
     {
@@ -107,6 +109,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         myCassandraMetrics = builder.myCassandraMetrics;
         myRepairHistoryService = builder.myRepairHistoryService;
         myTableStorageStates = builder.myTableStorageStates;
+        myRepairLockType = builder.myRepairLockType;
     }
 
     @Override
@@ -305,6 +308,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
                     .withCassandraMetrics(myCassandraMetrics)
                     .withReplicationState(myReplicationState)
                     .withRepairPolices(myRepairPolicies)
+                    .withRepairLockType(myRepairLockType)
                     .build();
         }
         else
@@ -325,6 +329,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
                     .withTableStorageStates(myTableStorageStates)
                     .withRepairPolices(myRepairPolicies)
                     .withRepairHistory(myRepairHistoryService)
+                    .withRepairLockType(myRepairLockType)
                     .withNode(node)
                     .build();
         }
@@ -357,6 +362,19 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         private TableRepairMetrics myTableRepairMetrics;
         private RepairHistoryService myRepairHistoryService;
         private TableStorageStates myTableStorageStates;
+        private RepairLockType myRepairLockType;
+
+        /**
+         * RepairSchedulerImpl build with repair lock type.
+         *
+         * @param repairLockType Repair lock type.
+         * @return Builder
+         */
+        public Builder withRepairLockType(final RepairLockType repairLockType)
+        {
+            myRepairLockType = repairLockType;
+            return this;
+        }
 
         /**
          * RepairSchedulerImpl build with fault reporter.

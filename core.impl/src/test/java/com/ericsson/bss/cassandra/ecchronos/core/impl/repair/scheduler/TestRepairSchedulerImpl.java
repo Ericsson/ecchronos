@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.TestUtils;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairJob;
@@ -338,6 +339,7 @@ public class TestRepairSchedulerImpl
                 .withRepairStateFactory(myRepairStateFactory)
                 .withTableStorageStates(myTableStorageStates)
                 .withCassandraMetrics(myCassandraMetrics)
-                .withRepairHistory(myRepairHistory);
+                .withRepairHistory(myRepairHistory)
+                .withRepairLockType(RepairLockType.VNODE);
     }
 }
