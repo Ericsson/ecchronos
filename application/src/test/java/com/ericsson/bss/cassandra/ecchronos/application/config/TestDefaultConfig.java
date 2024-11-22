@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.application.config;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.ConnectionConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.DistributedJmxConnection;
+import com.ericsson.bss.cassandra.ecchronos.application.config.connection.JolokiaConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.RetryPolicyConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.FileBasedRepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.GlobalRepairConfig;
@@ -165,5 +166,14 @@ public class TestDefaultConfig
     {
         RepairType repairType = repairConfig.getRepairType();
         assertThat(repairType).isEqualTo(RepairType.VNODE);
+    }
+
+    @Test
+    public void testJolokiaConfig()
+    {
+        JolokiaConfig jolokiaConfig = config.getConnectionConfig().getJmxConnection().getJolokiaConfig();
+        assertThat(jolokiaConfig).isNotNull();
+        assertThat(jolokiaConfig.isEnabled()).isFalse();
+        assertThat(jolokiaConfig.getPort()).isEqualTo(8778);
     }
 }

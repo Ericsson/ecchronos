@@ -20,6 +20,7 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.QueryExecutionException;
+import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedJmxConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
@@ -44,6 +45,8 @@ public class DistributedJmxBuilder
 {
     private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxBuilder.class);
     private static final String JMX_FORMAT_URL = "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi";
+    private static final String JMX_JOLOKIA_FORMAT_URL = "service:jmx:jolokia://%s:%d/jolokia";
+    private static final int DEFAULT_JOLOKIA_PORT = 8778;
     private static final int DEFAULT_PORT = 7199;
 
     private CqlSession mySession;
@@ -51,7 +54,8 @@ public class DistributedJmxBuilder
     private final ConcurrentHashMap<UUID, JMXConnector> myJMXConnections = new ConcurrentHashMap<>();
     private Supplier<String[]> myCredentialsSupplier;
     private Supplier<Map<String, String>> myTLSSupplier;
-
+    private boolean isJolokiaEnabled = false;
+    private int myJolokiaPort = DEFAULT_JOLOKIA_PORT;
     private EccNodesSync myEccNodesSync;
 
     /**
@@ -119,6 +123,18 @@ public class DistributedJmxBuilder
         return this;
     }
 
+    public final DistributedJmxBuilder withJolokiaEnabled(final boolean jolokiaEnabled)
+    {
+        isJolokiaEnabled = jolokiaEnabled;
+        return this;
+    }
+
+    public final DistributedJmxBuilder withJolokiaPort(final int jolokiaPort)
+    {
+        myJolokiaPort = jolokiaPort;
+        return this;
+    }
+
     /**
      * Build the DistributedJmxConnectionProviderImpl instance.
      *
@@ -126,12 +142,10 @@ public class DistributedJmxBuilder
      * @throws IOException
      *         if an I/O error occurs during the creation of connections.
      */
-    public final DistributedJmxConnectionProviderImpl build() throws IOException
+    public final DistributedJmxConnectionProvider build() throws IOException
     {
         createConnections();
         return new DistributedJmxConnectionProviderImpl(
-                myNodesList,
-                myJMXConnections,
                 this
         );
     }
@@ -154,8 +168,8 @@ public class DistributedJmxBuilder
     }
 
     /***
-     * Creates a JMXconnection to the host.
-     * @param node
+     * Creates a JMX connection to the host.
+     * @param node the node to connect with.
      * @throws EcChronosException
      */
     public void reconnect(final Node node) throws EcChronosException
@@ -163,7 +177,19 @@ public class DistributedJmxBuilder
         try
         {
             String host = node.getBroadcastRpcAddress().get().getHostString();
-            Integer port = getJMXPort(node);
+            JMXServiceURL jmxUrl;
+            Integer port;
+            if (isJolokiaEnabled)
+            {
+                port = myJolokiaPort;
+                jmxUrl = new JMXServiceURL(String.format(JMX_JOLOKIA_FORMAT_URL, host, port));
+            }
+            else
+            {
+                port = getJMXPort(node);
+                jmxUrl = new JMXServiceURL(String.format(JMX_FORMAT_URL, host, port));
+            }
+
             if (host.contains(":"))
             {
                 // Use square brackets to surround IPv6 addresses
@@ -171,7 +197,7 @@ public class DistributedJmxBuilder
             }
 
             LOG.info("Starting to instantiate JMXService with host: {} and port: {}", host, port);
-            JMXServiceURL jmxUrl = new JMXServiceURL(String.format(JMX_FORMAT_URL, host, port));
+
             LOG.debug("Connecting JMX through {}, credentials: {}, tls: {}", jmxUrl, isAuthEnabled(), isTLSEnabled());
             JMXConnector jmxConnector = JMXConnectorFactory.connect(jmxUrl, createJMXEnv());
             if (isConnected(jmxConnector))
@@ -283,5 +309,15 @@ public class DistributedJmxBuilder
         }
 
         return true;
+    }
+
+    public final List<Node> getNodesList()
+    {
+        return myNodesList;
+    }
+
+    public final ConcurrentHashMap<UUID, JMXConnector> getJMXConnections()
+    {
+        return myJMXConnections;
     }
 }

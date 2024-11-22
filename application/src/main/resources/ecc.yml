@@ -83,7 +83,6 @@ connection:
     ##
     ## The class used to provide CQL connections to Apache Cassandra.
     ## The default provider will be used unless another is specified.
-    ## The default provider will be used unless another is specified.
     ##
     provider: com.ericsson.bss.cassandra.ecchronos.application.providers.AgentNativeConnectionProvider
     ##
@@ -99,6 +98,17 @@ connection:
       time: 45
       unit: MINUTES
   jmx:
+    jolokia:
+      #
+      # Specifies whether the Jolokia adapter for connecting to JMX objects is enabled or not.
+      # Default: false (adapter is disabled if not explicitly configured).
+      #
+      enabled: false
+      #
+      # Defines the port used by Jolokia for accessing JMX objects.
+      # Default: 8778 (this port will be used if no other port is configured).
+      #
+      port: 8778
     ##
     ## The class used to provide JMX connections to Apache Cassandra.
     ## The default provider will be used unless another is specified.

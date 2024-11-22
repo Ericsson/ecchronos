@@ -47,6 +47,9 @@ connection:
       time: 45
       unit: minutes
   jmx:
+    jolokia:
+      enabled: true
+      port: 7887
     provider: com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider
     retryPolicy:
       maxAttempts: 5

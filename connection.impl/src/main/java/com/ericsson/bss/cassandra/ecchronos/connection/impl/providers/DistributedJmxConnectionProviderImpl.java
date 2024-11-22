@@ -39,19 +39,14 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
     /**
      * Constructs a DistributedJmxConnectionProviderImpl with the specified list of nodes and JMX connections.
      *
-     * @param nodesList
-     *         the list of Node objects representing the nodes to manage JMX connections for.
-     * @param jmxConnections
-     *         a ConcurrentHashMap mapping each node's UUID to its corresponding JMXConnector.
+     * @param distributedJmxBuilder DistributedJmxBuilder.
      */
     public DistributedJmxConnectionProviderImpl(
-            final List<Node> nodesList,
-            final ConcurrentHashMap<UUID, JMXConnector> jmxConnections,
             final DistributedJmxBuilder distributedJmxBuilder
     )
     {
-        myNodesList = nodesList;
-        myJMXConnections = jmxConnections;
+        myNodesList = distributedJmxBuilder.getNodesList();
+        myJMXConnections = distributedJmxBuilder.getJMXConnections();
         myDistributedJmxBuilder = distributedJmxBuilder;
     }
 
@@ -170,5 +165,4 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
         }
 
     }
-
 }

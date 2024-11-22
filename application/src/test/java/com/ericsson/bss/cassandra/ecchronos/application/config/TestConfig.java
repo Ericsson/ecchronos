@@ -317,5 +317,14 @@ public class TestConfig
     {
         assertThat(nativeConnection.getAgentConnectionConfig().getInstanceName()).isEqualTo("unique_identifier");
     }
+
+    @Test
+    public void testJolokiaConfig()
+    {
+        JolokiaConfig jolokiaConfig = config.getConnectionConfig().getJmxConnection().getJolokiaConfig();
+        assertThat(jolokiaConfig).isNotNull();
+        assertThat(jolokiaConfig.isEnabled()).isTrue();
+        assertThat(jolokiaConfig.getPort()).isEqualTo(7887);
+    }
 }
 

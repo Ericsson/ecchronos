@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config.connection;
 
+import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 
@@ -26,6 +27,7 @@ import java.util.function.Supplier;
 public class DistributedJmxConnection extends Connection<DistributedJmxConnectionProvider>
 {
     private RetryPolicyConfig myRetryPolicyConfig = new RetryPolicyConfig();
+    private JolokiaConfig myJolokiaConfig = new JolokiaConfig();
 
     public DistributedJmxConnection()
     {
@@ -51,6 +53,18 @@ public class DistributedJmxConnection extends Connection<DistributedJmxConnectio
         myRetryPolicyConfig = retryPolicyConfig;
     }
 
+    @JsonProperty("jolokia")
+    public final JolokiaConfig getJolokiaConfig()
+    {
+        return myJolokiaConfig;
+    }
+
+    @JsonProperty("jolokia")
+    public final void setJolokiaConfig(final JolokiaConfig jolokiaConfig)
+    {
+        myJolokiaConfig = jolokiaConfig;
+    }
+
     /**
      * @return
      */
@@ -58,6 +72,7 @@ public class DistributedJmxConnection extends Connection<DistributedJmxConnectio
     protected Class<?>[] expectedConstructor()
     {
         return new Class<?>[] {
+                                Config.class,
                                 Supplier.class,
                                 DistributedNativeConnectionProvider.class,
                                 EccNodesSync.class
