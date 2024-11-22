@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Telefonaktiebolaget LM Ericsson
+ * Copyright 2024 Telefonaktiebolaget LM Ericsson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ public interface LockFactory
      *  @param hostId
      *  The hostId.
      * @return The lock if able to lock the resource.
+     * @throws LockException If an error occurs while trying to acquire the lock.
      */
     DistributedLock tryLock(String dataCenter, String resource, int priority, Map<String, String> metadata, UUID hostId)
                                                                                                             throws LockException;
@@ -54,7 +55,7 @@ public interface LockFactory
      *             i.e "RepairResource-DC1-1".
      * @return The metadata of the lock
      *          containing keyspace and table to repair.
-     * @throws LockException
+     * @throws LockException If an error occurs while trying to acquire the lock.
      */
     Map<String, String> getLockMetadata(String dataCenter, String resource) throws LockException;
 

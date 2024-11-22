@@ -59,7 +59,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
      * @param successful
      *            If the job ran successfully.
      */
-    public void postExecute(final boolean successful)
+    public void postExecute(final boolean successful, final ScheduledTask task)
     {
         if (successful)
         {

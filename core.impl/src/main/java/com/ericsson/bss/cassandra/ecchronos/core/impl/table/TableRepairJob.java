@@ -186,7 +186,7 @@ public class TableRepairJob extends ScheduledRepairJob
      *         If the job ran successfully.
      */
     @Override
-    public void postExecute(final boolean successful)
+    public void postExecute(final boolean successful, final ScheduledTask task)
     {
         try
         {
@@ -197,7 +197,7 @@ public class TableRepairJob extends ScheduledRepairJob
             LOG.warn("Unable to check repair history, {}", this, e);
         }
 
-        super.postExecute(successful);
+        super.postExecute(successful, task);
     }
 
     /**
