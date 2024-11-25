@@ -2,20 +2,21 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Bump Spring, Tomcat, Jackson and other dependencies to Remove Vulnerabilities in Agent - Issue #776
 * Add Locks In SchedulerManager - Issue #768
 * Cassandra-Based Distributed Locks - Issue #741
 * Create New Repair Type Called "VNODE" - Issue #755
 * Create ReplicaRepairGroup Class for Grouping Replicas and Token Ranges - Issue #721
 * Hot Reload of Nodes List - Issue #699
-* Investigate Creation of RepairScheduler and ScheduleManager #714
+* Investigate Creation of RepairScheduler and ScheduleManager - Issue #714
 * Implement ScheduledJobQueue for Prioritized Job Management and Execution - Issue #740
 * Implement RepairGroup Class for Managing and Executing Repair Tasks - Issue #738
 * Create IncrementalRepairTask Class - Issue #736
 * Implement ScheduledRepairJob, ScheduledJob and ScheduledTask for Automated Recurring Task Scheduling in Cassandra - Issue #737
 * Create RepairTask Abstract Class to Handle Repair Operations - Issue #717
 * Create ReplicationState and ReplicationStateImpl Class for Managing Token-to-Replicas Mapping - Issue #722
-* Create a RepairHistory to Store Information on Repair Operations Performed by ecChronos Agent #730
-* Generate Unique EcChronos ID #678
+* Create a RepairHistory to Store Information on Repair Operations Performed by ecChronos Agent - Issue #730
+* Generate Unique EcChronos ID - Issue #678
 * Create RepairConfiguration class for repair configurations - Issue #716
 * Create DistributedJmxProxy and DistributedJmxProxyFactory - Issue #715
 * Create a New Maven Module "utils" for Common Code Reuse - Issue #720
@@ -31,4 +32,4 @@
 * Create JMXAgentConfig to add Hosts in JMX Session Through ecc.yml - Issue #675
 * Expose AgentNativeConnectionProvider on Connection and Application Module - Issue #673
 * Create DatacenterAwareConfig to add Hosts in CQL Session Through ecc.yml - Issue #671
-* Create Initial project Structure for Agent - Issue #695 
+* Create Initial project Structure for Agent - Issue #695

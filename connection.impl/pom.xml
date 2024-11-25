@@ -54,12 +54,12 @@
 
         <!-- Cassandra driver -->
         <dependency>
-            <groupId>com.datastax.oss</groupId>
+            <groupId>org.apache.cassandra</groupId>
             <artifactId>java-driver-core</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.datastax.oss</groupId>
+            <groupId>org.apache.cassandra</groupId>
             <artifactId>java-driver-metrics-micrometer</artifactId>
         </dependency>
 
@@ -90,26 +90,6 @@
 
     <build>
         <plugins>
-            <!-- We shade com.datastax.oss:java-driver-metrics-micrometer to make it work in OSGi -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <artifactSet>
-                                <includes>
-                                    <include>com.datastax.oss:java-driver-metrics-micrometer</include>
-                                </includes>
-                            </artifactSet>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
@@ -124,7 +104,7 @@
                         </Import-Package>
                         <Export-Package>
                             com.ericsson.bss.cassandra.ecchronos.connection.impl.*,
-                            com.datastax.oss.driver.internal.metrics.micrometer.*
+                            org.apache.cassandra.driver.internal.metrics.micrometer.*
                         </Export-Package>
                     </instructions>
                 </configuration>
