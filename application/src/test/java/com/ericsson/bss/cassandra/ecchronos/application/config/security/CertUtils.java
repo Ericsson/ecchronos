@@ -70,9 +70,9 @@ public class CertUtils
 {
     public static final String RSA_ALGORITHM_NAME = "RSA";
     public static final String EC_ALGORITHM_NAME = "ECDSA";
-    //When changing keysize make sure you know what you are doing.
-    //Too big keysize will slow keypair generation by ALOT.
-    //2048 for RSA is not secure enough in real world, but since this is only for tests it's perfectly fine.
+    // When changing key sizes, make sure you know what you are doing.
+    // Too big key sizes will slow down key pair generation by A LOT.
+    // 2048 for RSA is not secure enough in the real world, but since this is only for tests it's perfectly fine.
     private static final int RSA_KEY_SIZE = 2048;
     private static final int EC_KEY_SIZE = 384;
     private static final int PEM_ENCODED_LINE_LENGTH = 64;
