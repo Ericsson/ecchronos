@@ -17,11 +17,13 @@
 
 from distutils.core import setup
 
-setup(name='ecChronos library',
-      version='1.0',
-      description='ecChronos REST library',
-      author='Marcus Olsson',
-      author_email='marcus.olsson@ericsson.com',
-      url='https://github.com/Ericsson/ecchronos',
-      license='Apache License, Version 2.0',
-      packages=['ecchronoslib'])
+setup(
+    name="ecChronos library",
+    version="1.0",
+    description="ecChronos REST library",
+    author="Marcus Olsson",
+    author_email="marcus.olsson@ericsson.com",
+    url="https://github.com/Ericsson/ecchronos",
+    license="Apache License, Version 2.0",
+    packages=["ecchronoslib"],
+)

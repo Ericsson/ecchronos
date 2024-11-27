@@ -43,7 +43,7 @@ class VnodeState(object):
         self.repaired = data["repaired"] if "repaired" in data else "False"
 
     def get_last_repaired_at(self):
-        return datetime.datetime.fromtimestamp(self.last_repaired_at_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
+        return datetime.datetime.fromtimestamp(self.last_repaired_at_in_ms / 1000).strftime("%Y-%m-%d %H:%M:%S")
 
 
 class Job(object):
@@ -73,7 +73,7 @@ class Repair(Job):
     def get_completed_at(self):
         if self.completed_at == -1:
             return "-"
-        return datetime.datetime.fromtimestamp(self.completed_at / 1000).strftime('%Y-%m-%d %H:%M:%S')
+        return datetime.datetime.fromtimestamp(self.completed_at / 1000).strftime("%Y-%m-%d %H:%M:%S")
 
 
 class Schedule(Job):
@@ -87,17 +87,17 @@ class Schedule(Job):
         self.repair_type = data["repairType"] if "repairType" in data else "VNODE"
 
     def get_config(self):
-        return json.dumps(self.config).strip('{}')
+        return json.dumps(self.config).strip("{}")
 
     def get_next_repair(self):
         if self.next_repair_in_ms == -1:
             return "-"
-        return datetime.datetime.fromtimestamp(self.next_repair_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
+        return datetime.datetime.fromtimestamp(self.next_repair_in_ms / 1000).strftime("%Y-%m-%d %H:%M:%S")
 
     def get_last_repaired_at(self):
         if self.last_repaired_at_in_ms == -1:
             return "-"
-        return datetime.datetime.fromtimestamp(self.last_repaired_at_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
+        return datetime.datetime.fromtimestamp(self.last_repaired_at_in_ms / 1000).strftime("%Y-%m-%d %H:%M:%S")
 
 
 class FullSchedule(Schedule):
@@ -119,12 +119,12 @@ class RepairInfo(object):
     def get_since(self):
         if self.since_in_ms == -1:
             return "-"
-        return datetime.datetime.fromtimestamp(self.since_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
+        return datetime.datetime.fromtimestamp(self.since_in_ms / 1000).strftime("%Y-%m-%d %H:%M:%S")
 
     def get_to(self):
         if self.since_in_ms == -1:
             return "-"
-        return datetime.datetime.fromtimestamp(self.to_in_ms / 1000).strftime('%Y-%m-%d %H:%M:%S')
+        return datetime.datetime.fromtimestamp(self.to_in_ms / 1000).strftime("%Y-%m-%d %H:%M:%S")
 
 
 class RepairStats(object):

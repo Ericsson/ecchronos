@@ -21,51 +21,52 @@ def run_ecc_repair_status(context, params):
     run_ecctool(context, ["repairs"] + params)
 
 
-@when('we list all repairs')
+@when("we list all repairs")
 def step_list_repairs(context):
     run_ecc_repair_status(context, [])
     handle_repair_output(context)
 
 
-@when('we list all repairs with limit of {limit}')
+@when("we list all repairs with limit of {limit}")
 def step_list_repairs_with_limit(context, limit):
-    run_ecc_repair_status(context, ['--limit', limit])
+    run_ecc_repair_status(context, ["--limit", limit])
     handle_repair_output(context)
 
 
-@when('we list all repairs for keyspace {keyspace} with a limit of {limit}')
+@when("we list all repairs for keyspace {keyspace} with a limit of {limit}")
 def step_list_repairs_for_keyspace_with_limit(context, keyspace, limit):
-    run_ecc_repair_status(context, ['--keyspace', keyspace, '--limit', limit])
+    run_ecc_repair_status(context, ["--keyspace", keyspace, "--limit", limit])
     handle_repair_output(context)
 
 
-@when('we list all repairs for keyspace {keyspace}')
+@when("we list all repairs for keyspace {keyspace}")
 def step_list_repairs_for_keyspace(context, keyspace):
-    run_ecc_repair_status(context, ['--keyspace', keyspace])
+    run_ecc_repair_status(context, ["--keyspace", keyspace])
     handle_repair_output(context)
 
 
-@when('we list repairs {keyspace}.{table} with a limit of {limit}')
+@when("we list repairs {keyspace}.{table} with a limit of {limit}")
 def step_show_repair_with_limit(context, keyspace, table, limit):
-    run_ecc_repair_status(context, ['--keyspace', keyspace, '--table', table])
-    run_ecc_repair_status(context, ['--id', get_job_id(context), '--limit', limit])
+    run_ecc_repair_status(context, ["--keyspace", keyspace, "--table", table])
+    run_ecc_repair_status(context, ["--id", get_job_id(context), "--limit", limit])
     handle_repair_output(context)
 
 
-@when('we list repairs for table {keyspace}.{table}')
+@when("we list repairs for table {keyspace}.{table}")
 def step_show_repair(context, keyspace, table):
-    run_ecc_repair_status(context, ['--keyspace', keyspace, '--table', table])
+    run_ecc_repair_status(context, ["--keyspace", keyspace, "--table", table])
     handle_repair_output(context)
 
 
-@when('we list repairs for hostid and table {keyspace}.{table}')
+@when("we list repairs for hostid and table {keyspace}.{table}")
 def step_show_repair_with_nodeid(context, keyspace, table):
-    run_ecc_repair_status(context, ['--keyspace', keyspace, '--table', table,
-                                    '--hostid', '{0}'.format(context.environment.host_id)])
+    run_ecc_repair_status(
+        context, ["--keyspace", keyspace, "--table", table, "--hostid", "{0}".format(context.environment.host_id)]
+    )
     handle_repair_output(context)
 
 
-@then('the output should contain {limit:d} repair rows')
+@then("the output should contain {limit:d} repair rows")
 def step_validate_list_repairs_contains_rows_with_limit(context, limit):
     rows = context.rows
 
