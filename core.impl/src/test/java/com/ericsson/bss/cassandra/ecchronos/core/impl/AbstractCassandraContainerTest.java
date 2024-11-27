@@ -18,7 +18,8 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnecti
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import java.net.InetSocketAddress;
 
-import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.testcontainers.containers.CassandraContainer;
@@ -60,7 +61,7 @@ public class AbstractCassandraContainerTest
                 .withLocalDatacenter("DC1")
                 .build();
 
-        List<Node> nodesList = mySession.getMetadata().getNodes().values().stream().toList();
+        Map<UUID, Node> nodesList = mySession.getMetadata().getNodes();
         myNativeConnectionProvider = new DistributedNativeConnectionProvider()
         {
             @Override
@@ -70,7 +71,7 @@ public class AbstractCassandraContainerTest
             }
 
             @Override
-            public List<Node> getNodes()
+            public Map<UUID, Node>  getNodes()
             {
                 return nodesList;
             }

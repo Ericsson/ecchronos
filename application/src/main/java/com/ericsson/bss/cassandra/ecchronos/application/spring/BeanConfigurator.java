@@ -343,7 +343,7 @@ public class BeanConfigurator
     {
         Interval connectionDelay = config().getConnectionConfig().getCqlConnection().getConnectionDelay();
         EccNodesSync myEccNodesSync = EccNodesSync.newBuilder()
-                .withInitialNodesList(distributedNativeConnectionProvider.getNodes())
+                .withNativeConnection(distributedNativeConnectionProvider)
                 .withSession(distributedNativeConnectionProvider.getCqlSession())
                 .withEcchronosID(ecChronosID)
                 .withConnectionDelayValue(connectionDelay.getTime())

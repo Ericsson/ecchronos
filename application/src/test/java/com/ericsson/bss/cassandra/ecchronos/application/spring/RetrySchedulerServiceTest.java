@@ -114,6 +114,7 @@ class RetrySchedulerServiceTest
         ResultSet mockResultSet = mock(ResultSet.class);
         Row mockRow = mock(Row.class);
         UUID nodeId = UUID.randomUUID();
+        Map<UUID, Node> nodes = new HashMap<>();
 
         // Setup mock behavior for ResultSet and Row
         when(mockRow.getString("node_status")).thenReturn(NodeStatus.UNAVAILABLE.name());
@@ -125,7 +126,8 @@ class RetrySchedulerServiceTest
         Node mockNode = mock(Node.class);
         when(mockNode.getHostId()).thenReturn(nodeId);
         when(mockNode.getDatacenter()).thenReturn("datacenter");
-        when(nativeConnectionProvider.getNodes()).thenReturn(Collections.singletonList(mockNode));
+        nodes.put(nodeId, mockNode);
+        when(nativeConnectionProvider.getNodes()).thenReturn(nodes);
 
         // Mock JMX connector behavior
         JMXConnector mockJmxConnector = mock(JMXConnector.class);
@@ -152,6 +154,7 @@ class RetrySchedulerServiceTest
     {
         // Mock the node as unavailable
         ResultSet mockResultSet = mock(ResultSet.class);
+        Map<UUID, Node> nodes = new HashMap<>();
         when(eccNodesSync.getResultSet()).thenReturn(mockResultSet);
         Row mockRow = mock(Row.class);
         when(mockRow.getString("node_status")).thenReturn("UNAVAILABLE");
@@ -163,7 +166,8 @@ class RetrySchedulerServiceTest
         Node mockNode = mock(Node.class);
         when(mockNode.getHostId()).thenReturn(nodeId);
         when(mockNode.getDatacenter()).thenReturn("datacenter");
-        when(nativeConnectionProvider.getNodes()).thenReturn(Collections.singletonList(mockNode));
+        nodes.put(nodeId, mockNode);
+        when(nativeConnectionProvider.getNodes()).thenReturn(nodes);
 
         // Mock the JMX connection behavior for a failed reconnection
         when(jmxConnectionProvider.getJmxConnector(nodeId)).thenReturn(null);
@@ -179,6 +183,7 @@ class RetrySchedulerServiceTest
     {
         // Mock the node as unavailable
         ResultSet mockResultSet = mock(ResultSet.class);
+        Map<UUID, Node> nodes = new HashMap<>();
         when(eccNodesSync.getResultSet()).thenReturn(mockResultSet);
         Row mockRow = mock(Row.class);
         when(mockRow.getString("node_status")).thenReturn("UNAVAILABLE");
@@ -190,7 +195,8 @@ class RetrySchedulerServiceTest
         Node mockNode = mock(Node.class);
         when(mockNode.getDatacenter()).thenReturn("datacenter");
         when(mockNode.getHostId()).thenReturn(nodeId);
-        when(nativeConnectionProvider.getNodes()).thenReturn(Collections.singletonList(mockNode));
+        nodes.put(nodeId, mockNode);
+        when(nativeConnectionProvider.getNodes()).thenReturn(nodes);
 
         // Simulate failed reconnects up to max attempts
         when(jmxConnectionProvider.getJmxConnector(nodeId)).thenReturn(null);

@@ -22,6 +22,7 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
+import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
 import com.google.common.base.Preconditions;
@@ -29,7 +30,6 @@ import com.google.common.base.Preconditions;
 import java.net.UnknownHostException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -63,7 +63,7 @@ public final class EccNodesSync
     private static final String TABLE_NAME = "nodes_sync";
 
     private final CqlSession mySession;
-    private final List<Node> myNodesList;
+    private final DistributedNativeConnectionProvider myNativeConnectionProvider;
     private final String ecChronosID;
 
     private final PreparedStatement myCreateStatement;
@@ -76,8 +76,10 @@ public final class EccNodesSync
     private EccNodesSync(final Builder builder) throws UnknownHostException
     {
         mySession = Preconditions.checkNotNull(builder.mySession, "Session cannot be null");
-        myNodesList = Preconditions
-                .checkNotNull(builder.initialNodesList, "Nodes list cannot be null");
+        myNativeConnectionProvider = Preconditions
+                .checkNotNull(builder.myNativeConnection, "Native Connection cannot be null");
+        Preconditions
+                .checkNotNull(myNativeConnectionProvider.getNodes(), "Nodes map cannot be null");
         myCreateStatement = mySession.prepare(QueryBuilder.insertInto(KEYSPACE_NAME, TABLE_NAME)
                 .value(COLUMN_ECCHRONOS_ID, bindMarker())
                 .value(COLUMN_DC_NAME, bindMarker())
@@ -123,11 +125,11 @@ public final class EccNodesSync
 
     public void acquireNodes() throws EcChronosException
     {
-        if (myNodesList.isEmpty())
+        if (myNativeConnectionProvider.getNodes().isEmpty())
         {
             throw new EcChronosException("Cannot Acquire Nodes because there is no nodes to be acquired");
         }
-        for (Node node : myNodesList)
+        for (Node node : myNativeConnectionProvider.getNodes().values())
         {
             LOG.info(
                     "Preparing to acquire node {} with endpoint {} and Datacenter {}",
@@ -194,6 +196,7 @@ public final class EccNodesSync
         }
         return tmpResultSet;
     }
+
     public ResultSet deleteNodeStatus(
             final String datacenterName,
             final UUID nodeID
@@ -272,7 +275,7 @@ public final class EccNodesSync
     public static class Builder
     {
         private CqlSession mySession;
-        private List<Node> initialNodesList;
+        private DistributedNativeConnectionProvider myNativeConnection;
         private String myEcchronosID;
         private Long myConnectionDelayValue;
         private ChronoUnit myConnectionDelayUnit;
@@ -293,13 +296,13 @@ public final class EccNodesSync
         /**
          * Builds EccNodesSync with nodes list.
          *
-         * @param nodes
+         * @param nativeConnectionProvider
          *         nodes list
          * @return Builder
          */
-        public Builder withInitialNodesList(final List<Node> nodes)
+        public Builder withNativeConnection(final DistributedNativeConnectionProvider nativeConnectionProvider)
         {
-            this.initialNodesList = nodes;
+            myNativeConnection = nativeConnectionProvider;
             return this;
         }
 

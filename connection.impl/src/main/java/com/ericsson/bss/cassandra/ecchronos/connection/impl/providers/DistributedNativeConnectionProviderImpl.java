@@ -21,12 +21,13 @@ import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.Distributed
 
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import java.io.IOException;
-import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class DistributedNativeConnectionProviderImpl implements DistributedNativeConnectionProvider
 {
     private final CqlSession mySession;
-    private final List<Node> myNodes;
+    private final Map<UUID, Node> myNodes;
     private final DistributedNativeBuilder myDistributedNativeBuilder;
     private final ConnectionType myConnectionType;
 
@@ -36,17 +37,17 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
      *
      * @param session
      *         the {@link CqlSession} used for communication with the Cassandra cluster.
-     * @param nodesList
-     *         the list of {@link Node} instances representing the nodes in the cluster.
+     * @param nodesMap
+     *         the map of {@link Node} instances representing the nodes in the cluster.
      */
     public DistributedNativeConnectionProviderImpl(
                                                    final CqlSession session,
-                                                   final List<Node> nodesList,
+                                                   final Map<UUID, Node> nodesMap,
                                                    final DistributedNativeBuilder distributedNativeBuilder,
                                                    final ConnectionType connectionType)
     {
         mySession = session;
-        myNodes = nodesList;
+        myNodes = nodesMap;
         myDistributedNativeBuilder = distributedNativeBuilder;
         myConnectionType = connectionType;
     }
@@ -65,10 +66,10 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
     /**
      * Returns the list of {@link Node} instances generated based on the agent connection type.
      *
-     * @return a {@link List} of {@link Node} instances representing the nodes in the cluster.
+     * @return a {@link Map} of {@link Node} instances representing the nodes in the cluster.
      */
     @Override
-    public List<Node> getNodes()
+    public Map<UUID, Node> getNodes()
     {
         return myNodes;
     }
@@ -97,29 +98,29 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
     }
 
     /**
-     * Add a nw node to the list of nodes.
-     * @param node
+     * Add a new node to the map of nodes.
+     * @param node the node to add.
      */
     @Override
     public void addNode(final Node node)
     {
-        myNodes.add(node);
+        myNodes.put(node.getHostId(), node);
     }
 
     /**
-     * Remove node for the list of nodes.
-     * @param node
+     * Remove node from the map of nodes.
+     * @param node the node to remove.
      */
     @Override
     public void removeNode(final Node node)
     {
-        myNodes.remove(node);
+        myNodes.remove(node.getHostId());
     }
 
     /**
      * Checks the node is on the list of specified dc's/racks/nodes.
-     * @param node
-     * @return
+     * @param node the node to validate.
+     * @return true if the node is valid.
      */
     @Override
     public Boolean confirmNodeValid(final Node node)

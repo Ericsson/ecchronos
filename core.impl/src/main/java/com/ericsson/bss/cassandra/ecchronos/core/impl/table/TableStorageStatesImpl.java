@@ -69,7 +69,7 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
 
     private void initializeEmptyTableSizeMap()
     {
-        for (Node node : myNativeConnectionProvider.getNodes())
+        for (Node node : myNativeConnectionProvider.getNodes().values())
         {
             UUID nodeID = node.getHostId();
             initializeEmptyNodeMap(nodeID);

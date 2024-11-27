@@ -18,10 +18,13 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Node;
 
+import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.data.utils.AbstractCassandraTest;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import net.jcip.annotations.NotThreadSafe;
 import org.junit.After;
 import org.junit.Before;
@@ -30,13 +33,16 @@ import org.junit.Test;
 import java.net.UnknownHostException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @NotThreadSafe
 public class TestEccNodesSync extends AbstractCassandraTest
@@ -44,7 +50,8 @@ public class TestEccNodesSync extends AbstractCassandraTest
     private static final String ECCHRONOS_KEYSPACE = "ecchronos";
 
     private EccNodesSync eccNodesSync;
-    private final List<Node> nodesList = getNativeConnectionProvider().getNodes();
+    private final DistributedNativeConnectionProvider nativeConnectionProvider = getNativeConnectionProvider();
+    private final Map<UUID, Node> nodesList = getNativeConnectionProvider().getNodes();
     private final UUID nodeID = UUID.randomUUID();
     private final String datacenterName = "datacenter1";
 
@@ -72,7 +79,7 @@ public class TestEccNodesSync extends AbstractCassandraTest
 
         eccNodesSync = EccNodesSync.newBuilder()
                 .withSession(mySession)
-                .withInitialNodesList(nodesList)
+                .withNativeConnection(nativeConnectionProvider)
                 .withConnectionDelayValue(Long.valueOf(10))
                 .withConnectionDelayUnit(TimeUnit.MINUTES)
                 .withEcchronosID("ecchronos-test").build();
@@ -88,7 +95,7 @@ public class TestEccNodesSync extends AbstractCassandraTest
     @Test
     public void testAcquireNode()
     {
-        ResultSet result = eccNodesSync.verifyAcquireNode(nodesList.get(0));
+        ResultSet result = eccNodesSync.verifyAcquireNode(nodesList.values().stream().toList().get(0));
         assertNotNull(result);
     }
 
@@ -117,20 +124,36 @@ public class TestEccNodesSync extends AbstractCassandraTest
     @Test
     public void testEccNodesWithNullList()
     {
+        DistributedNativeConnectionProvider mockNativeConnectionProvider = mock(DistributedNativeConnectionProvider.class);
+        when(mockNativeConnectionProvider.getNodes()).thenReturn(null);
         EccNodesSync.Builder tmpEccNodesSyncBuilder = EccNodesSync.newBuilder()
                 .withSession(mySession)
-                .withInitialNodesList(null);
+                .withNativeConnection(mockNativeConnectionProvider);
         NullPointerException exception = assertThrows(
                 NullPointerException.class, tmpEccNodesSyncBuilder::build);
-        assertEquals("Nodes list cannot be null", exception.getMessage());
+        assertEquals("Nodes map cannot be null", exception.getMessage());
+    }
+
+    @Test
+    public void testEccNodesWithNullNativeConnectionProvider()
+    {
+        EccNodesSync.Builder tmpEccNodesSyncBuilder = EccNodesSync.newBuilder()
+                .withSession(mySession)
+                .withNativeConnection(null);
+        NullPointerException exception = assertThrows(
+                NullPointerException.class, tmpEccNodesSyncBuilder::build);
+        assertEquals("Native Connection cannot be null", exception.getMessage());
     }
 
     @Test
     public void testAcquiredNodesWithEmptyList() throws UnknownHostException
     {
+        DistributedNativeConnectionProvider mockNativeConnectionProvider = mock(DistributedNativeConnectionProvider.class);
+        when(mockNativeConnectionProvider.getNodes()).thenReturn(new HashMap<>());
         EccNodesSync tmpEccNodesSync = EccNodesSync.newBuilder()
                 .withSession(mySession)
-                .withInitialNodesList(new ArrayList<>()).build();
+                .withNativeConnection(mockNativeConnectionProvider)
+                .build();
         EcChronosException exception = assertThrows(
                 EcChronosException.class, tmpEccNodesSync::acquireNodes);
         assertEquals(
@@ -143,7 +166,7 @@ public class TestEccNodesSync extends AbstractCassandraTest
     {
         EccNodesSync.Builder tmpEccNodesSyncBuilder = EccNodesSync.newBuilder()
                 .withSession(null)
-                .withInitialNodesList(nodesList);
+                .withNativeConnection(nativeConnectionProvider);
         NullPointerException exception = assertThrows(
                 NullPointerException.class, tmpEccNodesSyncBuilder::build);
         assertEquals("Session cannot be null", exception.getMessage());

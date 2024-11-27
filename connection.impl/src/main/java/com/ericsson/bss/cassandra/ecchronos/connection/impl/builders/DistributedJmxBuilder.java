@@ -21,6 +21,7 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.QueryExecutionException;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedJmxConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
@@ -33,7 +34,6 @@ import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -50,7 +50,7 @@ public class DistributedJmxBuilder
     private static final int DEFAULT_PORT = 7199;
 
     private CqlSession mySession;
-    private List<Node> myNodesList;
+    private DistributedNativeConnectionProvider myNativeConnectionProvider;
     private final ConcurrentHashMap<UUID, JMXConnector> myJMXConnections = new ConcurrentHashMap<>();
     private Supplier<String[]> myCredentialsSupplier;
     private Supplier<Map<String, String>> myTLSSupplier;
@@ -72,15 +72,15 @@ public class DistributedJmxBuilder
     }
 
     /**
-     * Set the list of nodes to be used by the DistributedJmxBuilder.
+     * Set the map of nodes to be used by the DistributedJmxBuilder.
      *
-     * @param nodesList
-     *         a List of Node instances representing the Cassandra nodes to connect to.
+     * @param nativeConnection
+     *         connection bean that contains the Cassandra nodes to connect to.
      * @return the current instance of DistributedJmxBuilder for chaining.
      */
-    public final DistributedJmxBuilder withNodesList(final List<Node> nodesList)
+    public final DistributedJmxBuilder withNativeConnection(final DistributedNativeConnectionProvider nativeConnection)
     {
-        myNodesList = nodesList;
+        myNativeConnectionProvider = nativeConnection;
         return this;
     }
 
@@ -152,7 +152,7 @@ public class DistributedJmxBuilder
 
     private void createConnections() throws IOException
     {
-        for (Node node : myNodesList)
+        for (Node node : myNativeConnectionProvider.getNodes().values())
         {
             LOG.info("Creating connection with node {}", node.getHostId());
             try
@@ -170,7 +170,6 @@ public class DistributedJmxBuilder
     /***
      * Creates a JMX connection to the host.
      * @param node the node to connect with.
-     * @throws EcChronosException
      */
     public void reconnect(final Node node) throws EcChronosException
     {
@@ -311,9 +310,9 @@ public class DistributedJmxBuilder
         return true;
     }
 
-    public final List<Node> getNodesList()
+    public final DistributedNativeConnectionProvider getNativeConnectionProvider()
     {
-        return myNodesList;
+        return myNativeConnectionProvider;
     }
 
     public final ConcurrentHashMap<UUID, JMXConnector> getJMXConnections()

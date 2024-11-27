@@ -25,7 +25,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -63,7 +62,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     private static final Integer NO_OF_THREADS = 1;
 
     private CqlSession mySession;
-    private List<Node> myNodes;
+    private DistributedNativeConnectionProvider myNativeConnectionProvider;
     private ReplicatedTableProvider myReplicatedTableProvider;
     private RepairScheduler myRepairScheduler;
     private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
@@ -84,7 +83,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     private DefaultRepairConfigurationProvider(final Builder builder)
     {
         mySession = builder.mySession;
-        myNodes = builder.myNodesList;
+        myNativeConnectionProvider = builder.myNativeConnection;
         myReplicatedTableProvider = builder.myReplicatedTableProvider;
         myRepairScheduler = builder.myRepairScheduler;
         myRepairConfigurationFunction = builder.myRepairConfigurationFunction;
@@ -106,7 +105,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     public void fromBuilder(final Builder builder)
     {
         mySession = builder.mySession;
-        myNodes = builder.myNodesList;
+        myNativeConnectionProvider = builder.myNativeConnection;
         myReplicatedTableProvider = builder.myReplicatedTableProvider;
         myRepairScheduler = builder.myRepairScheduler;
         myRepairConfigurationFunction = builder.myRepairConfigurationFunction;
@@ -128,7 +127,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     public void onKeyspaceCreated(final KeyspaceMetadata keyspace)
     {
         String keyspaceName = keyspace.getName().asInternal();
-        for (Node node : myNodes)
+        for (Node node : myNativeConnectionProvider.getNodes().values())
         {
             if (myReplicatedTableProvider.accept(node, keyspaceName))
             {
@@ -176,7 +175,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     @Override
     public void onTableCreated(final TableMetadata table)
     {
-        for (Node node : myNodes)
+        for (Node node : myNativeConnectionProvider.getNodes().values())
         {
             if (myReplicatedTableProvider.accept(node, table.getKeyspace().asInternal()))
             {
@@ -197,7 +196,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     public void onTableDropped(final TableMetadata table)
     {
         TableReference tableReference = myTableReferenceFactory.forTable(table);
-        for (Node node : myNodes)
+        for (Node node : myNativeConnectionProvider.getNodes().values())
         {
             myRepairScheduler.removeConfiguration(node, tableReference);
         }
@@ -226,7 +225,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
             for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
             {
                 allTableOperation(keyspaceMetadata.getName().asInternal(), (tableReference, tableMetadata) ->
-                        myNodes.forEach(node -> myRepairScheduler.removeConfiguration(node, tableReference)));
+                        myNativeConnectionProvider.getNodes().values().forEach(node -> myRepairScheduler.removeConfiguration(node, tableReference)));
             }
         }
     }
@@ -461,7 +460,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
 
     /**
      * Callback for when a new node is added to the cluster.
-     * @param node
+     * @param node the node to add.
      */
     @Override
     public void onAdd(final Node node)
@@ -473,7 +472,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
 
     /**
      * callback for when a node is removed from the cluster.
-     * @param node
+     * @param node the node to remove.
      */
     @Override
     public void onRemove(final Node node)
@@ -498,7 +497,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
         {
             String keyspaceName = keyspaceMetadata.getName().asInternal();
-            for (Node node : myNodes)
+            for (Node node : myNativeConnectionProvider.getNodes().values())
             {
                 if (myReplicatedTableProvider.accept(node, keyspaceName))
                 {
@@ -515,7 +514,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     public static class Builder
     {
         private CqlSession mySession;
-        private List<Node> myNodesList;
+        private DistributedNativeConnectionProvider myNativeConnection;
         private ReplicatedTableProvider myReplicatedTableProvider;
         private RepairScheduler myRepairScheduler;
         private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
@@ -599,20 +598,20 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         }
 
         /**
-         * Build SchedulerManager with run interval.
+         * Build with run DistributedNativeConnectionProvider.
          *
-         * @param nodesList the interval to run a repair task
-         * @return Builder with nodes list
+         * @param nativeConnection the Native Connection that contains Cassandra nodes.
+         * @return Builder Native Connection
          */
-        public Builder withNodesList(final List<Node> nodesList)
+        public Builder withNativeConnection(final DistributedNativeConnectionProvider nativeConnection)
         {
-            myNodesList = nodesList;
+            myNativeConnection = nativeConnection;
             return this;
         }
 
         /**
          * Build with EccNodesSync.
-         * @param eccNodesSync
+         * @param eccNodesSync the base table to store node info.
          * @return Builder with EccNodesSync
          */
         public Builder withEccNodesSync(final EccNodesSync eccNodesSync)
@@ -623,8 +622,8 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
 
         /**
          * Build with DistributedNativeConnectionProvider.
-         * @param agentNativeConnectionProvider
-         * @return
+         * @param agentNativeConnectionProvider the native connection.
+         * @return Builder
          */
         public Builder withDistributedNativeConnectionProvider(final DistributedNativeConnectionProvider agentNativeConnectionProvider)
         {
@@ -634,7 +633,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
 
         /**
          * Build with DistributedJmxConnectionProvider.
-         * @param jmxConnectionProvider
+         * @param jmxConnectionProvider the jmx connection.
          * @return Builder with DistributedJmxConnectionProvider
          */
         public Builder withJmxConnectionProvider(final DistributedJmxConnectionProvider jmxConnectionProvider)
@@ -650,8 +649,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
          */
         public DefaultRepairConfigurationProvider build()
         {
-            DefaultRepairConfigurationProvider configurationProvider = new DefaultRepairConfigurationProvider(this);
-            return configurationProvider;
+            return new DefaultRepairConfigurationProvider(this);
         }
     }
 }

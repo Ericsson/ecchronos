@@ -268,7 +268,7 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
     @Test
     public void testGetLockWithLocallyHigherPriority() throws LockException
     {
-        UUID localHostId = getNativeConnectionProvider().getNodes().get(0).getHostId();
+        UUID localHostId = getNativeConnectionProvider().getNodes().values().stream().toList().get(0).getHostId();
         execute(myCompeteStatement.bind("lock", localHostId, 2));
         CASLockFactory lockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
@@ -287,7 +287,7 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
     @Test
     public void testGetLockWithLocallyLowerPriority() throws LockException
     {
-        UUID localHostId = getNativeConnectionProvider().getNodes().get(0).getHostId();
+        UUID localHostId = getNativeConnectionProvider().getNodes().values().stream().toList().get(0).getHostId();
         execute(myCompeteStatement.bind("lock", localHostId, 1));
         CASLockFactory lockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
@@ -458,7 +458,7 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
                             }
 
                             @Override
-                            public List<Node> getNodes()
+                            public Map<UUID, Node> getNodes()
                             {
                                 return null;
                             }
@@ -494,11 +494,13 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
     public void testDataCenterAwareAgentTypeWithDefaultSerialConsistency()
     {
         Node nodeMock = mock(Node.class);
+        Map<UUID, Node> mockNodes = new HashMap<>();
+        mockNodes.put(UUID.randomUUID(), nodeMock);
         DistributedNativeConnectionProvider connectionProviderMock = mock(DistributedNativeConnectionProvider.class);
 
         when(nodeMock.getHostId()).thenReturn(UUID.randomUUID());
         when(connectionProviderMock.getCqlSession()).thenReturn(mySession);
-        when(connectionProviderMock.getNodes()).thenReturn(Arrays.asList(nodeMock));
+        when(connectionProviderMock.getNodes()).thenReturn(mockNodes);
         when(connectionProviderMock.getConnectionType()).thenReturn(ConnectionType.datacenterAware);
 
         myLockFactory = new CASLockFactoryBuilder()
@@ -517,9 +519,12 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
         Node nodeMock = mock(Node.class);
         DistributedNativeConnectionProvider connectionProviderMock = mock(DistributedNativeConnectionProvider.class);
 
+        Map<UUID, Node> mockNodes = new HashMap<>();
+        mockNodes.put(UUID.randomUUID(), nodeMock);
+
         when(nodeMock.getHostId()).thenReturn(UUID.randomUUID());
         when(connectionProviderMock.getCqlSession()).thenReturn(mySession);
-        when(connectionProviderMock.getNodes()).thenReturn(Arrays.asList(nodeMock));
+        when(connectionProviderMock.getNodes()).thenReturn(mockNodes);
 
         myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(connectionProviderMock)
@@ -536,9 +541,11 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
     {
         DistributedNativeConnectionProvider connectionProviderMock = mock(DistributedNativeConnectionProvider.class);
         Node nodeMock = mock(Node.class);
+        Map<UUID, Node> mockNodes = new HashMap<>();
+        mockNodes.put(UUID.randomUUID(), nodeMock);
         when(nodeMock.getHostId()).thenReturn(UUID.randomUUID());
         when(connectionProviderMock.getCqlSession()).thenReturn(mySession);
-        when(connectionProviderMock.getNodes()).thenReturn(Arrays.asList(nodeMock));
+        when(connectionProviderMock.getNodes()).thenReturn(mockNodes);
 
         myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(connectionProviderMock)
@@ -555,9 +562,11 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
     {
         DistributedNativeConnectionProvider connectionProviderMock = mock(DistributedNativeConnectionProvider.class);
         Node nodeMock = mock(Node.class);
+        Map<UUID, Node> mockNodes = new HashMap<>();
+        mockNodes.put(UUID.randomUUID(), nodeMock);
         when(nodeMock.getHostId()).thenReturn(UUID.randomUUID());
         when(connectionProviderMock.getCqlSession()).thenReturn(mySession);
-        when(connectionProviderMock.getNodes()).thenReturn(Arrays.asList(nodeMock));
+        when(connectionProviderMock.getNodes()).thenReturn(mockNodes);
 
         myLockFactory = new CASLockFactoryBuilder()
                 .withNativeConnectionProvider(connectionProviderMock)
@@ -592,24 +601,16 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
         return mySession.execute(statement);
     }
 
-    private long getReadCount(String tableName) throws AttributeNotFoundException,
-                                                InstanceNotFoundException,
-                                                MBeanException,
-                                                ReflectionException,
+    private long getReadCount(String tableName) throws
                                                 IOException,
-                                                MalformedObjectNameException,
                                                 UnsupportedOperationException,
                                                 InterruptedException
     {
         return getReadCountFromTableStats(tableName);
     }
 
-    private long getWriteCount(String tableName) throws AttributeNotFoundException,
-                                                 InstanceNotFoundException,
-                                                 MBeanException,
-                                                 ReflectionException,
+    private long getWriteCount(String tableName) throws
                                                  IOException,
-                                                 MalformedObjectNameException,
                                                  UnsupportedOperationException,
                                                  InterruptedException
     {
@@ -659,9 +660,9 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
             }
 
             @Override
-            public List<Node> getNodes()
+            public Map<UUID, Node> getNodes()
             {
-                return mySession.getMetadata().getNodes().values().stream().toList();
+                return mySession.getMetadata().getNodes();
             }
 
             @Override
