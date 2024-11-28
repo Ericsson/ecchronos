@@ -95,7 +95,7 @@ public class ECChronos implements Closeable
         defaultRepairConfigurationProvider.fromBuilder(DefaultRepairConfigurationProvider.newBuilder()
                 .withRepairScheduler(myRepairSchedulerImpl)
                 .withSession(session)
-                .withNodesList(nativeConnectionProvider.getNodes())
+                .withNativeConnection(nativeConnectionProvider)
                 .withReplicatedTableProvider(myECChronosInternals.getReplicatedTableProvider())
                 .withRepairConfiguration(repairConfigurationProvider::get)
                 .withEccNodesSync(eccNodesSync)

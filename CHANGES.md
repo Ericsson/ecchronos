@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Modify DistributedNativeConnectionProvider to Return a Map<UUID, Node> - Issue #778
 * Bump Spring, Tomcat, Jackson and other dependencies to Remove Vulnerabilities in Agent - Issue #776
 * Add Locks In SchedulerManager - Issue #768
 * Cassandra-Based Distributed Locks - Issue #741

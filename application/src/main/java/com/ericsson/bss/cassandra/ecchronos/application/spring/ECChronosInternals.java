@@ -15,7 +15,6 @@
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.lockfactory.CasLockFactoryConfig;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
@@ -39,10 +38,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import java.io.Closeable;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,7 +65,7 @@ public class ECChronosInternals implements Closeable
         myJmxProxyFactory = DistributedJmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(jmxConnectionProvider)
                 .withEccNodesSync(eccNodesSync)
-                .withNodesMap(generateNodesMap(nativeConnectionProvider.getNodes()))
+                .withNodesMap(nativeConnectionProvider.getNodes())
                 .build();
 
         CqlSession session = nativeConnectionProvider.getCqlSession();
@@ -84,7 +79,7 @@ public class ECChronosInternals implements Closeable
         myReplicatedTableProvider = new ReplicatedTableProviderImpl(
                 session,
                 myTableReferenceFactory,
-                nativeConnectionProvider.getNodes());
+                nativeConnectionProvider);
 
         myTableStorageStatesImpl = TableStorageStatesImpl.builder()
                 .withReplicatedTableProvider(myReplicatedTableProvider)
@@ -169,15 +164,6 @@ public class ECChronosInternals implements Closeable
         myScheduleManagerImpl.close();
 
         myCassandraMetrics.close();
-    }
-
-    // In the future we should modify the DistributedNativeConnectionProvider
-    // to generate this nodesMap instead of a nodesList
-    private Map<UUID, Node> generateNodesMap(final List<Node> nodes)
-    {
-        Map<UUID, Node> nodesMap = new HashMap<>();
-        nodes.forEach(node -> nodesMap.put(node.getHostId(), node));
-        return nodesMap;
     }
 
     private static final class NoOpRepairMetrics implements TableRepairMetrics

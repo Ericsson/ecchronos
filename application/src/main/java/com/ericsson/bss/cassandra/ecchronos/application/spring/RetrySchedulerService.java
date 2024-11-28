@@ -118,7 +118,7 @@ public final class RetrySchedulerService implements DisposableBean
 
             if (NodeStatus.UNAVAILABLE.name().equals(status))
             {
-                myDistributedNativeConnectionProvider.getNodes()
+                myDistributedNativeConnectionProvider.getNodes().values()
                         .stream()
                         .filter(node -> Objects.equals(node.getHostId(), nodeId))
                         .findFirst()

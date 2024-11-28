@@ -70,7 +70,7 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
 
         myDistributedJmxConnectionProviderImpl = DistributedJmxConnectionProviderImpl.builder()
                 .withCqlSession(distributedNativeConnectionProvider.getCqlSession())
-                .withNodesList(distributedNativeConnectionProvider.getNodes())
+                .withNativeConnection(distributedNativeConnectionProvider)
                 .withCredentials(credentials)
                 .withEccNodesSync(eccNodesSync)
                 .withTLS(tls)

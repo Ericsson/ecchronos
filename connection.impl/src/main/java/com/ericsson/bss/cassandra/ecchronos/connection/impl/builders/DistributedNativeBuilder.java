@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -242,42 +243,49 @@ public class DistributedNativeBuilder
         LOG.info("Creating Session With Initial Contact Points");
         CqlSession session = createSession(this);
         LOG.info("Requesting Nodes List");
-        List<Node> nodesList = createNodesList(session);
+        Map<UUID, Node> nodesList = createNodesMap(session);
         LOG.info("Nodes list was created with success");
         return new DistributedNativeConnectionProviderImpl(session, nodesList, this, myType);
     }
 
     /**
-     * Creates a list of nodes based on the connection type, reads the node list from the database.
+     * Creates a map of nodes based on the connection type, reads the node list from the database.
      * @param session the connection information to the database
-     * @return list of nodes
+     * @return map of nodes
      */
-    public List<Node> createNodesList(final CqlSession session)
+    public Map<UUID, Node> createNodesMap(final CqlSession session)
     {
-        List<Node> tmpNodeList = new ArrayList<>();
+        Map<UUID, Node> tmpNodeMap = new HashMap<>();
         switch (myType)
         {
         case datacenterAware:
-            tmpNodeList = resolveDatacenterNodes(session, myDatacenterAware);
-            return tmpNodeList;
+            tmpNodeMap = generateNodesMap(resolveDatacenterNodes(session, myDatacenterAware));
+            return tmpNodeMap;
 
         case rackAware:
-            tmpNodeList = resolveRackNodes(session, myRackAware);
-            return tmpNodeList;
+            tmpNodeMap = generateNodesMap(resolveRackNodes(session, myRackAware));
+            return tmpNodeMap;
 
         case hostAware:
-            tmpNodeList = resolveHostAware(session, myHostAware);
-            return tmpNodeList;
+            tmpNodeMap = generateNodesMap(resolveHostAware(session, myHostAware));
+            return tmpNodeMap;
 
         default:
         }
-        return tmpNodeList;
+        return tmpNodeMap;
+    }
+
+    private Map<UUID, Node> generateNodesMap(final List<Node> nodes)
+    {
+        Map<UUID, Node> nodesMap = new HashMap<>();
+        nodes.forEach(node -> nodesMap.put(node.getHostId(), node));
+        return nodesMap;
     }
 
     /**
      * Checks the node is on the list of specified dc's/racks/nodes.
-     * @param node
-     * @return
+     * @param node the node to validate.
+     * @return true if node is valid.
      */
     public Boolean confirmNodeValid(final Node node)
     {
@@ -289,7 +297,6 @@ public class DistributedNativeBuilder
                 return confirmRackNodeValid(node, myRackAware);
             case hostAware:
                 return confirmHostNodeValid(node, myHostAware);
-
             default:
         }
         return false;

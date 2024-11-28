@@ -29,6 +29,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.Distributed
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedNativeConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,10 +64,10 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
      *         the handler for managing SSL/TLS certificates.
      */
     public AgentNativeConnectionProvider(
-                                         final Config config,
-                                         final Supplier<Security.CqlSecurity> cqlSecuritySupplier,
-                                         final CertificateHandler certificateHandler,
-                                         final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
+         final Config config,
+         final Supplier<Security.CqlSecurity> cqlSecuritySupplier,
+         final CertificateHandler certificateHandler,
+         final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
     {
         AgentConnectionConfig agentConnectionConfig = config.getConnectionConfig()
                 .getCqlConnection()
@@ -112,8 +113,8 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
      * @return the configured {@link DistributedNativeBuilder}.
      */
     public final DistributedNativeBuilder resolveAgentProviderBuilder(
-                                                                      final DistributedNativeBuilder builder,
-                                                                      final AgentConnectionConfig agentConnectionConfig)
+          final DistributedNativeBuilder builder,
+          final AgentConnectionConfig agentConnectionConfig)
     {
         switch (agentConnectionConfig.getType())
         {
@@ -142,7 +143,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
      * @return a list of {@link InetSocketAddress} representing the resolved contact points.
      */
     public final List<InetSocketAddress> resolveInitialContactPoints(
-                                                                     final Map<String, AgentConnectionConfig.Host> contactPoints)
+            final Map<String, AgentConnectionConfig.Host> contactPoints)
     {
         List<InetSocketAddress> resolvedContactPoints = new ArrayList<>();
         for (AgentConnectionConfig.Host host : contactPoints.values())
@@ -222,8 +223,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
      *         if the connection is in an illegal state.
      */
     public final DistributedNativeConnectionProviderImpl tryEstablishConnection(
-                                                                                final DistributedNativeBuilder builder) throws AllNodesFailedException,
-                                                                                                                        IllegalStateException
+            final DistributedNativeBuilder builder) throws AllNodesFailedException, IllegalStateException
     {
         try
         {
@@ -248,12 +248,12 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
     }
 
     /**
-     * Retrieves the list of nodes connected by this provider.
+     * Retrieves the map of nodes connected by this provider.
      *
-     * @return a list of {@link Node} instances.
+     * @return a Map of {@link Node} instances.
      */
     @Override
-    public List<Node> getNodes()
+    public Map<UUID, Node> getNodes()
     {
         return myDistributedNativeConnectionProviderImpl.getNodes();
     }
@@ -271,27 +271,28 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
     }
 
     /**
-     * Add a nw node to the list of nodes.
-     * @param myNode
+     * Add a new node to the map of nodes.
+     * @param myNode the node to add.
      */
     @Override
     public void addNode(final Node myNode)
     {
         myDistributedNativeConnectionProviderImpl.addNode(myNode);
     }
+
     /**
      * Remove node for the list of nodes.
-     * @param myNode
+     * @param myNode the node to remove.
      */
     @Override
     public void removeNode(final Node myNode)
     {
         myDistributedNativeConnectionProviderImpl.removeNode(myNode);
     }
+
     /**
      * Checks the node is on the list of specified dc's/racks/nodes.
-     * @param node
-     * @return
+     * @param node the node to validate.
      */
     @Override
     public Boolean confirmNodeValid(final Node node)

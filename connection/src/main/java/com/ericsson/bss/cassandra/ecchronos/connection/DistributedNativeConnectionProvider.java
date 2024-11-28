@@ -17,24 +17,27 @@ package com.ericsson.bss.cassandra.ecchronos.connection;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.List;
-
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
+import java.util.Map;
+import java.util.UUID;
 
 public interface DistributedNativeConnectionProvider extends Closeable
 {
     CqlSession getCqlSession();
 
-    List<Node> getNodes();
-
+    Map<UUID, Node> getNodes();
 
     @Override
     default void close() throws IOException
     {
     }
+
     void addNode(Node myNode);
+
     void removeNode(Node myNode);
+
     Boolean confirmNodeValid(Node node);
+
     ConnectionType getConnectionType();
 }

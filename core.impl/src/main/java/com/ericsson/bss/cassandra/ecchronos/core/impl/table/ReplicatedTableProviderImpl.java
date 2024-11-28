@@ -17,12 +17,12 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.table;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.Metadata;
 import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -44,7 +44,7 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
     private static final String SIMPLE_STRATEGY = "org.apache.cassandra.locator.SimpleStrategy";
     private static final String NETWORK_TOPOLOGY_STRATEGY = "org.apache.cassandra.locator.NetworkTopologyStrategy";
 
-    private final List<Node> myNodes;
+    private final DistributedNativeConnectionProvider myNativeConnectionProvider;
 
     private static final String SIMPLE_STRATEGY_REPLICATION_FACTOR = "replication_factor";
 
@@ -58,16 +58,16 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
      *
      * @param session the {@link CqlSession} used to connect to the Cassandra cluster. Must not be {@code null}.
      * @param tableReferenceFactory the factory to create {@link TableReference} instances. Must not be {@code null}.
-     * @param nodes the list of {@link Node} objects representing the nodes in the Cassandra cluster. Must not be {@code null}.
+     * @param nativeConnectionProvider the {@link DistributedNativeConnectionProvider} object that contains the nodes in the Cassandra cluster. Must not be {@code null}.
      */
     public ReplicatedTableProviderImpl(
             final CqlSession session,
             final TableReferenceFactory tableReferenceFactory,
-            final List<Node> nodes)
+            final DistributedNativeConnectionProvider nativeConnectionProvider)
     {
         mySession = session;
         myTableReferenceFactory = tableReferenceFactory;
-        myNodes = nodes;
+        myNativeConnectionProvider = nativeConnectionProvider;
     }
 
     /**
@@ -76,9 +76,9 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
     @Override
     public final Set<TableReference> getAll()
     {
-        return myNodes.stream()
+        return myNativeConnectionProvider.getNodes().values().stream()
                 .flatMap(node -> mySession.getMetadata().getKeyspaces().values().stream()
-                        .filter(k -> accept(node, k.getName().asInternal())) // Chama o accept com o Node e o nome da keyspace
+                        .filter(k -> accept(node, k.getName().asInternal()))
                         .flatMap(k -> k.getTables().values().stream())
                         .map(tb -> myTableReferenceFactory.forTable(tb.getKeyspace().asInternal(), tb.getName().asInternal()))
                 )

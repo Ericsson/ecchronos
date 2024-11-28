@@ -14,8 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection.impl.providers;
 
+import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import java.io.IOException;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 public class DistributedJmxConnectionProviderImpl implements DistributedJmxConnectionProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxConnectionProviderImpl.class);
-    private final List<Node> myNodesList;
+    private final DistributedNativeConnectionProvider myNativeConnectionProvider;
     private final ConcurrentHashMap<UUID, JMXConnector> myJMXConnections;
     private final DistributedJmxBuilder myDistributedJmxBuilder;
 
@@ -45,7 +45,7 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
             final DistributedJmxBuilder distributedJmxBuilder
     )
     {
-        myNodesList = distributedJmxBuilder.getNodesList();
+        myNativeConnectionProvider = distributedJmxBuilder.getNativeConnectionProvider();
         myJMXConnections = distributedJmxBuilder.getJMXConnections();
         myDistributedJmxBuilder = distributedJmxBuilder;
     }
@@ -127,7 +127,7 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
     @Override
     public void close() throws IOException
     {
-        for (Node node : myNodesList)
+        for (Node node : myNativeConnectionProvider.getNodes().values())
         {
             close(node.getHostId());
         }
@@ -149,8 +149,8 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
 
     /**
      * Add a node and create a JMXconnection.
-     * @param node
-     * @throws IOException
+     * @param node the node to connect with.
+     * @throws IOException if connection fails.
      */
     @Override
     public void add(final Node node) throws IOException

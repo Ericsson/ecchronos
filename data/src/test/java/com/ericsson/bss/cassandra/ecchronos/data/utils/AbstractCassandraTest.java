@@ -18,6 +18,8 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
+import java.util.Map;
+import java.util.UUID;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.testcontainers.containers.CassandraContainer;
@@ -47,7 +49,7 @@ public class AbstractCassandraTest
                 .addContactPoint(node.getContactPoint())
                 .withLocalDatacenter(node.getLocalDatacenter())
                 .build();
-        List<Node> nodesList = new ArrayList<>(mySession.getMetadata().getNodes().values());
+        Map<UUID, Node> nodesList = mySession.getMetadata().getNodes();
         myNativeConnectionProvider = new DistributedNativeConnectionProvider()
         {
             @Override
@@ -57,19 +59,19 @@ public class AbstractCassandraTest
             }
 
             @Override
-            public List<Node> getNodes()
+            public Map<UUID, Node> getNodes()
             {
                 return nodesList;
             }
 
             @Override
             public void addNode(Node myNode) {
-                nodesList.add(myNode);
+                nodesList.put(myNode.getHostId(), myNode);
             }
 
             @Override
             public void removeNode(Node myNode) {
-                nodesList.remove(myNode);
+                nodesList.remove(myNode.getHostId());
             }
 
             @Override
