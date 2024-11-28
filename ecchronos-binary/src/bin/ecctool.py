@@ -445,10 +445,10 @@ def get_jvm_opts(conf_dir):
 def run_ecc(cwd, command, arguments):
     if arguments.foreground:
         command += " -f"
-    proc = subprocess.Popen(
+    proc = subprocess.Popen(  # pylint: disable=consider-using-with
         command.split(" "),
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,  # pylint: disable=consider-using-with
+        stderr=subprocess.STDOUT,
         cwd=cwd,
     )
     pid = proc.pid

@@ -233,11 +233,11 @@ class V2RepairSchedulerRequest(RestRequest):
             result = result.transform_with_data(new_data=[Repair(x) for x in result.data])
         return result
 
-    def get_repair_info(
+    def get_repair_info(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         self,
         keyspace=None,
         table=None,
-        since=None,  # pylint: disable=too-many-arguments, too-many-positional-arguments
+        since=None,
         duration=None,
         local=False,
     ):
