@@ -78,7 +78,7 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
     {
         return myNativeConnectionProvider.getNodes().values().stream()
                 .flatMap(node -> mySession.getMetadata().getKeyspaces().values().stream()
-                        .filter(k -> accept(node, k.getName().asInternal())) // Chama o accept com o Node e o nome da keyspace
+                        .filter(k -> accept(node, k.getName().asInternal()))
                         .flatMap(k -> k.getTables().values().stream())
                         .map(tb -> myTableReferenceFactory.forTable(tb.getKeyspace().asInternal(), tb.getName().asInternal()))
                 )
