@@ -19,7 +19,7 @@ try:
     from urllib.parse import quote
 except ImportError:
     from urllib2 import urlopen, Request, HTTPError, URLError
-    from urllib import quote # pylint: disable=ungrouped-imports
+    from urllib import quote  # pylint: disable=ungrouped-imports
 import json
 import os
 import ssl
@@ -51,15 +51,14 @@ class RequestResult(object):
         return self.status_code == 200
 
     def transform_with_data(self, new_data):
-        return RequestResult(status_code=self.status_code,
-                             data=new_data,
-                             exception=self.exception,
-                             message=self.message)
+        return RequestResult(
+            status_code=self.status_code, data=new_data, exception=self.exception, message=self.message
+        )
 
 
 class RestRequest(object):
-    default_base_url = 'http://localhost:8080'
-    default_https_base_url = 'https://localhost:8080'
+    default_base_url = "http://localhost:8080"
+    default_https_base_url = "https://localhost:8080"
 
     def __init__(self, base_url=None):
         if base_url:
@@ -78,9 +77,9 @@ class RestRequest(object):
 
     @staticmethod
     def get_charset(response):
-        return RestRequest.get_param(response.info(), 'charset') or 'utf-8'
+        return RestRequest.get_param(response.info(), "charset") or "utf-8"
 
-    def request(self, url, method='GET'):
+    def request(self, url, method="GET"):
         request_url = "{0}/{1}".format(self.base_url, url)
         try:
             request = Request(request_url)
@@ -99,17 +98,15 @@ class RestRequest(object):
             response.close()
             return RequestResult(status_code=response.getcode(), data=json_data)
         except HTTPError as e:
-            return RequestResult(status_code=e.code,
-                                 message="Unable to retrieve resource {0}".format(request_url),
-                                 exception=e)
+            return RequestResult(
+                status_code=e.code, message="Unable to retrieve resource {0}".format(request_url), exception=e
+            )
         except URLError as e:
-            return RequestResult(status_code=404,
-                                 message="Unable to connect to {0}".format(request_url),
-                                 exception=e)
+            return RequestResult(status_code=404, message="Unable to connect to {0}".format(request_url), exception=e)
         except Exception as e:  # pylint: disable=broad-except
-            return RequestResult(exception=e,
-                                 message="Unable to retrieve resource {0}".format(request_url))
-    def basic_request(self, url, method='GET'):
+            return RequestResult(exception=e, message="Unable to retrieve resource {0}".format(request_url))
+
+    def basic_request(self, url, method="GET"):
         request_url = "{0}/{1}".format(self.base_url, url)
         try:
             request = Request(request_url)
@@ -127,38 +124,35 @@ class RestRequest(object):
             data = response.read()
 
             response.close()
-            return data.decode('UTF-8')
+            return data.decode("UTF-8")
         except HTTPError as e:
-            return RequestResult(status_code=e.code,
-                                 message="Unable to retrieve resource {0}".format(request_url),
-                                 exception=e)
+            return RequestResult(
+                status_code=e.code, message="Unable to retrieve resource {0}".format(request_url), exception=e
+            )
         except URLError as e:
-            return RequestResult(status_code=404,
-                                 message="Unable to connect to {0}".format(request_url),
-                                 exception=e)
+            return RequestResult(status_code=404, message="Unable to connect to {0}".format(request_url), exception=e)
         except Exception as e:  # pylint: disable=broad-except
-            return RequestResult(exception=e,
-                                 message="Unable to retrieve resource {0}".format(request_url))
+            return RequestResult(exception=e, message="Unable to retrieve resource {0}".format(request_url))
 
 
 class V2RepairSchedulerRequest(RestRequest):
-    ROOT = 'repair-management/'
-    PROTOCOL = ROOT + 'v2/'
-    REPAIRS = PROTOCOL + 'repairs'
-    SCHEDULES = PROTOCOL + 'schedules'
+    ROOT = "repair-management/"
+    PROTOCOL = ROOT + "v2/"
+    REPAIRS = PROTOCOL + "repairs"
+    SCHEDULES = PROTOCOL + "schedules"
 
     v2_schedule_status_url = SCHEDULES
-    v2_schedule_id_status_url = SCHEDULES + '/{0}'
-    v2_schedule_id_full_status_url = SCHEDULES + '/{0}?full=true'
+    v2_schedule_id_status_url = SCHEDULES + "/{0}"
+    v2_schedule_id_full_status_url = SCHEDULES + "/{0}?full=true"
 
     v2_repair_status_url = REPAIRS
-    v2_repair_id_status_url = REPAIRS + '/{0}'
+    v2_repair_id_status_url = REPAIRS + "/{0}"
 
     v2_repair_run_url = REPAIRS
 
-    repair_info_url = PROTOCOL + 'repairInfo'
+    repair_info_url = PROTOCOL + "repairInfo"
 
-    running_job_url = PROTOCOL + 'running-job'
+    running_job_url = PROTOCOL + "running-job"
 
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
@@ -234,13 +228,19 @@ class V2RepairSchedulerRequest(RestRequest):
                 request_url += "&repairType=" + repair_type
             else:
                 request_url += "?repairType=" + repair_type
-        result = self.request(request_url, 'POST')
+        result = self.request(request_url, "POST")
         if result.is_successful():
             result = result.transform_with_data(new_data=[Repair(x) for x in result.data])
         return result
 
-    def get_repair_info(self, keyspace=None, table=None, since=None,  # pylint: disable=too-many-arguments, too-many-positional-arguments
-                        duration=None, local=False):
+    def get_repair_info(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+        self,
+        keyspace=None,
+        table=None,
+        since=None,
+        duration=None,
+        local=False,
+    ):
         request_url = V2RepairSchedulerRequest.repair_info_url
         if keyspace:
             request_url += "?keyspace=" + quote(keyspace)

@@ -16,8 +16,8 @@
 from behave import then  # pylint: disable=no-name-in-module
 
 
-@then('the status is {state}')
+@then("the status is {state}")
 def step_verify_server_status(context, state):
     context.json = context.response.json()
 
-    assert context.json['status'] == state
+    assert context.json["status"] == state

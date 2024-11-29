@@ -21,37 +21,37 @@ def run_ecc_run_repair(context, params):
     run_ecctool(context, ["run-repair"] + params)
 
 
-@when('we run repair for keyspace {keyspace} and table {table}')
+@when("we run repair for keyspace {keyspace} and table {table}")
 def step_run_repair(context, keyspace, table):
-    run_ecc_run_repair(context, ['--keyspace', keyspace, '--table', table])
+    run_ecc_run_repair(context, ["--keyspace", keyspace, "--table", table])
     handle_repair_output(context)
 
 
-@when('we run repair for keyspace {keyspace}')
+@when("we run repair for keyspace {keyspace}")
 def step_run_repair_keyspace(context, keyspace):
-    run_ecc_run_repair(context, ['--keyspace', keyspace])
+    run_ecc_run_repair(context, ["--keyspace", keyspace])
     handle_repair_output(context)
 
 
-@when('we run repair')
+@when("we run repair")
 def step_run_repair_cluster(context):
     run_ecc_run_repair(context, [])
     handle_repair_output(context)
 
 
-@when('we run local repair for keyspace {keyspace} and table {table} with type {repair_type}')
+@when("we run local repair for keyspace {keyspace} and table {table} with type {repair_type}")
 def step_run_local_repair(context, keyspace, table, repair_type):
-    run_ecc_run_repair(context, ['--keyspace', keyspace, '--table', table, '--local', '--repair_type', repair_type])
+    run_ecc_run_repair(context, ["--keyspace", keyspace, "--table", table, "--local", "--repair_type", repair_type])
     handle_repair_output(context)
 
 
-@when('we run local repair for keyspace {keyspace}')
+@when("we run local repair for keyspace {keyspace}")
 def step_run_local_repair_for_keyspace(context, keyspace):
-    run_ecc_run_repair(context, ['--keyspace', keyspace, '--local'])
+    run_ecc_run_repair(context, ["--keyspace", keyspace, "--local"])
     handle_repair_output(context)
 
 
-@when('we run local repair')
+@when("we run local repair")
 def step_run_local_repair_cluster(context):
-    run_ecc_run_repair(context, ['--local'])
+    run_ecc_run_repair(context, ["--local"])
     handle_repair_output(context)

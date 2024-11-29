@@ -14,11 +14,11 @@
 # limitations under the License.
 #
 
-project = 'ecChronos'
-copyright = '2023, Telefonaktiebolaget LM Ericsson'
-author = 'masokol'
+project = "ecChronos"
+copyright = "2023, Telefonaktiebolaget LM Ericsson"
+author = "masokol"
 
-extensions = ['sphinxcontrib.autoprogram', 'sphinx_markdown_builder']
+extensions = ["sphinxcontrib.autoprogram", "sphinx_markdown_builder"]
 
-templates_path = ['_templates']
+templates_path = ["_templates"]
 exclude_patterns = []
