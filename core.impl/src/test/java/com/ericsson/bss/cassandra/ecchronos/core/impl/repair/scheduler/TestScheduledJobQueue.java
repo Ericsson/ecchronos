@@ -77,7 +77,7 @@ public class TestScheduledJobQueue
 
         for (ScheduledJob job : queue)
         {
-            job.postExecute(true);
+            job.postExecute(true, null);
         }
 
         assertThat(queue.iterator()).toIterable().isEmpty();

@@ -31,7 +31,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.state.TokenSubRangeUtil;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairPolicy;
-import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryService;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobException;
@@ -250,7 +249,7 @@ public class RepairGroup extends ScheduledTask
         private TableRepairMetrics myTableRepairMetrics;
         private List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
         private BigInteger myTokensPerRepair = LongTokenRange.FULL_RANGE;
-        private RepairHistoryService myRepairHistory;
+        private RepairHistory myRepairHistory;
         private Node myNode;
         private UUID myJobId;
         private RepairLockFactory myRepairLockFactory;
@@ -370,7 +369,7 @@ public class RepairGroup extends ScheduledTask
          * @param repairHistory Repair history.
          * @return Builder
          */
-        public Builder withRepairHistory(final RepairHistoryService repairHistory)
+        public Builder withRepairHistory(final RepairHistory repairHistory)
         {
             myRepairHistory = repairHistory;
             return this;

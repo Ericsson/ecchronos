@@ -19,9 +19,12 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.repair.FileBasedR
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandStatus;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.OnDemandRepairSchedulerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.RepairSchedulerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.RepairStateFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
@@ -44,6 +47,7 @@ public class ECChronos implements Closeable
     private final ECChronosInternals myECChronosInternals;
     private final RepairSchedulerImpl myRepairSchedulerImpl;
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
+    private final OnDemandRepairSchedulerImpl myOnDemandRepairSchedulerImpl;
 
     public ECChronos(
             final Config configuration,
@@ -90,6 +94,18 @@ public class ECChronos implements Closeable
                 .withRepairLockType(configuration.getRepairConfig().getRepairLockType())
                 .build();
 
+        myOnDemandRepairSchedulerImpl = OnDemandRepairSchedulerImpl.builder()
+                .withScheduleManager(myECChronosInternals.getScheduleManager())
+                .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
+                .withJmxProxyFactory(myECChronosInternals.getJmxProxyFactory())
+                .withReplicationState(replicationState)
+                .withRepairLockType(configuration.getRepairConfig().getRepairLockType())
+                .withSession(session)
+                .withRepairConfiguration(configuration.getRepairConfig().asRepairConfiguration())
+                .withRepairHistory(repairHistoryService)
+                .withOnDemandStatus(new OnDemandStatus(nativeConnectionProvider))
+                .build();
+
         AbstractRepairConfigurationProvider repairConfigurationProvider = new FileBasedRepairConfiguration(applicationContext);
 
         defaultRepairConfigurationProvider.fromBuilder(DefaultRepairConfigurationProvider.newBuilder()
@@ -124,6 +140,12 @@ public class ECChronos implements Closeable
         return myECChronosInternals.getReplicatedTableProvider();
     }
 
+    @Bean
+    public OnDemandRepairScheduler onDemandRepairScheduler()
+    {
+        return myOnDemandRepairSchedulerImpl;
+    }
+
     @Override
     public final void close()
     {
@@ -131,6 +153,7 @@ public class ECChronos implements Closeable
         myTimeBasedRunPolicy.close();
         myRepairSchedulerImpl.close();
         myECChronosInternals.close();
+        myOnDemandRepairSchedulerImpl.close();
     }
 }
 

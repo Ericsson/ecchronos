@@ -276,7 +276,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             {
                 LOG.debug("Lock has been acquired on node with Id {} with lock {}", nodeID, lock);
                 boolean successful = runTask(task);
-                job.postExecute(successful);
+                job.postExecute(successful, task);
                 return true;
             }
             catch (Exception e)
