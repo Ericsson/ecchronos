@@ -21,6 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfigurati
 
 import com.ericsson.bss.cassandra.ecchronos.core.state.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.core.state.PostUpdateHook;
+import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistoryProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairState;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairStateFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicaRepairGroupFactory;
@@ -28,7 +29,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.state.VnodeRepairStateFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
-import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryService;
 
 public final class RepairStateFactoryImpl implements RepairStateFactory
 {
@@ -77,7 +77,7 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
     {
         private ReplicationState myReplicationState;
         private HostStates myHostStates;
-        private RepairHistoryService myRepairHistoryProvider;
+        private RepairHistoryProvider myRepairHistoryProvider;
         private TableRepairMetrics myTableRepairMetrics;
 
         /**
@@ -110,7 +110,7 @@ public final class RepairStateFactoryImpl implements RepairStateFactory
          * @param repairHistoryProvider The repair history provider.
          * @return Builder
          */
-        public Builder withRepairHistoryProvider(final RepairHistoryService repairHistoryProvider)
+        public Builder withRepairHistoryProvider(final RepairHistoryProvider repairHistoryProvider)
         {
             myRepairHistoryProvider = repairHistoryProvider;
             return this;

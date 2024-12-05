@@ -80,6 +80,12 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
+            <artifactId>rest</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Spring boot -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

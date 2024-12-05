@@ -107,6 +107,7 @@
         <module>utils</module>
         <module>fault.manager</module>
         <module>fault.manager.impl</module>
+        <module>rest</module>
     </modules>
 
     <properties>
@@ -124,6 +125,7 @@
         <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
         <jakarta.validation-api.version>3.1.0</jakarta.validation-api.version>
         <org.apache.httpcomponents.client.version>5.3.1</org.apache.httpcomponents.client.version>
+        <swagger-annotations.version>2.2.25</swagger-annotations.version>
 
         <!-- Cassandra -->
         <cassandra.driver.core.version>4.18.1</cassandra.driver.core.version>
@@ -376,6 +378,19 @@
                 <groupId>org.jolokia</groupId>
                 <artifactId>jolokia-jsr160</artifactId>
                 <version>${jolokia.adapter.version}</version>
+            </dependency>
+
+            <!-- OpenAPI annotations -->
+            <dependency>
+                <groupId>jakarta.validation</groupId>
+                <artifactId>jakarta.validation-api</artifactId>
+                <version>${jakarta.validation-api.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-annotations</artifactId>
+                <version>${swagger-annotations.version}</version>
             </dependency>
 
             <!-- test -->

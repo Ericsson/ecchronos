@@ -45,7 +45,7 @@ public class DistributedJmxBuilder
 {
     private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxBuilder.class);
     private static final String JMX_FORMAT_URL = "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi";
-    private static final String JMX_JOLOKIA_FORMAT_URL = "service:jmx:jolokia://%s:%d/jolokia";
+    private static final String JMX_JOLOKIA_FORMAT_URL = "service:jmx:jolokia://%s:%d/jolokia/";
     private static final int DEFAULT_JOLOKIA_PORT = 8778;
     private static final int DEFAULT_PORT = 7199;
 
@@ -212,7 +212,7 @@ public class DistributedJmxBuilder
         }
         catch
         (
-            AllNodesFailedException | QueryExecutionException | IOException | SecurityException e)
+                AllNodesFailedException | QueryExecutionException | IOException | SecurityException e)
         {
             LOG.error("Failed to create JMX connection with node {} because of {}", node.getHostId(), e.getMessage());
             myEccNodesSync.updateNodeStatus(NodeStatus.UNAVAILABLE, node.getDatacenter(), node.getHostId());

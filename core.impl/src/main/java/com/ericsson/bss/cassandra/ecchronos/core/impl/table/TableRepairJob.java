@@ -165,6 +165,8 @@ public class TableRepairJob extends ScheduledRepairJob
                         .withTokensPerRepair(tokensPerRepair)
                         .withRepairPolicies(getRepairPolicies())
                         .withRepairHistory(myRepairHistory)
+                        .withRepairResourceFactory(getRepairLockType().getLockFactory())
+                        .withRepairLockFactory(REPAIR_LOCK_FACTORY)
                         .withJobId(getId())
                         .withNode(myNode);
 
