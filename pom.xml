@@ -137,7 +137,7 @@
     <dependencyManagement>
         <dependencies>
 
-            <!-- Override versions of indirect dependencies -->
+            <!-- Temporary override versions of indirect dependencies (not yet stepped) -->
 
             <!-- Used by testcontainers, steped due to CVE-2024-25710 -->
             <dependency>
