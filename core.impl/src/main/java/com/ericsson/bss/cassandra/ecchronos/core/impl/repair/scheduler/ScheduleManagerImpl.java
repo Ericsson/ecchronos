@@ -210,7 +210,15 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         {
             try
             {
-                tryRunNext();
+                if (myQueue.get(nodeID) != null)
+                {
+                    tryRunNext();
+                }
+                else
+                {
+                    LOG.info("There is no ScheduledJob for this node {} to run ", nodeID);
+                }
+
             }
             catch (Exception e)
             {

@@ -108,6 +108,7 @@
         <module>fault.manager</module>
         <module>fault.manager.impl</module>
         <module>rest</module>
+        <module>standalone-integration</module>
     </modules>
 
     <properties>
@@ -463,6 +464,7 @@
                         <rulesets>
                             <ruleset>pmd-rules.xml</ruleset>
                         </rulesets>
+
                         <verbose>true</verbose>
                     </configuration>
                 </plugin>
