@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Introduce REST Module for Scheduling and Managing Cassandra Repairs - Issue #771
 * Create On Demand Repair Job on Agent - Issue #775
 * Modify DistributedNativeConnectionProvider to Return a Map<UUID, Node> - Issue #778
 * Bump Spring, Tomcat, Jackson and other dependencies to Remove Vulnerabilities in Agent - Issue #776
