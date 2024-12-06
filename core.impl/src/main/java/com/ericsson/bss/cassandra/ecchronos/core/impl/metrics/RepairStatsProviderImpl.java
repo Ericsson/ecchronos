@@ -51,8 +51,9 @@ public class RepairStatsProviderImpl implements RepairStatsProvider
         VnodeRepairStates vnodeRepairStates;
         vnodeRepairStates = myVnodeRepairStateFactory.calculateClusterWideState(node, tableReference, to, since);
         Collection<VnodeRepairState> states = vnodeRepairStates.getVnodeRepairStates();
-        Collection<VnodeRepairState> repairedStates = states.stream().filter(s -> isRepaired(s, since, to)).collect(
-                Collectors.toList());
+        Collection<VnodeRepairState> repairedStates = states.stream()
+                .filter(s -> isRepaired(s, since, to))
+                .collect(Collectors.toList());
         double repairedRatio = states.isEmpty() ? 0 : (double) repairedStates.size() / states.size();
         return new RepairStats(tableReference.getKeyspace(), tableReference.getTable(), repairedRatio,
                 VnodeRepairStateUtils.getRepairTime(repairedStates));

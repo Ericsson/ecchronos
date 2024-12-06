@@ -42,7 +42,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 /**
- * When updating the path it should also be updated in the OSGi component.
+ * REST controller for managing and retrieving Cassandra repair schedules and job statuses using {@link RepairScheduler}.
  */
 @Tag(name = "Repair-Management", description = "Management of repairs")
 @RestController

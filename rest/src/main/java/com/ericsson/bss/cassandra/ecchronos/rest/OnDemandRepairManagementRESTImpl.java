@@ -51,7 +51,8 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 /**
- * When updating the path it should also be updated in the OSGi component.
+ * REST Controller for managing on-demand repair operations in ecChronos,
+ * allowing creation, retrieval, and filtering of repair jobs.
  */
 @Tag(name = "Repair-Management", description = "Management of repairs")
 @RestController
