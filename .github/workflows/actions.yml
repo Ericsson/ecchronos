@@ -26,7 +26,7 @@ jobs:
          - name: "Unit tests"
            test_suite: 'test jacoco:report'
          - name: "Style check"
-           test_suite: 'compile com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
+           test_suite: 'compile -Pbuild-cassandra-test-jar com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Cache local Maven repository
@@ -42,7 +42,7 @@ jobs:
           java-version: 17
           distribution: 'temurin'
       - name: install dependencies
-        run: mvn install -DskipTests=true
+        run: mvn install -Pbuild-cassandra-test-jar -DskipTests=true
       - run: mvn $TEST_SUITE -B
         id: tests
         env:
