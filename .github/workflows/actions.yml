@@ -42,7 +42,7 @@ jobs:
           java-version: 17
           distribution: 'temurin'
       - name: install dependencies
-        run: mvn install -DskipTests=true
+        run: mvn install -Pbuild-cassandra-test-jar -DskipTests=true
       - run: mvn $TEST_SUITE -B
         id: tests
         env:
