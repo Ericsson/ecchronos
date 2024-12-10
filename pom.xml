@@ -82,20 +82,15 @@
         <org.apache.commons.io.version>2.17.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.27.1</org.apache.commons.commons-compress.version>
         <org.apache.felix.scr.version>2.2.12</org.apache.felix.scr.version>
-        <org.apache.httpcomponents.client.version>5.3.1</org.apache.httpcomponents.client.version>
+        <org.apache.httpcomponents.client.version>5.4.1</org.apache.httpcomponents.client.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.79</org.bouncycastle.bcpkix-jdk18on.version>
         <org.hdrhistogram.version>2.2.2</org.hdrhistogram.version>
         <org.springframework.boot.version>3.4.0</org.springframework.boot.version>
-        <org.springframework.web.version>6.1.14</org.springframework.web.version>
         <org.yaml.snakeyaml.version>2.3</org.yaml.snakeyaml.version>
-        <osgi.component.version>1.5.1</osgi.component.version>
-        <osgi.metatype.version>1.4.1</osgi.metatype.version>
-        <pax-exam.version>4.13.5</pax-exam.version>
         <slf4j.version>2.0.16</slf4j.version>
         <springdoc.openapi-starter-webmvc-ui.version>2.6.0</springdoc.openapi-starter-webmvc-ui.version>
         <swagger-annotations.version>2.2.25</swagger-annotations.version>
         <testcontainers.version>1.20.4</testcontainers.version>
-        <tomcat.version>10.1.31</tomcat.version>
 
         <!-- Plugin versions -->
         <com.mycila.license-maven-plugin.version>4.6</com.mycila.license-maven-plugin.version>
@@ -146,6 +141,8 @@
                 <version>${org.apache.commons.commons-compress.version}</version>
                 <scope>test</scope>
             </dependency>
+
+            <!-- End of temporary override section -->
 
             <!-- Netty -->
             <dependency>
@@ -370,24 +367,6 @@
 
             <!-- Spring boot -->
             <dependency>
-                <groupId>org.apache.tomcat.embed</groupId>
-                <artifactId>tomcat-embed-core</artifactId>
-                <version>${tomcat.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.tomcat.embed</groupId>
-                <artifactId>tomcat-embed-el</artifactId>
-                <version>${tomcat.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.tomcat.embed</groupId>
-                <artifactId>tomcat-embed-websocket</artifactId>
-                <version>${tomcat.version}</version>
-            </dependency>
-
-            <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
                 <version>${org.springframework.boot.version}</version>
@@ -405,12 +384,6 @@
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
                 <version>${springdoc.openapi-starter-webmvc-ui.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-web</artifactId>
-                <version>${org.springframework.web.version}</version>
             </dependency>
 
             <dependency>
@@ -442,21 +415,6 @@
                 <groupId>io.prometheus</groupId>
                 <artifactId>prometheus-metrics-exposition-formats</artifactId>
                 <version>${io.prometheus.client-java.version}</version>
-            </dependency>
-
-            <!-- OSGi -->
-            <dependency>
-                <groupId>org.osgi</groupId>
-                <artifactId>org.osgi.service.component.annotations</artifactId>
-                <version>${osgi.component.version}</version>
-                <scope>provided</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.osgi</groupId>
-                <artifactId>org.osgi.service.metatype.annotations</artifactId>
-                <version>${osgi.metatype.version}</version>
-                <scope>provided</scope>
             </dependency>
 
             <!-- Test -->
@@ -507,21 +465,6 @@
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcpkix-jdk18on</artifactId>
                 <version>${org.bouncycastle.bcpkix-jdk18on.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <!-- Pax exam -->
-            <dependency>
-                <groupId>org.ops4j.pax.exam</groupId>
-                <artifactId>pax-exam-cm</artifactId>
-                <version>${pax-exam.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.ops4j.pax.exam</groupId>
-                <artifactId>pax-exam-junit4</artifactId>
-                <version>${pax-exam.version}</version>
                 <scope>test</scope>
             </dependency>
 
