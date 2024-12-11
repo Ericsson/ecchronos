@@ -47,13 +47,6 @@
             <artifactId>java-driver-metrics-micrometer</artifactId>
         </dependency>
 
-        <!-- OSGi -->
-        <dependency>
-            <groupId>org.osgi</groupId>
-            <artifactId>org.osgi.service.component.annotations</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
         <!-- Test -->
         <dependency>
             <groupId>org.junit.vintage</groupId>

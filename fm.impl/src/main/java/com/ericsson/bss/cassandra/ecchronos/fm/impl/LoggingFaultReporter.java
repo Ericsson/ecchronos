@@ -17,13 +17,11 @@ package com.ericsson.bss.cassandra.ecchronos.fm.impl;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 
-@Component(service = RepairFaultReporter.class)
 public class LoggingFaultReporter implements RepairFaultReporter
 {
     private static final Logger LOG = LoggerFactory.getLogger(LoggingFaultReporter.class);

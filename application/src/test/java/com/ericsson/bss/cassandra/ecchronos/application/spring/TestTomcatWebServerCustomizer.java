@@ -17,8 +17,12 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
 import com.ericsson.bss.cassandra.ecchronos.application.utils.CertUtils;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.RepairStatsProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.ReplicatedTableProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReferenceFactory;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -117,6 +121,18 @@ public abstract class TestTomcatWebServerCustomizer
 
     @MockBean
     private ECChronos ecChronos;
+
+    @MockBean
+    private TableReferenceFactory tableReferenceFactory;
+
+    @MockBean
+    private ReplicatedTableProvider replicatedTableProvider;
+
+    @MockBean
+    private RepairStatsProvider repairStatsProvider;
+
+    @MockBean
+    private RepairScheduler repairScheduler;
 
     @MockBean
     private NativeConnectionProvider nativeConnectionProvider;
