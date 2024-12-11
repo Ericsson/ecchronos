@@ -9,7 +9,31 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Stockholm"
+    # Create a group of dependencies to lower amount of PRs
+    groups:
+      maven-dep:
+        applies-to: version-updates # Applies the group rule to version updates
+        update-types:
+        - "minor"
+        - "patch"
+      maven-security:
+        applies-to: security-updates # Applies the group rule to security updates
+        update-types:
+        - "minor"
+        - "patch"
+    # Ignore a major version update to avoid breaking changes
+    ignore:
+      - dependency-name: "*"
+        update-types:
+        - "version-update:semver-major"
+
   - package-ecosystem: "github-actions" # See documentation for possible values
-    directory: "/" # Location of package manifests
+    directory: "/.github/" # Location of package manifests
     schedule:
       interval: "weekly"
+      day: "wednesday"
+      time: "09:00"
+      timezone: "Europe/Stockholm"
