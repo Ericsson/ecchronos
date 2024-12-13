@@ -61,7 +61,7 @@
         <cassandra.driver.core.version>4.18.1</cassandra.driver.core.version>
         <cassandra.driver.protocol.version>1.5.1</cassandra.driver.protocol.version>
         <com.fasterxml.jackson.core.version>2.18.2</com.fasterxml.jackson.core.version>
-        <com.fasterxml.jackson.dataformat.version>2.18.1</com.fasterxml.jackson.dataformat.version>
+        <com.fasterxml.jackson.dataformat.version>2.18.2</com.fasterxml.jackson.dataformat.version>
         <com.typesafe.config.version>1.4.3</com.typesafe.config.version>
         <equalsverifier.version>3.17.5</equalsverifier.version>
         <failureaccess.version>1.0.2</failureaccess.version>
