@@ -42,6 +42,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -110,6 +111,11 @@ public class RepairGroup extends ScheduledTask
             myTokensPerRepair = Preconditions
                     .checkNotNull(builder.myTokensPerRepair, "Tokens per repair must be set");
         }
+        if (RepairType.PARALLEL_VNODE.equals(myRepairConfiguration.getRepairType()))
+        {
+            myNode = Preconditions
+                    .checkNotNull(builder.myNode, "Node must be set");
+        }
         myJobId = Preconditions
                 .checkNotNull(builder.myJobId, "Job id must be set");
     }
@@ -125,7 +131,6 @@ public class RepairGroup extends ScheduledTask
     {
         LOG.debug("Table {} running repair job {}", myTableReference, myReplicaRepairGroup);
         boolean successful = true;
-
         for (RepairTask repairTask : getRepairTasks(nodeID))
         {
             if (!shouldContinue())
@@ -222,6 +227,14 @@ public class RepairGroup extends ScheduledTask
                             new HashSet<>(myReplicaRepairGroup.getReplicas()), myJobId));
                 }
             }
+        }
+        else
+        {
+            Set<LongTokenRange> combinedRanges = new LinkedHashSet<>();
+            myReplicaRepairGroup.iterator().forEachRemaining(combinedRanges::add);
+            tasks.add(new VnodeRepairTask(myNode, myJmxProxyFactory, myTableReference, myRepairConfiguration,
+                    myTableRepairMetrics, myRepairHistory, combinedRanges,
+                    new HashSet<>(myReplicaRepairGroup.getReplicas()), myJobId));
         }
 
         return tasks;

@@ -167,13 +167,13 @@ public class VnodeRepairTask extends RepairTask
     }
 
     @VisibleForTesting
-    final Set<LongTokenRange> getTokenRanges()
+    public final Set<LongTokenRange> getTokenRanges()
     {
         return Sets.newLinkedHashSet(myTokenRanges);
     }
 
     @VisibleForTesting
-    final Set<DriverNode> getReplicas()
+    public final Set<DriverNode> getReplicas()
     {
         return Sets.newHashSet(myReplicas);
     }
