@@ -25,7 +25,7 @@ import java.util.Set;
  */
 public class CombinedRepairResourceFactory implements RepairResourceFactory
 {
-    private final ImmutableSet<RepairResourceFactory> myRepairResourceFactories;
+    private final Set<RepairResourceFactory> myRepairResourceFactories;
 
     /**
      * Constructor.

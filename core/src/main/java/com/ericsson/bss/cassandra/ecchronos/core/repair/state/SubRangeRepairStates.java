@@ -24,7 +24,7 @@ import java.util.Objects;
 
 public final class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
 {
-    private final ImmutableList<VnodeRepairState> myVnodeRepairStatuses;
+    private final List<VnodeRepairState> myVnodeRepairStatuses;
 
     private SubRangeRepairStates(final SubRangeRepairStates.Builder builder)
     {
@@ -92,7 +92,7 @@ public final class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
 
     public static class Builder implements VnodeRepairStates.Builder
     {
-        private final ImmutableList<VnodeRepairState> myVnodeRepairStatesBase;
+        private final List<VnodeRepairState> myVnodeRepairStatesBase;
         private final Map<LongTokenRange, VnodeRepairState> myActualVnodeRepairStates = new HashMap<>();
 
         public Builder(final Collection<VnodeRepairState> vnodeRepairStates)
@@ -154,22 +154,12 @@ public final class SubRangeRepairStates implements VnodeRepairStates // CPD-OFF
 
         private boolean shouldReplace(final VnodeRepairState baseVnode, final VnodeRepairState newVnode)
         {
-            if (!baseVnode.isSameVnode(newVnode))
-            {
-                return false;
-            }
-
-            return isNewer(baseVnode, newVnode);
+            return baseVnode.isSameVnode(newVnode) && isNewer(baseVnode, newVnode);
         }
 
         private boolean partialVnodeIsNewer(final VnodeRepairState baseVnode, final VnodeRepairState newVnode)
         {
-            if (!baseVnode.getReplicas().equals(newVnode.getReplicas()))
-            {
-                return false;
-            }
-
-            return isNewer(baseVnode, newVnode);
+            return baseVnode.getReplicas().equals(newVnode.getReplicas()) && isNewer(baseVnode, newVnode);
         }
 
         private boolean isNewer(final VnodeRepairState baseVnode, final VnodeRepairState newVnode)

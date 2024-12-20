@@ -190,7 +190,7 @@ public class CqlTLSConfig
     {
         if (myProtocol == null)
         {
-            return null;
+            return new String[0];
         }
         return myProtocol.split(",");
     }

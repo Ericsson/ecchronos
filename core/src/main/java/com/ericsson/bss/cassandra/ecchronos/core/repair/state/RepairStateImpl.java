@@ -236,7 +236,7 @@ public class RepairStateImpl implements RepairState
      * @return boolean
      */
     @VisibleForTesting
-    boolean isRepairNeeded(final long lastRepairedAt, final long estimatedRepairTime, final long now)
+    final boolean isRepairNeeded(final long lastRepairedAt, final long estimatedRepairTime, final long now)
     {
         return lastRepairedAt + (myRepairConfiguration.getRepairIntervalInMs() - estimatedRepairTime) <= now;
     }

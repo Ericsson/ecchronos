@@ -29,13 +29,12 @@ import java.util.List;
  *     <li>If there is a repair available - {@link #canRepair()}</li>
  * </ul>
  */
-@SuppressWarnings("FinalClass")
-public class RepairStateSnapshot
+public final class RepairStateSnapshot
 {
     private final boolean canRepair;
     private final long myLastCompletedAt;
     private final long myCreatedAt;
-    private final ImmutableList<ReplicaRepairGroup> myReplicaRepairGroup;
+    private final List<ReplicaRepairGroup> myReplicaRepairGroup;
     private final VnodeRepairStates myVnodeRepairStates;
     private final long myEstimatedRepairTime;
 
@@ -124,7 +123,7 @@ public class RepairStateSnapshot
     {
         private Long myLastCompletedAt;
         private long myCreatedAt = System.currentTimeMillis();
-        private ImmutableList<ReplicaRepairGroup> myReplicaRepairGroup;
+        private List<ReplicaRepairGroup> myReplicaRepairGroup;
         private VnodeRepairStates myVnodeRepairStates;
 
         /**

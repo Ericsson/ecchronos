@@ -26,10 +26,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.google.common.collect.ImmutableSet;
 
-@SuppressWarnings("FinalClass")
-public class OngoingJob
+public final class OngoingJob
 {
     public enum Status
     {
@@ -39,7 +37,7 @@ public class OngoingJob
     private final UUID myJobId;
     private final UUID myHostId;
     private final TableReference myTableReference;
-    private final Map<LongTokenRange, ImmutableSet<DriverNode>> myTokens;
+    private final Map<LongTokenRange, Set<DriverNode>> myTokens;
     private final Set<UdtValue> myRepairedTokens;
     private final OnDemandStatus myOnDemandStatus;
     private final ReplicationState myReplicationState;
@@ -112,7 +110,7 @@ public class OngoingJob
         myOnDemandStatus.updateJob(myJobId, myRepairedTokens);
     }
 
-    public Map<LongTokenRange, ImmutableSet<DriverNode>> getTokens()
+    public Map<LongTokenRange, Set<DriverNode>> getTokens()
     {
         return myTokens;
     }
@@ -127,11 +125,11 @@ public class OngoingJob
 
     public void startClusterWideJob(final RepairOptions.RepairType repairType)
     {
-        Map<LongTokenRange, ImmutableSet<DriverNode>> allTokenRanges = myReplicationState
+        Map<LongTokenRange, Set<DriverNode>> allTokenRanges = myReplicationState
                 .getTokenRanges(myTableReference);
         Map<DriverNode, Set<LongTokenRange>> repairedRangesPerNode = new HashMap<>();
         Map<DriverNode, Set<LongTokenRange>> remainingRangesPerNode = new HashMap<>();
-        for (Map.Entry<LongTokenRange, ImmutableSet<DriverNode>> range : allTokenRanges.entrySet())
+        for (Map.Entry<LongTokenRange, Set<DriverNode>> range : allTokenRanges.entrySet())
         {
             LongTokenRange rangeForNodes = range.getKey();
             Set<DriverNode> nodes = range.getValue();
