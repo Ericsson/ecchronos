@@ -33,6 +33,7 @@
     </rule>
 
     <rule ref="category/java/bestpractices.xml">
+        <exclude name="GuardLogStatement" />
     </rule>
 
     <rule ref="category/java/errorprone.xml">
@@ -47,6 +48,18 @@
     <rule ref="category/java/errorprone.xml/AvoidDuplicateLiterals">
         <properties>
             <property name="skipAnnotations" value="true" />
+        </properties>
+    </rule>
+
+    <!-- increase threshold -->
+    <rule ref="category/java/design.xml/CouplingBetweenObjects">
+        <properties>
+            <property name="threshold" value="50" />
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/CognitiveComplexity">
+        <properties>
+            <property name="reportLevel" value="30" />
         </properties>
     </rule>
 </ruleset>

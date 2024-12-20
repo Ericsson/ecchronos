@@ -96,7 +96,7 @@ public abstract class Connection<T>
      *         If the getDeclaredConstructor method was not found.
      */
     @JsonProperty("certificateHandler")
-    public void setCertificateHandler(final Class<? extends CertificateHandler> certificateHandlerClass)
+    public final void setCertificateHandler(final Class<? extends CertificateHandler> certificateHandlerClass)
             throws NoSuchMethodException
     {
         certificateHandlerClass.getDeclaredConstructor(expectedCertHandlerConstructor());

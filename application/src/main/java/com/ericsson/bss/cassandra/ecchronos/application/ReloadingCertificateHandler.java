@@ -158,11 +158,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
 
         boolean sameConfig(final CqlTLSConfig newTLSConfig) throws IOException, NoSuchAlgorithmException
         {
-            if (!myTlsConfig.equals(newTLSConfig))
-            {
-                return false;
-            }
-            return checksumSame(newTLSConfig);
+            return myTlsConfig.equals(newTLSConfig) && checksumSame(newTLSConfig);
         }
 
         private boolean checksumSame(final CqlTLSConfig newTLSConfig) throws IOException, NoSuchAlgorithmException

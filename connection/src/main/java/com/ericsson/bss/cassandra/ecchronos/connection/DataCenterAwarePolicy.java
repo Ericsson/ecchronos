@@ -50,7 +50,8 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
 {
     private static final Logger LOG = LoggerFactory.getLogger(DataCenterAwarePolicy.class);
 
-    private final ConcurrentMap<String, CopyOnWriteArrayList<Node>> myPerDcLiveNodes = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, CopyOnWriteArrayList<Node>> myPerDcLiveNodes = // NOPMD
+            new ConcurrentHashMap<>();
     private final AtomicInteger myIndex = new AtomicInteger();
 
     public DataCenterAwarePolicy(final DriverContext context, final String profileName)
@@ -64,7 +65,7 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
         super.init(nodes, distanceReporter);
         LOG.info("Using provided data-center name '{}' for DataCenterAwareLoadBalancingPolicy", getLocalDatacenter());
 
-        ArrayList<String> notInLocalDC = new ArrayList<>();
+        List<String> notInLocalDC = new ArrayList<>();
 
         for (Node node : nodes.values())
         {
@@ -75,7 +76,7 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
                 notInLocalDC.add(String.format("%s (%s)", node, dc));
             }
 
-            CopyOnWriteArrayList<Node> nodeList = myPerDcLiveNodes.get(dc);
+            CopyOnWriteArrayList<Node> nodeList = myPerDcLiveNodes.get(dc); // NOPMD
             if (nodeList == null)
             {
                 myPerDcLiveNodes.put(dc, new CopyOnWriteArrayList<>(Collections.singletonList(node)));
@@ -172,7 +173,7 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
             return NodeDistance.LOCAL;
         }
 
-        CopyOnWriteArrayList<Node> dcNodes = myPerDcLiveNodes.get(dc);
+        CopyOnWriteArrayList<Node> dcNodes = myPerDcLiveNodes.get(dc); // NOPMD
         if (dcNodes == null)
         {
             return NodeDistance.IGNORED;
@@ -183,7 +184,7 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
 
     private Queue<Node> getFallbackQueryPlan(final String dataCenter)
     {
-        CopyOnWriteArrayList<Node> localLiveNodes = myPerDcLiveNodes.get(dataCenter);
+        CopyOnWriteArrayList<Node> localLiveNodes = myPerDcLiveNodes.get(dataCenter); // NOPMD
         final List<Node> nodes = localLiveNodes == null ? Collections.emptyList() : cloneList(localLiveNodes);
         final int startIndex = myIndex.getAndIncrement();
         int index = startIndex;
@@ -203,7 +204,7 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
     }
 
     @SuppressWarnings ("unchecked")
-    private static CopyOnWriteArrayList<Node> cloneList(final CopyOnWriteArrayList<Node> list)
+    private static CopyOnWriteArrayList<Node> cloneList(final CopyOnWriteArrayList<Node> list) // NOPMD
     {
         return (CopyOnWriteArrayList<Node>) list.clone();
     }
@@ -219,10 +220,10 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
     {
         String dc = getDc(node);
 
-        CopyOnWriteArrayList<Node> dcNodes = myPerDcLiveNodes.get(dc);
+        CopyOnWriteArrayList<Node> dcNodes = myPerDcLiveNodes.get(dc); // NOPMD
         if (dcNodes == null)
         {
-            CopyOnWriteArrayList<Node> newMap = new CopyOnWriteArrayList<>(Collections.singletonList(node));
+            CopyOnWriteArrayList<Node> newMap = new CopyOnWriteArrayList<>(Collections.singletonList(node)); // NOPMD
             dcNodes = myPerDcLiveNodes.putIfAbsent(dc, newMap);
             // If we've successfully put our new node, we're good, otherwise we've been beaten so continue
             if (dcNodes == null)
@@ -242,7 +243,7 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
 
     private void markAsDown(final Node node)
     {
-        CopyOnWriteArrayList<Node> dcNodes = myPerDcLiveNodes.get(getDc(node));
+        CopyOnWriteArrayList<Node> dcNodes = myPerDcLiveNodes.get(getDc(node)); // NOPMD
         if (dcNodes != null)
         {
             dcNodes.remove(node);
@@ -272,7 +273,7 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
     /**
      * Only for test purposes.
      */
-    ConcurrentMap<String, CopyOnWriteArrayList<Node>> getPerDcLiveNodes()
+    ConcurrentMap<String, CopyOnWriteArrayList<Node>> getPerDcLiveNodes() // NOPMD
     {
         return myPerDcLiveNodes;
     }

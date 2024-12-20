@@ -108,7 +108,6 @@ public class ECChronosInternals implements Closeable
                     .build();
 
             myTableRepairMetricsImpl = TableRepairMetricsImpl.builder()
-                    .withTableStorageStates(myTableStorageStatesImpl)
                     .withMeterRegistry(meterRegistry)
                     .build();
 
@@ -213,9 +212,8 @@ public class ECChronosInternals implements Closeable
         myCassandraMetrics.close();
     }
 
-    private static class NoOpRepairMetrics implements TableRepairMetrics
+    private static final class NoOpRepairMetrics implements TableRepairMetrics
     {
-
         @Override
         public void repairState(final TableReference tableReference,
                                 final int repairedRanges,
@@ -252,7 +250,7 @@ public class ECChronosInternals implements Closeable
         }
     }
 
-    private static class NoOpTableStorageState implements TableStorageStates
+    private static final class NoOpTableStorageState implements TableStorageStates
     {
         @Override
         public long getDataSize(final TableReference tableReference)

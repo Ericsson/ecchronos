@@ -36,6 +36,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -122,7 +123,7 @@ public class TestReplicationStateImpl
 
         ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockSession, mockReplica1);
 
-        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(
+        Map<LongTokenRange, Set<DriverNode>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(
                 tableReference);
 
         assertThat(tokenRangeToReplicas.keySet()).containsExactlyInAnyOrder(range1);
@@ -148,7 +149,7 @@ public class TestReplicationStateImpl
 
         ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockSession, mockReplica1);
 
-        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(
+        Map<LongTokenRange, Set<DriverNode>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(
                 tableReference);
 
         assertThat(tokenRangeToReplicas.keySet()).containsExactlyInAnyOrder(range1, range2);
@@ -174,7 +175,7 @@ public class TestReplicationStateImpl
 
         ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockSession, mockReplica1);
 
-        ImmutableSet<DriverNode> replicas = replicationState.getReplicas(tableReference);
+        Set<DriverNode> replicas = replicationState.getReplicas(tableReference);
 
         assertThat(replicas).containsExactlyInAnyOrder(mockNode1, mockNode2, mockNode3);
     }
@@ -196,7 +197,7 @@ public class TestReplicationStateImpl
 
         ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockSession, mockReplica1);
 
-        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(
+        Map<LongTokenRange, Set<DriverNode>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(
                 tableReference);
 
         assertThat(tokenRangeToReplicas.keySet()).containsExactlyInAnyOrder(range1, range2);
@@ -221,7 +222,7 @@ public class TestReplicationStateImpl
 
         ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockSession, mockReplica1);
 
-        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(
+        Map<LongTokenRange, Set<DriverNode>> tokenRangeToReplicas = replicationState.getTokenRangeToReplicas(
                 tableReference);
 
         assertThat(tokenRangeToReplicas.keySet()).containsExactlyInAnyOrder(range1);
@@ -246,7 +247,7 @@ public class TestReplicationStateImpl
 
         ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockSession, mockReplica1);
 
-        ImmutableSet<DriverNode> nodes = replicationState.getNodes(tableReference, subRange);
+        Set<DriverNode> nodes = replicationState.getNodes(tableReference, subRange);
 
         assertThat(nodes).containsExactlyInAnyOrder(mockNode1, mockNode2, mockNode3);
     }
@@ -303,7 +304,7 @@ public class TestReplicationStateImpl
 
         ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockSession, mockReplica1);
 
-        ImmutableSet<DriverNode> nodes = replicationState.getNodesClusterWide(tableReference, subRange);
+        Set<DriverNode> nodes = replicationState.getNodesClusterWide(tableReference, subRange);
 
         assertThat(nodes).containsExactlyInAnyOrder(mockNode1, mockNode2, mockNode3);
     }
@@ -373,7 +374,7 @@ public class TestReplicationStateImpl
 
         ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockSession, mockReplica1);
 
-        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRanges = replicationState.getTokenRanges(tableReference);
+        Map<LongTokenRange, Set<DriverNode>> tokenRanges = replicationState.getTokenRanges(tableReference);
 
         assertThat(tokenRanges.keySet()).containsExactlyInAnyOrder(range1, range2, range3, range4);
         assertThat(tokenRanges.get(range1)).containsExactlyInAnyOrder(mockNode1, mockNode2, mockNode3);
@@ -396,7 +397,7 @@ public class TestReplicationStateImpl
 
         ReplicationState replicationState = new ReplicationStateImpl(mockNodeResolver, mockSession, mockReplica1);
 
-        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRanges = replicationState.getTokenRanges(tableReference);
+        Map<LongTokenRange, Set<DriverNode>> tokenRanges = replicationState.getTokenRanges(tableReference);
 
         assertThat(tokenRanges.keySet()).containsExactlyInAnyOrder(range1);
         assertThat(tokenRanges.get(range1)).containsExactlyInAnyOrder(mockNode1, mockNode2, mockNode3);

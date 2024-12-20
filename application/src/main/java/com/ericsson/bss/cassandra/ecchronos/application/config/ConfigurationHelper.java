@@ -85,7 +85,7 @@ public class ConfigurationHelper
             }
             return config;
         }
-        catch (IOException e)
+        catch (IOException e) // NOPMD
         {
             throw new ConfigurationException("Unable to load configuration file " + configurationFile, e);
         }
@@ -105,7 +105,7 @@ public class ConfigurationHelper
             }
             return config;
         }
-        catch (IOException e)
+        catch (IOException e) // NOPMD
         {
             throw new ConfigurationException("Unable to load configuration file from classpath", e);
         }

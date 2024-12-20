@@ -41,9 +41,6 @@ public class TestTableRepairMetricsImpl
     private static final String TEST_TABLE1 = "test_table1";
     private static final String TEST_TABLE2 = "test_table2";
 
-    @Mock
-    private TableStorageStates myTableStorageStates;
-
     private TableRepairMetricsImpl myTableRepairMetricsImpl;
     private MeterRegistry myMeterRegistry;
 
@@ -56,7 +53,6 @@ public class TestTableRepairMetricsImpl
         compositeMeterRegistry.add(new SimpleMeterRegistry());
         myMeterRegistry = compositeMeterRegistry;
         myTableRepairMetricsImpl = TableRepairMetricsImpl.builder()
-                .withTableStorageStates(myTableStorageStates)
                 .withMeterRegistry(myMeterRegistry)
                 .build();
     }
@@ -73,7 +69,6 @@ public class TestTableRepairMetricsImpl
     {
         assertThatExceptionOfType(NullPointerException.class)
                 .isThrownBy(() -> TableRepairMetricsImpl.builder()
-                        .withTableStorageStates(null)
                         .build());
     }
 
