@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -38,7 +39,7 @@ public final class HostStatesImpl implements HostStates, Closeable
 
     private static final long DEFAULT_REFRESH_INTERVAL_IN_MS = TimeUnit.SECONDS.toMillis(10);
 
-    private final ConcurrentHashMap<InetAddress, Boolean> myHostStates = new ConcurrentHashMap<>();
+    private final Map<InetAddress, Boolean> myHostStates = new ConcurrentHashMap<>();
     private final Object myRefreshLock = new Object();
     private final long myRefreshIntervalInMs;
 

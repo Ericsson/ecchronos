@@ -363,7 +363,7 @@ public abstract class RepairTask implements NotificationListener
         NOTIFICATION
     }
 
-    private class HangPreventingTask implements Runnable
+    private final class HangPreventingTask implements Runnable
     {
         private static final int MAX_CHECKS = 3;
         private static final String NORMAL_STATUS = "NORMAL";

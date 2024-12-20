@@ -48,7 +48,7 @@ public class TestOngoingJob
     private static final String keyspaceName = "keyspace";
     private static final String tableName = "table";
 
-    private final Map<LongTokenRange, ImmutableSet<DriverNode>> myTokenMap = new HashMap<>();
+    private final Map<LongTokenRange, Set<DriverNode>> myTokenMap = new HashMap<>();
 
     @Mock
     private OnDemandStatus myOnDemandStatus;
@@ -354,31 +354,31 @@ public class TestOngoingJob
     @Test
     public void testStartClusterWideJob()
     {
-        Map<LongTokenRange, ImmutableSet<DriverNode>> thisNodeTokenMap = new HashMap<>();
+        Map<LongTokenRange, Set<DriverNode>> thisNodeTokenMap = new HashMap<>();
         DriverNode node1 = mock(DriverNode.class);
         DriverNode node2 = mock(DriverNode.class);
         DriverNode node3 = mock(DriverNode.class);
         DriverNode node4 = mock(DriverNode.class);
 
         LongTokenRange range1 = new LongTokenRange(1, 2);
-        ImmutableSet<DriverNode> range1Replicas = ImmutableSet.of(node1, node2, node3);
+        Set<DriverNode> range1Replicas = ImmutableSet.of(node1, node2, node3);
         LongTokenRange range2 = new LongTokenRange(2, 3);
-        ImmutableSet<DriverNode> range2Replicas = ImmutableSet.of(node1, node2, node3);
+        Set<DriverNode> range2Replicas = ImmutableSet.of(node1, node2, node3);
         LongTokenRange range3 = new LongTokenRange(3, 4);
-        ImmutableSet<DriverNode> range3Replicas = ImmutableSet.of(node2, node1, node3);
+        Set<DriverNode> range3Replicas = ImmutableSet.of(node2, node1, node3);
         LongTokenRange range4 = new LongTokenRange(4, 5);
-        ImmutableSet<DriverNode> range4Replicas = ImmutableSet.of(node2, node1, node3);
+        Set<DriverNode> range4Replicas = ImmutableSet.of(node2, node1, node3);
         LongTokenRange range5 = new LongTokenRange(5, 6);
-        ImmutableSet<DriverNode> range5Replicas = ImmutableSet.of(node3, node2, node1);
+        Set<DriverNode> range5Replicas = ImmutableSet.of(node3, node2, node1);
 
         LongTokenRange range6 = new LongTokenRange(6, 7);
-        ImmutableSet<DriverNode> range6Replicas = ImmutableSet.of(node2, node3, node4);
+        Set<DriverNode> range6Replicas = ImmutableSet.of(node2, node3, node4);
         LongTokenRange range7 = new LongTokenRange(7, 8);
-        ImmutableSet<DriverNode> range7Replicas = ImmutableSet.of(node2, node3, node4);
+        Set<DriverNode> range7Replicas = ImmutableSet.of(node2, node3, node4);
         LongTokenRange range8 = new LongTokenRange(8, 9);
-        ImmutableSet<DriverNode> range8Replicas = ImmutableSet.of(node3, node2, node4);
+        Set<DriverNode> range8Replicas = ImmutableSet.of(node3, node2, node4);
         LongTokenRange range9 = new LongTokenRange(9, 10);
-        ImmutableSet<DriverNode> range9Replicas = ImmutableSet.of(node4, node3, node2);
+        Set<DriverNode> range9Replicas = ImmutableSet.of(node4, node3, node2);
 
         thisNodeTokenMap.put(range1, range1Replicas);
         thisNodeTokenMap.put(range2, range2Replicas);
@@ -386,7 +386,7 @@ public class TestOngoingJob
         thisNodeTokenMap.put(range4, range4Replicas);
         thisNodeTokenMap.put(range5, range5Replicas);
 
-        Map<LongTokenRange, ImmutableSet<DriverNode>> allTokenMap = new HashMap<>();
+        Map<LongTokenRange, Set<DriverNode>> allTokenMap = new HashMap<>();
         allTokenMap.put(range1, range1Replicas);
         allTokenMap.put(range2, range2Replicas);
         allTokenMap.put(range3, range3Replicas);
@@ -438,7 +438,7 @@ public class TestOngoingJob
         repairedRangesNode4.add(range7);
         repairedRangesNode4.add(range8);
         //Node4 is replica to node2 and node3
-        Map<LongTokenRange, ImmutableSet<DriverNode>> node4TokenMap = new HashMap<>();
+        Map<LongTokenRange, Set<DriverNode>> node4TokenMap = new HashMap<>();
         node4TokenMap.put(range6, range6Replicas);
         node4TokenMap.put(range7, range7Replicas);
         node4TokenMap.put(range8, range8Replicas);
@@ -450,7 +450,7 @@ public class TestOngoingJob
     @Test
     public void testStartIncrementalClusterWideJob()
     {
-        Map<LongTokenRange, ImmutableSet<DriverNode>> thisNodeTokenMap = new HashMap<>();
+        Map<LongTokenRange, Set<DriverNode>> thisNodeTokenMap = new HashMap<>();
         DriverNode node1 = mock(DriverNode.class);
         DriverNode node2 = mock(DriverNode.class);
         UUID node2Id = UUID.randomUUID();
@@ -463,24 +463,24 @@ public class TestOngoingJob
         when(node4.getId()).thenReturn(node4Id);
 
         LongTokenRange range1 = new LongTokenRange(1, 2);
-        ImmutableSet<DriverNode> range1Replicas = ImmutableSet.of(node1, node2, node3);
+        Set<DriverNode> range1Replicas = ImmutableSet.of(node1, node2, node3);
         LongTokenRange range2 = new LongTokenRange(2, 3);
-        ImmutableSet<DriverNode> range2Replicas = ImmutableSet.of(node1, node2, node3);
+        Set<DriverNode> range2Replicas = ImmutableSet.of(node1, node2, node3);
         LongTokenRange range3 = new LongTokenRange(3, 4);
-        ImmutableSet<DriverNode> range3Replicas = ImmutableSet.of(node2, node1, node3);
+        Set<DriverNode> range3Replicas = ImmutableSet.of(node2, node1, node3);
         LongTokenRange range4 = new LongTokenRange(4, 5);
-        ImmutableSet<DriverNode> range4Replicas = ImmutableSet.of(node2, node1, node3);
+        Set<DriverNode> range4Replicas = ImmutableSet.of(node2, node1, node3);
         LongTokenRange range5 = new LongTokenRange(5, 6);
-        ImmutableSet<DriverNode> range5Replicas = ImmutableSet.of(node3, node2, node1);
+        Set<DriverNode> range5Replicas = ImmutableSet.of(node3, node2, node1);
 
         LongTokenRange range6 = new LongTokenRange(6, 7);
-        ImmutableSet<DriverNode> range6Replicas = ImmutableSet.of(node2, node3, node4);
+        Set<DriverNode> range6Replicas = ImmutableSet.of(node2, node3, node4);
         LongTokenRange range7 = new LongTokenRange(7, 8);
-        ImmutableSet<DriverNode> range7Replicas = ImmutableSet.of(node2, node3, node4);
+        Set<DriverNode> range7Replicas = ImmutableSet.of(node2, node3, node4);
         LongTokenRange range8 = new LongTokenRange(8, 9);
-        ImmutableSet<DriverNode> range8Replicas = ImmutableSet.of(node3, node2, node4);
+        Set<DriverNode> range8Replicas = ImmutableSet.of(node3, node2, node4);
         LongTokenRange range9 = new LongTokenRange(9, 10);
-        ImmutableSet<DriverNode> range9Replicas = ImmutableSet.of(node4, node3, node2);
+        Set<DriverNode> range9Replicas = ImmutableSet.of(node4, node3, node2);
 
         thisNodeTokenMap.put(range1, range1Replicas);
         thisNodeTokenMap.put(range2, range2Replicas);
@@ -488,7 +488,7 @@ public class TestOngoingJob
         thisNodeTokenMap.put(range4, range4Replicas);
         thisNodeTokenMap.put(range5, range5Replicas);
 
-        Map<LongTokenRange, ImmutableSet<DriverNode>> allTokenMap = new HashMap<>();
+        Map<LongTokenRange, Set<DriverNode>> allTokenMap = new HashMap<>();
         allTokenMap.put(range1, range1Replicas);
         allTokenMap.put(range2, range2Replicas);
         allTokenMap.put(range3, range3Replicas);

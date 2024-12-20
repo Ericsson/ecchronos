@@ -16,9 +16,9 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * A class representing the repair state of a single vnode.
@@ -28,7 +28,7 @@ public class VnodeRepairState
     public static final long UNREPAIRED = -1L;
 
     private final LongTokenRange myTokenRange;
-    private final ImmutableSet<DriverNode> myReplicas;
+    private final Set<DriverNode> myReplicas;
     private final long myStartedAt;
     private final long myFinishedAt;
     private final long myRepairTime;
@@ -41,7 +41,7 @@ public class VnodeRepairState
      * @param startedAt Started at timetamp.
      */
     public VnodeRepairState(final LongTokenRange tokenRange,
-                            final ImmutableSet<DriverNode> replicas,
+                            final Set<DriverNode> replicas,
                             final long startedAt)
     {
         this(tokenRange, replicas, startedAt, UNREPAIRED);
@@ -57,7 +57,7 @@ public class VnodeRepairState
      * @param repairTime Repair time.
      */
     public VnodeRepairState(final LongTokenRange tokenRange,
-                            final ImmutableSet<DriverNode> replicas,
+                            final Set<DriverNode> replicas,
                             final long startedAt,
                             final long finishedAt,
                             final long repairTime)
@@ -78,7 +78,7 @@ public class VnodeRepairState
      * @param finishedAt Finished at timestamp.
      */
     public VnodeRepairState(final LongTokenRange tokenRange,
-                            final ImmutableSet<DriverNode> replicas,
+                            final Set<DriverNode> replicas,
                             final long startedAt,
                             final long finishedAt)
     {
@@ -112,7 +112,7 @@ public class VnodeRepairState
      *
      * @return The nodes
      */
-    public ImmutableSet<DriverNode> getReplicas()
+    public Set<DriverNode> getReplicas()
     {
         return myReplicas;
     }

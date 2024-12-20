@@ -22,8 +22,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Configuration options for table repairs.
  */
-@SuppressWarnings("FinalClass")
-public class RepairConfiguration
+public final class RepairConfiguration
 {
     public static final double NO_UNWIND = 0.0d;
     public static final long FULL_REPAIR_SIZE = Long.MAX_VALUE;

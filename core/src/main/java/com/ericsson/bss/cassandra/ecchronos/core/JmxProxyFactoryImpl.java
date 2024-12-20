@@ -41,8 +41,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 /**
  * A factory creating JMX proxies to Cassandra.
  */
-@SuppressWarnings("FinalClass")
-public class JmxProxyFactoryImpl implements JmxProxyFactory
+public final class JmxProxyFactoryImpl implements JmxProxyFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(JmxProxyFactoryImpl.class);
 

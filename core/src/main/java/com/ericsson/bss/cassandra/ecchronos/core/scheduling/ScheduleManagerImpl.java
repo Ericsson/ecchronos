@@ -150,7 +150,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
      * <p>
      * Retrieves a job from the queue and tries to run it provided that it's possible to get the required locks.
      */
-    private class JobRunTask implements Runnable
+    private final class JobRunTask implements Runnable
     {
         @Override
         public void run()
@@ -215,7 +215,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         private boolean tryRunTask(final ScheduledJob job, final ScheduledTask task)
         {
             LOG.debug("Trying to acquire lock for {}", task);
-            try (LockFactory.DistributedLock lock = task.getLock(myLockFactory))
+            try (LockFactory.DistributedLock lock = task.getLock(myLockFactory)) // NOPMD
             {
                 boolean successful = runTask(task);
                 job.postExecute(successful, task);

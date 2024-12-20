@@ -125,11 +125,7 @@ public class LongTokenRange
 
         LongTokenRange that = (LongTokenRange) o;
 
-        if (start != that.start)
-        {
-            return false;
-        }
-        return end == that.end;
+        return start == that.start && end == that.end;
     }
 
     @Override

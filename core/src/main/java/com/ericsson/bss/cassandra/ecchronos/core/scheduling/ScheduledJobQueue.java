@@ -14,11 +14,13 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.scheduling;
 
-import java.util.Collection;
 import java.util.Comparator;
+import java.util.Queue;
+import java.util.Map;
 import java.util.EnumMap;
-import java.util.Iterator;
 import java.util.PriorityQueue;
+import java.util.Collection;
+import java.util.Iterator;
 
 import com.google.common.collect.AbstractIterator;
 import org.slf4j.Logger;
@@ -40,7 +42,7 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
 
     private final Comparator<ScheduledJob> myComparator;
 
-    private final EnumMap<ScheduledJob.Priority, PriorityQueue<ScheduledJob>> myJobQueues
+    private final Map<ScheduledJob.Priority, Queue<ScheduledJob>> myJobQueues
             = new EnumMap<>(ScheduledJob.Priority.class);
 
     /**
@@ -107,7 +109,7 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
     {
         int size = 0;
 
-        for (PriorityQueue<ScheduledJob> queue : myJobQueues.values())
+        for (Queue<ScheduledJob> queue : myJobQueues.values())
         {
             size += queue.size();
         }
