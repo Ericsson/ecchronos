@@ -77,7 +77,7 @@
         <jcip.version>1.0</jcip.version>
         <junit.version>5.11.4</junit.version>
         <junitparams.version>1.1.1</junitparams.version>
-        <logback.version>1.5.12</logback.version>
+        <logback.version>1.5.15</logback.version>
         <mockito.core.version>5.14.2</mockito.core.version>
         <org.apache.commons.io.version>2.18.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.27.1</org.apache.commons.commons-compress.version>
