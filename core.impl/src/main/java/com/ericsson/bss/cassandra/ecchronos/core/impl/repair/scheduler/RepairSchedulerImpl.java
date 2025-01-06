@@ -191,7 +191,10 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
                     LOG.info("Creating schedule for table {} in node {}", tableReference, node.getHostId());
                     createTableSchedule(node, tableReference, repairConfigurations);
                 }
-                LOG.info("No configuration changes for table {} in node {}", tableReference, node.getHostId());
+                else
+                {
+                    LOG.info("No configuration changes for table {} in node {}", tableReference, node.getHostId());
+                }
             }
             catch (Exception e)
             {

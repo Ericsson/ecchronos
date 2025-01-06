@@ -26,6 +26,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.Distribute
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
+import org.jolokia.client.jmxadapter.JolokiaJmxConnectionProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -178,16 +179,7 @@ public class DistributedJmxBuilder
             String host = node.getBroadcastRpcAddress().get().getHostString();
             JMXServiceURL jmxUrl;
             Integer port;
-            if (isJolokiaEnabled)
-            {
-                port = myJolokiaPort;
-                jmxUrl = new JMXServiceURL(String.format(JMX_JOLOKIA_FORMAT_URL, host, port));
-            }
-            else
-            {
-                port = getJMXPort(node);
-                jmxUrl = new JMXServiceURL(String.format(JMX_FORMAT_URL, host, port));
-            }
+            JMXConnector jmxConnector;
 
             if (host.contains(":"))
             {
@@ -195,10 +187,24 @@ public class DistributedJmxBuilder
                 host = "[" + host + "]";
             }
 
-            LOG.info("Starting to instantiate JMXService with host: {} and port: {}", host, port);
+            if (isJolokiaEnabled)
+            {
+                port = myJolokiaPort;
+                jmxUrl = new JMXServiceURL(String.format(JMX_JOLOKIA_FORMAT_URL, host, port));
+                JolokiaJmxConnectionProvider jolokiaJmxConnectionProvider = new JolokiaJmxConnectionProvider();
+                LOG.info("Creating Jolokia JMXConnection with host: {} and port: {}", host, port);
+                jmxConnector = jolokiaJmxConnectionProvider.newJMXConnector(jmxUrl, createJMXEnv());
+                jmxConnector.connect();
+            }
+            else
+            {
+                port = getJMXPort(node);
+                jmxUrl = new JMXServiceURL(String.format(JMX_FORMAT_URL, host, port));
+                LOG.info("Starting to instantiate JMXService with host: {} and port: {}", host, port);
+                jmxConnector = JMXConnectorFactory.connect(jmxUrl, createJMXEnv());
+            }
 
             LOG.debug("Connecting JMX through {}, credentials: {}, tls: {}", jmxUrl, isAuthEnabled(), isTLSEnabled());
-            JMXConnector jmxConnector = JMXConnectorFactory.connect(jmxUrl, createJMXEnv());
             if (isConnected(jmxConnector))
             {
                 LOG.info("Connected JMX for {}", jmxUrl);
@@ -208,7 +214,7 @@ public class DistributedJmxBuilder
             else
             {
                 myEccNodesSync.updateNodeStatus(NodeStatus.UNAVAILABLE, node.getDatacenter(), node.getHostId());
-        }
+            }
         }
         catch
         (

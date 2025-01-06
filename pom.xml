@@ -180,7 +180,7 @@
         <org.codehaus.mojo.license-maven-plugin.version>2.4.0</org.codehaus.mojo.license-maven-plugin.version>
         <org.jacoco.jacoco-maven-plugin.version>0.8.12</org.jacoco.jacoco-maven-plugin.version>
 
-        <jolokia.adapter.version>1.7.1</jolokia.adapter.version>
+        <jolokia.adapter.version>2.1.1</jolokia.adapter.version>
 
         <skipTests>false</skipTests>
         <skipUTs>${skipTests}</skipUTs>
@@ -377,7 +377,24 @@
 
             <dependency>
                 <groupId>org.jolokia</groupId>
-                <artifactId>jolokia-jsr160</artifactId>
+                <artifactId>jolokia-jmx-adapter</artifactId>
+                <version>${jolokia.adapter.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jolokia</groupId>
+                <artifactId>jolokia-service-jmx</artifactId>
+                <version>${jolokia.adapter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jolokia</groupId>
+                <artifactId>jolokia-service-serializer</artifactId>
+                <version>${jolokia.adapter.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jolokia</groupId>
+                <artifactId>jolokia-client-java</artifactId>
                 <version>${jolokia.adapter.version}</version>
             </dependency>
 
