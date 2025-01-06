@@ -38,33 +38,32 @@ import com.ericsson.bss.cassandra.ecchronos.core.metadata.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairEntry;
-import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistoryProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.state.TokenSubRangeUtil;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableStorageStates;
-import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.CassandraRepairHistoryService;
 import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryService;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.ericsson.bss.cassandra.ecchronos.utils.converter.UnitConverter;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairParallelism;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairStatus;
+import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.google.common.collect.Sets;
 import net.jcip.annotations.NotThreadSafe;
 import org.assertj.core.util.Lists;
 import org.junit.After;
-import org.junit.Ignore;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -92,28 +91,9 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-@Ignore
-@RunWith (Parameterized.class)
 @NotThreadSafe
 public class ITSchedules extends TestBase
 {
-    enum RepairHistoryType
-    {
-        CASSANDRA, ECC
-    }
-
-    @Parameterized.Parameters
-    public static Collection parameters()
-    {
-        return Arrays.asList(new Object[][] {
-                                              { RepairHistoryType.CASSANDRA },
-                                              { RepairHistoryType.ECC }
-        });
-    }
-
-    @Parameterized.Parameter
-    public RepairHistoryType myRepairHistoryType;
-
     private static RepairFaultReporter mockFaultReporter;
 
     private static TableRepairMetrics mockTableRepairMetrics;
@@ -128,7 +108,7 @@ public class ITSchedules extends TestBase
 
     private static DriverNode myLocalNode;
 
-    private static RepairHistoryProvider myRepairHistoryProvider;
+    private static RepairHistoryService myRepairHistoryService;
 
     private static NodeResolver myNodeResolver;
 
@@ -144,8 +124,8 @@ public class ITSchedules extends TestBase
 
     private final Set<TableReference> myRepairs = new HashSet<>();
 
-    @Parameterized.BeforeParam
-    public static void init(RepairHistoryType repairHistoryType)
+    @BeforeClass
+    public static void init()
     {
         mockFaultReporter = mock(RepairFaultReporter.class);
         mockTableRepairMetrics = mock(TableRepairMetrics.class);
@@ -165,21 +145,7 @@ public class ITSchedules extends TestBase
 
         ReplicationState replicationState = new ReplicationStateImpl(myNodeResolver, mySession);
 
-        RepairHistoryService repairHistoryService =
-                new RepairHistoryService(mySession, replicationState, myNodeResolver, TimeUnit.DAYS.toMillis(30));
-
-        if (repairHistoryType == RepairHistoryType.ECC)
-        {
-            myRepairHistoryProvider = repairHistoryService;
-        }
-        else if (repairHistoryType == RepairHistoryType.CASSANDRA)
-        {
-            myRepairHistoryProvider = new CassandraRepairHistoryService(myNodeResolver, mySession, TimeUnit.DAYS.toMillis(30));
-        }
-        else
-        {
-            throw new IllegalArgumentException("Unknown repair history type for test");
-        }
+        myRepairHistoryService = new RepairHistoryService(mySession, replicationState, myNodeResolver, TimeUnit.DAYS.toMillis(30));
 
         myLockFactory = CASLockFactory.builder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
@@ -199,11 +165,9 @@ public class ITSchedules extends TestBase
                 .withHostStates(HostStatesImpl.builder()
                         .withJmxProxyFactory(getJmxProxyFactory())
                         .build())
-                .withRepairHistoryProvider(myRepairHistoryProvider)
+                .withRepairHistoryProvider(myRepairHistoryService)
                 .withTableRepairMetrics(mockTableRepairMetrics)
                 .build();
-
-        RepairHistoryService eccRepairHistory = new RepairHistoryService(mySession, replicationState, myNodeResolver, 2_592_000_000L);
 
         myRepairSchedulerImpl = RepairSchedulerImpl.builder()
                 .withJmxProxyFactory(getJmxProxyFactory())
@@ -213,9 +177,8 @@ public class ITSchedules extends TestBase
                 .withRepairStateFactory(repairStateFactory)
                 .withRepairLockType(RepairLockType.VNODE)
                 .withTableStorageStates(mockTableStorageStates)
-                .withRepairHistory(repairHistoryService)
                 .withReplicationState(replicationState)
-                .withRepairHistory(eccRepairHistory)
+                .withRepairHistory(myRepairHistoryService)
                 .build();
 
         myRepairConfiguration = RepairConfiguration.newBuilder()
@@ -260,7 +223,7 @@ public class ITSchedules extends TestBase
         reset(mockTableStorageStates);
     }
 
-    @Parameterized.AfterParam
+    @AfterClass
     public static void closeConnections()
     {
         myHostStates.close();
@@ -292,6 +255,36 @@ public class ITSchedules extends TestBase
         verifyTableRepairedSince(tableReference, startTime);
         verifyRepairSessionMetrics(tableReference, tokenRangesFor(tableReference.getKeyspace()).size());
         verify(mockFaultReporter, never()).raise(any(RepairFaultReporter.FaultCode.class), anyMap());
+    }
+
+    /**
+     * Create a table that is replicated and was repaired two hours ago.
+     * The repair factory should detect the new table automatically and schedule it to run.
+     */
+    @Test
+    public void repairSingleTableInParallel()
+    {
+        long startTime = System.currentTimeMillis();
+
+        TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
+
+        injectRepairHistory(tableReference, System.currentTimeMillis() - TimeUnit.HOURS.toMillis(2));
+
+        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
+                .withRepairInterval(60, TimeUnit.MINUTES)
+                .withRepairType(RepairType.PARALLEL_VNODE)
+                .withParallelism(RepairParallelism.PARALLEL)
+                .build();
+        schedule(tableReference, repairConfiguration);
+
+        await().pollInterval(1, TimeUnit.SECONDS)
+                .atMost(90, TimeUnit.SECONDS)
+                .until(() -> isRepairedSince(tableReference, startTime));
+
+        verifyTableRepairedSince(tableReference, startTime);
+        verifyRepairSessionMetrics(tableReference, 1); // Amount of repair groups
+        verify(mockFaultReporter, never())
+                .raise(any(RepairFaultReporter.FaultCode.class), anyMap());
     }
 
     /**
@@ -438,7 +431,7 @@ public class ITSchedules extends TestBase
                                            Set<LongTokenRange> expectedRepaired)
     {
         Set<LongTokenRange> expectedRepairedCopy = new HashSet<>(expectedRepaired);
-        Iterator<RepairEntry> repairEntryIterator = myRepairHistoryProvider.iterate(myLocalHost, tableReference,
+        Iterator<RepairEntry> repairEntryIterator = myRepairHistoryService.iterate(myLocalHost, tableReference,
                 System.currentTimeMillis(), repairedSince,
                 repairEntry -> fullyRepaired(repairEntry) && expectedRepairedCopy.remove(repairEntry.getRange()));
 
@@ -538,47 +531,26 @@ public class ITSchedules extends TestBase
     {
         long started_at = timestamp;
         long finished_at = timestamp + 5;
+        Set<UUID> nodes = participants.stream()
+                .map(myNodeResolver::fromIp)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(DriverNode::getId)
+                .collect(Collectors.toSet());
 
-        SimpleStatement statement;
-
-        if (myRepairHistoryType == RepairHistoryType.CASSANDRA)
-        {
-            statement = QueryBuilder.insertInto("system_distributed", "repair_history")
-                    .value("keyspace_name", literal(tableReference.getKeyspace()))
-                    .value("columnfamily_name", literal(tableReference.getTable()))
-                    .value("participants", literal(participants))
-                    .value("coordinator", literal(myLocalNode.getPublicAddress()))
-                    .value("id", literal(Uuids.startOf(started_at)))
-                    .value("started_at", literal(Instant.ofEpochMilli(started_at)))
-                    .value("finished_at", literal(Instant.ofEpochMilli(finished_at)))
-                    .value("range_begin", literal(range_begin))
-                    .value("range_end", literal(range_end))
-                    .value("status", literal("SUCCESS"))
-                    .build();
-        }
-        else
-        {
-            Set<UUID> nodes = participants.stream()
-                    .map(myNodeResolver::fromIp)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .map(DriverNode::getId)
-                    .collect(Collectors.toSet());
-
-            statement = QueryBuilder.insertInto("ecchronos", "repair_history")
-                    .value("table_id", literal(tableReference.getId()))
-                    .value("node_id", literal(myLocalNode.getId()))
-                    .value("repair_id", literal(Uuids.startOf(finished_at)))
-                    .value("job_id", literal(tableReference.getId()))
-                    .value("coordinator_id", literal(myLocalNode.getId()))
-                    .value("range_begin", literal(range_begin))
-                    .value("range_end", literal(range_end))
-                    .value("participants", literal(nodes))
-                    .value("status", literal("SUCCESS"))
-                    .value("started_at", literal(Instant.ofEpochMilli(started_at)))
-                    .value("finished_at", literal(Instant.ofEpochMilli(finished_at)))
-                    .build();
-        }
+        SimpleStatement statement = QueryBuilder.insertInto("ecchronos", "repair_history")
+                .value("table_id", literal(tableReference.getId()))
+                .value("node_id", literal(myLocalNode.getId()))
+                .value("repair_id", literal(Uuids.startOf(finished_at)))
+                .value("job_id", literal(tableReference.getId()))
+                .value("coordinator_id", literal(myLocalNode.getId()))
+                .value("range_begin", literal(range_begin))
+                .value("range_end", literal(range_end))
+                .value("participants", literal(nodes))
+                .value("status", literal("SUCCESS"))
+                .value("started_at", literal(Instant.ofEpochMilli(started_at)))
+                .value("finished_at", literal(Instant.ofEpochMilli(finished_at)))
+                .build();
 
         mySession.execute(statement);
     }

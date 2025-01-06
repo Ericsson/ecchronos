@@ -32,6 +32,7 @@ import static org.mockito.ArgumentMatchers.any;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.DummyLock;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairTask;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairTask;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
@@ -53,6 +54,8 @@ import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -271,6 +274,46 @@ public class TestRepairGroup
 
         boolean success = repairGroup.execute(myNodeID);
         assertThat(success).isFalse();
+    }
+
+    @Test
+    public void testGetCombinedRepairTask()
+    {
+        LongTokenRange range1 = new LongTokenRange(0, 1);
+        LongTokenRange range2 = new LongTokenRange(3, 4);
+        LongTokenRange range3 = new LongTokenRange(6, 8);
+        LongTokenRange range4 = new LongTokenRange(10, 11);
+        Set<LongTokenRange> expectedTokenRanges = new LinkedHashSet(
+                ImmutableList.of(range1, range2, range3, range4)
+        );
+
+        // setup
+        DriverNode node = mockNode("DC1");
+
+        ImmutableSet<DriverNode> nodes = ImmutableSet.of(node);
+
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range1, range2, range3, range4), System.currentTimeMillis());
+
+        RepairConfiguration repairConfiguration = RepairConfiguration.newBuilder()
+                .withParallelism(RepairParallelism.PARALLEL)
+                .withRepairWarningTime(RUN_INTERVAL_IN_DAYS * 2, TimeUnit.DAYS)
+                .withRepairErrorTime(GC_GRACE_DAYS_IN_DAYS, TimeUnit.DAYS)
+                .withRepairType(RepairType.PARALLEL_VNODE)
+                .build();
+
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).withRepairConfiguration(repairConfiguration).build(PRIORITY);
+
+        Collection<RepairTask> repairTasks = repairGroup.getRepairTasks(myNodeID);
+
+        assertThat(repairTasks).hasSize(1);
+        Iterator<RepairTask> iterator = repairTasks.iterator();
+        assertThat(iterator.hasNext()).isTrue();
+        VnodeRepairTask repairTask = (VnodeRepairTask) iterator.next();
+
+        assertThat(repairTask.getReplicas()).containsExactlyInAnyOrderElementsOf(nodes);
+        assertThat(repairTask.getTokenRanges()).containsExactlyElementsOf(expectedTokenRanges);
+        assertThat(repairTask.getTableReference()).isEqualTo(TABLE_REFERENCE);
+        assertThat(repairTask.getRepairConfiguration().getRepairParallelism()).isEqualTo(RepairParallelism.PARALLEL);
     }
 
     private RepairGroup.Builder builderFor(ReplicaRepairGroup replicaRepairGroup)
