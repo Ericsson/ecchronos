@@ -70,10 +70,11 @@ import org.slf4j.LoggerFactory;
 /**
  * A factory creating JMX proxies to Cassandra.
  */
-@SuppressWarnings({"PMD.ClassWithOnlyPrivateConstructorsShouldBeFinal", "checkstyle:finalclass"})
+@SuppressWarnings({"PMD.ClassWithOnlyPrivateConstructorsShouldBeFinal", "checkstyle:finalclass", "PMD.GodClass"})
 public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactory
 {
     private static final long DEFAULT_RUN_DELAY_IN_MS = 100;
+    private static final String CLIENT_ID_PROPERTY = "clientID";
     private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxProxyFactoryImpl.class);
     private static final String SS_OBJ_NAME = "org.apache.cassandra.db:type=StorageService";
     private static final String RS_OBJ_NAME = "org.apache.cassandra.db:type=RepairService";
@@ -238,7 +239,7 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
                         ClientRegisterResponse.class);
 
                 Map<String, String> properties = new HashMap<>();
-                properties.put("clientID", clientRegisterResponse.getValue().getId());
+                properties.put(CLIENT_ID_PROPERTY, clientRegisterResponse.getValue().getId());
                 properties.put("store", clientRegisterResponse.getValue().getBackend().getPull().getStore());
 
                 myClientIdMap.put(nodeID, properties);
@@ -254,7 +255,7 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
             String url = mountJolokiaBaseURL(nodeID) + "/notification";
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url)).POST(HttpRequest.BodyPublishers.ofString(jolokiaNotificationOptions(nodeID))).build();
+                    .uri(URI.create(url)).POST(HttpRequest.BodyPublishers.ofString(jolokiaCreateNotificationOptions(nodeID))).build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
             NotificationRegisterResponse notificationRegisterResponse = objectMapper.readValue(response.body(),
@@ -263,12 +264,29 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
             return notificationRegisterResponse.getValue();
         }
 
-        private String jolokiaNotificationOptions(final UUID nodeID)
+        private void removeJolokiaNotification(final UUID nodeID, final String notificationID)
+        {
+            String url = mountJolokiaBaseURL(nodeID) + "/notification";
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url)).POST(HttpRequest.BodyPublishers.ofString(
+                        jolokiaRemoveNotificationOptions(nodeID, notificationID))).build();
+            try
+            {
+                client.send(request, HttpResponse.BodyHandlers.ofString());
+            }
+            catch (IOException | InterruptedException e)
+            {
+                LOG.error("Error trying to remove NotificationListener with ID {} in node {}, because of {}",
+                        notificationID, nodeID, e.getMessage());
+            }
+        }
+
+        private String jolokiaCreateNotificationOptions(final UUID nodeID)
         {
             Map<String, Object> params = new HashMap<>();
             params.put("type", "notification");
             params.put("command", "add");
-            params.put("client", myClientIdMap.get(nodeID).get("clientID"));
+            params.put("client", myClientIdMap.get(nodeID).get(CLIENT_ID_PROPERTY));
             params.put("mode", "pull");
             params.put("mbean", SS_OBJ_NAME);
             List<String> filter = List.of(
@@ -286,6 +304,26 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
             catch (JsonProcessingException e)
             {
                 LOG.error("Unable to serialize notification options for node {} because of {}", nodeID, e.getMessage());
+            }
+            return "";
+        }
+
+        private String jolokiaRemoveNotificationOptions(final UUID nodeID, final String notificationID)
+        {
+            Map<String, Object> params = new HashMap<>();
+            params.put("type", "notification");
+            params.put("command", "remove");
+            params.put("client", myClientIdMap.get(nodeID).get(CLIENT_ID_PROPERTY));
+            params.put("handle", notificationID);
+
+            try
+            {
+                return objectMapper.writeValueAsString(params);
+            }
+            catch (JsonProcessingException e)
+            {
+                LOG.error("Unable to serialize Jolokia Notification Options for node {} because of {}", nodeID,
+                        e.getMessage());
             }
             return "";
         }
@@ -310,7 +348,7 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
                 {
                     J4pExecRequest execRequest = new J4pExecRequest(
                             myClientIdMap.get(nodeID).get("store"),
-                            operation, myClientIdMap.get(nodeID).get("clientID"),
+                            operation, myClientIdMap.get(nodeID).get(CLIENT_ID_PROPERTY),
                             notificationID);
 
                     return mountJolokiaClient(nodeID).execute(execRequest).asJSONObject();
@@ -532,6 +570,7 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
                     if (isJolokiaEnabled)
                     {
                         String jolokiaNotificationID = myJolokiaRelationshipListeners.get(listener);
+                        removeJolokiaNotification(nodeID, jolokiaNotificationID);
                         synchronized (myNotificationMonitors)
                         {
                             myNotificationMonitors.get(nodeID).get(jolokiaNotificationID).cancel(true);
