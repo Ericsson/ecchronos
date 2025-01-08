@@ -23,7 +23,6 @@
         <version>6.0.1-SNAPSHOT</version>
     </parent>
     <artifactId>connection.impl</artifactId>
-    <packaging>bundle</packaging>
     <description>A configurable reference implementation of connections</description>
     <name>EcChronos Connection Implementation</name>
 
@@ -72,29 +71,4 @@
         </dependency>
 
     </dependencies>
-
-    <build>
-        <plugins>
-
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <configuration>
-                    <unpackBundle>true</unpackBundle>
-                    <manifestLocation>META-INF</manifestLocation>
-                    <instructions>
-                        <Import-Package><![CDATA[
-                            net.jcip.annotations;resolution:=optional,
-                            *
-                            ]]>
-                        </Import-Package>
-                        <Export-Package>
-                            com.ericsson.bss.cassandra.ecchronos.connection.impl.*,
-                            org.apache.cassandra.driver.internal.metrics.micrometer.*
-                        </Export-Package>
-                    </instructions>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

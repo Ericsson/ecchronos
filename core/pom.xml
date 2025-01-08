@@ -23,7 +23,6 @@
         <version>6.0.1-SNAPSHOT</version>
     </parent>
     <artifactId>core</artifactId>
-    <packaging>bundle</packaging>
     <description>Core package for scheduling and repairs</description>
     <name>EcChronos Core</name>
 
@@ -159,18 +158,6 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <configuration>
-                    <unpackBundle>true</unpackBundle>
-                    <manifestLocation>META-INF</manifestLocation>
-                    <instructions>
-                        <Export-Package>com.ericsson.bss.cassandra.ecchronos.core.*</Export-Package>
-                    </instructions>
-                </configuration>
             </plugin>
         </plugins>
     </build>
