@@ -69,8 +69,7 @@ public final class NotificationRegisterResponse
     @Override
     public String toString()
     {
-        return "NotificationAddResponse{"
-                + "request=" + myRequest
+        return "NotificationAddResponse{ request=" + myRequest
                 + ", value='" + myValue
                 + '\'' + ", status="
                 + myStatus + ", timestamp="
@@ -149,8 +148,7 @@ public final class NotificationRegisterResponse
         @Override
         public String toString()
         {
-            return "Request{"
-                    + "mode='"
+            return "Request{ mode='"
                     + myMode + '\''
                     + ", filter="
                     + myFilter

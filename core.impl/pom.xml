@@ -145,18 +145,15 @@
         <dependency>
             <groupId>org.jolokia</groupId>
             <artifactId>jolokia-service-jmx</artifactId>
-            <version>${jolokia.adapter.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jolokia</groupId>
             <artifactId>jolokia-service-serializer</artifactId>
-            <version>${jolokia.adapter.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.jolokia</groupId>
             <artifactId>jolokia-client-java</artifactId>
-            <version>${jolokia.adapter.version}</version>
         </dependency>
     </dependencies>
 </project>

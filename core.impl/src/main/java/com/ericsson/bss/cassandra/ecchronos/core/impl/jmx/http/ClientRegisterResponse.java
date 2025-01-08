@@ -71,7 +71,7 @@ public final class ClientRegisterResponse
     @Override
     public String toString()
     {
-        return "NotificationResponse{" + "request=" + myRequest
+        return "NotificationResponse{ request=" + myRequest
                 + ", value=" + myValue + ", status=" + myStatus
                 + ", timestamp=" + myTimestamp + '}';
     }
@@ -81,7 +81,6 @@ public final class ClientRegisterResponse
         private String myType;
         private String myCommand;
 
-        // Getters e Setters
         public String getType()
         {
             return myType;
@@ -105,7 +104,7 @@ public final class ClientRegisterResponse
         @Override
         public String toString()
         {
-            return "Request{" + "type='" + myType + '\'' + ", command='" + myCommand + '\'' + '}';
+            return "Request{ type='" + myType + '\'' + ", command='" + myCommand + '\'' + '}';
         }
     }
 
@@ -114,7 +113,6 @@ public final class ClientRegisterResponse
         private Backend myBackend;
         private String myId;
 
-        // Getters e Setters
         public Backend getBackend()
         {
             return myBackend;
@@ -138,8 +136,7 @@ public final class ClientRegisterResponse
         @Override
         public String toString()
         {
-            return "Value{"
-                    + "backend=" + myBackend
+            return "Value{ backend=" + myBackend
                     + ", id='" + myId + '\'' + '}';
         }
     }
@@ -151,7 +148,6 @@ public final class ClientRegisterResponse
         @JsonProperty("sse")
         private Map<String, String> mySse;
 
-        // Getters e Setters
         public Pull getPull()
         {
             return myPull;
@@ -175,7 +171,7 @@ public final class ClientRegisterResponse
         @Override
         public String toString()
         {
-            return "Backend{" + "pull=" + myPull + ", sse=" + mySse + '}';
+            return "Backend{ pull=" + myPull + ", sse=" + mySse + '}';
         }
     }
 
@@ -207,13 +203,8 @@ public final class ClientRegisterResponse
         @Override
         public String toString()
         {
-            return "Pull{"
-                    +
-                    "maxEntries=" + myMaxEntries
-                    +
-                    ", store='" + myStore + '\''
-                    +
-                    '}';
+            return "Pull { maxEntries=" + myMaxEntries
+                    + ", store='" + myStore + '\'' + '}';
         }
     }
 }
