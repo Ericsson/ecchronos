@@ -23,7 +23,6 @@
         <version>6.0.1-SNAPSHOT</version>
     </parent>
     <artifactId>fm.impl</artifactId>
-    <packaging>bundle</packaging>
     <description>A reference implementation of the fault reporter using logging to report faults</description>
     <name>EcChronos Fault Management Implementation</name>
 
@@ -52,21 +51,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <configuration>
-                    <unpackBundle>true</unpackBundle>
-                    <manifestLocation>META-INF</manifestLocation>
-                    <instructions>
-                        <Import-Package>*</Import-Package>
-                        <Export-Package>com.ericsson.bss.cassandra.ecchronos.fm.impl.*</Export-Package>
-                    </instructions>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>
