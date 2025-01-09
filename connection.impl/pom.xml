@@ -49,7 +49,21 @@
 
         <dependency>
             <groupId>org.jolokia</groupId>
-            <artifactId>jolokia-jsr160</artifactId>
+            <artifactId>jolokia-jmx-adapter</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jolokia</groupId>
+            <artifactId>jolokia-service-jmx</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jolokia</groupId>
+            <artifactId>jolokia-service-serializer</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jolokia</groupId>
+            <artifactId>jolokia-client-java</artifactId>
         </dependency>
 
         <!-- Cassandra driver -->

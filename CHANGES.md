@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Reconcile Jolokia Notification Listener Implementation with RepairTask - Issue #831
 * Introduce REST Module for Scheduling and Managing Cassandra Repairs - Issue #771
 * Create On Demand Repair Job on Agent - Issue #775
 * Modify DistributedNativeConnectionProvider to Return a Map<UUID, Node> - Issue #778

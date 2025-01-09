@@ -41,6 +41,15 @@ jobs:
         with:
           java-version: 17
           distribution: 'temurin'
+      - name: Download and install custom dependency
+        run: |
+          curl -L -o jolokia-jmx-adapter-2.1.1.jar https://search.maven.org/remotecontent?filepath=org/jolokia/jolokia-client-jmx-adapter/2.1.1/jolokia-client-jmx-adapter-2.1.1.jar
+          mvn install:install-file \
+            -Dfile=jolokia-jmx-adapter-2.1.1.jar \
+            -DgroupId=org.jolokia \
+            -DartifactId=jolokia-jmx-adapter \
+            -Dversion=2.1.1 \
+            -Dpackaging=jar
       - name: install dependencies
         run: mvn install -Pbuild-cassandra-test-jar -DskipTests=true
       - run: mvn $TEST_SUITE -B

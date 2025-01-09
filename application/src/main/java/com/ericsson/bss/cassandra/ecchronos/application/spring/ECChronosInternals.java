@@ -66,6 +66,8 @@ public class ECChronosInternals implements Closeable
                 .withJmxConnectionProvider(jmxConnectionProvider)
                 .withEccNodesSync(eccNodesSync)
                 .withNodesMap(nativeConnectionProvider.getNodes())
+                .withJolokiaEnabled(configuration
+                        .getConnectionConfig().getJmxConnection().getJolokiaConfig().isEnabled())
                 .build();
 
         CqlSession session = nativeConnectionProvider.getCqlSession();
