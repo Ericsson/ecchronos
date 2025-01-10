@@ -67,7 +67,7 @@ public abstract class ScheduledRepairJob extends ScheduledJob
      * Get the table reference for this job.
      * @return Table reference
      */
-    public TableReference getTableReference()
+    public final TableReference getTableReference()
     {
         return myTableReference;
     }

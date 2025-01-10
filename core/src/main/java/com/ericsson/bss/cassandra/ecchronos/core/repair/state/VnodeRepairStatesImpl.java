@@ -19,12 +19,13 @@ import com.google.common.collect.ImmutableList;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 public final class VnodeRepairStatesImpl implements VnodeRepairStates // CPD-OFF
 {
-    private final ImmutableList<VnodeRepairState> myVnodeRepairStatuses;
+    private final List<VnodeRepairState> myVnodeRepairStatuses;
 
     private VnodeRepairStatesImpl(final Builder builder)
     {

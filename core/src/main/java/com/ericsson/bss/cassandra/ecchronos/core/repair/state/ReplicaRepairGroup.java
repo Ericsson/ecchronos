@@ -16,10 +16,9 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -28,8 +27,8 @@ import java.util.stream.Collectors;
  */
 public class ReplicaRepairGroup implements Iterable<LongTokenRange>
 {
-    private final ImmutableSet<DriverNode> myReplicas;
-    private final ImmutableList<LongTokenRange> myVnodes;
+    private final Set<DriverNode> myReplicas;
+    private final List<LongTokenRange> myVnodes;
     private final long myLastCompletedAt;
 
     /**
@@ -39,7 +38,7 @@ public class ReplicaRepairGroup implements Iterable<LongTokenRange>
      * @param vnodes The token ranges.
      * @param lastCompletedAt last repair completed
      */
-    public ReplicaRepairGroup(final ImmutableSet<DriverNode> replicas, final ImmutableList<LongTokenRange> vnodes,
+    public ReplicaRepairGroup(final Set<DriverNode> replicas, final List<LongTokenRange> vnodes,
             final long lastCompletedAt)
     {
         myReplicas = replicas;

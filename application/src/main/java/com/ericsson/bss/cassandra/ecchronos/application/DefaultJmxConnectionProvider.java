@@ -100,7 +100,7 @@ public class DefaultJmxConnectionProvider implements JmxConnectionProvider
         Credentials credentials = jmxSecurity.get().getJmxCredentials();
         if (!credentials.isEnabled())
         {
-            return null;
+            return new String[0];
         }
         return new String[] {
                 credentials.getUsername(), credentials.getPassword()

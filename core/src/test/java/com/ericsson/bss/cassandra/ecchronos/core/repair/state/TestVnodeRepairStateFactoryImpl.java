@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -57,7 +58,7 @@ public class TestVnodeRepairStateFactoryImpl
     @Mock
     private ReplicationState mockReplicationState;
 
-    private Map<LongTokenRange, ImmutableSet<DriverNode>> tokenToNodeMap = new TreeMap<>(
+    private Map<LongTokenRange, Set<DriverNode>> tokenToNodeMap = new TreeMap<>(
             Comparator.comparingLong(l -> l.start));
 
     private RepairHistoryProvider repairHistoryProvider = new MockedRepairHistoryProvider(TABLE_REFERENCE);
@@ -437,7 +438,7 @@ public class TestVnodeRepairStateFactoryImpl
         withRange(longTokenRange2, node1, node2);
         ImmutableSet<DriverNode> replicas = ImmutableSet.of(node1, node2);
 
-        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenToHostMap = new HashMap<>();
+        Map<LongTokenRange, Set<DriverNode>> tokenToHostMap = new HashMap<>();
         tokenToHostMap.put(longTokenRange1, replicas);
         tokenToHostMap.put(longTokenRange2, replicas);
 
@@ -508,23 +509,23 @@ public class TestVnodeRepairStateFactoryImpl
 
     private void withSubRangeSuccessfulRepairHistory(LongTokenRange range, long startedAt, long finishedAt)
     {
-        ImmutableSet<DriverNode> replicas = getKnownReplicasForSubRange(range);
+        Set<DriverNode> replicas = getKnownReplicasForSubRange(range);
         withRepairHistory(range, startedAt, finishedAt, replicas, "SUCCESS");
     }
 
     private void withSuccessfulRepairHistory(LongTokenRange range, long startedAt, long finishedAt)
     {
-        ImmutableSet<DriverNode> replicas = getKnownReplicas(range);
+        Set<DriverNode> replicas = getKnownReplicas(range);
         withRepairHistory(range, startedAt, finishedAt, replicas, "SUCCESS");
     }
 
     private void withFailedRepairHistory(LongTokenRange range, long startedAt)
     {
-        ImmutableSet<DriverNode> replicas = getKnownReplicas(range);
+        Set<DriverNode> replicas = getKnownReplicas(range);
         withRepairHistory(range, startedAt, VnodeRepairState.UNREPAIRED, replicas, "FAILED");
     }
 
-    private void withRepairHistory(LongTokenRange range, long startedAt, long finishedAt, ImmutableSet<DriverNode> replicas, String status)
+    private void withRepairHistory(LongTokenRange range, long startedAt, long finishedAt, Set<DriverNode> replicas, String status)
     {
         RepairEntry repairEntry = new RepairEntry(range, startedAt, finishedAt, replicas, status);
         repairHistory.add(repairEntry);
@@ -555,9 +556,9 @@ public class TestVnodeRepairStateFactoryImpl
         return new VnodeRepairState(range, getKnownReplicasForSubRange(range), startedAt, finishedAt);
     }
 
-    private ImmutableSet<DriverNode> getKnownReplicasForSubRange(LongTokenRange range)
+    private Set<DriverNode> getKnownReplicasForSubRange(LongTokenRange range)
     {
-        ImmutableSet<DriverNode> replicas = tokenToNodeMap.get(range);
+        Set<DriverNode> replicas = tokenToNodeMap.get(range);
         if (replicas == null)
         {
             for (LongTokenRange vnode : tokenToNodeMap.keySet())
@@ -575,9 +576,9 @@ public class TestVnodeRepairStateFactoryImpl
         return replicas;
     }
 
-    private ImmutableSet<DriverNode> getKnownReplicas(LongTokenRange range)
+    private Set<DriverNode> getKnownReplicas(LongTokenRange range)
     {
-        ImmutableSet<DriverNode> replicas = tokenToNodeMap.get(range);
+        Set<DriverNode> replicas = tokenToNodeMap.get(range);
         assertThat(replicas).isNotNull();
         return replicas;
     }

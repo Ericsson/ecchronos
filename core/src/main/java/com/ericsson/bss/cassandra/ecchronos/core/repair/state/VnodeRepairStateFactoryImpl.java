@@ -17,7 +17,6 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +54,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
     public VnodeRepairStates calculateNewState(final TableReference tableReference, final RepairStateSnapshot previous,
             final long iterateToTime)
     {
-        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicaMap
+        Map<LongTokenRange, Set<DriverNode>> tokenRangeToReplicaMap
                 = myReplicationState.getTokenRangeToReplicas(tableReference);
         long lastRepairedAt = previousLastRepairedAt(previous, tokenRangeToReplicaMap);
 
@@ -86,7 +85,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
                                             final long to,
                                             final long from)
     {
-        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicaMap
+        Map<LongTokenRange, Set<DriverNode>> tokenRangeToReplicaMap
                 = myReplicationState.getTokenRangeToReplicas(tableReference);
         Iterator<RepairEntry> repairEntryIterator = myRepairHistoryProvider.iterate(tableReference, to, from,
                 (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
@@ -102,7 +101,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
                                                        final long to,
                                                        final long from)
     {
-        Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRanges = myReplicationState.getTokenRanges(tableReference);
+        Map<LongTokenRange, Set<DriverNode>> tokenRanges = myReplicationState.getTokenRanges(tableReference);
         Set<DriverNode> allNodes = new HashSet<>();
         tokenRanges.values().forEach(n -> allNodes.addAll(n));
         List<RepairEntry> allRepairEntries = new ArrayList<>();
@@ -122,15 +121,15 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
     private VnodeRepairStates generateVnodeRepairStates(final long lastRepairedAt,
                                                         final RepairStateSnapshot previous,
                                                         final Iterator<RepairEntry> repairEntryIterator,
-                                                        final Map<LongTokenRange, ImmutableSet<DriverNode>>
+                                                        final Map<LongTokenRange, Set<DriverNode>>
                                                                 tokenRangeToReplicaMap)
     {
         List<VnodeRepairState> vnodeRepairStatesBase = new ArrayList<>();
 
-        for (Map.Entry<LongTokenRange, ImmutableSet<DriverNode>> entry : tokenRangeToReplicaMap.entrySet())
+        for (Map.Entry<LongTokenRange, Set<DriverNode>> entry : tokenRangeToReplicaMap.entrySet())
         {
             LongTokenRange longTokenRange = entry.getKey();
-            ImmutableSet<DriverNode> replicas = entry.getValue();
+            Set<DriverNode> replicas = entry.getValue();
             vnodeRepairStatesBase.add(new VnodeRepairState(longTokenRange, replicas, lastRepairedAt));
         }
 
@@ -153,7 +152,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         {
             RepairEntry repairEntry = repairEntryIterator.next();
             LongTokenRange longTokenRange = repairEntry.getRange();
-            ImmutableSet<DriverNode> replicas = getReplicasForRange(longTokenRange, tokenRangeToReplicaMap);
+            Set<DriverNode> replicas = getReplicasForRange(longTokenRange, tokenRangeToReplicaMap);
 
             VnodeRepairState vnodeRepairState = new VnodeRepairState(longTokenRange,
                     replicas, repairEntry.getStartedAt(), repairEntry.getFinishedAt());
@@ -165,7 +164,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
     }
 
     private long previousLastRepairedAt(final RepairStateSnapshot previous,
-                                        final Map<LongTokenRange, ImmutableSet<DriverNode>> tokenToReplicaMap)
+                                        final Map<LongTokenRange, Set<DriverNode>> tokenToReplicaMap)
     {
         if (previous == null)
         {
@@ -194,7 +193,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
     }
 
     private boolean acceptRepairEntries(final RepairEntry repairEntry,
-                                        final Map<LongTokenRange, ImmutableSet<DriverNode>> tokenRangeToReplicaMap)
+                                        final Map<LongTokenRange, Set<DriverNode>> tokenRangeToReplicaMap)
     {
         if (RepairStatus.SUCCESS != repairEntry.getStatus())
         {
@@ -204,7 +203,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
 
         LongTokenRange repairedRange = repairEntry.getRange();
 
-        ImmutableSet<DriverNode> nodes = getReplicasForRange(repairedRange, tokenRangeToReplicaMap);
+        Set<DriverNode> nodes = getReplicasForRange(repairedRange, tokenRangeToReplicaMap);
         if (nodes == null)
         {
             LOG.trace("Ignoring entry {}, replicas not present in tokenRangeToReplicas", repairEntry);
@@ -220,14 +219,14 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         return true;
     }
 
-    private ImmutableSet<DriverNode> getReplicasForRange(final LongTokenRange range,
-                                                         final Map<LongTokenRange, ImmutableSet<DriverNode>>
+    private Set<DriverNode> getReplicasForRange(final LongTokenRange range,
+                                                         final Map<LongTokenRange, Set<DriverNode>>
                                                                  tokenRangeToReplicaMap)
     {
-        ImmutableSet<DriverNode> nodes = tokenRangeToReplicaMap.get(range);
+        Set<DriverNode> nodes = tokenRangeToReplicaMap.get(range);
         if (nodes == null && useSubRanges)
         {
-            for (Map.Entry<LongTokenRange, ImmutableSet<DriverNode>> vnode : tokenRangeToReplicaMap.entrySet())
+            for (Map.Entry<LongTokenRange, Set<DriverNode>> vnode : tokenRangeToReplicaMap.entrySet())
             {
                 if (vnode.getKey().isCovering(range))
                 {

@@ -15,11 +15,11 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 
 import java.util.Map;
+import java.util.Set;
 
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
-import com.google.common.collect.ImmutableSet;
 
 /**
  * Replication state interface used to retrieve mappings between token range to responsible nodes.
@@ -36,7 +36,7 @@ public interface ReplicationState
      * @param tokenRange The token range to get nodes for.
      * @return The responsible nodes or null if either the token range does not exist or is intersecting two ranges.
      */
-    ImmutableSet<DriverNode> getNodes(TableReference tableReference, LongTokenRange tokenRange);
+    Set<DriverNode> getNodes(TableReference tableReference, LongTokenRange tokenRange);
 
     /**
      * Get the nodes that are a replica for the provided table that have ranges in common with the local node.
@@ -44,7 +44,7 @@ public interface ReplicationState
      * @param tableReference The table to fetch replicas for.
      * @return The replicas for the table
      */
-    ImmutableSet<DriverNode> getReplicas(TableReference tableReference);
+    Set<DriverNode> getReplicas(TableReference tableReference);
 
     /**
      * Get the nodes that are responsible for the provided token range, check clusterwide.
@@ -54,7 +54,7 @@ public interface ReplicationState
      * @param tokenRange The token range to get nodes for.
      * @return The responsible nodes or null if either the token range does not exist or is intersecting two ranges.
      */
-    ImmutableSet<DriverNode> getNodesClusterWide(TableReference tableReference, LongTokenRange tokenRange);
+    Set<DriverNode> getNodesClusterWide(TableReference tableReference, LongTokenRange tokenRange);
 
     /**
      * Get a map of the current replication state for the provided table.
@@ -63,7 +63,7 @@ public interface ReplicationState
      *            The table used to calculate the proper replication.
      * @return The map consisting of token -&gt; responsible nodes.
      */
-    Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRangeToReplicas(TableReference tableReference);
+    Map<LongTokenRange, Set<DriverNode>> getTokenRangeToReplicas(TableReference tableReference);
 
-    Map<LongTokenRange, ImmutableSet<DriverNode>> getTokenRanges(TableReference tableReference);
+    Map<LongTokenRange, Set<DriverNode>> getTokenRanges(TableReference tableReference);
 }

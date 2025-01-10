@@ -38,7 +38,7 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
 
     private static final long DEFAULT_UPDATE_DELAY_IN_MS = TimeUnit.SECONDS.toMillis(60);
 
-    private final AtomicReference<ImmutableMap<TableReference, Long>> myTableSizes = new AtomicReference<>();
+    private final AtomicReference<Map<TableReference, Long>> myTableSizes = new AtomicReference<>();
     private final ScheduledExecutorService myScheduledExecutorService;
 
     private final ReplicatedTableProvider myReplicatedTableProvider;
@@ -60,7 +60,7 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
     @Override
     public long getDataSize(final TableReference tableReference)
     {
-        ImmutableMap<TableReference, Long> dataSizes = myTableSizes.get();
+        Map<TableReference, Long> dataSizes = myTableSizes.get();
 
         if (dataSizes != null && dataSizes.containsKey(tableReference))
         {
@@ -73,7 +73,7 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
     @Override
     public long getDataSize()
     {
-        ImmutableMap<TableReference, Long> dataSizes = myTableSizes.get();
+        Map<TableReference, Long> dataSizes = myTableSizes.get();
 
         if (dataSizes != null)
         {
@@ -160,7 +160,7 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
         }
     }
 
-    private ImmutableMap<TableReference, Long> getTableSizes(final JmxProxy jmxProxy)
+    private Map<TableReference, Long> getTableSizes(final JmxProxy jmxProxy)
     {
         Map<TableReference, Long> dataSizes = new HashMap<>();
 

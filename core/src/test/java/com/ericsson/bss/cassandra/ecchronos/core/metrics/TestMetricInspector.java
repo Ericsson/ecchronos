@@ -43,8 +43,6 @@ public class TestMetricInspector
     private static final String TEST_TABLE1 = "test_table1";
     private static final String TEST_TABLE2 = "test_table2";
 
-    @Mock
-    private TableStorageStates myTableStorageStates;
     private MeterRegistry myMeterRegistry;
     private TableRepairMetricsImpl myTableRepairMetricsImpl;
     private MetricInspector myMetricInspector;
@@ -62,7 +60,6 @@ public class TestMetricInspector
         compositeMeterRegistry.add(new SimpleMeterRegistry());
         myMeterRegistry = compositeMeterRegistry;
         myTableRepairMetricsImpl = TableRepairMetricsImpl.builder()
-                .withTableStorageStates(myTableStorageStates)
                 .withMeterRegistry(myMeterRegistry)
                 .build();
         myMetricInspector = new MetricInspector(myMeterRegistry, 1,  1, 5000);    }

@@ -24,6 +24,7 @@ import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.Timer;
 
 import java.io.Closeable;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -49,16 +50,13 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
     }
 
     @VisibleForTesting
-    static Clock clock = () -> System.currentTimeMillis();
+    static Clock clock = () -> System.currentTimeMillis(); // NOPMD
 
-    private final ConcurrentHashMap<TableReference, TableGauges> myTableGauges = new ConcurrentHashMap<>();
-    private final TableStorageStates myTableStorageStates;
+    private final Map<TableReference, TableGauges> myTableGauges = new ConcurrentHashMap<>();
     private final MeterRegistry myMeterRegistry;
 
     private TableRepairMetricsImpl(final Builder builder)
     {
-        myTableStorageStates = Preconditions.checkNotNull(builder.myTableStorageStates,
-                "Table storage states cannot be null");
         myMeterRegistry = Preconditions.checkNotNull(builder.myMeterRegistry, "Meter registry cannot be null");
     }
 
@@ -153,18 +151,20 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
 
     public static class Builder
     {
-        private TableStorageStates myTableStorageStates;
         private MeterRegistry myMeterRegistry;
 
         /**
          * Build with table storage states.
          *
+         * @deprecated
+         * This is not used anymore, calling this method is a NoOP
+         *
          * @param tableStorageStates Table storage states
          * @return Builder
          */
+        @Deprecated
         public Builder withTableStorageStates(final TableStorageStates tableStorageStates)
         {
-            myTableStorageStates = tableStorageStates;
             return this;
         }
 

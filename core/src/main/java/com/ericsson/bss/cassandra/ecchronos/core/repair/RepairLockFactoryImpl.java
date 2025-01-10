@@ -124,27 +124,21 @@ public class RepairLockFactoryImpl implements RepairLockFactory
         String dataCenter = repairResource.getDataCenter();
 
         String resource = repairResource.getResourceName(LOCKS_PER_RESOURCE);
-        try
-        {
-            myLock = lockFactory.tryLock(dataCenter, resource, priority, metadata);
 
-            if (myLock != null)
-            {
-                return myLock;
-            }
+        myLock = lockFactory.tryLock(dataCenter, resource, priority, metadata);
 
-            String msg = String.format("Lock resources exhausted for %s", repairResource);
-            LOG.warn(msg);
-            throw new LockException(msg);
-        }
-        catch (LockException e)
+        if (myLock != null)
         {
-            LOG.debug("Lock ({} in datacenter {}) got error {}",
-                    resource,
-                    dataCenter,
-                    e.getMessage());
-            throw e;
+            return myLock;
         }
+
+        String msg = String.format("Lock resources exhausted for %s", repairResource);
+        LOG.warn(msg);
+        LOG.debug("Lock ({} in datacenter {}) got error {}",
+                resource,
+                dataCenter,
+                msg);
+        throw new LockException(msg);
     }
 
     static class TemporaryLockHolder implements AutoCloseable
