@@ -41,6 +41,7 @@ management:
 springdoc:
   api-docs:
     enabled: false
+    version: "openapi_3_0"
 
 # Security Config
 #server:
