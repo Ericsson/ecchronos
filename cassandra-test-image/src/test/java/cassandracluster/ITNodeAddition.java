@@ -14,8 +14,6 @@
  */
 package cassandracluster;
 
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -24,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.DockerComposeContainer;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -37,8 +34,9 @@ import static org.mockito.Mockito.any;
 public class ITNodeAddition extends AbstractCassandraCluster
 {
     private static final Logger LOG = LoggerFactory.getLogger(ITNodeAddition.class);
+
     @BeforeClass
-    public static void setup() throws InterruptedException
+    public static void setup()
     {
         Path dockerComposePath = Paths.get("")
                 .toAbsolutePath()
@@ -52,22 +50,15 @@ public class ITNodeAddition extends AbstractCassandraCluster
         composeContainer.start();
 
         LOG.info("Waiting for the Cassandra cluster to finish starting up.");
-        waitForNodesToBeUp("cassandra-seed-dc1-rack1-node1",1,50000);
-
+        waitForNodesToBeUp("cassandra-seed-dc1-rack1-node1",1,DEFAULT_WAIT_TIME_IN_MS);
     }
+
     @Test
     public void testAdditionalNodesAddedToCluster() throws InterruptedException, IOException
     {
         DefaultRepairConfigurationProvider listener = mock(DefaultRepairConfigurationProvider.class);
-        containerIP = composeContainer.getContainerByServiceName("cassandra-seed-dc1-rack1-node1").get()
-                .getContainerInfo()
-                .getNetworkSettings().getNetworks().values().stream().findFirst().get().getIpAddress();
-        CqlSessionBuilder builder = CqlSession.builder()
-                .addContactPoint(new InetSocketAddress(containerIP, 9042))
-                .withLocalDatacenter("datacenter1")
-                .withAuthCredentials("cassandra", "cassandra")
-                .withNodeStateListener(listener);
-        mySession = builder.build();
+        
+        mySession = defaultBuilder().build();
 
         // scale up new nodes
         composeContainer.withScaledService("cassandra-node-dc1-rack1-node2", 1 );
@@ -75,7 +66,7 @@ public class ITNodeAddition extends AbstractCassandraCluster
         composeContainer.withScaledService("cassandra-seed-dc2-rack1-node1", 1 );
         composeContainer.start();
         LOG.info("Waiting for the new nodes to finish starting up.");
-        waitForNodesToBeUp("cassandra-seed-dc1-rack1-node1",4,50000);
+        waitForNodesToBeUp("cassandra-seed-dc1-rack1-node1",4,DEFAULT_WAIT_TIME_IN_MS);
 
         assertEquals( 4, getNodeCountViaNodetool("cassandra-node-dc1-rack1-node2"));
 
