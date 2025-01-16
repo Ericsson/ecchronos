@@ -39,7 +39,7 @@ public class AbstractCassandraCluster
     private static final Logger LOG = LoggerFactory.getLogger(AbstractCassandraCluster.class);
     protected static String containerIP;
     protected static CqlSession mySession;
-    private static final long DEFAULT_WAIT_TIME_IN_SC = 10000;
+    private static final long DEFAULT_WAIT_TIME_IN_SECS= 10000;
 
     @BeforeClass
     public static void setup() throws IOException, InterruptedException
@@ -105,7 +105,7 @@ public class AbstractCassandraCluster
         LOG.info("Waiting 10sec");
         try
         {
-            Thread.sleep(DEFAULT_WAIT_TIME_IN_SC);
+            Thread.sleep(DEFAULT_WAIT_TIME_IN_SECS);
         }
         catch (InterruptedException e)
         {
