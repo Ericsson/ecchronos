@@ -25,6 +25,7 @@
      @Test
      public void testCassandraCluster()
      {
+         createDefaultSession();
          mySession.execute(
                  "CREATE KEYSPACE IF NOT EXISTS test_keyspace WITH replication = {'class': 'NetworkTopologyStrategy', " +
                          "'datacenter1': 2}");

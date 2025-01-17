@@ -17,52 +17,63 @@ package cassandracluster;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.command.StartContainerCmd;
-import com.github.dockerjava.api.command.StopContainerCmd;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.DockerComposeContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 public class AbstractCassandraCluster
 {
+    private static final String DOCKER_COMPOSE_FILE_PATH = "cassandra-test-image/src/main/docker/docker-compose.yml";
+    private static final String CASSANDRA_SETUP_DB_SCRIPT_PATH = "/etc/cassandra/setup_db.sh";
+    protected static final String CASSANDRA_SEED_NODE_NAME = "cassandra-seed-dc1-rack1-node1";
+    protected static final long DEFAULT_WAIT_TIME_IN_MS = 50000;
     protected static DockerComposeContainer<?> composeContainer;
     private static final Logger LOG = LoggerFactory.getLogger(AbstractCassandraCluster.class);
     protected static String containerIP;
     protected static CqlSession mySession;
-    private static final long TENSECONDS = 10000;
+    private static final long DEFAULT_WAIT_TIME_IN_SECS= 10000;
 
     @BeforeClass
-    public static void setup() throws InterruptedException
+    public static void setup() throws IOException, InterruptedException
     {
         Path dockerComposePath = Paths.get("")
                 .toAbsolutePath()
                 .getParent()
-                .resolve("cassandra-test-image/src/main/docker/docker-compose.yml");
-        composeContainer = new DockerComposeContainer<>(dockerComposePath.toFile());
+                .resolve(DOCKER_COMPOSE_FILE_PATH);
+        composeContainer = new DockerComposeContainer<>(dockerComposePath.toFile())
+                .withEnv("JOLOKIA", "false")
+                .withLogConsumer(CASSANDRA_SEED_NODE_NAME, new Slf4jLogConsumer(LOG));
+
         composeContainer.start();
         LOG.info("Waiting for the Cassandra cluster to finish starting up.");
-        waitForNodesToBeUp("cassandra-seed-dc1-rack1-node1",4,50000);
+        waitForNodesToBeUp(CASSANDRA_SEED_NODE_NAME,4,DEFAULT_WAIT_TIME_IN_MS);
 
-        containerIP = composeContainer.getContainerByServiceName("cassandra-seed-dc1-rack1-node1").get()
+        containerIP = composeContainer.getContainerByServiceName(CASSANDRA_SEED_NODE_NAME).get()
                 .getContainerInfo()
                 .getNetworkSettings().getNetworks().values().stream().findFirst().get().getIpAddress();
-        CqlSessionBuilder builder = CqlSession.builder()
+        composeContainer.getContainerByServiceName(CASSANDRA_SEED_NODE_NAME).get()
+                .execInContainer("bash", CASSANDRA_SETUP_DB_SCRIPT_PATH);
+    }
+
+    protected static void createDefaultSession()
+    {
+        mySession = defaultBuilder().build();
+    }
+
+    protected static CqlSessionBuilder defaultBuilder()
+    {
+        return CqlSession.builder()
                 .addContactPoint(new InetSocketAddress(containerIP, 9042))
                 .withLocalDatacenter("datacenter1")
                 .withAuthCredentials("cassandra", "cassandra");
-        mySession = builder.build();
     }
 
     @AfterClass
@@ -81,29 +92,6 @@ public class AbstractCassandraCluster
                 .execInContainer("nodetool", "-u", "cassandra", "-pw", "cassandra", "decommission").getStdout();
     }
 
-    protected void startContainer ( String node)
-    {
-        DockerClient dockerClient = DockerClientFactory.instance().client();
-        String container = composeContainer
-                .getContainerByServiceName(node).get().getContainerId();
-
-        try (StartContainerCmd startCmd3 = dockerClient.startContainerCmd(container))
-        {
-            startCmd3.exec();
-        }
-    }
-
-    protected void stopContainer ( String node)
-    {
-        DockerClient dockerClient = DockerClientFactory.instance().client();
-        String container = composeContainer
-                .getContainerByServiceName(node).get().getContainerId();
-        try (StopContainerCmd stopCmd = dockerClient.stopContainerCmd(container))
-        {
-            stopCmd.exec();
-        }
-    }
-
     protected static int getNodeCountViaNodetool( String node) throws IOException, InterruptedException
     {
         String stdout = composeContainer.getContainerByServiceName(node).get()
@@ -111,14 +99,15 @@ public class AbstractCassandraCluster
         return stdout.split("UN",-1).length-1;
     }
 
-    protected static boolean waitForNodesToBeUp( String node, int expectedNodes, long maxWaitTimeInMillis)
+    protected static void waitForNodesToBeUp( String node, int expectedNodes, long maxWaitTimeInMillis)
     {
         long startTime = System.currentTimeMillis();
         LOG.info("Waiting 10sec");
         try
         {
-            Thread.sleep(TENSECONDS);
-        } catch (InterruptedException e)
+            Thread.sleep(DEFAULT_WAIT_TIME_IN_SECS);
+        }
+        catch (InterruptedException e)
         {
             // ignore and retry
         }
@@ -128,7 +117,7 @@ public class AbstractCassandraCluster
             {
                 if (getNodeCountViaNodetool(node) == expectedNodes)
                 {
-                    return true;
+                    return;
                 }
             }
             catch (IOException | InterruptedException e)
@@ -137,31 +126,6 @@ public class AbstractCassandraCluster
             }
         }
         LOG.info("Timed out waiting for the Cassandra cluster to finish starting up.");
-        return false;
-    }
-    
-    protected void loadEcchronosKeyspace () throws InterruptedException
-    {
-        Path cqlfile = Paths.get("")
-            .toAbsolutePath()
-            .getParent()
-            .resolve("cassandra-test-image/src/main/docker/create_keyspaces.cql");
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(cqlfile.toFile())))
-        {
-            String line;
-            while ((line = reader.readLine()) != null)
-            {
-
-                System.out.println(line);
-                mySession.execute(line);
-                Thread.sleep(500);
-            }
-        }
-        catch (IOException e)
-        {
-            System.err.println("Error reading the file: " + e.getMessage());
-        }
     }
 }
 
