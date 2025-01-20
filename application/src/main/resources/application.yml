@@ -40,6 +40,7 @@ management:
 # and API doc at <ecchronos:port>/v3/api-docs.yaml
 springdoc:
   api-docs:
+    version: OPENAPI_3_0
     enabled: false
 
 # Security Config

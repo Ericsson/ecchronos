@@ -283,13 +283,13 @@ paths:
             text/plain;version=0.0.4;charset=utf-8:
               schema:
                 type: string
-            application/openmetrics-text; version=1.0.0; charset=utf-8:
-              schema:
-                type: string
             application/openmetrics-text;version=1.0.0;charset=utf-8:
               schema:
                 type: string
             text/plain; version=0.0.4; charset=utf-8:
+              schema:
+                type: string
+            application/openmetrics-text; version=1.0.0; charset=utf-8:
               schema:
                 type: string
   /actuator:
@@ -309,14 +309,14 @@ paths:
                   type: object
                   additionalProperties:
                     $ref: "#/components/schemas/Link"
-            application/json:
+            application/vnd.spring-boot.actuator.v2+json:
               schema:
                 type: object
                 additionalProperties:
                   type: object
                   additionalProperties:
                     $ref: "#/components/schemas/Link"
-            application/vnd.spring-boot.actuator.v2+json:
+            application/json:
               schema:
                 type: object
                 additionalProperties:
@@ -336,29 +336,10 @@ paths:
             application/vnd.spring-boot.actuator.v3+json:
               schema:
                 type: object
-            application/json:
-              schema:
-                type: object
             application/vnd.spring-boot.actuator.v2+json:
               schema:
                 type: object
-  /actuator/health/**:
-    get:
-      tags:
-      - Actuator
-      summary: Actuator web endpoint 'health-path'
-      operationId: health-path
-      responses:
-        "200":
-          description: OK
-          content:
-            application/vnd.spring-boot.actuator.v3+json:
-              schema:
-                type: object
             application/json:
-              schema:
-                type: object
-            application/vnd.spring-boot.actuator.v2+json:
               schema:
                 type: object
 components:
