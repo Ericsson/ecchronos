@@ -1,7 +1,7 @@
 # ecChronos
 
 [![codecov](https://codecov.io/gh/ericsson/ecchronos/branch/master/graph/badge.svg)](https://codecov.io/gh/ericsson/ecchronos/tree/master)
-[![maven central](https://img.shields.io/maven-central/v/com.ericsson.bss.cassandra.ecchronos/ecchronos-binary.svg?label=maven%20central&versionPrefix=5.0)](https://central.sonatype.com/artifact/com.ericsson.bss.cassandra.ecchronos/ecchronos-binary/versions)
+[![maven central](https://img.shields.io/maven-central/v/com.ericsson.bss.cassandra.ecchronos/ecchronos-binary.svg?label=maven%20central&versionPrefix=6.0)](https://central.sonatype.com/artifact/com.ericsson.bss.cassandra.ecchronos/ecchronos-binary/versions)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/Ericsson/ecchronos/badge)](https://securityscorecards.dev/viewer/?uri=github.com/Ericsson/ecchronos)
 
 ecChronos is a decentralized scheduling framework primarily focused on performing automatic repairs in Apache Cassandra.
