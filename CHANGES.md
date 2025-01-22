@@ -1,5 +1,7 @@
 # Changes
 
+## Version 6.0.2
+
 ## Version 6.0.1
 
 * Bump dependecies
