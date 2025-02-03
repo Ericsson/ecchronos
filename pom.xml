@@ -81,7 +81,7 @@
         <mockito.core.version>5.15.2</mockito.core.version>
         <org.apache.commons.io.version>2.18.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.27.1</org.apache.commons.commons-compress.version>
-        <org.apache.httpcomponents.client.version>5.4.1</org.apache.httpcomponents.client.version>
+        <org.apache.httpcomponents.client.version>5.4.2</org.apache.httpcomponents.client.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.80</org.bouncycastle.bcpkix-jdk18on.version>
         <org.hdrhistogram.version>2.2.2</org.hdrhistogram.version>
         <org.springframework.boot.version>3.4.2</org.springframework.boot.version>
