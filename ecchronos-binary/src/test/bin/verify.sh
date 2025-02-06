@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# vi: syntax=python
+#!/bin/bash
 #
 # Copyright 2025 Telefonaktiebolaget LM Ericsson
 #
@@ -15,13 +14,5 @@
 # limitations under the License.
 #
 
-from distutils.core import setup
-
-setup(name='ecChronos library',
-      version='1.0',
-      description='ecChronos REST library',
-      author='Victor Cavichioli',
-      author_email='victor.cavichioli@ericsson.com',
-      url='https://github.com/Ericsson/ecchronos',
-      license='Apache License, Version 2.0',
-      packages=['ecchronoslib'])
+RESULT=$(cat "$1")
+exit $RESULT

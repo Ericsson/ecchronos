@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-# vi: syntax=python
+#!/bin/bash
 #
 # Copyright 2025 Telefonaktiebolaget LM Ericsson
 #
@@ -15,13 +14,29 @@
 # limitations under the License.
 #
 
-from distutils.core import setup
+source variables.sh
 
-setup(name='ecChronos library',
-      version='1.0',
-      description='ecChronos REST library',
-      author='Victor Cavichioli',
-      author_email='victor.cavichioli@ericsson.com',
-      url='https://github.com/Ericsson/ecchronos',
-      license='Apache License, Version 2.0',
-      packages=['ecchronoslib'])
+# Install virtualenv and pylint
+if [ -z "${CI}" ]; then
+  echo "Installing virtualenv"
+  pip install --user virtualenv
+  virtualenv "$VENV_DIR" --python=python3
+  source "$VENV_DIR"/bin/activate
+fi
+
+echo "Installing pylint"
+
+pip install pylint
+
+echo "Installing behave dependencies"
+
+pip install behave
+pip install requests
+pip install jsonschema
+pip install cassandra-driver
+
+for directory in "$@"
+do
+  echo "Running pylint for $directory"
+  pylint "$directory" || exit 1
+done
