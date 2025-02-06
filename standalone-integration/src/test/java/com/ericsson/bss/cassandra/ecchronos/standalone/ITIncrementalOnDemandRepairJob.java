@@ -255,7 +255,7 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
     {
         List<OnDemandRepairJobView> completedJobs = myOnDemandRepairSchedulerImpl.getAllRepairJobs(hostId)
                 .stream()
-                .filter(j -> j.getId().equals(jobId))
+                .filter(j -> j.getJobId().equals(jobId))
                 .collect(Collectors.toList());
         assertThat(completedJobs).hasSize(1);
         assertThat(completedJobs.get(0).getCompletionTime()).isGreaterThanOrEqualTo(startTime);
@@ -264,6 +264,6 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
     private UUID triggerRepair(TableReference tableReference, Node node) throws EcChronosException
     {
         myRepairs.add(tableReference);
-        return myOnDemandRepairSchedulerImpl.scheduleJob(tableReference, RepairType.INCREMENTAL, node.getHostId()).getId();
+        return myOnDemandRepairSchedulerImpl.scheduleJob(tableReference, RepairType.INCREMENTAL, node.getHostId()).getJobId();
     }
 }

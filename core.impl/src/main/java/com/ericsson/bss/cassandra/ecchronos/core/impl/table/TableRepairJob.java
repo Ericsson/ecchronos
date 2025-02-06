@@ -64,7 +64,8 @@ public class TableRepairJob extends ScheduledRepairJob
 
     TableRepairJob(final Builder builder)
     {
-        super(builder.configuration, builder.tableReference.getId(), builder.tableReference, builder.jmxProxyFactory,
+        super(builder.configuration, builder.tableReference.getId(), builder.myNode.getHostId(), builder.tableReference,
+                builder.jmxProxyFactory,
                 builder.repairConfiguration, builder.repairPolicies,
                 builder.tableRepairMetrics, builder.repairLockType);
         myNode = Preconditions.checkNotNull(builder.myNode,
@@ -85,7 +86,7 @@ public class TableRepairJob extends ScheduledRepairJob
     public ScheduledRepairJobView getView()
     {
         long now = System.currentTimeMillis();
-        return new ScheduledRepairJobView(getId(), getTableReference(), getRepairConfiguration(),
+        return new ScheduledRepairJobView(getNodeId(), getJobId(), getTableReference(), getRepairConfiguration(),
                 myRepairState.getSnapshot(),
                 getStatus(now), getProgress(now), getNextRunInMs(), getRepairConfiguration().getRepairType());
     }
@@ -167,7 +168,7 @@ public class TableRepairJob extends ScheduledRepairJob
                         .withRepairHistory(myRepairHistory)
                         .withRepairResourceFactory(getRepairLockType().getLockFactory())
                         .withRepairLockFactory(REPAIR_LOCK_FACTORY)
-                        .withJobId(getId())
+                        .withJobId(getJobId())
                         .withNode(myNode);
 
                 taskList.add(builder.build(getRealPriority(replicaRepairGroup.getLastCompletedAt())));

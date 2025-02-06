@@ -1,0 +1,36 @@
+#################################################################
+#                             jvm.options                       #
+#                                                               #
+# - all flags defined here will be used by to startup the JVM   #
+# - one flag should be specified per line                       #
+# - lines that do not start with '-' will be ignored            #
+# - only static flags are accepted (no variables or parameters) #
+#################################################################
+
+########################
+# GENERAL JVM SETTINGS #
+########################
+
+# Make sure all memory is faulted and zeroed on startup.
+# This helps prevent soft faults in containers and makes
+# transparent hugepage allocation more effective.
+#-XX:+AlwaysPreTouch
+
+# Sets the number of threads used during parallel phases of the garbage collectors.
+# The default value varies with the platform on which the JVM is running.
+# Having this value unset on JDK 8 and earlier versions may cause issues.
+# https://bugs.java.com/bugdatabase/view_bug.do?bug_id=6858051
+#-XX:ParallelGCThreads=1
+
+#################
+# HEAP SETTINGS #
+#################
+
+# Initial and minimum heap size.
+#-Xms256M
+
+# Maximum heap size.
+#-Xmx512M
+
+# Size of the heap for young generation.
+#-Xmn100M

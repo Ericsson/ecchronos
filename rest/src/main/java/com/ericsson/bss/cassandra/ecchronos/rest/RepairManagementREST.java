@@ -15,7 +15,6 @@
 package com.ericsson.bss.cassandra.ecchronos.rest;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.RepairInfo;
-import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 
 import java.time.Duration;
@@ -37,5 +36,5 @@ public interface RepairManagementREST
      * @return A JSON representation of {@link RepairInfo}
      */
     ResponseEntity<RepairInfo> getRepairInfo(
-            UUID nodeID, String keyspace, String table, Long since, Duration duration);
+            String nodeID, String keyspace, String table, Long since, Duration duration);
 }

@@ -34,9 +34,9 @@ import java.util.UUID;
 public class OnDemandRepair
 {
     @NotBlank
-    public UUID id;
+    public UUID jobID;
     @NotBlank
-    public UUID hostId;
+    public UUID nodeID;
     @NotBlank
     public String keyspace;
     @NotBlank
@@ -67,8 +67,8 @@ public class OnDemandRepair
             final long wasCompletedAt,
             final RepairType theRepairType)
     {
-        this.id = theId;
-        this.hostId = theHostId;
+        this.jobID = theId;
+        this.nodeID = theHostId;
         this.keyspace = theKeyspace;
         this.table = theTable;
         this.status = theStatus;
@@ -80,8 +80,8 @@ public class OnDemandRepair
 
     public OnDemandRepair(final OnDemandRepairJobView repairJobView)
     {
-        this.id = repairJobView.getId();
-        this.hostId = repairJobView.getHostId();
+        this.jobID = repairJobView.getJobId();
+        this.nodeID = repairJobView.getNodeId();
         this.keyspace = repairJobView.getTableReference().getKeyspace();
         this.table = repairJobView.getTableReference().getTable();
         this.status = repairJobView.getStatus();
@@ -108,8 +108,8 @@ public class OnDemandRepair
             return false;
         }
         OnDemandRepair that = (OnDemandRepair) o;
-        return  id.equals(that.id)
-                && hostId.equals(that.hostId)
+        return  jobID.equals(that.jobID)
+                && nodeID.equals(that.nodeID)
                 && keyspace.equals(that.keyspace)
                 && table.equals(that.table)
                 && status == that.status
@@ -126,6 +126,6 @@ public class OnDemandRepair
     @Override
     public int hashCode()
     {
-        return Objects.hash(id, hostId, keyspace, table, repairedRatio, status, completedAt, repairType);
+        return Objects.hash(jobID, nodeID, keyspace, table, repairedRatio, status, completedAt, repairType);
     }
 }

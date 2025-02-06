@@ -133,7 +133,7 @@ public class TestRepairManagementRESTImpl
         repairStats.add(repairStats4);
         repairStats.add(repairStats5);
         RepairInfo expectedResponse = new RepairInfo(since, to, repairStats);
-        ResponseEntity<RepairInfo> response = managementREST.getRepairInfo(mockNodeId1, null, null, since, duration);
+        ResponseEntity<RepairInfo> response = managementREST.getRepairInfo(mockNodeId1.toString(), null, null, since, duration);
 
         RepairInfo returnedRepairInfo = response.getBody();
         assertThat(returnedRepairInfo).isEqualTo(expectedResponse);
@@ -176,7 +176,7 @@ public class TestRepairManagementRESTImpl
         repairStats.add(repairStats4);
         repairStats.add(repairStats5);
         RepairInfo expectedResponse = new RepairInfo(since, 0L, repairStats);
-        ResponseEntity<RepairInfo> response = managementREST.getRepairInfo(mockNodeId1, null, null, since, null);
+        ResponseEntity<RepairInfo> response = managementREST.getRepairInfo(mockNodeId1.toString(), null, null, since, null);
 
         RepairInfo returnedRepairInfo = response.getBody();
         assertThat(returnedRepairInfo.repairStats).containsExactlyInAnyOrderElementsOf(expectedResponse.repairStats);
@@ -221,7 +221,7 @@ public class TestRepairManagementRESTImpl
         repairStats.add(repairStats3);
         repairStats.add(repairStats4);
         repairStats.add(repairStats5);
-        ResponseEntity<RepairInfo> response = managementREST.getRepairInfo(mockNodeId1, null, null, null, duration);
+        ResponseEntity<RepairInfo> response = managementREST.getRepairInfo(mockNodeId1.toString(), null, null, null, duration);
 
         RepairInfo returnedRepairInfo = response.getBody();
         assertThat(returnedRepairInfo.repairStats).containsExactlyInAnyOrderElementsOf(repairStats);
@@ -257,7 +257,7 @@ public class TestRepairManagementRESTImpl
         repairStats.add(repairStats2);
         repairStats.add(repairStats3);
         RepairInfo expectedResponse = new RepairInfo(since, to, repairStats);
-        ResponseEntity<RepairInfo> response = managementREST.getRepairInfo(mockNodeId1, "keyspace1", null, since, duration);
+        ResponseEntity<RepairInfo> response = managementREST.getRepairInfo(mockNodeId1.toString(), "keyspace1", null, since, duration);
 
         RepairInfo returnedRepairInfo = response.getBody();
         assertThat(returnedRepairInfo).isEqualTo(expectedResponse);
@@ -278,7 +278,7 @@ public class TestRepairManagementRESTImpl
         List<RepairStats> repairStats = new ArrayList<>();
         repairStats.add(repairStats1);
         RepairInfo expectedResponse = new RepairInfo(since, to, repairStats);
-        ResponseEntity<RepairInfo> response = managementREST.getRepairInfo(mockNodeId1, "keyspace1", "table1", since, duration);
+        ResponseEntity<RepairInfo> response = managementREST.getRepairInfo(mockNodeId1.toString(), "keyspace1", "table1", since, duration);
 
         RepairInfo returnedRepairInfo = response.getBody();
         assertThat(returnedRepairInfo).isEqualTo(expectedResponse);
@@ -294,7 +294,7 @@ public class TestRepairManagementRESTImpl
         ResponseEntity<RepairInfo> response = null;
         try
         {
-            response = managementREST.getRepairInfo(mockNodeId1, null, "table1", since, duration);
+            response = managementREST.getRepairInfo(mockNodeId1.toString(), null, "table1", since, duration);
         }
         catch (ResponseStatusException e)
         {
@@ -312,7 +312,7 @@ public class TestRepairManagementRESTImpl
         when(myReplicatedTableProvider.accept(mockNode1, "keyspace1")).thenReturn(true);
         List<RepairStats> repairStats = new ArrayList<>();
         repairStats.add(repairStats1);
-        ResponseEntity<RepairInfo> response = managementREST.getRepairInfo(mockNodeId1, "keyspace1", "table1", null, null);
+        ResponseEntity<RepairInfo> response = managementREST.getRepairInfo(mockNodeId1.toString(), "keyspace1", "table1", null, null);
 
         RepairInfo returnedRepairInfo = response.getBody();
         assertThat(returnedRepairInfo.repairStats).containsExactly(repairStats1);
@@ -327,7 +327,7 @@ public class TestRepairManagementRESTImpl
         ResponseEntity<RepairInfo> response = null;
         try
         {
-            response = managementREST.getRepairInfo(mockNodeId1, null, null, null, null);
+            response = managementREST.getRepairInfo(mockNodeId1.toString(), null, null, null, null);
         }
         catch (ResponseStatusException e)
         {
@@ -343,7 +343,7 @@ public class TestRepairManagementRESTImpl
         ResponseEntity<RepairInfo> response = null;
         try
         {
-            response = managementREST.getRepairInfo(mockNodeId1, "keyspace1", "table1", 0L, Duration.ofMillis(-1000));
+            response = managementREST.getRepairInfo(mockNodeId1.toString(), "keyspace1", "table1", 0L, Duration.ofMillis(-1000));
         }
         catch (ResponseStatusException e)
         {

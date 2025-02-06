@@ -22,6 +22,7 @@ import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ScheduledJobExcepti
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
@@ -30,6 +31,7 @@ import org.junit.Test;
 public class TestScheduledJobQueue
 {
     private ScheduledJobQueue queue;
+    private UUID nodeId = UUID.randomUUID();
 
     @Before
     public void setup()
@@ -40,7 +42,7 @@ public class TestScheduledJobQueue
     @Test
     public void testInsertRemoveOne()
     {
-        DummyJob job = new DummyJob(ScheduledJob.Priority.LOW);
+        DummyJob job = new DummyJob(ScheduledJob.Priority.LOW, nodeId);
 
         queue.add(job);
 
@@ -50,8 +52,8 @@ public class TestScheduledJobQueue
     @Test
     public void testInsertDifferentPrio()
     {
-        DummyJob job = new DummyJob(ScheduledJob.Priority.LOW);
-        DummyJob job2 = new DummyJob(ScheduledJob.Priority.HIGH);
+        DummyJob job = new DummyJob(ScheduledJob.Priority.LOW, nodeId);
+        DummyJob job2 = new DummyJob(ScheduledJob.Priority.HIGH, nodeId);
 
         queue.add(job);
         queue.add(job2);
@@ -86,8 +88,8 @@ public class TestScheduledJobQueue
     @Test
     public void testRemoveJobInQueueIsPossible()
     {
-        DummyJob job = new DummyJob(ScheduledJob.Priority.HIGH);
-        DummyJob job2 = new DummyJob(ScheduledJob.Priority.LOW);
+        DummyJob job = new DummyJob(ScheduledJob.Priority.HIGH, nodeId);
+        DummyJob job2 = new DummyJob(ScheduledJob.Priority.LOW, nodeId);
 
         queue.add(job);
         queue.add(job2);
@@ -158,7 +160,7 @@ public class TestScheduledJobQueue
     {
         public RunnableOnce(Priority prio)
         {
-            super(new ConfigurationBuilder().withPriority(prio).withRunInterval(1, TimeUnit.DAYS).build());
+            super(new ConfigurationBuilder().withPriority(prio).withRunInterval(1, TimeUnit.DAYS).build(), nodeId);
         }
 
         @Override
@@ -179,7 +181,7 @@ public class TestScheduledJobQueue
         private State state;
         StateJob(Priority priority, State state)
         {
-            super(priority);
+            super(priority, nodeId);
             this.state = state;
         }
 

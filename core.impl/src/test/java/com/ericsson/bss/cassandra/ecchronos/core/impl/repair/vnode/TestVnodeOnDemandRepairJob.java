@@ -103,14 +103,14 @@ public class TestVnodeOnDemandRepairJob
     public void testJobCorrectlyReturned()
     {
         VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob(0);
-        OnDemandRepairJobView expectedView = new OnDemandRepairJobView(repairJob.getId(), myHostId, myTableReference,
+        OnDemandRepairJobView expectedView = new OnDemandRepairJobView(repairJob.getJobId(), myHostId, myTableReference,
                 OnDemandRepairJobView.Status.IN_QUEUE, 0, System.currentTimeMillis(), RepairType.VNODE);
-        assertThat(repairJob.getId()).isEqualTo(repairJob.getId());
+        assertThat(repairJob.getJobId()).isEqualTo(repairJob.getJobId());
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
         assertThat(repairJob.getTableReference()).isEqualTo(myTableReference);
         assertThat(repairJob.getView().getTableReference()).isEqualTo(expectedView.getTableReference());
         assertThat(repairJob.getView().getStatus()).isEqualTo(expectedView.getStatus());
-        assertThat(repairJob.getView().getHostId()).isEqualTo(expectedView.getHostId());
+        assertThat(repairJob.getView().getNodeId()).isEqualTo(expectedView.getNodeId());
     }
 
     @Test
@@ -119,13 +119,13 @@ public class TestVnodeOnDemandRepairJob
         VnodeOnDemandRepairJob repairJob = createVnodeOnDemandRepairJob(0);
         Iterator<ScheduledTask> it = repairJob.iterator();
         repairJob.postExecute(false, it.next());
-        OnDemandRepairJobView expectedView = new OnDemandRepairJobView(repairJob.getId(), myHostId, myTableReference,
+        OnDemandRepairJobView expectedView = new OnDemandRepairJobView(repairJob.getJobId(), myHostId, myTableReference,
                 OnDemandRepairJobView.Status.ERROR, 0, System.currentTimeMillis(), RepairType.VNODE);
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
         assertThat(repairJob.getTableReference()).isEqualTo(myTableReference);
         assertThat(repairJob.getView().getTableReference()).isEqualTo(expectedView.getTableReference());
         assertThat(repairJob.getView().getStatus()).isEqualTo(expectedView.getStatus());
-        assertThat(repairJob.getView().getHostId()).isEqualTo(expectedView.getHostId());
+        assertThat(repairJob.getView().getNodeId()).isEqualTo(expectedView.getNodeId());
     }
 
     @Test

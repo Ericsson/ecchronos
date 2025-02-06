@@ -37,7 +37,9 @@ import java.util.stream.Collectors;
 public class Schedule
 {
     @NotBlank
-    public UUID id;
+    public UUID nodeID;
+    @NotBlank
+    public UUID jobID;
     @NotBlank
     public String keyspace;
     @NotBlank
@@ -63,7 +65,9 @@ public class Schedule
     }
 
     @VisibleForTesting
-    public Schedule(final UUID theId,
+    public Schedule(
+            final UUID theNodeID,
+            final UUID theJobId,
             final String theKeyspace,
             final String theTable,
             final ScheduledRepairJobView.Status theStatus,
@@ -71,9 +75,11 @@ public class Schedule
             final long theLastRepairedAtInMs,
             final long theNextRepairInMs,
             final ScheduleConfig theConfig,
-            final RepairType theRepairType)
+            final RepairType theRepairType
+    )
     {
-        this.id = theId;
+        this.nodeID = theNodeID;
+        this.jobID = theJobId;
         this.keyspace = theKeyspace;
         this.table = theTable;
         this.status = theStatus;
@@ -87,7 +93,8 @@ public class Schedule
 
     public Schedule(final ScheduledRepairJobView repairJobView)
     {
-        this.id = repairJobView.getId();
+        this.nodeID = repairJobView.getNodeId();
+        this.jobID = repairJobView.getJobId();
         this.keyspace = repairJobView.getTableReference().getKeyspace();
         this.table = repairJobView.getTableReference().getTable();
         this.status = repairJobView.getStatus();
@@ -138,7 +145,8 @@ public class Schedule
                 && keyspace.equals(that.keyspace)
                 && table.equals(that.table)
                 && status == that.status
-                && id.equals(that.id)
+                && jobID.equals(that.jobID)
+                && nodeID.equals(that.nodeID)
                 && config.equals(that.config)
                 && virtualNodeStates.equals(that.virtualNodeStates)
                 && repairType.equals(that.repairType);
@@ -152,7 +160,7 @@ public class Schedule
     @Override
     public int hashCode()
     {
-        return Objects.hash(id, keyspace, table, lastRepairedAtInMs, repairedRatio,
+        return Objects.hash(nodeID, jobID, keyspace, table, lastRepairedAtInMs, repairedRatio,
                 status, nextRepairInMs, config, virtualNodeStates, repairType);
     }
 }

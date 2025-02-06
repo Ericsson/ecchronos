@@ -163,7 +163,7 @@ public class TestUtils
             {
                 this.repairConfiguration = generateRepairConfiguration(repairInterval);
             }
-            return new ScheduledRepairJobView(id, tableReference(keyspace, table), repairConfiguration,
+            return new ScheduledRepairJobView(id, id, tableReference(keyspace, table), repairConfiguration,
                     generateRepairStateSnapshot(lastRepairedAt, vnodeRepairStates), status,progress, lastRepairedAt + repairInterval, repairType);
         }
     }

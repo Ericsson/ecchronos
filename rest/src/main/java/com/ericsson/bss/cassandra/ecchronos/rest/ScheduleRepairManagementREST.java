@@ -38,11 +38,12 @@ public interface ScheduleRepairManagementREST
     /**
      * Get schedule with a specific id.
      *
-     * @param id The id of the schedule
+     * @param nodeID The id of the node
+     * @param jobID The id of the schedule
      * @param full Whether to include token range information.
      * @return A JSON representation of {@link Schedule}
      */
-    ResponseEntity<Schedule> getSchedules(String id, boolean full);
+    ResponseEntity<Schedule> getSchedulesByJob(String nodeID, String jobID, boolean full);
 
     /**
      * Retrieves the current status of the job being managed by this scheduler.

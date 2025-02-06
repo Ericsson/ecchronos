@@ -109,6 +109,7 @@
         <module>fault.manager.impl</module>
         <module>rest</module>
         <module>standalone-integration</module>
+        <module>ecchronos-binary</module>
     </modules>
 
     <properties>

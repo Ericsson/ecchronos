@@ -161,9 +161,10 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
     {
         UUID randomAvailableNodeId = selectRandomAvailableNode();
         OnDemandRepairJobView jobView = scheduleJob(tableReference, true, repairType, randomAvailableNodeId);
-        return getAllClusterWideRepairJobs().stream()
-                .filter(j -> j.getId().equals(jobView.getId()))
+        List<OnDemandRepairJobView> jobViews = getAllClusterWideRepairJobs().stream()
+                .filter(j -> j.getNodeId().equals(jobView.getNodeId()))
                 .collect(Collectors.toList());
+        return jobViews;
     }
 
     private UUID selectRandomAvailableNode() throws EcChronosException
@@ -208,7 +209,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         {
             validateTableReference(tableReference);
             OnDemandRepairJob job = getRepairJob(tableReference, isClusterWide, repairType, nodeId);
-            myScheduledJobs.put(job.getId(), job);
+            myScheduledJobs.put(job.getJobId(), job);
             myScheduleManager.schedule(nodeId, job);
             return job.getView();
         }
@@ -233,9 +234,9 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         synchronized (myLock)
         {
             OnDemandRepairJob job = getOngoingRepairJob(ongoingJob);
-            if (myScheduledJobs.putIfAbsent(job.getId(), job) == null)
+            if (myScheduledJobs.putIfAbsent(job.getJobId(), job) == null)
             {
-                LOG.info("Scheduling ongoing job: {}", job.getId());
+                LOG.info("Scheduling ongoing job: {}", job.getJobId());
                 myScheduleManager.schedule(ongoingJob.getHostId(), job);
             }
         }

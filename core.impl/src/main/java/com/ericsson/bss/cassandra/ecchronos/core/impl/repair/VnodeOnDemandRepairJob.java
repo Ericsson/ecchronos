@@ -133,7 +133,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
                 .withRepairResourceFactory(getRepairLockType().getLockFactory())
                 .withRepairLockFactory(REPAIR_LOCK_FACTORY)
                 .withRepairHistory(myRepairHistory)
-                .withJobId(getId())
+                .withJobId(getJobId())
                 .withNode(currentNode)
                 .build(ScheduledJob.Priority.HIGHEST.getValue());
     }
@@ -142,7 +142,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
     public OnDemandRepairJobView getView()
     {
         return new OnDemandRepairJobView(
-                getId(),
+                getJobId(),
                 getOngoingJob().getHostId(),
                 getTableReference(),
                 getStatus(),
@@ -176,7 +176,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
     @Override
     public void finishJob()
     {
-        UUID id = getId();
+        UUID id = getJobId();
         getOnFinishedHook().accept(id);
         if (myTasks.isEmpty())
         {
@@ -197,13 +197,13 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
     {
         if (hasFailed())
         {
-            LOG.error("Repair job with id {} failed", getId());
+            LOG.error("Repair job with id {} failed", getJobId());
             return ScheduledJob.State.FAILED;
         }
         if (getOngoingJob().hasTopologyChanged())
         {
             LOG.error("Repair job with id {} failed. Token ranges have changed since repair has was triggered",
-                    getId());
+                    getJobId());
             setFailed(true);
             return ScheduledJob.State.FAILED;
         }

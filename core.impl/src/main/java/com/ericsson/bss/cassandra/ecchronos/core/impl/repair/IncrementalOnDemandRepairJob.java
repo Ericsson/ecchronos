@@ -77,7 +77,7 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
                 .withTableRepairMetrics(getTableRepairMetrics())
                 .withRepairResourceFactory(getRepairLockType().getLockFactory())
                 .withRepairLockFactory(REPAIR_LOCK_FACTORY)
-                .withJobId(getId());
+                .withJobId(getJobId());
     }
 
     @Override
@@ -90,7 +90,7 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
     public OnDemandRepairJobView getView()
     {
         return new OnDemandRepairJobView(
-                getId(),
+                getJobId(),
                 getOngoingJob().getHostId(),
                 getOngoingJob().getTableReference(),
                 getStatus(),
@@ -124,7 +124,7 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
     @Override
     public void finishJob()
     {
-        UUID id = getId();
+        UUID id = getJobId();
         getOnFinishedHook().accept(id);
         if (myTasks.isEmpty())
         {

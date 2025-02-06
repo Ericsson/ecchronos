@@ -98,31 +98,31 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
     }
 
     @Override
-    @GetMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/repairs/{id}",
+    @GetMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/repairs/{nodeID}",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "get-repairs-by-id",
             description = "Get manual repairs matching the id which are running/completed/failed.",
             summary = "Get manual repairs matching the id.")
     public final ResponseEntity<List<OnDemandRepair>> getRepairs(
             @PathVariable
-            @Parameter(description = "Only return repairs matching the id.")
-            final String id,
+            @Parameter(description = "Only return repairs matching the specified nodeID.")
+            final String nodeID,
             @RequestParam(required = false)
-            @Parameter(description = "Only return repairs matching the hostId.")
-            final String hostId)
+            @Parameter(description = "Only return repairs matching the specified JobID.")
+            final String jobID)
     {
-        return ResponseEntity.ok(getListOfOnDemandRepairs(id, hostId));
+        return ResponseEntity.ok(getListOfOnDemandRepairs(nodeID, jobID));
     }
 
     @Override
     @PostMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/repairs", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "run-repair",
-            description = "Run a manual repair, if 'isLocal' is not provided this will run a cluster-wide repair.",
+            description = "Run a manual repair",
             summary = "Run a manual repair.")
     public final ResponseEntity<List<OnDemandRepair>> runRepair(
             @RequestParam()
             @Parameter(description = "The node to run repair.")
-            final UUID nodeID,
+            final String nodeID,
             @RequestParam(required = false)
             @Parameter(description = "The keyspace to run repair for, mandatory if 'table' is provided.")
             final String keyspace,
@@ -133,10 +133,11 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             @Parameter(description = "The type of the repair, defaults to vnode.")
             final RepairType repairType,
             @RequestParam(required = false)
-            @Parameter(description = "Decides if the repair should be only for the local node, i.e not cluster-wide.")
+            @Parameter(description = "Decides if the repair should be only for the specified node, i.e not cluster-wide.")
             final boolean isLocal)
     {
-        return ResponseEntity.ok(runOnDemandRepair(nodeID, keyspace, table, getRepairTypeOrDefault(repairType), isLocal));
+        UUID uuid = parseIdOrThrow(nodeID);
+        return ResponseEntity.ok(runOnDemandRepair(uuid, keyspace, table, getRepairTypeOrDefault(repairType), isLocal));
     }
 
     private RepairType getRepairTypeOrDefault(final RepairType repairType)
@@ -163,7 +164,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 UUID host = parseIdOrThrow(hostId);
                 return getClusterWideOnDemandJobs(job -> keyspace.equals(job.getTableReference().getKeyspace())
                         && table.equals(job.getTableReference().getTable())
-                        && host.equals(job.getHostId()));
+                        && host.equals(job.getNodeId()));
             }
             if (hostId == null)
             {
@@ -173,7 +174,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             UUID host = parseIdOrThrow(hostId);
             return getClusterWideOnDemandJobs(
                     job -> keyspace.equals(job.getTableReference().getKeyspace())
-                            && host.equals(job.getHostId()));
+                            && host.equals(job.getNodeId()));
         }
         else if (table == null)
         {
@@ -182,31 +183,27 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 return getClusterWideOnDemandJobs(job -> true);
             }
             UUID host = parseIdOrThrow(hostId);
-            return getClusterWideOnDemandJobs(job -> host.equals(job.getHostId()));
+            return getClusterWideOnDemandJobs(job -> host.equals(job.getNodeId()));
         }
         throw new ResponseStatusException(BAD_REQUEST);
     }
 
-    private List<OnDemandRepair> getListOfOnDemandRepairs(final String id, final String hostId)
+    private List<OnDemandRepair> getListOfOnDemandRepairs(final String nodeID, final String jobID)
     {
-        UUID uuid = parseIdOrThrow(id);
-        if (hostId == null)
+
+        UUID myNodeID = parseIdOrThrow(nodeID);
+        List<OnDemandRepair> repairJobs;
+        if (jobID != null)
         {
-            List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(
-                    job -> uuid.equals(job.getId()));
+            UUID myJobID = parseIdOrThrow(jobID);
+            repairJobs = getOnDemandJobs(myNodeID).stream().filter(job -> myJobID.equals(job.jobID)).toList();
             if (repairJobs.isEmpty())
             {
                 throw new ResponseStatusException(NOT_FOUND);
             }
             return repairJobs;
         }
-        UUID host = parseIdOrThrow(hostId);
-        List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> uuid.equals(job.getId())
-                && host.equals(job.getHostId()));
-        if (repairJobs.isEmpty())
-        {
-            throw new ResponseStatusException(NOT_FOUND);
-        }
+        repairJobs = getOnDemandJobs(myNodeID);
         return repairJobs;
     }
 
@@ -271,6 +268,14 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 .collect(Collectors.toList());
     }
 
+    private List<OnDemandRepair> getOnDemandJobs(
+            final UUID nodeID)
+    {
+        return myOnDemandRepairScheduler.getAllRepairJobs(nodeID).stream()
+                .map(OnDemandRepair::new)
+                .collect(Collectors.toList());
+    }
+
     private List<OnDemandRepair> runLocalOrCluster(
             final UUID nodeID,
             final RepairType repairType,
@@ -297,7 +302,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                     List<OnDemandRepairJobView> repairJobView = myOnDemandRepairScheduler.scheduleClusterWideJob(
                             tableReference, repairType);
                     onDemandRepairs.addAll(
-                            repairJobView.stream().map(OnDemandRepair::new).collect(Collectors.toList()));
+                            repairJobView.stream().map(view -> new OnDemandRepair(view)).collect(Collectors.toList()));
                 }
             }
         }

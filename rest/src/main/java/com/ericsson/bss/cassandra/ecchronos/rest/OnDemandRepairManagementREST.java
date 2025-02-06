@@ -16,7 +16,6 @@ package com.ericsson.bss.cassandra.ecchronos.rest;
 
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.OnDemandRepair;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
-import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -40,11 +39,11 @@ public interface OnDemandRepairManagementREST
     /**
      * Get a list of on demand repairs associated with a specific id.
      *
-     * @param id The id of the on demand repair
-     * @param hostId The hostId of the on demand repair (optional)
+     * @param nodeId The hostId of the on demand repair.
+     *               * @param jobId The id of the on demand repair (optional).
      * @return A list of JSON representations of {@link OnDemandRepair}
      */
-    ResponseEntity<List<OnDemandRepair>> getRepairs(String id, String hostId);
+    ResponseEntity<List<OnDemandRepair>> getRepairs(String nodeId, String jobId);
 
     /**
      * Schedule an on demand repair to be run on a specific table.
@@ -57,7 +56,7 @@ public interface OnDemandRepairManagementREST
      * @return A JSON representation of {@link OnDemandRepair}
      */
     ResponseEntity<List<OnDemandRepair>> runRepair(
-            UUID nodeID, String keyspace, String table, RepairType repairType,
+            String nodeID, String keyspace, String table, RepairType repairType,
             boolean isLocal);
 }
 
