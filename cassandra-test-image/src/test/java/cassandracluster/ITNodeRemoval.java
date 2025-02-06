@@ -14,18 +14,13 @@
  */
 package cassandracluster;
 
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
 
-import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ConfigurationException;
-import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -37,20 +32,11 @@ public class ITNodeRemoval extends AbstractCassandraCluster
     private static final Logger LOG = LoggerFactory.getLogger(ITNodeRemoval.class);
 
     @Test
-    public void testNodeDecommissionedFromCluster() throws InterruptedException, IOException, ConfigurationException, EcChronosException
+    public void testNodeDecommissionedFromCluster() throws InterruptedException
     {
         DefaultRepairConfigurationProvider listener = mock(DefaultRepairConfigurationProvider.class);
 
-        containerIP = composeContainer.getContainerByServiceName("cassandra-seed-dc1-rack1-node1").get()
-                .getContainerInfo()
-                .getNetworkSettings().getNetworks().values().stream().findFirst().get().getIpAddress();
-
-        CqlSessionBuilder builder = CqlSession.builder()
-                .addContactPoint(new InetSocketAddress(containerIP, 9042))
-                .withLocalDatacenter("datacenter1")
-                .withAuthCredentials("cassandra", "cassandra")
-                .withNodeStateListener(listener);
-        mySession = builder.build();
+        mySession = defaultBuilder().withNodeStateListener(listener).build();
 
         try
         {
@@ -61,7 +47,7 @@ public class ITNodeRemoval extends AbstractCassandraCluster
             throw new RuntimeException(e);
         }
         LOG.info("Waiting for node to be decommissioned.");
-        waitForNodesToBeUp("cassandra-seed-dc2-rack1-node1",4,50000);
+        waitForNodesToBeUp("cassandra-seed-dc2-rack1-node1",4,DEFAULT_WAIT_TIME_IN_MS);
 
         verify(listener, times(1)).onRemove(any());
     }

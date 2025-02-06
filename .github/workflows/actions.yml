@@ -27,6 +27,9 @@ jobs:
            test_suite: 'test jacoco:report'
          - name: "Style check"
            test_suite: 'compile com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
+         - name: "Standalone integration 4.0 - Java 17"
+           test_suite: 'verify -P standalone-integration-tests -DskipUTs'
+           artifacts_dir: "standalone-integration/target"
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Cache local Maven repository

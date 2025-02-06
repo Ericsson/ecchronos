@@ -112,6 +112,7 @@ abstract public class TestBase extends AbstractCassandraCluster
     @BeforeClass
     public static void setUpCluster() throws Exception
     {
+        createDefaultSession();
         createKeyspaceAndTables();
         Security security = ConfigurationHelper.DEFAULT_INSTANCE.getConfiguration(SECURITY_FILE, Security.class);
         jmxSecurity.set(security.getJmxSecurity());
