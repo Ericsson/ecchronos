@@ -36,6 +36,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -49,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.REPAIR_MANAGEMENT_ENDPOINT_PREFIX;
 import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.getDefaultDurationOrProvided;
+import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.parseIdOrThrow;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
@@ -91,7 +93,7 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     }
 
     @Override
-    @GetMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/repairInfo", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/repairInfo/{nodeID}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "get-repair-info",
             description = "Get repair information, if keyspace and table are provided while duration and since are"
                     + " not, the duration will default to GC_GRACE_SECONDS of the table. "
@@ -99,9 +101,9 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                     + "the repair history.",
             summary = "Get repair information")
     public final ResponseEntity<RepairInfo> getRepairInfo(
-            @RequestParam()
+            @PathVariable()
             @Parameter(description = "Return repair-info matching the nodeID, mandatory parameter.")
-            final UUID nodeID,
+            final String nodeID,
             @RequestParam(required = false)
             @Parameter(description = "Only return repair-info matching the keyspace, mandatory if 'table' is provided.")
             final String keyspace,
@@ -121,7 +123,8 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                     schema = @Schema(type = "string"))
             final Duration duration)
     {
-        return ResponseEntity.ok(fetchRepairInfo(nodeID, keyspace, table, since, duration));
+        UUID uuid = parseIdOrThrow(nodeID);
+        return ResponseEntity.ok(fetchRepairInfo(uuid, keyspace, table, since, duration));
     }
 
     private RepairInfo fetchRepairInfo(

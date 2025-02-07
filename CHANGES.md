@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Create ecchronos-binary Module with ecctool for Interacting with the ecChronos REST API - Issue #867
 * Update TestContainers Template to Enable or Disable Jolokia in Cassandra - Issue #844
 * Reconcile Jolokia Notification Listener Implementation with RepairTask - Issue #831
 * Introduce REST Module for Scheduling and Managing Cassandra Repairs - Issue #771

@@ -26,14 +26,14 @@ public class DummyJob extends ScheduledJob
 {
     volatile boolean hasRun = false;
 
-    public DummyJob(Priority priority)
+    public DummyJob(Priority priority, UUID nodeID)
     {
-        super(new ConfigurationBuilder().withPriority(priority).withRunInterval(1, TimeUnit.SECONDS).build());
+        super(new ConfigurationBuilder().withPriority(priority).withRunInterval(1, TimeUnit.SECONDS).build(), nodeID);
     }
 
-    public DummyJob(Priority priority, UUID jobId)
+    public DummyJob(Priority priority, UUID jobId, UUID nodeID)
     {
-        super(new ConfigurationBuilder().withPriority(priority).build(), jobId);
+        super(new ConfigurationBuilder().withPriority(priority).build(), jobId, nodeID);
     }
 
     public boolean hasRun()

@@ -28,7 +28,8 @@ public class ScheduledRepairJobView
         COMPLETED, ON_TIME, LATE, OVERDUE, BLOCKED
     }
 
-    private final UUID myId;
+    private final UUID myNodeID;
+    private final UUID myJobID;
     private final TableReference myTableReference;
     private final RepairConfiguration myRepairConfiguration;
     private RepairStateSnapshot myRepairStateSnapshot;
@@ -38,11 +39,12 @@ public class ScheduledRepairJobView
     private final long myCompletionTime;
     private final RepairType myRepairType;
 
-    public ScheduledRepairJobView(final UUID id, final TableReference tableReference,
+    public ScheduledRepairJobView(final UUID nodeID, final UUID jobID, final TableReference tableReference,
             final RepairConfiguration repairConfiguration, final Status status, final double progress,
             final long nextRepair, final long completionTime, final RepairType repairType)
     {
-        myId = id;
+        myNodeID = nodeID;
+        myJobID = jobID;
         myTableReference = tableReference;
         myRepairConfiguration = repairConfiguration;
         myStatus = status;
@@ -52,12 +54,13 @@ public class ScheduledRepairJobView
         myRepairType = repairType;
     }
 
-    public ScheduledRepairJobView(final UUID id, final TableReference tableReference,
+    public ScheduledRepairJobView(final UUID nodeID, final UUID jobID, final TableReference tableReference,
             final RepairConfiguration repairConfiguration, final RepairStateSnapshot repairStateSnapshot,
             final Status status, final double progress, final long nextRepair,
             final RepairType repairType)
     {
-        myId = id;
+        myNodeID = nodeID;
+        myJobID = jobID;
         myTableReference = tableReference;
         myRepairConfiguration = repairConfiguration;
         myRepairStateSnapshot = repairStateSnapshot;
@@ -69,13 +72,23 @@ public class ScheduledRepairJobView
     }
 
     /**
-     * Get id.
+     * Get job ID.
      *
      * @return UUID
      */
-    public UUID getId()
+    public UUID getJobId()
     {
-        return myId;
+        return myJobID;
+    }
+
+    /**
+     * Get job ID.
+     *
+     * @return UUID
+     */
+    public UUID getNodeId()
+    {
+        return myNodeID;
     }
 
     /**
@@ -178,7 +191,7 @@ public class ScheduledRepairJobView
         ScheduledRepairJobView that = (ScheduledRepairJobView) o;
         return Double.compare(that.myProgress, myProgress) == 0
                 && myNextRepair == that.myNextRepair
-                && Objects.equals(myId, that.myId)
+                && Objects.equals(myJobID, that.myJobID)
                 && Objects.equals(myTableReference, that.myTableReference)
                 && Objects.equals(myRepairConfiguration, that.myRepairConfiguration)
                 && Objects.equals(myRepairStateSnapshot, that.myRepairStateSnapshot)
@@ -194,7 +207,7 @@ public class ScheduledRepairJobView
     @Override
     public int hashCode()
     {
-        return Objects.hash(myId, myTableReference, myRepairConfiguration, myRepairStateSnapshot, myStatus, myProgress,
+        return Objects.hash(myJobID, myTableReference, myRepairConfiguration, myRepairStateSnapshot, myStatus, myProgress,
                 myNextRepair, myRepairType);
     }
 }

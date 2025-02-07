@@ -40,6 +40,7 @@ public abstract class ScheduledRepairJob extends ScheduledJob
 
     public ScheduledRepairJob(
             final Configuration configuration,
+            final UUID nodeID,
             final TableReference tableReference,
             final DistributedJmxProxyFactory jmxProxyFactory,
             final RepairConfiguration repairConfiguration,
@@ -47,7 +48,7 @@ public abstract class ScheduledRepairJob extends ScheduledJob
             final TableRepairMetrics tableRepairMetrics,
             final RepairLockType repairLockType)
     {
-        super(configuration);
+        super(configuration, nodeID);
         myTableReference = Preconditions.checkNotNull(tableReference, "Table reference must be set");
         myJmxProxyFactory = Preconditions.checkNotNull(jmxProxyFactory, "JMX proxy factory must be set");
         myRepairConfiguration = Preconditions.checkNotNull(repairConfiguration, "Repair configuration must be set");
@@ -58,7 +59,8 @@ public abstract class ScheduledRepairJob extends ScheduledJob
 
     public ScheduledRepairJob(
             final Configuration configuration,
-            final UUID id,
+            final UUID jobId,
+            final UUID nodeID,
             final TableReference tableReference,
             final DistributedJmxProxyFactory jmxProxyFactory,
             final RepairConfiguration repairConfiguration,
@@ -66,7 +68,7 @@ public abstract class ScheduledRepairJob extends ScheduledJob
             final TableRepairMetrics tableRepairMetrics,
             final RepairLockType repairLockType)
     {
-        super(configuration, id);
+        super(configuration, jobId, nodeID);
         myTableReference = Preconditions.checkNotNull(tableReference, "Table reference must be set");
         myJmxProxyFactory = Preconditions.checkNotNull(jmxProxyFactory, "JMX proxy factory must be set");
         myRepairConfiguration = Preconditions.checkNotNull(repairConfiguration, "Repair configuration must be set");

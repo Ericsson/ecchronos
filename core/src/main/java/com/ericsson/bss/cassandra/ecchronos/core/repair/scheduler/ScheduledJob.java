@@ -33,17 +33,19 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     protected volatile long myLastSuccessfulRun = -1L;
     private volatile long myNextRunTimeInMs = -1L;
     private volatile long myRunOffset = 0;
-    private final UUID myId;
+    private final UUID myNodeID;
+    private final UUID myJobID;
     private final TimeUnit myPriorityGranularity;
 
-    public ScheduledJob(final Configuration configuration)
+    public ScheduledJob(final Configuration configuration, final UUID nodeID)
     {
-        this(configuration, UUID.randomUUID());
+        this(configuration, UUID.randomUUID(), nodeID);
     }
 
-    public ScheduledJob(final Configuration configuration, final UUID id)
+    public ScheduledJob(final Configuration configuration, final UUID jobID, final UUID nodeID)
     {
-        myId = id;
+        myNodeID = nodeID;
+        myJobID = jobID;
         myPriority = configuration.priority;
         myRunIntervalInMs = configuration.runIntervalInMs;
         myBackoffInMs = configuration.backoffInMs;
@@ -194,9 +196,17 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     /**
      * @return unique identifier for Job
      */
-    public final UUID getId()
+    public final UUID getJobId()
     {
-        return myId;
+        return myJobID;
+    }
+
+    /**
+     * @return unique identifier for the node running the job.
+     */
+    public final UUID getNodeId()
+    {
+        return myNodeID;
     }
 
     /**
@@ -220,7 +230,8 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
                 && myNextRunTimeInMs == that.myNextRunTimeInMs
                 && myRunOffset == that.myRunOffset
                 && myPriority == that.myPriority
-                && Objects.equals(myId, that.myId)
+                && Objects.equals(myJobID, that.myJobID)
+                && Objects.equals(myNodeID, that.myNodeID)
                 && Objects.equals(myPriorityGranularity, that.myPriorityGranularity);
     }
 
@@ -231,7 +242,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
     public int hashCode()
     {
         return Objects.hash(myPriority, myBackoffInMs, myRunIntervalInMs, myLastSuccessfulRun,
-                myNextRunTimeInMs, myRunOffset, myId, myPriorityGranularity);
+                myNextRunTimeInMs, myRunOffset, myJobID, myNodeID, myPriorityGranularity);
     }
 
     /**

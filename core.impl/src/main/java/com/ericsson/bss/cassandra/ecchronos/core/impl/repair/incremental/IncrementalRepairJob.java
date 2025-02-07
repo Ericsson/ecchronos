@@ -37,6 +37,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Collection;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +57,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     IncrementalRepairJob(final Builder builder)
     {
-        super(builder.myConfiguration, builder.myTableReference, builder.myJmxProxyFactory,
+        super(builder.myConfiguration, builder.myNodeId, builder.myTableReference, builder.myJmxProxyFactory,
                 builder.myRepairConfiguration, builder.myRepairPolicies, builder.myTableRepairMetrics, builder.myRepairLockType);
         myNode = Preconditions.checkNotNull(builder.myNode, "Node must be set");
         myReplicationState = Preconditions.checkNotNull(builder.myReplicationState, "Replication state must be set");
@@ -79,7 +80,8 @@ public class IncrementalRepairJob extends ScheduledRepairJob
     public ScheduledRepairJobView getView()
     {
         long now = System.currentTimeMillis();
-        return new ScheduledRepairJobView(getId(), getTableReference(), getRepairConfiguration(), getStatus(now),
+        return new ScheduledRepairJobView(getNodeId(), getJobId(), getTableReference(), getRepairConfiguration(),
+                getStatus(now),
                 getProgress(), getNextRunInMs(), getLastSuccessfulRun(), getRepairConfiguration().getRepairType());
     }
 
@@ -135,7 +137,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
                 .withReplicaRepairGroup(replicaRepairGroup)
                 .withRepairLockFactory(REPAIR_LOCK_FACTORY)
                 .withRepairResourceFactory(getRepairLockType().getLockFactory())
-                .withRepairPolicies(getRepairPolicies()).withJobId(getId());
+                .withRepairPolicies(getRepairPolicies()).withJobId(getJobId());
         List<ScheduledTask> taskList = new ArrayList<>();
         taskList.add(builder.build(getRealPriority()));
         return taskList.iterator();
@@ -203,6 +205,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         private TableReference myTableReference;
         private DistributedJmxProxyFactory myJmxProxyFactory;
         private Node myNode;
+        private UUID myNodeId;
         private TableRepairMetrics myTableRepairMetrics = null;
         private ReplicationState myReplicationState;
         private RepairConfiguration myRepairConfiguration = RepairConfiguration.DEFAULT;
@@ -246,6 +249,7 @@ public class IncrementalRepairJob extends ScheduledRepairJob
         public Builder withNode(final Node node)
         {
             myNode = node;
+            myNodeId =  myNode.getHostId();
             return this;
         }
 

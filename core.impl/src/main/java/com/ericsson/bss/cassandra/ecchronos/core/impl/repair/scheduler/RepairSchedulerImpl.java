@@ -40,6 +40,7 @@ import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.Closeable;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -176,6 +177,26 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
                     .collect(Collectors.toList());
         }
     }
+
+    @Override
+    public List<ScheduledRepairJobView> getCurrentRepairJobsByNode(final UUID nodeId)
+    {
+        synchronized (myLock)
+        {
+            Map<TableReference, Set<ScheduledRepairJob>> tableJobs = myScheduledJobs.get(nodeId);
+
+            if (tableJobs == null)
+            {
+                return Collections.emptyList();
+            }
+
+            return tableJobs.values().stream()
+                    .flatMap(Set::stream)
+                    .map(ScheduledRepairJob::getView)
+                    .collect(Collectors.toList());
+        }
+    }
+
 
     private void handleTableConfigurationChange(
             final Node node,

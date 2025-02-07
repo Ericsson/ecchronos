@@ -19,6 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfigurati
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * A factory which takes repair configuration and schedules tables for repair based on the provided configuration.
@@ -58,6 +59,12 @@ public interface RepairScheduler
      * @return A {@code String} representing the current status of the job.
      */
     String getCurrentJobStatus();
+
+    /**
+     * @param nodeId the nodeId.
+     * @return the list of the currently scheduled repair jobs for the specified nodeId.
+     */
+    List<ScheduledRepairJobView> getCurrentRepairJobsByNode(UUID nodeId);
 }
 
 

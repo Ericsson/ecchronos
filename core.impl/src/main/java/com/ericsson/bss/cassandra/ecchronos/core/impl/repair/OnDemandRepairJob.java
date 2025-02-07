@@ -46,7 +46,7 @@ public abstract class OnDemandRepairJob extends ScheduledJob
                              final OngoingJob ongoingJob,
                              final Node currentNode)
     {
-        super(configuration, ongoingJob.getJobId());
+        super(configuration, ongoingJob.getJobId(), ongoingJob.getHostId());
 
         myOngoingJob = Preconditions.checkNotNull(ongoingJob,
                 "Ongoing job must be set");

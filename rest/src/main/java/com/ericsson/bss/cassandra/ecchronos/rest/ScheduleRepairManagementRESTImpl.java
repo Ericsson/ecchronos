@@ -77,20 +77,39 @@ public class ScheduleRepairManagementRESTImpl implements ScheduleRepairManagemen
         return ResponseEntity.ok(getListOfSchedules(keyspace, table));
     }
 
-    @Override
     @GetMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/schedules/{id}",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "get-schedules-by-id", description = "Get schedules matching the id.",
             summary = "Get schedules matching the id.")
-    public final ResponseEntity<Schedule> getSchedules(
+    public final ResponseEntity<List<Schedule>> getSchedulesByNode(
             @PathVariable
-            @Parameter(description = "The id of the schedule.")
+            @Parameter(description = "The id of the node.")
             final String id,
             @RequestParam(required = false)
             @Parameter(description = "Decides if a 'full schedule' should be returned.")
             final boolean full)
     {
-        return ResponseEntity.ok(getScheduleView(id, full));
+        return ResponseEntity.ok(getScheduleViews(id, full));
+
+    }
+
+    @Override
+    @GetMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/schedules/{nodeID}/{jobID}",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(operationId = "get-schedules-by-id", description = "Get schedules matching the id.",
+            summary = "Get schedules matching the id.")
+    public final ResponseEntity<Schedule> getSchedulesByJob(
+            @PathVariable
+            @Parameter(description = "The id of the node.")
+            final String nodeID,
+            @PathVariable
+            @Parameter(description = "The id of the schedule.")
+            final String jobID,
+            @RequestParam(required = false)
+            @Parameter(description = "Decides if a 'full schedule' should be returned.")
+            final boolean full)
+    {
+        return ResponseEntity.ok(getScheduleViewByJob(nodeID, jobID, full));
 
     }
 
@@ -102,16 +121,29 @@ public class ScheduleRepairManagementRESTImpl implements ScheduleRepairManagemen
                 .collect(Collectors.toList());
     }
 
-    private Schedule getScheduleView(final String id, final boolean full)
+    private Schedule getScheduleViewByJob(final String nodeID, final String jobID, final boolean full)
     {
-        UUID uuid = parseIdOrThrow(id);
-        Optional<ScheduledRepairJobView> view = myRepairScheduler.getCurrentRepairJobs().stream()
-                .filter(job -> job.getId().equals(uuid)).findFirst();
+        UUID nodeUUID = parseIdOrThrow(nodeID);
+        UUID jobUUID = parseIdOrThrow(jobID);
+        Optional<ScheduledRepairJobView> view = myRepairScheduler.getCurrentRepairJobsByNode(nodeUUID).stream()
+                .filter(job -> job.getJobId().equals(jobUUID)).findFirst();
         if (!view.isPresent())
         {
             throw new ResponseStatusException(NOT_FOUND);
         }
         return new Schedule(view.get(), full);
+    }
+
+    private List<Schedule> getScheduleViews(final String id, final boolean full)
+    {
+        UUID uuid = parseIdOrThrow(id);
+        List<ScheduledRepairJobView> views = myRepairScheduler.getCurrentRepairJobsByNode(uuid);
+        if (views.isEmpty())
+        {
+            throw new ResponseStatusException(NOT_FOUND);
+        }
+
+        return views.stream().map(view -> new Schedule(view, full)).collect(Collectors.toList());
     }
 
     private List<Schedule> getListOfSchedules(final String keyspace, final String table)

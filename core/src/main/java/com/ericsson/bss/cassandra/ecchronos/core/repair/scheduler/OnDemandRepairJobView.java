@@ -57,18 +57,18 @@ public class OnDemandRepairJobView
         BLOCKED
     }
 
-    private final UUID myId;
+    private final UUID myJobId;
     private final TableReference myTableReference;
     private final Status myStatus;
     private final double myProgress;
-    private final UUID myHostId;
+    private final UUID myNodeId;
     private final long myCompletionTime;
     private final RepairType myRepairType;
 
     /**
      * Constructor for OnDemandRepairJobView.
      *
-     * @param id The UUID representing the repair job ID.
+     * @param jobId The UUID representing the repair job ID.
      * @param hostId The UUID representing the host ID associated with the repair.
      * @param tableReference The table reference for the repair job.
      * @param status The status of the repair job.
@@ -76,7 +76,7 @@ public class OnDemandRepairJobView
      * @param completionTime The completion time of the repair job in milliseconds.
      * @param repairType The type of repair being performed.
      */
-    public OnDemandRepairJobView(final UUID id,
+    public OnDemandRepairJobView(final UUID jobId,
                                  final UUID hostId,
                                  final TableReference tableReference,
                                  final Status status,
@@ -84,11 +84,11 @@ public class OnDemandRepairJobView
                                  final long completionTime,
                                  final RepairType repairType)
     {
-        myId = id;
+        myJobId = jobId;
         myTableReference = tableReference;
         myStatus = status;
         myProgress = progress;
-        myHostId = hostId;
+        myNodeId = hostId;
         myCompletionTime = completionTime;
         myRepairType = repairType;
     }
@@ -98,9 +98,9 @@ public class OnDemandRepairJobView
      *
      * @return UUID
      */
-    public UUID getId()
+    public UUID getJobId()
     {
-        return myId;
+        return myJobId;
     }
 
     /**
@@ -138,9 +138,9 @@ public class OnDemandRepairJobView
      *
      * @return UUID
      */
-    public UUID getHostId()
+    public UUID getNodeId()
     {
-        return myHostId;
+        return myNodeId;
     }
 
     /**
@@ -181,8 +181,8 @@ public class OnDemandRepairJobView
         }
         OnDemandRepairJobView that = (OnDemandRepairJobView) o;
         return Double.compare(that.myProgress, myProgress) == 0 && myCompletionTime == that.myCompletionTime
-                && Objects.equals(myId, that.myId) && Objects.equals(myTableReference, that.myTableReference)
-                && myStatus == that.myStatus && Objects.equals(myHostId, that.myHostId)
+                && Objects.equals(myJobId, that.myJobId) && Objects.equals(myTableReference, that.myTableReference)
+                && myStatus == that.myStatus && Objects.equals(myNodeId, that.myNodeId)
                 && Objects.equals(myRepairType, that.myRepairType);
     }
 
@@ -194,6 +194,6 @@ public class OnDemandRepairJobView
     @Override
     public int hashCode()
     {
-        return Objects.hash(myId, myTableReference, myStatus, myProgress, myHostId, myCompletionTime, myRepairType);
+        return Objects.hash(myJobId, myNodeId, myTableReference, myStatus, myProgress, myNodeId, myCompletionTime, myRepairType);
     }
 }

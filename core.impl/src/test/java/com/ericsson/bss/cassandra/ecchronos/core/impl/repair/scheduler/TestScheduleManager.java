@@ -101,7 +101,7 @@ public class TestScheduleManager
     @Test
     public void testRunningOneJob()
     {
-        DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW);
+        DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW, nodeID1);
         myScheduler.schedule(nodeID1, job1);
 
         myScheduler.run(nodeID1);
@@ -113,7 +113,7 @@ public class TestScheduleManager
     @Test
     public void testRunningJobWithFailingRunPolicy()
     {
-        DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW);
+        DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW, nodeID1);
         myScheduler.schedule(nodeID1, job1);
 
         when(myRunPolicy.validate(any(ScheduledJob.class))).thenReturn(1L);
@@ -129,7 +129,7 @@ public class TestScheduleManager
     {
         TestJob job1 = new TestJob(ScheduledJob.Priority.LOW, 2, () -> {
             when(myRunPolicy.validate(any(ScheduledJob.class))).thenReturn(1L);
-        });
+        }, nodeID1);
         myScheduler.schedule(nodeID1, job1);
 
         when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any())).thenReturn(new DummyLock());
@@ -143,7 +143,7 @@ public class TestScheduleManager
     @Test
     public void testRunningJobWithThrowingRunPolicy()
     {
-        DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW);
+        DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW, nodeID1);
         myScheduler.schedule(nodeID1, job1);
 
         when(myRunPolicy.validate(any(ScheduledJob.class))).thenThrow(new IllegalStateException());
@@ -157,8 +157,8 @@ public class TestScheduleManager
     @Test
     public void testTwoJobsRejected()
     {
-        DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW);
-        DummyJob job2 = new DummyJob(ScheduledJob.Priority.LOW);
+        DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW, nodeID1);
+        DummyJob job2 = new DummyJob(ScheduledJob.Priority.LOW, nodeID1);
         myScheduler.schedule(nodeID1, job1);
         myScheduler.schedule(nodeID1, job2);
 
@@ -176,7 +176,7 @@ public class TestScheduleManager
     public void testDescheduleRunningJob() throws InterruptedException
     {
         CountDownLatch jobCdl = new CountDownLatch(1);
-        TestJob job1 = new TestJob(ScheduledJob.Priority.HIGH, jobCdl);
+        TestJob job1 = new TestJob(ScheduledJob.Priority.HIGH, jobCdl, nodeID1);
         myScheduler.schedule(nodeID1, job1);
 
         new Thread(() -> myScheduler.run(nodeID1)).start();
@@ -200,6 +200,7 @@ public class TestScheduleManager
                         .withPriority(ScheduledJob.Priority.LOW)
                         .withRunInterval(1, TimeUnit.SECONDS)
                         .build(),
+                nodeID1,
                 jobId,
                 latch);
         myScheduler.schedule(nodeID1, job1);
@@ -219,6 +220,7 @@ public class TestScheduleManager
                         .withPriority(ScheduledJob.Priority.LOW)
                         .withRunInterval(1, TimeUnit.SECONDS)
                         .build(),
+                nodeID1,
                 jobId,
                 latch);
         myScheduler.schedule(nodeID1, job1);
@@ -230,7 +232,7 @@ public class TestScheduleManager
     @Test
     public void testRunningOneJobWithThrowingLock() throws LockException
     {
-        DummyJob job = new DummyJob(ScheduledJob.Priority.LOW);
+        DummyJob job = new DummyJob(ScheduledJob.Priority.LOW, nodeID1);
         myScheduler.schedule(nodeID1, job);
 
         when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any())).thenThrow(new LockException(""));
@@ -244,8 +246,8 @@ public class TestScheduleManager
     @Test
     public void testTwoJobsThrowingLock() throws LockException
     {
-        DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW);
-        DummyJob job2 = new DummyJob(ScheduledJob.Priority.LOW);
+        DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW, nodeID1);
+        DummyJob job2 = new DummyJob(ScheduledJob.Priority.LOW, nodeID1);
         myScheduler.schedule(nodeID1, job1);
         myScheduler.schedule(nodeID1, job2);
 
@@ -262,7 +264,7 @@ public class TestScheduleManager
     @Test
     public void testThreeTasksOneThrowing() throws LockException
     {
-        TestJob job = new TestJob(ScheduledJob.Priority.LOW, 3);
+        TestJob job = new TestJob(ScheduledJob.Priority.LOW, 3, nodeID1);
         myScheduler.schedule(nodeID1, job);
 
         when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any()))
@@ -303,26 +305,26 @@ public class TestScheduleManager
         private final Runnable onCompletion;
 
 
-        public TestJob(Priority priority, CountDownLatch cdl)
+        public TestJob(Priority priority, CountDownLatch cdl, UUID nodeId)
         {
-            this(priority, cdl, 1, () -> {});
+            this(priority, cdl, 1, () -> {}, nodeId);
         }
 
-        public TestJob(Priority priority, int numTasks)
+        public TestJob(Priority priority, int numTasks, UUID nodeId)
         {
-            this(priority, numTasks, () -> {});
+            this(priority, numTasks, () -> {}, nodeId);
         }
 
-        public TestJob(Priority priority, int numTasks, Runnable onCompletion)
+        public TestJob(Priority priority, int numTasks, Runnable onCompletion, UUID nodeId)
         {
-            super(new ConfigurationBuilder().withPriority(priority).withRunInterval(1, TimeUnit.SECONDS).build());
+            super(new ConfigurationBuilder().withPriority(priority).withRunInterval(1, TimeUnit.SECONDS).build(), nodeId);
             this.numTasks = numTasks;
             this.onCompletion = onCompletion;
         }
 
-        public TestJob(Priority priority, CountDownLatch cdl, int numTasks, Runnable onCompletion)
+        public TestJob(Priority priority, CountDownLatch cdl, int numTasks, Runnable onCompletion, UUID nodeId)
         {
-            super(new ConfigurationBuilder().withPriority(priority).withRunInterval(1, TimeUnit.SECONDS).build());
+            super(new ConfigurationBuilder().withPriority(priority).withRunInterval(1, TimeUnit.SECONDS).build(), nodeId);
             this.numTasks = numTasks;
             this.onCompletion = onCompletion;
             countDownLatch = cdl;
@@ -391,9 +393,10 @@ public class TestScheduleManager
     public class TestScheduledJob extends ScheduledJob
     {
         private final CountDownLatch taskCompletionLatch;
-        public TestScheduledJob(Configuration configuration, UUID id, CountDownLatch taskCompletionLatch)
+        public TestScheduledJob(Configuration configuration, UUID nodeId, UUID jobId,
+                CountDownLatch taskCompletionLatch)
         {
-            super(configuration, id);
+            super(configuration, jobId, nodeId);
             this.taskCompletionLatch = taskCompletionLatch;
         }
         @Override
