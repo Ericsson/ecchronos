@@ -38,10 +38,9 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @RestController
 public class MetricsREST
 {
-    @Autowired
     private final PrometheusMeterRegistry myPrometheusMeterRegistry;
 
-    public MetricsREST(final PrometheusMeterRegistry prometheusMeterRegistry)
+    public MetricsREST(@Autowired(required = false) final PrometheusMeterRegistry prometheusMeterRegistry)
     {
         myPrometheusMeterRegistry = prometheusMeterRegistry;
     }
