@@ -1,5 +1,9 @@
 # Changes
 
+## Version 6.0.3
+
+
+
 ## Version 6.0.2
 
 * Fail to Initialize ecChronos When statistics.enabled is False - Issue #869
