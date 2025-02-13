@@ -20,7 +20,7 @@
     <parent>
         <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
         <artifactId>parent</artifactId>
-        <version>5.0.4</version>
+        <version>5.0.4-ec1-SNAPSHOT</version>
     </parent>
     <artifactId>core</artifactId>
     <packaging>bundle</packaging>
@@ -162,6 +162,11 @@
                     <unpackBundle>true</unpackBundle>
                     <manifestLocation>META-INF</manifestLocation>
                     <instructions>
+                        <Import-Package><![CDATA[
+                            com.google.common.*;version="[32.0,1000.0)",
+                            *
+                            ]]>
+                        </Import-Package>
                         <Export-Package>com.ericsson.bss.cassandra.ecchronos.core.*</Export-Package>
                     </instructions>
                 </configuration>

@@ -1,6 +1,10 @@
 # Changes
 ## Version 5.0.4
 
+* Add version range for guava when deployed in osgi
+
+## Version 5.0.4
+
 * ecChronos will break if repair interval is shorter than the initial delay - Issue #667
 
 ## Version 5.0.3
