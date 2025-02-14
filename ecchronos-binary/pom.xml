@@ -19,7 +19,7 @@
     <parent>
         <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
         <artifactId>parent</artifactId>
-        <version>5.0.4-ec1</version>
+        <version>5.0.4-ec2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
