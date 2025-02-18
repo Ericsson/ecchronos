@@ -59,7 +59,6 @@
         <awaitility.version>4.2.2</awaitility.version>
         <caffeine.version>3.2.0</caffeine.version>
         <cassandra.driver.core.version>4.19.0</cassandra.driver.core.version>
-        <cassandra.driver.protocol.version>1.5.1</cassandra.driver.protocol.version>
         <com.fasterxml.jackson.core.version>2.18.2</com.fasterxml.jackson.core.version>
         <com.fasterxml.jackson.dataformat.version>2.18.2</com.fasterxml.jackson.dataformat.version>
         <com.typesafe.config.version>1.4.3</com.typesafe.config.version>
@@ -325,12 +324,6 @@
                 <groupId>com.google.guava</groupId>
                 <artifactId>failureaccess</artifactId>
                 <version>${failureaccess.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.datastax.oss</groupId>
-                <artifactId>native-protocol</artifactId>
-                <version>${cassandra.driver.protocol.version}</version>
             </dependency>
 
             <dependency>
