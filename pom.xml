@@ -646,6 +646,14 @@ limitations under the License.
                             <exclude>.python-version</exclude>
                             <exclude>src/test/resources/cassandra.yaml</exclude>
                             <exclude>src/test/resources/cassandra-rackdc.properties</exclude>
+                            <exclude>**/*.conf</exclude>
+                            <exclude>**/*.attr</exclude>
+                            <exclude>**/*.db</exclude>
+                            <exclude>**/*.srl</exclude>
+                            <exclude>**/*.key</exclude>
+                            <exclude>**/*.crl</exclude>
+                            <exclude>**/*.csr</exclude>
+                            <exclude>**/*.old</exclude>
                             <exclude>**/*.cql</exclude>
                             <exclude>**/*.txt</exclude>
                             <exclude>**/*.p12</exclude>
