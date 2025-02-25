@@ -378,7 +378,7 @@
 
             <dependency>
                 <groupId>org.jolokia</groupId>
-                <artifactId>jolokia-jmx-adapter</artifactId>
+                <artifactId>jolokia-client-jmx-adapter</artifactId>
                 <version>${jolokia.adapter.version}</version>
             </dependency>
 

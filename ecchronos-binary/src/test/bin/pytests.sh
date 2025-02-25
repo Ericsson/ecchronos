@@ -14,6 +14,10 @@
 # limitations under the License.
 #
 
+sudo apt install -y yq 
+
+python3 create_cassandra_cluster.py
+
 source variables.sh
 
 # Install virtualenv and behave
@@ -37,6 +41,17 @@ PYLIB_DIR="$BASE_DIR"/pylib
 
 CERTIFICATE_DIRECTORY=${project.build.directory}/certificates/cert
 
+
+if [ -z "$CASSANDRA_SEED_IP" ]; then
+    echo "Error: Container '$SEED_NODE_CONTAINER_ID' is not running"
+    exit 1
+fi
+
+if [ -z "$CASSANDRA_NODE_IP" ]; then
+    echo "Error: Container '$NODE_CONTAINER_ID' is not running"
+    exit 1
+fi
+
 # Change configuration for ecchronos
 
 ## Connection
@@ -44,12 +59,13 @@ CERTIFICATE_DIRECTORY=${project.build.directory}/certificates/cert
 sed '/^\s*#.*/d' -i "$CONF_DIR"/ecc.yml
 # Uncomment heap options
 sed 's/^#\s*-X/-X/g' -i "$CONF_DIR"/jvm.options
-# Replace native/jmx host (it's important not to change the REST host)
-sed "/cql:/{n;s/host: .*/host: $CASSANDRA_IP/}" -i "$CONF_DIR"/ecc.yml
-sed "/jmx:/{n;s/host: .*/host: $CASSANDRA_IP/}" -i "$CONF_DIR"/ecc.yml
-# Replace native/jmx ports
-sed "s/port: 9042/port: $CASSANDRA_NATIVE_PORT/g" -i "$CONF_DIR"/ecc.yml
-sed "s/port: 7199/port: $CASSANDRA_JMX_PORT/g" -i "$CONF_DIR"/ecc.yml
+
+yq eval "
+  .connection.cql.agent.contactPoints |= [
+    { \"host\": \"$CASSANDRA_SEED_IP\", \"port\": 9042 },
+    { \"host\": \"$CASSANDRA_NODE_IP\", \"port\": 9042 }
+  ]
+" -i "$CONF_DIR/ecc.yml"
 
 # Lower scheduler frequency so we don't need to wait that long in tests
 sed '/scheduler:/{n;/frequency/{n;s/time: .*/time: 1/}}' -i "$CONF_DIR"/ecc.yml
@@ -131,9 +147,9 @@ CHECKS=0
 MAX_CHECK=10
 
 echo "Waiting for REST server to start..."
-SCHEDULES_CURL="curl --silent --fail --head --output /dev/null http://localhost:8080/repair-management/v2/schedules"
+SCHEDULES_CURL="curl --silent --fail --head --output /dev/null http://localhost:8080/repair-management/schedules"
 if [ "${LOCAL}" != "true" ]; then
-    SCHEDULES_CURL="curl --silent --fail --head --output /dev/null https://localhost:8080/repair-management/v2/schedules --cert $CERTIFICATE_DIRECTORY/clientcert.crt --key $CERTIFICATE_DIRECTORY/clientkey.pem --cacert $CERTIFICATE_DIRECTORY/serverca.crt"
+    SCHEDULES_CURL="curl --silent --fail --head --output /dev/null https://localhost:8080/repair-management/schedules --cert $CERTIFICATE_DIRECTORY/clientcert.crt --key $CERTIFICATE_DIRECTORY/clientkey.pem --cacert $CERTIFICATE_DIRECTORY/serverca.crt"
 fi
 until eval $SCHEDULES_CURL; do
     if [ "$CHECKS" -eq "$MAX_CHECK" ]; then

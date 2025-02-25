@@ -49,7 +49,7 @@
 
         <dependency>
             <groupId>org.jolokia</groupId>
-            <artifactId>jolokia-jmx-adapter</artifactId>
+            <artifactId>jolokia-client-jmx-adapter</artifactId>
         </dependency>
 
         <dependency>
