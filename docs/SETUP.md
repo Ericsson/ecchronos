@@ -100,7 +100,7 @@ NOTICE.txt
 Change the configuration in `conf/ecc.yml`.
 To get started the connection configuration needs to match your local setup:
 
-```
+```yaml
 connection:
   cql:
     host: localhost
@@ -114,14 +114,14 @@ If ecChronos is deployed in a multi-site environment where clients can't connect
 the remoteRouting must be disabled. If remote routing is enabled, locks will be taken in the remote data center.
 Disabling remote routing will cause locks to be taken locally but with SERIAL consistency instead of LOCAL_SERIAL consistency.
 
-```
+```yaml
 cql:
   remoteRouting: false
 ```
 
 If you have authentication/tls enabled you need to modify `conf/security.yml`:
 
-```
+```yaml
 cql:
   credentials:
     enabled: true
@@ -155,7 +155,7 @@ jmx:
 
 CQL also supports certificates in PEM format.
 
-```
+```yaml
 cql:
   credentials:
     enabled: true
@@ -170,10 +170,23 @@ cql:
     cipher_suites:
     require_endpoint_verification: false
 ```
+
 > **Note**
 >
 > In case certificate stores and PEM certificates are declared in `conf/security.yml` for CQL,
 > PEM certificates takes precedence.
+
+If Certificate Revocation Lists (CRL) is to be used for the CQL connections, add the following
+section to the cql/tls section.
+
+```yaml
+    crl:
+      enabled: true
+      path: /path/to/crl/file.crl
+      strict: true/false
+      attempts: 5
+      interval: 300
+```
 
 The security parameters can be updated during runtime and will automatically be picked up by ecc.
 
