@@ -62,7 +62,7 @@
         <com.fasterxml.jackson.core.version>2.18.2</com.fasterxml.jackson.core.version>
         <com.fasterxml.jackson.dataformat.version>2.18.2</com.fasterxml.jackson.dataformat.version>
         <com.typesafe.config.version>1.4.3</com.typesafe.config.version>
-        <equalsverifier.version>3.19</equalsverifier.version>
+        <equalsverifier.version>3.19.1</equalsverifier.version>
         <failureaccess.version>1.0.2</failureaccess.version>
         <guava.version>33.4.0-jre</guava.version>
         <io.dropwizard.metrics.version>4.2.30</io.dropwizard.metrics.version>
