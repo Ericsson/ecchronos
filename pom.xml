@@ -56,7 +56,7 @@
 
         <!-- Dependency versions -->
         <assertj.version>3.27.3</assertj.version>
-        <awaitility.version>4.2.2</awaitility.version>
+        <awaitility.version>4.3.0</awaitility.version>
         <caffeine.version>3.2.0</caffeine.version>
         <cassandra.driver.core.version>4.19.0</cassandra.driver.core.version>
         <com.fasterxml.jackson.core.version>2.18.2</com.fasterxml.jackson.core.version>
