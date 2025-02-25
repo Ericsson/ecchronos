@@ -44,7 +44,6 @@ public final class CRLFileManager
     private static final Logger LOG = LoggerFactory.getLogger(CRLFileManager.class);
 
     private static final int FIRST_ATTEMPT_COUNT = 1;
-    private static final int NANO_TO_MILLI_FACTOR = 1_000_000;
 
     private long lastModifiedTime = 0;
     private long lastFileSize = 0;
@@ -179,7 +178,7 @@ public final class CRLFileManager
             int dupes = newCRLs.size() - this.myCRLs.size();
             // Measure time spent on refreshing
             long endTime = System.nanoTime();
-            long duration = (endTime - startTime) / NANO_TO_MILLI_FACTOR;
+            long duration = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
             // CRL file was refreshed; notify and log the details
             updateFileMetadata();
             notifyRefresh();

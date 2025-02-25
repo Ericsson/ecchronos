@@ -34,7 +34,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class TestCustomCRLValidator {
+public class TestCustomCRLValidator
+{
 
     /**
      * Test that a valid certificate and a valid CRL is resulting in a not revoked state.

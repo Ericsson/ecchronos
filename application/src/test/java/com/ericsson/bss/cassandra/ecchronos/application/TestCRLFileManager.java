@@ -69,7 +69,8 @@ public class TestCRLFileManager
 
     private static TestAppender testLogger = new TestAppender();
 
-    public static class TestAppender extends ListAppender<ILoggingEvent> {
+    public static class TestAppender extends ListAppender<ILoggingEvent>
+    {
         public void reset() {
             this.list.clear();
         }

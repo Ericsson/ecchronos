@@ -382,7 +382,8 @@ public class CertUtils
         X509CRLHolder crlHolder = crlBuilder.build(contentSigner);
 
         // Write to file
-        try (FileOutputStream fos = new FileOutputStream(crlFile)) {
+        try (FileOutputStream fos = new FileOutputStream(crlFile))
+        {
             fos.write(crlHolder.getEncoded());
             if (duplicate)
             {
@@ -399,7 +400,8 @@ public class CertUtils
     public void createCorruptedCRL(String crlFile) throws Exception
     {
         // Write gibberish to file
-        try (FileOutputStream fos = new FileOutputStream(crlFile)) {
+        try (FileOutputStream fos = new FileOutputStream(crlFile))
+        {
             fos.write("gibberish".getBytes(StandardCharsets.UTF_8));
         }
     }
