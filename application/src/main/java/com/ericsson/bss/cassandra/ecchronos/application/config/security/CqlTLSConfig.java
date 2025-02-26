@@ -38,6 +38,7 @@ public class CqlTLSConfig
     private String myProtocol;
     private String[] myCipherSuites;
     private boolean myRequireEndpointVerification;
+    private CRLConfig myCRLConfig;
 
     @JsonCreator
     public CqlTLSConfig(@JsonProperty("enabled") final boolean isEnabled,
@@ -59,8 +60,8 @@ public class CqlTLSConfig
         myTrustCertificatePath = trustCertificatePath;
         if (myIsEnabled && !isKeyStoreConfigured() && !isCertificateConfigured())
         {
-            throw new IllegalArgumentException("Invalid CQL TLS config, you must either configure KeyStore or PEM based"
-                    + " certificates.");
+            throw new IllegalArgumentException(
+                    "Invalid CQL TLS config, you must either configure KeyStore or PEM based certificates.");
         }
     }
 
@@ -206,6 +207,18 @@ public class CqlTLSConfig
         myRequireEndpointVerification = requireEndpointVerification;
     }
 
+    @JsonProperty("crl")
+    public final CRLConfig getCRLConfig()
+    {
+        return myCRLConfig;
+    }
+
+    @JsonProperty("crl")
+    public final void setCRLConfig(final CRLConfig crlConfig)
+    {
+        myCRLConfig = crlConfig;
+    }
+
     @Override
     public final boolean equals(final Object o)
     {
@@ -241,4 +254,5 @@ public class CqlTLSConfig
         result = HASH_SEED * result + Arrays.hashCode(myCipherSuites);
         return result;
     }
+
 }

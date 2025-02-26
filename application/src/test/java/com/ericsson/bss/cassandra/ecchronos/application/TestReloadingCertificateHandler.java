@@ -15,6 +15,7 @@
 
 package com.ericsson.bss.cassandra.ecchronos.application;
 
+import com.ericsson.bss.cassandra.ecchronos.application.config.security.CRLConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.CqlTLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.utils.CertUtils;
 import org.junit.BeforeClass;
@@ -173,6 +174,7 @@ public class TestReloadingCertificateHandler
                 KEYSTORE_PASSWORD);
         cqlTLSConfig.setStoreType(STORE_TYPE_JKS);
         cqlTLSConfig.setProtocol(protocolVersion);
+        cqlTLSConfig.setCRLConfig(new CRLConfig());
         return cqlTLSConfig;
     }
 

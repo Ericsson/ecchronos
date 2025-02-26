@@ -2,7 +2,7 @@
 
 ## Version 6.0.3
 
-
+* Add CRL support for CQL connections - Issue #880
 
 ## Version 6.0.2
 

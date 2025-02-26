@@ -26,8 +26,10 @@ import org.slf4j.LoggerFactory;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
+import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import jakarta.xml.bind.DatatypeConverter;
+import javax.net.ssl.X509TrustManager;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -35,12 +37,14 @@ import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.CRLException;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -117,13 +121,8 @@ public class ReloadingCertificateHandler implements CertificateHandler
                 tlsConfig = myCqlTLSConfigSupplier.get();
             }
         }
-        catch (NoSuchAlgorithmException
-               | IOException
-               | UnrecoverableKeyException
-               | CertificateException
-               | KeyStoreException
-               | KeyManagementException
-                e)
+        catch (NoSuchAlgorithmException | IOException | UnrecoverableKeyException | CertificateException
+               | KeyStoreException | KeyManagementException | InvalidAlgorithmParameterException | CRLException e)
         {
             LOG.warn("Unable to create new SSL Context after configuration changed. Trying with the old one", e);
         }
@@ -143,8 +142,9 @@ public class ReloadingCertificateHandler implements CertificateHandler
         private final SslContext mySslContext;
         private final Map<String, String> myChecksums = new HashMap<>();
 
-        Context(final CqlTLSConfig tlsConfig) throws NoSuchAlgorithmException, IOException, UnrecoverableKeyException,
-                CertificateException, KeyStoreException, KeyManagementException
+        Context(final CqlTLSConfig tlsConfig)
+                throws NoSuchAlgorithmException, IOException, UnrecoverableKeyException, CertificateException,
+                KeyStoreException, KeyManagementException, InvalidAlgorithmParameterException, CRLException
         {
             myTlsConfig = tlsConfig;
             mySslContext = createSSLContext(myTlsConfig);
@@ -222,9 +222,33 @@ public class ReloadingCertificateHandler implements CertificateHandler
         else
         {
             KeyManagerFactory keyManagerFactory = getKeyManagerFactory(tlsConfig);
-            TrustManagerFactory trustManagerFactory = getTrustManagerFactory(tlsConfig);
             builder.keyManager(keyManagerFactory);
-            builder.trustManager(trustManagerFactory);
+            TrustManagerFactory trustManagerFactory = getTrustManagerFactory(tlsConfig);
+
+            if (tlsConfig.getCRLConfig().getEnabled())
+            {
+                // If CRL is enabled, use the CustomX509TrustManager (CRL checking is added to the SSL context)
+                LOG.debug("CRL enabled using strict mode: {}", tlsConfig.getCRLConfig().getStrict());
+                TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
+                for (int i = 0; i < trustManagers.length; i++)
+                {
+                    if (trustManagers[i] instanceof X509TrustManager)
+                    {
+                        CustomCRLValidator validator = new CustomCRLValidator(tlsConfig.getCRLConfig());
+                        trustManagers[i] = new CustomX509TrustManager(
+                                (X509TrustManager) trustManagers[i],
+                                validator
+                        );
+                        // Add customized TrustManager
+                        builder.trustManager(trustManagers[i]);
+                    }
+                }
+            }
+            else
+            {
+                // No CRL, use regular TrustManagerFqctory
+                builder.trustManager(trustManagerFactory);
+            }
         }
         if (tlsConfig.getCipherSuites().isPresent())
         {
@@ -264,4 +288,5 @@ public class ReloadingCertificateHandler implements CertificateHandler
             return trustManagerFactory;
         }
     }
+
 }
