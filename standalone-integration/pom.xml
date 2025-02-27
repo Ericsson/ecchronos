@@ -45,13 +45,6 @@
 
         <dependency>
             <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-            <artifactId>connection</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
             <artifactId>connection.impl</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
