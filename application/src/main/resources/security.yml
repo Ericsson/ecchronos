@@ -34,7 +34,8 @@ cql:
     require_endpoint_verification: false
     ##
     ## Certificate Revocation List (CRL) configuration for ecChronos CQL connections. CRL
-    ## checking will be done in one of two modes; strict or non-strict.
+    ## checking will be done in one of two modes; strict or non-strict. The CRL feature
+    ## is optional. If the crl section is not specified, it will default to disabled.
     ##
     ## strict     - A valid and signed CRL must exist for the provided certificate for a
     ##              connection to be allowed. Therefore, a missing or empty CRL file

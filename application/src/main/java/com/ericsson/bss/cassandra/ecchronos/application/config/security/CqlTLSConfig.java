@@ -38,7 +38,8 @@ public class CqlTLSConfig
     private String myProtocol;
     private String[] myCipherSuites;
     private boolean myRequireEndpointVerification;
-    private CRLConfig myCRLConfig;
+    // Since CRL is optional, make sure there always is a disabled default CRL config available.
+    private CRLConfig myCRLConfig = new CRLConfig();
 
     @JsonCreator
     public CqlTLSConfig(@JsonProperty("enabled") final boolean isEnabled,
