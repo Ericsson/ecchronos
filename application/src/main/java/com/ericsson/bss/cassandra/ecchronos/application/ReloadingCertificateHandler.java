@@ -247,6 +247,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
             else
             {
                 // No CRL, use regular TrustManagerFqctory
+                LOG.debug("CRL not enabled");
                 builder.trustManager(trustManagerFactory);
             }
         }
