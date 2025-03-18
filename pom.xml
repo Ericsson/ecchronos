@@ -62,7 +62,7 @@
         <com.fasterxml.jackson.core.version>2.18.3</com.fasterxml.jackson.core.version>
         <com.fasterxml.jackson.dataformat.version>2.18.3</com.fasterxml.jackson.dataformat.version>
         <com.typesafe.config.version>1.4.3</com.typesafe.config.version>
-        <equalsverifier.version>3.19.1</equalsverifier.version>
+        <equalsverifier.version>3.19.2</equalsverifier.version>
         <failureaccess.version>1.0.2</failureaccess.version>
         <guava.version>33.4.0-jre</guava.version>
         <io.dropwizard.metrics.version>4.2.30</io.dropwizard.metrics.version>
@@ -77,7 +77,7 @@
         <junit.version>5.12.1</junit.version>
         <junitparams.version>1.1.1</junitparams.version>
         <logback.version>1.5.17</logback.version>
-        <mockito.core.version>5.16.0</mockito.core.version>
+        <mockito.core.version>5.16.1</mockito.core.version>
         <org.apache.commons.io.version>2.18.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.27.1</org.apache.commons.commons-compress.version>
         <org.apache.httpcomponents.client.version>5.4.2</org.apache.httpcomponents.client.version>
