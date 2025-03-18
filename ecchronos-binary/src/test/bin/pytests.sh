@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-sudo apt install -y yq 
-
-python3 create_cassandra_cluster.py
+sudo snap install yq 
 
 source variables.sh
 
@@ -34,23 +32,30 @@ pip install behave
 pip install requests
 pip install jsonschema
 pip install cassandra-driver
+pip install testcontainers
 
+CASSANDRA_SEED_NODE_NAME="cassandra-seed-dc1-rack1-node1"
+CASSANDRA_NODE_NAME="cassandra-node-dc1-rack1-node2"
 BASE_DIR="$TEST_DIR"/ecchronos-binary-${project.version}
 CONF_DIR="$BASE_DIR"/conf
 PYLIB_DIR="$BASE_DIR"/pylib
 
-CERTIFICATE_DIRECTORY=${project.build.directory}/certificates/cert
+export CERTIFICATE_DIRECTORY=${project.build.directory}/certificates/cert
 
+python create_cassandra_cluster.py
 
-if [ -z "$CASSANDRA_SEED_IP" ]; then
-    echo "Error: Container '$SEED_NODE_CONTAINER_ID' is not running"
-    exit 1
-fi
+SERVICE_NAMES=($CASSANDRA_SEED_NODE_NAME $CASSANDRA_NODE_NAME)
+CASSANDRA_CONTACT_POINTS=()
 
-if [ -z "$CASSANDRA_NODE_IP" ]; then
-    echo "Error: Container '$NODE_CONTAINER_ID' is not running"
-    exit 1
-fi
+for SERVICE in "${SERVICE_NAMES[@]}"; do
+    CONTAINER_ID=$(docker ps --format '{{.Names}}' | grep "$SERVICE")
+    if [ -n "$CONTAINER_ID" ]; then
+        CASSANDRA_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$CONTAINER_ID")
+        CASSANDRA_CONTACT_POINTS+=("{ \"host\": \"$CASSANDRA_IP\", \"port\": 9042 }")
+    fi
+done
+
+CONTACT_POINTS_JSON=$(IFS=,; echo "[${CASSANDRA_CONTACT_POINTS[*]}]")
 
 # Change configuration for ecchronos
 
@@ -61,10 +66,7 @@ sed '/^\s*#.*/d' -i "$CONF_DIR"/ecc.yml
 sed 's/^#\s*-X/-X/g' -i "$CONF_DIR"/jvm.options
 
 yq eval "
-  .connection.cql.agent.contactPoints |= [
-    { \"host\": \"$CASSANDRA_SEED_IP\", \"port\": 9042 },
-    { \"host\": \"$CASSANDRA_NODE_IP\", \"port\": 9042 }
-  ]
+  .connection.cql.agent.contactPoints = $CONTACT_POINTS_JSON
 " -i "$CONF_DIR/ecc.yml"
 
 # Lower scheduler frequency so we don't need to wait that long in tests
