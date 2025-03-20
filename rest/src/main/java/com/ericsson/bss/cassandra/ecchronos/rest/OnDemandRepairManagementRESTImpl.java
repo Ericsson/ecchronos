@@ -252,7 +252,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         }
     }
 
-    private UUID searchNodeID(String nodeID)
+    private UUID searchNodeID(final String nodeID)
     {
         if (nodeID == null || nodeID.isEmpty())
         {
