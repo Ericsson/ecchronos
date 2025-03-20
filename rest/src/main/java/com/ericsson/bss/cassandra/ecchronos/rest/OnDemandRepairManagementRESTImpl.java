@@ -120,7 +120,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             description = "Run a manual repair",
             summary = "Run a manual repair.")
     public final ResponseEntity<List<OnDemandRepair>> runRepair(
-            @RequestParam()
+            @RequestParam(required = false)
             @Parameter(description = "The node to run repair.")
             final String nodeID,
             @RequestParam(required = false)
@@ -136,8 +136,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             @Parameter(description = "Decides if the repair should be only for the specified node, i.e not cluster-wide.")
             final boolean isLocal)
     {
-        UUID uuid = parseIdOrThrow(nodeID);
-        return ResponseEntity.ok(runOnDemandRepair(uuid, keyspace, table, getRepairTypeOrDefault(repairType), isLocal));
+        return ResponseEntity.ok(runOnDemandRepair(nodeID, keyspace, table, getRepairTypeOrDefault(repairType), isLocal));
     }
 
     private RepairType getRepairTypeOrDefault(final RepairType repairType)
@@ -208,13 +207,16 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
     }
 
     private List<OnDemandRepair> runOnDemandRepair(
-            final UUID nodeID,
+            final String nodeID,
             final String keyspace, final String table,
             final RepairType repairType, final boolean isLocal)
     {
         try
         {
             List<OnDemandRepair> onDemandRepairs;
+
+            UUID nodeUUID = searchNodeID(nodeID);
+
             if (keyspace != null)
             {
                 if (table != null)
@@ -225,12 +227,12 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                         throw new ResponseStatusException(NOT_FOUND,
                                 "Table " + keyspace + "." + table + " does not exist");
                     }
-                    onDemandRepairs = runLocalOrCluster(nodeID, repairType, isLocal,
+                    onDemandRepairs = runLocalOrCluster(nodeUUID, repairType, isLocal,
                             Collections.singleton(myTableReferenceFactory.forTable(keyspace, table)));
                 }
                 else
                 {
-                    onDemandRepairs = runLocalOrCluster(nodeID, repairType, isLocal,
+                    onDemandRepairs = runLocalOrCluster(nodeUUID, repairType, isLocal,
                             myTableReferenceFactory.forKeyspace(keyspace));
                 }
             }
@@ -240,7 +242,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 {
                     throw new ResponseStatusException(BAD_REQUEST, "Keyspace must be provided if table is provided");
                 }
-                onDemandRepairs = runLocalOrCluster(nodeID, repairType, isLocal, myTableReferenceFactory.forCluster());
+                onDemandRepairs = runLocalOrCluster(nodeUUID, repairType, isLocal, myTableReferenceFactory.forCluster());
             }
             return onDemandRepairs;
         }
@@ -248,6 +250,15 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         {
             throw new ResponseStatusException(NOT_FOUND, NOT_FOUND.getReasonPhrase(), e);
         }
+    }
+
+    private UUID searchNodeID(String nodeID)
+    {
+        if (nodeID == null || nodeID.isEmpty())
+        {
+            return myDistributedNativeConnectionProvider.getNodes().values().stream().findAny().get().getHostId();
+        }
+        return parseIdOrThrow(nodeID);
     }
 
     private static Predicate<OnDemandRepairJobView> forTableOnDemand(final String keyspace, final String table)

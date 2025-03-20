@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Modify ecctool to Allow Repairs to be Created Without Requiring a Node ID - Issue #903
 * Create ecchronos-binary Module with ecctool for Interacting with the ecChronos REST API - Issue #867
 * Update TestContainers Template to Enable or Disable Jolokia in Cassandra - Issue #844
 * Reconcile Jolokia Notification Listener Implementation with RepairTask - Issue #831

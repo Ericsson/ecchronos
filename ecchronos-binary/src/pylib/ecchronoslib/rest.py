@@ -227,7 +227,8 @@ class RepairSchedulerRequest(RestRequest):
 
     def post(self, node_id=None, keyspace=None, table=None, repair_type="vnode"):
         request_url = RepairSchedulerRequest.repair_run_url
-        request_url += "?nodeID=" + node_id
+        if node_id:
+            request_url += "?nodeID=" + node_id
         if keyspace:
             request_url += "?keyspace=" + keyspace
             if table:
