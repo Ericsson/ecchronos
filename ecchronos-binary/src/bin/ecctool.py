@@ -271,9 +271,6 @@ def repairs(arguments):
 
 def run_repair(arguments):
     request = rest.RepairSchedulerRequest(base_url=arguments.url)
-    if not arguments.id:
-        print("--id must be specified")
-        sys.exit(1)
     if not arguments.keyspace and arguments.table:
         print("--keyspace must be specified if table is specified")
         sys.exit(1)
