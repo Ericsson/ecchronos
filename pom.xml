@@ -83,7 +83,7 @@
         <org.apache.httpcomponents.client.version>5.4.2</org.apache.httpcomponents.client.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.80</org.bouncycastle.bcpkix-jdk18on.version>
         <org.hdrhistogram.version>2.2.2</org.hdrhistogram.version>
-        <org.springframework.boot.version>3.4.3</org.springframework.boot.version>
+        <org.springframework.boot.version>3.4.4</org.springframework.boot.version>
         <org.yaml.snakeyaml.version>2.4</org.yaml.snakeyaml.version>
         <slf4j.version>2.0.17</slf4j.version>
         <springdoc.openapi-starter-webmvc-ui.version>2.8.6</springdoc.openapi-starter-webmvc-ui.version>
