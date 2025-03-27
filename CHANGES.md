@@ -1,5 +1,9 @@
 # Changes
-## Version 5.0.4
+## ## Version 5.0.4-ec2
+
+* Fix guava range for connection
+
+## Version 5.0.4-ec1
 
 * Add version range for guava when deployed in osgi
 
