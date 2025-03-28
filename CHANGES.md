@@ -1,6 +1,7 @@
 # Changes
 ## Version 5.0.4-ec2
 
+* Fix guava range for connection
 * Bump tomcat to 9.0.99 due to CVE-2025-24813
 
 ## Version 5.0.4-ec1
