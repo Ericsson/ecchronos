@@ -29,6 +29,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.NotificationListener;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
+import javax.management.RuntimeMBeanException;
 import javax.management.openmbean.CompositeData;
 import javax.management.remote.JMXConnector;
 
@@ -243,13 +244,19 @@ public final class JmxProxyFactoryImpl implements JmxProxyFactory
                 return (Long) myMbeanServerConnection.getAttribute(objectName, "Count");
             }
             catch (AttributeNotFoundException
-                   | InstanceNotFoundException
                    | MBeanException
                    | ReflectionException
                    | IOException
                    | MalformedObjectNameException e)
             {
                 LOG.error("Unable to retrieve disk space usage for {}", tableReference, e);
+            }
+            catch (RuntimeMBeanException
+                   | InstanceNotFoundException e)
+            {
+                // This exception can occur when a table is about to be changed, but has not finished doing so,
+                // before we try to fetch data from it. Just return the default value for the time being.
+                LOG.warn("Unable to retrieve disk space usage for {} (bean not yet ready)", tableReference);
             }
 
             return 0;
@@ -280,12 +287,18 @@ public final class JmxProxyFactoryImpl implements JmxProxyFactory
                     return maxRepaired;
                 }
             }
-            catch (InstanceNotFoundException
-                   | MBeanException
+            catch (MBeanException
                    | ReflectionException
                    | IOException e)
             {
                 LOG.error("Unable to get maxRepaired for {}", tableReference, e);
+            }
+            catch (RuntimeMBeanException
+                   | InstanceNotFoundException e)
+            {
+                // This exception can occur when a table is about to be changed, but has not finished doing so,
+                // before we try to fetch data from it. Just return the default value for the time being.
+                LOG.warn("Unable to get maxRepaired for {} (bean not yet ready)", tableReference);
             }
             return 0;
         }
@@ -303,13 +316,19 @@ public final class JmxProxyFactoryImpl implements JmxProxyFactory
                 return percentRepaired;
             }
             catch (AttributeNotFoundException
-                   | InstanceNotFoundException
                    | MBeanException
                    | ReflectionException
                    | IOException
                    | MalformedObjectNameException e)
             {
                 LOG.error("Unable to retrieve disk space usage for {}", tableReference, e);
+            }
+            catch (RuntimeMBeanException
+                   | InstanceNotFoundException e)
+            {
+                // This exception can occur when a table is about to be changed, but has not finished doing so
+                // before we try to fetch data from it. Just return the default value for the time being.
+                LOG.warn("Unable to retrieve disk space usage for {} (bean not yet ready)", tableReference);
             }
             return 0.0;
         }

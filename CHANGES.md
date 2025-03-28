@@ -1,5 +1,9 @@
 # Changes
 
+## Version 6.0.4
+
+* Return default values if schema changes in Cassandra have not been completed - Issue #922
+
 ## Version 6.0.3
 
 * Add CRL support for CQL connections - Issue #880
