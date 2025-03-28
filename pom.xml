@@ -80,9 +80,7 @@
         <mockito.core.version>5.16.1</mockito.core.version>
         <org.apache.commons.io.version>2.18.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.27.1</org.apache.commons.commons-compress.version>
-        <org.apache.httpcomponents.client.version>5.4.2</org.apache.httpcomponents.client.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.80</org.bouncycastle.bcpkix-jdk18on.version>
-        <org.hdrhistogram.version>2.2.2</org.hdrhistogram.version>
         <org.springframework.boot.version>3.4.4</org.springframework.boot.version>
         <org.yaml.snakeyaml.version>2.4</org.yaml.snakeyaml.version>
         <slf4j.version>2.0.17</slf4j.version>
@@ -129,7 +127,7 @@
     <dependencyManagement>
         <dependencies>
 
-            <!-- Temporary override versions of indirect dependencies (not yet stepped) -->
+            <!-- Temporary override versions of indirect dependencies (not yet stepped by the direct dependency) -->
 
             <!-- Used by testcontainers, steped due to CVE-2024-25710 -->
             <dependency>
@@ -137,6 +135,27 @@
                 <artifactId>commons-compress</artifactId>
                 <version>${org.apache.commons.commons-compress.version}</version>
                 <scope>test</scope>
+            </dependency>
+
+            <!-- Used by spring-boot-starter-web -->
+            <dependency>
+                <groupId>jakarta.servlet</groupId>
+                <artifactId>jakarta.servlet-api</artifactId>
+                <version>${jakarta.servlet-api.version}</version>
+            </dependency>
+
+            <!-- Used by guava -->
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>failureaccess</artifactId>
+                <version>${failureaccess.version}</version>
+            </dependency>
+
+            <!-- Used by java-driver -->
+            <dependency>
+                <groupId>com.typesafe</groupId>
+                <artifactId>config</artifactId>
+                <version>${com.typesafe.config.version}</version>
             </dependency>
 
             <!-- End of temporary override section -->
@@ -321,24 +340,6 @@
             </dependency>
 
             <dependency>
-                <groupId>com.google.guava</groupId>
-                <artifactId>failureaccess</artifactId>
-                <version>${failureaccess.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.typesafe</groupId>
-                <artifactId>config</artifactId>
-                <version>${com.typesafe.config.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.hdrhistogram</groupId>
-                <artifactId>HdrHistogram</artifactId>
-                <version>${org.hdrhistogram.version}</version>
-            </dependency>
-
-            <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
@@ -375,18 +376,6 @@
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
                 <version>${springdoc.openapi-starter-webmvc-ui.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>jakarta.servlet</groupId>
-                <artifactId>jakarta.servlet-api</artifactId>
-                <version>${jakarta.servlet-api.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.httpcomponents.client5</groupId>
-                <artifactId>httpclient5</artifactId>
-                <version>${org.apache.httpcomponents.client.version}</version>
             </dependency>
 
             <!-- OpenAPI annotations -->
