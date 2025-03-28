@@ -321,14 +321,14 @@ public final class JmxProxyFactoryImpl implements JmxProxyFactory
                    | IOException
                    | MalformedObjectNameException e)
             {
-                LOG.error("Unable to retrieve disk space usage for {}", tableReference, e);
+                LOG.error("Unable to retrieve PercentRepaired for {}", tableReference, e);
             }
             catch (RuntimeMBeanException
                    | InstanceNotFoundException e)
             {
                 // This exception can occur when a table is about to be changed, but has not finished doing so
                 // before we try to fetch data from it. Just return the default value for the time being.
-                LOG.warn("Unable to retrieve disk space usage for {} (bean not yet ready)", tableReference);
+                LOG.warn("Unable to retrieve PercentRepaired for {} (bean not yet ready)", tableReference);
             }
             return 0.0;
         }
