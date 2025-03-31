@@ -20,7 +20,7 @@
     <parent>
         <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
         <artifactId>parent</artifactId>
-        <version>5.0.4-ec2</version>
+        <version>5.0.4-ec3-SNAPSHOT</version>
     </parent>
     <artifactId>cassandra-test-image</artifactId>
     <description>Test image for integration tests using Apache Cassandra</description>
