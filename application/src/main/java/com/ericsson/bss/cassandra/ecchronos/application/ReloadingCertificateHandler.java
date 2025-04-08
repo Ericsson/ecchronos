@@ -38,15 +38,22 @@ import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyFactory;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CRLException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -208,54 +215,133 @@ public class ReloadingCertificateHandler implements CertificateHandler
             CertificateException,
             UnrecoverableKeyException
     {
-
         SslContextBuilder builder = SslContextBuilder.forClient();
         if (tlsConfig.isCertificateConfigured())
         {
+            LOG.info("PEM certificates configured for CQL connections");
+
+            // Get certificate and key files from config
             File certificateFile = new File(tlsConfig.getCertificatePath().get());
             File certificatePrivateKeyFile = new File(tlsConfig.getCertificatePrivateKeyPath().get());
             File trustCertificateFile = new File(tlsConfig.getTrustCertificatePath().get());
 
-            builder.keyManager(certificateFile, certificatePrivateKeyFile);
-            builder.trustManager(trustCertificateFile);
+            KeyStore keyStore = KeyStore.getInstance("JKS");
+            keyStore.load(null, null);
+
+            // Setup client certificates and its private key into a keystore/truststore
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            Certificate clientCert = cf.generateCertificate(new FileInputStream(certificateFile));
+            Certificate trustCert = cf.generateCertificate(new FileInputStream(trustCertificateFile));
+            PrivateKey privateKey = loadPrivateKey(certificatePrivateKeyFile);
+
+            LOG.info("Private key algorithm: {}", privateKey.getAlgorithm());
+
+            // Create the certificate chain and add it to the keystore
+            Certificate[] certChain = new Certificate[]{clientCert, trustCert};
+            keyStore.setKeyEntry("client-key", privateKey, "".toCharArray(), certChain);
+
+            // Create KeyManagerFactory
+            KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            kmf.init(keyStore, "".toCharArray());
+
+            // Create TrustManagerFactory and load the trusted certificate into it
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            KeyStore trustStore = KeyStore.getInstance("JKS");
+            trustStore.load(null, null);
+            trustStore.setCertificateEntry("trust-cert", trustCert);
+            tmf.init(trustStore);
+
+            // Finally, set the managers in the builder
+            builder.keyManager(kmf);
+            setTrustManagers(builder, tlsConfig, tmf);
         }
         else
         {
+            LOG.info("Keystore/truststore configured for CQL connections");
+
             KeyManagerFactory keyManagerFactory = getKeyManagerFactory(tlsConfig);
             builder.keyManager(keyManagerFactory);
-            TrustManagerFactory trustManagerFactory = getTrustManagerFactory(tlsConfig);
-
-            if (tlsConfig.getCRLConfig().getEnabled())
-            {
-                // If CRL is enabled, use the CustomX509TrustManager (CRL checking is added to the SSL context)
-                LOG.debug("CRL enabled using strict mode: {}", tlsConfig.getCRLConfig().getStrict());
-                TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
-                for (int i = 0; i < trustManagers.length; i++)
-                {
-                    if (trustManagers[i] instanceof X509TrustManager)
-                    {
-                        CustomCRLValidator validator = new CustomCRLValidator(tlsConfig.getCRLConfig());
-                        trustManagers[i] = new CustomX509TrustManager(
-                                (X509TrustManager) trustManagers[i],
-                                validator
-                        );
-                        // Add customized TrustManager
-                        builder.trustManager(trustManagers[i]);
-                    }
-                }
-            }
-            else
-            {
-                // No CRL, use regular TrustManagerFqctory
-                LOG.debug("CRL not enabled");
-                builder.trustManager(trustManagerFactory);
-            }
+            setTrustManagers(builder, tlsConfig, getTrustManagerFactory(tlsConfig));
         }
         if (tlsConfig.getCipherSuites().isPresent())
         {
             builder.ciphers(Arrays.asList(tlsConfig.getCipherSuites().get()));
         }
         return builder.protocols(tlsConfig.getProtocols()).build();
+    }
+
+    protected static void setTrustManagers(SslContextBuilder builder, CqlTLSConfig config, TrustManagerFactory tmf)
+    {
+        if (config.getCRLConfig().getEnabled())
+        {
+            // If CRL is enabled, use the CustomX509TrustManager (CRL checking is added to the SSL context)
+            LOG.info("CRL enabled using strict mode: {}", config.getCRLConfig().getStrict());
+            // We will add out custom trust manager to the TrustManagerFactory
+            TrustManager[] trustManagers = tmf.getTrustManagers();
+            for (int i = 0; i < trustManagers.length; i++)
+            {
+                if (trustManagers[i] instanceof X509TrustManager)
+                {
+                    CustomCRLValidator validator = new CustomCRLValidator(config.getCRLConfig());
+                    trustManagers[i] = new CustomX509TrustManager(
+                            (X509TrustManager) trustManagers[i],
+                            validator
+                    );
+                    // Add customized TrustManager
+                    builder.trustManager(trustManagers[i]);
+                }
+            }
+        }
+        else
+        {
+            // No CRL, use TrustManagerFactory as-is
+            LOG.info("CRL not enabled");
+            builder.trustManager(tmf);
+        }
+    }
+
+    protected static PrivateKey loadPrivateKey(File file) throws IOException
+    {
+        try
+        {
+            // Supported key types are EC and RSA (DSA is legacy and should not be used)
+
+            // Read key file and remove the PEM header and any whitespaces
+            String key = Files.readString(file.toPath());
+            String privateKeyPEM = key
+                    .replaceAll("-----BEGIN .*PRIVATE KEY-----", "")
+                    .replaceAll("-----END .*PRIVATE KEY-----", "")
+                    .replaceAll("\\s", "");
+
+            // Decode the key into a nice byte array
+            byte[] decoded = Base64.getDecoder().decode(privateKeyPEM);
+            PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(decoded);
+
+            // Check if the key is of type EC first.
+            try
+            {
+                KeyFactory kf = KeyFactory.getInstance("EC");
+                return kf.generatePrivate(spec);
+            }
+            catch (InvalidKeySpecException e1)
+            {
+                // Not type EC; try RSA
+                LOG.info("Key type not EC, trying RSA");
+                try
+                {
+                    KeyFactory kf = KeyFactory.getInstance("RSA");
+                    return kf.generatePrivate(spec);
+                }
+                catch (InvalidKeySpecException e2)
+                {
+                    throw new IOException("Unsupported private key format", e2);
+                }
+            }
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            throw new IOException("Failed to load the private key file", e);
+        }
     }
 
     protected static KeyManagerFactory getKeyManagerFactory(final CqlTLSConfig tlsConfig) throws IOException,

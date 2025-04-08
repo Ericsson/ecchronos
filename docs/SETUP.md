@@ -153,7 +153,7 @@ jmx:
     cipher_suites:
 ```
 
-CQL also supports certificates in PEM format.
+CQL also supports certificates in PEM format (EC and RSA algorithms only).
 
 ```yaml
 cql:
