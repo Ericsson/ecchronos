@@ -270,7 +270,9 @@ public class ReloadingCertificateHandler implements CertificateHandler
         return builder.protocols(tlsConfig.getProtocols()).build();
     }
 
-    protected static void setTrustManagers(final SslContextBuilder builder, final CqlTLSConfig config, final TrustManagerFactory tmf)
+    protected static void setTrustManagers(final SslContextBuilder builder,
+                                           final CqlTLSConfig config,
+                                           final TrustManagerFactory tmf)
     {
         if (config.getCRLConfig().getEnabled())
         {
