@@ -66,6 +66,8 @@ public class ReloadingCertificateHandler implements CertificateHandler
     private final AtomicReference<Context> currentContext = new AtomicReference<>();
     private final Supplier<CqlTLSConfig> myCqlTLSConfigSupplier;
 
+    private static final String STORE_TYPE_JKS = "JKS";
+
     public ReloadingCertificateHandler(final Supplier<CqlTLSConfig> cqlTLSConfigSupplier)
     {
         this.myCqlTLSConfigSupplier = cqlTLSConfigSupplier;
@@ -225,7 +227,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
             File certificatePrivateKeyFile = new File(tlsConfig.getCertificatePrivateKeyPath().get());
             File trustCertificateFile = new File(tlsConfig.getTrustCertificatePath().get());
 
-            KeyStore keyStore = KeyStore.getInstance("JKS");
+            KeyStore keyStore = KeyStore.getInstance(STORE_TYPE_JKS);
             keyStore.load(null, null);
 
             // Setup client certificates and its private key into a keystore/truststore
@@ -246,7 +248,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
 
             // Create TrustManagerFactory and load the trusted certificate into it
             TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            KeyStore trustStore = KeyStore.getInstance("JKS");
+            KeyStore trustStore = KeyStore.getInstance(STORE_TYPE_JKS);
             trustStore.load(null, null);
             trustStore.setCertificateEntry("trust-cert", trustCert);
             tmf.init(trustStore);
@@ -329,6 +331,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
             {
                 // Not type EC; try RSA
                 LOG.info("Key type not EC, trying RSA");
+                LOG.debug("Ignoring exception", e1);
                 try
                 {
                     KeyFactory kf = KeyFactory.getInstance("RSA");
@@ -355,7 +358,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
         try (InputStream keystoreFile = new FileInputStream(tlsConfig.getKeyStorePath()))
         {
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(algorithm);
-            KeyStore keyStore = KeyStore.getInstance(tlsConfig.getStoreType().orElse("JKS"));
+            KeyStore keyStore = KeyStore.getInstance(tlsConfig.getStoreType().orElse(STORE_TYPE_JKS));
             keyStore.load(keystoreFile, keystorePassword);
             keyManagerFactory.init(keyStore, keystorePassword);
             return keyManagerFactory;
@@ -371,7 +374,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
         try (InputStream truststoreFile = new FileInputStream(tlsConfig.getTrustStorePath()))
         {
             TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(algorithm);
-            KeyStore keyStore = KeyStore.getInstance(tlsConfig.getStoreType().orElse("JKS"));
+            KeyStore keyStore = KeyStore.getInstance(tlsConfig.getStoreType().orElse(STORE_TYPE_JKS));
             keyStore.load(truststoreFile, truststorePassword);
             trustManagerFactory.init(keyStore);
             return trustManagerFactory;
