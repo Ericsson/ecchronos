@@ -304,6 +304,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
         }
     }
 
+    @SuppressWarnings("PMD.PreserveStackTrace")
     protected static PrivateKey loadPrivateKey(final File file) throws IOException
     {
         try
@@ -331,7 +332,6 @@ public class ReloadingCertificateHandler implements CertificateHandler
             {
                 // Not type EC; try RSA
                 LOG.info("Key type not EC, trying RSA");
-                LOG.debug("Ignoring exception", e1);
                 try
                 {
                     KeyFactory kf = KeyFactory.getInstance("RSA");
