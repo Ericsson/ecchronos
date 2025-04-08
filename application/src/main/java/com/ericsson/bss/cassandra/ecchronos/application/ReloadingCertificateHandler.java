@@ -270,7 +270,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
         return builder.protocols(tlsConfig.getProtocols()).build();
     }
 
-    protected static void setTrustManagers(SslContextBuilder builder, CqlTLSConfig config, TrustManagerFactory tmf)
+    protected static void setTrustManagers(final SslContextBuilder builder, final CqlTLSConfig config, final TrustManagerFactory tmf)
     {
         if (config.getCRLConfig().getEnabled())
         {
@@ -300,7 +300,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
         }
     }
 
-    protected static PrivateKey loadPrivateKey(File file) throws IOException
+    protected static PrivateKey loadPrivateKey(final File file) throws IOException
     {
         try
         {
