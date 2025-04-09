@@ -156,14 +156,14 @@ public final class CustomX509TrustManager implements X509TrustManager
             revalidateServerTrust();
             revalidateClientTrust();
             myCRLValidator.resetAttempts();
-            LOG.info("Provided certificates are verified by current CRL (previous failed attempts was reset)");
+            LOG.info("Certificates are not revoked by current CRL (any previous failed attempts was reset)");
         }
         catch (CertificateException e)
         {
             if (myCRLValidator.inStrictMode())
             {
                 // Strict mode: Log it, check for attempts made and eventually shut down if all attempts are consumed
-                LOG.warn("Provided certificates are rejected by current CRL (strict mode, attempt {} of {} made)",
+                LOG.warn("Certificates are revoked by current CRL (strict mode, attempt {} of {} made)",
                         myCRLValidator.increaseAttempts(),
                         myCRLValidator.maxAttempts());
                 // If the last attempt was made, do a graceful shutdown

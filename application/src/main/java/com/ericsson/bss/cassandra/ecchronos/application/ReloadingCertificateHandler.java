@@ -236,7 +236,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
             Certificate trustCert = cf.generateCertificate(new FileInputStream(trustCertificateFile));
             PrivateKey privateKey = loadPrivateKey(certificatePrivateKeyFile);
 
-            LOG.info("Private key algorithm: {}", privateKey.getAlgorithm());
+            LOG.info("Detected private key algorithm to be {}", privateKey.getAlgorithm());
 
             // Create the certificate chain and add it to the keystore
             Certificate[] certChain = new Certificate[]{clientCert, trustCert};
@@ -280,10 +280,10 @@ public class ReloadingCertificateHandler implements CertificateHandler
         {
             // If CRL is enabled, use the CustomX509TrustManager (CRL checking is added to the SSL context)
             LOG.info("CRL enabled using strict mode: {}", config.getCRLConfig().getStrict());
-            // We will add out custom trust manager to the TrustManagerFactory
             TrustManager[] trustManagers = tmf.getTrustManagers();
             for (int i = 0; i < trustManagers.length; i++)
             {
+                // Replace X509TrustManager with our custom one
                 if (trustManagers[i] instanceof X509TrustManager)
                 {
                     CustomCRLValidator validator = new CustomCRLValidator(config.getCRLConfig());
@@ -291,7 +291,6 @@ public class ReloadingCertificateHandler implements CertificateHandler
                             (X509TrustManager) trustManagers[i],
                             validator
                     );
-                    // Add customized TrustManager
                     builder.trustManager(trustManagers[i]);
                 }
             }
@@ -322,16 +321,15 @@ public class ReloadingCertificateHandler implements CertificateHandler
             byte[] decoded = Base64.getDecoder().decode(privateKeyPEM);
             PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(decoded);
 
-            // Check if the key is of type EC first.
             try
             {
+                LOG.debug("Trying private key type EC");
                 KeyFactory kf = KeyFactory.getInstance("EC");
                 return kf.generatePrivate(spec);
             }
             catch (InvalidKeySpecException e1)
             {
-                // Not type EC; try RSA
-                LOG.info("Key type not EC, trying RSA");
+                LOG.debug("Trying private key type RSA");
                 try
                 {
                     KeyFactory kf = KeyFactory.getInstance("RSA");
