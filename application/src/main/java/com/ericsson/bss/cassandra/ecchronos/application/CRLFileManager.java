@@ -164,6 +164,7 @@ public final class CRLFileManager
         if (!fileModified() && myAttempt == 1)
         {
             // No file changes and no reattempts needed, so no refresh is necessary at this time
+            LOG.debug("No CRL file changes detected; skipping refresh");
             return;
         }
 
@@ -180,16 +181,17 @@ public final class CRLFileManager
             long endTime = System.nanoTime();
             long duration = TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
             // CRL file was refreshed; notify and log the details
-            updateFileMetadata();
-            notifyRefresh();
             LOG.info("CRL file refreshed in {} ms; read {} record(s), discarded {} duplicate(s)",
                     duration, this.myCRLs.size(), dupes);
         }
         catch (IOException | CRLException e)
         {
             myCRLs.clear();
-            LOG.error("Failed to read CRL file; any cached CRLs have been purged", e);
+            LOG.error("Failed to read CRL file; any previously cached CRLs have been purged");
         }
+        // Make sure listeners are aware of the changes
+        updateFileMetadata();
+        notifyRefresh();
     }
 
 }

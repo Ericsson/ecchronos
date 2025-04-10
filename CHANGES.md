@@ -2,6 +2,7 @@
 
 ## Version 6.0.4
 
+* CRL not properly applied when using certificate files - Issue #932
 * Return default values if schema changes in Cassandra have not been completed - Issue #922
 
 ## Version 6.0.3

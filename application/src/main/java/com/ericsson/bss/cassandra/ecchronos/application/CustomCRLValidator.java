@@ -120,7 +120,7 @@ public final class CustomCRLValidator
                     + cert.getIssuerX500Principal().getName());
         }
 
-        // If this point is reached, the certificate is valid and not revoked
+        // If this point is reached, the certificate is not revoked
     }
 
     public void addRefreshListener(final Runnable listener)
