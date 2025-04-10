@@ -62,9 +62,9 @@
         <com.fasterxml.jackson.core.version>2.18.3</com.fasterxml.jackson.core.version>
         <com.fasterxml.jackson.dataformat.version>2.18.3</com.fasterxml.jackson.dataformat.version>
         <com.typesafe.config.version>1.4.3</com.typesafe.config.version>
-        <equalsverifier.version>3.19.2</equalsverifier.version>
+        <equalsverifier.version>3.19.3</equalsverifier.version>
         <failureaccess.version>1.0.3</failureaccess.version>
-        <guava.version>33.4.0-jre</guava.version>
+        <guava.version>33.4.6-jre</guava.version>
         <io.dropwizard.metrics.version>4.2.30</io.dropwizard.metrics.version>
         <io.micrometer.version>1.14.5</io.micrometer.version>
         <io.netty.version>4.1.119.Final</io.netty.version>
@@ -77,17 +77,15 @@
         <junit.version>5.12.1</junit.version>
         <junitparams.version>1.1.1</junitparams.version>
         <logback.version>1.5.18</logback.version>
-        <mockito.core.version>5.16.1</mockito.core.version>
+        <mockito.core.version>5.17.0</mockito.core.version>
         <org.apache.commons.io.version>2.18.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.27.1</org.apache.commons.commons-compress.version>
-        <org.apache.httpcomponents.client.version>5.4.2</org.apache.httpcomponents.client.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.80</org.bouncycastle.bcpkix-jdk18on.version>
-        <org.hdrhistogram.version>2.2.2</org.hdrhistogram.version>
         <org.springframework.boot.version>3.4.4</org.springframework.boot.version>
         <org.yaml.snakeyaml.version>2.4</org.yaml.snakeyaml.version>
         <slf4j.version>2.0.17</slf4j.version>
         <springdoc.openapi-starter-webmvc-ui.version>2.8.6</springdoc.openapi-starter-webmvc-ui.version>
-        <swagger-annotations.version>2.2.29</swagger-annotations.version>
+        <swagger-annotations.version>2.2.30</swagger-annotations.version>
         <testcontainers.version>1.20.6</testcontainers.version>
 
         <!-- Plugin versions -->
@@ -99,7 +97,7 @@
         <org.apache.maven.plugins.maven-compiler-plugin.version>3.14.0</org.apache.maven.plugins.maven-compiler-plugin.version>
         <org.apache.maven.plugins-maven-dependency-plugin.version>3.8.1</org.apache.maven.plugins-maven-dependency-plugin.version>
         <org.apache.maven.plugins.maven-deploy-plugin.version>3.1.4</org.apache.maven.plugins.maven-deploy-plugin.version>
-        <org.apache.maven.plugins.maven-failsafe-plugin.version>3.5.2</org.apache.maven.plugins.maven-failsafe-plugin.version>
+        <org.apache.maven.plugins.maven-failsafe-plugin.version>3.5.3</org.apache.maven.plugins.maven-failsafe-plugin.version>
         <org.apache.maven.plugins.maven-gpg-plugin.version>3.2.7</org.apache.maven.plugins.maven-gpg-plugin.version>
         <org.apache.maven.plugins.maven-install-plugin.version>3.1.4</org.apache.maven.plugins.maven-install-plugin.version>
         <org.apache.maven.plugins-maven-jar-plugin.version>3.4.2</org.apache.maven.plugins-maven-jar-plugin.version>
@@ -109,11 +107,11 @@
         <org.apache.maven.plugins-maven-resources-plugin.version>3.3.1</org.apache.maven.plugins-maven-resources-plugin.version>
         <org.apache.maven.plugins-maven-shade-plugin.version>3.6.0</org.apache.maven.plugins-maven-shade-plugin.version>
         <org.apache.maven.plugins.maven-source-plugin.version>3.3.1</org.apache.maven.plugins.maven-source-plugin.version>
-        <org.apache.maven.plugins.maven-surefire-plugin.version>3.5.2</org.apache.maven.plugins.maven-surefire-plugin.version>
+        <org.apache.maven.plugins.maven-surefire-plugin.version>3.5.3</org.apache.maven.plugins.maven-surefire-plugin.version>
         <org.apache.servicemix.tooling.depends-maven-plugin.version>1.5.0</org.apache.servicemix.tooling.depends-maven-plugin.version>
         <org.codehaus.mojo.exec-maven-plugin.version>3.5.0</org.codehaus.mojo.exec-maven-plugin.version>
         <org.codehaus.mojo.license-maven-plugin.version>2.5.0</org.codehaus.mojo.license-maven-plugin.version>
-        <org.jacoco.jacoco-maven-plugin.version>0.8.12</org.jacoco.jacoco-maven-plugin.version>
+        <org.jacoco.jacoco-maven-plugin.version>0.8.13</org.jacoco.jacoco-maven-plugin.version>
 
         <!-- Test defaults -->
         <skipTests>false</skipTests>
@@ -129,7 +127,7 @@
     <dependencyManagement>
         <dependencies>
 
-            <!-- Temporary override versions of indirect dependencies (not yet stepped) -->
+            <!-- Temporary override versions of indirect dependencies (not yet stepped by the direct dependency) -->
 
             <!-- Used by testcontainers, steped due to CVE-2024-25710 -->
             <dependency>
@@ -137,6 +135,27 @@
                 <artifactId>commons-compress</artifactId>
                 <version>${org.apache.commons.commons-compress.version}</version>
                 <scope>test</scope>
+            </dependency>
+
+            <!-- Used by spring-boot-starter-web -->
+            <dependency>
+                <groupId>jakarta.servlet</groupId>
+                <artifactId>jakarta.servlet-api</artifactId>
+                <version>${jakarta.servlet-api.version}</version>
+            </dependency>
+
+            <!-- Used by guava -->
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>failureaccess</artifactId>
+                <version>${failureaccess.version}</version>
+            </dependency>
+
+            <!-- Used by java-driver -->
+            <dependency>
+                <groupId>com.typesafe</groupId>
+                <artifactId>config</artifactId>
+                <version>${com.typesafe.config.version}</version>
             </dependency>
 
             <!-- End of temporary override section -->
@@ -321,24 +340,6 @@
             </dependency>
 
             <dependency>
-                <groupId>com.google.guava</groupId>
-                <artifactId>failureaccess</artifactId>
-                <version>${failureaccess.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.typesafe</groupId>
-                <artifactId>config</artifactId>
-                <version>${com.typesafe.config.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.hdrhistogram</groupId>
-                <artifactId>HdrHistogram</artifactId>
-                <version>${org.hdrhistogram.version}</version>
-            </dependency>
-
-            <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
@@ -375,18 +376,6 @@
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
                 <version>${springdoc.openapi-starter-webmvc-ui.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>jakarta.servlet</groupId>
-                <artifactId>jakarta.servlet-api</artifactId>
-                <version>${jakarta.servlet-api.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.httpcomponents.client5</groupId>
-                <artifactId>httpclient5</artifactId>
-                <version>${org.apache.httpcomponents.client.version}</version>
             </dependency>
 
             <!-- OpenAPI annotations -->
