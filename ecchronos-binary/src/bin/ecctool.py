@@ -22,7 +22,7 @@ import signal
 import sys
 import glob
 import subprocess
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentTypeError
 from io import open
 
 try:
@@ -74,6 +74,14 @@ def add_repairs_subcommand(sub_parsers):
         "repairs", description="Show the status of all manual repairs. This subcommand has " "no mandatory parameters."
     )
     parser_repairs.add_argument(
+        "-c",
+        "--column",
+        type=int,
+        nargs="*",
+        help="Output only stated columns (or all if none is given). First column is 0.",
+        default=None,
+    )
+    parser_repairs.add_argument(
         "-k",
         "--keyspace",
         type=str,
@@ -119,6 +127,14 @@ def add_repairs_subcommand(sub_parsers):
 def add_schedules_subcommand(sub_parsers):
     parser_schedules = sub_parsers.add_parser(
         "schedules", description="Show the status of schedules. This subcommand has no " "mandatory parameters."
+    )
+    parser_schedules.add_argument(
+        "-c",
+        "--column",
+        type=uint,
+        nargs="*",
+        help="Output only stated columns (or all if none is given). First column is 0.",
+        default=None,
     )
     parser_schedules.add_argument(
         "-k",
@@ -226,6 +242,14 @@ def add_repair_info_subcommand(sub_parsers):
         "GC_GRACE_SECONDS.",
     )
     parser_repair_info.add_argument(
+        "-c",
+        "--column",
+        type=uint,
+        nargs="*",
+        help="Output only stated columns (or all if none is given). First column is 0.",
+        default=None,
+    )
+    parser_repair_info.add_argument(
         "-k", "--keyspace", type=str, help="Show repair information for all tables in the specified keyspace."
     )
     parser_repair_info.add_argument(
@@ -314,6 +338,13 @@ def add_status_subcommand(sub_parsers):
     )
 
 
+def uint(value):
+    ivalue = int(value)
+    if ivalue < 0:
+        raise ArgumentTypeError(f"{value} is negative. Only non-negative integers are allowed.")
+    return ivalue
+
+
 def schedules(arguments):
     # pylint: disable=too-many-branches
     request = rest.V2RepairSchedulerRequest(base_url=arguments.url)
@@ -326,7 +357,7 @@ def schedules(arguments):
             result = request.get_schedule(job_id=arguments.id)
 
         if result.is_successful():
-            table_printer.print_schedule(result.data, arguments.limit, full)
+            table_printer.print_schedule(result.data, arguments.limit, full, arguments.column)
         else:
             print(result.format_exception())
     elif arguments.full:
@@ -338,13 +369,13 @@ def schedules(arguments):
             sys.exit(1)
         result = request.list_schedules(keyspace=arguments.keyspace, table=arguments.table)
         if result.is_successful():
-            table_printer.print_schedules(result.data, arguments.limit)
+            table_printer.print_schedules(result.data, arguments.limit, arguments.column)
         else:
             print(result.format_exception())
     else:
         result = request.list_schedules(keyspace=arguments.keyspace)
         if result.is_successful():
-            table_printer.print_schedules(result.data, arguments.limit)
+            table_printer.print_schedules(result.data, arguments.limit, arguments.column)
         else:
             print(result.format_exception())
 
@@ -363,13 +394,13 @@ def repairs(arguments):
             sys.exit(1)
         result = request.list_repairs(keyspace=arguments.keyspace, table=arguments.table, host_id=arguments.hostid)
         if result.is_successful():
-            table_printer.print_repairs(result.data, arguments.limit)
+            table_printer.print_repairs(result.data, arguments.limit, arguments.column)
         else:
             print(result.format_exception())
     else:
         result = request.list_repairs(keyspace=arguments.keyspace, host_id=arguments.hostid)
         if result.is_successful():
-            table_printer.print_repairs(result.data, arguments.limit)
+            table_printer.print_repairs(result.data, arguments.limit, arguments.column)
         else:
             print(result.format_exception())
 
@@ -410,7 +441,7 @@ def repair_info(arguments):
         local=arguments.local,
     )
     if result.is_successful():
-        table_printer.print_repair_info(result.data, arguments.limit)
+        table_printer.print_repair_info(result.data, arguments.limit, arguments.column)
     else:
         print(result.format_exception())
 

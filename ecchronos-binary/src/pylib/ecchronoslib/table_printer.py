@@ -18,7 +18,7 @@ from datetime import datetime
 from ecchronoslib import table_formatter
 
 
-def print_schedule(schedule, max_lines, full=False):
+def print_schedule(schedule, max_lines, full=False, columns=None):
     if not schedule.is_valid():
         print("Schedule not found")
         return
@@ -48,7 +48,7 @@ def print_schedule(schedule, max_lines, full=False):
         for vnode_state in sorted_vnode_states:
             _add_vnode_state_to_table(vnode_state, vnode_state_table)
 
-        table_formatter.format_table(vnode_state_table)
+        table_formatter.format_table(vnode_state_table, columns)
 
 
 def _add_vnode_state_to_table(vnode_state, table):
@@ -91,47 +91,39 @@ def print_repair_summary(repairs):
     )
 
 
-def print_schedules(schedules, max_lines):
+def print_schedules(schedules, max_lines, columns=None):
     schedule_table = [
         ["Id", "Keyspace", "Table", "Status", "Repaired(%)", "Completed at", "Next repair", "Repair type"]
     ]
     print("Snapshot as of", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    print_schedule_table(schedule_table, schedules, max_lines)
+    print_schedule_table(schedule_table, schedules, max_lines, columns)
     print_summary(schedules)
 
 
-def print_repairs(repairs, max_lines=-1):
+def print_repairs(repairs, max_lines=-1, columns=None):
     repair_table = [["Id", "Host Id", "Keyspace", "Table", "Status", "Repaired(%)", "Completed at", "Repair type"]]
-    print_repair_table(repair_table, repairs, max_lines)
+    print_repair_table(repair_table, repairs, max_lines, columns)
     print_repair_summary(repairs)
 
 
-def print_schedule_table(schedule_table, schedules, max_lines):
+def print_schedule_table(schedule_table, schedules, max_lines, columns):
     sorted_schedules = sorted(schedules, key=lambda x: (x.last_repaired_at_in_ms, x.repaired_ratio), reverse=False)
     if max_lines > -1:
         sorted_schedules = sorted_schedules[:max_lines]
 
     for schedule in sorted_schedules:
         schedule_table.append(_convert_schedule(schedule))
-    table_formatter.format_table(schedule_table)
+    table_formatter.format_table(schedule_table, columns)
 
 
-def print_repair_table(repair_table, repairs, max_lines):
+def print_repair_table(repair_table, repairs, max_lines, columns):
     sorted_repairs = sorted(repairs, key=lambda x: (x.completed_at, x.repaired_ratio), reverse=False)
     if max_lines > -1:
         sorted_repairs = sorted_repairs[:max_lines]
 
     for repair in sorted_repairs:
         repair_table.append(_convert_repair(repair))
-    table_formatter.format_table(repair_table)
-
-
-def print_repair(repair):
-    repair_table = [
-        ["Id", "Host Id", "Keyspace", "Table", "Status", "Repaired(%)", "Completed at", "Repair type"],
-        _convert_repair(repair),
-    ]
-    table_formatter.format_table(repair_table)
+    table_formatter.format_table(repair_table, columns)
 
 
 def _convert_repair(repair):
@@ -163,12 +155,12 @@ def _convert_schedule(schedule):
     return entry
 
 
-def print_repair_info(repair_info, max_lines=-1):
+def print_repair_info(repair_info, max_lines=-1, columns=None):
     print("Time window between '{0}' and '{1}'".format(repair_info.get_since(), repair_info.get_to()))
-    print_repair_stats(repair_info.repair_stats, max_lines)
+    print_repair_stats(repair_info.repair_stats, max_lines, columns)
 
 
-def print_repair_stats(repair_stats, max_lines=-1):
+def print_repair_stats(repair_stats, max_lines=-1, columns=None):
     repair_stats_table = [["Keyspace", "Table", "Repaired (%)", "Repair time taken"]]
     sorted_repair_stats = sorted(repair_stats, key=lambda x: (x.repaired_ratio, x.keyspace, x.table), reverse=False)
     if max_lines > -1:
@@ -176,7 +168,7 @@ def print_repair_stats(repair_stats, max_lines=-1):
 
     for repair_stat in sorted_repair_stats:
         repair_stats_table.append(_convert_repair_stat(repair_stat))
-    table_formatter.format_table(repair_stats_table)
+    table_formatter.format_table(repair_stats_table, columns)
 
 
 def _convert_repair_stat(repair_stat):

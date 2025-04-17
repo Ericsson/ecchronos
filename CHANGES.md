@@ -1,5 +1,9 @@
 # Changes
 
+## Version 6.0.5
+
+* Possible to filter columns in output - Issue #925
+
 ## Version 6.0.4
 
 * CRL not properly applied when using certificate files - Issue #932

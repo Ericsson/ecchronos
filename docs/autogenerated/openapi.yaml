@@ -345,28 +345,24 @@ paths:
 components:
   schemas:
     OnDemandRepair:
-      required:
-      - completedAt
-      - hostId
-      - id
-      - keyspace
-      - repairType
-      - repairedRatio
-      - status
-      - table
       type: object
       properties:
         id:
+          minLength: 1
           type: string
           format: uuid
         hostId:
+          minLength: 1
           type: string
           format: uuid
         keyspace:
+          minLength: 1
           type: string
         table:
+          minLength: 1
           type: string
         status:
+          minLength: 1
           type: string
           enum:
           - COMPLETED
@@ -384,32 +380,27 @@ components:
           type: integer
           format: int64
         repairType:
+          minLength: 1
           type: string
           enum:
           - VNODE
           - PARALLEL_VNODE
           - INCREMENTAL
     Schedule:
-      required:
-      - config
-      - id
-      - keyspace
-      - lastRepairedAtInMs
-      - nextRepairInMs
-      - repairType
-      - repairedRatio
-      - status
-      - table
       type: object
       properties:
         id:
+          minLength: 1
           type: string
           format: uuid
         keyspace:
+          minLength: 1
           type: string
         table:
+          minLength: 1
           type: string
         status:
+          minLength: 1
           type: string
           enum:
           - COMPLETED
@@ -431,6 +422,7 @@ components:
         config:
           $ref: "#/components/schemas/ScheduleConfig"
         repairType:
+          minLength: 1
           type: string
           enum:
           - VNODE
@@ -441,12 +433,6 @@ components:
           items:
             $ref: "#/components/schemas/VirtualNodeState"
     ScheduleConfig:
-      required:
-      - errorTimeInMs
-      - intervalInMs
-      - parallelism
-      - unwindRatio
-      - warningTimeInMs
       type: object
       properties:
         intervalInMs:
@@ -466,16 +452,11 @@ components:
           type: integer
           format: int64
         parallelism:
+          minLength: 1
           type: string
           enum:
           - PARALLEL
     VirtualNodeState:
-      required:
-      - endToken
-      - lastRepairedAtInMs
-      - repaired
-      - replicas
-      - startToken
       type: object
       properties:
         startToken:
@@ -498,10 +479,6 @@ components:
         repaired:
           type: boolean
     RepairInfo:
-      required:
-      - repairStats
-      - sinceInMs
-      - toInMs
       type: object
       properties:
         sinceInMs:
@@ -517,16 +494,13 @@ components:
           items:
             $ref: "#/components/schemas/RepairStats"
     RepairStats:
-      required:
-      - keyspace
-      - repairTimeTakenMs
-      - repairedRatio
-      - table
       type: object
       properties:
         keyspace:
+          minLength: 1
           type: string
         table:
+          minLength: 1
           type: string
         repairedRatio:
           maximum: 1
