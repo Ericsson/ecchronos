@@ -3,9 +3,7 @@
 ecctool is a command line utility which can be used to perform actions towards a local ecChronos instance. The actions are implemented in form of subcommands with arguments. All visualization is displayed in form of human-readable tables.
 
 ```console
-usage: ecctool [-h]
-               {repairs,schedules,run-repair,repair-info,start,stop,status}
-               ...
+usage: ecctool [-h] {repairs,schedules,run-repair,repair-info,start,stop,status,running-job} ...
 ```
 
 
@@ -17,13 +15,16 @@ show this help message and exit
 Get information about repairs for tables. The repair information is based on repair history, meaning that both manual repairs and schedules will contribute to the repair information. This subcommand requires the user to provide either –since or –duration if –keyspace and –table is not provided. If repair info is fetched for a specific table using –keyspace and –table, the duration will default to the table’s GC_GRACE_SECONDS.
 
 ```console
-usage: ecctool repair-info [-h] [-k KEYSPACE] [-t TABLE] [-s SINCE]
-                           [-d DURATION] [--local] [-u URL] [-l LIMIT]
+usage: ecctool repair-info [-h] [-c [COLUMN [COLUMN ...]]] [-k KEYSPACE] [-t TABLE] [-s SINCE] [-d DURATION] [--local] [-u URL] [-l LIMIT]
 ```
 
 
 ### -h, --help
 show this help message and exit
+
+
+### -c &lt;column&gt;, --column &lt;column&gt;
+Output only stated columns (or all if none is given). First column is 0.
 
 
 ### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
@@ -58,13 +59,16 @@ Limits the number of rows printed in the output. Specified as a number, -1 to di
 Show the status of all manual repairs. This subcommand has no mandatory parameters.
 
 ```console
-usage: ecctool repairs [-h] [-k KEYSPACE] [-t TABLE] [-u URL] [-i ID]
-                       [-l LIMIT] [--hostid HOSTID]
+usage: ecctool repairs [-h] [-c [COLUMN [COLUMN ...]]] [-k KEYSPACE] [-t TABLE] [-u URL] [-i ID] [-l LIMIT] [--hostid HOSTID]
 ```
 
 
 ### -h, --help
 show this help message and exit
+
+
+### -c &lt;column&gt;, --column &lt;column&gt;
+Output only stated columns (or all if none is given). First column is 0.
 
 
 ### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
@@ -95,8 +99,7 @@ Show repairs for the specified host id. The host id corresponds to the Cassandra
 Run a manual repair. The manual repair will be triggered in ecChronos. EcChronos will perform repair through Cassandra JMX interface. This subcommand has no mandatory parameters.
 
 ```console
-usage: ecctool run-repair [-h] [-u URL] [--local] [-r REPAIR_TYPE]
-                          [-k KEYSPACE] [-t TABLE]
+usage: ecctool run-repair [-h] [-u URL] [--local] [-r REPAIR_TYPE] [-k KEYSPACE] [-t TABLE]
 ```
 
 
@@ -123,18 +126,37 @@ Run repair for the specified keyspace. Repair will be run for all tables within 
 ### -t &lt;table&gt;, --table &lt;table&gt;
 Run repair for the specified table. Keyspace argument -k or –keyspace becomes mandatory if using this argument.
 
-## ecctool schedules
+## ecctool running-job
 
-Show the status of schedules. This subcommand has no mandatory parameters.
+Show which (if any) job is currently running
 
 ```console
-usage: ecctool schedules [-h] [-k KEYSPACE] [-t TABLE] [-u URL] [-i ID] [-f]
-                         [-l LIMIT]
+usage: ecctool running-job [-h] [-u URL]
 ```
 
 
 ### -h, --help
 show this help message and exit
+
+
+### -u &lt;url&gt;, --url &lt;url&gt;
+The ecChronos host to connect to, specified in the format [http:/](http:/)/&lt;host&gt;:&lt;port&gt;.
+
+## ecctool schedules
+
+Show the status of schedules. This subcommand has no mandatory parameters.
+
+```console
+usage: ecctool schedules [-h] [-c [COLUMN [COLUMN ...]]] [-k KEYSPACE] [-t TABLE] [-u URL] [-i ID] [-f] [-l LIMIT]
+```
+
+
+### -h, --help
+show this help message and exit
+
+
+### -c &lt;column&gt;, --column &lt;column&gt;
+Output only stated columns (or all if none is given). First column is 0.
 
 
 ### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
@@ -215,24 +237,3 @@ Stops the ecChronos instance by pid fetched from the specified pid file.
 # Examples
 
 For example usage and explanation about output refer to [ECCTOOL_EXAMPLES.md](../ECCTOOL_EXAMPLES.md)
-
-## ecctool running-job
-
-Show which (if any) job that is currently running.
-
-```console
-usage: ecctool running-job [-h] [-u URL]
-
-Show which (if any) job is currently running
-
-optional arguments:
-  -h, --help         show this help message and exit
-  -u URL, --url URL  The ecChronos host to connect to, specified in the format http://<host>:<port>.
-```
-
-### -h, --help
-show this help message and exit
-
-
-### -u &lt;url&gt;, --url &lt;url&gt;
-The ecChronos host to connect to, specified in the format [http:/](http:/)/&lt;host&gt;:&lt;port&gt;.
