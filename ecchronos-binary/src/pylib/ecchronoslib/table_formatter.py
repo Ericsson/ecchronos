@@ -24,14 +24,24 @@ def calculate_max_len(data, i):
     return max_len
 
 
-def format_table(data):
+def format_table(data, columns):
     if len(data) <= 0:
         return
+
+    # Make sure we only work with valid columns
+    valid = []
+    if columns is not None:
+        for column in columns:
+            if 0 <= column < len(data[0]):
+                valid.append(column)
 
     print_format = "| "
     total_length = 2
 
     for idx, _ in enumerate(data[0]):
+        # If any columns are specified, print only those, otherwise print all
+        if len(valid) > 0 and idx not in valid:
+            continue
         max_len = calculate_max_len(data, idx)
         print_format = "{0}{{{1}:{2}s}} | ".format(print_format, idx, max_len)
         total_length += max_len + 3
