@@ -19,6 +19,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.repair.FileBasedR
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.RepairStatsProviderImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorkerManager;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.OnDemandRepairSchedulerImpl;
@@ -52,6 +53,7 @@ public class ECChronos implements Closeable
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
     private final OnDemandRepairSchedulerImpl myOnDemandRepairSchedulerImpl;
     private final RepairStatsProvider myRepairStatsProvider;
+    private final NodeWorkerManager myNodeWorkerManager;
 
     public ECChronos(
             final Config configuration,
@@ -112,16 +114,19 @@ public class ECChronos implements Closeable
 
         AbstractRepairConfigurationProvider repairConfigurationProvider = new FileBasedRepairConfiguration(applicationContext);
 
-        defaultRepairConfigurationProvider.fromBuilder(DefaultRepairConfigurationProvider.newBuilder()
+        myNodeWorkerManager = NodeWorkerManager.newBuilder()
                 .withRepairScheduler(myRepairSchedulerImpl)
-                .withSession(session)
+                .withRepairConfiguration(repairConfigurationProvider::get)
                 .withNativeConnection(nativeConnectionProvider)
                 .withReplicatedTableProvider(myECChronosInternals.getReplicatedTableProvider())
-                .withRepairConfiguration(repairConfigurationProvider::get)
+                .withTableReferenceFactory(myECChronosInternals.getTableReferenceFactory()).build();
+
+        defaultRepairConfigurationProvider.fromBuilder(DefaultRepairConfigurationProvider.newBuilder()
+                .withSession(session)
                 .withEccNodesSync(eccNodesSync)
                 .withJmxConnectionProvider(jmxConnectionProvider)
-                .withDistributedNativeConnectionProvider(nativeConnectionProvider)
-                .withTableReferenceFactory(myECChronosInternals.getTableReferenceFactory()));
+                .withNodeWorkerManager(myNodeWorkerManager)
+                .withDistributedNativeConnectionProvider(nativeConnectionProvider));
 
         myRepairStatsProvider = new RepairStatsProviderImpl(
                 nativeConnectionProvider,
@@ -157,6 +162,12 @@ public class ECChronos implements Closeable
     public RepairStatsProvider repairStatsProvider()
     {
         return myRepairStatsProvider;
+    }
+
+    @Bean
+    public NodeWorkerManager nodeWorkerManager()
+    {
+        return myNodeWorkerManager;
     }
 
     @Override
