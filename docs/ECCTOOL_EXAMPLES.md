@@ -94,14 +94,14 @@ For schedules this value can go up and down as ranges become unrepaired.
 `Completed at`
 - repair type VNODE: the time when the all ranges for the schedule are repaired.
 ecChronos assumes all ranges are repaired if there's no repair history.
-- repair type INCREMENTAL: The last konow point in time that all data was repaired. 
-If Repiered()% is at 100% this will normaly be the current time.
+- repair type INCREMENTAL: The last known point in time that all data was repaired. 
+If Repaired(%) is at 100% this will normally be the current time.
 
 `Next repair`
 - repair type VNODE: the time when the schedule will be made ready for execution.
 This is based on the (oldest range repair time + interval) - repair time taken for the ranges.
 This is updated each time a repair group is completed.
-- repair type INCREMENTAL: If there is something to repaire, ie Repaired(%) is not 100%,
+- repair type INCREMENTAL: If there is something to repair, ie Repaired(%) is not 100%,
 this is the time it will be made ready for execution. This will always be "completed at" + "interval".
 
 `Repair type` - the type of the schedule, can be `VNODE`, `PARALLEL_VNODE` or `INCREMENTAL`. All schedules pre ecChronos 5.0 were `VNODE`.
