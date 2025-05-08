@@ -52,9 +52,11 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -222,29 +224,43 @@ public class ReloadingCertificateHandler implements CertificateHandler
 
         if (tlsConfig.isCertificateConfigured())
         {
-            LOG.info("PEM certificates configured for CQL connections, using internal store type {}", storeType);
+            LOG.info("Will use PEM certificates for CQL connections, using internal store type {}", storeType);
 
             // Get certificate and key files from config
             File certificateFile = new File(tlsConfig.getCertificatePath().get());
             File certificatePrivateKeyFile = new File(tlsConfig.getCertificatePrivateKeyPath().get());
             File trustCertificateFile = new File(tlsConfig.getTrustCertificatePath().get());
 
+            // Put client certificate(s) and its private key into an internal keystore
             KeyStore keyStore = KeyStore.getInstance(storeType);
             keyStore.load(null, null);
 
-            // Setup client certificates and its private key into a keystore/truststore
             CertificateFactory cf = CertificateFactory.getInstance("X.509");
-            Certificate clientCert = cf.generateCertificate(new FileInputStream(certificateFile));
-            Certificate trustCert = cf.generateCertificate(new FileInputStream(trustCertificateFile));
-            PrivateKey privateKey = loadPrivateKey(certificatePrivateKeyFile);
 
-            LOG.info("Private key algorithm: {}", privateKey.getAlgorithm());
+            // Read up all certificates in the file given (chained or not)
+            try (FileInputStream fis = new FileInputStream(certificateFile))
+            {
+                List<Certificate> clientCertificates = new ArrayList<>(cf.generateCertificates(fis));
+                if (clientCertificates.isEmpty())
+                {
+                    throw new CertificateException("No certificate(s) found in the certificate file!");
+                }
+                else
+                {
+                    // Order certs from leaf to root (the client cert will be at index 0 of the certificate array)
+                    Certificate[] certChain = clientCertificates.toArray(new Certificate[0]);
+                    LOG.debug("Number of certificates in certificate chain: {}", certChain.length);
 
-            // Create the certificate chain and add it to the keystore
-            Certificate[] certChain = new Certificate[]{clientCert};
-            keyStore.setKeyEntry("client-key", privateKey, "".toCharArray(), certChain);
+                    // Load and parse the private key
+                    PrivateKey privateKey = loadPrivateKey(certificatePrivateKeyFile);
+                    LOG.debug("Private key algorithm: {}", privateKey.getAlgorithm());
 
-            // Create KeyManagerFactory
+                    // Finally, set the key/certs entry in the keystore
+                    keyStore.setKeyEntry("client-certs", privateKey, "".toCharArray(), certChain);
+                }
+            }
+
+            // Set trusted certificates
             KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             kmf.init(keyStore, "".toCharArray());
 
@@ -252,8 +268,26 @@ public class ReloadingCertificateHandler implements CertificateHandler
             TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             KeyStore trustStore = KeyStore.getInstance(storeType);
             trustStore.load(null, null);
-            trustStore.setCertificateEntry("trust-cert", trustCert);
-            tmf.init(trustStore);
+
+            try (FileInputStream fis = new FileInputStream(trustCertificateFile))
+            {
+                List<Certificate> trustedCertificates = new ArrayList<>(cf.generateCertificates(fis));
+                if (trustedCertificates.isEmpty())
+                {
+                    throw new CertificateException("No certificate(s) found in the trusted certificate file!");
+                }
+                else
+                {
+                    LOG.debug("Number of certificates in trusted certificate chain: {}", trustedCertificates.size());
+                    // Add all certificates in the trusted chain to the internal truststore
+                    for (int i = 0; i < trustedCertificates.size(); i++)
+                    {
+                        trustStore.setCertificateEntry("trusted-certs" + i, trustedCertificates.get(i));
+                    }
+
+                    tmf.init(trustStore);
+                }
+            }
 
             // Finally, set the managers in the builder
             builder.keyManager(kmf);
@@ -261,7 +295,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
         }
         else
         {
-            LOG.info("Keystore/truststore configured for CQL connections, expecting store type {}", storeType);
+            LOG.info("Will use keystore/truststore for CQL connections, expecting store type {}", storeType);
 
             KeyManagerFactory keyManagerFactory = getKeyManagerFactory(tlsConfig);
             builder.keyManager(keyManagerFactory);
@@ -318,6 +352,13 @@ public class ReloadingCertificateHandler implements CertificateHandler
                     .replaceAll("-----BEGIN .*PRIVATE KEY-----", "")
                     .replaceAll("-----END .*PRIVATE KEY-----", "")
                     .replaceAll("\\s", "");
+
+            // Sanity check; no support for old style EC keys
+            if (privateKeyPEM.contains("ECPARAMETERS"))
+            {
+                LOG.error("Old EC key format detected. Use new format instead!");
+                throw new IOException("Unsupported private key EC format");
+            }
 
             // Decode the key into a nice byte array
             byte[] decoded = Base64.getDecoder().decode(privateKeyPEM);
