@@ -44,13 +44,7 @@ public class TestCustomX509TrustManager
      * @throws CertificateException if certificate validation fails
      */
     @Test
-    public void testCheckServerTrustedValidatesAndStoresChain()
-            throws CertificateException,
-            NoSuchAlgorithmException,
-            SignatureException,
-            InvalidKeyException,
-            NoSuchProviderException,
-            CRLException
+    public void testCheckServerTrustedValidatesAndStoresChain() throws CertificateException
     {
         // Mock dependencies
         X509TrustManager mockDelegate = mock(X509TrustManager.class);
@@ -61,12 +55,11 @@ public class TestCustomX509TrustManager
         String authType = "RSA";
         // Set up expectations
         doNothing().when(mockDelegate).checkServerTrusted(chain, authType);
-        doNothing().when(mockValidator).validateCertificate(any(X509Certificate.class), any());
         // Execute method under test
         trustManager.checkServerTrusted(chain, authType);
         // Verify interactions
         verify(mockDelegate).checkServerTrusted(chain, authType);
-        verify(mockValidator).validateCertificate(chain[0], trustManager.getAcceptedIssuers());
+        verify(mockValidator).isCertificateCRLValid(chain[0]);
         // Verify that the last chain and auth type were stored
         assertArrayEquals(trustManager.myLastServerChain, chain);
         assertEquals(authType, trustManager.myLastServerAuthType);
@@ -102,7 +95,7 @@ public class TestCustomX509TrustManager
     }
 
     /**
-     * Tests the behavior of checkClientTrusted when the CRL validation fails.
+     * Tests checkClientTrusted throws when certificate is REVOKED.
      */
     @Test
     public void testCheckClientTrustedCRLValidationFails() throws Exception
@@ -112,7 +105,7 @@ public class TestCustomX509TrustManager
         CustomX509TrustManager trustManager = new CustomX509TrustManager(delegateMock, validatorMock);
         X509Certificate[] dummyChain = new X509Certificate[1];
         dummyChain[0] = Mockito.mock(X509Certificate.class);
-        doThrow(new CertificateException("CRL validation failed")).when(validatorMock).validateCertificate(Mockito.any(), Mockito.any());
+        doReturn(CustomCRLValidator.CRLState.REVOKED).when(validatorMock).isCertificateCRLValid(Mockito.any(X509Certificate.class));
         assertThrows(CertificateException.class, () -> trustManager.checkClientTrusted(dummyChain, "RSA"));
     }
 
@@ -143,7 +136,7 @@ public class TestCustomX509TrustManager
     }
 
     /**
-     * Test case for CRL validator throwing CertificateException.
+     * Test case for CRL validator throwing CertificateException when certificate is REVOKED.
      */
     @Test
     public void testCheckServerTrustedCRLValidatorThrowsException() throws Exception
@@ -154,9 +147,8 @@ public class TestCustomX509TrustManager
         X509Certificate[] chain = new X509Certificate[1];
         chain[0] = Mockito.mock(X509Certificate.class);
         String authType = "RSA";
-        Mockito.doThrow(new CertificateException("CRL validation failed"))
-               .when(validatorMock).validateCertificate(Mockito.any(), Mockito.any());
-        assertThrows(CertificateException.class, () -> trustManager.checkServerTrusted(chain, authType));
+        doReturn(CustomCRLValidator.CRLState.REVOKED).when(validatorMock).isCertificateCRLValid(Mockito.any(X509Certificate.class));
+        assertThrows(CertificateException.class, () -> trustManager.checkClientTrusted(chain, authType));
     }
 
     /**
@@ -187,7 +179,7 @@ public class TestCustomX509TrustManager
         X509Certificate[] dummyChain = new X509Certificate[]{mock(X509Certificate.class)};
         String dummyAuthType = "RSA";
         customTrustManager.checkServerTrusted(dummyChain, dummyAuthType);
-        doThrow(new CertificateException("CRL validation failed")).when(mockValidator).validateCertificate(any(), any());
+        doReturn(CustomCRLValidator.CRLState.REVOKED).when(mockValidator).isCertificateCRLValid(any());
         assertThrows(CertificateException.class, customTrustManager::revalidateServerTrust);
     }
 

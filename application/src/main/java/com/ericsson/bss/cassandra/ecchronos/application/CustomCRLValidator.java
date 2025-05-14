@@ -20,13 +20,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.SignatureException;
 import java.security.cert.CRL;
-import java.security.cert.CRLException;
-import java.security.cert.CertificateException;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
@@ -35,6 +29,13 @@ import java.util.Date;
 public final class CustomCRLValidator
 {
     private static final Logger LOG = LoggerFactory.getLogger(CustomCRLValidator.class);
+
+    public enum CRLState
+    {
+        INVALID,    // Dates etc failed verification
+        VALID,      // Everything is valid and fine, but there is no specific non-revoked CRL
+        REVOKED     // The certificate is specifically revoked by the CRL
+    }
 
     @VisibleForTesting
     protected CRLFileManager myCRLFileManager;
@@ -45,82 +46,52 @@ public final class CustomCRLValidator
         this.myCRLFileManager = new CRLFileManager(crlConfig);
     }
 
-    public void validateCertificate(final X509Certificate cert, final X509Certificate[] chain) // NOPMD
-            throws CertificateException, CRLException, NoSuchAlgorithmException,
-            SignatureException, InvalidKeyException, NoSuchProviderException
+    public CRLState isCertificateCRLValid(final X509Certificate cert) // NOPMD
     {
-        // Sanity check of the provided chain
-        if (chain == null || chain.length < 1)
+        // Sanity check of the provided certificate and chain
+        if (cert == null)
         {
-            throw new CertificateException("Certificate chain must also include CA certificate");
+            return CRLState.INVALID;
         }
-        // Get CA cert
-        X509Certificate caCert = chain[0];
 
-        // Get the latest CRLs
+        // Get the current CRLs and make sure there are CRLs at all
         Collection<? extends CRL> crls = myCRLFileManager.getCurrentCRLs();
-        if (myCRLFileManager.inStrictMode())
+        if (crls == null || crls.isEmpty())
         {
-            // "Emptiness" in strict mode is not allowed
-            if (crls == null || crls.isEmpty())
-            {
-                throw new CertificateException("In strict mode CRLs must be available for validation");
-            }
-            // In strict mode, verify certificate is signed by the same CA (will throw if not)
-            cert.verify(caCert.getPublicKey());
+            return CRLState.INVALID;
         }
 
         // Do the actual revoke checking
-        boolean validCRL = false;
         for (CRL crl : crls)
         {
-            if (crl instanceof X509CRL x509Crl)
+            // Check if this CRL is for our certificate's issuer
+            if ((crl instanceof X509CRL x509Crl)
+                    && x509Crl.getIssuerX500Principal().equals(cert.getIssuerX500Principal()))
             {
-                // Verify CRL is actually signed by the CA
-                if (myCRLFileManager.inStrictMode())
+                // Certificate revoked?
+                if (x509Crl.isRevoked(cert))
                 {
-                    try
-                    {
-                        x509Crl.verify(caCert.getPublicKey());
-                    }
-                    catch (Exception e)
-                    {
-                        // CRL not signed by the CA. Disregard it and continue with the next
-                        continue;
-                    }
+                    LOG.warn("Certificate with serial number {} is revoked by CRL", cert.getSerialNumber());
+                    return CRLState.REVOKED;
                 }
-
-                // Check if this CRL is for our certificate's issuer
-                if (x509Crl.getIssuerX500Principal().equals(cert.getIssuerX500Principal()))
+                // Also, verify the CRL is actually current
+                Date next = x509Crl.getNextUpdate();
+                if (next != null)
                 {
-                    // Certificate revoked?
-                    if (x509Crl.isRevoked(cert))
+                    if (next.before(new Date()))
                     {
-                        LOG.debug("Certificate with serial number {} is revoked", cert.getSerialNumber());
-                        throw new CertificateException(
-                                "Certificate is revoked by CRL: " + cert.getSubjectX500Principal());
+                        LOG.debug("CRL for issuer {} is expired", ((X509CRL) crl).getIssuerX500Principal().getName());
+                        return CRLState.INVALID;
                     }
-                    // Also, verify the CRL is actually current
-                    if (x509Crl.getNextUpdate().before(new Date()))
+                    else
                     {
-                        String expCRL = ((X509CRL) crl).getIssuerX500Principal().getName();
-                        LOG.debug("CRL for issuer {} is expired", expCRL);
-                        throw new CertificateException("CRL is expired: " + expCRL);
+                        return CRLState.VALID;
                     }
-
-                    // At least one CRL (with no revocation) passed, which is necessary for strict mode
-                    validCRL = true;
                 }
             }
         }
-
-        if (myCRLFileManager.inStrictMode() && !validCRL)
-        {
-            throw new CertificateException("No valid CRL found for certificate issuer "
-                    + cert.getIssuerX500Principal().getName());
-        }
-
-        // If this point is reached, the certificate is not revoked
+        // Gone through all CRLs, nothing was valid for this certificate
+        return CRLState.INVALID;
     }
 
     public void addRefreshListener(final Runnable listener)
