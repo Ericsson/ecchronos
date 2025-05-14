@@ -80,19 +80,29 @@ The possible statuses are:
 * `ON_TIME` - the schedule is awaiting execution or is currently running
 * `LATE` - the schedule is late, warning time specified in the configuration has passed.
 * `OVERDUE` - the schedule is overdue, error time specified in the configuration has passed.
-* `COMPLETED` - the schedule is completed, all ranges have been repaired within the interval.
+* `COMPLETED`
+  - repair type VNODE: the schedule is completed, all ranges have been repaired within the interval.
+  - repair type INCREMENTAL: all data is repaired, ie Repaired(%) is 100%. 
 * `BLOCKED` - the schedule is blocked, occurs if a schedule should be executing but
   is blocked by a run-policy or if a repair task has failed and triggered a backoff (30 minutes).
 
-`Repaired(%)` - the number of ranges repaired within the interval vs total ranges.
+`Repaired(%)`
+- repair type VNODE: the number of ranges repaired within the interval vs total ranges.
 For schedules this value can go up and down as ranges become unrepaired.
+- repair type INCREMENTAL: The amount of the data that is repaired, 100% means that all data is repaired.
 
-`Completed at` - the time when the all ranges for the schedule are repaired.
+`Completed at`
+- repair type VNODE: the time when the all ranges for the schedule are repaired.
 ecChronos assumes all ranges are repaired if there's no repair history.
+- repair type INCREMENTAL: The last known point in time that all data was repaired. 
+If Repaired(%) is at 100% this will normally be the current time.
 
-`Next repair` - the time when the schedule will be made ready for execution.
+`Next repair`
+- repair type VNODE: the time when the schedule will be made ready for execution.
 This is based on the (oldest range repair time + interval) - repair time taken for the ranges.
 This is updated each time a repair group is completed.
+- repair type INCREMENTAL: If there is something to repair, ie Repaired(%) is not 100%,
+this is the time it will be made ready for execution. This will always be "completed at" + "interval".
 
 `Repair type` - the type of the schedule, can be `VNODE`, `PARALLEL_VNODE` or `INCREMENTAL`. All schedules pre ecChronos 5.0 were `VNODE`.
 
