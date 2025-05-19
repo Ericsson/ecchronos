@@ -19,11 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.X509TrustManager;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.SignatureException;
-import java.security.cert.CRLException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
@@ -60,27 +55,45 @@ public final class CustomX509TrustManager implements X509TrustManager
     }
 
     @Override
-    public void checkServerTrusted(final X509Certificate[] chain, final String authType)
-            throws CertificateException
+    public void checkServerTrusted(final X509Certificate[] chain, final String authType) throws CertificateException
     {
         myValidationLock.lock();
         try
         {
             // Do the override stuff
             myDelegate.checkServerTrusted(chain, authType);
-            // Now, do our custom checks
+            // Now, do our custom CRL checks (assume INVALID state at start)
+            CustomCRLValidator.CRLState state = CustomCRLValidator.CRLState.INVALID;
             for (X509Certificate cert : chain)
             {
-                myCRLValidator.validateCertificate(cert, getAcceptedIssuers());
+                // Go through the chain to see if we get any other state than VALID or REVOKED
+                state = myCRLValidator.isCertificateCRLValid(cert);
+                if (state != CustomCRLValidator.CRLState.INVALID)
+                {
+                    // So, either VALID or REVOKED were found, no need to continue along the chain
+                    break;
+                }
+            }
+            if (myCRLValidator.inStrictMode() && (state != CustomCRLValidator.CRLState.VALID))
+            {
+                // Strict mode; throw if not VALID (that is, if state is REVOKED or INVALID)
+                throw new CertificateException("No valid CRL found for server trusted");
+            }
+            else
+            {
+                // Non-strict mode; throw only on REVOKED (disregard INVALID and VALID)
+                if (state == CustomCRLValidator.CRLState.REVOKED)
+                {
+                    throw new CertificateException("Certificate is revoked by CRL");
+                }
+                else if (state == CustomCRLValidator.CRLState.INVALID)
+                {
+                    LOG.warn("No valid CRL found for server trusted, keeping connection");
+                }
             }
             // Store the last validated chain and authType for the server checks
             myLastServerChain = Arrays.copyOf(chain, chain.length);
             myLastServerAuthType = authType;
-        }
-        catch (CRLException | NoSuchAlgorithmException | SignatureException
-               | InvalidKeyException | NoSuchProviderException e)
-        {
-            throw new CertificateException("CRL validation failed for server trusted", e);
         }
         finally
         {
@@ -89,27 +102,45 @@ public final class CustomX509TrustManager implements X509TrustManager
     }
 
     @Override
-    public void checkClientTrusted(final X509Certificate[] chain, final String authType)
-            throws CertificateException
+    public void checkClientTrusted(final X509Certificate[] chain, final String authType) throws CertificateException
     {
         myValidationLock.lock();
         try
         {
             // Do the regular client stuff
             myDelegate.checkClientTrusted(chain, authType);
-            // Now, do our custom checks
+            // Now, do our custom CRL checks (assume INVALID state at start)
+            CustomCRLValidator.CRLState state = CustomCRLValidator.CRLState.INVALID;
             for (X509Certificate cert : chain)
             {
-                myCRLValidator.validateCertificate(cert, getAcceptedIssuers());
+                // Go through the chain to see if we get any other state than VALID or REVOKED
+                state = myCRLValidator.isCertificateCRLValid(cert);
+                if (state != CustomCRLValidator.CRLState.INVALID)
+                {
+                    // So, either VALID or REVOKED were found, no need to continue down the chain
+                    break;
+                }
+            }
+            if (myCRLValidator.inStrictMode() && (state != CustomCRLValidator.CRLState.VALID))
+            {
+                // Strict mode; throw if not VALID (that is, if state is REVOKED or INVALID)
+                throw new CertificateException("No valid CRL found for client trusted");
+            }
+            else
+            {
+                // Non-strict mode; throw only on REVOKED (disregard INVALID and VALID)
+                if (state == CustomCRLValidator.CRLState.REVOKED)
+                {
+                    throw new CertificateException("Certificate is revoked by CRL");
+                }
+                else if (state == CustomCRLValidator.CRLState.INVALID)
+                {
+                    LOG.warn("No valid CRL found for client trusted, keeping connection");
+                }
             }
             // Store the last validated chain and authType for the client checks
             myLastClientChain = Arrays.copyOf(chain, chain.length);
             myLastClientAuthType = authType;
-        }
-        catch (CRLException | NoSuchAlgorithmException | SignatureException
-               | InvalidKeyException | NoSuchProviderException e)
-        {
-            throw new CertificateException("CRL validation failed for client trusted", e);
         }
         finally
         {
@@ -177,7 +208,7 @@ public final class CustomX509TrustManager implements X509TrustManager
             {
                 // Non-strict mode: Log a warning, but all connections will be kept alive. CRL checking will only
                 // be done when setting up new connections.
-                LOG.warn("No valid certificate found during CRL refresh (non-strict mode)");
+                LOG.warn("No valid certificate found during CRL refresh (non-strict mode), keeping connections");
             }
         }
     }

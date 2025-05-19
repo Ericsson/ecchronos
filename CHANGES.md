@@ -2,6 +2,7 @@
 
 ## Version 6.0.5
 
+* Certificate chains in PEM files not working - Issue #957
 * Possible to filter columns in output - Issue #925
 
 ## Version 6.0.4
