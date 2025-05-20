@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
+import com.ericsson.bss.cassandra.ecchronos.application.config.connection.ThreadPoolTaskConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.FileBasedRepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
@@ -41,9 +42,12 @@ import java.io.Closeable;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import java.util.Collections;
+import java.util.concurrent.ThreadPoolExecutor;
+
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
 public class ECChronos implements Closeable
@@ -114,12 +118,15 @@ public class ECChronos implements Closeable
 
         AbstractRepairConfigurationProvider repairConfigurationProvider = new FileBasedRepairConfiguration(applicationContext);
 
+        ThreadPoolTaskConfig threadPoolTaskConfig = configuration.getConnectionConfig().getThreadPoolTaskConfig();
+
         myNodeWorkerManager = NodeWorkerManager.newBuilder()
                 .withRepairScheduler(myRepairSchedulerImpl)
                 .withRepairConfiguration(repairConfigurationProvider::get)
                 .withNativeConnection(nativeConnectionProvider)
                 .withReplicatedTableProvider(myECChronosInternals.getReplicatedTableProvider())
-                .withTableReferenceFactory(myECChronosInternals.getTableReferenceFactory()).build();
+                .withTableReferenceFactory(myECChronosInternals.getTableReferenceFactory())
+                .withThreadPool(setupThreadPool(threadPoolTaskConfig)).build();
 
         defaultRepairConfigurationProvider.fromBuilder(DefaultRepairConfigurationProvider.newBuilder()
                 .withSession(session)
@@ -178,6 +185,19 @@ public class ECChronos implements Closeable
         myRepairSchedulerImpl.close();
         myECChronosInternals.close();
         myOnDemandRepairSchedulerImpl.close();
+        myNodeWorkerManager.shutdown();
+    }
+
+    private ThreadPoolTaskExecutor setupThreadPool(final ThreadPoolTaskConfig threadPoolTaskConfig)
+    {
+        ThreadPoolTaskExecutor threadPool = new ThreadPoolTaskExecutor();
+        threadPool.setCorePoolSize(threadPoolTaskConfig.getCorePoolSize());
+        threadPool.setMaxPoolSize(threadPoolTaskConfig.getMaxPoolSize());
+        threadPool.setQueueCapacity(threadPoolTaskConfig.getQueueCapacity());
+        threadPool.setKeepAliveSeconds(threadPoolTaskConfig.getKeepAliveSeconds());
+        threadPool.setThreadNamePrefix("NodeWorker-");
+        threadPool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        return threadPool;
     }
 }
 

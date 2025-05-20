@@ -22,38 +22,69 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairSchedule
 import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Function;
 
 public final class NodeWorkerManager
 {
     private final Map<Node, NodeWorker> myWorkers = new ConcurrentHashMap<>();
-    private final ExecutorService myThreadPool;
+    private final ThreadPoolTaskExecutor myThreadPool;
+
+    private final DistributedNativeConnectionProvider myNativeConnectionProvider;
+    private final ReplicatedTableProvider myReplicatedTableProvider;
+    private final RepairScheduler myRepairScheduler;
+    private final TableReferenceFactory myTableReferenceFactory;
+    private final Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
 
     private NodeWorkerManager(final Builder builder)
     {
-        Collection<Node> nodes = builder.myNativeConnectionProvider.getNodes().values();
-        myThreadPool = Executors.newFixedThreadPool(nodes.size());
-        for (Node node : nodes)
-        {
-            NodeWorker worker = new NodeWorker(
-                    node,
-                    builder.myReplicatedTableProvider,
-                    builder.myRepairScheduler,
-                    Preconditions.checkNotNull(builder.myTableReferenceFactory,
-                    "Table reference factory must be set"),
-                    builder.myRepairConfigurationFunction,
-                    builder.myNativeConnectionProvider.getCqlSession());
-            myWorkers.put(node, worker);
-            myThreadPool.submit(worker);
-        }
+        myNativeConnectionProvider = builder.myNativeConnectionProvider;
+        Collection<Node> nodes = myNativeConnectionProvider.getNodes().values();
+        myReplicatedTableProvider = builder.myReplicatedTableProvider;
+        myRepairScheduler = builder.myRepairScheduler;
+        myTableReferenceFactory = builder.myTableReferenceFactory;
+        myRepairConfigurationFunction = builder.myRepairConfigurationFunction;
+        myThreadPool = builder.myThreadPool;
+        myThreadPool.initialize();
+        setupInitialNodeWorkers(nodes);
+    }
+
+    private void setupInitialNodeWorkers(final Collection<Node> nodes)
+    {
+        nodes.forEach(this::addNewNodeToThreadPool);
+    }
+
+    private void addNewNodeToThreadPool(final Node node)
+    {
+        NodeWorker worker = new NodeWorker(
+                node,
+                myReplicatedTableProvider,
+                myRepairScheduler,
+                Preconditions.checkNotNull(myTableReferenceFactory,
+                        "Table reference factory must be set"),
+                myRepairConfigurationFunction,
+                myNativeConnectionProvider.getCqlSession());
+        myWorkers.put(node, worker);
+        myThreadPool.submit(worker);
+    }
+
+    public synchronized void addNode(final Node node)
+    {
+        addNewNodeToThreadPool(node);
+    }
+
+    public synchronized void removeNode(final Node node)
+    {
+        NodeWorker nodeWorker = myWorkers.get(node);
+        myWorkers.remove(node);
+        myThreadPool.stop(nodeWorker);
     }
 
     public void broadcastEvent(final RepairEvent event)
@@ -64,11 +95,17 @@ public final class NodeWorkerManager
 
     public void shutdown()
     {
-        myThreadPool.shutdownNow();
+        myThreadPool.shutdown();
+    }
+
+    @VisibleForTesting
+    public Collection<NodeWorker> getWorkers()
+    {
+        return myWorkers.values();
     }
 
     /**
-     * Create Builder for DefaultRepairConfigurationProvider.
+     * Create Builder for NodeWorkerManager.
      * @return Builder the Builder instance for the class.
      */
     public static Builder newBuilder()
@@ -83,6 +120,7 @@ public final class NodeWorkerManager
         private RepairScheduler myRepairScheduler;
         private TableReferenceFactory myTableReferenceFactory;
         private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
+        private ThreadPoolTaskExecutor myThreadPool;
 
         /**
          * Build with repair configuration.
@@ -142,6 +180,18 @@ public final class NodeWorkerManager
         public Builder withTableReferenceFactory(final TableReferenceFactory tableReferenceFactory)
         {
             myTableReferenceFactory = tableReferenceFactory;
+            return this;
+        }
+
+        /**
+         * Build with thread pool task executor.
+         *
+         * @param threadPool The thread pool task executor.
+         * @return Builder
+         */
+        public Builder withThreadPool(final ThreadPoolTaskExecutor threadPool)
+        {
+            myThreadPool = threadPool;
             return this;
         }
 

@@ -19,6 +19,18 @@
 ## Properties for connection to Cassandra nodes
 ##
 connection:
+  # Configuration for the ThreadPoolTaskExecutor used by ecChronos.
+  # This thread pool controls how many concurrent threads the NodeManager can use.
+  # The number of threads should be proportional to the number of nodes managed by this instance.
+  threadPool:
+    ## Minimum number of threads in the pool
+    corePoolSize: 4
+    ## Maximum number of threads in the pool
+    maxPoolSize: 10
+    ## Queue capacity for pending tasks
+    queueCapacity: 20
+    ## Keep idle threads alive for 60 seconds
+    keepAliveSeconds: 60
   cql:
     ## Configuration to define Agent Strategy and hosts for ecChronos
     ## to connect to. The application will use the configurations

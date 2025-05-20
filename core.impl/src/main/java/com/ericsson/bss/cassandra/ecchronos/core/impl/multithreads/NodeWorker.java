@@ -30,6 +30,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairSchedule
 import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
+import com.google.common.annotations.VisibleForTesting;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -200,6 +201,12 @@ public final class NodeWorker implements Runnable
     {
         TableReference tableReference = myTableReferenceFactory.forTable(table);
         myRepairScheduler.removeConfiguration(myNode, tableReference);
+    }
+
+    @VisibleForTesting
+    public int getQueueSize()
+    {
+        return myEventQueue.size();
     }
 }
 

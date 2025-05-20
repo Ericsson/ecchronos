@@ -137,7 +137,6 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     public void onTableCreated(final TableMetadata table)
     {
         myWorkerManager.broadcastEvent(new TableCreatedEvent(table));
-
     }
 
     /**
@@ -368,6 +367,10 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         LOG.info("Node added {}", node.getHostId());
         NodeAddedAction callable = new NodeAddedAction(myEccNodesSync, myJmxConnectionProvider, myAgentNativeConnectionProvider, node);
         myService.submit(callable);
+        if (myWorkerManager != null)
+        {
+            myWorkerManager.addNode(node);
+        }
     }
 
     /**
@@ -380,6 +383,10 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         LOG.info("Node removed {}", node.getHostId());
         NodeRemovedAction callable = new NodeRemovedAction(myEccNodesSync, myJmxConnectionProvider, myAgentNativeConnectionProvider, node);
         myService.submit(callable);
+        if (myWorkerManager != null)
+        {
+            myWorkerManager.removeNode(node);
+        }
     }
 
     /**
