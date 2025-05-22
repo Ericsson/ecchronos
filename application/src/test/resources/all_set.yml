@@ -14,6 +14,11 @@
 #
 
 connection:
+  threadPool:
+    corePoolSize: 10
+    maxPoolSize: 50
+    queueCapacity: 10
+    keepAliveSeconds: 30
   cql:
     agent:
       instanceName: unique_identifier

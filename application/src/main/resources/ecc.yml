@@ -19,12 +19,24 @@
 ## Properties for connection to Cassandra nodes
 ##
 connection:
+  # Configuration for the ThreadPoolTaskExecutor used by ecChronos.
+  # This thread pool controls how many concurrent threads the NodeManager can use.
+  # The number of threads should be proportional to the number of nodes managed by this instance.
+  threadPool:
+    ## Minimum number of threads in the pool
+    corePoolSize: 4
+    ## Maximum number of threads in the pool
+    maxPoolSize: 10
+    ## Queue capacity for pending tasks
+    queueCapacity: 20
+    ## The time to keep idle threads alive, in seconds
+    keepAliveSeconds: 60
   cql:
     ## Configuration to define Agent Strategy and hosts for ecChronos
     ## to connect to. The application will use the configurations
     ## specified below, connecting to the listed hosts;
     agent:
-      ## Each ecchronos instance must have unique name.
+      ## Each ecChronos instance must have unique name.
       ## (instanceName: unique identifier), that will be used
       ## as ecchronos_id (partition key in nodes_sync table).
       instanceName: unique_identifier
@@ -47,7 +59,7 @@ connection:
           port: 9042
         - host: 127.0.0.2
           port: 9042
-      ## Configuration to define datacenters for ecchronos
+      ## Configuration to define datacenters for ecChronos
       ## to connect to, datacenterAware enable means that
       ## ecChronos will be responsible for all nodes in the
       ## datacenter list.
@@ -55,7 +67,7 @@ connection:
         datacenters:
           - name: datacenter1
           - name: datacenter2
-      ## Configuration to define racks for ecchronos
+      ## Configuration to define racks for ecChronos
       ## to connect to, rackAware enable means that
       ## ecChronos will be responsible for all nodes in the
       ## rack list, this configuration is designed to manage
@@ -66,7 +78,7 @@ connection:
             rackName: rack1
           - datacenterName: datacenter1
             rackName: rack2
-      ## Configuration to define hosts for ecchronos
+      ## Configuration to define hosts for ecChronos
       ## to connect to, hostAware enable means that
       ## ecChronos will be responsible just for the
       ## specified hosts list.
@@ -168,7 +180,7 @@ repair:
   ## This unit is used in the calculation of priority.
   ## Default is HOURS for backward compatibility.
   ## Ensure to pause repair operations prior to changing the granularity.
-  ## Not doing so may lead to inconsistencies as some ecchronos instances
+  ## Not doing so may lead to inconsistencies as some ecChronos instances
   ## could have different priorities compared to others for the same repair.
   ## Possible values are HOURS, MINUTES, or SECONDS.
   ##

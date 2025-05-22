@@ -14,10 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config;
 
-import com.ericsson.bss.cassandra.ecchronos.application.config.connection.ConnectionConfig;
-import com.ericsson.bss.cassandra.ecchronos.application.config.connection.DistributedJmxConnection;
-import com.ericsson.bss.cassandra.ecchronos.application.config.connection.JolokiaConfig;
-import com.ericsson.bss.cassandra.ecchronos.application.config.connection.RetryPolicyConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.connection.*;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.FileBasedRepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.GlobalRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Interval;
@@ -175,5 +172,16 @@ public class TestDefaultConfig
         assertThat(jolokiaConfig).isNotNull();
         assertThat(jolokiaConfig.isEnabled()).isFalse();
         assertThat(jolokiaConfig.getPort()).isEqualTo(8778);
+    }
+
+    @Test
+    public void testDefaultThreadPoolConfig()
+    {
+        ThreadPoolTaskConfig threadPoolTaskConfig = config.getConnectionConfig().getThreadPoolTaskConfig();
+        assertNotNull(threadPoolTaskConfig);
+        assertThat(threadPoolTaskConfig.getCorePoolSize()).isEqualTo(4);
+        assertThat(threadPoolTaskConfig.getMaxPoolSize()).isEqualTo(10);
+        assertThat(threadPoolTaskConfig.getQueueCapacity()).isEqualTo(20);
+        assertThat(threadPoolTaskConfig.getKeepAliveSeconds()).isEqualTo(60);
     }
 }

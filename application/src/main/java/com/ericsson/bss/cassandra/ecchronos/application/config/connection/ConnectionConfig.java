@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class ConnectionConfig
 {
+    private ThreadPoolTaskConfig myThreadPoolTaskConfig = new ThreadPoolTaskConfig();
     private DistributedNativeConnection myCqlConnection = new DistributedNativeConnection();
     private DistributedJmxConnection myJmxConnection = new DistributedJmxConnection();
 
@@ -49,6 +50,18 @@ public class ConnectionConfig
         {
             myJmxConnection = jmxConnection;
         }
+    }
+
+    @JsonProperty("threadPool")
+    public final ThreadPoolTaskConfig getThreadPoolTaskConfig()
+    {
+        return myThreadPoolTaskConfig;
+    }
+
+    @JsonProperty("threadPool")
+    public final void setThreadPoolTaskConfig(final ThreadPoolTaskConfig threadPoolTaskConfig)
+    {
+        myThreadPoolTaskConfig = threadPoolTaskConfig;
     }
 
     @Override

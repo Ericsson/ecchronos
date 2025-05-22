@@ -326,5 +326,16 @@ public class TestConfig
         assertThat(jolokiaConfig.isEnabled()).isTrue();
         assertThat(jolokiaConfig.getPort()).isEqualTo(7887);
     }
+
+    @Test
+    public void testThreadPoolConfig()
+    {
+        ThreadPoolTaskConfig threadPoolTaskConfig = config.getConnectionConfig().getThreadPoolTaskConfig();
+        assertNotNull(threadPoolTaskConfig);
+        assertThat(threadPoolTaskConfig.getCorePoolSize()).isEqualTo(10);
+        assertThat(threadPoolTaskConfig.getMaxPoolSize()).isEqualTo(50);
+        assertThat(threadPoolTaskConfig.getQueueCapacity()).isEqualTo(10);
+        assertThat(threadPoolTaskConfig.getKeepAliveSeconds()).isEqualTo(30);
+    }
 }
 
