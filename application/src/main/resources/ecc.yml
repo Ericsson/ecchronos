@@ -29,7 +29,7 @@ connection:
     maxPoolSize: 10
     ## Queue capacity for pending tasks
     queueCapacity: 20
-    ## Keep idle threads alive for 60 seconds
+    ## The time to keep idle threads alive, in seconds
     keepAliveSeconds: 60
   cql:
     ## Configuration to define Agent Strategy and hosts for ecChronos
