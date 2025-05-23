@@ -1,5 +1,9 @@
 # Changes
 
+## Version 6.0.6
+
+* Switch to prometheus-metrics-exposition-textformats due to a licence issue - Issue 972
+
 ## Version 6.0.5
 
 * Certificate chains in PEM files not working - Issue #957
