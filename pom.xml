@@ -77,17 +77,6 @@
         <url>http://www.ericsson.com</url>
     </organization>
 
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
-
     <scm>
         <url>https://github.com/ericsson/ecchronos</url>
         <connection>scm:git:git@github.com:ericsson/ecchronos.git</connection>
@@ -120,42 +109,45 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Spring boot -->
-        <org.springframework.boot.version>3.4.3</org.springframework.boot.version>
-        <springdoc.openapi-starter-webmvc-ui.version>2.8.5</springdoc.openapi-starter-webmvc-ui.version>
+        <org.springframework.boot.version>3.5.0</org.springframework.boot.version>
+        <springdoc.openapi-starter-webmvc-ui.version>2.8.8</springdoc.openapi-starter-webmvc-ui.version>
+        <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
-        <swagger-annotations.version>2.2.29</swagger-annotations.version>
+        <swagger-annotations.version>2.2.32</swagger-annotations.version>
 
         <!-- Cassandra -->
         <cassandra.driver.core.version>4.19.0</cassandra.driver.core.version>
-        <guava.version>33.4.0-jre</guava.version>
+        <com.typesafe.config.version>1.4.3</com.typesafe.config.version>
+        <guava.version>33.4.8-jre</guava.version>
         <caffeine.version>3.2.0</caffeine.version>
         <slf4j.version>2.0.17</slf4j.version>
-        <logback.version>1.5.17</logback.version>
+        <logback.version>1.5.18</logback.version>
 
         <!-- Jackson -->
-        <com.fasterxml.jackson.core.version>2.18.3</com.fasterxml.jackson.core.version>
-        <com.fasterxml.jackson.dataformat.version>2.18.3</com.fasterxml.jackson.dataformat.version>
+        <com.fasterxml.jackson.core.version>2.19.0</com.fasterxml.jackson.core.version>
+        <com.fasterxml.jackson.dataformat.version>2.19.0</com.fasterxml.jackson.dataformat.version>
         <org.yaml.snakeyaml.version>2.4</org.yaml.snakeyaml.version>
 
         <!-- Tests -->
-        <mockito.core.version>5.16.1</mockito.core.version>
+        <mockito.core.version>5.18.0</mockito.core.version>
         <assertj.version>3.27.3</assertj.version>
-        <junit.version>5.12.1</junit.version>
-        <org.apache.commons.io.version>2.18.0</org.apache.commons.io.version>
-        <equalsverifier.version>3.19.2</equalsverifier.version>
+        <junit.version>5.12.2</junit.version>
+        <org.apache.commons.io.version>2.19.0</org.apache.commons.io.version>
+        <org.apache.commons.commons-compress.version>1.27.1</org.apache.commons.commons-compress.version>
+        <equalsverifier.version>4.0</equalsverifier.version>
         <jcip.version>1.0</jcip.version>
-        <testcontainers.version>1.20.6</testcontainers.version>
+        <testcontainers.version>1.21.0</testcontainers.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.80</org.bouncycastle.bcpkix-jdk18on.version>
 
         <!-- Plugin versions -->
-        <com.mycila.license-maven-plugin.version>4.6</com.mycila.license-maven-plugin.version>
+        <com.mycila.license-maven-plugin.version>5.0.0</com.mycila.license-maven-plugin.version>
         <org.apache.maven.plugin.maven-jxr-plugin.version>3.6.0</org.apache.maven.plugin.maven-jxr-plugin.version>
         <org.apache.maven.plugins.maven-assembly-plugin.version>3.7.1</org.apache.maven.plugins.maven-assembly-plugin.version>
         <org.apache.maven.plugins-maven-checkstyle-plugin.version>3.6.0</org.apache.maven.plugins-maven-checkstyle-plugin.version>
         <org.apache.maven.plugins.maven-compiler-plugin.version>3.14.0</org.apache.maven.plugins.maven-compiler-plugin.version>
         <org.apache.maven.plugins-maven-dependency-plugin.version>3.8.1</org.apache.maven.plugins-maven-dependency-plugin.version>
         <org.apache.maven.plugins.maven-deploy-plugin.version>3.1.4</org.apache.maven.plugins.maven-deploy-plugin.version>
-        <org.apache.maven.plugins.maven-failsafe-plugin.version>3.5.2</org.apache.maven.plugins.maven-failsafe-plugin.version>
+        <org.apache.maven.plugins.maven-failsafe-plugin.version>3.5.3</org.apache.maven.plugins.maven-failsafe-plugin.version>
         <org.apache.maven.plugins.maven-gpg-plugin.version>3.2.7</org.apache.maven.plugins.maven-gpg-plugin.version>
         <org.apache.maven.plugins.maven-install-plugin.version>3.1.4</org.apache.maven.plugins.maven-install-plugin.version>
         <org.apache.maven.plugins-maven-jar-plugin.version>3.4.2</org.apache.maven.plugins-maven-jar-plugin.version>
@@ -165,11 +157,12 @@
         <org.apache.maven.plugins-maven-resources-plugin.version>3.3.1</org.apache.maven.plugins-maven-resources-plugin.version>
         <org.apache.maven.plugins-maven-shade-plugin.version>3.6.0</org.apache.maven.plugins-maven-shade-plugin.version>
         <org.apache.maven.plugins.maven-source-plugin.version>3.3.1</org.apache.maven.plugins.maven-source-plugin.version>
-        <org.apache.maven.plugins.maven-surefire-plugin.version>3.5.2</org.apache.maven.plugins.maven-surefire-plugin.version>
+        <org.apache.maven.plugins.maven-surefire-plugin.version>3.5.3</org.apache.maven.plugins.maven-surefire-plugin.version>
         <org.apache.servicemix.tooling.depends-maven-plugin.version>1.5.0</org.apache.servicemix.tooling.depends-maven-plugin.version>
         <org.codehaus.mojo.exec-maven-plugin.version>3.5.0</org.codehaus.mojo.exec-maven-plugin.version>
         <org.codehaus.mojo.license-maven-plugin.version>2.5.0</org.codehaus.mojo.license-maven-plugin.version>
-        <org.jacoco.jacoco-maven-plugin.version>0.8.12</org.jacoco.jacoco-maven-plugin.version>
+        <org.jacoco.jacoco-maven-plugin.version>0.8.13</org.jacoco.jacoco-maven-plugin.version>
+        <org.sonatype.central-central-publishing-maven-plugin>0.7.0</org.sonatype.central-central-publishing-maven-plugin>
 
         <jolokia.adapter.version>2.1.1</jolokia.adapter.version>
 
@@ -179,6 +172,33 @@
 
     <dependencyManagement>
         <dependencies>
+
+            <!-- Temporary override versions of indirect dependencies (not yet stepped by the direct dependency) -->
+
+            <!-- Used by testcontainers, steped due to CVE-2024-25710 -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>${org.apache.commons.commons-compress.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- Used by spring-boot-starter-web -->
+            <dependency>
+                <groupId>jakarta.servlet</groupId>
+                <artifactId>jakarta.servlet-api</artifactId>
+                <version>${jakarta.servlet-api.version}</version>
+            </dependency>
+
+            <!-- Used by java-driver -->
+            <dependency>
+                <groupId>com.typesafe</groupId>
+                <artifactId>config</artifactId>
+                <version>${com.typesafe.config.version}</version>
+            </dependency>
+
+            <!-- End of temporary override section -->
+
             <!-- Spring boot -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
@@ -587,6 +607,9 @@ limitations under the License.
                 <plugin>
                     <artifactId>maven-deploy-plugin</artifactId>
                     <version>${org.apache.maven.plugins.maven-deploy-plugin.version}</version>
+                    <configuration>
+                        <skip>true</skip>
+                    </configuration>
                 </plugin>
 
                 <plugin>
@@ -669,6 +692,23 @@ limitations under the License.
 
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>${org.sonatype.central-central-publishing-maven-plugin}</version>
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>publish</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <publishingServerId>publisher</publishingServerId>
+                </configuration>
             </plugin>
         </plugins>
     </build>
