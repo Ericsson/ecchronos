@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Enable Multithreading Support in the EcChronos Agent for Node Operations - Issue #959
 * Modify ecctool to Allow Repairs to be Created Without Requiring a Node ID - Issue #903
 * Create ecchronos-binary Module with ecctool for Interacting with the ecChronos REST API - Issue #867
 * Update TestContainers Template to Enable or Disable Jolokia in Cassandra - Issue #844

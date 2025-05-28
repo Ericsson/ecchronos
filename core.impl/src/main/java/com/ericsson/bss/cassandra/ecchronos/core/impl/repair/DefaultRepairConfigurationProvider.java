@@ -16,24 +16,16 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorkerManager;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.refresh.NodeAddedAction;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.refresh.NodeRemovedAction;
-import com.ericsson.bss.cassandra.ecchronos.core.metadata.Metadata;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairScheduler;
-import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
-import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
-import java.util.Collections;
-import java.util.Set;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.CloseEvent;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.KeyspaceCreatedEvent;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.SetupEvent;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.TableCreatedEvent;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.TableDroppedEvent;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.HashSet;
-import java.util.Map;
-
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.NodeStateListenerBase;
@@ -47,12 +39,11 @@ import com.datastax.oss.driver.api.core.session.Session;
 import com.datastax.oss.driver.api.core.type.UserDefinedType;
 
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
-import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A repair configuration provider that adds configuration to {@link RepairScheduler} based on whether the table
+ * A repair configuration provider that adds configuration to {@link NodeWorkerManager} based on whether the table
  * is replicated locally using the default repair configuration provided during construction of this object.
  */
 @SuppressWarnings("PMD.GodClass")
@@ -60,13 +51,9 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultRepairConfigurationProvider.class);
     private static final Integer NO_OF_THREADS = 1;
+    private NodeWorkerManager myWorkerManager;
 
     private CqlSession mySession;
-    private DistributedNativeConnectionProvider myNativeConnectionProvider;
-    private ReplicatedTableProvider myReplicatedTableProvider;
-    private RepairScheduler myRepairScheduler;
-    private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
-    private TableReferenceFactory myTableReferenceFactory;
     private final ExecutorService myService;
     private EccNodesSync myEccNodesSync;
     private DistributedJmxConnectionProvider myJmxConnectionProvider;
@@ -83,18 +70,12 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     private DefaultRepairConfigurationProvider(final Builder builder)
     {
         mySession = builder.mySession;
-        myNativeConnectionProvider = builder.myNativeConnection;
-        myReplicatedTableProvider = builder.myReplicatedTableProvider;
-        myRepairScheduler = builder.myRepairScheduler;
-        myRepairConfigurationFunction = builder.myRepairConfigurationFunction;
-        myTableReferenceFactory = Preconditions.checkNotNull(builder.myTableReferenceFactory,
-                "Table reference factory must be set");
         myEccNodesSync = builder.myEccNodesSync;
         myJmxConnectionProvider = builder.myJmxConnectionProvider;
         myAgentNativeConnectionProvider = builder.myAgentNativeConnectionProvider;
-
         setupConfiguration();
         myService = Executors.newFixedThreadPool(NO_OF_THREADS);
+
     }
 
     /**
@@ -105,16 +86,10 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     public void fromBuilder(final Builder builder)
     {
         mySession = builder.mySession;
-        myNativeConnectionProvider = builder.myNativeConnection;
-        myReplicatedTableProvider = builder.myReplicatedTableProvider;
-        myRepairScheduler = builder.myRepairScheduler;
-        myRepairConfigurationFunction = builder.myRepairConfigurationFunction;
-        myTableReferenceFactory = Preconditions.checkNotNull(builder.myTableReferenceFactory,
-                "Table reference factory must be set");
         myEccNodesSync = builder.myEccNodesSync;
         myJmxConnectionProvider = builder.myJmxConnectionProvider;
         myAgentNativeConnectionProvider = builder.myAgentNativeConnectionProvider;
-
+        myWorkerManager = builder.myNodeWorkerManager;
         setupConfiguration();
     }
 
@@ -126,18 +101,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     @Override
     public void onKeyspaceCreated(final KeyspaceMetadata keyspace)
     {
-        String keyspaceName = keyspace.getName().asInternal();
-        for (Node node : myNativeConnectionProvider.getNodes().values())
-        {
-            if (myReplicatedTableProvider.accept(node, keyspaceName))
-            {
-                allTableOperation(keyspaceName, (tableReference, tableMetadata) -> updateConfiguration(node, tableReference, tableMetadata));
-            }
-            else
-            {
-                allTableOperation(keyspaceName, (tableReference, tableMetadata) -> myRepairScheduler.removeConfiguration(node, tableReference));
-            }
-        }
+        myWorkerManager.broadcastEvent(new KeyspaceCreatedEvent(keyspace));
     }
 
     /**
@@ -161,10 +125,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     @Override
     public void onKeyspaceDropped(final KeyspaceMetadata keyspace)
     {
-        for (TableMetadata table : keyspace.getTables().values())
-        {
-            onTableDropped(table);
-        }
+        keyspace.getTables().values().forEach(this::onTableDropped);
     }
 
     /**
@@ -175,16 +136,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     @Override
     public void onTableCreated(final TableMetadata table)
     {
-        for (Node node : myNativeConnectionProvider.getNodes().values())
-        {
-            if (myReplicatedTableProvider.accept(node, table.getKeyspace().asInternal()))
-            {
-                TableReference tableReference = myTableReferenceFactory.forTable(table.getKeyspace().asInternal(),
-                        table.getName().asInternal());
-                updateConfiguration(node, tableReference, table);
-            }
-        }
-
+        myWorkerManager.broadcastEvent(new TableCreatedEvent(table));
     }
 
     /**
@@ -195,11 +147,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     @Override
     public void onTableDropped(final TableMetadata table)
     {
-        TableReference tableReference = myTableReferenceFactory.forTable(table);
-        for (Node node : myNativeConnectionProvider.getNodes().values())
-        {
-            myRepairScheduler.removeConfiguration(node, tableReference);
-        }
+        myWorkerManager.broadcastEvent(new TableDroppedEvent(table));
     }
 
     /**
@@ -224,58 +172,9 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         {
             for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
             {
-                allTableOperation(keyspaceMetadata.getName().asInternal(), (tableReference, tableMetadata) ->
-                        myNativeConnectionProvider.getNodes().values().forEach(node -> myRepairScheduler.removeConfiguration(node, tableReference)));
+                myWorkerManager.broadcastEvent(new CloseEvent(keyspaceMetadata));
             }
         }
-    }
-
-    private void allTableOperation(
-            final String keyspaceName,
-            final BiConsumer<TableReference, TableMetadata> consumer)
-    {
-        for (TableMetadata tableMetadata : Metadata.getKeyspace(mySession, keyspaceName).get().getTables().values())
-        {
-            String tableName = tableMetadata.getName().asInternal();
-            TableReference tableReference = myTableReferenceFactory.forTable(keyspaceName, tableName);
-
-            consumer.accept(tableReference, tableMetadata);
-        }
-    }
-
-    private void updateConfiguration(
-            final Node node,
-            final TableReference tableReference,
-            final TableMetadata table)
-    {
-        Set<RepairConfiguration> repairConfigurations = myRepairConfigurationFunction.apply(tableReference);
-        Set<RepairConfiguration> enabledRepairConfigurations = new HashSet<>();
-        for (RepairConfiguration repairConfiguration: repairConfigurations)
-        {
-            if (!RepairConfiguration.DISABLED.equals(repairConfiguration)
-                    && !isTableIgnored(table, repairConfiguration.getIgnoreTWCSTables()))
-            {
-                enabledRepairConfigurations.add(repairConfiguration);
-            }
-        }
-        myRepairScheduler.putConfigurations(node, tableReference, enabledRepairConfigurations);
-    }
-
-    private boolean isTableIgnored(final TableMetadata table, final boolean ignore)
-    {
-        Map<CqlIdentifier, Object> tableOptions = table.getOptions();
-        if (tableOptions == null)
-        {
-            return false;
-        }
-        Map<String, String> compaction
-                = (Map<String, String>) tableOptions.get(CqlIdentifier.fromInternal("compaction"));
-        if (compaction == null)
-        {
-            return false;
-        }
-        return ignore
-                && "org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy".equals(compaction.get("class"));
     }
 
     /**
@@ -468,6 +367,10 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         LOG.info("Node added {}", node.getHostId());
         NodeAddedAction callable = new NodeAddedAction(myEccNodesSync, myJmxConnectionProvider, myAgentNativeConnectionProvider, node);
         myService.submit(callable);
+        if (myWorkerManager != null)
+        {
+            myWorkerManager.addNode(node);
+        }
     }
 
     /**
@@ -480,6 +383,10 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         LOG.info("Node removed {}", node.getHostId());
         NodeRemovedAction callable = new NodeRemovedAction(myEccNodesSync, myJmxConnectionProvider, myAgentNativeConnectionProvider, node);
         myService.submit(callable);
+        if (myWorkerManager != null)
+        {
+            myWorkerManager.removeNode(node);
+        }
     }
 
     /**
@@ -496,14 +403,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
 
         for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
         {
-            String keyspaceName = keyspaceMetadata.getName().asInternal();
-            for (Node node : myNativeConnectionProvider.getNodes().values())
-            {
-                if (myReplicatedTableProvider.accept(node, keyspaceName))
-                {
-                    allTableOperation(keyspaceName, (tableReference, tableMetadata) -> updateConfiguration(node, tableReference, tableMetadata));
-                }
-            }
+            myWorkerManager.broadcastEvent(new SetupEvent(keyspaceMetadata));
 
         }
     }
@@ -514,14 +414,10 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     public static class Builder
     {
         private CqlSession mySession;
-        private DistributedNativeConnectionProvider myNativeConnection;
-        private ReplicatedTableProvider myReplicatedTableProvider;
-        private RepairScheduler myRepairScheduler;
-        private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
-        private TableReferenceFactory myTableReferenceFactory;
         private EccNodesSync myEccNodesSync;
         private DistributedJmxConnectionProvider myJmxConnectionProvider;
         private DistributedNativeConnectionProvider myAgentNativeConnectionProvider;
+        private NodeWorkerManager myNodeWorkerManager;
 
 
         /**
@@ -533,79 +429,6 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         public Builder withSession(final CqlSession session)
         {
             mySession = session;
-            return this;
-        }
-
-        /**
-         * Build with default repair configuration.
-         *
-         * @param defaultRepairConfiguration The default repair configuration
-         * @return Builder
-         */
-        public Builder withDefaultRepairConfiguration(final RepairConfiguration defaultRepairConfiguration)
-        {
-            myRepairConfigurationFunction = (tableReference) -> Collections.singleton(defaultRepairConfiguration);
-            return this;
-        }
-
-        /**
-         * Build with repair configuration.
-         *
-         * @param defaultRepairConfiguration The default repair configuration
-         * @return Builder
-         */
-        public Builder withRepairConfiguration(final Function<TableReference, Set<RepairConfiguration>>
-                defaultRepairConfiguration)
-        {
-            myRepairConfigurationFunction = defaultRepairConfiguration;
-            return this;
-        }
-
-        /**
-         * Build with replicated table provider.
-         *
-         * @param replicatedTableProvider The replicated table provider
-         * @return Builder
-         */
-        public Builder withReplicatedTableProvider(final ReplicatedTableProvider replicatedTableProvider)
-        {
-            myReplicatedTableProvider = replicatedTableProvider;
-            return this;
-        }
-
-        /**
-         * Build with table repair scheduler.
-         *
-         * @param repairScheduler The repair scheduler
-         * @return Builder
-         */
-        public Builder withRepairScheduler(final RepairScheduler repairScheduler)
-        {
-            myRepairScheduler = repairScheduler;
-            return this;
-        }
-
-        /**
-         * Build with table reference factory.
-         *
-         * @param tableReferenceFactory The table reference factory
-         * @return Builder
-         */
-        public Builder withTableReferenceFactory(final TableReferenceFactory tableReferenceFactory)
-        {
-            myTableReferenceFactory = tableReferenceFactory;
-            return this;
-        }
-
-        /**
-         * Build with run DistributedNativeConnectionProvider.
-         *
-         * @param nativeConnection the Native Connection that contains Cassandra nodes.
-         * @return Builder Native Connection
-         */
-        public Builder withNativeConnection(final DistributedNativeConnectionProvider nativeConnection)
-        {
-            myNativeConnection = nativeConnection;
             return this;
         }
 
@@ -639,6 +462,17 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         public Builder withJmxConnectionProvider(final DistributedJmxConnectionProvider jmxConnectionProvider)
         {
             myJmxConnectionProvider = jmxConnectionProvider;
+            return this;
+        }
+
+        /**
+         * Build with NodeWorkerManager.
+         * @param nodeWorkerManager the node worker manager.
+         * @return Builder with NodeWorkerManager
+         */
+        public Builder withNodeWorkerManager(final NodeWorkerManager nodeWorkerManager)
+        {
+            myNodeWorkerManager = nodeWorkerManager;
             return this;
         }
 

@@ -15,10 +15,12 @@
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
+import com.ericsson.bss.cassandra.ecchronos.application.config.connection.ThreadPoolTaskConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.FileBasedRepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.RepairStatsProviderImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorkerManager;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandStatus;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.OnDemandRepairSchedulerImpl;
@@ -40,9 +42,12 @@ import java.io.Closeable;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import java.util.Collections;
+import java.util.concurrent.ThreadPoolExecutor;
+
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
 public class ECChronos implements Closeable
@@ -52,6 +57,7 @@ public class ECChronos implements Closeable
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
     private final OnDemandRepairSchedulerImpl myOnDemandRepairSchedulerImpl;
     private final RepairStatsProvider myRepairStatsProvider;
+    private final NodeWorkerManager myNodeWorkerManager;
 
     public ECChronos(
             final Config configuration,
@@ -112,16 +118,22 @@ public class ECChronos implements Closeable
 
         AbstractRepairConfigurationProvider repairConfigurationProvider = new FileBasedRepairConfiguration(applicationContext);
 
-        defaultRepairConfigurationProvider.fromBuilder(DefaultRepairConfigurationProvider.newBuilder()
+        ThreadPoolTaskConfig threadPoolTaskConfig = configuration.getConnectionConfig().getThreadPoolTaskConfig();
+
+        myNodeWorkerManager = NodeWorkerManager.newBuilder()
                 .withRepairScheduler(myRepairSchedulerImpl)
-                .withSession(session)
+                .withRepairConfiguration(repairConfigurationProvider::get)
                 .withNativeConnection(nativeConnectionProvider)
                 .withReplicatedTableProvider(myECChronosInternals.getReplicatedTableProvider())
-                .withRepairConfiguration(repairConfigurationProvider::get)
+                .withTableReferenceFactory(myECChronosInternals.getTableReferenceFactory())
+                .withThreadPool(setupThreadPool(threadPoolTaskConfig)).build();
+
+        defaultRepairConfigurationProvider.fromBuilder(DefaultRepairConfigurationProvider.newBuilder()
+                .withSession(session)
                 .withEccNodesSync(eccNodesSync)
                 .withJmxConnectionProvider(jmxConnectionProvider)
-                .withDistributedNativeConnectionProvider(nativeConnectionProvider)
-                .withTableReferenceFactory(myECChronosInternals.getTableReferenceFactory()));
+                .withNodeWorkerManager(myNodeWorkerManager)
+                .withDistributedNativeConnectionProvider(nativeConnectionProvider));
 
         myRepairStatsProvider = new RepairStatsProviderImpl(
                 nativeConnectionProvider,
@@ -159,6 +171,12 @@ public class ECChronos implements Closeable
         return myRepairStatsProvider;
     }
 
+    @Bean
+    public NodeWorkerManager nodeWorkerManager()
+    {
+        return myNodeWorkerManager;
+    }
+
     @Override
     public final void close()
     {
@@ -167,6 +185,19 @@ public class ECChronos implements Closeable
         myRepairSchedulerImpl.close();
         myECChronosInternals.close();
         myOnDemandRepairSchedulerImpl.close();
+        myNodeWorkerManager.shutdown();
+    }
+
+    private ThreadPoolTaskExecutor setupThreadPool(final ThreadPoolTaskConfig threadPoolTaskConfig)
+    {
+        ThreadPoolTaskExecutor threadPool = new ThreadPoolTaskExecutor();
+        threadPool.setCorePoolSize(threadPoolTaskConfig.getCorePoolSize());
+        threadPool.setMaxPoolSize(threadPoolTaskConfig.getMaxPoolSize());
+        threadPool.setQueueCapacity(threadPoolTaskConfig.getQueueCapacity());
+        threadPool.setKeepAliveSeconds(threadPoolTaskConfig.getKeepAliveSeconds());
+        threadPool.setThreadNamePrefix("NodeWorker-");
+        threadPool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        return threadPool;
     }
 }
 

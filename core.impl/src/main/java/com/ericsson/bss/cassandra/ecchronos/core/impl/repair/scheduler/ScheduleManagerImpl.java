@@ -25,12 +25,11 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.Executors;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -47,7 +46,6 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private static final Logger LOG = LoggerFactory.getLogger(ScheduleManagerImpl.class);
 
     static final long DEFAULT_RUN_DELAY_IN_MS = TimeUnit.SECONDS.toMillis(30);
-
     private static final String NO_RUNNING_JOB = "No job is currently running";
 
     private final Map<UUID, ScheduledJobQueue> myQueue = new ConcurrentHashMap<>();
@@ -58,12 +56,13 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private final Map<UUID, JobRunTask> myRunTasks = new ConcurrentHashMap<>();
     private final CASLockFactory myLockFactory;
 
-    private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
-            new ThreadFactoryBuilder().setNameFormat("TaskExecutor-%d").build());
+    private final ScheduledThreadPoolExecutor myExecutor;
 
     private ScheduleManagerImpl(final Builder builder)
     {
         myNodeIDList = builder.myNodeIDList;
+        myExecutor  = new ScheduledThreadPoolExecutor(
+                myNodeIDList.size(), new ThreadFactoryBuilder().setNameFormat("TaskExecutor-%d").build());
         myLockFactory = builder.myLockFactory;
         createScheduleFutureForNodeIDList(builder);
     }
