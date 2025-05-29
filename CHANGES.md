@@ -2,7 +2,8 @@
 
 ## Version 6.0.6
 
-* Switch to prometheus-metrics-exposition-textformats due to a licence issue - Issue 972
+* Add JSON format to ecctool - Issue #980
+* Switch to prometheus-metrics-exposition-textformats due to a licence issue - Issue #972
 
 ## Version 6.0.5
 
