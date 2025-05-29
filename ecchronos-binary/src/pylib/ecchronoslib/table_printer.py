@@ -18,6 +18,7 @@ import json
 from datetime import datetime
 from ecchronoslib import table_formatter
 
+
 def print_schedule(schedule, max_lines, full=False, columns=None, output="table"):
     if not schedule.is_valid():
         print("Schedule not found")
@@ -30,7 +31,6 @@ def print_schedule(schedule, max_lines, full=False, columns=None, output="table"
 
 
 def _print_schedule_table_format(schedule, max_lines, full=False, columns=None):
-
     verbose_print_format = "{0:15s}: {1}"
 
     print(verbose_print_format.format("Id", schedule.job_id))
@@ -47,7 +47,9 @@ def _print_schedule_table_format(schedule, max_lines, full=False, columns=None):
         vnode_state_table = [["Start token", "End token", "Replicas", "Repaired at", "Repaired"]]
 
         sorted_vnode_states = sorted(
-            schedule.vnode_states, key=lambda vnode: vnode.last_repaired_at_in_ms, reverse=True
+            schedule.vnode_states,
+            key=lambda vnode: vnode.last_repaired_at_in_ms,
+            reverse=True,
         )
 
         if max_lines > -1:
@@ -62,7 +64,9 @@ def _print_schedule_table_format(schedule, max_lines, full=False, columns=None):
 def _print_schedule_json_format(schedule, max_lines=-1, full=False):
     if full:
         sorted_vnode_states = sorted(
-            schedule.vnode_states, key=lambda vnode: vnode.last_repaired_at_in_ms, reverse=True
+            schedule.vnode_states,
+            key=lambda vnode: vnode.last_repaired_at_in_ms,
+            reverse=True,
         )
 
         if max_lines > -1:
@@ -112,7 +116,6 @@ def print_repair_summary(repairs):
 
 
 def print_schedules(schedules, max_lines, columns=None, output="table"):
-
     print("Snapshot as of", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     if output == "json":
@@ -125,13 +128,26 @@ def print_schedules(schedules, max_lines, columns=None, output="table"):
 
 def _print_schedules_table_format(schedules, max_lines, columns=None):
     schedule_table = [
-        ["Id", "Keyspace", "Table", "Status", "Repaired(%)", "Completed at", "Next repair", "Repair type"]
+        [
+            "Id",
+            "Keyspace",
+            "Table",
+            "Status",
+            "Repaired(%)",
+            "Completed at",
+            "Next repair",
+            "Repair type",
+        ]
     ]
     print_schedule_table(schedule_table, schedules, max_lines, columns)
 
 
 def _print_schedules_json_format(schedules, max_lines):
-    sorted_schedules = sorted(schedules, key=lambda x: (x.last_repaired_at_in_ms, x.repaired_ratio), reverse=False)
+    sorted_schedules = sorted(
+        schedules,
+        key=lambda x: (x.last_repaired_at_in_ms, x.repaired_ratio),
+        reverse=False,
+    )
     if max_lines > -1:
         sorted_schedules = sorted_schedules[:max_lines]
 
@@ -140,7 +156,6 @@ def _print_schedules_json_format(schedules, max_lines):
 
 
 def print_repairs(repairs, max_lines=-1, columns=None, output="table"):
-
     if output == "json":
         _print_repair_json_format(repairs, max_lines)
     else:
@@ -158,7 +173,11 @@ def _print_repair_json_format(repairs, max_lines=-1):
 
 
 def print_schedule_table(schedule_table, schedules, max_lines, columns):
-    sorted_schedules = sorted(schedules, key=lambda x: (x.last_repaired_at_in_ms, x.repaired_ratio), reverse=False)
+    sorted_schedules = sorted(
+        schedules,
+        key=lambda x: (x.last_repaired_at_in_ms, x.repaired_ratio),
+        reverse=False,
+    )
     if max_lines > -1:
         sorted_schedules = sorted_schedules[:max_lines]
 
@@ -168,7 +187,18 @@ def print_schedule_table(schedule_table, schedules, max_lines, columns):
 
 
 def _print_repair_table_format(repairs, max_lines, columns):
-    repair_table = [["Id", "Host Id", "Keyspace", "Table", "Status", "Repaired(%)", "Completed at", "Repair type"]]
+    repair_table = [
+        [
+            "Id",
+            "Host Id",
+            "Keyspace",
+            "Table",
+            "Status",
+            "Repaired(%)",
+            "Completed at",
+            "Repair type",
+        ]
+    ]
     sorted_repairs = sorted(repairs, key=lambda x: (x.completed_at, x.repaired_ratio), reverse=False)
     if max_lines > -1:
         sorted_repairs = sorted_repairs[:max_lines]
@@ -216,7 +246,11 @@ def print_repair_info(repair_info, max_lines=-1, columns=None, output="table"):
 
 
 def _print_repair_info_json_format(repair_stats, max_lines=-1):
-    sorted_repair_stats = sorted(repair_stats, key=lambda x: (x.repaired_ratio, x.keyspace, x.table), reverse=False)
+    sorted_repair_stats = sorted(
+        repair_stats,
+        key=lambda x: (x.repaired_ratio, x.keyspace, x.table),
+        reverse=False,
+    )
     if max_lines > -1:
         sorted_repair_stats = sorted_repair_stats[:max_lines]
 
@@ -226,7 +260,11 @@ def _print_repair_info_json_format(repair_stats, max_lines=-1):
 
 def print_repair_stats(repair_stats, max_lines=-1, columns=None):
     repair_stats_table = [["Keyspace", "Table", "Repaired (%)", "Repair time taken"]]
-    sorted_repair_stats = sorted(repair_stats, key=lambda x: (x.repaired_ratio, x.keyspace, x.table), reverse=False)
+    sorted_repair_stats = sorted(
+        repair_stats,
+        key=lambda x: (x.repaired_ratio, x.keyspace, x.table),
+        reverse=False,
+    )
     if max_lines > -1:
         sorted_repair_stats = sorted_repair_stats[:max_lines]
 
