@@ -117,6 +117,13 @@ def add_repairs_subcommand(sub_parsers):
         default=-1,
     )
     parser_repairs.add_argument(
+        "-o",
+        "--output",
+        type=str,
+        help="Output format. One of: (json, table).",
+        default="table",
+    )
+    parser_repairs.add_argument(
         "--hostid",
         type=str,
         help="Show repairs for the specified host id. The host id corresponds to the "
@@ -178,6 +185,13 @@ def add_schedules_subcommand(sub_parsers):
         type=int,
         help="Limits the number of rows printed in the output. Specified as a number, " "-1 to disable limit.",
         default=-1,
+    )
+    parser_schedules.add_argument(
+        "-o",
+        "--output",
+        type=str,
+        help="Output format. One of: (json, table).",
+        default="table",
     )
 
 
@@ -295,6 +309,13 @@ def add_repair_info_subcommand(sub_parsers):
         help="Limits the number of rows printed in the output. Specified as a number, " "-1 to disable limit.",
         default=-1,
     )
+    parser_repair_info.add_argument(
+        "-o",
+        "--output",
+        type=str,
+        help="Output format. One of: (json, table).",
+        default="table",
+    )
 
 
 def add_start_subcommand(sub_parsers):
@@ -357,7 +378,7 @@ def schedules(arguments):
             result = request.get_schedule(job_id=arguments.id)
 
         if result.is_successful():
-            table_printer.print_schedule(result.data, arguments.limit, full, arguments.column)
+            table_printer.print_schedule(result.data, arguments.limit, full, arguments.column, arguments.output)
         else:
             print(result.format_exception())
     elif arguments.full:
@@ -369,13 +390,13 @@ def schedules(arguments):
             sys.exit(1)
         result = request.list_schedules(keyspace=arguments.keyspace, table=arguments.table)
         if result.is_successful():
-            table_printer.print_schedules(result.data, arguments.limit, arguments.column)
+            table_printer.print_schedules(result.data, arguments.limit, arguments.column, arguments.output)
         else:
             print(result.format_exception())
     else:
         result = request.list_schedules(keyspace=arguments.keyspace)
         if result.is_successful():
-            table_printer.print_schedules(result.data, arguments.limit, arguments.column)
+            table_printer.print_schedules(result.data, arguments.limit, arguments.column, arguments.output)
         else:
             print(result.format_exception())
 
@@ -385,7 +406,7 @@ def repairs(arguments):
     if arguments.id:
         result = request.get_repair(job_id=arguments.id, host_id=arguments.hostid)
         if result.is_successful():
-            table_printer.print_repairs(result.data, arguments.limit)
+            table_printer.print_repairs(result.data, arguments.limit, output=arguments.output)
         else:
             print(result.format_exception())
     elif arguments.table:
@@ -394,13 +415,13 @@ def repairs(arguments):
             sys.exit(1)
         result = request.list_repairs(keyspace=arguments.keyspace, table=arguments.table, host_id=arguments.hostid)
         if result.is_successful():
-            table_printer.print_repairs(result.data, arguments.limit, arguments.column)
+            table_printer.print_repairs(result.data, arguments.limit, arguments.column, arguments.output)
         else:
             print(result.format_exception())
     else:
         result = request.list_repairs(keyspace=arguments.keyspace, host_id=arguments.hostid)
         if result.is_successful():
-            table_printer.print_repairs(result.data, arguments.limit, arguments.column)
+            table_printer.print_repairs(result.data, arguments.limit, arguments.column, arguments.output)
         else:
             print(result.format_exception())
 
@@ -441,7 +462,7 @@ def repair_info(arguments):
         local=arguments.local,
     )
     if result.is_successful():
-        table_printer.print_repair_info(result.data, arguments.limit, arguments.column)
+        table_printer.print_repair_info(result.data, arguments.limit, arguments.column, arguments.output)
     else:
         print(result.format_exception())
 
