@@ -31,6 +31,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import com.google.common.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -40,8 +42,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-public final class NodeWorker implements Runnable
+public class NodeWorker implements Runnable
 {
+    private static final Logger LOG = LoggerFactory.getLogger(NodeWorker.class);
     private final Node myNode;
     private final BlockingQueue<RepairEvent> myEventQueue = new LinkedBlockingQueue<>();
     private final ReplicatedTableProvider myReplicatedTableProvider;
@@ -49,6 +52,7 @@ public final class NodeWorker implements Runnable
     private final TableReferenceFactory myTableReferenceFactory;
     private final Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
     private final CqlSession mySession;
+
 
     public NodeWorker(
             final Node node,
@@ -66,13 +70,13 @@ public final class NodeWorker implements Runnable
         mySession = session;
     }
 
-    public void submitEvent(final RepairEvent event)
+    public final void submitEvent(final RepairEvent event)
     {
         myEventQueue.offer(event);
     }
 
     @Override
-    public void run()
+    public final void run()
     {
         while (!Thread.currentThread().isInterrupted())
         {
@@ -82,6 +86,7 @@ public final class NodeWorker implements Runnable
                 handleEvent(event);
             }
             catch (InterruptedException e)
+
             {
                 Thread.currentThread().interrupt();
             }
@@ -126,7 +131,12 @@ public final class NodeWorker implements Runnable
         }
     }
 
-    private void onKeyspaceCreated(final KeyspaceCreatedEvent keyspaceEvent)
+    /**
+     * Deal with keyspace creation.
+     * @param keyspaceEvent
+     */
+
+    protected void onKeyspaceCreated(final KeyspaceCreatedEvent keyspaceEvent)
     {
         String keyspaceName = keyspaceEvent.keyspace().getName().asInternal();
         if (myReplicatedTableProvider.accept(myNode, keyspaceName))
@@ -139,7 +149,11 @@ public final class NodeWorker implements Runnable
         }
     }
 
-    private void onTableCreated(final TableCreatedEvent tableEvent)
+    /**
+     * Deal with table creation.
+     * @param tableEvent
+     */
+    protected void onTableCreated(final TableCreatedEvent tableEvent)
     {
         if (myReplicatedTableProvider.accept(myNode, tableEvent.table().getKeyspace().asInternal()))
         {
@@ -197,12 +211,20 @@ public final class NodeWorker implements Runnable
         }
     }
 
-    private void removeConfiguration(final TableMetadata table)
+    /**
+     * Deal with Table removal.
+     * @param table
+     */
+    protected void removeConfiguration(final TableMetadata table)
     {
         TableReference tableReference = myTableReferenceFactory.forTable(table);
         myRepairScheduler.removeConfiguration(myNode, tableReference);
     }
 
+    /**
+     * Used for testing only.
+     * @return
+     */
     @VisibleForTesting
     public int getQueueSize()
     {

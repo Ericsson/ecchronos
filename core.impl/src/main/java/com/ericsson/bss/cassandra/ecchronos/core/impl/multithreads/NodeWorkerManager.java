@@ -32,7 +32,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-public final class NodeWorkerManager
+public class NodeWorkerManager
 {
     private final Map<Node, NodeWorker> myWorkers = new ConcurrentHashMap<>();
     private final ThreadPoolTaskExecutor myThreadPool;
@@ -43,7 +43,7 @@ public final class NodeWorkerManager
     private final TableReferenceFactory myTableReferenceFactory;
     private final Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
 
-    private NodeWorkerManager(final Builder builder)
+    protected NodeWorkerManager(final Builder builder)
     {
         myNativeConnectionProvider = builder.myNativeConnectionProvider;
         Collection<Node> nodes = myNativeConnectionProvider.getNodes().values();
@@ -61,7 +61,11 @@ public final class NodeWorkerManager
         nodes.forEach(this::addNewNodeToThreadPool);
     }
 
-    private void addNewNodeToThreadPool(final Node node)
+    /**
+     * Creates a NodeWorker and adds it to the ThreadPool.
+     * @param node
+     */
+    protected void addNewNodeToThreadPool(final Node node)
     {
         NodeWorker worker = new NodeWorker(
                 node,
@@ -75,31 +79,31 @@ public final class NodeWorkerManager
         myThreadPool.submit(worker);
     }
 
-    public synchronized void addNode(final Node node)
+    public final synchronized void addNode(final Node node)
     {
         addNewNodeToThreadPool(node);
     }
 
-    public synchronized void removeNode(final Node node)
+    public final synchronized void removeNode(final Node node)
     {
         NodeWorker nodeWorker = myWorkers.get(node);
         myWorkers.remove(node);
         myThreadPool.stop(nodeWorker);
     }
 
-    public void broadcastEvent(final RepairEvent event)
+    public final void broadcastEvent(final RepairEvent event)
     {
         myWorkers.values().parallelStream()
                 .forEach(nodeWorker -> nodeWorker.submitEvent(event));
     }
 
-    public void shutdown()
+    public final void shutdown()
     {
         myThreadPool.shutdown();
     }
 
     @VisibleForTesting
-    public Collection<NodeWorker> getWorkers()
+    public final Collection<NodeWorker> getWorkers()
     {
         return myWorkers.values();
     }
@@ -111,6 +115,41 @@ public final class NodeWorkerManager
     public static Builder newBuilder()
     {
         return new Builder();
+    }
+
+    public final Map<Node, NodeWorker> getMyWorkers()
+    {
+        return myWorkers;
+    }
+
+    public final ThreadPoolTaskExecutor getMyThreadPool()
+    {
+        return myThreadPool;
+    }
+
+    public final DistributedNativeConnectionProvider getMyNativeConnectionProvider()
+    {
+        return myNativeConnectionProvider;
+    }
+
+    public final ReplicatedTableProvider getMyReplicatedTableProvider()
+    {
+        return myReplicatedTableProvider;
+    }
+
+    public final RepairScheduler getMyRepairScheduler()
+    {
+        return myRepairScheduler;
+    }
+
+    public final TableReferenceFactory getMyTableReferenceFactory()
+    {
+        return myTableReferenceFactory;
+    }
+
+    public final Function<TableReference, Set<RepairConfiguration>> getMyRepairConfigurationFunction()
+    {
+        return myRepairConfigurationFunction;
     }
 
     public static class Builder
