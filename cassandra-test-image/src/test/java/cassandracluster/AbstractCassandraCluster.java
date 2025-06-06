@@ -102,22 +102,15 @@ public class AbstractCassandraCluster
     protected static void waitForNodesToBeUp( String node, int expectedNodes, long maxWaitTimeInMillis)
     {
         long startTime = System.currentTimeMillis();
-        LOG.info("Waiting 10sec");
-        try
-        {
-            Thread.sleep(DEFAULT_WAIT_TIME_IN_SECS);
-        }
-        catch (InterruptedException e)
-        {
-            // ignore and retry
-        }
+
         while ( startTime + maxWaitTimeInMillis > System.currentTimeMillis())
         {
             try
             {
+                Thread.sleep(DEFAULT_WAIT_TIME_IN_SECS);
                 if (getNodeCountViaNodetool(node) == expectedNodes)
                 {
-                    return;
+                      return;
                 }
             }
             catch (IOException | InterruptedException e)
