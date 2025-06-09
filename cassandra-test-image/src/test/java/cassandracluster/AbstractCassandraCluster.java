@@ -110,7 +110,7 @@ public class AbstractCassandraCluster
                 Thread.sleep(DEFAULT_WAIT_TIME_IN_SECS);
                 if (getNodeCountViaNodetool(node) == expectedNodes)
                 {
-                      return;
+                    return;
                 }
             }
             catch (IOException | InterruptedException e)

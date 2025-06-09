@@ -58,36 +58,23 @@ public class TestTableChanges extends AbstractCassandraCluster
 {
     private static final Integer WAIT_TIME = 1000;
     private static final Logger LOG = LoggerFactory.getLogger(TestThreading.class);
-
-
     @Mock
     private DistributedNativeConnectionProvider nativeConnectionProvider;
-
     @Mock
     private ReplicatedTableProvider replicatedTableProvider;
-
     @Mock
     private RepairScheduler repairScheduler;
-
     @Mock
     private TableReferenceFactory tableReferenceFactory;
-
     private ThreadPoolTaskExecutor threadPool;
-
     @Mock
     private Function<TableReference, Set<RepairConfiguration>> repairConfigFunction;
-
-
-
     private CqlSession cqlSession;
-
     @Mock
     EccNodesSync eccNodesSync;
     @Mock
     DistributedJmxConnectionProvider jmxConnectionProvider;
-
     private NodeWorkerManager manager;
-
     private DefaultRepairConfigurationProvider defaultRepairConfigurationProvider;
 
     @BeforeClass
@@ -104,25 +91,17 @@ public class TestTableChanges extends AbstractCassandraCluster
         composeContainer.withScaledService("cassandra-seed-dc2-rack1-node1", 0 );
         composeContainer.start();
 
-
-
         LOG.info("Waiting for the Cassandra cluster to finish starting up.");
         waitForNodesToBeUp("cassandra-seed-dc1-rack1-node1",1,DEFAULT_WAIT_TIME_IN_MS);
 
         containerIP = composeContainer.getContainerByServiceName(CASSANDRA_SEED_NODE_NAME).get()
                 .getContainerInfo()
                 .getNetworkSettings().getNetworks().values().stream().findFirst().get().getIpAddress();
-
     }
-
-
-
-
 
     @Before
     public void testSetup()
     {
-
         threadPool = new TestThreading.NoopThreadPoolTaskExecutor();
         threadPool.setCorePoolSize(4);
         threadPool.setMaxPoolSize(10);
@@ -131,10 +110,6 @@ public class TestTableChanges extends AbstractCassandraCluster
         threadPool.setThreadNamePrefix("NodeWorker-");
         threadPool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
-
-
-
-
         NodeWorkerManager.Builder builder =  NodeWorkerManager.newBuilder()
                 .withNativeConnection(nativeConnectionProvider)
                 .withReplicatedTableProvider(replicatedTableProvider)
@@ -142,7 +117,6 @@ public class TestTableChanges extends AbstractCassandraCluster
                 .withTableReferenceFactory(tableReferenceFactory)
                 .withRepairConfiguration(repairConfigFunction)
                 .withThreadPool(threadPool);
-
 
         manager = new MockNodeWorkManager(builder);
 
@@ -158,19 +132,17 @@ public class TestTableChanges extends AbstractCassandraCluster
 
         when(nativeConnectionProvider.getCqlSession()).thenReturn(cqlSession);
 
-
         defaultRepairConfigurationProvider.fromBuilder(DefaultRepairConfigurationProvider.newBuilder()
                 .withSession(cqlSession)
                 .withEccNodesSync(eccNodesSync)
                 .withJmxConnectionProvider(jmxConnectionProvider)
                 .withNodeWorkerManager(manager)
                 .withDistributedNativeConnectionProvider(nativeConnectionProvider));
-
     }
+
     @Test
     public void testNewTableCluster()
     {
-
         composeContainer.withScaledService("cassandra-node-dc1-rack1-node2", 1 );
         composeContainer.withScaledService("cassandra-node-dc2-rack1-node2", 1 );
         composeContainer.withScaledService("cassandra-seed-dc2-rack1-node1", 1 );
@@ -178,14 +150,15 @@ public class TestTableChanges extends AbstractCassandraCluster
         LOG.info("Waiting for the new nodes to finish starting up.");
         waitForNodesToBeUp("cassandra-seed-dc1-rack1-node1",4,DEFAULT_WAIT_TIME_IN_MS * 10 );
 
-
         cqlSession.execute(
                 "CREATE KEYSPACE IF NOT EXISTS test_keyspace WITH replication = {'class': 'NetworkTopologyStrategy', " +
                         "'datacenter1': 1}");
-
-        try {
+        try
+        {
             Thread.sleep(WAIT_TIME);
-        } catch (InterruptedException e) {
+        }
+        catch (InterruptedException e)
+        {
             throw new RuntimeException(e);
         }
 
@@ -195,19 +168,23 @@ public class TestTableChanges extends AbstractCassandraCluster
 
         Collection<NodeWorker> workers = manager.getWorkers();
 
-        try {
+        try
+        {
             Thread.sleep(WAIT_TIME);
-        } catch (InterruptedException e) {
+        }
+        catch (InterruptedException e)
+        {
             throw new RuntimeException(e);
         }
 
-        for ( NodeWorker nodeWorker: workers){
+        for ( NodeWorker nodeWorker: workers)
+        {
             LOG.info( ((MockNodeWorker)nodeWorker).getKeyspaceCreateCount()+ " " + ((MockNodeWorker)nodeWorker).getTableCreateCount() );
             assertEquals(Optional.ofNullable(1), Optional.ofNullable(((MockNodeWorker) nodeWorker).getKeyspaceCreateCount())) ;;
             assertEquals(Optional.ofNullable(2), Optional.ofNullable(((MockNodeWorker) nodeWorker).getTableCreateCount())) ;;
         }
-
     }
+
     @Test
     public void testRemoveTable()
     {
@@ -219,16 +196,18 @@ public class TestTableChanges extends AbstractCassandraCluster
         LOG.info("Waiting for the new nodes to finish starting up.");
         waitForNodesToBeUp("cassandra-seed-dc1-rack1-node1",4,DEFAULT_WAIT_TIME_IN_MS  );
 
-
         cqlSession.execute(
                 "CREATE KEYSPACE IF NOT EXISTS test_keyspace WITH replication = {'class': 'NetworkTopologyStrategy', " +
                         "'datacenter1': 1}");
 
         cqlSession.execute("CREATE TABLE IF NOT EXISTS test_keyspace.test_table (id UUID PRIMARY KEY, value text)");
 
-        try {
+        try
+        {
             Thread.sleep(WAIT_TIME);
-        } catch (InterruptedException e) {
+        }
+        catch (InterruptedException e)
+        {
             throw new RuntimeException(e);
         }
 
@@ -236,28 +215,30 @@ public class TestTableChanges extends AbstractCassandraCluster
 
         Collection<NodeWorker> workers = manager.getWorkers();
 
-        try {
+        try
+        {
             Thread.sleep(WAIT_TIME);
-        } catch (InterruptedException e) {
+        }
+        catch (InterruptedException e)
+        {
             throw new RuntimeException(e);
         }
 
-        for ( NodeWorker nodeWorker: workers){
+        for ( NodeWorker nodeWorker: workers)
+        {
             assertEquals(Optional.ofNullable(1), Optional.ofNullable(((MockNodeWorker) nodeWorker).getTableRemoveCount())) ;;
         }
-
     }
+
     @Test
     public void testRemoveKeyspace()
     {
-
         composeContainer.withScaledService("cassandra-node-dc1-rack1-node2", 1 );
         composeContainer.withScaledService("cassandra-node-dc2-rack1-node2", 1 );
         composeContainer.withScaledService("cassandra-seed-dc2-rack1-node1", 1 );
         composeContainer.start();
         LOG.info("Waiting for the new nodes to finish starting up.");
         waitForNodesToBeUp("cassandra-seed-dc1-rack1-node1",4,DEFAULT_WAIT_TIME_IN_MS  );
-
 
         cqlSession.execute(
                 "CREATE KEYSPACE IF NOT EXISTS test_keyspace2 WITH replication = {'class': 'NetworkTopologyStrategy', " +
@@ -267,13 +248,17 @@ public class TestTableChanges extends AbstractCassandraCluster
         cqlSession.execute("CREATE TABLE IF NOT EXISTS test_keyspace2.test_table2 (id UUID PRIMARY KEY, value text)");
         cqlSession.execute("CREATE TABLE IF NOT EXISTS test_keyspace2.test_table3 (id UUID PRIMARY KEY, value text)");
 
-        try {
+        try
+        {
             Thread.sleep(WAIT_TIME);
-        } catch (InterruptedException e) {
+        }
+        catch (InterruptedException e)
+        {
             throw new RuntimeException(e);
         }
 
-        try {
+        try
+        {
             cqlSession.execute("DROP KEYSPACE test_keyspace2");
         }
         catch ( DriverTimeoutException e) {
@@ -283,16 +268,18 @@ public class TestTableChanges extends AbstractCassandraCluster
 
         Collection<NodeWorker> workers = manager.getWorkers();
 
-        try {
+        try
+        {
             Thread.sleep(WAIT_TIME);
-        } catch (InterruptedException e) {
+        }
+        catch (InterruptedException e)
+        {
             throw new RuntimeException(e);
         }
 
-        for ( NodeWorker nodeWorker: workers){
+        for ( NodeWorker nodeWorker: workers)
+        {
             assertEquals(Optional.ofNullable(3), Optional.ofNullable(((MockNodeWorker) nodeWorker).getTableRemoveCount())) ;;
         }
-
     }
-
 }

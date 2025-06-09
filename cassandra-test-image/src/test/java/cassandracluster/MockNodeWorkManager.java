@@ -24,16 +24,15 @@ import com.google.common.base.Preconditions;
 
 import java.util.Collection;
 
-public class MockNodeWorkManager extends NodeWorkerManager{
-
+public class MockNodeWorkManager extends NodeWorkerManager
+{
     Integer newNodesCount = 0;
-
-
 
     public MockNodeWorkManager(final NodeWorkerManager.Builder builder)
     {
         super(builder);
     }
+
     @Override
     protected void addNewNodeToThreadPool(final Node node)
     {

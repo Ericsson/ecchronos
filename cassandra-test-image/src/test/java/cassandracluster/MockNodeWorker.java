@@ -31,13 +31,11 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import java.util.Set;
 import java.util.function.Function;
 
-public class MockNodeWorker extends NodeWorker {
-
+public class MockNodeWorker extends NodeWorker
+{
     Integer tableCreateCount = 0;
     Integer tableRemoveCount = 0;
     Integer keyspaceCreateCount = 0;
-
-
     public MockNodeWorker(
             final Node node,
             final ReplicatedTableProvider replicatedTableProvider,
@@ -48,16 +46,17 @@ public class MockNodeWorker extends NodeWorker {
     {
         super (node,replicatedTableProvider, repairScheduler, tableReferenceFactory, repairConfigurationFunction, session);
     }
+
     @Override
     protected void onTableCreated(final TableCreatedEvent tableEvent)
     {
         tableCreateCount ++;
         super.onTableCreated(tableEvent);
-
-
     }
+
     @Override
-    protected void removeConfiguration(final TableMetadata table){
+    protected void removeConfiguration(final TableMetadata table)
+    {
         tableRemoveCount++;
         super.removeConfiguration(table);
     }
@@ -68,15 +67,19 @@ public class MockNodeWorker extends NodeWorker {
         keyspaceCreateCount++;
         super.onKeyspaceCreated(keyspaceEvent);
     }
-    public Integer getTableCreateCount() {
+
+    public Integer getTableCreateCount()
+    {
         return tableCreateCount;
     }
-    public Integer getTableRemoveCount() {
+
+    public Integer getTableRemoveCount()
+    {
         return tableRemoveCount;
     }
 
-    public Integer getKeyspaceCreateCount() {
+    public Integer getKeyspaceCreateCount()
+    {
         return keyspaceCreateCount;
     }
-
 }

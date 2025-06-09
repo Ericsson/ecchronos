@@ -59,46 +59,25 @@
 @RunWith(MockitoJUnitRunner.class)
 public class TestThreading  extends AbstractCassandraCluster
  {
-
      private static final Logger LOG = LoggerFactory.getLogger(TestThreading.class);
-
-
-         @Mock
-         private DistributedNativeConnectionProvider nativeConnectionProvider;
-
-         @Mock
-         private ReplicatedTableProvider replicatedTableProvider;
-
-         @Mock
-         private RepairScheduler repairScheduler;
-
-         @Mock
-         private TableReferenceFactory tableReferenceFactory;
-
-//         private NoopThreadPoolTaskExecutor threadPool;
-         private ThreadPoolTaskExecutor threadPool;
-
-         @Mock
-         private Function<TableReference, Set<RepairConfiguration>> repairConfigFunction;
-
-
-
-         private CqlSession cqlSession;
-
-         @Mock
-         private KeyspaceMetadata keyspaceMetadata;
-
-         @Mock
-         private TableMetadata tableMetadata;
-
-         @Mock
-         EccNodesSync eccNodesSync;
-         @Mock
-         DistributedJmxConnectionProvider jmxConnectionProvider;
-
-         private NodeWorkerManager manager;
-
-         private DefaultRepairConfigurationProvider defaultRepairConfigurationProvider;
+     @Mock
+     private DistributedNativeConnectionProvider nativeConnectionProvider;
+     @Mock
+     private ReplicatedTableProvider replicatedTableProvider;
+     @Mock
+     private RepairScheduler repairScheduler;
+     @Mock
+     private TableReferenceFactory tableReferenceFactory;
+     private ThreadPoolTaskExecutor threadPool;
+     @Mock
+     private Function<TableReference, Set<RepairConfiguration>> repairConfigFunction;
+     private CqlSession cqlSession;
+     @Mock
+     EccNodesSync eccNodesSync;
+     @Mock
+     DistributedJmxConnectionProvider jmxConnectionProvider;
+     private NodeWorkerManager manager;
+     private DefaultRepairConfigurationProvider defaultRepairConfigurationProvider;
 
      @BeforeClass
      public static void setup()
@@ -114,8 +93,6 @@ public class TestThreading  extends AbstractCassandraCluster
          composeContainer.withScaledService("cassandra-seed-dc2-rack1-node1", 0 );
          composeContainer.start();
 
-
-
          LOG.info("Waiting for the Cassandra cluster to finish starting up.");
          waitForNodesToBeUp("cassandra-seed-dc1-rack1-node1",1,DEFAULT_WAIT_TIME_IN_MS);
 
@@ -125,14 +102,9 @@ public class TestThreading  extends AbstractCassandraCluster
 
      }
 
-
-
-
-
      @Before
      public void testSetup()
      {
-
          threadPool = new NoopThreadPoolTaskExecutor();
          threadPool.setCorePoolSize(4);
          threadPool.setMaxPoolSize(10);
@@ -141,10 +113,6 @@ public class TestThreading  extends AbstractCassandraCluster
          threadPool.setThreadNamePrefix("NodeWorker-");
          threadPool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
-
-
-
-
          NodeWorkerManager.Builder builder =  NodeWorkerManager.newBuilder()
                  .withNativeConnection(nativeConnectionProvider)
                  .withReplicatedTableProvider(replicatedTableProvider)
@@ -152,7 +120,6 @@ public class TestThreading  extends AbstractCassandraCluster
                  .withTableReferenceFactory(tableReferenceFactory)
                  .withRepairConfiguration(repairConfigFunction)
                  .withThreadPool(threadPool);
-
 
          manager = new MockNodeWorkManager(builder);
 
@@ -168,19 +135,17 @@ public class TestThreading  extends AbstractCassandraCluster
 
          when(nativeConnectionProvider.getCqlSession()).thenReturn(cqlSession);
 
-
          defaultRepairConfigurationProvider.fromBuilder(DefaultRepairConfigurationProvider.newBuilder()
                  .withSession(cqlSession)
                  .withEccNodesSync(eccNodesSync)
                  .withJmxConnectionProvider(jmxConnectionProvider)
                  .withNodeWorkerManager(manager)
                  .withDistributedNativeConnectionProvider(nativeConnectionProvider));
-
      }
+
      @Test
      public void testCassandraCluster()
      {
-
          composeContainer.withScaledService("cassandra-node-dc1-rack1-node2", 1 );
          composeContainer.withScaledService("cassandra-node-dc2-rack1-node2", 1 );
          composeContainer.withScaledService("cassandra-seed-dc2-rack1-node1", 1 );
@@ -188,35 +153,29 @@ public class TestThreading  extends AbstractCassandraCluster
          LOG.info("Waiting for the new nodes to finish starting up.");
          waitForNodesToBeUp("cassandra-seed-dc1-rack1-node1",4,DEFAULT_WAIT_TIME_IN_MS );
 
-
          assertEquals(3, threadPool.getActiveCount());
-
-
      }
-
 
      public static class NoopThreadPoolTaskExecutor extends ThreadPoolTaskExecutor
+     {
+         private final List<Runnable> submittedTasks = new ArrayList<>();
+
+         @Override
+         public Future<?> submit(Runnable task)
          {
-
-             private final List<Runnable> submittedTasks = new ArrayList<>();
-
-             @Override
-             public Future<?> submit(Runnable task)
-             {
-                 submittedTasks.add(task);
-                 return super.submit(task);
+             submittedTasks.add(task);
+             return super.submit(task);
              //    return CompletableFuture.completedFuture(null);
-             }
-
-             @Override
-             public void stop(Runnable task)
-             {
-                 submittedTasks.remove(task);
-             }
-             public List<Runnable> getSubmittedTasks()
-             {
-                 return submittedTasks;
-             }
          }
 
+         @Override
+         public void stop(Runnable task)
+         {
+             submittedTasks.remove(task);
+         }
+         public List<Runnable> getSubmittedTasks()
+         {
+             return submittedTasks;
+         }
      }
+ }
