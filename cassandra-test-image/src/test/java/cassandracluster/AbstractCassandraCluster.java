@@ -34,7 +34,7 @@ public class AbstractCassandraCluster
     private static final String DOCKER_COMPOSE_FILE_PATH = "cassandra-test-image/src/main/docker/docker-compose.yml";
     private static final String CASSANDRA_SETUP_DB_SCRIPT_PATH = "/etc/cassandra/setup_db.sh";
     protected static final String CASSANDRA_SEED_NODE_NAME = "cassandra-seed-dc1-rack1-node1";
-    protected static final long DEFAULT_WAIT_TIME_IN_MS = 50000;
+    protected static final long DEFAULT_WAIT_TIME_IN_MS = 90000;
     protected static DockerComposeContainer<?> composeContainer;
     private static final Logger LOG = LoggerFactory.getLogger(AbstractCassandraCluster.class);
     protected static String containerIP;

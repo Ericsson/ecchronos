@@ -36,6 +36,7 @@ public class MockNodeWorker extends NodeWorker
     Integer tableCreateCount = 0;
     Integer tableRemoveCount = 0;
     Integer keyspaceCreateCount = 0;
+
     public MockNodeWorker(
             final Node node,
             final ReplicatedTableProvider replicatedTableProvider,
