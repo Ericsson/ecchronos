@@ -1,5 +1,7 @@
 # Changes
 
+## Version 6.0.7
+
 ## Version 6.0.6
 
 * Add JSON format to ecctool - Issue #980
