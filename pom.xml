@@ -66,7 +66,7 @@
         <guava.version>33.4.8-jre</guava.version>
         <io.dropwizard.metrics.version>4.2.32</io.dropwizard.metrics.version>
         <io.micrometer.version>1.15.0</io.micrometer.version>
-        <io.netty.version>4.1.121.Final</io.netty.version>
+        <io.netty.version>4.1.122.Final</io.netty.version>
         <io.prometheus.simpleclient.version>0.16.0</io.prometheus.simpleclient.version>
         <io.prometheus.client-java.version>1.3.8</io.prometheus.client-java.version>
         <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
@@ -79,7 +79,7 @@
         <mockito.core.version>5.18.0</mockito.core.version>
         <org.apache.commons.io.version>2.19.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.27.1</org.apache.commons.commons-compress.version>
-        <org.bouncycastle.bcpkix-jdk18on.version>1.80</org.bouncycastle.bcpkix-jdk18on.version>
+        <org.bouncycastle.bcpkix-jdk18on.version>1.81</org.bouncycastle.bcpkix-jdk18on.version>
         <org.springframework.boot.version>3.5.0</org.springframework.boot.version>
         <org.yaml.snakeyaml.version>2.4</org.yaml.snakeyaml.version>
         <slf4j.version>2.0.17</slf4j.version>
