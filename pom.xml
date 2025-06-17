@@ -59,10 +59,10 @@
         <awaitility.version>4.3.0</awaitility.version>
         <caffeine.version>3.2.1</caffeine.version>
         <cassandra.driver.core.version>4.19.0</cassandra.driver.core.version>
-        <com.fasterxml.jackson.core.version>2.19.0</com.fasterxml.jackson.core.version>
+        <com.fasterxml.jackson.core.version>2.19.1</com.fasterxml.jackson.core.version>
         <com.fasterxml.jackson.dataformat.version>2.19.0</com.fasterxml.jackson.dataformat.version>
         <com.typesafe.config.version>1.4.3</com.typesafe.config.version>
-        <equalsverifier.version>4.0</equalsverifier.version>
+        <equalsverifier.version>4.0.2</equalsverifier.version>
         <guava.version>33.4.8-jre</guava.version>
         <io.dropwizard.metrics.version>4.2.32</io.dropwizard.metrics.version>
         <io.micrometer.version>1.15.0</io.micrometer.version>
