@@ -79,8 +79,10 @@
         <mockito.core.version>5.18.0</mockito.core.version>
         <org.apache.commons.io.version>2.19.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.27.1</org.apache.commons.commons-compress.version>
+        <org.apache.tomcat.embed.tomcat-embed-core.version>10.1.42</org.apache.tomcat.embed.tomcat-embed-core.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.81</org.bouncycastle.bcpkix-jdk18on.version>
         <org.springframework.boot.version>3.5.0</org.springframework.boot.version>
+        <org.springframework.spring-web>6.2.8</org.springframework.spring-web>
         <org.yaml.snakeyaml.version>2.4</org.yaml.snakeyaml.version>
         <slf4j.version>2.0.17</slf4j.version>
         <springdoc.openapi-starter-webmvc-ui.version>2.8.9</springdoc.openapi-starter-webmvc-ui.version>
@@ -142,6 +144,18 @@
                 <groupId>jakarta.servlet</groupId>
                 <artifactId>jakarta.servlet-api</artifactId>
                 <version>${jakarta.servlet-api.version}</version>
+            </dependency>
+            <!-- Due to CVE-2025-48988 & CVE-2025-49125 -->
+            <dependency>
+                <groupId>org.apache.tomcat.embed</groupId>
+                <artifactId>tomcat-embed-core</artifactId>
+                <version>${org.apache.tomcat.embed.tomcat-embed-core.version}</version>
+            </dependency>
+            <!-- Due to CVE-2025-41234 -->
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-web</artifactId>
+                <version>${org.springframework.spring-web}</version>
             </dependency>
 
             <!-- Used by java-driver -->
