@@ -2,6 +2,8 @@
 
 ## Version 6.0.7
 
+* Corrects json output option - Issue #999
+
 ## Version 6.0.6
 
 * Add JSON format to ecctool - Issue #980
