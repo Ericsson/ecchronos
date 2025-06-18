@@ -150,10 +150,7 @@ def _print_schedules_json_format(timestamp, schedules, max_lines):
     if max_lines > -1:
         sorted_schedules = sorted_schedules[:max_lines]
     schedules_dict = [s.to_dict() for s in sorted_schedules]
-    data = {
-        "snapshot_time": timestamp,
-        "scheules": schedules_dict
-    }
+    data = {"snapshot_time": timestamp, "scheules": schedules_dict}
     print(json.dumps((data), indent=4))
 
 
@@ -258,11 +255,7 @@ def _print_repair_info_json_format(info_from, info_to, repair_stats, max_lines=-
     if max_lines > -1:
         sorted_repair_stats = sorted_repair_stats[:max_lines]
     repair_stats_dict = [rs.to_dict() for rs in sorted_repair_stats]
-    data = {
-        "time_window_from": info_from,
-        "time_window_to": info_to,
-        "repair_info": repair_stats_dict
-    }
+    data = {"time_window_from": info_from, "time_window_to": info_to, "repair_info": repair_stats_dict}
     print(json.dumps(data, indent=4))
 
 
