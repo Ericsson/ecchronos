@@ -116,14 +116,13 @@ def print_repair_summary(repairs):
 
 
 def print_schedules(schedules, max_lines, columns=None, output="table"):
-    print("Snapshot as of", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     if output == "json":
-        _print_schedules_json_format(schedules, max_lines)
+        _print_schedules_json_format(timestamp, schedules, max_lines)
     else:
+        print("Snapshot as of", timestamp)
         _print_schedules_table_format(schedules, max_lines, columns)
-
-    print_summary(schedules)
+        print_summary(schedules)
 
 
 def _print_schedules_table_format(schedules, max_lines, columns=None):
@@ -142,7 +141,7 @@ def _print_schedules_table_format(schedules, max_lines, columns=None):
     print_schedule_table(schedule_table, schedules, max_lines, columns)
 
 
-def _print_schedules_json_format(schedules, max_lines):
+def _print_schedules_json_format(timestamp, schedules, max_lines):
     sorted_schedules = sorted(
         schedules,
         key=lambda x: (x.last_repaired_at_in_ms, x.repaired_ratio),
@@ -150,9 +149,12 @@ def _print_schedules_json_format(schedules, max_lines):
     )
     if max_lines > -1:
         sorted_schedules = sorted_schedules[:max_lines]
-
     schedules_dict = [s.to_dict() for s in sorted_schedules]
-    print(json.dumps(schedules_dict, indent=4))
+    data = {
+        "snapshot_time": timestamp,
+        "scheules": schedules_dict
+    }
+    print(json.dumps((data), indent=4))
 
 
 def print_repairs(repairs, max_lines=-1, columns=None, output="table"):
@@ -160,7 +162,7 @@ def print_repairs(repairs, max_lines=-1, columns=None, output="table"):
         _print_repair_json_format(repairs, max_lines)
     else:
         _print_repair_table_format(repairs, max_lines, columns)
-    print_repair_summary(repairs)
+        print_repair_summary(repairs)
 
 
 def _print_repair_json_format(repairs, max_lines=-1):
@@ -238,14 +240,16 @@ def _convert_schedule(schedule):
 
 
 def print_repair_info(repair_info, max_lines=-1, columns=None, output="table"):
-    print("Time window between '{0}' and '{1}'".format(repair_info.get_since(), repair_info.get_to()))
+    info_from = repair_info.get_since()
+    info_to = repair_info.get_to()
     if output == "json":
-        _print_repair_info_json_format(repair_info.repair_stats, max_lines)
+        _print_repair_info_json_format(info_from, info_to, repair_info.repair_stats, max_lines)
     else:
+        print("Time window between '{0}' and '{1}'".format(info_from, info_to))
         print_repair_stats(repair_info.repair_stats, max_lines, columns)
 
 
-def _print_repair_info_json_format(repair_stats, max_lines=-1):
+def _print_repair_info_json_format(info_from, info_to, repair_stats, max_lines=-1):
     sorted_repair_stats = sorted(
         repair_stats,
         key=lambda x: (x.repaired_ratio, x.keyspace, x.table),
@@ -253,9 +257,13 @@ def _print_repair_info_json_format(repair_stats, max_lines=-1):
     )
     if max_lines > -1:
         sorted_repair_stats = sorted_repair_stats[:max_lines]
-
     repair_stats_dict = [rs.to_dict() for rs in sorted_repair_stats]
-    print(json.dumps(repair_stats_dict, indent=4))
+    data = {
+        "time_window_from": info_from,
+        "time_window_to": info_to,
+        "repair_info": repair_stats_dict
+    }
+    print(json.dumps(data, indent=4))
 
 
 def print_repair_stats(repair_stats, max_lines=-1, columns=None):
