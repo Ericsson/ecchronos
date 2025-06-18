@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import jakarta.xml.bind.DatatypeConverter;
@@ -101,12 +100,6 @@ public class ReloadingCertificateHandler implements CertificateHandler
         }
         sslEngine.setUseClientMode(true);
 
-        if (tlsConfig.requiresEndpointVerification())
-        {
-            SSLParameters sslParameters = new SSLParameters();
-            sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
-            sslEngine.setSSLParameters(sslParameters);
-        }
         tlsConfig.getCipherSuites().ifPresent(sslEngine::setEnabledCipherSuites);
         return sslEngine;
     }
@@ -300,6 +293,16 @@ public class ReloadingCertificateHandler implements CertificateHandler
             KeyManagerFactory keyManagerFactory = getKeyManagerFactory(tlsConfig);
             builder.keyManager(keyManagerFactory);
             setTrustManagers(builder, tlsConfig, getTrustManagerFactory(tlsConfig));
+        }
+        if (tlsConfig.requiresEndpointVerification())
+        {
+            LOG.info("Endpoint verification enabled");
+            builder.endpointIdentificationAlgorithm("HTTPS");
+        }
+        else
+        {
+            LOG.info("Endpoint verification disabled");
+            builder.endpointIdentificationAlgorithm("");
         }
         if (tlsConfig.getCipherSuites().isPresent())
         {
