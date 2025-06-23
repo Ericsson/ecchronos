@@ -99,8 +99,6 @@ public class ReloadingCertificateHandler implements CertificateHandler
             sslEngine = sslContext.newEngine(ByteBufAllocator.DEFAULT);
         }
         sslEngine.setUseClientMode(true);
-
-        tlsConfig.getCipherSuites().ifPresent(sslEngine::setEnabledCipherSuites);
         return sslEngine;
     }
 
