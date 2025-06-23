@@ -87,7 +87,7 @@
         <slf4j.version>2.0.17</slf4j.version>
         <springdoc.openapi-starter-webmvc-ui.version>2.8.9</springdoc.openapi-starter-webmvc-ui.version>
         <swagger-annotations.version>2.2.33</swagger-annotations.version>
-        <testcontainers.version>1.21.1</testcontainers.version>
+        <testcontainers.version>1.21.2</testcontainers.version>
 
         <!-- Plugin versions -->
         <com.mycila.license-maven-plugin.version>5.0.0</com.mycila.license-maven-plugin.version>
