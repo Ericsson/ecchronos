@@ -84,7 +84,6 @@ public class ReloadingCertificateHandler implements CertificateHandler
     public SSLEngine newSslEngine(final EndPoint remoteEndpoint)
     {
         Context context = getContext();
-        CqlTLSConfig tlsConfig = context.getTlsConfig();
         SslContext sslContext = context.getSSLContext();
 
         SSLEngine sslEngine;
@@ -99,6 +98,8 @@ public class ReloadingCertificateHandler implements CertificateHandler
             sslEngine = sslContext.newEngine(ByteBufAllocator.DEFAULT);
         }
         sslEngine.setUseClientMode(true);
+
+//        tlsConfig.getCipherSuites().ifPresent(sslEngine::setEnabledCipherSuites);
         return sslEngine;
     }
 
