@@ -282,7 +282,6 @@ class RejectionsRequest(RestRequest):
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
 
-
     def list_rejections(self, keyspace=None, table=None):
         request_url = RejectionsRequest.ROOT
 
@@ -298,12 +297,9 @@ class RejectionsRequest(RestRequest):
 
         return result
 
-
     def create_rejection(self, rejection_body):
         request_url = RejectionsRequest.ROOT
-        headers = {
-            "Content-Type": "application/json"
-        }
+        headers = {"Content-Type": "application/json"}
         result = self.request(request_url, "POST", body=rejection_body, headers=headers)
 
         if result.is_successful():
@@ -313,12 +309,9 @@ class RejectionsRequest(RestRequest):
         print(result.format_exception())
         return result
 
-
     def update_rejection(self, rejection_body):
         request_url = RejectionsRequest.ROOT
-        headers = {
-            "Content-Type": "application/json"
-        }
+        headers = {"Content-Type": "application/json"}
         result = self.request(request_url, "PATCH", body=rejection_body, headers=headers)
 
         if result.is_successful():
@@ -328,12 +321,9 @@ class RejectionsRequest(RestRequest):
         print(result.format_exception())
         return result
 
-
     def delete_rejection(self, rejection_body):
         request_url = RejectionsRequest.ROOT
-        headers = {
-            "Content-Type": "application/json"
-        }
+        headers = {"Content-Type": "application/json"}
 
         result = self.request(request_url, "DELETE", body=rejection_body, headers=headers)
 
@@ -343,7 +333,6 @@ class RejectionsRequest(RestRequest):
             return result
         print(result.format_exception())
         return result
-
 
     def truncate_rejections(self):
         request_url = RejectionsRequest.TRUNCATE
@@ -355,6 +344,7 @@ class RejectionsRequest(RestRequest):
             return result
         print(result.format_exception())
         return result
+
 
 def _create_response(request):
     cert_file = os.getenv("ECCTOOL_CERT_FILE")

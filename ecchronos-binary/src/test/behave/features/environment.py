@@ -22,7 +22,6 @@ from cassandra.auth import PlainTextAuthProvider
 
 
 class Environment:
-
     cluster = None
     session = None
     host_id = None

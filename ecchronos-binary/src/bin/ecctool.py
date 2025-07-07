@@ -359,10 +359,11 @@ def add_status_subcommand(sub_parsers):
         default=None,
     )
 
+
 def add_rejections_subcommand(sub_parsers):
     parser_rejections = sub_parsers.add_parser(
         "rejections",
-        description="Manage rejections of ecChronos instance. This subcommand has no " "mandatory parameters."
+        description="Manage rejections of ecChronos instance. This subcommand has no " "mandatory parameters.",
     )
     parser_rejections.add_argument(
         "-u",
@@ -382,38 +383,23 @@ def add_rejections_subcommand(sub_parsers):
 
 def add_rejections_post_subcommand(rejections_subparsers):
     parser_post = rejections_subparsers.add_parser("create", help="Create a new rejection")
+    parser_post.add_argument("-k", "--keyspace", type=str, required=True, help="Keyspace for the rejection")
+    parser_post.add_argument("-t", "--table", type=str, required=True, help="Table for the rejection")
+    parser_post.add_argument("-sh", "--start-hour", type=int, required=True, help="Start hour of the rejection")
+    parser_post.add_argument("-sm", "--start-minute", type=int, required=True, help="Start minute of the rejection")
+    parser_post.add_argument("-eh", "--end-hour", type=int, required=True, help="End hour of the rejection")
+    parser_post.add_argument("-em", "--end-minute", type=int, required=True, help="End minute of the rejection")
     parser_post.add_argument(
-        "-k", "--keyspace", type=str, required=True,
-        help="Keyspace for the rejection"
-    )
-    parser_post.add_argument(
-        "-t", "--table", type=str, required=True,
-        help="Table for the rejection"
-    )
-    parser_post.add_argument(
-        "-sh", "--start-hour", type=int, required=True,
-        help="Start hour of the rejection"
-    )
-    parser_post.add_argument(
-        "-sm", "--start-minute", type=int, required=True,
-        help="Start minute of the rejection"
-    )
-    parser_post.add_argument(
-        "-eh", "--end-hour", type=int, required=True,
-        help="End hour of the rejection"
-    )
-    parser_post.add_argument(
-        "-em", "--end-minute", type=int, required=True,
-        help="End minute of the rejection"
-    )
-    parser_post.add_argument(
-        "-dcs", "--dc-exclusions",
-        nargs='+',
+        "-dcs",
+        "--dc-exclusions",
+        nargs="+",
         required=True,
-        help="List of datacenters to exclude from the rejection, e.g. -dcs dc1 dc2 dc3..."
+        help="List of datacenters to exclude from the rejection, e.g. -dcs dc1 dc2 dc3...",
     )
     parser_post.add_argument(
-        "-u", "--url", type=str,
+        "-u",
+        "--url",
+        type=str,
         help="The ecChronos host to connect to, e.g. http://<host>:<port>.",
         default=None,
     )
@@ -428,8 +414,8 @@ def add_get_rejections_subcommand(rejections_subparsers):
         "-t",
         "--table",
         type=str,
-        help="Show rejection information for the specified table." +
-        "Keyspace argument -k or --keyspace mandatory if using this argument.",
+        help="Show rejection information for the specified table."
+        + "Keyspace argument -k or --keyspace mandatory if using this argument.",
     )
     parser_get.add_argument(
         "-u",
@@ -442,30 +428,21 @@ def add_get_rejections_subcommand(rejections_subparsers):
 
 def add_update_rejections_subcommand(rejections_subparsers):
     parser_update = rejections_subparsers.add_parser("update", help="Update a rejection")
+    parser_update.add_argument("-k", "--keyspace", type=str, required=True, help="Keyspace for the rejection")
+    parser_update.add_argument("-t", "--table", type=str, required=True, help="Table for the rejection")
+    parser_update.add_argument("-sh", "--start-hour", type=int, required=True, help="Start hour of the rejection")
+    parser_update.add_argument("-sm", "--start-minute", type=int, required=True, help="Start minute of the rejection")
     parser_update.add_argument(
-        "-k", "--keyspace", type=str, required=True,
-        help="Keyspace for the rejection"
-    )
-    parser_update.add_argument(
-        "-t", "--table", type=str, required=True,
-        help="Table for the rejection"
-    )
-    parser_update.add_argument(
-        "-sh", "--start-hour", type=int, required=True,
-        help="Start hour of the rejection"
-    )
-    parser_update.add_argument(
-        "-sm", "--start-minute", type=int, required=True,
-        help="Start minute of the rejection"
-    )
-    parser_update.add_argument(
-        "-dcs", "--dc-exclusions",
-        nargs='+',
+        "-dcs",
+        "--dc-exclusions",
+        nargs="+",
         required=False,
-        help="List of datacenters to exclude from the rejection, e.g. -dcs dc1 dc2 dc3..."
+        help="List of datacenters to exclude from the rejection, e.g. -dcs dc1 dc2 dc3...",
     )
     parser_update.add_argument(
-        "-u", "--url", type=str,
+        "-u",
+        "--url",
+        type=str,
         help="The ecChronos host to connect to, e.g. http://<host>:<port>.",
         default=None,
     )
@@ -473,34 +450,22 @@ def add_update_rejections_subcommand(rejections_subparsers):
 
 def add_delete_rejections_subcommand(rejections_subparsers):
     parser_delete = rejections_subparsers.add_parser("delete", help="Delete a rejection")
+    parser_delete.add_argument("-a", "--all", type=bool, required=False, help="Delete all rejections")
+    parser_delete.add_argument("-k", "--keyspace", type=str, required=False, help="Keyspace for the rejection")
+    parser_delete.add_argument("-t", "--table", type=str, required=False, help="Table for the rejection")
+    parser_delete.add_argument("-sh", "--start-hour", type=int, required=False, help="Start hour of the rejection")
+    parser_delete.add_argument("-sm", "--start-minute", type=int, required=False, help="Start minute of the rejection")
     parser_delete.add_argument(
-        "-a", "--all", type=bool, required=False,
-        help="Delete all rejections"
-    )
-    parser_delete.add_argument(
-        "-k", "--keyspace", type=str, required=False,
-        help="Keyspace for the rejection"
-    )
-    parser_delete.add_argument(
-        "-t", "--table", type=str, required=False,
-        help="Table for the rejection"
-    )
-    parser_delete.add_argument(
-        "-sh", "--start-hour", type=int, required=False,
-        help="Start hour of the rejection"
-    )
-    parser_delete.add_argument(
-        "-sm", "--start-minute", type=int, required=False,
-        help="Start minute of the rejection"
-    )
-    parser_delete.add_argument(
-        "-dcs", "--dc-exclusions",
-        nargs='+',
+        "-dcs",
+        "--dc-exclusions",
+        nargs="+",
         required=False,
-        help="List of datacenters to exclude from the rejection, e.g. -dcs dc1 dc2 dc3..."
+        help="List of datacenters to exclude from the rejection, e.g. -dcs dc1 dc2 dc3...",
     )
     parser_delete.add_argument(
-        "-u", "--url", type=str,
+        "-u",
+        "--url",
+        type=str,
         help="The ecChronos host to connect to, e.g. http://<host>:<port>.",
         default=None,
     )
@@ -542,14 +507,14 @@ def _get_rejections(arguments):
 def _create_rejections(arguments):
     request = rest.RejectionsRequest(base_url=arguments.url)
     rejection_body = {
-            "keyspaceName": arguments.keyspace,
-            "tableName": arguments.table,
-            "startHour": arguments.start_hour,
-            "startMinute": arguments.start_minute,
-            "endHour": arguments.end_hour,
-            "endMinute": arguments.end_minute,
-            "dcExclusions": arguments.dc_exclusions
-        }
+        "keyspaceName": arguments.keyspace,
+        "tableName": arguments.table,
+        "startHour": arguments.start_hour,
+        "startMinute": arguments.start_minute,
+        "endHour": arguments.end_hour,
+        "endMinute": arguments.end_minute,
+        "dcExclusions": arguments.dc_exclusions,
+    }
     result = request.create_rejection(rejection_body)
     table_printer.print_rejections(result.data)
 
@@ -557,14 +522,14 @@ def _create_rejections(arguments):
 def _update_rejections(arguments):
     request = rest.RejectionsRequest(base_url=arguments.url)
     rejection_body = {
-            "keyspaceName": arguments.keyspace,
-            "tableName": arguments.table,
-            "startHour": arguments.start_hour,
-            "startMinute": arguments.start_minute,
-            "endHour": None,
-            "endMinute": None,
-            "dcExclusions": arguments.dc_exclusions
-        }
+        "keyspaceName": arguments.keyspace,
+        "tableName": arguments.table,
+        "startHour": arguments.start_hour,
+        "startMinute": arguments.start_minute,
+        "endHour": None,
+        "endMinute": None,
+        "dcExclusions": arguments.dc_exclusions,
+    }
     result = request.update_rejection(rejection_body)
     table_printer.print_rejections(result.data)
 
@@ -575,22 +540,17 @@ def _delete_rejections(arguments):
 
     if arguments.all:
         confirm = input(
-        """
+            """
         This operation will permanently delete all rejection data and cannot be undone.
         Are you sure you want to proceed? (y/N):
         """
         )
-        if confirm.lower() == 'y':
+        if confirm.lower() == "y":
             result = request.truncate_rejections()
         else:
-            print('Operation cancelled by the user.')
+            print("Operation cancelled by the user.")
             sys.exit(1)
-    elif not None in [
-        arguments.keyspace,
-        arguments.table,
-        arguments.start_hour,
-        arguments.start_minute]:
-
+    elif not None in [arguments.keyspace, arguments.table, arguments.start_hour, arguments.start_minute]:
         dc_exclusions = arguments.dc_exclusions
 
         if dc_exclusions is None:
@@ -603,7 +563,7 @@ def _delete_rejections(arguments):
             "startMinute": arguments.start_minute,
             "endHour": None,
             "endMinute": None,
-            "dcExclusions": dc_exclusions
+            "dcExclusions": dc_exclusions,
         }
 
         result = request.delete_rejection(rejection_body)

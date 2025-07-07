@@ -19,7 +19,6 @@ from datetime import datetime
 from ecchronoslib import table_formatter
 
 
-
 def print_rejections(rejections):
     _print_rejections_table_format(rejections)
 
