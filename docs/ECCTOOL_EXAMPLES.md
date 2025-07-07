@@ -194,3 +194,183 @@ or
 ```bash
 Job ID: x-x-x-x-x, Status: Running
 ```
+
+## rejections
+
+ecctool rejections interacts with table `ecchronos.reject_configuration` through REST endpoints. There are 4 sub-commands
+in rejections get, create, update and delete.
+
+### ecctool rejections get
+
+Show all reject configurations:
+
+```
+-------------------------------------------------------------------------------------------------
+| Keyspace | Table | Start Hour | Start Minute | End Hour | End Minute | DC Exclusions          | 
+-------------------------------------------------------------------------------------------------
+| *        | *     | 0          | 0            | 0        | 0          | ['datacenter1', 'dc1'] | 
+| test2    | test2 | 18         | 30           | 19       | 30         | ['dc1', 'dc2']         | 
+| test2    | test3 | 15         | 30           | 18       | 30         | ['dc1', 'dc2', 'dc3']  | 
+-------------------------------------------------------------------------------------------------
+```
+
+### ecctool rejections get -k <keyspace_name>
+
+Show all reject configurations matching the specified keyspace:
+
+```
+$ ecctool rejections get -k test2
+
+------------------------------------------------------------------------------------------------
+| Keyspace | Table | Start Hour | Start Minute | End Hour | End Minute | DC Exclusions         |
+------------------------------------------------------------------------------------------------
+| test2    | test2 | 18         | 30           | 19       | 30         | ['dc1', 'dc2']        |
+| test2    | test3 | 15         | 30           | 18       | 30         | ['dc1', 'dc2', 'dc3'] |
+------------------------------------------------------------------------------------------------
+```
+
+### ecctool rejections get -k <keyspace_name> -t <table_name>
+
+Show all reject configurations matching the specified keyspace and table:
+
+```
+$ ecctool rejections get -k test2 -t test2
+
+-----------------------------------------------------------------------------------------
+| Keyspace | Table | Start Hour | Start Minute | End Hour | End Minute | DC Exclusions  | 
+-----------------------------------------------------------------------------------------
+| test2    | test2 | 18         | 30           | 19       | 30         | ['dc1', 'dc2'] | 
+-----------------------------------------------------------------------------------------
+```
+
+### ecctool rejections create
+
+Create a new reject configuration
+
+#### ecctool rejections create -k <keyspace_name> -t <table_name> -sh <start_hour> -sm <start_minute> -eh <end_hour> -em <end_minute> -dcs <datacenters>
+
+```
+$ ecctool rejections create -k test2 -t test4-sh 15 -sm 30 -eh 18 -em 30 -dcs dc1 dc2 dc3
+
+Rejection created successfully.
+-------------------------------------------------------------------------------------------------
+| Keyspace | Table | Start Hour | Start Minute | End Hour | End Minute | DC Exclusions          |
+-------------------------------------------------------------------------------------------------
+| *        | *     | 0          | 0            | 0        | 0          | ['datacenter1', 'dc1'] |
+| test2    | test2 | 18         | 30           | 19       | 30         | ['dc1', 'dc2']         |
+| test2    | test3 | 15         | 30           | 18       | 30         | ['dc1', 'dc2', 'dc3']  |
+| test2    | test4 | 15         | 30           | 18       | 30         | ['dc1', 'dc2', 'dc3']  |
+-------------------------------------------------------------------------------------------------
+```
+
+### ecctool rejections update
+
+*Current implementation just allows updates in dc_exclusion list, in the future it should include end_hour and end_minutes,
+as Cassandra doesn't allow updates in Primary Key columns, if changes in keyspace, table, start hour and end hour are needed,
+the customer should delete the previously persisted row by passing full Primary Key and then inserting a new row with the
+configuration needed.*
+
+Before updating
+
+```
+$ python ecctool.py rejections get -k test2 -t test4
+------------------------------------------------------------------------------------------------
+| Keyspace | Table | Start Hour | Start Minute | End Hour | End Minute | DC Exclusions         |
+------------------------------------------------------------------------------------------------
+| test2    | test4 | 15         | 30           | 18       | 30         | ['dc1', 'dc2', 'dc3'] |
+------------------------------------------------------------------------------------------------
+```
+
+After updating
+
+```
+$ python ecctool.py rejections update -k test2 -t test4 -sh 15 -sm 30 -dcs dc5 dc6
+Datacenter Exclusion added successfully.
+--------------------------------------------------------------------------------------------------------------
+| Keyspace | Table | Start Hour | Start Minute | End Hour | End Minute | DC Exclusions                       |
+--------------------------------------------------------------------------------------------------------------
+| test2    | test2 | 18         | 30           | 19       | 30         | ['dc1', 'dc2']                      |
+| test2    | test3 | 15         | 30           | 18       | 30         | ['dc1', 'dc2', 'dc3']               |
+| test2    | test4 | 15         | 30           | 18       | 30         | ['dc1', 'dc2', 'dc3', 'dc5', 'dc6'] |
+--------------------------------------------------------------------------------------------------------------
+```
+
+*keyspace, table, start hour and end hour are mandatory parameters as they are part of the Primary Key.*
+
+### ecctool rejections delete --all true
+
+It will perform a TRUNCATE in the table, deleting all the rows with no possibility to recover, be sure of what you are doing before performing this operation
+
+Example of running deletiong with *--all true* flag:
+
+```
+$ ecctool rejections delete --all true
+
+        This operation will permanently delete all rejection data and cannot be undone. Are you sure you want to proceed? (y/N):
+        y
+Rejections table truncated successfully.
+----------------------------------------------------------------------------------------
+| Keyspace | Table | Start Hour | Start Minute | End Hour | End Minute | DC Exclusions |
+----------------------------------------------------------------------------------------
+```
+
+#### ecctool rejections delete  -k <keyspace_name> -t <table_name> -sh <start_hour> -sm <start_minute>
+
+It will delete the row matching the specified data
+
+Before deletion:
+
+```
+$ ecctool rejections get
+
+--------------------------------------------------------------------------------------------------------------
+| Keyspace | Table | Start Hour | Start Minute | End Hour | End Minute | DC Exclusions                       |
+--------------------------------------------------------------------------------------------------------------
+| test3    | test4 | 15         | 30           | 18       | 30         | ['dc1', 'dc2', 'dc3']               |
+| test2    | test3 | 15         | 30           | 18       | 30         | ['dc1', 'dc2', 'dc3']               |
+| test2    | test4 | 15         | 30           | 18       | 30         | ['dc1', 'dc2', 'dc3', 'dc5', 'dc6'] |
+--------------------------------------------------------------------------------------------------------------
+```
+
+After deletion:
+
+```
+$ ecctool rejections delete -k test2 -t test3 -sh 15 -sm 30
+
+Rejection deleted successfully.
+--------------------------------------------------------------------------------------------------------------
+| Keyspace | Table | Start Hour | Start Minute | End Hour | End Minute | DC Exclusions                       |
+--------------------------------------------------------------------------------------------------------------
+| test3    | test4 | 15         | 30           | 18       | 30         | ['dc1', 'dc2', 'dc3']               |
+| test2    | test4 | 15         | 30           | 18       | 30         | ['dc1', 'dc2', 'dc3', 'dc5', 'dc6'] |
+--------------------------------------------------------------------------------------------------------------
+```
+
+#### ecctool rejections delete  -k <keyspace_name> -t <table_name> -sh <start_hour> -sm <start_minute> -dcs <datacenters>
+
+It will remove the specified datacenters list the rejection matching the provided data
+
+Before deletion:
+
+```
+$ ecctool rejections get
+--------------------------------------------------------------------------------------------------------------
+| Keyspace | Table | Start Hour | Start Minute | End Hour | End Minute | DC Exclusions                       |
+--------------------------------------------------------------------------------------------------------------
+| test3    | test4 | 15         | 30           | 18       | 30         | ['dc1', 'dc2', 'dc3']               |
+| test2    | test4 | 15         | 30           | 18       | 30         | ['dc1', 'dc2', 'dc3', 'dc5', 'dc6'] |
+--------------------------------------------------------------------------------------------------------------
+```
+
+After deletion:
+
+```
+$ ecctool rejections delete -k test2 -t test4 -sh 15 -sm 30 -dcs dc5 dc6
+Rejection deleted successfully.
+------------------------------------------------------------------------------------------------
+| Keyspace | Table | Start Hour | Start Minute | End Hour | End Minute | DC Exclusions         |
+------------------------------------------------------------------------------------------------
+| test3    | test4 | 15         | 30           | 18       | 30         | ['dc1', 'dc2', 'dc3'] |
+| test2    | test4 | 15         | 30           | 18       | 30         | ['dc1', 'dc2', 'dc3'] |
+------------------------------------------------------------------------------------------------
+```

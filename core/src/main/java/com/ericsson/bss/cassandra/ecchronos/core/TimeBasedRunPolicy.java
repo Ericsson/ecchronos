@@ -19,6 +19,7 @@ import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.Statement;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.ericsson.bss.cassandra.ecchronos.connection.StatementDecorator;
@@ -38,10 +39,12 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
@@ -59,6 +62,7 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
  * start_minute int,
  * end_hour int,
  * end_minute int,
+ * dc_exclusion {@code set<text>},
  * PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute));
  */
 public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeable
@@ -67,31 +71,183 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
 
     private static final String TABLE_REJECT_CONFIGURATION = "reject_configuration";
 
+    private static final String COLUMN_KEYSPACE_NAME = "keyspace_name";
+    private static final String COLUMN_TABLE_NAME = "table_name";
+    private static final String COLUMN_START_HOUR = "start_hour";
+    private static final String COLUMN_START_MINUTE = "start_minute";
+    private static final String COLUMN_END_HOUR = "end_hour";
+    private static final String COLUMN_END_MINUTE = "end_minute";
+    private static final String COLUMN_DC_EXCLUSION = "dc_exclusion";
+
     private static final long DEFAULT_REJECT_TIME = TimeUnit.MINUTES.toMillis(1);
 
     static final long DEFAULT_CACHE_EXPIRE_TIME = TimeUnit.SECONDS.toMillis(10);
 
-    private final PreparedStatement myGetRejectionsStatement;
+    private final PreparedStatement myGetRejectionsStatementByKsAndTb;
+    private final PreparedStatement myCreateRejectionsStatement;
+    private final PreparedStatement myAddDcExclusionStatement;
+    private final PreparedStatement myDropDcExclusionStatement;
+    private final PreparedStatement myTruncateStatement;
+    private final PreparedStatement myDeleteStatement;
+
+    private final PreparedStatement myGetAllRejectionsStatement;
+    private final PreparedStatement myGetRejectionsStatementByKs;
+
     private final StatementDecorator myStatementDecorator;
     private final CqlSession mySession;
     private final Clock myClock;
     private final LoadingCache<TableKey, TimeRejectionCollection> myTimeRejectionCache;
+    private final Node myNode;
 
     public TimeBasedRunPolicy(final Builder builder)
     {
         mySession = builder.mySession;
         myStatementDecorator = builder.myStatementDecorator;
         myClock = builder.myClock;
+        myNode = builder.myNode;
 
-        myGetRejectionsStatement = mySession.prepare(
+        myGetRejectionsStatementByKsAndTb = mySession.prepare(
                 QueryBuilder.selectFrom(builder.myKeyspaceName, TABLE_REJECT_CONFIGURATION)
                 .all()
-                .whereColumn("keyspace_name")
+                .whereColumn(COLUMN_KEYSPACE_NAME)
                 .isEqualTo(bindMarker())
-                .whereColumn("table_name").isEqualTo(bindMarker())
+                .whereColumn(COLUMN_TABLE_NAME).isEqualTo(bindMarker())
+                .build());
+
+        myGetRejectionsStatementByKs = mySession.prepare(
+                QueryBuilder.selectFrom(builder.myKeyspaceName, TABLE_REJECT_CONFIGURATION)
+                        .all()
+                        .whereColumn(COLUMN_KEYSPACE_NAME)
+                        .isEqualTo(bindMarker())
+                        .build());
+
+        myGetAllRejectionsStatement = mySession.prepare(
+                QueryBuilder.selectFrom(builder.myKeyspaceName, TABLE_REJECT_CONFIGURATION)
+                        .all()
+                        .build());
+
+        myCreateRejectionsStatement = mySession.prepare(
+                QueryBuilder.insertInto(builder.myKeyspaceName, TABLE_REJECT_CONFIGURATION)
+                .value(COLUMN_KEYSPACE_NAME, bindMarker())
+                .value(COLUMN_TABLE_NAME, bindMarker())
+                .value(COLUMN_START_HOUR, bindMarker())
+                .value(COLUMN_START_MINUTE, bindMarker())
+                .value(COLUMN_END_HOUR, bindMarker())
+                .value(COLUMN_END_MINUTE, bindMarker())
+                .value(COLUMN_DC_EXCLUSION, bindMarker())
+                .ifNotExists()
+                .build()
+        );
+
+        myAddDcExclusionStatement = mySession.prepare(QueryBuilder.update(
+                builder.myKeyspaceName, TABLE_REJECT_CONFIGURATION)
+                .append(COLUMN_DC_EXCLUSION, bindMarker())
+                .whereColumn(COLUMN_KEYSPACE_NAME).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_TABLE_NAME).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_START_HOUR).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_START_MINUTE).isEqualTo(bindMarker())
+                .ifExists()
+                .build());
+
+        myDropDcExclusionStatement = mySession.prepare(QueryBuilder.update(
+                builder.myKeyspaceName, TABLE_REJECT_CONFIGURATION)
+                .remove(COLUMN_DC_EXCLUSION, bindMarker())
+                .whereColumn(COLUMN_KEYSPACE_NAME).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_TABLE_NAME).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_START_HOUR).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_START_MINUTE).isEqualTo(bindMarker())
+                .ifExists()
+                .build());
+
+        myTruncateStatement = mySession.prepare(QueryBuilder.truncate(
+                builder.myKeyspaceName, TABLE_REJECT_CONFIGURATION)
+                .build());
+
+        myDeleteStatement = mySession.prepare(QueryBuilder.deleteFrom(
+                builder.myKeyspaceName, TABLE_REJECT_CONFIGURATION)
+                .whereColumn(COLUMN_KEYSPACE_NAME).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_TABLE_NAME).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_START_HOUR).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_START_MINUTE).isEqualTo(bindMarker())
+                .ifExists()
                 .build());
 
         myTimeRejectionCache = createConfigCache(builder.myCacheExpireTime);
+    }
+
+
+    public final ResultSet getAllRejections()
+    {
+        return mySession.execute(myStatementDecorator.apply(myGetAllRejectionsStatement.bind()));
+    }
+
+    public final ResultSet addRejection(final TimeBasedRunPolicyBucket bucket)
+    {
+        Statement decoratedStatement =
+                myStatementDecorator.apply(myCreateRejectionsStatement.bind(bucket.getKeyspaceName(),
+                        bucket.getTableName(),
+                        bucket.getStartHour(),
+                        bucket.getStartMinute(),
+                        bucket.getEndHour(),
+                        bucket.getEndMinute(),
+                        bucket.getDcExclusions()));
+        return mySession.execute(decoratedStatement);
+    }
+
+    public final ResultSet addDatacenterExclusion(final TimeBasedRunPolicyBucket bucket)
+    {
+        Statement decoratedStatement =
+                myStatementDecorator.apply(myAddDcExclusionStatement.bind(
+                        bucket.getDcExclusions(),
+                        bucket.getKeyspaceName(),
+                        bucket.getTableName(),
+                        bucket.getStartHour(),
+                        bucket.getStartMinute()));
+        return mySession.execute(decoratedStatement);
+    }
+
+
+    public final ResultSet dropDatacenterExclusion(final TimeBasedRunPolicyBucket bucket)
+    {
+        Statement decoratedStatement =
+                myStatementDecorator.apply(myDropDcExclusionStatement.bind(bucket.getDcExclusions(),
+                        bucket.getKeyspaceName(),
+                        bucket.getTableName(),
+                        bucket.getStartHour(),
+                        bucket.getStartMinute()));
+        return mySession.execute(decoratedStatement);
+    }
+
+    public final ResultSet deleteRejection(final TimeBasedRunPolicyBucket bucket)
+    {
+        Statement decoratedStatement =
+                myStatementDecorator.apply(myDeleteStatement.bind(
+                        bucket.getKeyspaceName(),
+                        bucket.getTableName(),
+                        bucket.getStartHour(),
+                        bucket.getStartMinute()));
+        return mySession.execute(decoratedStatement);
+    }
+
+    public final ResultSet getRejectionsByKsAndTb(final String keyspace, final String table)
+    {
+        Statement decoratedStatement =
+                myStatementDecorator.apply(myGetRejectionsStatementByKsAndTb.bind(keyspace, table));
+        return mySession.execute(decoratedStatement);
+    }
+
+    public final ResultSet getRejectionsByKs(final String keyspace)
+    {
+        Statement decoratedStatement =
+                myStatementDecorator.apply(myGetRejectionsStatementByKs.bind(keyspace));
+        return mySession.execute(decoratedStatement);
+    }
+
+    public final ResultSet truncate()
+    {
+        Statement decoratedStatement =
+                myStatementDecorator.apply(myTruncateStatement.bind());
+        return mySession.execute(decoratedStatement);
     }
 
     private LoadingCache<TableKey, TimeRejectionCollection> createConfigCache(final long expireAfter)
@@ -105,7 +261,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     private TimeRejectionCollection load(final TableKey key)
     {
         Statement decoratedStatement =
-                myStatementDecorator.apply(myGetRejectionsStatement.bind(key.getKeyspace(),
+                myStatementDecorator.apply(myGetRejectionsStatementByKsAndTb.bind(key.getKeyspace(),
                         key.getTable()));
 
         ResultSet resultSet = mySession.execute(decoratedStatement);
@@ -153,6 +309,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
         private long myCacheExpireTime = DEFAULT_CACHE_EXPIRE_TIME;
         private Clock myClock = Clock.systemDefaultZone();
+        private Node myNode;
 
         public final Builder withSession(final CqlSession session)
         {
@@ -169,6 +326,12 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         public final Builder withKeyspaceName(final String keyspaceName)
         {
             myKeyspaceName = keyspaceName;
+            return this;
+        }
+
+        public final Builder withLocalNode(final Node node)
+        {
+            myNode = node;
             return this;
         }
 
@@ -261,11 +424,14 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     {
         private final LocalDateTime myStart;
         private final LocalDateTime myEnd;
+        private final Set<String> myDatacenters;
 
         TimeRejection(final Row row)
         {
-            myStart = toDateTime(row.getInt("start_hour"), row.getInt("start_minute"));
-            myEnd = toDateTime(row.getInt("end_hour"), row.getInt("end_minute"));
+            myStart = toDateTime(row.getInt(COLUMN_START_HOUR), row.getInt(COLUMN_START_MINUTE));
+            myEnd = toDateTime(row.getInt(COLUMN_END_HOUR), row.getInt(COLUMN_END_MINUTE));
+            Set<String> tmpDcExclusion = row.getSet(COLUMN_DC_EXCLUSION, String.class);
+            myDatacenters = Objects.requireNonNullElse(tmpDcExclusion, Collections.emptySet());
         }
 
         public long rejectionTime()
@@ -275,7 +441,8 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
             if (myStart.getHour() == 0
                     && myStart.getMinute() == 0
                     && myEnd.getHour() == 0
-                    && myEnd.getMinute() == 0)
+                    && myEnd.getMinute() == 0
+                    && isDcExcluded())
             {
                 return DEFAULT_REJECT_TIME;
             }
@@ -283,8 +450,20 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
             return calculateRejectTime();
         }
 
+        public boolean isDcExcluded()
+        {
+            return myDatacenters.contains("*")
+                    || myDatacenters.contains(myNode.getDatacenter())
+                    || myDatacenters.isEmpty();
+        }
+
         private long calculateRejectTime()
         {
+            if (!isDcExcluded())
+            {
+                return -1L;
+            }
+
             LocalDateTime now = LocalDateTime.now(myClock);
 
             if (isWraparound())

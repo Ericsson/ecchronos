@@ -23,7 +23,7 @@ except ImportError:
 import json
 import os
 import ssl
-from ecchronoslib.types import FullSchedule, Repair, Schedule, RepairInfo
+from ecchronoslib.types import FullSchedule, Repair, Schedule, RepairInfo, Rejection
 
 
 class RequestResult(object):
@@ -79,20 +79,20 @@ class RestRequest(object):
     def get_charset(response):
         return RestRequest.get_param(response.info(), "charset") or "utf-8"
 
-    def request(self, url, method="GET"):
+    def request(self, url, method="GET", body=None, headers=None):
         request_url = "{0}/{1}".format(self.base_url, url)
         try:
-            request = Request(request_url)
+            if body is not None:
+                if isinstance(body, dict):
+                    body = json.dumps(body)
+                body = body.encode("utf-8")
+            request = Request(request_url, data=body)
+
+            if headers:
+                for k, v in headers.items():
+                    request.add_header(k, v)
             request.get_method = lambda: method
-            cert_file = os.getenv("ECCTOOL_CERT_FILE")
-            key_file = os.getenv("ECCTOOL_KEY_FILE")
-            ca_file = os.getenv("ECCTOOL_CA_FILE")
-            if cert_file and key_file and ca_file:
-                context = ssl.create_default_context(cafile=ca_file)
-                context.load_cert_chain(cert_file, key_file)
-                response = urlopen(request, context=context)
-            else:
-                response = urlopen(request)
+            response = _create_response(request)
             json_data = json.loads(response.read().decode(RestRequest.get_charset(response)))
 
             response.close()
@@ -273,3 +273,95 @@ class V2RepairSchedulerRequest(RestRequest):
         result = self.basic_request(request_url)
 
         return result
+
+
+class RejectionsRequest(RestRequest):
+    ROOT = "rejections"
+    TRUNCATE = ROOT + "/all"
+
+    def __init__(self, base_url=None):
+        RestRequest.__init__(self, base_url)
+
+
+    def list_rejections(self, keyspace=None, table=None):
+        request_url = RejectionsRequest.ROOT
+
+        if keyspace and table:
+            request_url = "{0}?keyspace={1}&table={2}".format(request_url, keyspace, table)
+        elif keyspace:
+            request_url = "{0}?keyspace={1}".format(request_url, keyspace)
+
+        result = self.request(request_url)
+
+        if result.is_successful():
+            result = result.transform_with_data(new_data=[Rejection(x) for x in result.data])
+
+        return result
+
+
+    def create_rejection(self, rejection_body):
+        request_url = RejectionsRequest.ROOT
+        headers = {
+            "Content-Type": "application/json"
+        }
+        result = self.request(request_url, "POST", body=rejection_body, headers=headers)
+
+        if result.is_successful():
+            print(result.data["message"])
+            result = result.transform_with_data(new_data=[Rejection(x) for x in result.data["data"]])
+            return result
+        print(result.format_exception())
+        return result
+
+
+    def update_rejection(self, rejection_body):
+        request_url = RejectionsRequest.ROOT
+        headers = {
+            "Content-Type": "application/json"
+        }
+        result = self.request(request_url, "PATCH", body=rejection_body, headers=headers)
+
+        if result.is_successful():
+            print(result.data["message"])
+            result = result.transform_with_data(new_data=[Rejection(x) for x in result.data["data"]])
+            return result
+        print(result.format_exception())
+        return result
+
+
+    def delete_rejection(self, rejection_body):
+        request_url = RejectionsRequest.ROOT
+        headers = {
+            "Content-Type": "application/json"
+        }
+
+        result = self.request(request_url, "DELETE", body=rejection_body, headers=headers)
+
+        if result.is_successful():
+            print(result.data["message"])
+            result = result.transform_with_data(new_data=[Rejection(x) for x in result.data["data"]])
+            return result
+        print(result.format_exception())
+        return result
+
+
+    def truncate_rejections(self):
+        request_url = RejectionsRequest.TRUNCATE
+        result = self.request(request_url, "DELETE")
+
+        if result.is_successful():
+            print(result.data["message"])
+            result = result.transform_with_data(new_data=[Rejection(x) for x in result.data["data"]])
+            return result
+        print(result.format_exception())
+        return result
+
+def _create_response(request):
+    cert_file = os.getenv("ECCTOOL_CERT_FILE")
+    key_file = os.getenv("ECCTOOL_KEY_FILE")
+    ca_file = os.getenv("ECCTOOL_CA_FILE")
+    if cert_file and key_file and ca_file:
+        context = ssl.create_default_context(cafile=ca_file)
+        context.load_cert_chain(cert_file, key_file)
+        return urlopen(request, context=context)
+    return urlopen(request)

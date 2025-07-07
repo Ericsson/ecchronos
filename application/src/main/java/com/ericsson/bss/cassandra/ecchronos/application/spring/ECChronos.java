@@ -91,6 +91,7 @@ public class ECChronos implements Closeable
                 .withSession(session)
                 .withStatementDecorator(statementDecorator)
                 .withKeyspaceName(configuration.getRunPolicy().getTimeBasedConfig().getKeyspaceName())
+                .withLocalNode(nativeConnectionProvider.getLocalNode())
                 .build();
 
         myRepairSchedulerImpl = RepairSchedulerImpl.builder()
@@ -164,6 +165,12 @@ public class ECChronos implements Closeable
     public RepairStatsProvider repairStatsProvider()
     {
         return myRepairStatsProvider;
+    }
+
+    @Bean
+    public TimeBasedRunPolicy timeBasedRunPolicy()
+    {
+        return myTimeBasedRunPolicy;
     }
 
     @Override

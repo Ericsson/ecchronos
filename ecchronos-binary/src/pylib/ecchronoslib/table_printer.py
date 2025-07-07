@@ -19,6 +19,11 @@ from datetime import datetime
 from ecchronoslib import table_formatter
 
 
+
+def print_rejections(rejections):
+    _print_rejections_table_format(rejections)
+
+
 def print_schedule(schedule, max_lines, full=False, columns=None, output="table"):
     if not schedule.is_valid():
         print("Schedule not found")
@@ -141,6 +146,27 @@ def _print_schedules_table_format(schedules, max_lines, columns=None):
     print_schedule_table(schedule_table, schedules, max_lines, columns)
 
 
+def _print_rejections_table_format(rejections):
+    rejections_table = [
+        [
+            "Keyspace",
+            "Table",
+            "Start Hour",
+            "Start Minute",
+            "End Hour",
+            "End Minute",
+            "DC Exclusions",
+        ]
+    ]
+    print_rejections_table(rejections_table, rejections)
+
+
+def print_rejections_table(rejections_table, rejections):
+    for rejection in rejections:
+        rejections_table.append(_convert_rejection(rejection))
+    table_formatter.format_table(rejections_table, None)
+
+
 def _print_schedules_json_format(timestamp, schedules, max_lines):
     sorted_schedules = sorted(
         schedules,
@@ -233,6 +259,19 @@ def _convert_schedule(schedule):
         schedule.repair_type,
     ]
 
+    return entry
+
+
+def _convert_rejection(rejection):
+    entry = [
+        rejection.keyspace,
+        rejection.table,
+        rejection.start_hour,
+        rejection.start_minute,
+        rejection.end_hour,
+        rejection.end_minute,
+        rejection.dc_exclusions,
+    ]
     return entry
 
 

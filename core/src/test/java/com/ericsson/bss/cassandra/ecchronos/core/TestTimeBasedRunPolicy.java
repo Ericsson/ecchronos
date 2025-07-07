@@ -31,6 +31,8 @@ import org.junit.runners.Parameterized;
 import java.time.*;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
@@ -68,9 +70,9 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
     {
         myRepairJobMock = mock(TableRepairJob.class);
         mySession.execute(String.format("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {'class': 'NetworkTopologyStrategy', 'DC1': 1}", myKeyspaceName));
-        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.reject_configuration (keyspace_name text, table_name text, start_hour int, start_minute int, end_hour int, end_minute int, PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute))", myKeyspaceName));
+        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.reject_configuration (keyspace_name text, table_name text, start_hour int, start_minute int, end_hour int, end_minute int, dc_exclusion set<text>, PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute))", myKeyspaceName));
 
-        insertRejectStatement = mySession.prepare(String.format("INSERT INTO %s.%s (keyspace_name, table_name, start_hour, start_minute, end_hour, end_minute) VALUES (?,?,?,?,?,?)", myKeyspaceName, TABLE_REJECT_CONFIGURATION));
+        insertRejectStatement = mySession.prepare(String.format("INSERT INTO %s.%s (keyspace_name, table_name, start_hour, start_minute, end_hour, end_minute, dc_exclusion) VALUES (?,?,?,?,?,?,?)", myKeyspaceName, TABLE_REJECT_CONFIGURATION));
     }
 
     @After
@@ -297,7 +299,7 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
                         .withKeyspaceName(myKeyspaceName)
                         .build());
 
-        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (keyspace_name text, table_name text, start_hour int, start_minute int, end_hour int, end_minute int, PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute))", myKeyspaceName, TABLE_REJECT_CONFIGURATION));
+        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (keyspace_name text, table_name text, start_hour int, start_minute int, end_hour int, end_minute int, dc_exclusion set<text>, PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute))", myKeyspaceName, TABLE_REJECT_CONFIGURATION));
     }
 
     @Test
@@ -329,13 +331,15 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
 
     private void insertEntry(String keyspace, String table, int start_hour, int start_minute, int end_hour, int end_minute)
     {
+        Set<String> dcExclusionSet = Collections.singleton("*");
         execute(insertRejectStatement.bind(
                 keyspace,
                 table,
                 start_hour,
                 start_minute,
                 end_hour,
-                end_minute));
+                end_minute,
+                dcExclusionSet));
     }
 
     private ResultSet execute(Statement statement)

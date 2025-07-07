@@ -1,3 +1,16 @@
+# Upgrade to 6.0.7
+
+## Reject Configuration in Datacenter level
+Version 6.0.7 has added support for disabling schedule repairs in a specified list of datacenters. Due to this the `ecchronos.reject_configuration` table
+has gotten a new column `dc_exclusion`.
+
+The `ecchronos.reject_configuration` table must be updated before performing the upgrade to version  6.0.7.
+
+The command to add the column is shown below:
+```
+ALTER TABLE ecchronos.reject_configuration ADD dc_exclusion set<text>;
+```
+
 # Upgrade to 5.X
 
 ## Caffeine cache
