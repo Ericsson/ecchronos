@@ -28,13 +28,20 @@ def handle_rejections_output(context):
     output_data = context.out.decode("ascii").strip().split("\n")
     print("Output data:")
     print(output_data)
-    context.header = output_data[0:6]
+
+    border_indexes = [i for i, line in enumerate(output_data) if set(line.strip()) == {'-'}]
+
+    if len(border_indexes) >= 2:
+        context.header = output_data[:border_indexes[1]+1]
+        context.rows = output_data[border_indexes[1]+1:border_indexes[-1]]
+    else:
+        context.header = output_data
+        context.rows = []
+
     print("header:")
     print(context.header)
-    context.rows = output_data[6:]
     print("rows:")
     print(context.rows)
-
 
 @then("the output should contain a valid rejections header")
 def step_validate_rejection_header(context):
