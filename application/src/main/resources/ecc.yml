@@ -47,7 +47,7 @@ connection:
       type: datacenterAware
       ## Specifies the datacenter that is considered "local" by the load balancing policy,
       ## The specified datacenter should match with the contact point datacenter
-      localDatacenter: dc1
+      localDatacenter: datacenter1
       ## A custom load balancing policy extended to allow the local
       ## datacenter to be replaced with a specified data center when
       ## creating a new plan, this is used just if the agent.type is datacenterAware
@@ -57,6 +57,8 @@ connection:
       contactPoints:
         - host: 127.0.0.1
           port: 9042
+        - host: 127.0.0.2
+          port: 9042
 
       ## Configuration to define datacenters for ecChronos
       ## to connect to, datacenterAware enable means that
@@ -64,7 +66,8 @@ connection:
       ## datacenter list.
       datacenterAware:
         datacenters:
-          - name: dc1
+          - name: datacenter1
+          - name: datacenter2
       ## Configuration to define racks for ecChronos
       ## to connect to, rackAware enable means that
       ## ecChronos will be responsible for all nodes in the
@@ -72,15 +75,23 @@ connection:
       ## racks on the same datacenter.
       rackAware:
         racks:
-          - datacenterName: dc1
+          - datacenterName: datacenter1
             rackName: rack1
-      ## Configuration to define hosts for ecChronos
+          - datacenterName: datacenter1
+            rackName: rack2
+        ## Configuration to define hosts for ecChronos
       ## to connect to, hostAware enable means that
       ## ecChronos will be responsible just for the
       ## specified hosts list.
       hostAware:
         hosts:
           - host: 127.0.0.1
+            port: 9042
+          - host: 127.0.0.2
+            port: 9042
+          - host: 127.0.0.3
+            port: 9042
+          - host: 127.0.0.4
             port: 9042
     ##
     ## The class used to provide CQL connections to Apache Cassandra.
@@ -157,14 +168,14 @@ repair:
   ##
   interval:
     time: 7
-    unit: minutes
+    unit: days
   ##
   ## Initial delay for new tables. New tables are always assumed to have been repaired in the past by the interval.
   ## However, a delay can be set for the first repair. This will not affect subsequent repairs and defaults to one day.
   ##
   initial_delay:
     time: 1
-    unit: minutes
+    unit: days
   ##
   ## The unit of time granularity for priority calculation, can be HOURS, MINUTES, or SECONDS.
   ## This unit is used in the calculation of priority.
