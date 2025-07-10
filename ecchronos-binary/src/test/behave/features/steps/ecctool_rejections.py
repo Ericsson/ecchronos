@@ -16,15 +16,13 @@
 from behave import when, then  # pylint: disable=no-name-in-module
 from ecc_step_library.common import match_and_remove_row, validate_header, run_ecctool
 
-REJECTIONS_HEADER = (
-    r"| Keyspace | Table | Start Hour | Start Minute | End Hour | End Minute | DC Exclusions |"
-)
-REJECTIONS_ROW_FORMAT_PATTERN = (
-    r"\| \* \| \* \| \d+ \| \d+ \| \d+ \| \d+ \| \[.*\] \|"
-)
+REJECTIONS_HEADER = r"| Keyspace | Table | Start Hour | Start Minute | End Hour | End Minute | DC Exclusions |"
+REJECTIONS_ROW_FORMAT_PATTERN = r"\| \* \| \* \| \d+ \| \d+ \| \d+ \| \d+ \| \[.*\] \|"
+
 
 def run_ecc_rejections(context, params):
     run_ecctool(context, ["rejections"] + params)
+
 
 def handle_rejections_output(context):
     output_data = context.out.decode("ascii").strip().split("\n")
@@ -37,9 +35,11 @@ def handle_rejections_output(context):
     print("rows:")
     print(context.rows)
 
+
 @then("the output should contain a valid rejections header")
 def step_validate_rejection_header(context):
     validate_header(context.header, REJECTIONS_HEADER)
+
 
 @then(
     "the output should contain a rejection row for {keyspace}.{table} with start hour {start_hour}, "
@@ -47,7 +47,7 @@ def step_validate_rejection_header(context):
 )
 def step_validate_rejection_row(
     context, keyspace, table, start_hour, start_minute, end_hour, end_minute, dc_exclusions
-): # pylint: disable=too-many-arguments,too-many-positional-arguments
+):  # pylint: disable=too-many-arguments,too-many-positional-arguments
     expected_row = rejection_row(
         REJECTIONS_ROW_FORMAT_PATTERN,
         keyspace=keyspace,
@@ -60,13 +60,14 @@ def step_validate_rejection_row(
     )
     match_and_remove_row(context.rows, expected_row)
 
+
 @when(
     "we create repair rejection for keyspace {keyspace}, table {table} with start hour {start_hour}, "
     "start minute {start_minute}, end hour {end_hour}, end minute {end_minute}, dc exclusions {dc_exclusions}"
 )
 def step_create_repair_rejection(
     context, keyspace, table, start_hour, start_minute, end_hour, end_minute, dc_exclusions
-): # pylint: disable=too-many-positional-arguments,too-many-arguments
+):  # pylint: disable=too-many-positional-arguments,too-many-arguments
     run_ecc_rejections(
         context,
         [
@@ -89,20 +90,24 @@ def step_create_repair_rejection(
     )
     handle_rejections_output(context)
 
+
 @when("we get all rejections")
 def step_get_all_rejections(context):
     run_ecc_rejections(context, ["get"])
     handle_rejections_output(context)
+
 
 @when("we get all rejections for {keyspace}.{table}")
 def step_get_rejections_for_keyspace_and_table(context, keyspace, table):
     run_ecc_rejections(context, ["get", "--keyspace", keyspace, "--table", table])
     handle_rejections_output(context)
 
+
 @when("we get all rejections for {keyspace}")
 def step_get_rejections_for_keyspace(context, keyspace):
     run_ecc_rejections(context, ["get", "--keyspace", keyspace])
     handle_rejections_output(context)
+
 
 @then("the output should contain a valid rejection header")
 def step_validate_list_tables_header(context):
@@ -111,5 +116,5 @@ def step_validate_list_tables_header(context):
 
 def rejection_row(
     template, keyspace, table, start_hour, start_minute, end_hour, end_minute, dc_exclusions
-): # pylint: disable=too-many-arguments,too-many-positional-arguments
+):  # pylint: disable=too-many-arguments,too-many-positional-arguments
     return template.format(keyspace, table, start_hour, start_minute, end_hour, end_minute, dc_exclusions)
