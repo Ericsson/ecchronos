@@ -25,18 +25,9 @@ def run_ecc_rejections(context, params):
 
 
 def handle_rejections_output(context):
-    output_data = context.out.decode("ascii").strip().split("\n")
-    print("Output data:")
-    print(output_data)
-
-    border_indexes = [i for i, line in enumerate(output_data) if set(line.strip()) == {"-"}]
-
-    if len(border_indexes) >= 2:
-        context.header = output_data[: border_indexes[1] + 1]
-        context.rows = output_data[border_indexes[1] + 1 : border_indexes[-1]]
-    else:
-        context.header = output_data
-        context.rows = []
+    output_data = context.out.decode("ascii").lstrip().rstrip().split("\n")
+    context.header = output_data[2]
+    context.rows = output_data[4:-1]
 
     print("header:")
     print(context.header)
