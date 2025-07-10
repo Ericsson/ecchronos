@@ -36,6 +36,7 @@ def handle_rejections_output(context):
     print("output_data:")
     print(output_data)
 
+
 @then("the output should contain a valid rejections header")
 def step_validate_rejection_header(context):
     validate_header(context.header, REJECTIONS_HEADER)
