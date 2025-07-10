@@ -28,13 +28,13 @@ def run_ecc_rejections(context, params):
 def handle_create_rejections_output(context):
     output_data = context.out.decode("ascii").lstrip().rstrip().split("\n")
     context.header = output_data[1:4]
-    context.rows = output_data[4:-1]
+    context.rows = output_data[4:]
 
 
 def handle_get_rejections_output(context):
     output_data = context.out.decode("ascii").lstrip().rstrip().split("\n")
     context.header = output_data[0:3]
-    context.rows = output_data[3:-1]
+    context.rows = output_data[3:]
 
 
 @then("the output should contain a valid rejections header")
