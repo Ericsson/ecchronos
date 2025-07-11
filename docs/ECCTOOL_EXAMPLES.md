@@ -273,7 +273,7 @@ configuration needed.*
 Before updating
 
 ```
-$ python ecctool.py rejections get -k test2 -t test4
+$ ecctool rejections get -k test2 -t test4
 ------------------------------------------------------------------------------------------------
 | Keyspace | Table | Start Hour | Start Minute | End Hour | End Minute | DC Exclusions         |
 ------------------------------------------------------------------------------------------------
@@ -284,7 +284,7 @@ $ python ecctool.py rejections get -k test2 -t test4
 After updating
 
 ```
-$ python ecctool.py rejections update -k test2 -t test4 -sh 15 -sm 30 -dcs dc5 dc6
+$ ecctool rejections update -k test2 -t test4 -sh 15 -sm 30 -dcs dc5 dc6
 Datacenter Exclusion added successfully.
 --------------------------------------------------------------------------------------------------------------
 | Keyspace | Table | Start Hour | Start Minute | End Hour | End Minute | DC Exclusions                       |

@@ -55,6 +55,14 @@ def match_and_remove_row(rows, expected_row):
     return found_row
 
 
+def check_row_not_exists(rows, expected_row):
+    for row in rows:
+        row_clean = strip_and_collapse(row)
+        if re.match(expected_row, row_clean):
+            return False
+    return True
+
+
 def handle_repair_output(context):
     output_data = context.out.decode("ascii").lstrip().rstrip().split("\n")
     context.header = output_data[0:3]
