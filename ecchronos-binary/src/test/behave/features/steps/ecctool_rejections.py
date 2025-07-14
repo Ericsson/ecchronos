@@ -19,6 +19,7 @@ from ecc_step_library.common import match_and_remove_row, validate_header, run_e
 
 REJECTIONS_HEADER = r"| Keyspace | Table | Start Hour | Start Minute | End Hour | End Minute | DC Exclusions |"
 REJECTIONS_ROW_FORMAT_PATTERN = r"\| {} +\| {} +\| {} +\| {} +\| {} +\| {} +\| \[.*\] +\|"
+REJECTIONS_ROW_FORMAT_PATTERN_WITH_DC = r"\| {} +\| {} +\| {} +\| {} +\| {} +\| {} +\| {} +\|"
 
 
 def run_ecc_rejections(context, params):
@@ -87,9 +88,12 @@ def step_get_rejections_for_keyspace_and_table(context, keyspace, table):
 
 
 @when(
-    "we update rejection with {keyspace}.{table} with start hour {start_hour}, start minute {start_minute} adding datacenter {dc_exclusions}"
+    "we update rejection with {keyspace}.{table} with start hour {start_hour}, start minute {start_minute} "
+    "adding datacenter {dc_exclusions}"
 )
-def step_add_dc_exclusion_for_rejection(context, keyspace, table, start_hour, start_minute, dc_exclusions):
+def step_add_dc_exclusion_for_rejection(
+    context, keyspace, table, start_hour, start_minute, dc_exclusions
+):  # pylint: disable=too-many-arguments,too-many-positional-arguments
     run_ecc_rejections(
         context,
         [
@@ -129,9 +133,12 @@ def step_delete_rejection(context, keyspace, table, start_hour, start_minute):
 
 
 @when(
-    "we delete a datacenter {dc} from rejection with {keyspace}.{table} with start hour {start_hour}, start minute {start_minute}"
+    "we delete a datacenter {dc} from rejection with {keyspace}.{table} with start hour {start_hour}, "
+    "start minute {start_minute}"
 )
-def step_delete_dc_from_rejection(context, dc, keyspace, table, start_hour, start_minute):
+def step_delete_dc_from_rejection(
+    context, dc, keyspace, table, start_hour, start_minute
+):  # pylint: disable=too-many-arguments,too-many-positional-arguments
     run_ecc_rejections(
         context,
         [
@@ -240,11 +247,12 @@ def step_validate_datacenter_in_rejection_row(
 def rejection_row(
     keyspace, table, start_hour, start_minute, end_hour, end_minute, dc_exclusions
 ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    dc_pattern = None
     if isinstance(dc_exclusions, list):
         dc_pattern = re.escape(str(dc_exclusions))
-    else:
-        dc_pattern = re.escape(str([dc_exclusions]))
+        return REJECTIONS_ROW_FORMAT_PATTERN_WITH_DC.format(
+            re.escape(keyspace), re.escape(table), start_hour, start_minute, end_hour, end_minute, dc_pattern
+        )
+    dc_pattern = re.escape(str([dc_exclusions]))
     return REJECTIONS_ROW_FORMAT_PATTERN.format(
         re.escape(keyspace), re.escape(table), start_hour, start_minute, end_hour, end_minute
     ).replace(r"\[\.\*\]", dc_pattern)

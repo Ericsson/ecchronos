@@ -58,7 +58,7 @@ def match_and_remove_row(rows, expected_row):
 def check_row_not_exists(rows, expected_row):
     for row in rows:
         row_clean = strip_and_collapse(row)
-        if re.match(expected_row, row_clean):
+        if re.search(expected_row, row_clean):
             return False
     return True
 
