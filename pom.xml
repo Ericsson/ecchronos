@@ -79,7 +79,7 @@
         <mockito.core.version>5.18.0</mockito.core.version>
         <org.apache.commons.io.version>2.19.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.27.1</org.apache.commons.commons-compress.version>
-        <org.apache.tomcat.embed.tomcat-embed-core.version>10.1.42</org.apache.tomcat.embed.tomcat-embed-core.version>
+        <org.apache.tomcat.embed.tomcat-embed-core.version>11.0.9</org.apache.tomcat.embed.tomcat-embed-core.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.81</org.bouncycastle.bcpkix-jdk18on.version>
         <org.springframework.boot.version>3.5.0</org.springframework.boot.version>
         <org.springframework.spring-web>6.2.8</org.springframework.spring-web>
