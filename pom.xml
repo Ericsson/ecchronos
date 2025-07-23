@@ -73,7 +73,7 @@
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
         <javax.inject-api.version>2.0.1</javax.inject-api.version>
         <jcip.version>1.0</jcip.version>
-        <junit.version>5.13.1</junit.version>
+        <junit.version>5.13.4</junit.version>
         <junitparams.version>1.1.1</junitparams.version>
         <logback.version>1.5.18</logback.version>
         <mockito.core.version>5.18.0</mockito.core.version>
@@ -81,8 +81,8 @@
         <org.apache.commons.commons-compress.version>1.27.1</org.apache.commons.commons-compress.version>
         <org.apache.tomcat.embed.tomcat-embed-core.version>11.0.9</org.apache.tomcat.embed.tomcat-embed-core.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.81</org.bouncycastle.bcpkix-jdk18on.version>
-        <org.springframework.boot.version>3.5.0</org.springframework.boot.version>
-        <org.springframework.spring-web>6.2.8</org.springframework.spring-web>
+        <org.springframework.boot.version>3.5.3</org.springframework.boot.version>
+        <org.springframework.spring-web>6.2.9</org.springframework.spring-web>
         <org.yaml.snakeyaml.version>2.4</org.yaml.snakeyaml.version>
         <slf4j.version>2.0.17</slf4j.version>
         <springdoc.openapi-starter-webmvc-ui.version>2.8.9</springdoc.openapi-starter-webmvc-ui.version>
