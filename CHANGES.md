@@ -2,6 +2,7 @@
 
 ## Version 6.0.7
 
+* Revert Switch to prometheus-metrics-exposition-textformats due to a licence issue - Issue #972
 * Corrects json output option - Issue #999
 
 ## Version 6.0.6
