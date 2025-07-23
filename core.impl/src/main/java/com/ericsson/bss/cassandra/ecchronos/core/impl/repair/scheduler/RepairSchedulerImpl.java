@@ -261,7 +261,11 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
             final Set<RepairConfiguration> repairConfigurations)
     {
         Set<ScheduledRepairJob> currentJobs = myScheduledJobs.get(node.getHostId()).get(tableReference);
-        Map<TableReference, Set<ScheduledRepairJob>> tableJob = new HashMap<>();
+        Map<TableReference, Set<ScheduledRepairJob>> tableJob = myScheduledJobs.get(node.getHostId());
+        if (tableJob == null)
+        {
+            tableJob = new HashMap<>();
+        }
         if (currentJobs != null)
         {
             for (ScheduledRepairJob job : currentJobs)
