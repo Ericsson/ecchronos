@@ -165,23 +165,6 @@
                 <version>${com.typesafe.config.version}</version>
             </dependency>
 
-            <!-- Used by micrometer-registry-prometheus, steped due to conflict with prometheus-metrics-exposition-textformats -->
-            <dependency>
-                <groupId>io.prometheus</groupId>
-                <artifactId>prometheus-metrics-core</artifactId>
-                <version>${io.prometheus.client-java.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.prometheus</groupId>
-                <artifactId>prometheus-metrics-model</artifactId>
-                <version>${io.prometheus.client-java.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.prometheus</groupId>
-                <artifactId>prometheus-metrics-config</artifactId>
-                <version>${io.prometheus.client-java.version}</version>
-            </dependency>
-
             <!-- End of temporary override section -->
 
             <!-- Netty -->
@@ -417,7 +400,7 @@
 
             <dependency>
                 <groupId>io.prometheus</groupId>
-                <artifactId>prometheus-metrics-exposition-textformats</artifactId>
+                <artifactId>prometheus-metrics-exposition-formats</artifactId>
                 <version>${io.prometheus.client-java.version}</version>
             </dependency>
 
