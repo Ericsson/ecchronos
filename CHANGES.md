@@ -1,9 +1,12 @@
 # Changes
 
-## Version 6.0.7
+## Version 6.1.0
 
 * Add Rejections sub-command - Issue #1015
 * Investigate Creation of a REST Endpoint to Disable Repairs at DC Level - Issue #1009
+
+## Version 6.0.7
+
 * Revert Switch to prometheus-metrics-exposition-textformats due to a licence issue - Issue #972
 * Corrects json output option - Issue #999
 

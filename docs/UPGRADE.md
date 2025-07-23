@@ -1,4 +1,4 @@
-# Upgrade to 6.0.7
+# Upgrade to 6.1.X
 
 ## Reject Configuration in Datacenter level
 Version 6.0.7 has added support for disabling schedule repairs in a specified list of datacenters. Due to this the `ecchronos.reject_configuration` table
