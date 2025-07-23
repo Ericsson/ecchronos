@@ -24,6 +24,7 @@ import java.time.Duration;
  *
  * Whenever the interface is changed it must be reflected in docs.
  */
+@FunctionalInterface
 public interface RepairManagementREST
 {
     /**

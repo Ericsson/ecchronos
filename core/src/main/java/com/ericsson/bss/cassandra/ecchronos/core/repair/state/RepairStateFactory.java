@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair.state;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 
+@FunctionalInterface
 public interface RepairStateFactory
 {
     RepairState create(TableReference tableReference,
