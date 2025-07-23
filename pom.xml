@@ -99,7 +99,7 @@
         <org.apache.maven.plugins-maven-dependency-plugin.version>3.8.1</org.apache.maven.plugins-maven-dependency-plugin.version>
         <org.apache.maven.plugins.maven-deploy-plugin.version>3.1.4</org.apache.maven.plugins.maven-deploy-plugin.version>
         <org.apache.maven.plugins.maven-failsafe-plugin.version>3.5.3</org.apache.maven.plugins.maven-failsafe-plugin.version>
-        <org.apache.maven.plugins.maven-gpg-plugin.version>3.2.7</org.apache.maven.plugins.maven-gpg-plugin.version>
+        <org.apache.maven.plugins.maven-gpg-plugin.version>3.2.8</org.apache.maven.plugins.maven-gpg-plugin.version>
         <org.apache.maven.plugins.maven-install-plugin.version>3.1.4</org.apache.maven.plugins.maven-install-plugin.version>
         <org.apache.maven.plugins-maven-jar-plugin.version>3.4.2</org.apache.maven.plugins-maven-jar-plugin.version>
         <org.apache.maven.plugins.maven-javadoc-plugin.version>3.11.2</org.apache.maven.plugins.maven-javadoc-plugin.version>
