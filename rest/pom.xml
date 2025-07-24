@@ -48,7 +48,7 @@
         <!-- Metrics -->
         <dependency>
             <groupId>io.prometheus</groupId>
-            <artifactId>prometheus-metrics-exposition-textformats</artifactId>
+            <artifactId>prometheus-metrics-exposition-formats</artifactId>
         </dependency>
         <dependency>
             <groupId>io.prometheus</groupId>
