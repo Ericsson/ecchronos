@@ -23,6 +23,8 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Date;
 
+import com.ericsson.bss.cassandra.ecchronos.application.config.security.CRLConfig;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestReloadingCertificateHandler
@@ -170,6 +172,7 @@ public class TestReloadingCertificateHandler
                 KEYSTORE_PASSWORD);
         cqlTLSConfig.setStoreType(STORE_TYPE_JKS);
         cqlTLSConfig.setProtocol(protocolVersion);
+        cqlTLSConfig.setCRLConfig(new CRLConfig());
         return cqlTLSConfig;
     }
 

@@ -1,4 +1,4 @@
-CREATE KEYSPACE IF NOT EXISTS ecchronos WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 1};
+CREATE KEYSPACE IF NOT EXISTS ecchronos WITH replication = {'class': 'NetworkTopologyStrategy', 'dc1': 1};
 
 CREATE TABLE IF NOT EXISTS ecchronos.lock (
     resource text,
