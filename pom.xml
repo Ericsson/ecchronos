@@ -79,6 +79,7 @@
         <mockito.core.version>5.18.0</mockito.core.version>
         <org.apache.commons.io.version>2.20.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.27.1</org.apache.commons.commons-compress.version>
+        <org.apache.commons.commons-lang3.version>3.18.0</org.apache.commons.commons-lang3.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.81</org.bouncycastle.bcpkix-jdk18on.version>
         <org.springframework.boot.version>3.5.3</org.springframework.boot.version>
         <org.yaml.snakeyaml.version>2.4</org.yaml.snakeyaml.version>
@@ -135,6 +136,13 @@
                 <artifactId>commons-compress</artifactId>
                 <version>${org.apache.commons.commons-compress.version}</version>
                 <scope>test</scope>
+            </dependency>
+
+            <!-- Used by testcontainers and springdoc-openapi-starter-webmvc-ui, steped due to CVE-2025-48924 -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${org.apache.commons.commons-lang3.version}</version>
             </dependency>
 
             <!-- Used by java-driver -->
