@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
 import com.ericsson.bss.cassandra.ecchronos.application.utils.CertUtils;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
@@ -151,6 +152,9 @@ public abstract class TestTomcatWebServerCustomizer
 
     @MockBean
     private CassandraHealthIndicator cassandraHealthIndicator;
+
+    @MockBean
+    private TimeBasedRunPolicy timeBasedRunPolicy;
 
     @SpyBean
     protected TomcatWebServerCustomizer tomcatWebServerCustomizer;
