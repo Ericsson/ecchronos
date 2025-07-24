@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.scheduling;
 
+@FunctionalInterface
 public interface RunPolicy
 {
     /**

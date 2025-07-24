@@ -21,6 +21,7 @@ import java.util.Optional;
 /**
  * Interface for providing table based repair metrics.
  */
+@FunctionalInterface
 public interface TableRepairMetricsProvider
 {
     /**

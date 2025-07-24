@@ -84,6 +84,7 @@ public interface LockFactory
     /**
      * A locked resource that gets released by the call of the {@link DistributedLock#close() close()} method.
      */
+    @FunctionalInterface
     interface DistributedLock extends Closeable
     {
         /**

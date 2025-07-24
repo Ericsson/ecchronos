@@ -21,6 +21,7 @@ import javax.management.remote.JMXConnector;
 /**
  * Cassandra JMX proxy interface used to interact with the local Cassandra node using JMX.
  */
+@FunctionalInterface
 public interface JmxConnectionProvider extends Closeable
 {
     JMXConnector getJmxConnector() throws IOException;

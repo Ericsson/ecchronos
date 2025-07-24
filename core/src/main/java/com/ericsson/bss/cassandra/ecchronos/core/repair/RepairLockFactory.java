@@ -23,6 +23,7 @@ import java.util.Set;
 /**
  * A locking factory for repair jobs.
  */
+@FunctionalInterface
 public interface RepairLockFactory
 {
     /**

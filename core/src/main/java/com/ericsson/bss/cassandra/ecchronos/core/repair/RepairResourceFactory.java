@@ -21,6 +21,7 @@ import java.util.Set;
 /**
  * Interface for generating repair resources to lock when running repair.
  */
+@FunctionalInterface
 public interface RepairResourceFactory
 {
     /**
