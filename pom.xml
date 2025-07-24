@@ -139,25 +139,6 @@
                 <scope>test</scope>
             </dependency>
 
-            <!-- Used by spring-boot-starter-web -->
-            <dependency>
-                <groupId>jakarta.servlet</groupId>
-                <artifactId>jakarta.servlet-api</artifactId>
-                <version>${jakarta.servlet-api.version}</version>
-            </dependency>
-            <!-- Due to CVE-2025-48988 & CVE-2025-49125 -->
-            <dependency>
-                <groupId>org.apache.tomcat.embed</groupId>
-                <artifactId>tomcat-embed-core</artifactId>
-                <version>${org.apache.tomcat.embed.tomcat-embed-core.version}</version>
-            </dependency>
-            <!-- Due to CVE-2025-41234 -->
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-web</artifactId>
-                <version>${org.springframework.spring-web}</version>
-            </dependency>
-
             <!-- Used by java-driver -->
             <dependency>
                 <groupId>com.typesafe</groupId>
@@ -350,6 +331,12 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>jakarta.servlet</groupId>
+                <artifactId>jakarta.servlet-api</artifactId>
+                <version>${jakarta.servlet-api.version}</version>
             </dependency>
 
             <dependency>
