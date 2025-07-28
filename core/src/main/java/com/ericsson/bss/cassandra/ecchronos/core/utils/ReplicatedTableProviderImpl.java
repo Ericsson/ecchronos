@@ -81,16 +81,16 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
             Map<String, String> replication = keyspaceMetadata.get().getReplication();
             String replicationClass = replication.get(STRATEGY_CLASS);
 
-            switch (replicationClass)
+            return switch (replicationClass)
             {
-                case SIMPLE_STRATEGY:
-                    return validateSimpleStrategy(replication);
-                case NETWORK_TOPOLOGY_STRATEGY:
-                    return validateNetworkTopologyStrategy(keyspace, replication);
-                default:
+                case SIMPLE_STRATEGY -> validateSimpleStrategy(replication);
+                case NETWORK_TOPOLOGY_STRATEGY -> validateNetworkTopologyStrategy(keyspace, replication);
+                default ->
+                {
                     LOG.warn("Replication strategy of type {} is not supported", replicationClass);
-                    break;
-            }
+                    yield false;
+                }
+            };
         }
 
         return false;
