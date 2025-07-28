@@ -40,19 +40,12 @@ public final class UnitConverter
         }
         long baseValue = Long.parseLong(matcher.group(1));
 
-        switch (matcher.group(2))
+        return switch (matcher.group(2))
         {
-            case "g":
-            case "G":
-                return baseValue * ONE_GiB;
-            case "m":
-            case "M":
-                return baseValue * ONE_MiB;
-            case "k":
-            case "K":
-                return baseValue * ONE_KiB;
-            default: // Bytes
-                return baseValue;
-        }
+            case "g", "G" -> baseValue * ONE_GiB;
+            case "m", "M" -> baseValue * ONE_MiB;
+            case "k", "K" -> baseValue * ONE_KiB;
+            default -> baseValue;
+        };
     }
 }
