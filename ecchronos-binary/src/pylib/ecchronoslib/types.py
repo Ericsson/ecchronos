@@ -50,7 +50,6 @@ class VnodeState(object):
 
 
 class Job(object):
-
     def __init__(self, data):
         self.job_id = data["id"] if "id" in data else "<UNKNOWN>"
         self.keyspace = data["keyspace"] if "keyspace" in data else "<UNKNOWN>"
@@ -69,7 +68,6 @@ class Job(object):
 
 
 class Repair(Job):
-
     def __init__(self, data):
         Job.__init__(self, data)
         self.completed_at = int(data["completedAt"] if "completedAt" in data else -1)
@@ -86,7 +84,6 @@ class Repair(Job):
 
 
 class Schedule(Job):
-
     def __init__(self, data):
         Job.__init__(self, data)
         self.last_repaired_at_in_ms = int(data["lastRepairedAtInMs"] if "lastRepairedAtInMs" in data else -1)
@@ -128,7 +125,6 @@ class FullSchedule(Schedule):
 
 
 class RepairInfo(object):
-
     def __init__(self, data):
         self.since_in_ms = int(data["sinceInMs"] if "sinceInMs" in data else -1)
         self.to_in_ms = int(data["toInMs"] if "toInMs" in data else -1)
@@ -146,7 +142,6 @@ class RepairInfo(object):
 
 
 class RepairStats(object):
-
     def __init__(self, data):
         self.keyspace = data["keyspace"] if "keyspace" in data else "<UNKNOWN>"
         self.table = data["table"] if "table" in data else "<UNKNOWN>"
@@ -183,6 +178,21 @@ class RepairStats(object):
         elif delta.microseconds > 0:
             human_readable_delta += "< 1 second"
         return human_readable_delta
+
+    def to_dict(self):
+        return self.__dict__
+
+
+class Rejection(object):
+    # pylint: disable=too-few-public-methods
+    def __init__(self, data):
+        self.keyspace = data["keyspaceName"] if "keyspaceName" in data else "<UNKNOWN>"
+        self.table = data["tableName"] if "tableName" in data else "<UNKNOWN>"
+        self.start_hour = data["startHour"] if "startHour" in data else -1
+        self.start_minute = data["startMinute"] if "startMinute" in data else -1
+        self.end_hour = data["endHour"] if "endHour" in data else -1
+        self.end_minute = data["endMinute"] if "endMinute" in data else -1
+        self.dc_exclusions = data["dcExclusions"] if "dcExclusions" in data else ["<UNKNOWN>"]
 
     def to_dict(self):
         return self.__dict__
