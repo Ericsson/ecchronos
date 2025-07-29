@@ -44,6 +44,7 @@ public final class TableRepairMetricsImpl implements TableRepairMetrics, TableRe
     static final String NODE_REPAIR_SESSIONS = "node.repair.sessions";
 
     @VisibleForTesting
+    @FunctionalInterface
     interface Clock
     {
         long timeNow();

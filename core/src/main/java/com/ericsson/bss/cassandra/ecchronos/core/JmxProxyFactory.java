@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core;
 
 import java.io.IOException;
 
+@FunctionalInterface
 public interface JmxProxyFactory
 {
     /**

@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 
 import io.micrometer.core.instrument.dropwizard.DropwizardConfig;
 
+@FunctionalInterface
 public interface CsvConfig extends DropwizardConfig
 {
     CsvConfig DEFAULT = k -> null;

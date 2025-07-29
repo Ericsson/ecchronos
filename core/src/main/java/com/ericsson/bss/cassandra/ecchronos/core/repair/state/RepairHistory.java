@@ -24,6 +24,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 /**
  * Repair history interface.
  */
+@FunctionalInterface
 public interface RepairHistory
 {
     RepairHistory NO_OP = new NoOpRepairHistory();

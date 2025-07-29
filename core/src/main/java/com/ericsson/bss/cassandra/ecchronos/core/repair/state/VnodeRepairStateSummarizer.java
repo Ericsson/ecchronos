@@ -225,6 +225,7 @@ public final class VnodeRepairStateSummarizer
     /**
      * A merge strategy for adjacent sub ranges.
      */
+    @FunctionalInterface
     public interface MergeStrategy
     {
         boolean shouldMerge(NormalizedRange range1, NormalizedRange range2);
