@@ -144,6 +144,10 @@
                                         <include>application.yml</include>
                                         <include>schedule.yml</include>
                                     </includes>
+                                    <excludes>
+                                        <exclude>**/__pycache__/**</exclude>
+                                        <exclude>**/*.pyc</exclude>
+                                    </excludes>
                                 </resource>
                             </resources>
                         </configuration>
@@ -160,10 +164,18 @@
                                 <resource>
                                     <directory>src/test/bin</directory>
                                     <filtering>true</filtering>
+                                    <excludes>
+                                        <exclude>**/__pycache__/**</exclude>
+                                        <exclude>**/*.pyc</exclude>
+                                    </excludes>
                                 </resource>
                                 <resource>
                                     <directory>src/test/behave</directory>
                                     <filtering>false</filtering>
+                                    <excludes>
+                                        <exclude>**/__pycache__/**</exclude>
+                                        <exclude>**/*.pyc</exclude>
+                                    </excludes>
                                 </resource>
                             </resources>
                         </configuration>
@@ -427,6 +439,113 @@
                 </plugins>
             </build>
         </profile>
+
+
+
+
+        <profile>
+            <activation>
+                <property>
+                    <name>precommit.tests</name>
+                </property>
+            </activation>
+            <id>local-beta-test</id>
+            <build>
+                <plugins>
+                    <!-- Integration tests -->
+                    <plugin>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>unpack-ecc-binary</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>unpack</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
+                                            <artifactId>ecchronos-binary</artifactId>
+                                            <version>${project.version}</version>
+                                            <type>tar.gz</type>
+                                            <outputDirectory>${project.build.directory}/test</outputDirectory>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>unpack-certificate-generation</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>unpack</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
+                                            <artifactId>cassandra-test-image</artifactId>
+                                            <version>${project.version}</version>
+                                            <outputDirectory>${project.build.directory}/certificates</outputDirectory>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>generate-certificates</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>generate_certificates.sh</argument>
+                                    </arguments>
+                                    <workingDirectory>${project.build.directory}/certificates</workingDirectory>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>local-beta-test</id>
+                                <phase>integration-test</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>python</executable>
+                                    <arguments>
+                                        <argument>-u</argument>
+                                        <argument>pytests.py</argument>
+                                    </arguments>
+                                    <workingDirectory>${project.build.directory}/test</workingDirectory>
+                                    <environmentVariables>
+                                        <LOCAL>false</LOCAL>
+                                        <PROJECT_VERSION>${project.version}</PROJECT_VERSION>
+                                        <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
+                                        <BASE_DIR>${project.basedir}</BASE_DIR>
+                                    </environmentVariables>
+                                    <redirectOutput>true</redirectOutput>
+                                    <redirectErrorStream>true</redirectErrorStream>
+
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+
+
+
+
         <profile>
             <id>generate-ecctool-doc</id>
             <build>
