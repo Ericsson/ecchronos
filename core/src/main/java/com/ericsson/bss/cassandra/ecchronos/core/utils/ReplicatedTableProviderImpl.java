@@ -74,7 +74,6 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
             return false;
         }
 
-        boolean returnValue = false;
         Optional<KeyspaceMetadata> keyspaceMetadata = Metadata.getKeyspace(mySession, keyspace);
 
         if (keyspaceMetadata.isPresent())
@@ -82,18 +81,19 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
             Map<String, String> replication = keyspaceMetadata.get().getReplication();
             String replicationClass = replication.get(STRATEGY_CLASS);
 
-            returnValue = switch (replicationClass)
+            return switch (replicationClass)
             {
                 case SIMPLE_STRATEGY -> validateSimpleStrategy(replication);
                 case NETWORK_TOPOLOGY_STRATEGY -> validateNetworkTopologyStrategy(keyspace, replication);
                 default ->
                 {
-                    LOG.warn("Replication strategy of type {} is not supported", replicationClass); yield false;
+                    LOG.warn("Replication strategy of type {} is not supported", replicationClass);
+                    yield false;
                 }
             };
         }
 
-        return returnValue;
+        return false;
     }
 
     private boolean validateSimpleStrategy(final Map<String, String> replication)
