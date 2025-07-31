@@ -116,10 +116,8 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     @Override
     public final long validate(final ScheduledJob job)
     {
-        if (job instanceof TableRepairJob)
+        if (job instanceof TableRepairJob repairJob)
         {
-            TableRepairJob repairJob = (TableRepairJob) job;
-
             return getRejectionsForTable(repairJob.getTableReference());
         }
 

@@ -116,9 +116,9 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
     {
         final String dataCenter;
 
-        if (request instanceof DataCenterAwareStatement)
+        if (request instanceof DataCenterAwareStatement dataCenterAwareStatement)
         {
-            dataCenter = ((DataCenterAwareStatement) request).getDataCenter();
+            dataCenter = dataCenterAwareStatement.getDataCenter();
         }
         else
         {
