@@ -1,5 +1,7 @@
 # Changes
 
+## Version 6.0.8
+
 ## Version 6.0.7
 
 * Revert Switch to prometheus-metrics-exposition-textformats due to a licence issue - Issue #972
