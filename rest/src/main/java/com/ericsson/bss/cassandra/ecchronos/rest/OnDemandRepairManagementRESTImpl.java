@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.REPAIR_MANAGEMENT_ENDPOINT_PREFIX;
 import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.parseIdOrThrow;
@@ -253,7 +252,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         return myOnDemandRepairScheduler.getAllClusterWideRepairJobs().stream()
                 .filter(filter)
                 .map(OnDemandRepair::new)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private List<OnDemandRepair> runLocalOrCluster(final RepairOptions.RepairType repairType, final boolean isLocal,
@@ -278,7 +277,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                     List<OnDemandRepairJobView> repairJobView = myOnDemandRepairScheduler.scheduleClusterWideJob(
                             tableReference, repairType);
                     onDemandRepairs.addAll(
-                            repairJobView.stream().map(OnDemandRepair::new).collect(Collectors.toList()));
+                            repairJobView.stream().map(OnDemandRepair::new).toList());
                 }
             }
         }

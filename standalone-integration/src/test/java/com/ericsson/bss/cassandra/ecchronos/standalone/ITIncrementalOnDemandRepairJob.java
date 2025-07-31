@@ -270,7 +270,7 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
     private void verifyOnDemandCompleted(UUID jobId, long startTime)
     {
         List<OnDemandRepairJobView> completedJobs = myOnDemandRepairSchedulerImpl.getAllRepairJobs().stream()
-                .filter(j -> j.getId().equals(jobId)).collect(Collectors.toList());
+                .filter(j -> j.getId().equals(jobId)).toList();
         assertThat(completedJobs).hasSize(1);
         assertThat(completedJobs.get(0).getCompletionTime()).isGreaterThanOrEqualTo(startTime);
     }

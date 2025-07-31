@@ -21,7 +21,6 @@ import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public class Priority
 {
@@ -29,7 +28,7 @@ public class Priority
     private static final Set<TimeUnit> ALLOWED_UNITS = EnumSet.of(TimeUnit.HOURS, TimeUnit.MINUTES, TimeUnit.SECONDS);
     private static final String ALLOWED_VALUES_STR = String.join(", ", ALLOWED_UNITS.stream()
             .map(TimeUnit::name)
-            .collect(Collectors.toList()));
+            .toList());
 
     private TimeUnit myGranularityUnit = TimeUnit.HOURS;
 
