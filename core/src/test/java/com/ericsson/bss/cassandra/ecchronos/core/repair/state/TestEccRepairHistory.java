@@ -92,19 +92,22 @@ public class TestEccRepairHistory extends AbstractCassandraContainerTest
         mySession.execute(String.format(
                 "CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {'class': 'NetworkTopologyStrategy', 'DC1': 1}",
                 keyspaceName));
-        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.repair_history(\n"
-                + "  table_id uuid,\n"
-                + "  node_id uuid,\n"
-                + "  repair_id timeuuid,\n"
-                + "  job_id uuid,\n"
-                + "  coordinator_id uuid,\n"
-                + "  range_begin text,\n"
-                + "  range_end text,\n"
-                + "  status text,\n"
-                + "  started_at timestamp,\n"
-                + "  finished_at timestamp,\n"
-                + "  PRIMARY KEY((table_id,node_id), repair_id)\n"
-                + ") WITH CLUSTERING ORDER BY (repair_id DESC)", keyspaceName));
+        mySession.execute(String.format("""
+                CREATE TABLE IF NOT EXISTS %s.repair_history(\n
+                  table_id uuid,\n
+                  node_id uuid,\n
+                  repair_id timeuuid,\n
+                  job_id uuid,\n
+                  coordinator_id uuid,\n
+                  range_begin text,\n
+                  range_end text,\n
+                  status text,\n
+                  started_at timestamp,\n
+                  finished_at timestamp,\n
+                  PRIMARY KEY((table_id,node_id), repair_id)\n
+                ) WITH CLUSTERING ORDER BY (repair_id DESC)
+                """,
+                keyspaceName));
 
         mockReplicationState = mock(ReplicationState.class);
         localId = mySession.getMetadata().getNodes().values().iterator().next().getHostId();
