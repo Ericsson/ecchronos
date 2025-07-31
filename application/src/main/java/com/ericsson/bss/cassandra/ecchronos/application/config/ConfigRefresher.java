@@ -152,9 +152,9 @@ public class ConfigRefresher implements Closeable
 
                 Object context = event.context();
 
-                if (context instanceof Path)
+                if (context instanceof Path path)
                 {
-                    handleEvent((Path) context);
+                    handleEvent(path);
                 }
                 else
                 {
