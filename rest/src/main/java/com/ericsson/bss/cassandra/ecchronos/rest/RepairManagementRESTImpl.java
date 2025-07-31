@@ -38,7 +38,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -190,14 +189,11 @@ public class RepairManagementRESTImpl implements RepairManagementREST
                     + sinceTime + ")");
         }
 
-        List<RepairStats> repairStats = new ArrayList<>();
-        for (TableReference table : tables)
-        {
-            if (myReplicatedTableProvider.accept(table.getKeyspace()))
-            {
-                repairStats.add(myRepairStatsProvider.getRepairStats(table, sinceTime, toTime, isLocal));
-            }
-        }
+        long finalToTime = toTime;
+        List<RepairStats> repairStats = tables.stream()
+                .filter(table -> myReplicatedTableProvider.accept(table.getKeyspace()))
+                .map(table -> myRepairStatsProvider.getRepairStats(table, sinceTime, finalToTime, isLocal))
+                .toList();
         return new RepairInfo(sinceTime, toTime, repairStats);
     }
 }

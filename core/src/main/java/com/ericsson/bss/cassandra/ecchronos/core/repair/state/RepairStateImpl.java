@@ -28,7 +28,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 public class RepairStateImpl implements RepairState
 {
@@ -131,7 +130,7 @@ public class RepairStateImpl implements RepairState
         List<VnodeRepairState> repairableVnodes = updatedVnodeRepairStates.getVnodeRepairStates().stream()
                 .filter(this::replicasAreRepairable)
                 .filter(v -> vnodeIsRepairable(v, old, System.currentTimeMillis()))
-                .collect(Collectors.toList());
+                .toList();
 
         List<ReplicaRepairGroup> replicaRepairGroups
                 = myReplicaRepairGroupFactory.generateReplicaRepairGroups(repairableVnodes);
