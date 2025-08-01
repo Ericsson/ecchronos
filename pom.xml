@@ -78,7 +78,7 @@
         <logback.version>1.5.18</logback.version>
         <mockito.core.version>5.18.0</mockito.core.version>
         <org.apache.commons.io.version>2.20.0</org.apache.commons.io.version>
-        <org.apache.commons.commons-compress.version>1.27.1</org.apache.commons.commons-compress.version>
+        <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
         <org.apache.commons.commons-lang3.version>3.18.0</org.apache.commons.commons-lang3.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.81</org.bouncycastle.bcpkix-jdk18on.version>
         <org.springframework.boot.version>3.5.4</org.springframework.boot.version>
