@@ -12,7 +12,7 @@ on:
   schedule:
     - cron: '29 16 * * 1'
   push:
-    branches: [ "master" ]
+    branches: [ "ecchronos-6.0" ]
 
 # Declare default permissions as read only.
 permissions: read-all
