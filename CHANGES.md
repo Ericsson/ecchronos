@@ -1,5 +1,7 @@
 # Changes
 
+## Version 6.1.0
+
 ## Version 6.0.8
 
 ## Version 6.0.7
