@@ -211,11 +211,10 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         {
             return true;
         }
-        if (o == null || getClass() != o.getClass())
+        if (!(o instanceof ScheduledJob that))
         {
             return false;
         }
-        ScheduledJob that = (ScheduledJob) o;
         return myBackoffInMs == that.myBackoffInMs
                 && myRunIntervalInMs == that.myRunIntervalInMs
                 && myLastSuccessfulRun == that.myLastSuccessfulRun
