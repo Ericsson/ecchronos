@@ -197,11 +197,11 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
 
             LOG.debug("Connecting to {} ({}), local data center: {}",
                     contactEndPoint,
-                    initialContact.getHostId(),
-                    initialContact.getDataCenter());
+                    initialContact.hostId(),
+                    initialContact.dataCenter());
 
             CqlSessionBuilder sessionBuilder = fromBuilder(builder);
-            sessionBuilder = sessionBuilder.withLocalDatacenter(initialContact.dataCenter);
+            sessionBuilder = sessionBuilder.withLocalDatacenter(initialContact.dataCenter());
             ProgrammaticDriverConfigLoaderBuilder loaderBuilder = DriverConfigLoader.programmaticBuilder()
                     .withStringList(DefaultDriverOption.METADATA_SCHEMA_REFRESHED_KEYSPACES,
                             SCHEMA_REFRESHED_KEYSPACES);
@@ -281,25 +281,6 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
         }
     }
 
-    static class InitialContact
-    {
-        private final String dataCenter;
-        private final UUID hostId;
-
-        InitialContact(final String aDataCenter, final UUID aHostId)
-        {
-            this.dataCenter = aDataCenter;
-            this.hostId = aHostId;
-        }
-
-        String getDataCenter()
-        {
-            return dataCenter;
-        }
-
-        UUID getHostId()
-        {
-            return hostId;
-        }
-    }
+    private record InitialContact(String dataCenter, UUID hostId)
+    { }
 }
