@@ -19,11 +19,14 @@ import os
 
 
 def get():
+    # pylint: disable=global-statement, global-variable-undefined, too-many-statements
+    # fmt:off
     global TEST_DIR, VENV_DIR, PIDFILE, PROJECT_VERSION, PROJECT_BUILD_DIRECTORY, \
         BASE_DIR, CONF_DIR, PYLIB_DIR, CERTIFICATE_DIRECTORY, ECC_YAML_FILE_PATH, \
         SECURITY_YAML_FILE_PATH, APPLICATION_YAML_FILE_PATH, SCHEDULE_YAML_FILE_PATH, \
         LOGBACK_FILE_PATH, JVM_OPTIONS_FILE_PATH, LOCAL, CASSANDRA_DOCKER_COMPOSE_FILE_PATH, \
         ROOT_DIR, BASE_URL, CASSANDRA_CERT_PATH
+    # fmt:on
 
     TEST_DIR = os.path.dirname(os.path.realpath(__file__))
     VENV_DIR = os.path.join(TEST_DIR, "venv")
