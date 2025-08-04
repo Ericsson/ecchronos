@@ -27,6 +27,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.TableRepairPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
@@ -276,7 +277,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         {
             TableRepairJob repairJob = (TableRepairJob) job;
 
-            return getRejectionsForTable(repairJob.getTableReference());
+            return getRejectionsForTable(repairJob.getTableReference(), null);
         }
 
         return -1;
@@ -285,7 +286,12 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     @Override
     public final boolean shouldRun(final TableReference tableReference)
     {
-        return getRejectionsForTable(tableReference) == -1L;
+        return getRejectionsForTable(tableReference, null) == -1L;
+    }
+
+    public final boolean shouldReplicaBeIncluded(final TableReference tableReference, final DriverNode node)
+    {
+        return getRejectionsForTable(tableReference, node) == -1L;
     }
 
     @Override
@@ -404,11 +410,11 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
             }
         }
 
-        public long rejectionTime()
+        public long rejectionTime(final DriverNode node)
         {
             for (TimeRejection rejection : myRejections)
             {
-                long rejectionTime = rejection.rejectionTime();
+                long rejectionTime = rejection.rejectionTime(node);
 
                 if (rejectionTime != -1L)
                 {
@@ -434,7 +440,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
             myDatacenters = Objects.requireNonNullElse(tmpDcExclusion, Collections.emptySet());
         }
 
-        public long rejectionTime()
+        public long rejectionTime(final DriverNode node)
         {
             // 00:00->00:00 means that we pause the repair scheduling,
             // so wait DEFAULT_REJECT_TIME instead of until 00:00
@@ -442,24 +448,38 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
                     && myStart.getMinute() == 0
                     && myEnd.getHour() == 0
                     && myEnd.getMinute() == 0
-                    && isDcExcluded())
+                    && isDcExcluded(node))
             {
                 return DEFAULT_REJECT_TIME;
             }
 
-            return calculateRejectTime();
+            return calculateRejectTime(node);
         }
 
-        public boolean isDcExcluded()
+        public boolean isDcExcluded(final DriverNode node)
         {
             return myDatacenters.contains("*")
-                    || myDatacenters.contains(myNode.getDatacenter())
+                    || myDatacenters.contains(dcToExclude(node))
                     || myDatacenters.isEmpty();
         }
 
-        private long calculateRejectTime()
+        private String dcToExclude(final DriverNode node)
         {
-            if (!isDcExcluded())
+            String dc;
+            if (node == null)
+            {
+                dc = myNode.getDatacenter();
+            }
+            else
+            {
+                dc = node.getDatacenter();
+            }
+            return dc;
+        }
+
+        private long calculateRejectTime(final DriverNode node)
+        {
+            if (!isDcExcluded(node))
             {
                 return -1L;
             }
@@ -499,7 +519,7 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         }
     }
 
-    private long getRejectionsForTable(final TableReference tableReference)
+    private long getRejectionsForTable(final TableReference tableReference, final DriverNode node)
     {
         long rejectTime = -1L;
         try
@@ -513,7 +533,8 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
 
             for (int i = 0; i < tableKeys.length && rejectTime == -1L; i++)
             {
-                rejectTime = myTimeRejectionCache.get(tableKeys[i]).rejectionTime();
+
+                rejectTime = myTimeRejectionCache.get(tableKeys[i]).rejectionTime(node);
             }
         }
         catch (Exception e)

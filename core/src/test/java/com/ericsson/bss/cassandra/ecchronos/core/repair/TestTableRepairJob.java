@@ -18,6 +18,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.servererrors.OverloadedException;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
@@ -104,6 +105,9 @@ public class TestTableRepairJob
     @Mock
     private RepairHistory.RepairSession myRepairSession;
 
+    @Mock
+    private TimeBasedRunPolicy myTimeBasedRunPolicy;
+
     private TableRepairJob myRepairJob;
 
     private final TableReference myTableReference = tableReference(keyspaceName, tableName);
@@ -118,6 +122,8 @@ public class TestTableRepairJob
         doNothing().when(myRepairState).update();
 
         when(myRepairHistory.newSession(any(), any(), any(), any())).thenReturn(myRepairSession);
+        when(myTimeBasedRunPolicy.shouldReplicaBeIncluded(any(TableReference.class), any(DriverNode.class))).thenReturn(true);
+        List<TableRepairPolicy> myRepairPolicies = Collections.singletonList(myTimeBasedRunPolicy);
 
         ScheduledJob.Configuration configuration = new ScheduledJob.ConfigurationBuilder()
                 .withPriority(ScheduledJob.Priority.LOW)
@@ -142,6 +148,7 @@ public class TestTableRepairJob
                 .withRepairLockType(RepairLockType.VNODE)
                 .withTableStorageStates(myTableStorageStates)
                 .withRepairHistory(myRepairHistory)
+                .withRepairPolices(myRepairPolicies)
                 .build();
     }
 
