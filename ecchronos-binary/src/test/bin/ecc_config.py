@@ -19,10 +19,10 @@ import yaml
 import re
 import global_variables as global_vars
 
+
 class EcchronosConfig:
     def __init__(self, context):
         self.context = context
-
 
     def modify_configuration(self):
         self._uncomment_head_options()
@@ -36,20 +36,18 @@ class EcchronosConfig:
         self._modify_logback_configuration()
         self._modify_schedule_configuration()
 
-
     def _uncomment_head_options(self):
-        pattern = re.compile(r'^#\s*(-X.*)')
-        with open(global_vars.JVM_OPTIONS_FILE_PATH, 'r', encoding='utf-8') as file:
+        pattern = re.compile(r"^#\s*(-X.*)")
+        with open(global_vars.JVM_OPTIONS_FILE_PATH, "r", encoding="utf-8") as file:
             lines = file.readlines()
 
-        with open(global_vars.JVM_OPTIONS_FILE_PATH, 'w', encoding='utf-8') as file:
+        with open(global_vars.JVM_OPTIONS_FILE_PATH, "w", encoding="utf-8") as file:
             for line in lines:
                 match = pattern.match(line)
                 if match:
-                    file.write(match.group(1) + '\n')
+                    file.write(match.group(1) + "\n")
                 else:
                     file.write(line)
-
 
     def _modify_connection_configuration(self):
         data = self._read_yaml_data(global_vars.ECC_YAML_FILE_PATH)
@@ -59,12 +57,10 @@ class EcchronosConfig:
         data["connection"]["jmx"]["port"] = self.context.cassandra_jmx_port
         self._modify_yaml_data(global_vars.ECC_YAML_FILE_PATH, data)
 
-
     def _modify_scheduler_configuration(self):
         data = self._read_yaml_data(global_vars.ECC_YAML_FILE_PATH)
         data["scheduler"]["frequency"]["time"] = 1
         self._modify_yaml_data(global_vars.ECC_YAML_FILE_PATH, data)
-
 
     def _modify_security_configuration(self):
         data = self._read_yaml_data(global_vars.SECURITY_YAML_FILE_PATH)
@@ -78,14 +74,13 @@ class EcchronosConfig:
         data["cql"]["tls"]["truststore_password"] = "ecctest"
         self._modify_yaml_data(global_vars.SECURITY_YAML_FILE_PATH, data)
 
-
     def _modify_application_configuration(self):
         data = self._read_yaml_data(global_vars.APPLICATION_YAML_FILE_PATH)
 
-        if 'server' not in data:
-            data['server'] = {}
-        if 'ssl' not in data['server']:
-            data['server']['ssl'] = {}
+        if "server" not in data:
+            data["server"] = {}
+        if "ssl" not in data["server"]:
+            data["server"]["ssl"] = {}
 
         data["server"]["ssl"]["enabled"] = True
         data["server"]["ssl"]["key-store"] = f"{global_vars.CERTIFICATE_DIRECTORY}/serverkeystore"
@@ -99,24 +94,22 @@ class EcchronosConfig:
         data["springdoc"]["api-docs"]["show-actuator"] = True
         self._modify_yaml_data(global_vars.APPLICATION_YAML_FILE_PATH, data)
 
-
     def _modify_logback_configuration(self):
-        with open(global_vars.LOGBACK_FILE_PATH, 'r') as file:
+        with open(global_vars.LOGBACK_FILE_PATH, "r") as file:
             lines = file.readlines()
 
         pattern = re.compile(r'^(\s*)(<appender-ref ref="STDOUT" />)\s*$')
 
-        with open(global_vars.LOGBACK_FILE_PATH, 'w') as file:
+        with open(global_vars.LOGBACK_FILE_PATH, "w") as file:
             for line in lines:
                 match = pattern.match(line)
                 if match:
                     indent = match.group(1)
                     content = match.group(2)
-                    new_line = f'{indent}<!-- {content} -->\n'
+                    new_line = f"{indent}<!-- {content} -->\n"
                     file.write(new_line)
                 else:
                     file.write(line)
-
 
     def _modify_schedule_configuration(self):
         data = self._read_yaml_data(global_vars.SCHEDULE_YAML_FILE_PATH)
@@ -126,51 +119,28 @@ class EcchronosConfig:
                 "tables": [
                     {
                         "name": "table1",
-                        "interval": {
-                            "time": 1,
-                            "unit": "days"
-                        },
-                        "initial_delay": {
-                            "time": 1,
-                            "unit": "hours"
-                        },
+                        "interval": {"time": 1, "unit": "days"},
+                        "initial_delay": {"time": 1, "unit": "hours"},
                         "unwind_ratio": 0.1,
-                        "alarm": {
-                            "warn": {
-                                "time": 4,
-                                "unit": "days"
-                            },
-                            "error": {
-                                "time": 8,
-                                "unit": "days"
-                            }
-                        }
+                        "alarm": {"warn": {"time": 4, "unit": "days"}, "error": {"time": 8, "unit": "days"}},
                     }
-                ]
+                ],
             },
             {
                 "name": "test2",
                 "tables": [
-                    {
-                        "name": "table1",
-                        "repair_type": "incremental"
-                    },
-                    {
-                        "name": "table2",
-                        "repair_type": "parallel_vnode"
-                    }
-                ]
-            }
+                    {"name": "table1", "repair_type": "incremental"},
+                    {"name": "table2", "repair_type": "parallel_vnode"},
+                ],
+            },
         ]
         self._modify_yaml_data(global_vars.SCHEDULE_YAML_FILE_PATH, data)
 
-
     def _read_yaml_data(self, filename):
-        with open(filename, 'r') as f:
+        with open(filename, "r") as f:
             data = yaml.safe_load(f)
             return data
 
-
-    def _modify_yaml_data(self,filename, data):
-        with open(filename, 'w') as file:
-            yaml.dump(data,file,sort_keys=False)
+    def _modify_yaml_data(self, filename, data):
+        with open(filename, "w") as file:
+            yaml.dump(data, file, sort_keys=False)

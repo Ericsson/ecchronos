@@ -17,6 +17,7 @@
 
 import os
 
+
 def get():
     global TEST_DIR, VENV_DIR, PIDFILE, PROJECT_VERSION, PROJECT_BUILD_DIRECTORY, \
         BASE_DIR, CONF_DIR, PYLIB_DIR, CERTIFICATE_DIRECTORY, ECC_YAML_FILE_PATH, \
@@ -25,10 +26,10 @@ def get():
         ROOT_DIR, BASE_URL, CASSANDRA_CERT_PATH
 
     TEST_DIR = os.path.dirname(os.path.realpath(__file__))
-    VENV_DIR = os.path.join(TEST_DIR, 'venv')
-    PIDFILE = os.path.join(TEST_DIR, 'ecc.pid')
-    PROJECT_VERSION = os.environ.get('PROJECT_VERSION')
-    PROJECT_BUILD_DIRECTORY = os.environ.get('PROJECT_BUILD_DIRECTORY')
+    VENV_DIR = os.path.join(TEST_DIR, "venv")
+    PIDFILE = os.path.join(TEST_DIR, "ecc.pid")
+    PROJECT_VERSION = os.environ.get("PROJECT_VERSION")
+    PROJECT_BUILD_DIRECTORY = os.environ.get("PROJECT_BUILD_DIRECTORY")
     BASE_DIR = f"{TEST_DIR}/ecchronos-binary-{PROJECT_VERSION}"
     CONF_DIR = f"{BASE_DIR}/conf"
     PYLIB_DIR = f"{BASE_DIR}/pylib"
@@ -39,10 +40,11 @@ def get():
     SCHEDULE_YAML_FILE_PATH = f"{CONF_DIR}/schedule.yml"
     LOGBACK_FILE_PATH = f"{CONF_DIR}/logback.xml"
     JVM_OPTIONS_FILE_PATH = f"{CONF_DIR}/jvm.options"
-    ROOT_DIR = os.path.dirname(os.environ.get('BASE_DIR'))
+    ROOT_DIR = os.path.dirname(os.environ.get("BASE_DIR"))
     CASSANDRA_DOCKER_COMPOSE_FILE_PATH = f"{ROOT_DIR}/cassandra-test-image/src/main/docker"
     CASSANDRA_CERT_PATH = f"{ROOT_DIR}/cassandra-test-image/target/certificates/cert"
-    LOCAL = os.environ.get('LOCAL')
-    BASE_URL ="http://localhost:8080/repair-management/v2/schedules"
+    LOCAL = os.environ.get("LOCAL")
+    BASE_URL = "http://localhost:8080/repair-management/v2/schedules"
+
 
 get()

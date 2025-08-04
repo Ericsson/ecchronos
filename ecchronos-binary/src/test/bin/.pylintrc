@@ -19,4 +19,4 @@ good-names=
   i
 
 [TYPECHECK]
-disable=bad-option-value, consider-using-f-string
+disable=bad-option-value, consider-using-f-string, not-callable

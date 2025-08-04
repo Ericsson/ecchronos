@@ -22,10 +22,12 @@ from ecc_config import EcchronosConfig
 import os
 import time
 import logging
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 MAX_CHECK = 10
+
 
 def cassandra_cluster():
     context = CassandraCluster(global_vars.LOCAL)
@@ -43,25 +45,30 @@ def start_ecchronos():
 
     result = subprocess.run(command, capture_output=True, text=True)
 
-    print("stdout:", result.stdout)
-    print("stderr:", result.stderr)
-    print("exit code:", result.returncode)
+    logger.info("stdout:", result.stdout)
+    logger.info("stderr:", result.stderr)
+    logger.info("exit code:", result.returncode)
 
 
 def check_status():
     checks = 0
     if global_vars.LOCAL:
-        curl_cmd = [
-            "curl", "--silent", "--fail", "--head", "--output", "/dev/null",
-            global_vars.BASE_URL
-        ]
+        curl_cmd = ["curl", "--silent", "--fail", "--head", "--output", "/dev/null", global_vars.BASE_URL]
     else:
         curl_cmd = [
-            "curl", "--silent", "--fail", "--head", "--output", "/dev/null",
-            "--cert", f"{global_vars.CERTIFICATE_DIRECTORY}/clientcert.crt",
-            "--key", f"{global_vars.CERTIFICATE_DIRECTORY}/clientkey.pem",
-            "--cacert", f"{global_vars.CERTIFICATE_DIRECTORY}/serverca.crt",
-            global_vars.BASE_URL
+            "curl",
+            "--silent",
+            "--fail",
+            "--head",
+            "--output",
+            "/dev/null",
+            "--cert",
+            f"{global_vars.CERTIFICATE_DIRECTORY}/clientcert.crt",
+            "--key",
+            f"{global_vars.CERTIFICATE_DIRECTORY}/clientkey.pem",
+            "--cacert",
+            f"{global_vars.CERTIFICATE_DIRECTORY}/serverca.crt",
+            global_vars.BASE_URL,
         ]
 
     while checks <= MAX_CHECK:
@@ -106,14 +113,17 @@ def run():
         check_status()
         logger.info("Sleeping")
         from time import sleep
+
         sleep(60)
         context.stop_cluster()
     except Exception as e:
         logger.info(f"An error occurred: {e}")
         context.stop_cluster()
 
+
 def stop():
     context = CassandraCluster(global_vars.LOCAL)
     context.stop_cluster()
+
 
 run()
