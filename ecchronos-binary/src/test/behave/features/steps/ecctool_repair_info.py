@@ -68,9 +68,9 @@ def step_get_local_repair_info_with_since(context, since):
     handle_repair_info_output(context)
 
 
-@when(
+@when(  # pylint: disable=not-callable
     "we get repair-info for keyspace {keyspace} with since {since} and duration {duration}"
-)  # pylint: disable=not-callable
+)
 def step_get_repair_info_for_keyspace_with_since_and_duration(context, keyspace, since, duration):
     run_ecc_repair_info(context, ["--keyspace", keyspace, "--since", since, "--duration", duration])
     handle_repair_info_output(context)
@@ -88,9 +88,9 @@ def step_get_repair_info_for_keyspace_with_since(context, keyspace, since):
     handle_repair_info_output(context)
 
 
-@when(
+@when(  # pylint: disable=not-callable
     "we get repair-info for table {keyspace}.{table} with since {since} and duration {duration}"
-)  # pylint: disable=not-callable
+)
 def step_get_repair_info_for_table_with_since_and_duration(context, keyspace, table, since, duration):
     run_ecc_repair_info(context, ["--keyspace", keyspace, "--table", table, "--since", since, "--duration", duration])
     handle_repair_info_output(context)
