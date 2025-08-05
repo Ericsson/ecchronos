@@ -13,10 +13,10 @@
 # limitations under the License.
 #
 
-from behave import given  # pylint: disable=no-name-in-module
+from behave import given
 
 
-@given('I fetch repairs with id')
+@given("I fetch repairs with id")  # pylint: disable=not-callable
 def step_fetch_repairs_with_id(context):
     assert context.id is not None
     context.url = "localhost:8080/repair-management/v2/repairs/{0}".format(context.id)
