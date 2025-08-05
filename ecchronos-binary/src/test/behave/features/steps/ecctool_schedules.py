@@ -14,7 +14,7 @@
 #
 
 import re
-from behave import when, then  # pylint: disable=no-name-in-module
+from behave import when, then
 from ecc_step_library.common import (
     get_job_id,
     match_and_remove_row,
@@ -44,50 +44,50 @@ def handle_schedule_output(context):
     context.summary = output_data[-1:]
 
 
-@when("we list all schedules")
+@when("we list all schedules")  # pylint: disable=not-callable
 def step_list_schedules(context):
     run_ecc_schedule_status(context, [])
     handle_schedule_output(context)
 
 
-@when("we list all schedules with a limit of {limit}")
+@when("we list all schedules with a limit of {limit}")  # pylint: disable=not-callable
 def step_list_schedules_with_limit(context, limit):
     run_ecc_schedule_status(context, ["--limit", limit])
     handle_schedule_output(context)
 
 
-@when("we list all schedules for keyspace {keyspace} with a limit of {limit}")
+@when("we list all schedules for keyspace {keyspace} with a limit of {limit}")  # pylint: disable=not-callable
 def step_list_schedules_for_keyspace_with_limit(context, keyspace, limit):
     run_ecc_schedule_status(context, ["--keyspace", keyspace, "--limit", limit])
     handle_schedule_output(context)
 
 
-@when("we list all schedules for keyspace {keyspace}")
+@when("we list all schedules for keyspace {keyspace}")  # pylint: disable=not-callable
 def step_list_schedules_for_keyspace(context, keyspace):
     run_ecc_schedule_status(context, ["--keyspace", keyspace])
     handle_schedule_output(context)
 
 
-@when("we list schedules {keyspace}.{table} with a limit of {limit}")
+@when("we list schedules {keyspace}.{table} with a limit of {limit}")  # pylint: disable=not-callable
 def step_list_schedule_with_limit(context, keyspace, table, limit):
     run_ecc_schedule_status(context, ["--keyspace", keyspace, "--table", table])
     run_ecc_schedule_status(context, ["--id", get_job_id(context), "--limit", limit])
     handle_schedule_output(context)
 
 
-@when("we list schedules for table {keyspace}.{table}")
+@when("we list schedules for table {keyspace}.{table}")  # pylint: disable=not-callable
 def step_show_schedule(context, keyspace, table):
     run_ecc_schedule_status(context, ["--keyspace", keyspace, "--table", table])
     handle_schedule_output(context)
 
 
-@then("the output should contain a schedule row for {keyspace}.{table} with type {repair_type}")
+@then("the output should contain a schedule row for {keyspace}.{table} with type {repair_type}")  # pylint: disable=not-callable
 def step_validate_list_tables_row(context, keyspace, table, repair_type):
     expected_row = table_row(SCHEDULE_ROW_FORMAT_PATTERN, keyspace, table, repair_type)
     match_and_remove_row(context.rows, expected_row)
 
 
-@when("we fetch schedule {keyspace}.{table} by id")
+@when("we fetch schedule {keyspace}.{table} by id")  # pylint: disable=not-callable
 def step_show_schedule_with_id(context, keyspace, table):
     run_ecc_schedule_status(context, ["--keyspace", keyspace, "--table", table])
     run_ecc_schedule_status(context, ["--id", get_job_id(context)])
@@ -96,7 +96,7 @@ def step_show_schedule_with_id(context, keyspace, table):
     context.conf = output_data[8:9]
 
 
-@when("we show schedule {keyspace}.{table} with a limit of {limit}")
+@when("we show schedule {keyspace}.{table} with a limit of {limit}")  # pylint: disable=not-callable
 def step_show_schedule_with_limit(context, keyspace, table, limit):
     run_ecc_schedule_status(context, ["--keyspace", keyspace, "--table", table])
     run_ecc_schedule_status(context, ["--id", get_job_id(context), "--limit", limit, "--full"])
@@ -107,7 +107,7 @@ def step_show_schedule_with_limit(context, keyspace, table, limit):
     context.rows = output_data[12:]
 
 
-@then("the output should contain a valid schedule summary")
+@then("the output should contain a valid schedule summary")  # pylint: disable=not-callable
 def step_validate_list_schedule_contains_summary(context):
     assert len(context.summary) == 1, "Expecting only 1 row summary"
 
@@ -115,7 +115,7 @@ def step_validate_list_schedule_contains_summary(context):
     assert re.match(SCHEDULE_SUMMARY, summary), "Faulty summary '{0}'".format(summary)
 
 
-@then("the output should contain a valid schedule for {keyspace}.{table} with type {repair_type}")
+@then("the output should contain a valid schedule for {keyspace}.{table} with type {repair_type}")  # pylint: disable=not-callable
 def step_validate_list_schedule_contains_rows(context, keyspace, table, repair_type):
     assert len(context.table_info) == 8, "Expecting 8 rows"
     assert len(context.conf) == 1, "Expecting 1 row"
@@ -123,17 +123,17 @@ def step_validate_list_schedule_contains_rows(context, keyspace, table, repair_t
     step_validate_expected_show_table_header(context, keyspace, table, repair_type)
 
 
-@then("the output should contain a valid snapshot header")
+@then("the output should contain a valid snapshot header")  # pylint: disable=not-callable
 def step_validate_list_snapshot_header(context):
     match_and_remove_row(context.snapshot, SNAPSHOT_HEADER)
 
 
-@then("the output should contain a valid schedule header")
+@then("the output should contain a valid schedule header")  # pylint: disable=not-callable
 def step_validate_list_schedule_header(context):
     validate_header(context.header, SCHEDULE_HEADER)
 
 
-@then("the output should contain {limit:d} row")
+@then("the output should contain {limit:d} row")  # pylint: disable=not-callable
 def step_validate_list_schedules_contains_rows_with_limit(context, limit):
     rows = context.rows
 
@@ -145,7 +145,7 @@ def step_validate_list_schedules_contains_rows_with_limit(context, limit):
     step_validate_list_rows_clear(context)
 
 
-@then("the expected schedule header should be for {keyspace}.{table} with type {repair_type}")
+@then("the expected schedule header should be for {keyspace}.{table} with type {repair_type}")  # pylint: disable=not-callable
 def step_validate_expected_show_table_header(context, keyspace, table, repair_type):
     table_info = context.table_info
     assert re.match("Id : .*", strip_and_collapse(table_info[0])), "Faulty Id '{0}'".format(table_info[0])
@@ -170,7 +170,7 @@ def step_validate_expected_show_table_header(context, keyspace, table, repair_ty
     ), "Faulty repair type '{0}'".format(table_info[7])
 
 
-@then("the token list should contain {limit:d} rows")
+@then("the token list should contain {limit:d} rows")  # pylint: disable=not-callable
 def step_validate_token_list(context, limit):
     for _ in range(limit):
         remove_token_row(context)
