@@ -13,10 +13,10 @@
 # limitations under the License.
 #
 
-from behave import then  # pylint: disable=no-name-in-module
+from behave import then
 
 
-@then("the status is {state}")
+@then("the status is {state}")  # pylint: disable=not-callable
 def step_verify_server_status(context, state):
     context.json = context.response.json()
 
