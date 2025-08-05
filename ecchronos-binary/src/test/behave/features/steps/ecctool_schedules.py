@@ -81,7 +81,9 @@ def step_show_schedule(context, keyspace, table):
     handle_schedule_output(context)
 
 
-@then("the output should contain a schedule row for {keyspace}.{table} with type {repair_type}")  # pylint: disable=not-callable
+@then(
+    "the output should contain a schedule row for {keyspace}.{table} with type {repair_type}"
+)  # pylint: disable=not-callable
 def step_validate_list_tables_row(context, keyspace, table, repair_type):
     expected_row = table_row(SCHEDULE_ROW_FORMAT_PATTERN, keyspace, table, repair_type)
     match_and_remove_row(context.rows, expected_row)
@@ -115,7 +117,9 @@ def step_validate_list_schedule_contains_summary(context):
     assert re.match(SCHEDULE_SUMMARY, summary), "Faulty summary '{0}'".format(summary)
 
 
-@then("the output should contain a valid schedule for {keyspace}.{table} with type {repair_type}")  # pylint: disable=not-callable
+@then(
+    "the output should contain a valid schedule for {keyspace}.{table} with type {repair_type}"
+)  # pylint: disable=not-callable
 def step_validate_list_schedule_contains_rows(context, keyspace, table, repair_type):
     assert len(context.table_info) == 8, "Expecting 8 rows"
     assert len(context.conf) == 1, "Expecting 1 row"
@@ -145,7 +149,9 @@ def step_validate_list_schedules_contains_rows_with_limit(context, limit):
     step_validate_list_rows_clear(context)
 
 
-@then("the expected schedule header should be for {keyspace}.{table} with type {repair_type}")  # pylint: disable=not-callable
+@then(
+    "the expected schedule header should be for {keyspace}.{table} with type {repair_type}"
+)  # pylint: disable=not-callable
 def step_validate_expected_show_table_header(context, keyspace, table, repair_type):
     table_info = context.table_info
     assert re.match("Id : .*", strip_and_collapse(table_info[0])), "Faulty Id '{0}'".format(table_info[0])

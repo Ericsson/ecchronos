@@ -110,7 +110,9 @@ def step_validate_list_tables_header(context):
     validate_header(context.header, REPAIR_HEADER)
 
 
-@then("the output should contain a repair row for {keyspace}.{table} with type {repair_type}")  # pylint: disable=not-callable
+@then(
+    "the output should contain a repair row for {keyspace}.{table} with type {repair_type}"
+)  # pylint: disable=not-callable
 def step_validate_repair_row(context, keyspace, table, repair_type):
     expected_row = table_row(REPAIR_ROW_FORMAT_PATTERN, keyspace, table, repair_type)
     match_and_remove_row(context.rows, expected_row)

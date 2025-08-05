@@ -39,7 +39,9 @@ def step_run_repair_cluster(context):
     handle_repair_output(context)
 
 
-@when("we run local repair for keyspace {keyspace} and table {table} with type {repair_type}")  # pylint: disable=not-callable
+@when(
+    "we run local repair for keyspace {keyspace} and table {table} with type {repair_type}"
+)  # pylint: disable=not-callable
 def step_run_local_repair(context, keyspace, table, repair_type):
     run_ecc_run_repair(context, ["--keyspace", keyspace, "--table", table, "--local", "--repair_type", repair_type])
     handle_repair_output(context)
