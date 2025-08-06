@@ -530,6 +530,7 @@
                                         <PROJECT_VERSION>${project.version}</PROJECT_VERSION>
                                         <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
+                                        <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                     </environmentVariables>
                                     <redirectOutput>true</redirectOutput>
                                     <redirectErrorStream>true</redirectErrorStream>

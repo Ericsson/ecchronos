@@ -72,6 +72,16 @@ class EcchronosConfig:
         data["cql"]["tls"]["keystore_password"] = "ecctest"
         data["cql"]["tls"]["truststore"] = f"{global_vars.CERTIFICATE_DIRECTORY}/.truststore"
         data["cql"]["tls"]["truststore_password"] = "ecctest"
+
+        data["jmx"]["credentials"]["enabled"] = True
+        data["jmx"]["credentials"]["username"] = "cassandra"
+        data["jmx"]["credentials"]["password"] = "cassandra"
+        data["jmx"]["tls"]["enabled"] = True
+        data["jmx"]["tls"]["keystore"] = f"{global_vars.CERTIFICATE_DIRECTORY}/.keystore"
+        data["jmx"]["tls"]["keystore_password"] = "ecctest"
+        data["jmx"]["tls"]["truststore"] = f"{global_vars.CERTIFICATE_DIRECTORY}/.truststore"
+        data["jmx"]["tls"]["truststore_password"] = "ecctest"
+        
         self._modify_yaml_data(global_vars.SECURITY_YAML_FILE_PATH, data)
 
     def _modify_application_configuration(self):

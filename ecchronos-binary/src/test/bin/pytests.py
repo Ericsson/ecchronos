@@ -22,7 +22,7 @@ from ecc_config import EcchronosConfig
 import os
 import time
 import logging
-
+import sys
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -45,9 +45,9 @@ def start_ecchronos():
 
     result = subprocess.run(command, capture_output=True, text=True)
 
-    logger.info("stdout:", result.stdout)
-    logger.info("stderr:", result.stderr)
-    logger.info("exit code:", result.returncode)
+    logger.info(f"stdout: {result.stdout}")
+    logger.info(f"stderr: {result.stderr}")
+    logger.info(f"exit code: {result.returncode}")
 
 
 def check_status():
@@ -100,10 +100,48 @@ def stop_ecchronos():
     logger.info("exit code:", result.returncode)
 
 
+def run_behave(context):
+    command = []
+    if global_vars.LOCAL == "true" :
+        command = [
+            "behave",
+            "--define",
+            f"ecctool={global_vars.BASE_DIR}/bin/ecctool",
+            "--define",
+            f"cassandra_address={context.cassandra_ip}",
+            "--define",
+            "no_tls",
+        ]
+    else:
+        command = [
+            "behave",
+            "--define",
+            f"ecctool={global_vars.BASE_DIR}/bin/ecctool",
+            "--define",
+            f"cassandra_address={context.cassandra_ip}",
+            "--define",
+            f"ecc_client_cert={global_vars.CERTIFICATE_DIRECTORY}/clientcert.crt",
+            "--define",
+            f"ecc_client_key={global_vars.CERTIFICATE_DIRECTORY}/clientkey.pem",
+            "--define",
+            f"ecc_client_ca={global_vars.CERTIFICATE_DIRECTORY}/serverca.crt",
+            "--define",
+            "cql_user=eccuser",
+            "--define",
+            "cql_password=eccpassword",
+            "--define",
+            f"cql_client_cert={global_vars.CERTIFICATE_DIRECTORY}/cert.crt",
+            "--define",
+            f"cql_client_key={global_vars.CERTIFICATE_DIRECTORY}/key.pem",
+            "--define",
+            f"cql_client_ca={global_vars.CERTIFICATE_DIRECTORY}/ca.crt",
+        ]
+    subprocess.run(command, stdout=sys.stdout, stderr=sys.stderr)
+
 def run():
     context = CassandraCluster(global_vars.LOCAL)
     try:
-        logger.info("Creating cluster")
+        logger.info(f"Creating cluster with version {global_vars.CASSANDRA_VERSION}")
         context.create_cluster()
         logger.info("Changing configs")
         default_config(context)
@@ -112,13 +150,13 @@ def run():
         logger.info("checking status")
         check_status()
         logger.info("Sleeping")
-        from time import sleep
-
-        sleep(60)
+        run_behave(context)
+        stop_ecchronos()
         context.stop_cluster()
     except Exception as e:
         logger.info(f"An error occurred: {e}")
         context.stop_cluster()
+        sys.exit(1)
 
 
 def stop():
@@ -126,4 +164,5 @@ def stop():
     context.stop_cluster()
 
 
-run()
+if __name__ == "__main__":
+    run()

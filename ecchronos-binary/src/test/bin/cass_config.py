@@ -22,8 +22,9 @@ import os
 from datetime import datetime, timedelta
 from time import sleep
 import logging
+import subprocess
 
-DEFAULT_WAIT_TIME_IN_SECS = 10
+DEFAULT_WAIT_TIME_IN_SECS = 30
 
 COMPOSE_FILE_NAME = "docker-compose.yml"
 CASSANDRA_SEED_DC1_RC1_ND1 = "cassandra-seed-dc1-rack1-node1"
@@ -36,6 +37,8 @@ class CassandraCluster:
     def __init__(self, local):
         self.local = local
         os.environ["CERTIFICATE_DIRECTORY"] = global_vars.CERTIFICATE_DIRECTORY
+        os.environ["CASSANDRA_VERSION"] = global_vars.CASSANDRA_VERSION
+        os.environ["DOCKER_BUILDKIT"] = "1"
         self.cassandra_compose = DockerCompose(
             global_vars.CASSANDRA_DOCKER_COMPOSE_FILE_PATH,
             build=True,
@@ -44,9 +47,14 @@ class CassandraCluster:
         )
 
     def create_cluster(self):
-        self.cassandra_compose.start()
+        try:
+            self.cassandra_compose.start()
+        except Exception as e:
+            print(f"Error creating cluster: {e}")
+            self.stop_cluster()
+            raise e
         self._set_env()
-        self._wait_for_nodes_to_be_up(4, 15000)
+        self._wait_for_nodes_to_be_up(4, DEFAULT_WAIT_TIME_IN_SECS*1000)
         self._setup_db()
 
     def _set_env(self):
@@ -78,18 +86,23 @@ class CassandraCluster:
         else:
             return next(iter(networks.values()))["IPAddress"]
 
+
     def _get_node_count(self):
-        listCertificates = ["ls", "/etc/certificates"]
+        if global_vars.LOCAL != "true":
+            command = ["docker", "exec", self.container_id, "sh", "-c", "~/.cassandra/nodetool-status-ssl.sh"]
+        else:
+            command = ["docker", "exec", self.container_id, "bash", "-c", "nodetool -u cassandra -pw cassandra status"]
 
-        stdoutListCertificates = self.cassandra_compose.exec_in_container(
-            service_name=CASSANDRA_SEED_DC1_RC1_ND1, command=listCertificates
-        )[0]
+        process = subprocess.run(
+            command,
+            check=True,
+            timeout=DEFAULT_WAIT_TIME_IN_SECS,
+            encoding='utf-8',
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
 
-        logger.info(f"stdoutListCertificates: {stdoutListCertificates}")
-
-        command = ["nodetool", "--ssl", "-u", "cassandra", "-pw", "cassandra", "status"]
-        stdout = self.cassandra_compose.exec_in_container(service_name=CASSANDRA_SEED_DC1_RC1_ND1, command=command)[0]
-        return stdout.split("UN", -1).__len__() - 1
+        return process.stdout.split("UN").__len__() - 1
 
     def _wait_for_nodes_to_be_up(self, expected_nodes, max_wait_time_in_millis):
         start_time = datetime.now()
@@ -97,21 +110,25 @@ class CassandraCluster:
 
         while start_time + max_wait_time > datetime.now():
             try:
-                sleep(DEFAULT_WAIT_TIME_IN_SECS)
+                sleep(5)
                 if self._get_node_count() == expected_nodes:
                     return
             except Exception:
                 # ignore and retry
                 continue
-        logging.info("dormindoooo")
-        from time import sleep
-
-        sleep(60)
         raise TimeoutError(f"Nodes did not go up after {max_wait_time_in_millis}ms")
 
     def _setup_db(self):
-        command = ["sh", "-c", "/etc/cassandra/setup_db.sh"]
-        self.cassandra_compose.exec_in_container(service_name=CASSANDRA_SEED_DC1_RC1_ND1, command=command)
+        command = ["docker", "exec", self.container_id, "sh", "-c", "/etc/cassandra/setup_db.sh"]
+
+        subprocess.run(
+            command,
+            timeout=DEFAULT_WAIT_TIME_IN_SECS*2,
+            encoding='utf-8',
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
 
     def stop_cluster(self):
-        self.cassandra_compose.stop()
+        self.cassandra_compose.stop(down=True)
