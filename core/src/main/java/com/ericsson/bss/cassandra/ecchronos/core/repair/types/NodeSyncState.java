@@ -19,6 +19,7 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import java.time.Instant;
 import java.util.UUID;
 
+@SuppressWarnings("PMD.DataClass")
 public class NodeSyncState
 {
     public static final String COLUMN_ECCHRONOS_ID = "ecchronos_id";

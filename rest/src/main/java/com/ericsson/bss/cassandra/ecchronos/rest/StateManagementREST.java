@@ -29,7 +29,7 @@ public interface StateManagementREST
     /**
      * Get a list of nodes managed by local instance. Will fetch all if no datacenter is specified.
      *
-     * @param datacenter The keyspace of the table (optional)
+     * @param datacenter The datacenter name(optional)
      * @return A list of JSON representations of {@link NodeSyncState}
      */
     ResponseEntity<List<NodeSyncState>> getNodes(String datacenter);
