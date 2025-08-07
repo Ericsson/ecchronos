@@ -1,5 +1,5 @@
 #
-# Copyright 2020 Telefonaktiebolaget LM Ericsson
+# Copyright 2025 Telefonaktiebolaget LM Ericsson
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -118,7 +118,7 @@ def step_validate_repair_row(context, keyspace, table, repair_type):
 
 def get_behave_dir():
     current_dir = os.path.dirname(__file__)
-    return os.path.abspath(os.path.join(current_dir, "../features"))
+    return os.path.abspath(os.path.join(current_dir, '../features'))
 
 
 @given('I have a json schema {schema_name}')
@@ -166,7 +166,6 @@ def step_send_post_request(context):
 
 @then('the response is successful')
 def step_verify_response_is_successful(context):
-    print( context.response.status_code )
     assert context.response is not None
     assert context.response.status_code == 200
 
@@ -217,6 +216,8 @@ def run_ecctool(context, params):
     client_ca = context.config.userdata.get("ecc_client_ca")
     env = {}
     if client_cert and client_key and client_ca:
-        env = {"ECCTOOL_CERT_FILE": client_cert, "ECCTOOL_KEY_FILE": client_key, "ECCTOOL_CA_FILE": client_ca}
+        env = {"ECCTOOL_CERT_FILE": client_cert,
+               "ECCTOOL_KEY_FILE": client_key,
+               "ECCTOOL_CA_FILE": client_ca}
     context.proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)  # pylint: disable=consider-using-with
     (context.out, context.err) = context.proc.communicate()
