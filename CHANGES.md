@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* REST Interface to provide list of nodes - Issue #1045
 * Fix REST interface only shows the schedules for the last table added - Issue #1030
 * Enable Multithreading Support in the EcChronos Agent for Node Operations - Issue #959
 * Modify ecctool to Allow Repairs to be Created Without Requiring a Node ID - Issue #903
