@@ -27,7 +27,8 @@ public record NodeSyncState(
     Instant nextConnection,
     String nodeEndpoint,
     String nodeStatus
-) {
+)
+{
     public static final String COLUMN_ECCHRONOS_ID = "ecchronos_id";
     public static final String COLUMN_DATACENTER_NAME = "datacenter_name";
     public static final String COLUMN_NODE_ID = "node_id";
