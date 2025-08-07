@@ -24,94 +24,18 @@ import java.util.List;
  * The repair state describes the current state of repairs for a table.
  * <ul>
  *     <li>When the table was last repaired - {@link #lastCompletedAt()}</li>
- *     <li>The next repair(s) to run - {@link #getRepairGroups()}</li>
- *     <li>The vnodes for the table and when they were last repaired - {@link #getVnodeRepairStates()}</li>
+ *     <li>The next repair(s) to run - {@link #repairGroups()}</li>
+ *     <li>The vnodes for the table and when they were last repaired - {@link #vnodeRepairStates()}</li>
  *     <li>If there is a repair available - {@link #canRepair()}</li>
  * </ul>
  */
-public final class RepairStateSnapshot
+public record RepairStateSnapshot(long lastCompletedAt, long createdAt, List<ReplicaRepairGroup> repairGroups,
+                                  VnodeRepairStates vnodeRepairStates, long estimatedRepairTime, boolean canRepair)
 {
-    private final boolean canRepair;
-    private final long myLastCompletedAt;
-    private final long myCreatedAt;
-    private final List<ReplicaRepairGroup> myReplicaRepairGroup;
-    private final VnodeRepairStates myVnodeRepairStates;
-    private final long myEstimatedRepairTime;
-
-    private RepairStateSnapshot(final Builder builder)
-    {
-        myLastCompletedAt = builder.myLastCompletedAt;
-        myCreatedAt = builder.myCreatedAt;
-        myReplicaRepairGroup = builder.myReplicaRepairGroup;
-        myVnodeRepairStates = builder.myVnodeRepairStates;
-        myEstimatedRepairTime = VnodeRepairStateUtils.getRepairTime(myVnodeRepairStates.getVnodeRepairStates());
-        canRepair = !myReplicaRepairGroup.isEmpty();
-    }
-
     public long getRemainingRepairTime(final long now, final long repairIntervalMs)
     {
-        return VnodeRepairStateUtils.getRemainingRepairTime(myVnodeRepairStates.getVnodeRepairStates(),
-                repairIntervalMs, now, myEstimatedRepairTime);
-    }
-
-    /**
-     * Get the time this snapshot was created.
-     * @return The time this snapshot was created.
-     */
-    public long getCreatedAt()
-    {
-        return myCreatedAt;
-    }
-
-    /**
-     * Check if a repair can be performed based on the current state.
-     *
-     * @return True if repair can run.
-     */
-    public boolean canRepair()
-    {
-        return canRepair;
-    }
-
-    /**
-     * Get the time of the last successful repair of the table.
-     *
-     * @return The time the table was last repaired or -1 if no information is available.
-     */
-    public long lastCompletedAt()
-    {
-        return myLastCompletedAt;
-    }
-
-    public long getEstimatedRepairTime()
-    {
-        return myEstimatedRepairTime;
-    }
-
-    /**
-     * Information needed to run the next repair(s).
-     *
-     * @return The next repair(s) or an empty list if none can be run.
-     */
-    public List<ReplicaRepairGroup> getRepairGroups()
-    {
-        return myReplicaRepairGroup;
-    }
-
-    public VnodeRepairStates getVnodeRepairStates()
-    {
-        return myVnodeRepairStates;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "RepairStateSnapshot{"
-                + "canRepair=" + canRepair
-                + ", myLastCompletedAt=" + myLastCompletedAt
-                + ", myReplicaRepairGroup=" + myReplicaRepairGroup
-                + ", myEstimatedRepairTime=" + myEstimatedRepairTime
-                + '}';
+        return VnodeRepairStateUtils.getRemainingRepairTime(vnodeRepairStates.getVnodeRepairStates(),
+                repairIntervalMs, now, estimatedRepairTime);
     }
 
     public static Builder newBuilder()
@@ -181,7 +105,12 @@ public final class RepairStateSnapshot
          */
         public RepairStateSnapshot build()
         {
-            return new RepairStateSnapshot(this);
+            return new RepairStateSnapshot(myLastCompletedAt,
+                    myCreatedAt,
+                    myReplicaRepairGroup,
+                    myVnodeRepairStates,
+                    VnodeRepairStateUtils.getRepairTime(myVnodeRepairStates.getVnodeRepairStates()),
+                    !myReplicaRepairGroup.isEmpty());
         }
     }
 }

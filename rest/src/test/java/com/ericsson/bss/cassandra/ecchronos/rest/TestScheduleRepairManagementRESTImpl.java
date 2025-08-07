@@ -216,7 +216,7 @@ public class TestScheduleRepairManagementRESTImpl
         VnodeRepairStates vnodeRepairStatesMock = mock(VnodeRepairStates.class);
         when(vnodeRepairStatesMock.getVnodeRepairStates()).thenReturn(vnodeRepairState);
         RepairStateSnapshot repairStateSnapshotMock = mock(RepairStateSnapshot.class);
-        when(repairStateSnapshotMock.getVnodeRepairStates()).thenReturn(vnodeRepairStatesMock);
+        when(repairStateSnapshotMock.vnodeRepairStates()).thenReturn(vnodeRepairStatesMock);
         return new ScheduledRepairJobView(id, tableReference, repairConfigurationMock, repairStateSnapshotMock,
                 ScheduledRepairJobView.Status.ON_TIME, 0.0, lastRepairedAt + repairInterval,
                 repairType);

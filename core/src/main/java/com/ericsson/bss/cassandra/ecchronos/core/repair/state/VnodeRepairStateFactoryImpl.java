@@ -69,9 +69,9 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
         else
         {
             LOG.debug("Table {} snapshot created at {}, iterating repair entries until that time", tableReference,
-                    previous.getCreatedAt());
+                    previous.createdAt());
             repairEntryIterator = myRepairHistoryProvider.iterate(tableReference, iterateToTime,
-                    previous.getCreatedAt(), (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
+                    previous.createdAt(), (repairEntry) -> acceptRepairEntries(repairEntry, tokenRangeToReplicaMap));
         }
 
         return generateVnodeRepairStates(lastRepairedAt, previous, repairEntryIterator, tokenRangeToReplicaMap);
@@ -145,7 +145,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
 
         if (previous != null)
         {
-            vnodeRepairStatusesBuilder.updateVnodeRepairStates(previous.getVnodeRepairStates().getVnodeRepairStates());
+            vnodeRepairStatusesBuilder.updateVnodeRepairStates(previous.vnodeRepairStates().getVnodeRepairStates());
         }
 
         while (repairEntryIterator.hasNext())
@@ -175,7 +175,7 @@ public class VnodeRepairStateFactoryImpl implements VnodeRepairStateFactory
 
         long lastRepairedAt = Long.MAX_VALUE;
 
-        for (VnodeRepairState vnodeRepairState : previous.getVnodeRepairStates().getVnodeRepairStates())
+        for (VnodeRepairState vnodeRepairState : previous.vnodeRepairStates().getVnodeRepairStates())
         {
             if (tokenToReplicaMap.containsKey(vnodeRepairState.getTokenRange())
                     && lastRepairedAt > vnodeRepairState.lastRepairedAt())

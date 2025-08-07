@@ -72,7 +72,7 @@ public class RepairStateImpl implements RepairState
         long now = System.currentTimeMillis();
         if (oldRepairStateSnapshot == null
                 || isRepairNeeded(oldRepairStateSnapshot.lastCompletedAt(),
-                oldRepairStateSnapshot.getEstimatedRepairTime(),
+                oldRepairStateSnapshot.estimatedRepairTime(),
                 now))
         {
             RepairStateSnapshot newRepairStateSnapshot = generateNewRepairState(oldRepairStateSnapshot, now);
@@ -81,12 +81,12 @@ public class RepairStateImpl implements RepairState
                 myTableRepairMetrics.lastRepairedAt(myTableReference, newRepairStateSnapshot.lastCompletedAt());
 
                 int nonRepairedRanges
-                        = (int) newRepairStateSnapshot.getVnodeRepairStates().getVnodeRepairStates().stream()
+                        = (int) newRepairStateSnapshot.vnodeRepairStates().getVnodeRepairStates().stream()
                         .filter(v -> vnodeIsRepairable(v, newRepairStateSnapshot, System.currentTimeMillis()))
                         .count();
 
                 int repairedRanges
-                        = newRepairStateSnapshot.getVnodeRepairStates().getVnodeRepairStates().size()
+                        = newRepairStateSnapshot.vnodeRepairStates().getVnodeRepairStates().size()
                         - nonRepairedRanges;
                 myTableRepairMetrics.repairState(myTableReference, repairedRanges, nonRepairedRanges);
                 myTableRepairMetrics.remainingRepairTime(myTableReference,
@@ -175,7 +175,7 @@ public class RepairStateImpl implements RepairState
             long next = repairedAt + myRepairConfiguration.getRepairIntervalInMs();
             if (old != null)
             {
-                next -= old.getEstimatedRepairTime();
+                next -= old.estimatedRepairTime();
             }
             LOG.debug("Table {} fully repaired at {}, next repair at/after {}", myTableReference,
                     MY_DATE_FORMAT.get().format(new Date(repairedAt)), MY_DATE_FORMAT.get().format(new Date(next)));
@@ -192,7 +192,7 @@ public class RepairStateImpl implements RepairState
             long next = repairedAt + runIntervalInMs;
             if (old != null)
             {
-                next -= old.getEstimatedRepairTime();
+                next -= old.estimatedRepairTime();
             }
             LOG.debug("Table {} partially repaired at {}, next repair at/after {}", myTableReference,
                     MY_DATE_FORMAT.get().format(new Date(repairedAt)), MY_DATE_FORMAT.get().format(new Date(next)));
@@ -246,7 +246,7 @@ public class RepairStateImpl implements RepairState
         long estimatedRepairTime = 0L;
         if (snapshot != null)
         {
-            estimatedRepairTime = snapshot.getEstimatedRepairTime();
+            estimatedRepairTime = snapshot.estimatedRepairTime();
         }
         return isRepairNeeded(vnodeRepairState.lastRepairedAt(), estimatedRepairTime, now);
     }

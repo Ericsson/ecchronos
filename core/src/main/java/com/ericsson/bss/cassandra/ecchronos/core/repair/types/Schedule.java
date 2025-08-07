@@ -105,7 +105,7 @@ public class Schedule
         {
             long repairedAfter
                     = System.currentTimeMillis() - repairJobView.getRepairConfiguration().getRepairIntervalInMs();
-            VnodeRepairStates vnodeRepairStates = repairJobView.getRepairStateSnapshot().getVnodeRepairStates();
+            VnodeRepairStates vnodeRepairStates = repairJobView.getRepairStateSnapshot().vnodeRepairStates();
 
             this.virtualNodeStates = vnodeRepairStates.getVnodeRepairStates().stream()
                     .map(vrs -> VirtualNodeState.convert(vrs, repairedAfter))
