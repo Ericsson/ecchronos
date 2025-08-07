@@ -69,7 +69,7 @@ public class StateManagementRESTImpl implements StateManagementREST
 
         rs.forEach(row ->
         {
-            NodeSyncState nodeSyncState = new NodeSyncState(row);
+            NodeSyncState nodeSyncState = NodeSyncState.fromRow(row);
             nodesList.add(nodeSyncState);
         });
         return nodesList;
