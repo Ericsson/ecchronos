@@ -70,19 +70,19 @@ def step_create_repair_rejection(
     handle_rejections_output_with_summary(context)
 
 
-@when("we get all rejections") # pylint: disable=not-callable
+@when("we get all rejections")  # pylint: disable=not-callable
 def step_get_all_rejections(context):
     run_ecc_rejections(context, ["get"])
     handle_get_rejections_output(context)
 
 
-@when("we get all rejections for {keyspace}") # pylint: disable=not-callable
+@when("we get all rejections for {keyspace}")  # pylint: disable=not-callable
 def step_get_rejections_for_keyspace(context, keyspace):
     run_ecc_rejections(context, ["get", "--keyspace", keyspace])
     handle_get_rejections_output(context)
 
 
-@when("we get rejections for {keyspace}.{table}") # pylint: disable=not-callable
+@when("we get rejections for {keyspace}.{table}")  # pylint: disable=not-callable
 def step_get_rejections_for_keyspace_and_table(context, keyspace, table):
     run_ecc_rejections(context, ["get", "--keyspace", keyspace, "--table", table])
     handle_get_rejections_output(context)
@@ -115,7 +115,9 @@ def step_add_dc_exclusion_for_rejection(
     handle_rejections_output_with_summary(context)
 
 
-@when("we delete rejection with {keyspace}.{table} with start hour {start_hour}, start minute {start_minute}") # pylint: disable=not-callable
+@when(
+    "we delete rejection with {keyspace}.{table} with start hour {start_hour}, start minute {start_minute}"
+)  # pylint: disable=not-callable
 def step_delete_rejection(context, keyspace, table, start_hour, start_minute):
     run_ecc_rejections(
         context,
@@ -161,13 +163,12 @@ def step_delete_dc_from_rejection(
     handle_rejections_output_with_summary(context)
 
 
-@then("the output should contain a valid rejection header") # pylint: disable=not-callable
+@then("the output should contain a valid rejection header")  # pylint: disable=not-callable
 def step_validate_list_tables_header(context):
     validate_header(context.header, REJECTIONS_HEADER)
 
 
-# pylint: disable=not-callable
-@then("the output should contain a valid rejections header") # pylint: disable=not-callable
+@then("the output should contain a valid rejections header")  # pylint: disable=not-callable
 def step_validate_rejection_header(context):
     validate_header(context.header, REJECTIONS_HEADER)
 
@@ -175,7 +176,7 @@ def step_validate_rejection_header(context):
 @then(
     "the output should contain a rejection row for {keyspace}.{table} with start hour {start_hour}, "
     "start minute {start_minute}, end hour {end_hour}, end minute {end_minute}, dc exclusions {dc_exclusions}"
-) # pylint: disable=not-callable
+)  # pylint: disable=not-callable
 def step_validate_rejection_row(
     context, keyspace, table, start_hour, start_minute, end_hour, end_minute, dc_exclusions
 ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -194,7 +195,7 @@ def step_validate_rejection_row(
 @then(
     "the output should not contain a row for {keyspace}.{table} with start hour {start_hour} and "
     "start minute {start_minute}, end hour {end_hour}, end minute {end_minute} with {dc1}"
-) # pylint: disable=not-callable
+)  # pylint: disable=not-callable
 def step_validate_rejection_delete_row(
     context, keyspace, table, start_hour, start_minute, end_hour, end_minute, dc1
 ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -233,7 +234,7 @@ def step_validate_delete_dc_from_rejection(
 @then(
     "the output should contain a row for {keyspace}.{table} with start hour {start_hour}, "
     "start minute {start_minute}, end hour {end_hour}, end minute {end_minute}, dc exclusions {dc1} and {dc2}"
-) # pylint: disable=not-callable
+)  # pylint: disable=not-callable
 def step_validate_datacenter_in_rejection_row(
     context, keyspace, table, start_hour, start_minute, end_hour, end_minute, dc1, dc2
 ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
