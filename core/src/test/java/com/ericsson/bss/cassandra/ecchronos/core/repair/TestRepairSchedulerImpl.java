@@ -86,7 +86,7 @@ public class TestRepairSchedulerImpl
         when(myRepairStateFactory.create(eq(TABLE_REFERENCE), any(), any())).thenReturn(myRepairState);
         when(myRepairStateFactory.create(eq(TABLE_REFERENCE2), any(), any())).thenReturn(myRepairState);
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(VNODE_REPAIR_STATE)).build();
-        when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
+        when(myRepairStateSnapshot.vnodeRepairStates()).thenReturn(vnodeRepairStates);
     }
 
     @Test

@@ -93,7 +93,7 @@ public class CassandraMetrics implements Closeable
         try
         {
             CassandraMetric cassandraMetric = myCache.get(tableReference);
-            return cassandraMetric.myMaxRepairedAt;
+            return cassandraMetric.maxRepairedAt();
         }
         catch (CompletionException e)
         {
@@ -112,7 +112,7 @@ public class CassandraMetrics implements Closeable
         try
         {
             CassandraMetric cassandraMetric = myCache.get(tableReference);
-            return cassandraMetric.myPercentRepaired;
+            return cassandraMetric.percentRepaired();
         }
         catch (CompletionException e)
         {
@@ -131,15 +131,6 @@ public class CassandraMetrics implements Closeable
         myCache.cleanUp();
     }
 
-    private class CassandraMetric
-    {
-        private final double myPercentRepaired;
-        private final long myMaxRepairedAt;
-
-        CassandraMetric(final Double percentRepaired, final Long maxRepairedAt)
-        {
-            myPercentRepaired = percentRepaired;
-            myMaxRepairedAt = maxRepairedAt;
-        }
-    }
+    private record CassandraMetric(double percentRepaired, long maxRepairedAt)
+    { }
 }

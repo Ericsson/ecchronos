@@ -90,7 +90,7 @@ public class TableRepairJob extends ScheduledRepairJob
     private double getProgress(final long timestamp)
     {
         long interval = getRepairConfiguration().getRepairIntervalInMs();
-        Collection<VnodeRepairState> states = myRepairState.getSnapshot().getVnodeRepairStates().getVnodeRepairStates();
+        Collection<VnodeRepairState> states = myRepairState.getSnapshot().vnodeRepairStates().getVnodeRepairStates();
 
         long nRepaired = states.stream()
                 .filter(isRepaired(timestamp, interval))
@@ -144,9 +144,9 @@ public class TableRepairJob extends ScheduledRepairJob
         {
             List<ScheduledTask> taskList = new ArrayList<>();
 
-            BigInteger tokensPerRepair = getTokensPerRepair(repairStateSnapshot.getVnodeRepairStates());
+            BigInteger tokensPerRepair = getTokensPerRepair(repairStateSnapshot.vnodeRepairStates());
 
-            for (ReplicaRepairGroup replicaRepairGroup : repairStateSnapshot.getRepairGroups())
+            for (ReplicaRepairGroup replicaRepairGroup : repairStateSnapshot.repairGroups())
             {
                 RepairGroup.Builder builder = RepairGroup.newBuilder()
                         .withTableReference(getTableReference())
@@ -161,7 +161,7 @@ public class TableRepairJob extends ScheduledRepairJob
                         .withRepairHistory(myRepairHistory)
                         .withJobId(getId());
 
-                taskList.add(builder.build(getRealPriority(replicaRepairGroup.getLastCompletedAt())));
+                taskList.add(builder.build(getRealPriority(replicaRepairGroup.lastCompletedAt())));
             }
 
             return taskList.iterator();
@@ -214,7 +214,7 @@ public class TableRepairJob extends ScheduledRepairJob
     @Override
     public long getRunOffset()
     {
-        return myRepairState.getSnapshot().getEstimatedRepairTime();
+        return myRepairState.getSnapshot().estimatedRepairTime();
     }
 
     /**
@@ -256,9 +256,9 @@ public class TableRepairJob extends ScheduledRepairJob
         if (repairStateSnapshot.canRepair())
         {
             long minRepairedAt = System.currentTimeMillis();
-            for (ReplicaRepairGroup replicaRepairGroup : repairStateSnapshot.getRepairGroups())
+            for (ReplicaRepairGroup replicaRepairGroup : repairStateSnapshot.repairGroups())
             {
-                long replicaGroupCompletedAt = replicaRepairGroup.getLastCompletedAt();
+                long replicaGroupCompletedAt = replicaRepairGroup.lastCompletedAt();
                 if (replicaGroupCompletedAt < minRepairedAt)
                 {
                     minRepairedAt = replicaGroupCompletedAt;

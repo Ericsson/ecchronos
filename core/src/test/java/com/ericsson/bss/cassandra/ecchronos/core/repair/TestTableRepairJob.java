@@ -289,7 +289,7 @@ public class TestTableRepairJob
                 System.currentTimeMillis());
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState))
                 .build();
-        when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
+        when(myRepairStateSnapshot.vnodeRepairStates()).thenReturn(vnodeRepairStates);
         ScheduledRepairJobView repairJobView = myRepairJob.getView();
 
         assertThat(repairJobView.getId()).isEqualTo(myTableReference.getId());
@@ -496,7 +496,7 @@ public class TestTableRepairJob
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), repairedAt);
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState))
                 .build();
-        when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
+        when(myRepairStateSnapshot.vnodeRepairStates()).thenReturn(vnodeRepairStates);
 
         assertThat(myRepairJob.getView().getStatus()).isEqualTo(ScheduledRepairJobView.Status.COMPLETED);
     }
@@ -508,7 +508,7 @@ public class TestTableRepairJob
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), repairedAt);
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState))
                 .build();
-        when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
+        when(myRepairStateSnapshot.vnodeRepairStates()).thenReturn(vnodeRepairStates);
         doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 
         assertThat(myRepairJob.getView().getStatus()).isEqualTo(ScheduledRepairJobView.Status.OVERDUE);
@@ -521,7 +521,7 @@ public class TestTableRepairJob
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), repairedAt);
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState))
                 .build();
-        when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
+        when(myRepairStateSnapshot.vnodeRepairStates()).thenReturn(vnodeRepairStates);
         doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 
         assertThat(myRepairJob.getView().getStatus()).isEqualTo(ScheduledRepairJobView.Status.ON_TIME);
@@ -534,7 +534,7 @@ public class TestTableRepairJob
         VnodeRepairState vnodeRepairState = TestUtils.createVnodeRepairState(1, 2, ImmutableSet.of(), repairedAt);
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState))
                 .build();
-        when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
+        when(myRepairStateSnapshot.vnodeRepairStates()).thenReturn(vnodeRepairStates);
         doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 
         assertThat(myRepairJob.getView().getStatus()).isEqualTo(ScheduledRepairJobView.Status.LATE);
@@ -548,7 +548,7 @@ public class TestTableRepairJob
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState))
                 .build();
         mockRepairGroup(repairedAt);
-        when(myRepairStateSnapshot.getVnodeRepairStates()).thenReturn(vnodeRepairStates);
+        when(myRepairStateSnapshot.vnodeRepairStates()).thenReturn(vnodeRepairStates);
         when(myRepairStateSnapshot.canRepair()).thenReturn(true);
         doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
         myRepairJob.setRunnableIn(TimeUnit.HOURS.toMillis(1));
@@ -570,7 +570,7 @@ public class TestTableRepairJob
 
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(
                 Arrays.asList(vnodeRepairState, vnodeRepairState2)).build();
-        doReturn(vnodeRepairStates).when(myRepairStateSnapshot).getVnodeRepairStates();
+        doReturn(vnodeRepairStates).when(myRepairStateSnapshot).vnodeRepairStates();
         doReturn(repairedAtFirst).when(myRepairStateSnapshot).lastCompletedAt();
 
         assertThat(myRepairJob.getView().getProgress()).isEqualTo(0.5d);
@@ -585,7 +585,7 @@ public class TestTableRepairJob
 
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(Arrays.asList(vnodeRepairState))
                 .build();
-        doReturn(vnodeRepairStates).when(myRepairStateSnapshot).getVnodeRepairStates();
+        doReturn(vnodeRepairStates).when(myRepairStateSnapshot).vnodeRepairStates();
         doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 
         assertThat(myRepairJob.getView().getProgress()).isEqualTo(1);
@@ -602,7 +602,7 @@ public class TestTableRepairJob
 
         VnodeRepairStatesImpl vnodeRepairStates = VnodeRepairStatesImpl.newBuilder(
                 Arrays.asList(vnodeRepairState, vnodeRepairState2)).build();
-        doReturn(vnodeRepairStates).when(myRepairStateSnapshot).getVnodeRepairStates();
+        doReturn(vnodeRepairStates).when(myRepairStateSnapshot).vnodeRepairStates();
         doReturn(repairedAt).when(myRepairStateSnapshot).lastCompletedAt();
 
         assertThat(myRepairJob.getView().getProgress()).isEqualTo(0);
@@ -640,7 +640,7 @@ public class TestTableRepairJob
         doReturn(true).when(myRepairStateSnapshot).canRepair();
         //Runinterval is 1 day
         long offset = TimeUnit.HOURS.toMillis(1);
-        doReturn(offset).when(myRepairStateSnapshot).getEstimatedRepairTime();
+        doReturn(offset).when(myRepairStateSnapshot).estimatedRepairTime();
 
         long repairedAt = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(25);
         mockRepairGroup(repairedAt);
@@ -811,7 +811,7 @@ public class TestTableRepairJob
         {
             repairGroups.add(replicaRepairGroup);
         }
-        when(myRepairStateSnapshot.getRepairGroups()).thenReturn(repairGroups);
+        when(myRepairStateSnapshot.repairGroups()).thenReturn(repairGroups);
     }
 
     private ReplicaRepairGroup getRepairGroup(LongTokenRange range, long lastRepairedAt)

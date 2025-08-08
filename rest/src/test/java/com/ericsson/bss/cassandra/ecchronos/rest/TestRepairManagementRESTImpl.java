@@ -156,9 +156,9 @@ public class TestRepairManagementRESTImpl
         ResponseEntity<RepairInfo> response = managementREST.getRepairInfo(null, null, since, null, true);
 
         RepairInfo returnedRepairInfo = response.getBody();
-        assertThat(returnedRepairInfo.repairStats).containsExactlyInAnyOrderElementsOf(expectedResponse.repairStats);
-        assertThat(returnedRepairInfo.sinceInMs).isEqualTo(expectedResponse.sinceInMs);
-        assertThat(returnedRepairInfo.toInMs).isGreaterThan(since);
+        assertThat(returnedRepairInfo.repairStats()).containsExactlyInAnyOrderElementsOf(expectedResponse.repairStats());
+        assertThat(returnedRepairInfo.sinceInMs()).isEqualTo(expectedResponse.sinceInMs());
+        assertThat(returnedRepairInfo.toInMs()).isGreaterThan(since);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
@@ -206,9 +206,9 @@ public class TestRepairManagementRESTImpl
         ResponseEntity<RepairInfo> response = managementREST.getRepairInfo(null, null, null, duration, true);
 
         RepairInfo returnedRepairInfo = response.getBody();
-        assertThat(returnedRepairInfo.repairStats).containsExactlyInAnyOrderElementsOf(repairStats);
-        assertThat(returnedRepairInfo.sinceInMs).isEqualTo(returnedRepairInfo.toInMs - durationInMs);
-        assertThat(returnedRepairInfo.toInMs).isEqualTo(returnedRepairInfo.sinceInMs + durationInMs);
+        assertThat(returnedRepairInfo.repairStats()).containsExactlyInAnyOrderElementsOf(repairStats);
+        assertThat(returnedRepairInfo.sinceInMs()).isEqualTo(returnedRepairInfo.toInMs() - durationInMs);
+        assertThat(returnedRepairInfo.toInMs()).isEqualTo(returnedRepairInfo.sinceInMs() + durationInMs);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
@@ -301,8 +301,8 @@ public class TestRepairManagementRESTImpl
                 true);
 
         RepairInfo returnedRepairInfo = response.getBody();
-        assertThat(returnedRepairInfo.repairStats).containsExactly(repairStats1);
-        assertThat(returnedRepairInfo.toInMs - returnedRepairInfo.sinceInMs).isEqualTo(
+        assertThat(returnedRepairInfo.repairStats()).containsExactly(repairStats1);
+        assertThat(returnedRepairInfo.toInMs() - returnedRepairInfo.sinceInMs()).isEqualTo(
                 Duration.ofSeconds(DEFAULT_GC_GRACE_SECONDS).toMillis());
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }

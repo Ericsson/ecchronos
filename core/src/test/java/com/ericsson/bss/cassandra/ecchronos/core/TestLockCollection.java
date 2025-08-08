@@ -64,9 +64,9 @@ public class TestLockCollection
 
         for (DistributedLock lock : locks)
         {
-            if (lock instanceof DummyLock)
+            if (lock instanceof DummyLock dummyLock)
             {
-                assertThat(((DummyLock) lock).closed).isTrue();
+                assertThat(dummyLock.closed).isTrue();
             }
         }
     }

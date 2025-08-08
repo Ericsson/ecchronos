@@ -43,8 +43,8 @@ public class TestRepairedAt
 
         assertThat(repairedAt.isRepaired()).isTrue();
         assertThat(repairedAt.isPartiallyRepaired()).isFalse();
-        assertThat(repairedAt.getMaxRepairedAt()).isEqualTo(1235L);
-        assertThat(repairedAt.getMinRepairedAt()).isEqualTo(1234L);
+        assertThat(repairedAt.maxRepairedAt()).isEqualTo(1235L);
+        assertThat(repairedAt.minRepairedAt()).isEqualTo(1234L);
     }
 
     @Test
@@ -64,8 +64,8 @@ public class TestRepairedAt
 
         assertThat(repairedAt.isRepaired()).isFalse();
         assertThat(repairedAt.isPartiallyRepaired()).isTrue();
-        assertThat(repairedAt.getMaxRepairedAt()).isEqualTo(1234L);
-        assertThat(repairedAt.getMinRepairedAt()).isEqualTo(VnodeRepairState.UNREPAIRED);
+        assertThat(repairedAt.maxRepairedAt()).isEqualTo(1234L);
+        assertThat(repairedAt.minRepairedAt()).isEqualTo(VnodeRepairState.UNREPAIRED);
     }
 
     @Test
@@ -85,7 +85,7 @@ public class TestRepairedAt
 
         assertThat(repairedAt.isRepaired()).isFalse();
         assertThat(repairedAt.isPartiallyRepaired()).isFalse();
-        assertThat(repairedAt.getMaxRepairedAt()).isEqualTo(VnodeRepairState.UNREPAIRED);
-        assertThat(repairedAt.getMinRepairedAt()).isEqualTo(VnodeRepairState.UNREPAIRED);
+        assertThat(repairedAt.maxRepairedAt()).isEqualTo(VnodeRepairState.UNREPAIRED);
+        assertThat(repairedAt.minRepairedAt()).isEqualTo(VnodeRepairState.UNREPAIRED);
     }
 }

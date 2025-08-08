@@ -28,7 +28,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 public class RepairStateImpl implements RepairState
 {
@@ -73,7 +72,7 @@ public class RepairStateImpl implements RepairState
         long now = System.currentTimeMillis();
         if (oldRepairStateSnapshot == null
                 || isRepairNeeded(oldRepairStateSnapshot.lastCompletedAt(),
-                oldRepairStateSnapshot.getEstimatedRepairTime(),
+                oldRepairStateSnapshot.estimatedRepairTime(),
                 now))
         {
             RepairStateSnapshot newRepairStateSnapshot = generateNewRepairState(oldRepairStateSnapshot, now);
@@ -82,12 +81,12 @@ public class RepairStateImpl implements RepairState
                 myTableRepairMetrics.lastRepairedAt(myTableReference, newRepairStateSnapshot.lastCompletedAt());
 
                 int nonRepairedRanges
-                        = (int) newRepairStateSnapshot.getVnodeRepairStates().getVnodeRepairStates().stream()
+                        = (int) newRepairStateSnapshot.vnodeRepairStates().getVnodeRepairStates().stream()
                         .filter(v -> vnodeIsRepairable(v, newRepairStateSnapshot, System.currentTimeMillis()))
                         .count();
 
                 int repairedRanges
-                        = newRepairStateSnapshot.getVnodeRepairStates().getVnodeRepairStates().size()
+                        = newRepairStateSnapshot.vnodeRepairStates().getVnodeRepairStates().size()
                         - nonRepairedRanges;
                 myTableRepairMetrics.repairState(myTableReference, repairedRanges, nonRepairedRanges);
                 myTableRepairMetrics.remainingRepairTime(myTableReference,
@@ -131,7 +130,7 @@ public class RepairStateImpl implements RepairState
         List<VnodeRepairState> repairableVnodes = updatedVnodeRepairStates.getVnodeRepairStates().stream()
                 .filter(this::replicasAreRepairable)
                 .filter(v -> vnodeIsRepairable(v, old, System.currentTimeMillis()))
-                .collect(Collectors.toList());
+                .toList();
 
         List<ReplicaRepairGroup> replicaRepairGroups
                 = myReplicaRepairGroupFactory.generateReplicaRepairGroups(repairableVnodes);
@@ -155,7 +154,7 @@ public class RepairStateImpl implements RepairState
         {
             if (repairedAt.isPartiallyRepaired())
             {
-                calculatedRepairedAt = partiallyRepairedTableRepairedAt(repairedAt.getMaxRepairedAt(), old);
+                calculatedRepairedAt = partiallyRepairedTableRepairedAt(repairedAt.maxRepairedAt(), old);
             }
             else
             {
@@ -164,7 +163,7 @@ public class RepairStateImpl implements RepairState
         }
         else
         {
-            calculatedRepairedAt = repairedTableRepairedAt(repairedAt.getMinRepairedAt(), old);
+            calculatedRepairedAt = repairedTableRepairedAt(repairedAt.minRepairedAt(), old);
         }
         return calculatedRepairedAt;
     }
@@ -176,7 +175,7 @@ public class RepairStateImpl implements RepairState
             long next = repairedAt + myRepairConfiguration.getRepairIntervalInMs();
             if (old != null)
             {
-                next -= old.getEstimatedRepairTime();
+                next -= old.estimatedRepairTime();
             }
             LOG.debug("Table {} fully repaired at {}, next repair at/after {}", myTableReference,
                     MY_DATE_FORMAT.get().format(new Date(repairedAt)), MY_DATE_FORMAT.get().format(new Date(next)));
@@ -193,7 +192,7 @@ public class RepairStateImpl implements RepairState
             long next = repairedAt + runIntervalInMs;
             if (old != null)
             {
-                next -= old.getEstimatedRepairTime();
+                next -= old.estimatedRepairTime();
             }
             LOG.debug("Table {} partially repaired at {}, next repair at/after {}", myTableReference,
                     MY_DATE_FORMAT.get().format(new Date(repairedAt)), MY_DATE_FORMAT.get().format(new Date(next)));
@@ -247,7 +246,7 @@ public class RepairStateImpl implements RepairState
         long estimatedRepairTime = 0L;
         if (snapshot != null)
         {
-            estimatedRepairTime = snapshot.getEstimatedRepairTime();
+            estimatedRepairTime = snapshot.estimatedRepairTime();
         }
         return isRepairNeeded(vnodeRepairState.lastRepairedAt(), estimatedRepairTime, now);
     }
