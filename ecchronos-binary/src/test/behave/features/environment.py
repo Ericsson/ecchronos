@@ -59,10 +59,10 @@ def before_all(context):
     session = cluster.connect()
     context.environment.session = session
     host = cluster.metadata.get_host(cassandra_address)
-#    context.environment.host_id = host.host_id
+    context.environment.host_id = host.host_id
 
 
-def after_feature(context, feature):  # pylint: disable=unused-argument
+def after_feature(context, feature): # pylint: disable=unused-argument
     wait_for_local_repairs_to_complete(context)
     context.environment.session.execute('TRUNCATE TABLE ecchronos.on_demand_repair_status')
     context.environment.session.execute('TRUNCATE TABLE ecchronos.repair_history')
@@ -85,3 +85,4 @@ def wait_for_local_repairs_to_complete(context):
         time.sleep(1)
     assert count < timeout_seconds, 'All repairs did not finish in {0} seconds'.format(timeout_seconds)
     print('Waiting for repairs to finish took {0} seconds'.format(count))
+
