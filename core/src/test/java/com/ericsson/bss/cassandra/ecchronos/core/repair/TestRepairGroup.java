@@ -33,6 +33,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -43,6 +44,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
 import org.junit.After;
 import org.junit.Before;
@@ -97,6 +99,11 @@ public class TestRepairGroup
     @Mock
     private RepairHistory.RepairSession myRepairSession;
 
+    @Mock
+    private TimeBasedRunPolicy myTimeBasedRunPolicy;
+
+    private List<TableRepairPolicy> myRepairPolicies;
+
     private final UUID myJobId = UUID.randomUUID();
 
     private RepairConfiguration myRepairConfiguration;
@@ -105,6 +112,8 @@ public class TestRepairGroup
     public void init()
     {
         when(myRepairHistory.newSession(any(), any(), any(), any())).thenReturn(myRepairSession);
+        when(myTimeBasedRunPolicy.shouldReplicaBeIncluded(any(TableReference.class), any(DriverNode.class))).thenReturn(true);
+        myRepairPolicies = Collections.singletonList(myTimeBasedRunPolicy);
 
         myRepairConfiguration = RepairConfiguration.newBuilder()
                 .withParallelism(RepairOptions.RepairParallelism.PARALLEL)
@@ -175,7 +184,7 @@ public class TestRepairGroup
 
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range), System.currentTimeMillis());
 
-        RepairGroup repairGroup = builderFor(replicaRepairGroup).build(priority);
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).withRepairPolicies(myRepairPolicies).build(priority);
 
         Collection<RepairTask> repairTasks = repairGroup.getRepairTasks();
 
@@ -236,6 +245,7 @@ public class TestRepairGroup
 
         RepairGroup repairGroup = builderFor(replicaRepairGroup)
                 .withTokensPerRepair(tokensPerRange)
+                .withRepairPolicies(myRepairPolicies)
                 .build(priority);
 
         Collection<RepairTask> repairTasks = repairGroup.getRepairTasks();
@@ -280,7 +290,7 @@ public class TestRepairGroup
                 .withRepairType(RepairOptions.RepairType.PARALLEL_VNODE)
                 .build();
 
-        RepairGroup repairGroup = builderFor(replicaRepairGroup).withRepairConfiguration(repairConfiguration).build(priority);
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).withRepairConfiguration(repairConfiguration).withRepairPolicies(myRepairPolicies).build(priority);
 
         Collection<RepairTask> repairTasks = repairGroup.getRepairTasks();
 
@@ -309,7 +319,7 @@ public class TestRepairGroup
 
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(node, node2), vnodes, System.currentTimeMillis());
 
-        RepairGroup repairGroup = builderFor(replicaRepairGroup).build(priority);
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).withRepairPolicies(myRepairPolicies).build(priority);
 
         Collection<RepairTask> tasks = repairGroup.getRepairTasks();
 

@@ -43,6 +43,7 @@ import java.util.function.BiConsumer;
 import javax.management.Notification;
 import javax.management.NotificationListener;
 
+import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -93,6 +94,11 @@ public class TestRepairGroupTasks
     @Mock
     private RepairHistory mockRepairHistory;
 
+    @Mock
+    private TimeBasedRunPolicy myTimeBasedRunPolicy;
+
+    private List<TableRepairPolicy> myRepairPolicies;
+
     private final UUID jobId = UUID.randomUUID();
 
     private RepairConfiguration repairConfiguration;
@@ -114,6 +120,9 @@ public class TestRepairGroupTasks
             repairSessions.put(range, repairSession);
             return repairSession;
         });
+
+        when(myTimeBasedRunPolicy.shouldReplicaBeIncluded(any(TableReference.class), any(DriverNode.class))).thenReturn(true);
+        myRepairPolicies = Collections.singletonList(myTimeBasedRunPolicy);
     }
 
     @Test
@@ -130,8 +139,9 @@ public class TestRepairGroupTasks
 
         when(mockRepairResourceFactory.getRepairResources(eq(replicaRepairGroup))).thenReturn(repairResources);
         when(mockRepairLockFactory.getLock(eq(mockLockFactory), eq(repairResources), eq(metadata), eq(priority))).thenReturn(new DummyLock());
+        when(myTimeBasedRunPolicy.shouldRun(any(TableReference.class))).thenReturn(true);
 
-        RepairGroup repairGroup = builderFor(replicaRepairGroup).build(priority);
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).withRepairPolicies(myRepairPolicies).build(priority);
 
         assertThat(repairGroup.execute()).isTrue();
 
@@ -151,8 +161,8 @@ public class TestRepairGroupTasks
 
         when(mockRepairResourceFactory.getRepairResources(eq(replicaRepairGroup))).thenReturn(repairResources);
         when(mockRepairLockFactory.getLock(eq(mockLockFactory), eq(repairResources), eq(metadata), eq(priority))).thenReturn(new DummyLock());
+        when(myTimeBasedRunPolicy.shouldRun(any(TableReference.class))).thenReturn(shouldRun.get());
 
-        TableRepairPolicy tableRepairPolicy = (tb) -> shouldRun.get();
         when(mockJmxProxyFactory.connect()).thenReturn(new CustomJmxProxy((notificationListener, i) -> {
             if (i == 1) // First repair
             {
@@ -162,10 +172,11 @@ public class TestRepairGroupTasks
             // If this doesn't work a timeout will occur as the repair task
             // will be waiting for progress.
             shouldRun.set(false);
+            when(myTimeBasedRunPolicy.shouldRun(any(TableReference.class))).thenReturn(shouldRun.get());
         }));
 
         RepairGroup repairGroup = builderFor(replicaRepairGroup)
-                .withRepairPolicies(Collections.singletonList(tableRepairPolicy))
+                .withRepairPolicies(myRepairPolicies)
                 .build(priority);
 
         assertThat(repairGroup.execute()).isFalse();

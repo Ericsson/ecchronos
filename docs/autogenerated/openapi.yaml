@@ -9,6 +9,8 @@ servers:
 - url: https://localhost:8080
   description: Generated server url
 tags:
+- name: Reject-Configuration
+  description: "Management of reject repairs per keyspace, table and datacenter"
 - name: Repair-Management
   description: Management of repairs
 - name: Metrics
@@ -101,6 +103,103 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/OnDemandRepair"
+  /rejections:
+    get:
+      tags:
+      - Reject-Configuration
+      summary: Get rejection information
+      description: "Get rejection information, if keyspace and table are provided\
+        \ it will return the datafiltered by the specified keyspace and table"
+      operationId: get-rejections
+      parameters:
+      - name: keyspace
+        in: query
+        description: "Only return rejections matching the keyspace, mandatory if 'table'\
+          \ is provided."
+        required: false
+        schema:
+          type: string
+      - name: table
+        in: query
+        description: "Only return rejections matching the table, mandatory if 'keyspace'\
+          \ is provided."
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimeBasedRunPolicyBucket"
+    post:
+      tags:
+      - Reject-Configuration
+      summary: Create rejection information
+      description: Create rejection information
+      operationId: create-rejection
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimeBasedRunPolicyBucket"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+    delete:
+      tags:
+      - Reject-Configuration
+      summary: Delete rejection information
+      description: "Delete rejection based on Primary Key data provided, if dc_exclusion\
+        \ is provided, it will remove the datacenter list from dc_exclusion column"
+      operationId: delete-rejection
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimeBasedRunPolicyBucket"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+    patch:
+      tags:
+      - Reject-Configuration
+      summary: Update rejection information
+      description: "Update rejection information, it will add a new datacenter in\
+        \ dc_exclusion column based on the Primary Key data provided."
+      operationId: update-rejection
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimeBasedRunPolicyBucket"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
   /repair-management/v2/schedules:
     get:
       tags:
@@ -342,9 +441,34 @@ paths:
             application/json:
               schema:
                 type: object
+  /rejections/all:
+    delete:
+      tags:
+      - Reject-Configuration
+      summary: Delete all rejection information
+      description: Delete all the data related with rejections.
+      operationId: delete-all-rejections
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
 components:
   schemas:
     OnDemandRepair:
+      required:
+      - completedAt
+      - hostId
+      - id
+      - keyspace
+      - repairType
+      - repairedRatio
+      - status
+      - table
       type: object
       properties:
         id:
@@ -386,7 +510,41 @@ components:
           - VNODE
           - PARALLEL_VNODE
           - INCREMENTAL
+    TimeBasedRunPolicyBucket:
+      type: object
+      properties:
+        keyspaceName:
+          type: string
+        tableName:
+          type: string
+        startHour:
+          type: integer
+          format: int32
+        startMinute:
+          type: integer
+          format: int32
+        endHour:
+          type: integer
+          format: int32
+        endMinute:
+          type: integer
+          format: int32
+        dcExclusions:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
     Schedule:
+      required:
+      - config
+      - id
+      - keyspace
+      - lastRepairedAtInMs
+      - nextRepairInMs
+      - repairType
+      - repairedRatio
+      - status
+      - table
       type: object
       properties:
         id:
@@ -433,6 +591,12 @@ components:
           items:
             $ref: "#/components/schemas/VirtualNodeState"
     ScheduleConfig:
+      required:
+      - errorTimeInMs
+      - intervalInMs
+      - parallelism
+      - unwindRatio
+      - warningTimeInMs
       type: object
       properties:
         intervalInMs:
@@ -457,6 +621,12 @@ components:
           enum:
           - PARALLEL
     VirtualNodeState:
+      required:
+      - endToken
+      - lastRepairedAtInMs
+      - repaired
+      - replicas
+      - startToken
       type: object
       properties:
         startToken:
@@ -479,6 +649,10 @@ components:
         repaired:
           type: boolean
     RepairInfo:
+      required:
+      - repairStats
+      - sinceInMs
+      - toInMs
       type: object
       properties:
         sinceInMs:
@@ -494,6 +668,11 @@ components:
           items:
             $ref: "#/components/schemas/RepairStats"
     RepairStats:
+      required:
+      - keyspace
+      - repairTimeTakenMs
+      - repairedRatio
+      - table
       type: object
       properties:
         keyspace:

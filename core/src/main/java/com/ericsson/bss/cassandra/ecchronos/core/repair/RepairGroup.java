@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
@@ -22,6 +23,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TokenSubRangeUtil;
@@ -187,26 +189,43 @@ public class RepairGroup extends ScheduledTask
         }
         else if (myRepairConfiguration.getRepairType().equals(RepairOptions.RepairType.PARALLEL_VNODE))
         {
+            Set<DriverNode> replicas = filterParticipants(myReplicaRepairGroup.getReplicas(), myTableReference);
+
             Set<LongTokenRange> combinedRanges = new LinkedHashSet<>();
             myReplicaRepairGroup.iterator().forEachRemaining(combinedRanges::add);
             tasks.add(new VnodeRepairTask(myJmxProxyFactory, myTableReference, myRepairConfiguration,
                     myTableRepairMetrics, myRepairHistory, combinedRanges,
-                    new HashSet<>(myReplicaRepairGroup.getReplicas()), myJobId));
+                    new HashSet<>(replicas), myJobId));
         }
         else
         {
+            Set<DriverNode> replicas = filterParticipants(myReplicaRepairGroup.getReplicas(), myTableReference);
             for (LongTokenRange range : myReplicaRepairGroup)
             {
                 for (LongTokenRange subRange : new TokenSubRangeUtil(range).generateSubRanges(myTokensPerRepair))
                 {
                     tasks.add(new VnodeRepairTask(myJmxProxyFactory, myTableReference, myRepairConfiguration,
                             myTableRepairMetrics, myRepairHistory, Collections.singleton(subRange),
-                            new HashSet<>(myReplicaRepairGroup.getReplicas()), myJobId));
+                            new HashSet<>(replicas), myJobId));
                 }
             }
         }
 
         return tasks;
+    }
+
+    private Set<DriverNode> filterParticipants(final Set<DriverNode> participants, final TableReference tableReference)
+    {
+        Set<DriverNode> allowedParticipants = new HashSet<>();
+        for (DriverNode node: participants)
+        {
+            TimeBasedRunPolicy timeBasedRunPolicy = (TimeBasedRunPolicy) myRepairPolicies.stream().findFirst().get();
+            if (timeBasedRunPolicy.shouldReplicaBeIncluded(tableReference, node))
+            {
+                allowedParticipants.add(node);
+            }
+        }
+        return allowedParticipants;
     }
 
     public static Builder newBuilder()
