@@ -25,55 +25,17 @@ import java.util.stream.Collectors;
 /**
  * A group of replicas and ranges that should be repaired together.
  */
-public class ReplicaRepairGroup implements Iterable<LongTokenRange>
+public record ReplicaRepairGroup(Set<DriverNode> replicas, List<LongTokenRange> vnodes,
+                                 long lastCompletedAt) implements Iterable<LongTokenRange>
 {
-    private final Set<DriverNode> myReplicas;
-    private final List<LongTokenRange> myVnodes;
-    private final long myLastCompletedAt;
-
-    /**
-     * Constructor.
-     *
-     * @param replicas The nodes.
-     * @param vnodes The token ranges.
-     * @param lastCompletedAt last repair completed
-     */
-    public ReplicaRepairGroup(final Set<DriverNode> replicas, final List<LongTokenRange> vnodes,
-            final long lastCompletedAt)
-    {
-        myReplicas = replicas;
-        myVnodes = vnodes;
-        myLastCompletedAt = lastCompletedAt;
-    }
-
-    /**
-     * Get replicas.
-     *
-     * @return Replicas
-     */
-    public Set<DriverNode> getReplicas()
-    {
-        return myReplicas;
-    }
-
-    /**
+     /**
      * Get datacenters.
      *
      * @return Datacenters
      */
     public Set<String> getDataCenters()
     {
-        return myReplicas.stream().map(DriverNode::getDatacenter).collect(Collectors.toSet());
-    }
-
-     /**
-     * Get last completed at.
-     *
-     * @return Last completed at for this repair group.
-     */
-    public long getLastCompletedAt()
-    {
-        return myLastCompletedAt;
+        return replicas.stream().map(DriverNode::getDatacenter).collect(Collectors.toSet());
     }
 
     /**
@@ -84,17 +46,6 @@ public class ReplicaRepairGroup implements Iterable<LongTokenRange>
     @Override
     public Iterator<LongTokenRange> iterator()
     {
-        return myVnodes.iterator();
-    }
-
-    /**
-     * String representation.
-     *
-     * @return String
-     */
-    @Override
-    public String toString()
-    {
-        return String.format("(replicas=%s,vnodes=%s)", myReplicas, myVnodes);
+        return vnodes.iterator();
     }
 }
