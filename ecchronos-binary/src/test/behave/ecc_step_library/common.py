@@ -25,7 +25,7 @@ from behave import given, then, when  # pylint: disable=no-name-in-module
 
 ID_PATTERN = r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
 REPAIR_SUMMARY_PATTERN = r'Summary: \d+ completed, \d+ in queue, \d+ blocked, \d+ warning, \d+ error'
-REPAIR_HEADER = r'| NodeID | JobID | Keyspace | Table | Status | Repaired(%) | Completed at | Repair type |'
+REPAIR_HEADER = r'| Id | Host Id | Keyspace | Table | Status | Repaired(%) | Completed at | Repair type |'
 REPAIR_ROW_FORMAT_PATTERN = r'\| .* \| .* \| {0} \| {1} \| (COMPLETED|IN_QUEUE|WARNING|ERROR) \| \d+[.]\d+ \| .* \| {2} \|'  # pylint: disable=line-too-long
 
 
@@ -180,28 +180,15 @@ def step_verify_schema(context, schema_name):
     validate(instance=context.json, schema=schema)
 
 
-@then('the nodeid from response is extracted for {keyspace}.{table}')
+@then('the id from response is extracted for {keyspace}.{table}')
 def step_extract_id(context, keyspace, table):
     assert context.response is not None
     context.json = context.response.json()
-    context.keyspace = keyspace
-    context.table = table
     for obj in context.json:
         if obj["keyspace"] == keyspace and obj["table"] == table:
-            context.id = obj["nodeID"]
+            context.id = obj["id"]
             break
     assert context.id is not None
-
-@then('the jobid from response is extracted for {keyspace}.{table}')
-def step_extract_id(context, keyspace, table):
-    assert context.response is not None
-    context.json = context.response.json()
-    for obj in context.json:
-        if obj["keyspace"] == keyspace and obj["table"] == table:
-            context.jobid = obj["jobID"]
-            break
-    assert context.jobid is not None
-
 
 @then('the job list contains only keyspace {keyspace}')
 def step_verify_job_list(context, keyspace):
