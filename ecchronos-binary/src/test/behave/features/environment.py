@@ -59,8 +59,6 @@ def before_all(context):
     session = cluster.connect()
     context.environment.session = session
     host = cluster.metadata.get_host(cassandra_address)
-    context.environment.host_id = host.host_id
-
 
 def after_feature(context, feature): # pylint: disable=unused-argument
     wait_for_local_repairs_to_complete(context)
