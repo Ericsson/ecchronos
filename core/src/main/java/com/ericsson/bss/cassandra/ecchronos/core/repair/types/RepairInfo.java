@@ -15,36 +15,11 @@
 
 package com.ericsson.bss.cassandra.ecchronos.core.repair.types;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.Objects;
 
-@SuppressWarnings("VisibilityModifier")
-public class RepairInfo
+public record RepairInfo(long sinceInMs, long toInMs, List<RepairStats> repairStats)
 {
-    @NotBlank
-    @Min(0)
-    public long sinceInMs;
-    @NotBlank
-    @Min(0)
-    public long toInMs;
-    @NotBlank
-    public List<RepairStats> repairStats;
-
-    public RepairInfo(final long since, final long to, final List<RepairStats> theRepairStats)
-    {
-        this.sinceInMs = since;
-        this.toInMs = to;
-        this.repairStats = theRepairStats;
-    }
-
-    /**
-     * Equality.
-     *
-     * @param o The object to compare to.
-     * @return boolean
-     */
     @Override
     public boolean equals(final Object o)
     {
@@ -63,11 +38,6 @@ public class RepairInfo
                 && repairStats.containsAll(that.repairStats);
     }
 
-    /**
-     * Hash representation.
-     *
-     * @return int
-     */
     @Override
     public int hashCode()
     {

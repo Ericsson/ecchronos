@@ -33,9 +33,9 @@ public class TestRepairInfo
         long to = 12345L;
         List<RepairStats> repairStatsList = Collections.singletonList(mock(RepairStats.class));
         RepairInfo repairInfo = new RepairInfo(since, to, repairStatsList);
-        assertThat(repairInfo.sinceInMs).isEqualTo(since);
-        assertThat(repairInfo.toInMs).isEqualTo(to);
-        assertThat(repairInfo.repairStats).isEqualTo(repairStatsList);
+        assertThat(repairInfo.sinceInMs()).isEqualTo(since);
+        assertThat(repairInfo.toInMs()).isEqualTo(to);
+        assertThat(repairInfo.repairStats()).isEqualTo(repairStatsList);
     }
 
     @Test
