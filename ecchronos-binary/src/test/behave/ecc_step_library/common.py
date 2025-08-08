@@ -137,8 +137,7 @@ def step_set_url(context, url):
 @when('I send a GET request')
 def step_send_get_request(context):
     assert context.url is not None
-    assert not context.url.startswith("http"), \
-        "context.url cannot contain protocol 'http' or 'https'"
+    assert not context.url.startswith("http"), "context.url cannot contain protocol 'http' or 'https'"
     client_cert = context.config.userdata.get("ecc_client_cert")
     client_key = context.config.userdata.get("ecc_client_key")
     client_ca = context.config.userdata.get("ecc_client_ca")
@@ -153,8 +152,7 @@ def step_send_get_request(context):
 @when('I send a POST request')
 def step_send_post_request(context):
     assert context.url is not None
-    assert not context.url.startswith("http"), \
-        "context.url cannot contain protocol 'http' or 'https'"
+    assert not context.url.startswith("http"), "context.url cannot contain protocol 'http' or 'https'"
     client_cert = context.config.userdata.get("ecc_client_cert")
     client_key = context.config.userdata.get("ecc_client_key")
     client_ca = context.config.userdata.get("ecc_client_ca")
@@ -191,7 +189,6 @@ def step_extract_id(context, keyspace, table):
             context.id = obj["id"]
             break
     assert context.id is not None
-
 
 @then('the job list contains only keyspace {keyspace}')
 def step_verify_job_list(context, keyspace):
