@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Ensure repair runs on correct node if node is specified on the manual repair #1054
 * REST Interface to provide list of nodes - Issue #1045
 * Fix REST interface only shows the schedules for the last table added - Issue #1030
 * Enable Multithreading Support in the EcChronos Agent for Node Operations - Issue #959
