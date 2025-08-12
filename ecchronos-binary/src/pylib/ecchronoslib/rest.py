@@ -227,17 +227,18 @@ class RepairSchedulerRequest(RestRequest):
 
     def post(self, node_id=None, keyspace=None, table=None, repair_type="vnode"):
         request_url = RepairSchedulerRequest.repair_run_url
+        seperator ="?"
         if node_id:
-            request_url += "?nodeID=" + node_id
+            request_url += seperator + "nodeID=" + node_id
+            seperator ="&"
         if keyspace:
-            request_url += "?keyspace=" + keyspace
+            request_url += seperator + "keyspace=" + keyspace
+            seperator ="&"
             if table:
                 request_url += "&table=" + table
         if repair_type:
-            if keyspace:
-                request_url += "&repairType=" + repair_type
-            else:
-                request_url += "?repairType=" + repair_type
+            request_url += seperator + "repairType=" + repair_type
+
         result = self.request(request_url, 'POST')
         if result.is_successful():
             result = result.transform_with_data(new_data=[Repair(x) for x in result.data])
