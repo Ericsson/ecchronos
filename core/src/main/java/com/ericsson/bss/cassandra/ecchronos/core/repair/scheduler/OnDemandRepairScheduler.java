@@ -49,6 +49,17 @@ public interface OnDemandRepairScheduler
      */
     List<OnDemandRepairJobView> scheduleClusterWideJob(TableReference tableReference,
                                                        RepairType repairType) throws EcChronosException;
+    /**
+     * Create a repair that is slated to run once for a specified table for all replicas.
+     *
+     * @param tableReference The table to schedule a job on.
+     * @param repairType The type of the repair.
+     * @param nodeID The node the repair will run on
+     * @return Views of the scheduled job.
+     * @throws EcChronosException Thrown when the keyspace/table doesn't exist.
+     */
+    List<OnDemandRepairJobView> scheduleClusterWideJob(UUID nodeID, TableReference tableReference,
+                                                       RepairType repairType) throws EcChronosException;
 
     /**
      * Retrieves all cluster-wide repair jobs.

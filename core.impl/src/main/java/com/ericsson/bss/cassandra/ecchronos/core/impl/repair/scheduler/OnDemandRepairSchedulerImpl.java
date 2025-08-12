@@ -153,6 +153,9 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
      *
      * @param tableReference
      *            The table to schedule a job on.
+     * @param repairType
+     *            The type of the repair.
+
      * @return Repair job view list
      */
     @Override
@@ -160,7 +163,25 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
                                                               final RepairType repairType) throws EcChronosException
     {
         UUID randomAvailableNodeId = selectRandomAvailableNode();
-        OnDemandRepairJobView jobView = scheduleJob(tableReference, true, repairType, randomAvailableNodeId);
+        return scheduleClusterWideJob(randomAvailableNodeId, tableReference, repairType);
+
+    }
+    /**
+     * Schedule cluster wide job on any random available up node.
+     *
+     * @param nodeId
+     *            The node to run the repair on
+     * @param tableReference
+     *            The table to schedule a job on.
+     * @param repairType
+     *            The type of the repair.
+     * @return Repair job view list
+     */
+    public List<OnDemandRepairJobView> scheduleClusterWideJob(UUID nodeId, final TableReference tableReference,
+                                                              final RepairType repairType) throws EcChronosException
+    {
+
+        OnDemandRepairJobView jobView = scheduleJob(tableReference, true, repairType, nodeId);
         List<OnDemandRepairJobView> jobViews = getAllClusterWideRepairJobs().stream()
                 .filter(j -> j.getNodeId().equals(jobView.getNodeId()))
                 .collect(Collectors.toList());
