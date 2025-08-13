@@ -44,3 +44,4 @@
 * Expose AgentNativeConnectionProvider on Connection and Application Module - Issue #673
 * Create DatacenterAwareConfig to add Hosts in CQL Session Through ecc.yml - Issue #671
 * Create Initial project Structure for Agent - Issue #695
+* Add CRL support for CQL connections - Issue #883
