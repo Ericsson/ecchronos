@@ -73,13 +73,13 @@ class CASLock implements DistributedLock, Runnable
         List<NodePriority> nodePriorities = computePriorities();
 
         myLocallyHighestPriority = nodePriorities.stream()
-                .filter(n -> n.getUuid().equals(myUuid))
-                .map(NodePriority::getPriority)
+                .filter(n -> n.uuid().equals(myUuid))
+                .map(NodePriority::priority)
                 .findFirst()
             .orElse(myPriority);
         globalHighPriority = nodePriorities.stream()
-                .filter(n -> !n.getUuid().equals(myUuid))
-                .map(NodePriority::getPriority)
+                .filter(n -> !n.uuid().equals(myUuid))
+                .map(NodePriority::priority)
                 .max(Integer::compare)
                 .orElse(myPriority);
     }
@@ -214,4 +214,6 @@ class CASLock implements DistributedLock, Runnable
         return myFailedUpdateAttempts.get();
     }
 
+    private record NodePriority(UUID uuid, int priority)
+    { }
 }
