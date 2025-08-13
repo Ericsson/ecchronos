@@ -250,7 +250,7 @@ public class TestOnDemandRepairManagementRESTImpl
                 RepairType.VNODE);
         List<OnDemandRepair> expectedResponse = Collections.singletonList(new OnDemandRepair(repairJobView));
 
-        when(myOnDemandRepairScheduler.scheduleClusterWideJob(tableReference, RepairType.VNODE)).thenReturn(
+        when(myOnDemandRepairScheduler.scheduleClusterWideJob(mockNodeId1, tableReference, RepairType.VNODE)).thenReturn(
                 Collections.singletonList(repairJobView));
         response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", "tb", RepairType.VNODE, false);
 
@@ -281,7 +281,7 @@ public class TestOnDemandRepairManagementRESTImpl
                 RepairType.INCREMENTAL);
         List<OnDemandRepair> expectedResponse = Collections.singletonList(new OnDemandRepair(repairJobView));
 
-        when(myOnDemandRepairScheduler.scheduleClusterWideJob(tableReference, RepairType.INCREMENTAL)).thenReturn(
+        when(myOnDemandRepairScheduler.scheduleClusterWideJob(mockNodeId1, tableReference, RepairType.INCREMENTAL)).thenReturn(
                 Collections.singletonList(repairJobView));
         response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", "tb", RepairType.INCREMENTAL, false);
 
