@@ -230,10 +230,10 @@ class RepairSchedulerRequest(RestRequest):
         separator = "?"
         if node_id:
             request_url += separator + "nodeID=" + node_id
-            separator =i "&"
+            separator = "&"
         if keyspace:
             request_url += separator + "keyspace=" + keyspace
-            separator =i "&"
+            separator = "&"
             if table:
                 request_url += "&table=" + table
         if repair_type:
