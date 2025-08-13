@@ -40,7 +40,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -105,8 +104,8 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     private TimeRejectionCollection load(final TableKey key)
     {
         Statement decoratedStatement =
-                myStatementDecorator.apply(myGetRejectionsStatement.bind(key.getKeyspace(),
-                        key.getTable()));
+                myStatementDecorator.apply(myGetRejectionsStatement.bind(key.keyspace(),
+                        key.table()));
 
         ResultSet resultSet = mySession.execute(decoratedStatement);
         Iterator<Row> iterator = resultSet.iterator();
@@ -359,46 +358,6 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
         return new TableKey(tableReference.getKeyspace(), tableReference.getTable());
     }
 
-    static class TableKey
-    {
-        private final String keyspace;
-        private final String table;
-
-        TableKey(final String aKeyspace, final String aTable)
-        {
-            this.keyspace = aKeyspace;
-            this.table = aTable;
-        }
-
-        String getKeyspace()
-        {
-            return keyspace;
-        }
-
-        String getTable()
-        {
-            return table;
-        }
-
-        @Override
-        public boolean equals(final Object o)
-        {
-            if (this == o)
-            {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass())
-            {
-                return false;
-            }
-            TableKey tableKey = (TableKey) o;
-            return keyspace.equals(tableKey.keyspace) && table.equals(tableKey.table);
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash(keyspace, table);
-        }
-    }
+    record TableKey(String keyspace, String table)
+    { }
 }
