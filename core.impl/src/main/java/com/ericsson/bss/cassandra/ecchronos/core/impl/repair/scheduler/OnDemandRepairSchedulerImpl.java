@@ -177,7 +177,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
      *            The type of the repair.
      * @return Repair job view list
      */
-    public List<OnDemandRepairJobView> scheduleClusterWideJob(UUID nodeId, final TableReference tableReference,
+    public List<OnDemandRepairJobView> scheduleClusterWideJob(final UUID nodeId, final TableReference tableReference,
                                                               final RepairType repairType) throws EcChronosException
     {
 
