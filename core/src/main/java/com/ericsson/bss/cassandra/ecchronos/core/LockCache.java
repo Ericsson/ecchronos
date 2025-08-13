@@ -18,11 +18,11 @@ import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory.DistributedLock;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import jakarta.validation.constraints.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -99,37 +99,11 @@ public final class LockCache
                 throws LockException;
     }
 
-    static final class LockKey
+    record LockKey(String dataCenter, @NotNull String resource)
     {
-        private final String myDataCenter;
-        private final String myResourceName;
-
-        LockKey(final String dataCenter, final String resourceName)
+        LockKey
         {
-            myDataCenter = dataCenter;
-            myResourceName = checkNotNull(resourceName);
-        }
-
-        @Override
-        public boolean equals(final Object o)
-        {
-            if (this == o)
-            {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass())
-            {
-                return false;
-            }
-            LockKey lockKey = (LockKey) o;
-            return Objects.equals(myDataCenter, lockKey.myDataCenter)
-                    && Objects.equals(myResourceName, lockKey.myResourceName);
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash(myDataCenter, myResourceName);
+            checkNotNull(resource);
         }
     }
 }
