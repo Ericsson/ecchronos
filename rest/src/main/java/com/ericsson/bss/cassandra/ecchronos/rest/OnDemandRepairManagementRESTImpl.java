@@ -311,7 +311,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 if (myReplicatedTableProvider.accept(node, tableReference.getKeyspace()))
                 {
                     List<OnDemandRepairJobView> repairJobView = myOnDemandRepairScheduler.scheduleClusterWideJob(
-                            tableReference, repairType);
+                            nodeID, tableReference, repairType);
                     onDemandRepairs.addAll(
                             repairJobView.stream().map(view -> new OnDemandRepair(view)).collect(Collectors.toList()));
                 }
