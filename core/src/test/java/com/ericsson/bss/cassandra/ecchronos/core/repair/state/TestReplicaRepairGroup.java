@@ -37,7 +37,7 @@ public class TestReplicaRepairGroup
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(node1, node2, node3, node4), ImmutableList.of(range), System.currentTimeMillis());
 
         assertThat(replicaRepairGroup.getDataCenters()).containsExactlyInAnyOrder("DC1", "DC2", "DC3");
-        assertThat(replicaRepairGroup.getReplicas()).containsExactlyInAnyOrder(node1, node2, node3, node4);
+        assertThat(replicaRepairGroup.replicas()).containsExactlyInAnyOrder(node1, node2, node3, node4);
         assertThat(replicaRepairGroup.iterator()).toIterable().containsExactly(range);
     }
 
@@ -54,7 +54,7 @@ public class TestReplicaRepairGroup
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(node1, node2, node3), ImmutableList.of(range, range2, range3), System.currentTimeMillis());
 
         assertThat(replicaRepairGroup.getDataCenters()).containsExactlyInAnyOrder("DC1");
-        assertThat(replicaRepairGroup.getReplicas()).containsExactlyInAnyOrder(node1, node2, node3);
+        assertThat(replicaRepairGroup.replicas()).containsExactlyInAnyOrder(node1, node2, node3);
         assertThat(replicaRepairGroup.iterator()).toIterable().containsExactly(range, range2, range3);
     }
 
