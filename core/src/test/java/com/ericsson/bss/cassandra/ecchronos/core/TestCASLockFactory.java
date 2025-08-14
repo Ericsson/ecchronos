@@ -146,8 +146,8 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
                 .withStatementDecorator(s -> s)
                 .withKeyspaceName(myKeyspaceName)
                 .build();
-        assertThat(myLockFactory.getCasLockFactoryCacheContext().getFailedLockRetryAttempts()).isEqualTo(9);
-        assertThat(myLockFactory.getCasLockFactoryCacheContext().getLockUpdateTimeInSeconds()).isEqualTo(120);
+        assertThat(myLockFactory.getCasLockFactoryCacheContext().failedLockRetryAttempts()).isEqualTo(9);
+        assertThat(myLockFactory.getCasLockFactoryCacheContext().lockUpdateTimeInSeconds()).isEqualTo(120);
     }
 
     @Test

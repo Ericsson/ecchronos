@@ -116,11 +116,8 @@ public final class CASLockFactory implements LockFactory, Closeable
         int lockUpdateTimeInSeconds = lockTimeInSeconds / REFRESH_INTERVAL_RATIO;
         int myFailedLockRetryAttempts = (lockTimeInSeconds / lockUpdateTimeInSeconds) - 1;
 
-        return CASLockFactoryCacheContext.newBuilder()
-                .withLockUpdateTimeInSeconds(lockUpdateTimeInSeconds)
-                .withFailedLockRetryAttempts(myFailedLockRetryAttempts)
-                .withLockCache(new LockCache(this::doTryLock, cacheExpiryTimeInSeconds))
-                .build();
+        return new CASLockFactoryCacheContext(new LockCache(this::doTryLock, cacheExpiryTimeInSeconds),
+                lockUpdateTimeInSeconds, myFailedLockRetryAttempts);
     }
 
     private int getDefaultTimeToLiveFromLockTable()
@@ -145,7 +142,7 @@ public final class CASLockFactory implements LockFactory, Closeable
                                    final Map<String, String> metadata)
                                                                        throws LockException
     {
-        return myCasLockFactoryCacheContext.getLockCache()
+        return myCasLockFactoryCacheContext.lockCache()
                 .getLock(dataCenter, resource, priority, metadata);
     }
 
@@ -192,7 +189,7 @@ public final class CASLockFactory implements LockFactory, Closeable
     @Override
     public Optional<LockException> getCachedFailure(final String dataCenter, final String resource)
     {
-        return myCasLockFactoryCacheContext.getLockCache().getCachedFailure(dataCenter, resource);
+        return myCasLockFactoryCacheContext.lockCache().getCachedFailure(dataCenter, resource);
     }
 
     @Override
@@ -341,4 +338,12 @@ public final class CASLockFactory implements LockFactory, Closeable
         }
     }
 
+    /**
+     * Represents a container for cache-related configurations and state for the CASLockFactory.
+     * This class is used to decouple cache-related fields from CASLockFactory to avoid excessive field count.
+     */
+    public record CASLockFactoryCacheContext(LockCache lockCache,
+                                             long lockUpdateTimeInSeconds,
+                                             int failedLockRetryAttempts)
+    { }
 }
