@@ -124,7 +124,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
     {
         OnDemandRepairJobView currentJob = scheduleJob(tableReference, true, repairType);
         return getAllClusterWideRepairJobs().stream()
-                .filter(j -> j.getId().equals(currentJob.getId()))
+                .filter(j -> j.id().equals(currentJob.id()))
                 .toList();
     }
 

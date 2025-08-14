@@ -147,19 +147,19 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                     return getClusterWideOnDemandJobs(forTableOnDemand(keyspace, table));
                 }
                 UUID host = parseIdOrThrow(hostId);
-                return getClusterWideOnDemandJobs(job -> keyspace.equals(job.getTableReference().getKeyspace())
-                        && table.equals(job.getTableReference().getTable())
-                        && host.equals(job.getHostId()));
+                return getClusterWideOnDemandJobs(job -> keyspace.equals(job.tableReference().getKeyspace())
+                        && table.equals(job.tableReference().getTable())
+                        && host.equals(job.hostId()));
             }
             if (hostId == null)
             {
                 return getClusterWideOnDemandJobs(
-                        job -> keyspace.equals(job.getTableReference().getKeyspace()));
+                        job -> keyspace.equals(job.tableReference().getKeyspace()));
             }
             UUID host = parseIdOrThrow(hostId);
             return getClusterWideOnDemandJobs(
-                    job -> keyspace.equals(job.getTableReference().getKeyspace())
-                            && host.equals(job.getHostId()));
+                    job -> keyspace.equals(job.tableReference().getKeyspace())
+                            && host.equals(job.hostId()));
         }
         else if (table == null)
         {
@@ -168,7 +168,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 return getClusterWideOnDemandJobs(job -> true);
             }
             UUID host = parseIdOrThrow(hostId);
-            return getClusterWideOnDemandJobs(job -> host.equals(job.getHostId()));
+            return getClusterWideOnDemandJobs(job -> host.equals(job.hostId()));
         }
         throw new ResponseStatusException(BAD_REQUEST);
     }
@@ -179,7 +179,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         if (hostId == null)
         {
             List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(
-                    job -> uuid.equals(job.getId()));
+                    job -> uuid.equals(job.id()));
             if (repairJobs.isEmpty())
             {
                 throw new ResponseStatusException(NOT_FOUND);
@@ -187,8 +187,8 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             return repairJobs;
         }
         UUID host = parseIdOrThrow(hostId);
-        List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> uuid.equals(job.getId())
-                && host.equals(job.getHostId()));
+        List<OnDemandRepair> repairJobs = getClusterWideOnDemandJobs(job -> uuid.equals(job.id())
+                && host.equals(job.hostId()));
         if (repairJobs.isEmpty())
         {
             throw new ResponseStatusException(NOT_FOUND);
@@ -241,7 +241,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
     {
         return tableView ->
         {
-            TableReference tableReference = tableView.getTableReference();
+            TableReference tableReference = tableView.tableReference();
             return tableReference.getKeyspace().equals(keyspace)
                     && tableReference.getTable().equals(table);
         };
