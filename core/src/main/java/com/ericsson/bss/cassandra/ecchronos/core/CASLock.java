@@ -94,8 +94,8 @@ class CASLock implements DistributedLock, Runnable
                 ScheduledExecutorService executor = myCasLockStatement.getCasLockProperties().getExecutor();
                 LOG.trace("Lock for resource {} acquired", myResource);
                 ScheduledFuture<?> future = executor.scheduleAtFixedRate(this,
-                myCasLockStatement.getCasLockFactoryCacheContext().getLockUpdateTimeInSeconds(),
-                myCasLockStatement.getCasLockFactoryCacheContext().getLockUpdateTimeInSeconds(), TimeUnit.SECONDS);
+                myCasLockStatement.getCasLockFactoryCacheContext().lockUpdateTimeInSeconds(),
+                myCasLockStatement.getCasLockFactoryCacheContext().lockUpdateTimeInSeconds(), TimeUnit.SECONDS);
                 myUpdateFuture.set(future);
 
                 return true;
@@ -117,7 +117,7 @@ class CASLock implements DistributedLock, Runnable
         {
             int failedAttempts = myFailedUpdateAttempts.incrementAndGet();
 
-            if (failedAttempts >= myCasLockStatement.getCasLockFactoryCacheContext().getFailedLockRetryAttempts())
+            if (failedAttempts >= myCasLockStatement.getCasLockFactoryCacheContext().failedLockRetryAttempts())
             {
                 LOG.error("Unable to re-lock resource '{}' after {} failed attempts", myResource, failedAttempts);
             }
