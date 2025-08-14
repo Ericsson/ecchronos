@@ -154,7 +154,7 @@ public class RepairStateImpl implements RepairState
         {
             if (repairedAt.isPartiallyRepaired())
             {
-                calculatedRepairedAt = partiallyRepairedTableRepairedAt(repairedAt.getMaxRepairedAt(), old);
+                calculatedRepairedAt = partiallyRepairedTableRepairedAt(repairedAt.maxRepairedAt(), old);
             }
             else
             {
@@ -163,7 +163,7 @@ public class RepairStateImpl implements RepairState
         }
         else
         {
-            calculatedRepairedAt = repairedTableRepairedAt(repairedAt.getMinRepairedAt(), old);
+            calculatedRepairedAt = repairedTableRepairedAt(repairedAt.minRepairedAt(), old);
         }
         return calculatedRepairedAt;
     }
