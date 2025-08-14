@@ -63,7 +63,7 @@ public final class VnodeRepairGroupFactory implements ReplicaRepairGroupFactory
                         .toList();
 
                 sortedRepairGroups.add(new ReplicaRepairGroup(replicas, ImmutableList.copyOf(commonVnodes),
-                        repairedAt.getMinRepairedAt()));
+                        repairedAt.minRepairedAt()));
             }
         }
 
