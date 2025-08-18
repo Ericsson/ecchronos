@@ -76,7 +76,7 @@
         <junit.version>5.13.4</junit.version>
         <junitparams.version>1.1.1</junitparams.version>
         <logback.version>1.5.18</logback.version>
-        <mockito.core.version>5.18.0</mockito.core.version>
+        <mockito.core.version>5.19.0</mockito.core.version>
         <org.apache.commons.io.version>2.20.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
         <org.apache.commons.commons-lang3.version>3.18.0</org.apache.commons.commons-lang3.version>
