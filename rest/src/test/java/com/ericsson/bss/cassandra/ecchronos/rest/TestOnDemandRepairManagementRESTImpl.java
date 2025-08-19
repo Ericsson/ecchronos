@@ -240,8 +240,7 @@ public class TestOnDemandRepairManagementRESTImpl
 
         when(myOnDemandRepairScheduler.scheduleJob(tableReference, RepairType.VNODE, mockNodeId1)).thenReturn(localRepairJobView);
         when(myReplicatedTableProvider.accept(mockNode1, "ks")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", "tb", RepairType.VNODE,
-                true);
+        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", "tb", RepairType.VNODE);
 
         assertThat(response.getBody()).isEqualTo(localExpectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -252,7 +251,7 @@ public class TestOnDemandRepairManagementRESTImpl
 
         when(myOnDemandRepairScheduler.scheduleClusterWideJob(tableReference, RepairType.VNODE)).thenReturn(
                 Collections.singletonList(repairJobView));
-        response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", "tb", RepairType.VNODE, false);
+        response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", "tb", RepairType.VNODE);
 
         assertThat(response.getBody()).isEqualTo(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -271,8 +270,7 @@ public class TestOnDemandRepairManagementRESTImpl
 
         when(myOnDemandRepairScheduler.scheduleJob(tableReference, RepairType.INCREMENTAL, mockNodeId1)).thenReturn(localRepairJobView);
         when(myReplicatedTableProvider.accept(mockNode1, "ks")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", "tb", RepairType.INCREMENTAL,
-                true);
+        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", "tb", RepairType.INCREMENTAL);
 
         assertThat(response.getBody()).isEqualTo(localExpectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -283,7 +281,7 @@ public class TestOnDemandRepairManagementRESTImpl
 
         when(myOnDemandRepairScheduler.scheduleClusterWideJob(tableReference, RepairType.INCREMENTAL)).thenReturn(
                 Collections.singletonList(repairJobView));
-        response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", "tb", RepairType.INCREMENTAL, false);
+        response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", "tb", RepairType.INCREMENTAL);
 
         assertThat(response.getBody()).isEqualTo(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -319,8 +317,7 @@ public class TestOnDemandRepairManagementRESTImpl
         when(myOnDemandRepairScheduler.scheduleJob(tableReference2, RepairType.VNODE, mockNodeId1)).thenReturn(repairJobView2);
         when(myOnDemandRepairScheduler.scheduleJob(tableReference3, RepairType.VNODE, mockNodeId1)).thenReturn(repairJobView3);
         when(myReplicatedTableProvider.accept(mockNode1, "ks")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", null, null,
-                true);
+        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", null, null);
 
         assertThat(response.getBody()).containsAll(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -356,8 +353,8 @@ public class TestOnDemandRepairManagementRESTImpl
         when(myOnDemandRepairScheduler.scheduleJob(tableReference2, RepairType.INCREMENTAL, mockNodeId1)).thenReturn(repairJobView2);
         when(myOnDemandRepairScheduler.scheduleJob(tableReference3, RepairType.INCREMENTAL, mockNodeId1)).thenReturn(repairJobView3);
         when(myReplicatedTableProvider.accept(mockNode1, "ks")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", null, RepairType.INCREMENTAL,
-                true);
+        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", null,
+                RepairType.INCREMENTAL);
 
         assertThat(response.getBody()).containsAll(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -407,8 +404,8 @@ public class TestOnDemandRepairManagementRESTImpl
         when(myReplicatedTableProvider.accept(mockNode1, "keyspace1")).thenReturn(true);
         when(myReplicatedTableProvider.accept(mockNode1, "keyspace2")).thenReturn(true);
         when(myReplicatedTableProvider.accept(mockNode1, "keyspace3")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), null, null, null,
-                true);
+        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), null,
+                null, null);
 
         assertThat(response.getBody()).containsAll(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -458,8 +455,7 @@ public class TestOnDemandRepairManagementRESTImpl
         when(myReplicatedTableProvider.accept(mockNode1, "keyspace2")).thenReturn(true);
         when(myReplicatedTableProvider.accept(mockNode1, "keyspace3")).thenReturn(true);
         ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), null, null,
-                RepairType.INCREMENTAL,
-                true);
+                RepairType.INCREMENTAL);
 
         assertThat(response.getBody()).containsAll(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -478,7 +474,7 @@ public class TestOnDemandRepairManagementRESTImpl
         ResponseEntity<List<OnDemandRepair>> response = null;
         try
         {
-            response = OnDemandRest.runRepair(mockNodeId1.toString(), null, "table1", RepairType.VNODE, true);
+            response = OnDemandRest.runRepair(mockNodeId1.toString(), null, "table1", RepairType.VNODE);
         }
         catch (ResponseStatusException e)
         {
