@@ -80,14 +80,14 @@ public class OnDemandRepair
 
     public OnDemandRepair(final OnDemandRepairJobView repairJobView)
     {
-        this.id = repairJobView.getId();
-        this.hostId = repairJobView.getHostId();
-        this.keyspace = repairJobView.getTableReference().getKeyspace();
-        this.table = repairJobView.getTableReference().getTable();
-        this.status = repairJobView.getStatus();
-        this.repairedRatio = repairJobView.getProgress();
-        this.completedAt = repairJobView.getCompletionTime();
-        this.repairType = repairJobView.getRepairType();
+        this.id = repairJobView.id();
+        this.hostId = repairJobView.hostId();
+        this.keyspace = repairJobView.tableReference().getKeyspace();
+        this.table = repairJobView.tableReference().getTable();
+        this.status = repairJobView.status();
+        this.repairedRatio = repairJobView.progress();
+        this.completedAt = repairJobView.completionTime();
+        this.repairType = repairJobView.repairType();
     }
 
     /**

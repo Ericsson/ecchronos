@@ -28,7 +28,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 public class RepairStateImpl implements RepairState
 {
@@ -131,7 +130,7 @@ public class RepairStateImpl implements RepairState
         List<VnodeRepairState> repairableVnodes = updatedVnodeRepairStates.getVnodeRepairStates().stream()
                 .filter(this::replicasAreRepairable)
                 .filter(v -> vnodeIsRepairable(v, old, System.currentTimeMillis()))
-                .collect(Collectors.toList());
+                .toList();
 
         List<ReplicaRepairGroup> replicaRepairGroups
                 = myReplicaRepairGroupFactory.generateReplicaRepairGroups(repairableVnodes);
@@ -155,7 +154,7 @@ public class RepairStateImpl implements RepairState
         {
             if (repairedAt.isPartiallyRepaired())
             {
-                calculatedRepairedAt = partiallyRepairedTableRepairedAt(repairedAt.getMaxRepairedAt(), old);
+                calculatedRepairedAt = partiallyRepairedTableRepairedAt(repairedAt.maxRepairedAt(), old);
             }
             else
             {
@@ -164,7 +163,7 @@ public class RepairStateImpl implements RepairState
         }
         else
         {
-            calculatedRepairedAt = repairedTableRepairedAt(repairedAt.getMinRepairedAt(), old);
+            calculatedRepairedAt = repairedTableRepairedAt(repairedAt.minRepairedAt(), old);
         }
         return calculatedRepairedAt;
     }

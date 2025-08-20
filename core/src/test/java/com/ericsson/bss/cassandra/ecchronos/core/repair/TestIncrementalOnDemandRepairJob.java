@@ -90,10 +90,10 @@ public class TestIncrementalOnDemandRepairJob
         assertThat(repairJob.getId()).isEqualTo(repairJob.getId());
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
         assertThat(repairJob.getTableReference()).isEqualTo(myTableReference);
-        assertThat(repairJob.getView().getTableReference()).isEqualTo(expectedView.getTableReference());
-        assertThat(repairJob.getView().getStatus()).isEqualTo(expectedView.getStatus());
-        assertThat(repairJob.getView().getHostId()).isEqualTo(expectedView.getHostId());
-        assertThat(repairJob.getView().getRepairType()).isEqualTo(expectedView.getRepairType());
+        assertThat(repairJob.getView().tableReference()).isEqualTo(expectedView.tableReference());
+        assertThat(repairJob.getView().status()).isEqualTo(expectedView.status());
+        assertThat(repairJob.getView().hostId()).isEqualTo(expectedView.hostId());
+        assertThat(repairJob.getView().repairType()).isEqualTo(expectedView.repairType());
     }
 
     @Test
@@ -106,10 +106,10 @@ public class TestIncrementalOnDemandRepairJob
                 OnDemandRepairJobView.Status.ERROR, 0, System.currentTimeMillis(), RepairOptions.RepairType.INCREMENTAL);
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
         assertThat(repairJob.getTableReference()).isEqualTo(myTableReference);
-        assertThat(repairJob.getView().getTableReference()).isEqualTo(expectedView.getTableReference());
-        assertThat(repairJob.getView().getStatus()).isEqualTo(expectedView.getStatus());
-        assertThat(repairJob.getView().getHostId()).isEqualTo(expectedView.getHostId());
-        assertThat(repairJob.getView().getRepairType()).isEqualTo(expectedView.getRepairType());
+        assertThat(repairJob.getView().tableReference()).isEqualTo(expectedView.tableReference());
+        assertThat(repairJob.getView().status()).isEqualTo(expectedView.status());
+        assertThat(repairJob.getView().hostId()).isEqualTo(expectedView.hostId());
+        assertThat(repairJob.getView().repairType()).isEqualTo(expectedView.repairType());
     }
 
     @Test
@@ -121,10 +121,10 @@ public class TestIncrementalOnDemandRepairJob
                 OnDemandRepairJobView.Status.ERROR, 0, System.currentTimeMillis(), RepairOptions.RepairType.INCREMENTAL);
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
         assertThat(repairJob.getTableReference()).isEqualTo(myTableReference);
-        assertThat(repairJob.getView().getTableReference()).isEqualTo(expectedView.getTableReference());
-        assertThat(repairJob.getView().getStatus()).isEqualTo(expectedView.getStatus());
-        assertThat(repairJob.getView().getHostId()).isEqualTo(expectedView.getHostId());
-        assertThat(repairJob.getView().getRepairType()).isEqualTo(expectedView.getRepairType());
+        assertThat(repairJob.getView().tableReference()).isEqualTo(expectedView.tableReference());
+        assertThat(repairJob.getView().status()).isEqualTo(expectedView.status());
+        assertThat(repairJob.getView().hostId()).isEqualTo(expectedView.hostId());
+        assertThat(repairJob.getView().repairType()).isEqualTo(expectedView.repairType());
     }
 
     @Test
@@ -137,10 +137,10 @@ public class TestIncrementalOnDemandRepairJob
         assertThat(repairJob.getId()).isEqualTo(repairJob.getId());
         assertThat(repairJob.getLastSuccessfulRun()).isEqualTo(-1);
         assertThat(repairJob.getTableReference()).isEqualTo(myTableReference);
-        assertThat(repairJob.getView().getTableReference()).isEqualTo(expectedView.getTableReference());
-        assertThat(repairJob.getView().getStatus()).isEqualTo(expectedView.getStatus());
-        assertThat(repairJob.getView().getHostId()).isEqualTo(expectedView.getHostId());
-        assertThat(repairJob.getView().getRepairType()).isEqualTo(expectedView.getRepairType());
+        assertThat(repairJob.getView().tableReference()).isEqualTo(expectedView.tableReference());
+        assertThat(repairJob.getView().status()).isEqualTo(expectedView.status());
+        assertThat(repairJob.getView().hostId()).isEqualTo(expectedView.hostId());
+        assertThat(repairJob.getView().repairType()).isEqualTo(expectedView.repairType());
     }
 
     @Test

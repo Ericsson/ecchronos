@@ -22,17 +22,8 @@ import java.util.Collection;
  * A value of {@link Long#MAX_VALUE} indicates that no repair information is available.
  * A value of {@link VnodeRepairState#UNREPAIRED} indicates that the status is unknown.
  */
-public final class RepairedAt
+public record RepairedAt(long minRepairedAt, long maxRepairedAt)
 {
-    private final long myMinRepairedAt;
-    private final long myMaxRepairedAt;
-
-    private RepairedAt(final long minRepairedAt, final long maxRepairedAt)
-    {
-        myMinRepairedAt = minRepairedAt;
-        myMaxRepairedAt = maxRepairedAt;
-    }
-
     /**
      * Check if all vnodes have repaired at information.
      *
@@ -40,7 +31,7 @@ public final class RepairedAt
      */
     public boolean isRepaired()
     {
-        return myMinRepairedAt != Long.MAX_VALUE && myMinRepairedAt != VnodeRepairState.UNREPAIRED;
+        return minRepairedAt != Long.MAX_VALUE && minRepairedAt != VnodeRepairState.UNREPAIRED;
     }
 
     /**
@@ -50,34 +41,14 @@ public final class RepairedAt
      */
     public boolean isPartiallyRepaired()
     {
-        return myMinRepairedAt == VnodeRepairState.UNREPAIRED && myMaxRepairedAt != myMinRepairedAt;
-    }
-
-    /**
-     * Get the highest repaired at for the vnodes.
-     *
-     * @return The highest repaired at.
-     */
-    public long getMaxRepairedAt()
-    {
-        return myMaxRepairedAt;
-    }
-
-    /**
-     * Get the lowest repaired at for the vnodes.
-     *
-     * @return The lowest repaired at.
-     */
-    public long getMinRepairedAt()
-    {
-        return myMinRepairedAt;
+        return minRepairedAt == VnodeRepairState.UNREPAIRED && maxRepairedAt != minRepairedAt;
     }
 
     @Override
     public String toString()
     {
         return String.format("(min=%d,max=%d,isRepaired=%b,isPartiallyRepaired=%b)",
-                getMinRepairedAt(), getMaxRepairedAt(), isRepaired(), isPartiallyRepaired());
+                minRepairedAt, maxRepairedAt, isRepaired(), isPartiallyRepaired());
     }
 
     /**

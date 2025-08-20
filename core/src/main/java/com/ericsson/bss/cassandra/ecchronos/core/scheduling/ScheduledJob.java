@@ -211,11 +211,10 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         {
             return true;
         }
-        if (o == null || getClass() != o.getClass())
+        if (!(o instanceof ScheduledJob that))
         {
             return false;
         }
-        ScheduledJob that = (ScheduledJob) o;
         return myBackoffInMs == that.myBackoffInMs
                 && myRunIntervalInMs == that.myRunIntervalInMs
                 && myLastSuccessfulRun == that.myLastSuccessfulRun
@@ -304,37 +303,14 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
 
     /**
      * The configuration of a job.
+     *
+     * @param priority The priority of the job
+     * @param runIntervalInMs The minimum amount of time to wait between each successful run
+     * @param backoffInMs The amount of time to wait before marking job as runnable after failing
+     * @param priorityGranularity The unit of time granularity used for priority calculation in scheduling jobs
      */
-    public static class Configuration
-    {
-        /**
-         * The priority of the job.
-         */
-        public final Priority priority;
-
-        /**
-         * The minimum amount of time to wait between each successful run.
-         */
-        public final long runIntervalInMs;
-
-        /**
-         * The amount of time to wait before marking job as runnable after failing.
-         */
-        public final long backoffInMs;
-
-        /**
-         * The unit of time granularity used for priority calculation in scheduling jobs.
-         */
-        public final TimeUnit priorityGranularity;
-
-        Configuration(final ConfigurationBuilder builder)
-        {
-            priority = builder.priority;
-            runIntervalInMs = builder.runIntervalInMs;
-            backoffInMs = builder.backoffInMs;
-            priorityGranularity = builder.granularityUnit;
-        }
-    }
+    public record Configuration(Priority priority, long runIntervalInMs, long backoffInMs, TimeUnit priorityGranularity)
+    { }
 
     /**
      * Builder class for the {@link Configuration}.
@@ -372,7 +348,7 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
 
         public final Configuration build()
         {
-            return new Configuration(this);
+            return new Configuration(priority, runIntervalInMs, backoffInMs, granularityUnit);
         }
     }
 }

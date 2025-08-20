@@ -73,13 +73,13 @@ class CASLock implements DistributedLock, Runnable
         List<NodePriority> nodePriorities = computePriorities();
 
         myLocallyHighestPriority = nodePriorities.stream()
-                .filter(n -> n.getUuid().equals(myUuid))
-                .map(NodePriority::getPriority)
+                .filter(n -> n.uuid().equals(myUuid))
+                .map(NodePriority::priority)
                 .findFirst()
             .orElse(myPriority);
         globalHighPriority = nodePriorities.stream()
-                .filter(n -> !n.getUuid().equals(myUuid))
-                .map(NodePriority::getPriority)
+                .filter(n -> !n.uuid().equals(myUuid))
+                .map(NodePriority::priority)
                 .max(Integer::compare)
                 .orElse(myPriority);
     }
@@ -94,8 +94,8 @@ class CASLock implements DistributedLock, Runnable
                 ScheduledExecutorService executor = myCasLockStatement.getCasLockProperties().getExecutor();
                 LOG.trace("Lock for resource {} acquired", myResource);
                 ScheduledFuture<?> future = executor.scheduleAtFixedRate(this,
-                myCasLockStatement.getCasLockFactoryCacheContext().getLockUpdateTimeInSeconds(),
-                myCasLockStatement.getCasLockFactoryCacheContext().getLockUpdateTimeInSeconds(), TimeUnit.SECONDS);
+                myCasLockStatement.getCasLockFactoryCacheContext().lockUpdateTimeInSeconds(),
+                myCasLockStatement.getCasLockFactoryCacheContext().lockUpdateTimeInSeconds(), TimeUnit.SECONDS);
                 myUpdateFuture.set(future);
 
                 return true;
@@ -117,7 +117,7 @@ class CASLock implements DistributedLock, Runnable
         {
             int failedAttempts = myFailedUpdateAttempts.incrementAndGet();
 
-            if (failedAttempts >= myCasLockStatement.getCasLockFactoryCacheContext().getFailedLockRetryAttempts())
+            if (failedAttempts >= myCasLockStatement.getCasLockFactoryCacheContext().failedLockRetryAttempts())
             {
                 LOG.error("Unable to re-lock resource '{}' after {} failed attempts", myResource, failedAttempts);
             }
@@ -214,4 +214,6 @@ class CASLock implements DistributedLock, Runnable
         return myFailedUpdateAttempts.get();
     }
 
+    private record NodePriority(UUID uuid, int priority)
+    { }
 }

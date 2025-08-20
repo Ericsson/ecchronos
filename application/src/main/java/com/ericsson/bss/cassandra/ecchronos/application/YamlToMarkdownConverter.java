@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public final class YamlToMarkdownConverter
 {
@@ -64,7 +63,7 @@ public final class YamlToMarkdownConverter
                 BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream)))
         {
 
-            lines = reader.lines().collect(Collectors.toList());
+            lines = reader.lines().toList();
         }
 
         List<String> filteredLines = new ArrayList<>();

@@ -24,7 +24,6 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
@@ -125,8 +124,8 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
     {
         OnDemandRepairJobView currentJob = scheduleJob(tableReference, true, repairType);
         return getAllClusterWideRepairJobs().stream()
-                .filter(j -> j.getId().equals(currentJob.getId()))
-                .collect(Collectors.toList());
+                .filter(j -> j.id().equals(currentJob.id()))
+                .toList();
     }
 
     /**
@@ -185,7 +184,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         {
             return myScheduledJobs.values().stream()
                     .map(OnDemandRepairJob::getView)
-                    .collect(Collectors.toList());
+                    .toList();
         }
     }
 
@@ -200,7 +199,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         return myOnDemandStatus.getAllClusterWideJobs().stream()
                 .map(job -> getOngoingRepairJob(job))
                 .map(OnDemandRepairJob::getView)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -214,7 +213,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         return myOnDemandStatus.getAllJobs(myReplicationState).stream()
                 .map(job -> getOngoingRepairJob(job))
                 .map(OnDemandRepairJob::getView)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private void removeScheduledJob(final UUID id)

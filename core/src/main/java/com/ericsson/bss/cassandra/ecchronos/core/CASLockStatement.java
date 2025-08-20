@@ -48,11 +48,11 @@ public class CASLockStatement
     private final PreparedStatement myGetLockMetadataStatement;
 
     private final CASLockProperties myCasLockProperties;
-    private final CASLockFactoryCacheContext myCasLockFactoryCacheContext;
+    private final CASLockFactory.CASLockFactoryCacheContext myCasLockFactoryCacheContext;
 
     public CASLockStatement(
         final CASLockProperties casLockProperties,
-        final CASLockFactoryCacheContext casLockFactoryCacheContext)
+        final CASLockFactory.CASLockFactoryCacheContext casLockFactoryCacheContext)
     {
         myCasLockProperties = casLockProperties;
         myCasLockFactoryCacheContext = casLockFactoryCacheContext;
@@ -211,7 +211,7 @@ public class CASLockStatement
         return myGetLockMetadataStatement;
     }
 
-    public final CASLockFactoryCacheContext getCasLockFactoryCacheContext()
+    public final CASLockFactory.CASLockFactoryCacheContext getCasLockFactoryCacheContext()
     {
         return myCasLockFactoryCacheContext;
     }

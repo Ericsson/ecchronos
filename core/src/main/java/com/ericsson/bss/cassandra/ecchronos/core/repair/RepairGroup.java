@@ -191,7 +191,7 @@ public class RepairGroup extends ScheduledTask
             myReplicaRepairGroup.iterator().forEachRemaining(combinedRanges::add);
             tasks.add(new VnodeRepairTask(myJmxProxyFactory, myTableReference, myRepairConfiguration,
                     myTableRepairMetrics, myRepairHistory, combinedRanges,
-                    new HashSet<>(myReplicaRepairGroup.getReplicas()), myJobId));
+                    new HashSet<>(myReplicaRepairGroup.replicas()), myJobId));
         }
         else
         {
@@ -201,7 +201,7 @@ public class RepairGroup extends ScheduledTask
                 {
                     tasks.add(new VnodeRepairTask(myJmxProxyFactory, myTableReference, myRepairConfiguration,
                             myTableRepairMetrics, myRepairHistory, Collections.singleton(subRange),
-                            new HashSet<>(myReplicaRepairGroup.getReplicas()), myJobId));
+                            new HashSet<>(myReplicaRepairGroup.replicas()), myJobId));
                 }
             }
         }

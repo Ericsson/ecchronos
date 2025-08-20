@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.REPAIR_MANAGEMENT_ENDPOINT_PREFIX;
 import static com.ericsson.bss.cassandra.ecchronos.rest.RestUtils.parseIdOrThrow;
@@ -100,7 +99,7 @@ public class ScheduleRepairManagementRESTImpl implements ScheduleRepairManagemen
         return myRepairScheduler.getCurrentRepairJobs().stream()
                 .filter(filter)
                 .map(Schedule::new)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private Schedule getScheduleView(final String id, final boolean full)

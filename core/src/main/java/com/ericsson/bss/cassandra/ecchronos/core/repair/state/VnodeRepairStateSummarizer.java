@@ -148,7 +148,7 @@ public final class VnodeRepairStateSummarizer
 
         return mySummarizedRanges.stream()
                 .map(myBaseVnode::transform)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private void splitOverlapping()
