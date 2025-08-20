@@ -219,7 +219,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         try
         {
             List<OnDemandRepair> onDemandRepairs;
-            if ( nodeID == null && !all)
+            if (nodeID == null && !all)
             {
                 throw new ResponseStatusException(BAD_REQUEST, "If a node is not specified then parameter all should be true");
             }
