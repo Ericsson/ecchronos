@@ -52,9 +52,10 @@ public interface OnDemandRepairManagementREST
      * @param keyspace The keyspace of the table
      * @param table The table
      * @param repairType The type of repair (optional)
+     * @param all run for all nodes, must be true if nodeIDis missing (optional)
      * @return A JSON representation of {@link OnDemandRepair}
      */
     ResponseEntity<List<OnDemandRepair>> runRepair(
-            String nodeID, String keyspace, String table, RepairType repairType);
+            String nodeID, String keyspace, String table, RepairType repairType, boolean all);
 }
 

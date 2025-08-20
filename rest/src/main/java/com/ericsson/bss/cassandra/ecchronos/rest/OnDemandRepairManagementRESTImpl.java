@@ -134,9 +134,13 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             final String table,
             @RequestParam(required = false)
             @Parameter(description = "The type of the repair, defaults to vnode.")
-            final RepairType repairType)
+            final RepairType repairType,
+            @RequestParam(required = false, defaultValue = "false")
+            @Parameter(description = "The type of the repair, defaults to vnode.")
+            final boolean all)
+
     {
-        return ResponseEntity.ok(runOnDemandRepair(nodeID, keyspace, table, getRepairTypeOrDefault(repairType)));
+        return ResponseEntity.ok(runOnDemandRepair(nodeID, keyspace, table, getRepairTypeOrDefault(repairType), all));
     }
 
     private RepairType getRepairTypeOrDefault(final RepairType repairType)
@@ -209,11 +213,16 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
     private List<OnDemandRepair> runOnDemandRepair(
             final String nodeID,
             final String keyspace, final String table,
-            final RepairType repairType)
+            final RepairType repairType,
+            final boolean all)
     {
         try
         {
             List<OnDemandRepair> onDemandRepairs;
+            if ( nodeID == null && !all)
+            {
+                throw new ResponseStatusException(BAD_REQUEST, "If a node is not specified then parameter all should be true");
+            }
 
             UUID nodeUUID = nodeID == null  ? null : parseIdOrThrow(nodeID);
 
@@ -237,7 +246,11 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         }
     }
 
-    private List<OnDemandRepair> getOnDemandRepairsForKeyspace(String keyspace, String table, RepairType repairType, UUID nodeUUID) throws EcChronosException {
+    private List<OnDemandRepair> getOnDemandRepairsForKeyspace(final String keyspace,
+                                                               final String table,
+                                                               final RepairType repairType,
+                                                               final UUID nodeUUID) throws EcChronosException
+    {
         List<OnDemandRepair> onDemandRepairs;
         if (table != null)
         {
