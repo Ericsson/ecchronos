@@ -219,10 +219,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         try
         {
             List<OnDemandRepair> onDemandRepairs;
-            if (nodeID == null && !all)
-            {
-                throw new ResponseStatusException(BAD_REQUEST, "If a node is not specified then parameter all should be true");
-            }
+            checkValidClusterRun(nodeID, all);
 
             UUID nodeUUID = nodeID == null  ? null : parseIdOrThrow(nodeID);
 
@@ -243,6 +240,13 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         catch (EcChronosException e)
         {
             throw new ResponseStatusException(NOT_FOUND, NOT_FOUND.getReasonPhrase(), e);
+        }
+    }
+
+    private static void checkValidClusterRun(final String nodeID, final boolean all) {
+        if (nodeID == null && !all)
+        {
+            throw new ResponseStatusException(BAD_REQUEST, "If a node is not specified then parameter all should be true");
         }
     }
 
