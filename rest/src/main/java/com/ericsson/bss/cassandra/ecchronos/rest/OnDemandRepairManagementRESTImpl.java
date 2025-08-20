@@ -243,7 +243,8 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         }
     }
 
-    private static void checkValidClusterRun(final String nodeID, final boolean all) {
+    private static void checkValidClusterRun(final String nodeID, final boolean all)
+    {
         if (nodeID == null && !all)
         {
             throw new ResponseStatusException(BAD_REQUEST, "If a node is not specified then parameter all should be true");
