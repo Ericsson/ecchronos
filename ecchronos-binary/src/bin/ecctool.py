@@ -139,7 +139,9 @@ def add_run_repair_subcommand(sub_parsers):
     parser_run_repair.add_argument("-t", "--table", type=str,
                                    help="Run repair for the specified table. Keyspace argument -k or --keyspace "
                                         "becomes mandatory if using this argument.", required=False)
-
+    parser_run_repair.add_argument("-a", "--all",
+                                   help="Run repair for all nodes "
+                                        , required=False, action='store_true')
 
 def add_repair_info_subcommand(sub_parsers):
     parser_repair_info = sub_parsers.add_parser("repair-info",
@@ -274,8 +276,14 @@ def run_repair(arguments):
     if not arguments.keyspace and arguments.table:
         print("--keyspace must be specified if table is specified")
         sys.exit(1)
+    if not arguments.id and not arguments.all:
+        print("--all must be specified if nodeid is not included")
+        sys.exit(1)
+    if arguments.id and arguments.all:
+        print("--all must not be specified if nodeid is included")
+        sys.exit(1)
     result = request.post(node_id=arguments.id, keyspace=arguments.keyspace, table=arguments.table,
-                          repair_type=arguments.repair_type)
+                          repair_type=arguments.repair_type, allnodes=arguments.all)
     if result.is_successful():
         table_printer.print_repairs(result.data)
     else:

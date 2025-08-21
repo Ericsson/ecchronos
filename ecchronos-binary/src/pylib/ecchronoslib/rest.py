@@ -225,19 +225,22 @@ class RepairSchedulerRequest(RestRequest):
 
         return result
 
-    def post(self, node_id=None, keyspace=None, table=None, repair_type="vnode"):
+    def post(self, node_id=None, keyspace=None, table=None, repair_type="vnode", allnodes="false"): # pylint: disable=too-many-arguments, too-many-positional-arguments
         request_url = RepairSchedulerRequest.repair_run_url
+        separator = "?"
         if node_id:
-            request_url += "?nodeID=" + node_id
+            request_url += separator + "nodeID=" + node_id
+            separator = "&"
         if keyspace:
-            request_url += "?keyspace=" + keyspace
+            request_url += separator + "keyspace=" + keyspace
+            separator = "&"
             if table:
                 request_url += "&table=" + table
         if repair_type:
-            if keyspace:
-                request_url += "&repairType=" + repair_type
-            else:
-                request_url += "?repairType=" + repair_type
+            request_url += separator + "repairType=" + repair_type
+            separator = "&"
+        if allnodes is True :
+            request_url += separator + "all=true"
         result = self.request(request_url, 'POST')
         if result.is_successful():
             result = result.transform_with_data(new_data=[Repair(x) for x in result.data])
