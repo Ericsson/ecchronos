@@ -130,7 +130,7 @@ public class RejectConfigREST
         ResultSet rs;
         try
         {
-            if (!bucket.getDcExclusions().isEmpty())
+            if (!bucket.dcExclusions().isEmpty())
             {
                 rs = myTimeBasedRunPolicy.dropDatacenterExclusion(bucket);
             }

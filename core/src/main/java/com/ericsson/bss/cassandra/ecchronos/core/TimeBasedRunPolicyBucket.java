@@ -16,66 +16,14 @@ package com.ericsson.bss.cassandra.ecchronos.core;
 
 import java.util.Set;
 
-public class TimeBasedRunPolicyBucket
+public record TimeBasedRunPolicyBucket(
+    String keyspaceName,
+    String tableName,
+    Integer startHour,
+    Integer startMinute,
+    Integer endHour,
+    Integer endMinute,
+    Set<String> dcExclusions
+)
 {
-    private final String keyspaceName;
-    private final String tableName;
-    private final Integer startHour;
-    private final Integer startMinute;
-    private final Integer endHour;
-    private final Integer endMinute;
-    private final Set<String> dcExclusions;
-
-    public TimeBasedRunPolicyBucket(
-            final String myKeyspaceName,
-            final String myTableName,
-            final Integer myStartHour,
-            final Integer myStartMinute,
-            final Integer myEndHour,
-            final Integer myEndMinute,
-            final Set<String> myDcExclusions)
-    {
-        this.keyspaceName = myKeyspaceName;
-        this.tableName = myTableName;
-        this.startHour = myStartHour;
-        this.startMinute = myStartMinute;
-        this.endHour = myEndHour;
-        this.endMinute = myEndMinute;
-        this.dcExclusions = myDcExclusions;
-    }
-
-    public final String getKeyspaceName()
-    {
-        return keyspaceName;
-    }
-
-    public final String getTableName()
-    {
-        return tableName;
-    }
-
-    public final Integer getStartHour()
-    {
-        return startHour;
-    }
-
-    public final Integer getStartMinute()
-    {
-        return startMinute;
-    }
-
-    public final Integer getEndHour()
-    {
-        return endHour;
-    }
-
-    public final Integer getEndMinute()
-    {
-        return endMinute;
-    }
-
-    public final Set<String> getDcExclusions()
-    {
-        return dcExclusions;
-    }
 }

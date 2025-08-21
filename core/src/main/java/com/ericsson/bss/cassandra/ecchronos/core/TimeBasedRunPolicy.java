@@ -185,13 +185,13 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     public final ResultSet addRejection(final TimeBasedRunPolicyBucket bucket)
     {
         Statement decoratedStatement =
-                myStatementDecorator.apply(myCreateRejectionsStatement.bind(bucket.getKeyspaceName(),
-                        bucket.getTableName(),
-                        bucket.getStartHour(),
-                        bucket.getStartMinute(),
-                        bucket.getEndHour(),
-                        bucket.getEndMinute(),
-                        bucket.getDcExclusions()));
+                myStatementDecorator.apply(myCreateRejectionsStatement.bind(bucket.keyspaceName(),
+                        bucket.tableName(),
+                        bucket.startHour(),
+                        bucket.startMinute(),
+                        bucket.endHour(),
+                        bucket.endMinute(),
+                        bucket.dcExclusions()));
         return mySession.execute(decoratedStatement);
     }
 
@@ -199,11 +199,11 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     {
         Statement decoratedStatement =
                 myStatementDecorator.apply(myAddDcExclusionStatement.bind(
-                        bucket.getDcExclusions(),
-                        bucket.getKeyspaceName(),
-                        bucket.getTableName(),
-                        bucket.getStartHour(),
-                        bucket.getStartMinute()));
+                        bucket.dcExclusions(),
+                        bucket.keyspaceName(),
+                        bucket.tableName(),
+                        bucket.startHour(),
+                        bucket.startMinute()));
         return mySession.execute(decoratedStatement);
     }
 
@@ -211,11 +211,11 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     public final ResultSet dropDatacenterExclusion(final TimeBasedRunPolicyBucket bucket)
     {
         Statement decoratedStatement =
-                myStatementDecorator.apply(myDropDcExclusionStatement.bind(bucket.getDcExclusions(),
-                        bucket.getKeyspaceName(),
-                        bucket.getTableName(),
-                        bucket.getStartHour(),
-                        bucket.getStartMinute()));
+                myStatementDecorator.apply(myDropDcExclusionStatement.bind(bucket.dcExclusions(),
+                        bucket.keyspaceName(),
+                        bucket.tableName(),
+                        bucket.startHour(),
+                        bucket.startMinute()));
         return mySession.execute(decoratedStatement);
     }
 
@@ -223,10 +223,10 @@ public class TimeBasedRunPolicy implements TableRepairPolicy, RunPolicy, Closeab
     {
         Statement decoratedStatement =
                 myStatementDecorator.apply(myDeleteStatement.bind(
-                        bucket.getKeyspaceName(),
-                        bucket.getTableName(),
-                        bucket.getStartHour(),
-                        bucket.getStartMinute()));
+                        bucket.keyspaceName(),
+                        bucket.tableName(),
+                        bucket.startHour(),
+                        bucket.startMinute()));
         return mySession.execute(decoratedStatement);
     }
 
