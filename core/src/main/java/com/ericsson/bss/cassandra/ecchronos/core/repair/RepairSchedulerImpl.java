@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 import com.ericsson.bss.cassandra.ecchronos.core.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.AlarmPostUpdateHook;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
@@ -68,6 +69,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     private final List<TableRepairPolicy> myRepairPolicies;
     private final RepairHistory myRepairHistory;
     private final CassandraMetrics myCassandraMetrics;
+    private final TimeBasedRunPolicy myTimeBasedRunPolicy;
 
     private RepairSchedulerImpl(final Builder builder)
     {
@@ -84,6 +86,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         myRepairPolicies = new ArrayList<>(builder.myRepairPolicies);
         myCassandraMetrics = builder.myCassandraMetrics;
         myRepairHistory = builder.myRepairHistory;
+        myTimeBasedRunPolicy = builder.myTimeBasedRunPolicy;
     }
 
     @Override
@@ -284,6 +287,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
                     .withTableStorageStates(myTableStorageStates)
                     .withRepairPolices(myRepairPolicies)
                     .withRepairHistory(myRepairHistory)
+                    .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                     .build();
 
         }
@@ -308,6 +312,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         private TableStorageStates myTableStorageStates;
         private RepairHistory myRepairHistory;
         private CassandraMetrics myCassandraMetrics;
+        private TimeBasedRunPolicy myTimeBasedRunPolicy;
         private final List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
 
         /**
@@ -439,6 +444,18 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         public Builder withCassandraMetrics(final CassandraMetrics cassandraMetrics)
         {
             myCassandraMetrics = cassandraMetrics;
+            return this;
+        }
+
+        /**
+         * Build with TimeBasedRunPolicy.
+         *
+         * @param timeBasedRunPolicy TimeBasedRunPolicy.
+         * @return Builder
+         */
+        public Builder withTimeBasedRunPolicy(final TimeBasedRunPolicy timeBasedRunPolicy)
+        {
+            myTimeBasedRunPolicy = timeBasedRunPolicy;
             return this;
         }
 

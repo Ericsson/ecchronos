@@ -149,6 +149,7 @@ public class TestTableRepairJob
                 .withTableStorageStates(myTableStorageStates)
                 .withRepairHistory(myRepairHistory)
                 .withRepairPolices(myRepairPolicies)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build();
     }
 
@@ -690,6 +691,7 @@ public class TestTableRepairJob
                 .withRepairLockType(RepairLockType.VNODE)
                 .withTableStorageStates(myTableStorageStates)
                 .withRepairHistory(myRepairHistory)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build();
 
         long lastRepaired = System.currentTimeMillis();
@@ -734,6 +736,7 @@ public class TestTableRepairJob
                 .withRepairLockType(RepairLockType.VNODE)
                 .withTableStorageStates(myTableStorageStates)
                 .withRepairHistory(myRepairHistory)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build();
 
         long diffLargeEnoughForOverflow = (long) (Integer.MAX_VALUE / myRepairJob.getPriority().getValue())

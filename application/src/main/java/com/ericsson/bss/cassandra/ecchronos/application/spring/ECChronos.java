@@ -104,6 +104,7 @@ public class ECChronos implements Closeable
                 .withRepairLockType(repairConfig.getRepairLockType())
                 .withTableStorageStates(myECChronosInternals.getTableStorageStates())
                 .withRepairPolicies(Collections.singletonList(myTimeBasedRunPolicy))
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .withRepairHistory(repairHistory)
                 .withCassandraMetrics(myECChronosInternals.getCassandraMetrics())
                 .build();
@@ -130,6 +131,7 @@ public class ECChronos implements Closeable
                 .withRepairConfiguration(repairConfig.asRepairConfiguration())
                 .withRepairHistory(repairHistory)
                 .withOnDemandStatus(new OnDemandStatus(nativeConnectionProvider))
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build();
         myRepairStatsProvider = new RepairStatsProviderImpl(new VnodeRepairStateFactoryImpl(replicationState,
                 repairHistoryProvider,

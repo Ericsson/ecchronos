@@ -141,7 +141,7 @@ public class TestRepairGroupTasks
         when(mockRepairLockFactory.getLock(eq(mockLockFactory), eq(repairResources), eq(metadata), eq(priority))).thenReturn(new DummyLock());
         when(myTimeBasedRunPolicy.shouldRun(any(TableReference.class))).thenReturn(true);
 
-        RepairGroup repairGroup = builderFor(replicaRepairGroup).withRepairPolicies(myRepairPolicies).build(priority);
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).withTimeBasedRunPolicy(myTimeBasedRunPolicy).withRepairPolicies(myRepairPolicies).build(priority);
 
         assertThat(repairGroup.execute()).isTrue();
 
@@ -177,6 +177,7 @@ public class TestRepairGroupTasks
 
         RepairGroup repairGroup = builderFor(replicaRepairGroup)
                 .withRepairPolicies(myRepairPolicies)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build(priority);
 
         assertThat(repairGroup.execute()).isFalse();

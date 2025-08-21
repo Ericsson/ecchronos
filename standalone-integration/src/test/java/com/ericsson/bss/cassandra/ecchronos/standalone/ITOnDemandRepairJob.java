@@ -41,6 +41,7 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.token.TokenRange;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.internal.core.metadata.token.Murmur3Token;
+import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairOptions;
 import org.assertj.core.util.Lists;
 import org.junit.After;
@@ -158,6 +159,12 @@ public class ITOnDemandRepairJob extends TestBase
                 .withRunInterval(100, TimeUnit.MILLISECONDS)
                 .build();
 
+        TimeBasedRunPolicy myTimeBasedRunPolicy = TimeBasedRunPolicy.builder()
+                .withSession(session)
+                .withStatementDecorator(s -> s)
+                .withLocalNode(myLocalHost)
+                .build();
+
         myRepairSchedulerImpl = OnDemandRepairSchedulerImpl.builder()
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .withTableRepairMetrics(mockTableRepairMetrics)
@@ -168,6 +175,7 @@ public class ITOnDemandRepairJob extends TestBase
                 .withRepairConfiguration(RepairConfiguration.DEFAULT)
                 .withRepairHistory(myEccRepairHistory)
                 .withOnDemandStatus(new OnDemandStatus(getNativeConnectionProvider()))
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build();
     }
 

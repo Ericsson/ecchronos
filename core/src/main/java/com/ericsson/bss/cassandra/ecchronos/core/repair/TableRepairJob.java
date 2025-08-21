@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairState;
@@ -53,6 +54,7 @@ public class TableRepairJob extends ScheduledRepairJob
     private final RepairState myRepairState;
     private final TableStorageStates myTableStorageStates;
     private final RepairHistory myRepairHistory;
+    private final TimeBasedRunPolicy myTimeBasedRunPolicy;
 
     TableRepairJob(final Builder builder)
     {
@@ -66,6 +68,8 @@ public class TableRepairJob extends ScheduledRepairJob
                         "Table storage states must be set");
         myRepairHistory = Preconditions.checkNotNull(builder.repairHistory,
                 "Repair history must be set");
+        myTimeBasedRunPolicy = Preconditions.checkNotNull(builder.myTimeBasedRunPolicy,
+                "TimeBasedRunPolicy must be set");
     }
 
     /**
@@ -159,7 +163,8 @@ public class TableRepairJob extends ScheduledRepairJob
                         .withTokensPerRepair(tokensPerRepair)
                         .withRepairPolicies(getRepairPolicies())
                         .withRepairHistory(myRepairHistory)
-                        .withJobId(getId());
+                        .withJobId(getId())
+                        .withTimeBasedRunPolicy(myTimeBasedRunPolicy);
 
                 taskList.add(builder.build(getRealPriority(replicaRepairGroup.getLastCompletedAt())));
             }
@@ -326,13 +331,15 @@ public class TableRepairJob extends ScheduledRepairJob
         }
         TableRepairJob that = (TableRepairJob) o;
         return Objects.equals(myRepairState, that.myRepairState) && Objects.equals(myTableStorageStates,
-                that.myTableStorageStates) && Objects.equals(myRepairHistory, that.myRepairHistory);
+                that.myTableStorageStates) && Objects.equals(myRepairHistory, that.myRepairHistory)
+                && Objects.equals(myTimeBasedRunPolicy, that.myTimeBasedRunPolicy);
     }
 
     @Override
     public final int hashCode()
     {
-        return Objects.hash(super.hashCode(), myRepairState, myTableStorageStates, myRepairHistory);
+        return Objects.hash(super.hashCode(), myRepairState, myTableStorageStates, myRepairHistory,
+                myTimeBasedRunPolicy);
     }
 
     @SuppressWarnings("VisibilityModifier")
@@ -351,6 +358,7 @@ public class TableRepairJob extends ScheduledRepairJob
         private TableStorageStates tableStorageStates;
         private final List<TableRepairPolicy> repairPolicies = new ArrayList<>();
         private RepairHistory repairHistory;
+        private TimeBasedRunPolicy myTimeBasedRunPolicy;
 
         /**
          * Build table repair job with configuration.
@@ -479,6 +487,18 @@ public class TableRepairJob extends ScheduledRepairJob
         public Builder withRepairHistory(final RepairHistory aRepairHistory)
         {
             this.repairHistory = aRepairHistory;
+            return this;
+        }
+
+        /**
+         * Build with TimeBasedRunPolicy.
+         *
+         * @param timeBasedRunPolicy TimeBasedRunPolicy.
+         * @return Builder
+         */
+        public Builder withTimeBasedRunPolicy(final TimeBasedRunPolicy timeBasedRunPolicy)
+        {
+            myTimeBasedRunPolicy = timeBasedRunPolicy;
             return this;
         }
 

@@ -184,7 +184,7 @@ public class TestRepairGroup
 
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(nodes, ImmutableList.of(range), System.currentTimeMillis());
 
-        RepairGroup repairGroup = builderFor(replicaRepairGroup).withRepairPolicies(myRepairPolicies).build(priority);
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).withTimeBasedRunPolicy(myTimeBasedRunPolicy).withRepairPolicies(myRepairPolicies).build(priority);
 
         Collection<RepairTask> repairTasks = repairGroup.getRepairTasks();
 
@@ -246,6 +246,7 @@ public class TestRepairGroup
         RepairGroup repairGroup = builderFor(replicaRepairGroup)
                 .withTokensPerRepair(tokensPerRange)
                 .withRepairPolicies(myRepairPolicies)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build(priority);
 
         Collection<RepairTask> repairTasks = repairGroup.getRepairTasks();
@@ -290,7 +291,8 @@ public class TestRepairGroup
                 .withRepairType(RepairOptions.RepairType.PARALLEL_VNODE)
                 .build();
 
-        RepairGroup repairGroup = builderFor(replicaRepairGroup).withRepairConfiguration(repairConfiguration).withRepairPolicies(myRepairPolicies).build(priority);
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).withRepairConfiguration(repairConfiguration)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy).withRepairPolicies(myRepairPolicies).build(priority);
 
         Collection<RepairTask> repairTasks = repairGroup.getRepairTasks();
 
@@ -319,7 +321,8 @@ public class TestRepairGroup
 
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(node, node2), vnodes, System.currentTimeMillis());
 
-        RepairGroup repairGroup = builderFor(replicaRepairGroup).withRepairPolicies(myRepairPolicies).build(priority);
+        RepairGroup repairGroup = builderFor(replicaRepairGroup)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy).withRepairPolicies(myRepairPolicies).build(priority);
 
         Collection<RepairTask> tasks = repairGroup.getRepairTasks();
 

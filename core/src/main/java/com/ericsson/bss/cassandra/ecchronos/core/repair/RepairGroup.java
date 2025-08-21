@@ -59,6 +59,7 @@ public class RepairGroup extends ScheduledTask
     private final RepairLockFactory myRepairLockFactory;
     private final List<TableRepairPolicy> myRepairPolicies;
     private final UUID myJobId;
+    private final TimeBasedRunPolicy myTimeBasedRunPolicy;
     private BigInteger myTokensPerRepair;
     private RepairHistory myRepairHistory;
 
@@ -81,6 +82,7 @@ public class RepairGroup extends ScheduledTask
                 .checkNotNull(builder.myRepairLockFactory, "Repair lock factory must be set");
         myRepairPolicies = new ArrayList<>(Preconditions
                 .checkNotNull(builder.myRepairPolicies, "Repair policies must be set"));
+        myTimeBasedRunPolicy = builder.myTimeBasedRunPolicy;
         if (!myRepairConfiguration.getRepairType().equals(RepairOptions.RepairType.INCREMENTAL))
         {
             myRepairHistory = Preconditions
@@ -219,8 +221,7 @@ public class RepairGroup extends ScheduledTask
         Set<DriverNode> allowedParticipants = new HashSet<>();
         for (DriverNode node: participants)
         {
-            TimeBasedRunPolicy timeBasedRunPolicy = (TimeBasedRunPolicy) myRepairPolicies.stream().findFirst().get();
-            if (timeBasedRunPolicy.shouldReplicaBeIncluded(tableReference, node))
+            if (myTimeBasedRunPolicy.shouldReplicaBeIncluded(tableReference, node))
             {
                 allowedParticipants.add(node);
             }
@@ -245,6 +246,7 @@ public class RepairGroup extends ScheduledTask
         private List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
         private BigInteger myTokensPerRepair = LongTokenRange.FULL_RANGE;
         private RepairHistory myRepairHistory;
+        private TimeBasedRunPolicy myTimeBasedRunPolicy;
         private UUID myJobId;
 
         /**
@@ -376,6 +378,18 @@ public class RepairGroup extends ScheduledTask
         public Builder withJobId(final UUID jobId)
         {
             myJobId = jobId;
+            return this;
+        }
+
+        /**
+         * Build with TimeBasedRunPolicy.
+         *
+         * @param timeBasedRunPolicy TimeBasedRunPolicy.
+         * @return Builder
+         */
+        public Builder withTimeBasedRunPolicy(final TimeBasedRunPolicy timeBasedRunPolicy)
+        {
+            myTimeBasedRunPolicy = timeBasedRunPolicy;
             return this;
         }
 

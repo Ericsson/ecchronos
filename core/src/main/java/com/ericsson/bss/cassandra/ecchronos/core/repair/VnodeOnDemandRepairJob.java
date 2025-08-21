@@ -18,6 +18,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 import static com.ericsson.bss.cassandra.ecchronos.core.repair.OngoingJob.Status;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
@@ -54,6 +55,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
     private final RepairHistory myRepairHistory;
     private final Map<ScheduledTask, Set<LongTokenRange>> myTasks;
     private final int myTotalTokens;
+    private final TimeBasedRunPolicy myTimeBasedRunPolicy;
 
     private VnodeOnDemandRepairJob(final Builder builder)
     {
@@ -61,6 +63,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
                 builder.repairLockType, builder.onFinishedHook, builder.tableRepairMetrics, builder.ongoingJob);
         myRepairHistory = Preconditions.checkNotNull(builder.repairHistory,
                 "Repair history must be set");
+        myTimeBasedRunPolicy = builder.myTimeBasedRunPolicy;
         myTotalTokens = getOngoingJob().getTokens().size();
         myTasks = createRepairTasks(getOngoingJob().getTokens(), getOngoingJob().getRepairedTokens());
     }
@@ -108,6 +111,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
                     .withRepairLockFactory(REPAIR_LOCK_FACTORY)
                     .withRepairHistory(myRepairHistory)
                     .withJobId(getId())
+                    .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                     .build(ScheduledJob.Priority.HIGHEST.getValue()), groupTokenRange);
         }
         return taskMap;
@@ -220,6 +224,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         };
         private RepairHistory repairHistory;
         private OngoingJob ongoingJob;
+        private TimeBasedRunPolicy myTimeBasedRunPolicy;
 
         public final Builder withJmxProxyFactory(final JmxProxyFactory aJMXProxyFactory)
         {
@@ -260,6 +265,18 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         public final Builder withOngoingJob(final OngoingJob anOngoingJob)
         {
             this.ongoingJob = anOngoingJob;
+            return this;
+        }
+
+        /**
+         * Build with TimeBasedRunPolicy.
+         *
+         * @param timeBasedRunPolicy TimeBasedRunPolicy.
+         * @return Builder
+         */
+        public Builder withTimeBasedRunPolicy(final TimeBasedRunPolicy timeBasedRunPolicy)
+        {
+            myTimeBasedRunPolicy = timeBasedRunPolicy;
             return this;
         }
 
