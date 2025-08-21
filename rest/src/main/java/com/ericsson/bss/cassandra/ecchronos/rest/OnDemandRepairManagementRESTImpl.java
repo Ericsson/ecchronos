@@ -37,11 +37,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
-import java.util.Collections;
+
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
+import java.util.Collections;
+import java.util.Collection;
+import java.util.Set;
+import java.util.ArrayList;
+
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -132,11 +135,12 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             @RequestParam(required = false)
             @Parameter(description = "The type of the repair, defaults to vnode.")
             final RepairType repairType,
-            @RequestParam(required = false)
-            @Parameter(description = "Decides if the repair should be only for the specified node, i.e not cluster-wide.")
-            final boolean isLocal)
+            @RequestParam(required = false, defaultValue = "false")
+            @Parameter(description = "The type of the repair, defaults to vnode.")
+            final boolean all)
+
     {
-        return ResponseEntity.ok(runOnDemandRepair(nodeID, keyspace, table, getRepairTypeOrDefault(repairType), isLocal));
+        return ResponseEntity.ok(runOnDemandRepair(nodeID, keyspace, table, getRepairTypeOrDefault(repairType), all));
     }
 
     private RepairType getRepairTypeOrDefault(final RepairType repairType)
@@ -209,32 +213,19 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
     private List<OnDemandRepair> runOnDemandRepair(
             final String nodeID,
             final String keyspace, final String table,
-            final RepairType repairType, final boolean isLocal)
+            final RepairType repairType,
+            final boolean all)
     {
         try
         {
             List<OnDemandRepair> onDemandRepairs;
+            checkValidClusterRun(nodeID, all);
 
-            UUID nodeUUID = searchNodeID(nodeID);
+            UUID nodeUUID = nodeID == null  ? null : parseIdOrThrow(nodeID);
 
             if (keyspace != null)
             {
-                if (table != null)
-                {
-                    TableReference tableReference = myTableReferenceFactory.forTable(keyspace, table);
-                    if (tableReference == null)
-                    {
-                        throw new ResponseStatusException(NOT_FOUND,
-                                "Table " + keyspace + "." + table + " does not exist");
-                    }
-                    onDemandRepairs = runLocalOrCluster(nodeUUID, repairType, isLocal,
-                            Collections.singleton(myTableReferenceFactory.forTable(keyspace, table)));
-                }
-                else
-                {
-                    onDemandRepairs = runLocalOrCluster(nodeUUID, repairType, isLocal,
-                            myTableReferenceFactory.forKeyspace(keyspace));
-                }
+                onDemandRepairs = getOnDemandRepairsForKeyspace(keyspace, table, repairType, nodeUUID);
             }
             else
             {
@@ -242,7 +233,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 {
                     throw new ResponseStatusException(BAD_REQUEST, "Keyspace must be provided if table is provided");
                 }
-                onDemandRepairs = runLocalOrCluster(nodeUUID, repairType, isLocal, myTableReferenceFactory.forCluster());
+                onDemandRepairs = runLocalOrCluster(nodeUUID, repairType, myTableReferenceFactory.forCluster());
             }
             return onDemandRepairs;
         }
@@ -252,13 +243,37 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         }
     }
 
-    private UUID searchNodeID(final String nodeID)
+    private static void checkValidClusterRun(final String nodeID, final boolean all)
     {
-        if (nodeID == null || nodeID.isEmpty())
+        if (nodeID == null && !all)
         {
-            return myDistributedNativeConnectionProvider.getNodes().values().stream().findAny().get().getHostId();
+            throw new ResponseStatusException(BAD_REQUEST, "If a node is not specified then parameter all should be true");
         }
-        return parseIdOrThrow(nodeID);
+    }
+
+    private List<OnDemandRepair> getOnDemandRepairsForKeyspace(final String keyspace,
+                                                               final String table,
+                                                               final RepairType repairType,
+                                                               final UUID nodeUUID) throws EcChronosException
+    {
+        List<OnDemandRepair> onDemandRepairs;
+        if (table != null)
+        {
+            TableReference tableReference = myTableReferenceFactory.forTable(keyspace, table);
+            if (tableReference == null)
+            {
+                throw new ResponseStatusException(NOT_FOUND,
+                        "Table " + keyspace + "." + table + " does not exist");
+            }
+            onDemandRepairs = runLocalOrCluster(nodeUUID, repairType,
+                    Collections.singleton(myTableReferenceFactory.forTable(keyspace, table)));
+        }
+        else
+        {
+            onDemandRepairs = runLocalOrCluster(nodeUUID, repairType,
+                    myTableReferenceFactory.forKeyspace(keyspace));
+        }
+        return onDemandRepairs;
     }
 
     private static Predicate<OnDemandRepairJobView> forTableOnDemand(final String keyspace, final String table)
@@ -290,30 +305,40 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
     private List<OnDemandRepair> runLocalOrCluster(
             final UUID nodeID,
             final RepairType repairType,
-            final boolean isLocal,
             final Set<TableReference> tables)
             throws EcChronosException
     {
+        if (nodeID == null)
+        {
+            return runForCluster(repairType, tables);
+        }
         List<OnDemandRepair> onDemandRepairs = new ArrayList<>();
         Node node = myDistributedNativeConnectionProvider.getNodes().get(nodeID);
         for (TableReference tableReference : tables)
         {
-            if (isLocal)
+           if (myReplicatedTableProvider.accept(node, tableReference.getKeyspace()))
             {
-                if (myReplicatedTableProvider.accept(node, tableReference.getKeyspace()))
+                onDemandRepairs.add(new OnDemandRepair(
+                        myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, nodeID)));
+            }
+        }
+        return onDemandRepairs;
+    }
+    private List<OnDemandRepair> runForCluster(
+            final RepairType repairType,
+            final Set<TableReference> tables)
+            throws EcChronosException
+    {
+        List<OnDemandRepair> onDemandRepairs = new ArrayList<>();
+        for (TableReference tableReference : tables)
+        {
+            Collection<Node> availableNodes = myDistributedNativeConnectionProvider.getNodes().values();
+            for (Node eachNode : availableNodes)
+            {
+                if (myReplicatedTableProvider.accept(eachNode, tableReference.getKeyspace()))
                 {
                     onDemandRepairs.add(new OnDemandRepair(
-                            myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, nodeID)));
-                }
-            }
-            else
-            {
-                if (myReplicatedTableProvider.accept(node, tableReference.getKeyspace()))
-                {
-                    List<OnDemandRepairJobView> repairJobView = myOnDemandRepairScheduler.scheduleClusterWideJob(
-                            tableReference, repairType);
-                    onDemandRepairs.addAll(
-                            repairJobView.stream().map(view -> new OnDemandRepair(view)).collect(Collectors.toList()));
+                            myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, eachNode.getHostId())));
                 }
             }
         }

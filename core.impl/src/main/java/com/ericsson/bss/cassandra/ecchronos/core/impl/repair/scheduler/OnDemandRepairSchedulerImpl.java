@@ -15,7 +15,6 @@
 package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
-import com.datastax.oss.driver.api.core.metadata.NodeState;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.IncrementalOnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandRepairJob;
@@ -41,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -159,30 +157,14 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
     public List<OnDemandRepairJobView> scheduleClusterWideJob(final TableReference tableReference,
                                                               final RepairType repairType) throws EcChronosException
     {
-        UUID randomAvailableNodeId = selectRandomAvailableNode();
-        OnDemandRepairJobView jobView = scheduleJob(tableReference, true, repairType, randomAvailableNodeId);
+        List<Node> availableNodes = myOnDemandStatus.getNodes();
+        for (Node node : availableNodes)
+        {
+            scheduleJob(tableReference, true, repairType, node.getHostId());
+        }
         List<OnDemandRepairJobView> jobViews = getAllClusterWideRepairJobs().stream()
-                .filter(j -> j.getNodeId().equals(jobView.getNodeId()))
                 .collect(Collectors.toList());
         return jobViews;
-    }
-
-    private UUID selectRandomAvailableNode() throws EcChronosException
-    {
-        List<Node> availableNodes = myOnDemandStatus.getNodes()
-                .stream()
-                .filter(node -> node.getState() == NodeState.UP)
-                .collect(Collectors.toList());
-
-        if (availableNodes.isEmpty())
-        {
-            throw new EcChronosException("No available nodes are up and connected to act as coordinator");
-        }
-
-        Random random = new Random();
-        Node selectedNode = availableNodes.get(random.nextInt(availableNodes.size()));
-
-        return selectedNode.getHostId();
     }
 
     /**
