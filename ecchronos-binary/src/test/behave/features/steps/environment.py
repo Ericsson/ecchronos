@@ -1,5 +1,5 @@
 #
-# Copyright 2022 Telefonaktiebolaget LM Ericsson
+# Copyright 2025 Telefonaktiebolaget LM Ericsson
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -76,7 +76,6 @@ def wait_for_local_repairs_to_complete(context):
             "SELECT host_id, job_id, status FROM ecchronos.on_demand_repair_status"
         )
         for row in rows:
-#            if row.host_id == context.environment.host_id:
              if row.status == "started":
                  uncompleted_repairs += 1
         if uncompleted_repairs < 1:

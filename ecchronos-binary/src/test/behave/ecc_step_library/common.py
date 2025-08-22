@@ -1,5 +1,5 @@
 #
-# Copyright 2020 Telefonaktiebolaget LM Ericsson
+# Copyright 2025 Telefonaktiebolaget LM Ericsson
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,8 +44,6 @@ def match_and_remove_row(rows, expected_row):
     row_idx = -1
     found_row = None
 
-    print (rows)
-
     for idx, row in enumerate(rows):
         row = strip_and_collapse(row)
         if re.match(expected_row, row):
@@ -55,8 +53,6 @@ def match_and_remove_row(rows, expected_row):
 
     assert row_idx != -1, "{0} not found in {1}".format(expected_row, rows)
     del rows[row_idx]
-    print ("After")
-    print (rows)
 
     return found_row
 
@@ -199,13 +195,11 @@ def step_send_post_request(context):
 
 @then("the response is successful")
 def step_verify_response_is_successful(context):
-    print( context.response.status_code )
     assert context.response is not None
     assert context.response.status_code == 200
 
 @then("the response is bad request")
 def step_verify_response_is_bad_request(context):
-    print( context.response.status_code )
     assert context.response is not None
     assert context.response.status_code == 400
 

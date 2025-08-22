@@ -1,5 +1,5 @@
 #
-# Copyright 2022 Telefonaktiebolaget LM Ericsson
+# Copyright 2025 Telefonaktiebolaget LM Ericsson
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,8 +48,6 @@ def step_list_repairs_for_keyspace(context, keyspace):
 @when("we list repairs {keyspace}.{table} with a limit of {limit}")
 def step_show_repair_with_limit(context, keyspace, table, limit):
     run_ecc_repair_status(context, ["--keyspace", keyspace, "--table", table, "--limit", limit])
-#    run_ecc_repair_status(context, ["--id", get_job_id(context), "--limit", limit])
-#    run_ecc_repair_status(context, [ "--limit", limit])
     handle_repair_output(context)
 
 
