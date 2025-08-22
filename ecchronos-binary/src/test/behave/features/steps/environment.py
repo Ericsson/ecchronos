@@ -58,7 +58,7 @@ def before_all(context):
     session = cluster.connect()
     context.environment.session = session
     host = cluster.metadata.get_host(cassandra_address)
-#    context.environment.host_id = host.host_id
+    context.environment.host_id = host.host_id
 
 
 def after_feature(context, feature):  # pylint: disable=unused-argument
@@ -76,9 +76,9 @@ def wait_for_local_repairs_to_complete(context):
             "SELECT host_id, job_id, status FROM ecchronos.on_demand_repair_status"
         )
         for row in rows:
-#           if row.host_id == context.environment.host_id:
-            if row.status == "started":
-                uncompleted_repairs += 1
+#            if row.host_id == context.environment.host_id:
+             if row.status == "started":
+                 uncompleted_repairs += 1
         if uncompleted_repairs < 1:
             break
         count += 1
