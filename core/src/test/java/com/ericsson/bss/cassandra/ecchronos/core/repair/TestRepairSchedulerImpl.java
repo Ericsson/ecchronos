@@ -17,10 +17,12 @@ package com.ericsson.bss.cassandra.ecchronos.core.repair;
 import com.ericsson.bss.cassandra.ecchronos.core.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.*;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledJob;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Before;
@@ -78,6 +80,9 @@ public class TestRepairSchedulerImpl
 
     @Mock
     private CassandraMetrics myCassandraMetrics;
+
+    @Mock
+    private TimeBasedRunPolicy myTimeBasedRunPolicy;
 
     @Before
     public void init() throws IOException
@@ -317,6 +322,7 @@ public class TestRepairSchedulerImpl
                 .withRepairLockType(RepairLockType.VNODE)
                 .withTableStorageStates(myTableStorageStates)
                 .withCassandraMetrics(myCassandraMetrics)
-                .withRepairHistory(myRepairHistory);
+                .withRepairHistory(myRepairHistory)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy);
     }
 }

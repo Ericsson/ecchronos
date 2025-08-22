@@ -91,6 +91,7 @@ public class ECChronos implements Closeable
                 .withSession(session)
                 .withStatementDecorator(statementDecorator)
                 .withKeyspaceName(configuration.getRunPolicy().getTimeBasedConfig().getKeyspaceName())
+                .withLocalNode(nativeConnectionProvider.getLocalNode())
                 .build();
 
         myRepairSchedulerImpl = RepairSchedulerImpl.builder()
@@ -103,6 +104,7 @@ public class ECChronos implements Closeable
                 .withRepairLockType(repairConfig.getRepairLockType())
                 .withTableStorageStates(myECChronosInternals.getTableStorageStates())
                 .withRepairPolicies(Collections.singletonList(myTimeBasedRunPolicy))
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .withRepairHistory(repairHistory)
                 .withCassandraMetrics(myECChronosInternals.getCassandraMetrics())
                 .build();
@@ -129,6 +131,7 @@ public class ECChronos implements Closeable
                 .withRepairConfiguration(repairConfig.asRepairConfiguration())
                 .withRepairHistory(repairHistory)
                 .withOnDemandStatus(new OnDemandStatus(nativeConnectionProvider))
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build();
         myRepairStatsProvider = new RepairStatsProviderImpl(new VnodeRepairStateFactoryImpl(replicationState,
                 repairHistoryProvider,
@@ -164,6 +167,12 @@ public class ECChronos implements Closeable
     public RepairStatsProvider repairStatsProvider()
     {
         return myRepairStatsProvider;
+    }
+
+    @Bean
+    public TimeBasedRunPolicy timeBasedRunPolicy()
+    {
+        return myTimeBasedRunPolicy;
     }
 
     @Override

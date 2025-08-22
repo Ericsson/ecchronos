@@ -2,7 +2,11 @@
 
 ## Version 6.1.0
 
+* Add Rejections sub-command - Issue #1015
+* Investigate Creation of a REST Endpoint to Disable Repairs at DC Level - Issue #1009
+
 ## Version 6.0.8
+
 
 ## Version 6.0.7
 

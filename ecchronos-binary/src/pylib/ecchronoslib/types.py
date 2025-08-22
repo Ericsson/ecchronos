@@ -181,3 +181,18 @@ class RepairStats(object):
 
     def to_dict(self):
         return self.__dict__
+
+
+class Rejection(object):
+    # pylint: disable=too-few-public-methods
+    def __init__(self, data):
+        self.keyspace = data["keyspaceName"] if "keyspaceName" in data else "<UNKNOWN>"
+        self.table = data["tableName"] if "tableName" in data else "<UNKNOWN>"
+        self.start_hour = data["startHour"] if "startHour" in data else -1
+        self.start_minute = data["startMinute"] if "startMinute" in data else -1
+        self.end_hour = data["endHour"] if "endHour" in data else -1
+        self.end_minute = data["endMinute"] if "endMinute" in data else -1
+        self.dc_exclusions = data["dcExclusions"] if "dcExclusions" in data else ["<UNKNOWN>"]
+
+    def to_dict(self):
+        return self.__dict__

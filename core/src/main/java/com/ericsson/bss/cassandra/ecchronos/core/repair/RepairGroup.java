@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.repair;
 
 import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.ScheduledJobException;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
@@ -22,6 +23,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.RepairHistory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.scheduling.ScheduledTask;
+import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TokenSubRangeUtil;
@@ -57,6 +59,7 @@ public class RepairGroup extends ScheduledTask
     private final RepairLockFactory myRepairLockFactory;
     private final List<TableRepairPolicy> myRepairPolicies;
     private final UUID myJobId;
+    private final TimeBasedRunPolicy myTimeBasedRunPolicy;
     private BigInteger myTokensPerRepair;
     private RepairHistory myRepairHistory;
 
@@ -79,6 +82,7 @@ public class RepairGroup extends ScheduledTask
                 .checkNotNull(builder.myRepairLockFactory, "Repair lock factory must be set");
         myRepairPolicies = new ArrayList<>(Preconditions
                 .checkNotNull(builder.myRepairPolicies, "Repair policies must be set"));
+        myTimeBasedRunPolicy = builder.myTimeBasedRunPolicy;
         if (!myRepairConfiguration.getRepairType().equals(RepairOptions.RepairType.INCREMENTAL))
         {
             myRepairHistory = Preconditions
@@ -187,26 +191,42 @@ public class RepairGroup extends ScheduledTask
         }
         else if (myRepairConfiguration.getRepairType().equals(RepairOptions.RepairType.PARALLEL_VNODE))
         {
+            Set<DriverNode> replicas = filterParticipants(myReplicaRepairGroup.getReplicas(), myTableReference);
+
             Set<LongTokenRange> combinedRanges = new LinkedHashSet<>();
             myReplicaRepairGroup.iterator().forEachRemaining(combinedRanges::add);
             tasks.add(new VnodeRepairTask(myJmxProxyFactory, myTableReference, myRepairConfiguration,
                     myTableRepairMetrics, myRepairHistory, combinedRanges,
-                    new HashSet<>(myReplicaRepairGroup.getReplicas()), myJobId));
+                    new HashSet<>(replicas), myJobId));
         }
         else
         {
+            Set<DriverNode> replicas = filterParticipants(myReplicaRepairGroup.getReplicas(), myTableReference);
             for (LongTokenRange range : myReplicaRepairGroup)
             {
                 for (LongTokenRange subRange : new TokenSubRangeUtil(range).generateSubRanges(myTokensPerRepair))
                 {
                     tasks.add(new VnodeRepairTask(myJmxProxyFactory, myTableReference, myRepairConfiguration,
                             myTableRepairMetrics, myRepairHistory, Collections.singleton(subRange),
-                            new HashSet<>(myReplicaRepairGroup.getReplicas()), myJobId));
+                            new HashSet<>(replicas), myJobId));
                 }
             }
         }
 
         return tasks;
+    }
+
+    private Set<DriverNode> filterParticipants(final Set<DriverNode> participants, final TableReference tableReference)
+    {
+        Set<DriverNode> allowedParticipants = new HashSet<>();
+        for (DriverNode node: participants)
+        {
+            if (myTimeBasedRunPolicy.shouldReplicaBeIncluded(tableReference, node))
+            {
+                allowedParticipants.add(node);
+            }
+        }
+        return allowedParticipants;
     }
 
     public static Builder newBuilder()
@@ -226,6 +246,7 @@ public class RepairGroup extends ScheduledTask
         private List<TableRepairPolicy> myRepairPolicies = new ArrayList<>();
         private BigInteger myTokensPerRepair = LongTokenRange.FULL_RANGE;
         private RepairHistory myRepairHistory;
+        private TimeBasedRunPolicy myTimeBasedRunPolicy;
         private UUID myJobId;
 
         /**
@@ -357,6 +378,18 @@ public class RepairGroup extends ScheduledTask
         public Builder withJobId(final UUID jobId)
         {
             myJobId = jobId;
+            return this;
+        }
+
+        /**
+         * Build with TimeBasedRunPolicy.
+         *
+         * @param timeBasedRunPolicy TimeBasedRunPolicy.
+         * @return Builder
+         */
+        public Builder withTimeBasedRunPolicy(final TimeBasedRunPolicy timeBasedRunPolicy)
+        {
+            myTimeBasedRunPolicy = timeBasedRunPolicy;
             return this;
         }
 

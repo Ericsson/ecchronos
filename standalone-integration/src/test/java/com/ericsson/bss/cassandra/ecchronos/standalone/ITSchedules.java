@@ -27,6 +27,7 @@ import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
 import com.ericsson.bss.cassandra.ecchronos.core.CASLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.HostStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockType;
@@ -226,6 +227,12 @@ public class ITSchedules extends TestBase
                 .withTableRepairMetrics(mockTableRepairMetrics)
                 .build();
 
+        TimeBasedRunPolicy myTimeBasedRunPolicy = TimeBasedRunPolicy.builder()
+                .withSession(session)
+                .withStatementDecorator(s -> s)
+                .withLocalNode(myLocalHost)
+                .build();
+
         myRepairSchedulerImpl = RepairSchedulerImpl.builder()
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .withTableRepairMetrics(mockTableRepairMetrics)
@@ -235,6 +242,7 @@ public class ITSchedules extends TestBase
                 .withRepairLockType(RepairLockType.VNODE)
                 .withTableStorageStates(mockTableStorageStates)
                 .withRepairHistory(eccRepairHistory)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build();
 
         myRepairConfiguration = RepairConfiguration.newBuilder()

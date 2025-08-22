@@ -31,6 +31,8 @@ import org.junit.runners.Parameterized;
 import java.time.*;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static com.ericsson.bss.cassandra.ecchronos.core.MockTableReferenceFactory.tableReference;
@@ -68,9 +70,9 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
     {
         myRepairJobMock = mock(TableRepairJob.class);
         mySession.execute(String.format("CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {'class': 'NetworkTopologyStrategy', 'DC1': 1}", myKeyspaceName));
-        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.reject_configuration (keyspace_name text, table_name text, start_hour int, start_minute int, end_hour int, end_minute int, PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute))", myKeyspaceName));
+        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.reject_configuration (keyspace_name text, table_name text, start_hour int, start_minute int, end_hour int, end_minute int, dc_exclusion set<text>, PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute))", myKeyspaceName));
 
-        insertRejectStatement = mySession.prepare(String.format("INSERT INTO %s.%s (keyspace_name, table_name, start_hour, start_minute, end_hour, end_minute) VALUES (?,?,?,?,?,?)", myKeyspaceName, TABLE_REJECT_CONFIGURATION));
+        insertRejectStatement = mySession.prepare(String.format("INSERT INTO %s.%s (keyspace_name, table_name, start_hour, start_minute, end_hour, end_minute, dc_exclusion) VALUES (?,?,?,?,?,?,?)", myKeyspaceName, TABLE_REJECT_CONFIGURATION));
     }
 
     @After
@@ -93,7 +95,7 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
     }
 
     @Test
-    public void testRejectedJob()
+    public void testRejectedJobInAllDCs()
     {
         String keyspace = "test";
         String table = "table";
@@ -105,7 +107,7 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
         policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
-        insertEntry(keyspace, table, 3, 0, 5, 0);
+        insertEntry(keyspace, table, 3, 0, 5, 0, "*");
 
         long delay = myRunPolicy.validate(myRepairJobMock);
 
@@ -114,7 +116,28 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
     }
 
     @Test
-    public void testNonRejectedJobRejectBefore()
+    public void testRejectedJobInLocalDc()
+    {
+        String keyspace = "test";
+        String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDateTime end = now.withHour(5).withMinute(0).withSecond(0);
+        long expectedDelay = Duration.between(LocalDateTime.now(clock), end).toMillis();
+
+        policyWithClock(clock);
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
+        insertEntry(keyspace, table, 3, 0, 5, 0, "DC1");
+
+        long delay = myRunPolicy.validate(myRepairJobMock);
+
+        assertThat(delay).isEqualTo(expectedDelay);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isFalse();
+    }
+
+    @Test
+    public void testRejectedJobInParentDc()
     {
         String keyspace = "test";
         String table = "table";
@@ -123,14 +146,16 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
         policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
-        insertEntry(keyspace, table, 2, 0, 4, 30);
+        insertEntry(keyspace, table, 3, 0, 5, 0, "DC2");
 
-        assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
+        long delay = myRunPolicy.validate(myRepairJobMock);
+
+        assertThat(delay).isEqualTo(-1L);
         assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
     }
 
     @Test
-    public void testNonRejectedJobRejectAfter()
+    public void testNonRejectedJobRejectBeforeInAllDCs()
     {
         String keyspace = "test";
         String table = "table";
@@ -139,14 +164,78 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
         policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
-        insertEntry(keyspace, table, 5, 0, 6, 0);
+        insertEntry(keyspace, table, 2, 0, 4, 30, "*");
 
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
         assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
     }
 
     @Test
-    public void testRejectedWraparoundBeforeEnd()
+    public void testNonRejectedJobRejectBeforeInLocalDc()
+    {
+        String keyspace = "test";
+        String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+
+        policyWithClock(clock);
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
+        insertEntry(keyspace, table, 2, 0, 4, 30, "DC1");
+
+        assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
+    }
+
+    @Test
+    public void testNonRejectedJobRejectAfterInAllDCs()
+    {
+        String keyspace = "test";
+        String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+
+        policyWithClock(clock);
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
+        insertEntry(keyspace, table, 5, 0, 6, 0, "*");
+
+        assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
+    }
+
+    @Test
+    public void testNonRejectedJobRejectAfterInAllLocalDc()
+    {
+        String keyspace = "test";
+        String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+
+        policyWithClock(clock);
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
+        insertEntry(keyspace, table, 5, 0, 6, 0, "DC1");
+
+        assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
+    }
+
+    @Test
+    public void testNonRejectedJobRejectAfterInAllParentDc()
+    {
+        String keyspace = "test";
+        String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+
+        policyWithClock(clock);
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
+        insertEntry(keyspace, table, 5, 0, 6, 0, "DC2");
+
+        assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
+    }
+
+    @Test
+    public void testRejectedWraparoundBeforeEndInAllDCs()
     {
         String keyspace = "test";
         String table = "table";
@@ -158,7 +247,7 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
         policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
-        insertEntry(keyspace, table, 6, 30, 5, 30);
+        insertEntry(keyspace, table, 6, 30, 5, 30, "*");
 
         long delay = myRunPolicy.validate(myRepairJobMock);
 
@@ -167,7 +256,46 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
     }
 
     @Test
-    public void testRejectedWraparoundWithAfterEnd()
+    public void testRejectedWraparoundBeforeEndInLocalDC()
+    {
+        String keyspace = "test";
+        String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDateTime end = now.withHour(5).withMinute(30).withSecond(0);
+        long expectedDelay = Duration.between(LocalDateTime.now(clock), end).toMillis();
+
+        policyWithClock(clock);
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
+        insertEntry(keyspace, table, 6, 30, 5, 30, "DC1");
+
+        long delay = myRunPolicy.validate(myRepairJobMock);
+
+        assertThat(delay).isEqualTo(expectedDelay);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isFalse();
+    }
+
+    @Test
+    public void testRejectedWraparoundBeforeEndInParentDC()
+    {
+        String keyspace = "test";
+        String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+
+        policyWithClock(clock);
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
+        insertEntry(keyspace, table, 6, 30, 5, 30, "DC2");
+
+        long delay = myRunPolicy.validate(myRepairJobMock);
+
+        assertThat(delay).isEqualTo(-1L);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
+    }
+
+    @Test
+    public void testRejectedWraparoundWithAfterEndInAllDCs()
     {
         String keyspace = "test";
         String table = "table";
@@ -179,7 +307,7 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
         policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
-        insertEntry(keyspace, table, 3, 30, 2, 30);
+        insertEntry(keyspace, table, 3, 30, 2, 30, "*");
 
         long delay = myRunPolicy.validate(myRepairJobMock);
 
@@ -188,7 +316,28 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
     }
 
     @Test
-    public void testNonRejectedWraparound()
+    public void testRejectedWraparoundWithAfterEndInLocalDC()
+    {
+        String keyspace = "test";
+        String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDateTime end = now.plusDays(1).withHour(2).withMinute(30).withSecond(0);
+        long expectedDelay = Duration.between(LocalDateTime.now(clock), end).toMillis();
+
+        policyWithClock(clock);
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
+        insertEntry(keyspace, table, 3, 30, 2, 30, "DC1");
+
+        long delay = myRunPolicy.validate(myRepairJobMock);
+
+        assertThat(delay).isEqualTo(expectedDelay);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isFalse();
+    }
+
+    @Test
+    public void testRejectedWraparoundWithAfterEndInParentDC()
     {
         String keyspace = "test";
         String table = "table";
@@ -197,14 +346,64 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
         policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
-        insertEntry(keyspace, table, 6, 30, 3, 30);
+        insertEntry(keyspace, table, 3, 30, 2, 30, "DC2");
+
+        long delay = myRunPolicy.validate(myRepairJobMock);
+
+        assertThat(delay).isEqualTo(-1L);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
+    }
+
+    @Test
+    public void testNonRejectedWraparoundInAllDCs()
+    {
+        String keyspace = "test";
+        String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+
+        policyWithClock(clock);
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
+        insertEntry(keyspace, table, 6, 30, 3, 30, "*");
 
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
         assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
     }
 
     @Test
-    public void testRejectAnyTable()
+    public void testNonRejectedWraparoundInLocalDC()
+    {
+        String keyspace = "test";
+        String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+
+        policyWithClock(clock);
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
+        insertEntry(keyspace, table, 6, 30, 3, 30, "DC1");
+
+        assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
+    }
+
+    @Test
+    public void testNonRejectedWraparoundInParentDC()
+    {
+        String keyspace = "test";
+        String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+
+        policyWithClock(clock);
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
+        insertEntry(keyspace, table, 6, 30, 3, 30, "DC2");
+
+        assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
+    }
+
+    @Test
+    public void testRejectAnyTableInAllDCs()
     {
         String keyspace1 = "test";
         String keyspace2 = "test2";
@@ -213,7 +412,7 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
         policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace1, table));
-        insertEntry("*", table, 0, 0, 0, 0);
+        insertEntry("*", table, 0, 0, 0, 0, "*");
 
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(DEFAULT_REJECT_TIME);
         assertThat(myRunPolicy.shouldRun(tableReference(keyspace1, table))).isFalse();
@@ -224,7 +423,48 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
     }
 
     @Test
-    public void testPausedJob()
+    public void testRejectAnyTableInLocalDC()
+    {
+        String keyspace1 = "test";
+        String keyspace2 = "test2";
+        String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+        policyWithClock(clock);
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace1, table));
+        insertEntry("*", table, 0, 0, 0, 0, "DC1");
+
+        assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(DEFAULT_REJECT_TIME);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace1, table))).isFalse();
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace2, table));
+        assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(DEFAULT_REJECT_TIME);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace2, table))).isFalse();
+    }
+
+    @Test
+    public void testRejectAnyTableInParentDC()
+    {
+        String keyspace1 = "test";
+        String keyspace2 = "test2";
+        String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+
+        policyWithClock(clock);
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace1, table));
+        insertEntry("*", table, 0, 0, 0, 0, "DC2");
+
+        assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace1, table))).isTrue();
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace2, table));
+        assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace2, table))).isTrue();
+    }
+
+    @Test
+    public void testPausedJobInAllDCs()
     {
         String keyspace = "test";
         String table = "table";
@@ -232,14 +472,14 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
         policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
-        insertEntry(keyspace, table, 0, 0, 0, 0);
+        insertEntry(keyspace, table, 0, 0, 0, 0, "*");
 
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(DEFAULT_REJECT_TIME);
         assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isFalse();
     }
 
     @Test
-    public void testAllPaused()
+    public void testPausedJobInLocalDC()
     {
         String keyspace = "test";
         String table = "table";
@@ -247,14 +487,14 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
         policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
-        insertEntry("*", "*", 0, 0, 0, 0);
+        insertEntry(keyspace, table, 0, 0, 0, 0, "DC1");
 
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(DEFAULT_REJECT_TIME);
         assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isFalse();
     }
 
     @Test
-    public void testAllPausedIsCached()
+    public void testPausedJobInParentDC()
     {
         String keyspace = "test";
         String table = "table";
@@ -262,7 +502,67 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
         policyWithClock(clock);
 
         when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
-        insertEntry("*", "*", 0, 0, 0, 0);
+        insertEntry(keyspace, table, 0, 0, 0, 0, "DC2");
+
+        assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
+    }
+
+    @Test
+    public void testAllPausedInAllDCs()
+    {
+        String keyspace = "test";
+        String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+        policyWithClock(clock);
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
+        insertEntry("*", "*", 0, 0, 0, 0, "*");
+
+        assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(DEFAULT_REJECT_TIME);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isFalse();
+    }
+
+    @Test
+    public void testAllPausedInLocalDC()
+    {
+        String keyspace = "test";
+        String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+        policyWithClock(clock);
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
+        insertEntry("*", "*", 0, 0, 0, 0, "DC1");
+
+        assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(DEFAULT_REJECT_TIME);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isFalse();
+    }
+
+    @Test
+    public void testAllPausedInParentDC()
+    {
+        String keyspace = "test";
+        String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+        policyWithClock(clock);
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
+        insertEntry("*", "*", 0, 0, 0, 0, "DC2");
+
+        assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
+    }
+
+    @Test
+    public void testAllPausedIsCachedInAllDCs()
+    {
+        String keyspace = "test";
+        String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+        policyWithClock(clock);
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
+        insertEntry("*", "*", 0, 0, 0, 0, "*");
 
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(DEFAULT_REJECT_TIME);
         assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isFalse();
@@ -271,6 +571,58 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
 
         assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(DEFAULT_REJECT_TIME);
         assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isFalse();
+
+        // Cache expires after 1 sec
+        await().pollInterval(500, TimeUnit.MILLISECONDS)
+                .atMost(2, TimeUnit.SECONDS)
+                .until(() -> myRunPolicy.validate(myRepairJobMock) == -1L);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
+    }
+
+    @Test
+    public void testAllPausedIsCachedInLocalDC()
+    {
+        String keyspace = "test";
+        String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+        policyWithClock(clock);
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
+        insertEntry("*", "*", 0, 0, 0, 0, "DC1");
+
+        assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(DEFAULT_REJECT_TIME);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isFalse();
+
+        mySession.execute(String.format("DELETE FROM %s.%s WHERE keyspace_name = '*' AND table_name = '*'", myKeyspaceName, TABLE_REJECT_CONFIGURATION));
+
+        assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(DEFAULT_REJECT_TIME);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isFalse();
+
+        // Cache expires after 1 sec
+        await().pollInterval(500, TimeUnit.MILLISECONDS)
+                .atMost(2, TimeUnit.SECONDS)
+                .until(() -> myRunPolicy.validate(myRepairJobMock) == -1L);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
+    }
+
+    @Test
+    public void testAllPausedIsCachedInParentDC()
+    {
+        String keyspace = "test";
+        String table = "table";
+        Clock clock = Clock.fixed(Instant.parse("2020-02-24T04:30:24Z"), UTC);
+        policyWithClock(clock);
+
+        when(myRepairJobMock.getTableReference()).thenReturn(tableReference(keyspace, table));
+        insertEntry("*", "*", 0, 0, 0, 0, "DC2");
+
+        assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
+
+        mySession.execute(String.format("DELETE FROM %s.%s WHERE keyspace_name = '*' AND table_name = '*'", myKeyspaceName, TABLE_REJECT_CONFIGURATION));
+
+        assertThat(myRunPolicy.validate(myRepairJobMock)).isEqualTo(-1L);
+        assertThat(myRunPolicy.shouldRun(tableReference(keyspace, table))).isTrue();
 
         // Cache expires after 1 sec
         await().pollInterval(500, TimeUnit.MILLISECONDS)
@@ -297,7 +649,7 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
                         .withKeyspaceName(myKeyspaceName)
                         .build());
 
-        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (keyspace_name text, table_name text, start_hour int, start_minute int, end_hour int, end_minute int, PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute))", myKeyspaceName, TABLE_REJECT_CONFIGURATION));
+        mySession.execute(String.format("CREATE TABLE IF NOT EXISTS %s.%s (keyspace_name text, table_name text, start_hour int, start_minute int, end_hour int, end_minute int, dc_exclusion set<text>, PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute))", myKeyspaceName, TABLE_REJECT_CONFIGURATION));
     }
 
     @Test
@@ -323,19 +675,22 @@ public class TestTimeBasedRunPolicy extends AbstractCassandraContainerTest
                 .withStatementDecorator(s -> s)
                 .withKeyspaceName(myKeyspaceName)
                 .withCacheExpireTime(TimeUnit.SECONDS.toMillis(1))
+                .withLocalNode(getNativeConnectionProvider().getLocalNode())
                 .withClock(clock)
                 .build();
     }
 
-    private void insertEntry(String keyspace, String table, int start_hour, int start_minute, int end_hour, int end_minute)
+    private void insertEntry(String keyspace, String table, int start_hour, int start_minute, int end_hour, int end_minute, String datacenter)
     {
+        Set<String> dcExclusionSet = Collections.singleton(datacenter);
         execute(insertRejectStatement.bind(
                 keyspace,
                 table,
                 start_hour,
                 start_minute,
                 end_hour,
-                end_minute));
+                end_minute,
+                dcExclusionSet));
     }
 
     private ResultSet execute(Statement statement)
