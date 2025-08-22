@@ -21,7 +21,6 @@ from cassandra.cluster import Cluster  # pylint: disable=no-name-in-module
 from cassandra.auth import PlainTextAuthProvider
 
 
-
 class Environment:
 
     cluster = None
@@ -38,7 +37,7 @@ def before_all(context):
 
     username = context.config.userdata.get("cql_user")
     password = context.config.userdata.get("cql_password")
-    auth_provider = None
+    auth_provider=None
     if (username and username != '') and (password and password != ''):
         auth_provider = PlainTextAuthProvider(username=username, password=password)
 
@@ -75,12 +74,11 @@ def wait_for_local_repairs_to_complete(context):
             'SELECT host_id, job_id, status FROM ecchronos.on_demand_repair_status'
         )
         for row in rows:
-            if row.status == 'started':
-                uncompleted_repairs += 1
+             if row.status == 'started':
+                 uncompleted_repairs += 1
         if uncompleted_repairs < 1:
             break
         count += 1
         time.sleep(1)
     assert count < timeout_seconds, 'All repairs did not finish in {0} seconds'.format(timeout_seconds)
     print('Waiting for repairs to finish took {0} seconds'.format(count))
-
