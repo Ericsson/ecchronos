@@ -236,8 +236,7 @@ def step_extract_id(context, keyspace, table):
             break
     assert context.jobid is not None
 
-
-@then("the job list contains only keyspace {keyspace}")
+@then('the job list contains only keyspace {keyspace}')
 def step_verify_job_list(context, keyspace):
     for obj in context.json:
         assert obj["keyspace"] == keyspace
