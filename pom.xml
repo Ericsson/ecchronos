@@ -85,7 +85,7 @@
         <org.apache.commons.commons-lang3.version>3.18.0</org.apache.commons.commons-lang3.version>
         <org.apache.httpcomponents.client5.httpclient5.version>5.5</org.apache.httpcomponents.client5.httpclient5.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.81</org.bouncycastle.bcpkix-jdk18on.version>
-        <org.springdoc.openapi-starter-webmvc-ui.version>2.8.10</org.springdoc.openapi-starter-webmvc-ui.version>
+        <org.springdoc.openapi-starter-webmvc-ui.version>2.8.11</org.springdoc.openapi-starter-webmvc-ui.version>
         <org.springframework.boot.spring-boot-starter-actuator.version>3.5.4</org.springframework.boot.spring-boot-starter-actuator.version>
         <org.springframework.boot.spring-boot-starter-thymeleaf.version>3.5.5</org.springframework.boot.spring-boot-starter-thymeleaf.version>
         <org.springframework.boot.spring-boot-starter-web.version>3.5.5</org.springframework.boot.spring-boot-starter-web.version>
