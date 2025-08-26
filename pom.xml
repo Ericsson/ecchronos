@@ -82,7 +82,6 @@
         <mockito.core.version>5.19.0</mockito.core.version>
         <org.apache.commons.io.version>2.20.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
-        <org.apache.commons.commons-lang3.version>3.18.0</org.apache.commons.commons-lang3.version>
         <org.apache.httpcomponents.client5.httpclient5.version>5.5</org.apache.httpcomponents.client5.httpclient5.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.81</org.bouncycastle.bcpkix-jdk18on.version>
         <org.springdoc.openapi-starter-webmvc-ui.version>2.8.11</org.springdoc.openapi-starter-webmvc-ui.version>
@@ -91,7 +90,6 @@
         <org.springframework.boot.spring-boot-starter-web.version>3.5.5</org.springframework.boot.spring-boot-starter-web.version>
         <org.springframework.spring-boot-test.version>3.5.5</org.springframework.spring-boot-test.version>
         <org.springframework.spring-test.version>6.2.10</org.springframework.spring-test.version>
-        <org.springframework.spring-webmvc.version>6.2.10</org.springframework.spring-webmvc.version>
         <org.yaml.snakeyaml.version>2.4</org.yaml.snakeyaml.version>
         <slf4j.version>2.0.17</slf4j.version>
         <swagger-annotations.version>2.2.36</swagger-annotations.version>
@@ -147,25 +145,11 @@
                 <scope>test</scope>
             </dependency>
 
-            <!-- Used by testcontainers and springdoc-openapi-starter-webmvc-ui, steped due to CVE-2025-48924 -->
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>${org.apache.commons.commons-lang3.version}</version>
-            </dependency>
-
             <!-- Used by java-driver -->
             <dependency>
                 <groupId>com.typesafe</groupId>
                 <artifactId>config</artifactId>
                 <version>${com.typesafe.config.version}</version>
-            </dependency>
-
-            <!-- Used by spring-boot-starter-web, stepd due to CVE.2025-41242 -->
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-webmvc</artifactId>
-                <version>${org.springframework.spring-webmvc.version}</version>
             </dependency>
 
             <!-- Used within prometheus, steped to keep them in sync -->
