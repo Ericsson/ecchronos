@@ -30,3 +30,9 @@ def step_check_node_count(context, count):
     assert context.response is not None
     context.json = context.response.json()
     assert len(context.json) == int(count)
+
+@then("the first nodeid from response is extracted from the node list")
+def extract_nodeid(context):
+    json = context.response.json()
+    context.nodeid = json[0]["nodeId"]
+
