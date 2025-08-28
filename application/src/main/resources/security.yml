@@ -32,7 +32,44 @@ cql:
     store_type: JKS
     cipher_suites:
     require_endpoint_verification: false
-
+    ##
+    ## Certificate Revocation List (CRL) configuration for ecChronos CQL connections. CRL
+    ## checking will be done in one of two modes; strict or non-strict. The CRL feature
+    ## is optional. If the crl section is not specified, it will default to disabled.
+    ##
+    ## strict     - A valid and signed CRL must exist for the provided certificate for a
+    ##              connection to be allowed. Therefore, a missing or empty CRL file
+    ##              will result in rejection. If rejected, a number of attempts will be
+    ##              made to refresh the CRL file (for any updates). If the last attempt
+    ##              fails, ecChronos will gracefully shut down.
+    ##
+    ## non-strict - Is more loose in its CRL checking in that already opened connections
+    ##              will be kept. CRL will only be carried out during new (re-)connections.
+    ##              Also, there must be an explicit revocation present for a certificate
+    ##              to be rejected. A missing or empty CRL will not result in rejected
+    ##              connections.
+    ##
+    crl:
+      ##
+      ## Enable CRL for CQL connections. Defaults to false.
+      ##
+      enabled: false
+      ##
+      ## Path to the CRL file.
+      ##
+      path: /path/to/file.crl
+      ##
+      ## Mode of operation. Defaults to false ("non-strict").
+      ##
+      strict: false
+      ##
+      ## Number of attempts at CRL rejections. Defaults to 5.
+      ##
+      attempts: 5
+      ##
+      ## How often (in seconds) to rescan the CRL file for modifications. Defaults to 5 minutes (300 seconds).
+      ##
+      interval: 300
 
 jmx:
   credentials:

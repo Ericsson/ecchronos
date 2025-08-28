@@ -27,6 +27,7 @@
         <exclude name="TooManyMethods"/>
         <exclude name="LawOfDemeter"/>
         <exclude name="AvoidCatchingGenericException"/> <!-- Should consider fixing this -->
+        <exclude name="AvoidDeeplyNestedIfStmts"/>
         <exclude name="AvoidUncheckedExceptionsInSignatures"/>
         <exclude name="ExcessiveImports"/>
         <exclude name="ExceptionAsFlowControl"/>
@@ -40,6 +41,7 @@
 
     <rule ref="category/java/errorprone.xml">
         <exclude name="CloseResource"/>
+        <exclude name="DoNotTerminateVM" />
         <exclude name="AvoidFieldNameMatchingMethodName"/>
         <exclude name="ReturnEmptyCollectionRatherThanNull"/>
         <exclude name="AvoidBranchingStatementAsLastInLoop"/>
