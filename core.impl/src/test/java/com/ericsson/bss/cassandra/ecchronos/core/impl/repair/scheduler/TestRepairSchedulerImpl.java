@@ -142,7 +142,7 @@ public class TestRepairSchedulerImpl
         verify(myRepairState, atLeastOnce()).update();
 
         repairSchedulerImpl.close();
-        verify(scheduleManager, times(1)).deschedule(eq(mockNodeID), any(ScheduledJob.class));
+        verify(scheduleManager, times(2)).deschedule(eq(mockNodeID), any(ScheduledJob.class));
 
         verifyNoMoreInteractions(ignoreStubs(myTableRepairMetrics));
         verifyNoMoreInteractions(myRepairStateFactory);

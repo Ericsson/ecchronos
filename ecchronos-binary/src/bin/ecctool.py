@@ -139,19 +139,22 @@ def add_run_repair_subcommand(sub_parsers):
     parser_run_repair.add_argument("-t", "--table", type=str,
                                    help="Run repair for the specified table. Keyspace argument -k or --keyspace "
                                         "becomes mandatory if using this argument.", required=False)
-
+    parser_run_repair.add_argument("-a", "--all",
+                                   help="Run repair for all nodes "
+                                        , required=False, action='store_true')
 
 def add_repair_info_subcommand(sub_parsers):
     parser_repair_info = sub_parsers.add_parser("repair-info",
-                                                description="Get information about repairs for tables. The repair "
-                                                            "information is based on repair history, meaning that "
-                                                            "both manual repairs and schedules will contribute to the "
-                                                            "repair information. This subcommand requires the user to "
-                                                            "provide either --since or --duration if --keyspace and "
-                                                            "--table is not provided. If repair info is fetched for a "
-                                                            "specific table using --keyspace and --table, "
-                                                            "the duration will default to the table's "
-                                                            "GC_GRACE_SECONDS.")
+                                        description="Get information about repairs for tables. The repair "
+                                                    "information is based on repair history, meaning that "
+                                                    "both manual repairs and schedules will contribute to "
+                                                    "the repair information. This subcommand requires the "
+                                                    "user to provide either --since or --duration if"
+                                                    "--keyspace and --table is not provided. "
+                                                    "If repair info is fetched for a "
+                                                    "specific table using --keyspace and --table, "
+                                                    "the duration will default to the table's "
+                                                    "GC_GRACE_SECONDS.")
     parser_repair_info.add_argument("-i", "--id", type=str,
                                   help="Show repair information matching the specified NodeID.")
     parser_repair_info.add_argument("-k", "--keyspace", type=str,
@@ -218,12 +221,14 @@ def schedules(arguments):
     result = None
     if arguments.id:
         if arguments.full and arguments.job is not None:
-            result = request.get_schedule(node_id=arguments.id, job_id=arguments.job, full=True)
+            result = request.get_schedule(node_id=arguments.id, keyspace=arguments.keyspace, table=arguments.table,
+                                                                                    job_id=arguments.job, full=True)
             full = True
         elif arguments.job is not None:
-            result = request.get_schedule(node_id=arguments.id, job_id=arguments.job, full=False)
+            result = request.get_schedule(node_id=arguments.id, keyspace=arguments.keyspace, table=arguments.table,
+                                                                                    job_id=arguments.job, full=False)
         else:
-            result = request.get_schedule(node_id=arguments.id)
+            result = request.get_schedule(node_id=arguments.id, keyspace=arguments.keyspace, table=arguments.table)
     elif arguments.full:
         print("Must specify NodeID and JobID with full")
         sys.exit(1)
@@ -274,8 +279,14 @@ def run_repair(arguments):
     if not arguments.keyspace and arguments.table:
         print("--keyspace must be specified if table is specified")
         sys.exit(1)
+    if not arguments.id and not arguments.all:
+        print("--all must be specified if nodeid is not included")
+        sys.exit(1)
+    if arguments.id and arguments.all:
+        print("--all must not be specified if nodeid is included")
+        sys.exit(1)
     result = request.post(node_id=arguments.id, keyspace=arguments.keyspace, table=arguments.table,
-                          repair_type=arguments.repair_type)
+                          repair_type=arguments.repair_type, allnodes=arguments.all)
     if result.is_successful():
         table_printer.print_repairs(result.data)
     else:

@@ -28,6 +28,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 public final class RestUtils
 {
     public static final String REPAIR_MANAGEMENT_ENDPOINT_PREFIX = "/repair-management";
+    public static final String INTERNAL_MANAGEMENT_ENDPOINT_PREFIX = "/state";
 
     private RestUtils()
     {

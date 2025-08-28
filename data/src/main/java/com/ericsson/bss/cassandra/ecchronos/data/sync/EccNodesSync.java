@@ -70,10 +70,13 @@ public final class EccNodesSync
     private final PreparedStatement myUpdateStatusStatement;
     private final PreparedStatement mySelectStatusStatement;
     private final PreparedStatement myDeleteStatement;
+
+    private final PreparedStatement myGetByEccInstanceStatement;
+    private final PreparedStatement myGetByEccInstanceAndDCStatement;
     private final Long connectionDelayValue;
     private final ChronoUnit connectionDelayUnit;
 
-    private EccNodesSync(final Builder builder) throws UnknownHostException
+    private EccNodesSync(final Builder builder)
     {
         mySession = Preconditions.checkNotNull(builder.mySession, "Session cannot be null");
         myNativeConnectionProvider = Preconditions
@@ -110,6 +113,18 @@ public final class EccNodesSync
                 .whereColumn(COLUMN_ECCHRONOS_ID).isEqualTo(bindMarker())
                 .build()
                 .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
+
+        myGetByEccInstanceStatement = mySession.prepare(selectFrom(KEYSPACE_NAME, TABLE_NAME).all()
+            .whereColumn(COLUMN_ECCHRONOS_ID).isEqualTo(bindMarker())
+            .build()
+            .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
+
+        myGetByEccInstanceAndDCStatement = mySession.prepare(selectFrom(KEYSPACE_NAME, TABLE_NAME).all()
+                .whereColumn(COLUMN_ECCHRONOS_ID).isEqualTo(bindMarker())
+                .whereColumn(COLUMN_DC_NAME).isEqualTo(bindMarker())
+                .build()
+                .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM));
+
         ecChronosID = builder.myEcchronosID;
 
         connectionDelayValue = builder.myConnectionDelayValue;
@@ -120,6 +135,18 @@ public final class EccNodesSync
     {
         // Bind the parameters
         BoundStatement boundStatement = mySelectStatusStatement.bind(ecChronosID);
+        return mySession.execute(boundStatement);
+    }
+
+    public ResultSet getAllByLocalInstance()
+    {
+        BoundStatement boundStatement = myGetByEccInstanceStatement.bind(ecChronosID);
+        return mySession.execute(boundStatement);
+    }
+
+    public ResultSet getAllByLocalAndDCInstance(final String dcName)
+    {
+        BoundStatement boundStatement = myGetByEccInstanceAndDCStatement.bind(ecChronosID, dcName);
         return mySession.execute(boundStatement);
     }
 

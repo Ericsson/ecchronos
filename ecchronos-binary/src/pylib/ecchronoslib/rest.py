@@ -149,8 +149,10 @@ class RepairSchedulerRequest(RestRequest):
     schedule_status_url = SCHEDULES
     schedule_id_status_url = SCHEDULES + '/{0}'
     schedule_id_job_status_url = SCHEDULES + '/{0}/{1}'
+    keyspace_and_table_url = '?keyspace={0}&table={1}'
+    keyspace_url = '?keyspace={0}'
 
-    schedule_id_job_full_status_url = schedule_id_job_status_url + '?full=true'
+
 
     repair_status_url = REPAIRS
     repair_id_status_url = REPAIRS + '/{0}'
@@ -164,14 +166,23 @@ class RepairSchedulerRequest(RestRequest):
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
 
-    def get_schedule(self, node_id, job_id=None, full=False):
+    def get_schedule(self, node_id, keyspace, table, job_id=None, full=False): # pylint: disable=too-many-arguments, too-many-positional-arguments
 
-        if full and job_id is not None:
-            request_url = RepairSchedulerRequest.schedule_id_job_full_status_url.format(node_id, job_id)
-        elif job_id is not None:
+        if job_id is not None:
             request_url = RepairSchedulerRequest.schedule_id_job_status_url.format(node_id, job_id)
         else:
             request_url = RepairSchedulerRequest.schedule_id_status_url.format(node_id)
+        if keyspace is not None and table is not None:
+            request_url = request_url + RepairSchedulerRequest.keyspace_and_table_url.format(keyspace, table)
+
+        if keyspace is not None and table is None:
+            request_url = request_url + RepairSchedulerRequest.keyspace_url.format(keyspace)
+        if full and keyspace is not None:
+            request_url = request_url + "&full=true"
+        if full and keyspace is None:
+            request_url = request_url + "?full=true"
+
+
 
         result = self.request(request_url)
         if result.is_successful():
@@ -179,7 +190,6 @@ class RepairSchedulerRequest(RestRequest):
                 result = result.transform_with_data(new_data=[Schedule(x) for x in result.data])
             else:
                 result = result.transform_with_data(new_data=FullSchedule(result.data))
-
         return result
 
     def get_repair(self, node_id, job_id):
@@ -224,20 +234,22 @@ class RepairSchedulerRequest(RestRequest):
             result = result.transform_with_data(new_data=[Repair(x) for x in result.data])
 
         return result
-
-    def post(self, node_id=None, keyspace=None, table=None, repair_type="vnode"):
+    def post(self, node_id=None, keyspace=None, table=None, repair_type="vnode", allnodes="false"): # pylint: disable=too-many-arguments, too-many-positional-arguments
         request_url = RepairSchedulerRequest.repair_run_url
+        separator = "?"
         if node_id:
-            request_url += "?nodeID=" + node_id
+            request_url += separator + "nodeID=" + node_id
+            separator = "&"
         if keyspace:
-            request_url += "?keyspace=" + keyspace
+            request_url += separator + "keyspace=" + keyspace
+            separator = "&"
             if table:
                 request_url += "&table=" + table
         if repair_type:
-            if keyspace:
-                request_url += "&repairType=" + repair_type
-            else:
-                request_url += "?repairType=" + repair_type
+            request_url += separator + "repairType=" + repair_type
+            separator = "&"
+        if allnodes is True :
+            request_url += separator + "all=true"
         result = self.request(request_url, 'POST')
         if result.is_successful():
             result = result.transform_with_data(new_data=[Repair(x) for x in result.data])
