@@ -109,7 +109,7 @@ public class Schedule
     public Schedule(final ScheduledRepairJobView repairJobView, final boolean full)
     {
         this(repairJobView);
-        if (full)
+        if (full && repairJobView.getRepairStateSnapshot() != null)
         {
             long repairedAfter
                     = System.currentTimeMillis() - repairJobView.getRepairConfiguration().getRepairIntervalInMs();
