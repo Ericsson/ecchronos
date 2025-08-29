@@ -126,10 +126,13 @@ public class StatisticsConfig
                 .getInterval(TimeUnit.SECONDS);
         if (triggerIntervalForMetricInspection >= repairTimeWindowInSeconds)
         {
-            throw new IllegalArgumentException(String.format("Repair window time must be greater than trigger interval."
-                            + " Current repair window time: %d seconds,"
-                            + " trigger interval for metric inspection: %d seconds",
-                    repairTimeWindowInSeconds, triggerIntervalForMetricInspection));
+            throw new IllegalArgumentException(String.format("""
+                            Repair window time must be greater than trigger interval.
+                             Current repair window time: %d seconds,
+                             trigger interval for metric inspection: %d seconds
+                            """,
+                    repairTimeWindowInSeconds,
+                    triggerIntervalForMetricInspection));
         }
      }
 

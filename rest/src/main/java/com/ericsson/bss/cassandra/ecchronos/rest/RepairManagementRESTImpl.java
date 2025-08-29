@@ -82,10 +82,12 @@ public class RepairManagementRESTImpl implements RepairManagementREST
     @Override
     @GetMapping(value = REPAIR_MANAGEMENT_ENDPOINT_PREFIX + "/repairInfo", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(operationId = "get-repair-info",
-            description = "Get repair information, if keyspace and table are provided while duration and since are"
-                    + " not, the duration will default to GC_GRACE_SECONDS of the table. "
-                    + "This operation might take time depending on the provided params since it's based on "
-                    + "the repair history.",
+            description = """
+                    Get repair information, if keyspace and table are provided while duration and since are
+                     not, the duration will default to GC_GRACE_SECONDS of the table.
+                     This operation might take time depending on the provided params since it's based on
+                     the repair history.
+                    """,
             summary = "Get repair information")
     public final ResponseEntity<RepairInfo> getRepairInfo(
             @RequestParam(required = false)
@@ -96,14 +98,18 @@ public class RepairManagementRESTImpl implements RepairManagementREST
             final String table,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-            @Parameter(description = "Since time, can be specified as ISO8601 date or as milliseconds since epoch."
-                    + " Required if keyspace and table or duration is not specified.",
+            @Parameter(description = """
+                    Since time, can be specified as ISO8601 date or as milliseconds since epoch.
+                     Required if keyspace and table or duration is not specified.
+                    """,
                     schema = @Schema(type = "string"))
             final Long since,
             @RequestParam(required = false)
-            @Parameter(description = "Duration, can be specified as either a simple duration like"
-                    + " '30s' or as ISO8601 duration 'pt30s'."
-                    + " Required if keyspace and table or since is not specified.",
+            @Parameter(description = """
+                    Duration, can be specified as either a simple duration like
+                     '30s' or as ISO8601 duration 'pt30s'.
+                     Required if keyspace and table or since is not specified.
+                    """,
                     schema = @Schema(type = "string"))
             final Duration duration,
             @RequestParam(required = false)
