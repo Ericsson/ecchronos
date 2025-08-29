@@ -142,16 +142,16 @@ public final class RepairConfiguration
     public String toString()
     {
         return String.format("""
-                        RepairConfiguration(interval=%dms,
-                        initialDelay=%dms,
-                        warning=%dms,
-                        error=%dms,
-                        parallelism=%s,
-                        unwindRatio=%.2f,
-                        ignoreTWCS=%b,
-                        backoff=%dms,
-                        repairType=%s,
-                        priorityGranularityUnit=%s))
+                        RepairConfiguration(interval=%dms,\
+                        initialDelay=%dms,\
+                        warning=%dms,\
+                        error=%dms,\
+                        parallelism=%s,\
+                        unwindRatio=%.2f,\
+                        ignoreTWCS=%b,\
+                        backoff=%dms,\
+                        repairType=%s,\
+                        priorityGranularityUnit=%s))\
                         """,
                         myRepairIntervalInMs,
                         myInitialDelayInMs,

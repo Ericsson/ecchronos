@@ -204,8 +204,8 @@ public class BeanConfigurator
                 throw e;
             }
             throw new ConfigurationException("""
-                    Invalid configuration, connection provider does not support
-                     configured certificate handler.
+                    Invalid configuration, connection provider does not support\
+                     configured certificate handler.\
                     """, e);
         }
     }

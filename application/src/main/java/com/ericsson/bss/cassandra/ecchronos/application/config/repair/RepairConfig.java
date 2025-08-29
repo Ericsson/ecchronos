@@ -146,8 +146,8 @@ public class RepairConfig
         if (repairIntervalSeconds >= warningIntervalSeconds)
         {
             throw new IllegalArgumentException(String.format("""
-                    %s repair interval must be shorter than warning interval.
-                     Current repair interval: %d seconds, warning interval: %d seconds
+                    %s repair interval must be shorter than warning interval.\
+                     Current repair interval: %d seconds, warning interval: %d seconds\
                     """,
                     repairConfigType,
                     repairIntervalSeconds,
@@ -168,8 +168,8 @@ public class RepairConfig
         if (warningIntervalSeconds >= errorIntervalSeconds)
         {
             throw new IllegalArgumentException(String.format("""
-                    %s warning interval must be shorter than error interval.
-                     Current warning interval: %d seconds, error interval: %d seconds
+                    %s warning interval must be shorter than error interval.\
+                     Current warning interval: %d seconds, error interval: %d seconds\
                     """,
                     repairConfigType,
                     warningIntervalSeconds,

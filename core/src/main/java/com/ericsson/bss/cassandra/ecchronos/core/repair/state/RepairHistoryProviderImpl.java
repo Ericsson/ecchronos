@@ -59,9 +59,9 @@ public class RepairHistoryProviderImpl implements RepairHistoryProvider
 
     private static final String REPAIR_HISTORY_BY_TIME_STATEMENT = String
             .format("""
-                    SELECT started_at, finished_at, range_begin, range_end, status, participants, coordinator
-                     FROM %s.%s WHERE keyspace_name=? AND columnfamily_name=? AND id >= minTimeuuid(?) and id <=
-                     maxTimeuuid(?)
+                    SELECT started_at, finished_at, range_begin, range_end, status, participants, coordinator\
+                     FROM %s.%s WHERE keyspace_name=? AND columnfamily_name=? AND id >= minTimeuuid(?) and id <=\
+                     maxTimeuuid(?)\
                     """,
                     KEYSPACE_NAME,
                     REPAIR_HISTORY);
