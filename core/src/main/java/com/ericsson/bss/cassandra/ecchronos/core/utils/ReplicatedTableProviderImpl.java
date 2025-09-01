@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -45,9 +46,10 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
                                        final CqlSession session,
                                        final TableReferenceFactory tableReferenceFactory)
     {
-        myLocalNode = node;
-        mySession = session;
-        myTableReferenceFactory = tableReferenceFactory;
+        myLocalNode = Objects.requireNonNull(node, "Local node cannot be null");
+        mySession = Objects.requireNonNull(session, "CQL session cannot be null");
+        myTableReferenceFactory = Objects.requireNonNull(tableReferenceFactory,
+                "Table reference factory cannot be null");
     }
 
     /**
@@ -81,16 +83,16 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
             Map<String, String> replication = keyspaceMetadata.get().getReplication();
             String replicationClass = replication.get(STRATEGY_CLASS);
 
-            switch (replicationClass)
+            return switch (replicationClass)
             {
-                case SIMPLE_STRATEGY:
-                    return validateSimpleStrategy(replication);
-                case NETWORK_TOPOLOGY_STRATEGY:
-                    return validateNetworkTopologyStrategy(keyspace, replication);
-                default:
+                case SIMPLE_STRATEGY -> validateSimpleStrategy(replication);
+                case NETWORK_TOPOLOGY_STRATEGY -> validateNetworkTopologyStrategy(keyspace, replication);
+                default ->
+                {
                     LOG.warn("Replication strategy of type {} is not supported", replicationClass);
-                    break;
-            }
+                    yield false;
+                }
+            };
         }
 
         return false;

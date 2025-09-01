@@ -255,7 +255,7 @@ public class TestVnodeRepairStates
 
         return subRanges.stream()
                 .map(subRange -> new VnodeRepairState(subRange, ImmutableSet.of(node), lastRepairedAt))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Test

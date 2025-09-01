@@ -191,7 +191,7 @@ public class RepairGroup extends ScheduledTask
         }
         else if (myRepairConfiguration.getRepairType().equals(RepairOptions.RepairType.PARALLEL_VNODE))
         {
-            Set<DriverNode> replicas = filterParticipants(myReplicaRepairGroup.getReplicas(), myTableReference);
+            Set<DriverNode> replicas = filterParticipants(myReplicaRepairGroup.replicas(), myTableReference);
 
             Set<LongTokenRange> combinedRanges = new LinkedHashSet<>();
             myReplicaRepairGroup.iterator().forEachRemaining(combinedRanges::add);
@@ -201,7 +201,7 @@ public class RepairGroup extends ScheduledTask
         }
         else
         {
-            Set<DriverNode> replicas = filterParticipants(myReplicaRepairGroup.getReplicas(), myTableReference);
+            Set<DriverNode> replicas = filterParticipants(myReplicaRepairGroup.replicas(), myTableReference);
             for (LongTokenRange range : myReplicaRepairGroup)
             {
                 for (LongTokenRange subRange : new TokenSubRangeUtil(range).generateSubRanges(myTokensPerRepair))

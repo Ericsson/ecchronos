@@ -166,7 +166,7 @@ public class TableRepairJob extends ScheduledRepairJob
                         .withJobId(getId())
                         .withTimeBasedRunPolicy(myTimeBasedRunPolicy);
 
-                taskList.add(builder.build(getRealPriority(replicaRepairGroup.getLastCompletedAt())));
+                taskList.add(builder.build(getRealPriority(replicaRepairGroup.lastCompletedAt())));
             }
 
             return taskList.iterator();
@@ -263,7 +263,7 @@ public class TableRepairJob extends ScheduledRepairJob
             long minRepairedAt = System.currentTimeMillis();
             for (ReplicaRepairGroup replicaRepairGroup : repairStateSnapshot.getRepairGroups())
             {
-                long replicaGroupCompletedAt = replicaRepairGroup.getLastCompletedAt();
+                long replicaGroupCompletedAt = replicaRepairGroup.lastCompletedAt();
                 if (replicaGroupCompletedAt < minRepairedAt)
                 {
                     minRepairedAt = replicaGroupCompletedAt;

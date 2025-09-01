@@ -323,11 +323,11 @@ public class ReloadingCertificateHandler implements CertificateHandler
             for (int i = 0; i < trustManagers.length; i++)
             {
                 // Replace X509TrustManager with our custom one
-                if (trustManagers[i] instanceof X509TrustManager)
+                if (trustManagers[i] instanceof X509TrustManager trustManager)
                 {
                     CustomCRLValidator validator = new CustomCRLValidator(config.getCRLConfig());
                     trustManagers[i] = new CustomX509TrustManager(
-                            (X509TrustManager) trustManagers[i],
+                            trustManager,
                             validator
                     );
                     builder.trustManager(trustManagers[i]);
