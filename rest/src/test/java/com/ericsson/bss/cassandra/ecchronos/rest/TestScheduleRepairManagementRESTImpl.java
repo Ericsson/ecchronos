@@ -108,7 +108,7 @@ public class TestScheduleRepairManagementRESTImpl
                 ImmutableSet.of(expectedVnodeRepairState3), RepairOptions.RepairType.VNODE);
         List<ScheduledRepairJobView> repairJobViews = Arrays.asList(job1, job2, job3);
 
-        List<Schedule> expectedResponse = repairJobViews.stream().map(Schedule::new).collect(Collectors.toList());
+        List<Schedule> expectedResponse = repairJobViews.stream().map(Schedule::new).toList();
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(repairJobViews);
 
@@ -165,7 +165,7 @@ public class TestScheduleRepairManagementRESTImpl
         List<ScheduledRepairJobView> repairJobViews = Arrays.asList(job1, job2, job3);
 
         List<Schedule> expectedResponse = repairJobViews.stream().map(view -> new Schedule(view, false))
-                .collect(Collectors.toList());
+                .toList();
 
         when(myRepairScheduler.getCurrentRepairJobs()).thenReturn(repairJobViews);
         ResponseEntity<Schedule> response = null;
@@ -187,7 +187,7 @@ public class TestScheduleRepairManagementRESTImpl
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
         List<Schedule> expectedResponseFull = repairJobViews.stream().map(view -> new Schedule(view, true))
-                .collect(Collectors.toList());
+                .toList();
 
         response = null;
         try

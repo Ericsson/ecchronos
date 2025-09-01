@@ -147,7 +147,7 @@ public class TestTableReferenceFactory
         assertThat(tableReferences).hasSize(2);
         assertThat(tableReferences.stream()
                 .filter(t -> t.getKeyspace().equals("keyspace111"))
-                .collect(Collectors.toList())).isNotEmpty();
+                .toList()).isNotEmpty();
     }
 
     @Test
@@ -162,7 +162,7 @@ public class TestTableReferenceFactory
         assertThat(tableReferences).hasSize(2);
         assertThat(tableReferences.stream()
                 .filter(t -> t.getKeyspace().equals("keyspaceWithCamelCase111"))
-                .collect(Collectors.toList())).isNotEmpty();
+                .toList()).isNotEmpty();
     }
 
     @Test
@@ -194,13 +194,13 @@ public class TestTableReferenceFactory
         assertThat(tableReferences).isNotEmpty();
         assertThat(tableReferences.stream()
                 .filter(t -> t.getKeyspace().equals("firstks"))
-                .collect(Collectors.toList())).hasSize(2);
+                .toList()).hasSize(2);
         assertThat(tableReferences.stream()
                 .filter(t -> t.getKeyspace().equals("secondks"))
-                .collect(Collectors.toList())).hasSize(1);
+                .toList()).hasSize(1);
         assertThat(tableReferences.stream()
                 .filter(t -> t.getKeyspace().equals("thirdks"))
-                .collect(Collectors.toList())).hasSize(1);
+                .toList()).hasSize(1);
     }
 
     @Test
@@ -218,13 +218,13 @@ public class TestTableReferenceFactory
         assertThat(tableReferences).isNotEmpty();
         assertThat(tableReferences.stream()
                 .filter(t -> t.getKeyspace().equals("firstKs"))
-                .collect(Collectors.toList())).hasSize(2);
+                .toList()).hasSize(2);
         assertThat(tableReferences.stream()
                 .filter(t -> t.getKeyspace().equals("secondks"))
-                .collect(Collectors.toList())).hasSize(1);
+                .toList()).hasSize(1);
         assertThat(tableReferences.stream()
                 .filter(t -> t.getKeyspace().equals("thirdKs"))
-                .collect(Collectors.toList())).hasSize(1);
+                .toList()).hasSize(1);
     }
 
     private void mockKeyspace(String keyspace, Set<String> tables)
