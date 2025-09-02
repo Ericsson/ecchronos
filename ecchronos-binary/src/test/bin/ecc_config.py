@@ -28,10 +28,13 @@ class EcchronosConfig:
         self._uncomment_head_options()
         self._modify_connection_configuration()
         self._modify_scheduler_configuration()
+        self._modify_spring_doc_configuration()
 
         if self.context.local != "true":
             self._modify_security_configuration()
             self._modify_application_configuration()
+        else:
+            self._modify_cql_configuration()
 
         self._modify_logback_configuration()
         self._modify_schedule_configuration()
@@ -84,6 +87,13 @@ class EcchronosConfig:
         
         self._modify_yaml_data(global_vars.SECURITY_YAML_FILE_PATH, data)
 
+    def _modify_cql_configuration(self):
+        data = self._read_yaml_data(global_vars.SECURITY_YAML_FILE_PATH)
+        data["cql"]["credentials"]["enabled"] = True
+        data["cql"]["credentials"]["username"] = "cassandra"
+        data["cql"]["credentials"]["password"] = "cassandra"
+        self._modify_yaml_data(global_vars.SECURITY_YAML_FILE_PATH, data)
+
     def _modify_application_configuration(self):
         data = self._read_yaml_data(global_vars.APPLICATION_YAML_FILE_PATH)
 
@@ -100,6 +110,11 @@ class EcchronosConfig:
         data["server"]["ssl"]["trust-store"] = f"{global_vars.CERTIFICATE_DIRECTORY}/servertruststore"
         data["server"]["ssl"]["trust-store-password"] = "ecctest"
         data["server"]["ssl"]["client-auth"] = "need"
+        self._modify_yaml_data(global_vars.APPLICATION_YAML_FILE_PATH, data)
+
+
+    def _modify_spring_doc_configuration(self):
+        data = self._read_yaml_data(global_vars.APPLICATION_YAML_FILE_PATH)
         data["springdoc"]["api-docs"]["enabled"] = True
         data["springdoc"]["api-docs"]["show-actuator"] = True
         self._modify_yaml_data(global_vars.APPLICATION_YAML_FILE_PATH, data)
@@ -143,6 +158,26 @@ class EcchronosConfig:
                     {"name": "table2", "repair_type": "parallel_vnode"},
                 ],
             },
+            {
+                "name": "system_auth",
+                "tables": [
+                    {"name": "network_permissions", "enabled": False},
+                    {"name": "resource_role_permissons_index", "enabled": False},
+                    {"name": "role_members", "enabled": False},
+                    {"name": "role_permissions", "enabled": False},
+                    {"name": "roles", "enabled": False}
+                ]
+            },
+            {
+                "name": "ecchronos",
+                "tables": [
+                    {"name": "lock", "enabled": False},
+                    {"name": "lock_priority", "enabled": False},
+                    {"name": "on_demand_repair_status", "enabled": False},
+                    {"name": "reject_configuration", "enabled": False},
+                    {"name": "repair_history", "enabled": False}
+                ]
+                }
         ]
         self._modify_yaml_data(global_vars.SCHEDULE_YAML_FILE_PATH, data)
 

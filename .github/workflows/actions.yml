@@ -44,7 +44,7 @@ jobs:
             artifacts_dir: "standalone-integration/target"
           - name: "Python integration - Java 17"
             java_version: 17
-            test_suite: 'verify -P docker-integration-test,python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -DskipUTs'
+            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
 
           # Java 21 tests
@@ -68,7 +68,7 @@ jobs:
             artifacts_dir: "standalone-integration/target"
           - name: "Python integration - Java 21"
             java_version: 21
-            test_suite: 'verify -P docker-integration-test,python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -DskipUTs'
+            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2

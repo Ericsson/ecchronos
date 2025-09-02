@@ -25,7 +25,7 @@ def get():
         BASE_DIR, CONF_DIR, PYLIB_DIR, CERTIFICATE_DIRECTORY, ECC_YAML_FILE_PATH, \
         SECURITY_YAML_FILE_PATH, APPLICATION_YAML_FILE_PATH, SCHEDULE_YAML_FILE_PATH, \
         LOGBACK_FILE_PATH, JVM_OPTIONS_FILE_PATH, LOCAL, CASSANDRA_DOCKER_COMPOSE_FILE_PATH, \
-        ROOT_DIR, BASE_URL, CASSANDRA_CERT_PATH, CASSANDRA_VERSION
+        ROOT_DIR, BASE_URL, CASSANDRA_CERT_PATH, CASSANDRA_VERSION, BASE_URL_TLS
     # fmt:on
 
     TEST_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -49,6 +49,7 @@ def get():
     CASSANDRA_VERSION = os.environ.get("CASSANDRA_VERSION")
     LOCAL = os.environ.get("LOCAL")
     BASE_URL = "http://localhost:8080/repair-management/v2/schedules"
+    BASE_URL_TLS = "https://localhost:8080/repair-management/v2/schedules"
 
 
 get()

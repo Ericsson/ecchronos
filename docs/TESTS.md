@@ -24,8 +24,8 @@ They are running simple tests that sometimes utilize a single embedded Cassandra
 
 ### Docker tests
 
-The acceptance tests and integration tests use docker instances by default.
-The docker containers gets started when the `-P docker-integration-test` flag is used in maven.
+The acceptance tests and integration tests use docker compose instances by default.
+The docker containers are managed by testcontainers and started automatically during test execution.
 The docker command must be runnable without *sudo* for the user running the tests.
 
 ### Integration tests
@@ -36,7 +36,7 @@ It is activated by using `-P standalone-integration-tests`.
 ### Acceptance tests
 
 The acceptance test use behave to verify the python scripts as well as the REST server in ecChronos.
-They are activated by using `-P python-integration-tests` in combination with the docker flag.
+They are activated by using `-P python-integration-tests` and use testcontainers to manage Docker instances automatically.
 
 ### Running acceptance/integration tests towards local ccm cluster
 

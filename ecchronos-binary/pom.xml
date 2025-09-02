@@ -183,31 +183,7 @@
                 </executions>
             </plugin>
 
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>code-validation</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${skipTests}</skip>
-                            <executable>bash</executable>
-                            <arguments>
-                                <argument>codestyle.sh</argument>
-                                <argument>${project.basedir}/src/bin</argument>
-                                <argument>${project.basedir}/src/pylib/ecchronoslib</argument>
-                                <argument>${project.basedir}/src/test/behave/ecc_step_library</argument>
-                                <argument>${project.basedir}/src/test/behave/features/steps</argument>
-                            </arguments>
-                            <workingDirectory>${project.build.directory}/test</workingDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+
         </plugins>
     </build>
 
@@ -282,55 +258,51 @@
                                 </configuration>
                             </execution>
                             <execution>
+                                <id>install-python-dependencies</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>install_dependencies.sh</argument>
+                                    </arguments>
+                                    <workingDirectory>${project.build.directory}/test</workingDirectory>
+                                    <environmentVariables>
+                                        <PROJECT_VERSION>${project.version}</PROJECT_VERSION>
+                                        <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
+                                        <BASE_DIR>${project.basedir}</BASE_DIR>
+                                        <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
+                                    </environmentVariables>
+                                </configuration>
+                            </execution>
+                            <execution>
                                 <id>python-integration-tests</id>
                                 <phase>integration-test</phase>
                                 <goals>
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>bash</executable>
+                                    <executable>python</executable>
                                     <arguments>
-                                        <argument>testwrapper.sh</argument>
-                                        <argument>pytests.sh</argument>
-                                        <argument>pytests.ret</argument>
+                                        <argument>-m</argument>
+                                        <argument>pytest</argument>
+                                        <argument>test_ecchronos.py</argument>
+                                        <argument>-s</argument>
+                                        <argument>-v</argument>
+                                        <argument>--tb=short</argument>
                                     </arguments>
                                     <workingDirectory>${project.build.directory}/test</workingDirectory>
                                     <environmentVariables>
-                                        <CASSANDRA_IP>${docker.container.seed1.ip}</CASSANDRA_IP>
-                                        <CASSANDRA_JMX_PORT>7199</CASSANDRA_JMX_PORT>
-                                        <CASSANDRA_NATIVE_PORT>9042</CASSANDRA_NATIVE_PORT>
+                                        <LOCAL>false</LOCAL>
+                                        <PROJECT_VERSION>${project.version}</PROJECT_VERSION>
+                                        <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
+                                        <BASE_DIR>${project.basedir}</BASE_DIR>
+                                        <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                     </environmentVariables>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>post-python-integration-tests</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>bash</executable>
-                                    <arguments>
-                                        <argument>testwrapper.sh</argument>
-                                        <argument>cleanup.sh</argument>
-                                        <argument>cleanup.ret</argument>
-                                    </arguments>
-                                    <workingDirectory>${project.build.directory}/test</workingDirectory>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>verify-python-integration-tests</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>bash</executable>
-                                    <arguments>
-                                        <argument>verify.sh</argument>
-                                        <argument>pytests.ret</argument>
-                                    </arguments>
-                                    <workingDirectory>${project.build.directory}/test</workingDirectory>
+                                    <redirectOutput>true</redirectOutput>
+                                    <redirectErrorStream>true</redirectErrorStream>
                                 </configuration>
                             </execution>
                         </executions>
@@ -382,138 +354,27 @@
                         <artifactId>exec-maven-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>python-integration-tests</id>
-                                <phase>integration-test</phase>
+                                <id>install-python-dependencies</id>
+                                <phase>pre-integration-test</phase>
                                 <goals>
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
                                     <executable>bash</executable>
                                     <arguments>
-                                        <argument>testwrapper.sh</argument>
-                                        <argument>pytests.sh</argument>
-                                        <argument>pytests.ret</argument>
+                                        <argument>install_dependencies.sh</argument>
                                     </arguments>
                                     <workingDirectory>${project.build.directory}/test</workingDirectory>
                                     <environmentVariables>
-                                        <CASSANDRA_IP>127.0.0.1</CASSANDRA_IP>
-                                        <CASSANDRA_JMX_PORT>7100</CASSANDRA_JMX_PORT>
-                                        <CASSANDRA_NATIVE_PORT>9042</CASSANDRA_NATIVE_PORT>
-                                        <LOCAL>true</LOCAL>
+                                        <PROJECT_VERSION>${project.version}</PROJECT_VERSION>
+                                        <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
+                                        <BASE_DIR>${project.basedir}</BASE_DIR>
+                                        <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                     </environmentVariables>
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>post-python-integration-tests</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>bash</executable>
-                                    <arguments>
-                                        <argument>testwrapper.sh</argument>
-                                        <argument>cleanup.sh</argument>
-                                        <argument>cleanup.ret</argument>
-                                    </arguments>
-                                    <workingDirectory>${project.build.directory}/test</workingDirectory>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>verify-python-integration-tests</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>bash</executable>
-                                    <arguments>
-                                        <argument>verify.sh</argument>
-                                        <argument>pytests.ret</argument>
-                                    </arguments>
-                                    <workingDirectory>${project.build.directory}/test</workingDirectory>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-
-
-
-        <profile>
-            <activation>
-                <property>
-                    <name>precommit.tests</name>
-                </property>
-            </activation>
-            <id>local-beta-test</id>
-            <build>
-                <plugins>
-                    <!-- Integration tests -->
-                    <plugin>
-                        <artifactId>maven-dependency-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>unpack-ecc-binary</id>
-                                <phase>pre-integration-test</phase>
-                                <goals>
-                                    <goal>unpack</goal>
-                                </goals>
-                                <configuration>
-                                    <artifactItems>
-                                        <artifactItem>
-                                            <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-                                            <artifactId>ecchronos-binary</artifactId>
-                                            <version>${project.version}</version>
-                                            <type>tar.gz</type>
-                                            <outputDirectory>${project.build.directory}/test</outputDirectory>
-                                        </artifactItem>
-                                    </artifactItems>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>unpack-certificate-generation</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>unpack</goal>
-                                </goals>
-                                <configuration>
-                                    <artifactItems>
-                                        <artifactItem>
-                                            <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-                                            <artifactId>cassandra-test-image</artifactId>
-                                            <version>${project.version}</version>
-                                            <outputDirectory>${project.build.directory}/certificates</outputDirectory>
-                                        </artifactItem>
-                                    </artifactItems>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>generate-certificates</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>bash</executable>
-                                    <arguments>
-                                        <argument>generate_certificates.sh</argument>
-                                    </arguments>
-                                    <workingDirectory>${project.build.directory}/certificates</workingDirectory>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>local-beta-test</id>
+                                <id>python-integration-tests</id>
                                 <phase>integration-test</phase>
                                 <goals>
                                     <goal>exec</goal>
@@ -521,12 +382,16 @@
                                 <configuration>
                                     <executable>python</executable>
                                     <arguments>
-                                        <argument>-u</argument>
-                                        <argument>pytests.py</argument>
+                                        <argument>-m</argument>
+                                        <argument>pytest</argument>
+                                        <argument>test_ecchronos.py</argument>
+                                        <argument>-s</argument>
+                                        <argument>-v</argument>
+                                        <argument>--tb=short</argument>
                                     </arguments>
                                     <workingDirectory>${project.build.directory}/test</workingDirectory>
                                     <environmentVariables>
-                                        <LOCAL>false</LOCAL>
+                                        <LOCAL>true</LOCAL>
                                         <PROJECT_VERSION>${project.version}</PROJECT_VERSION>
                                         <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
@@ -534,7 +399,6 @@
                                     </environmentVariables>
                                     <redirectOutput>true</redirectOutput>
                                     <redirectErrorStream>true</redirectErrorStream>
-
                                 </configuration>
                             </execution>
                         </executions>
@@ -542,10 +406,6 @@
                 </plugins>
             </build>
         </profile>
-
-
-
-
 
         <profile>
             <id>generate-ecctool-doc</id>
