@@ -59,12 +59,12 @@
         <awaitility.version>4.3.0</awaitility.version>
         <caffeine.version>3.2.2</caffeine.version>
         <cassandra.driver.core.version>4.19.0</cassandra.driver.core.version>
-        <com.fasterxml.jackson.core.version>2.19.2</com.fasterxml.jackson.core.version>
-        <com.fasterxml.jackson.dataformat.version>2.19.2</com.fasterxml.jackson.dataformat.version>
+        <com.fasterxml.jackson.annotations.version>2.20</com.fasterxml.jackson.annotations.version>
+        <com.fasterxml.jackson.core.version>2.20.0</com.fasterxml.jackson.core.version>
         <com.typesafe.config.version>1.4.4</com.typesafe.config.version>
         <equalsverifier.version>4.0.9</equalsverifier.version>
         <guava.version>33.4.8-jre</guava.version>
-        <io.dropwizard.metrics.version>4.2.34</io.dropwizard.metrics.version>
+        <io.dropwizard.metrics.version>4.2.36</io.dropwizard.metrics.version>
         <io.micrometer.version>1.15.3</io.micrometer.version>
         <io.netty.version>4.1.124.Final</io.netty.version>
         <io.prometheus.simpleclient.version>0.16.0</io.prometheus.simpleclient.version>
@@ -84,13 +84,13 @@
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
         <org.apache.httpcomponents.client5.httpclient5.version>5.5</org.apache.httpcomponents.client5.httpclient5.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.81</org.bouncycastle.bcpkix-jdk18on.version>
-        <org.springdoc.openapi-starter-webmvc-ui.version>2.8.11</org.springdoc.openapi-starter-webmvc-ui.version>
+        <org.springdoc.openapi-starter-webmvc-ui.version>2.8.12</org.springdoc.openapi-starter-webmvc-ui.version>
         <org.springframework.boot.spring-boot-starter-actuator.version>3.5.5</org.springframework.boot.spring-boot-starter-actuator.version>
         <org.springframework.boot.spring-boot-starter-thymeleaf.version>3.5.5</org.springframework.boot.spring-boot-starter-thymeleaf.version>
         <org.springframework.boot.spring-boot-starter-web.version>3.5.5</org.springframework.boot.spring-boot-starter-web.version>
         <org.springframework.spring-boot-test.version>3.5.5</org.springframework.spring-boot-test.version>
         <org.springframework.spring-test.version>6.2.10</org.springframework.spring-test.version>
-        <org.yaml.snakeyaml.version>2.4</org.yaml.snakeyaml.version>
+        <org.yaml.snakeyaml.version>2.5</org.yaml.snakeyaml.version>
         <slf4j.version>2.0.17</slf4j.version>
         <swagger-annotations.version>2.2.36</swagger-annotations.version>
         <testcontainers.version>1.21.3</testcontainers.version>
@@ -226,7 +226,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
-                <version>${com.fasterxml.jackson.core.version}</version>
+                <version>${com.fasterxml.jackson.annotations.version}</version>
             </dependency>
 
             <dependency>
@@ -238,7 +238,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.dataformat</groupId>
                 <artifactId>jackson-dataformat-yaml</artifactId>
-                <version>${com.fasterxml.jackson.dataformat.version}</version>
+                <version>${com.fasterxml.jackson.core.version}</version>
             </dependency>
 
             <dependency>
