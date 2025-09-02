@@ -90,7 +90,7 @@
         <org.springframework.boot.spring-boot-starter-web.version>3.5.5</org.springframework.boot.spring-boot-starter-web.version>
         <org.springframework.spring-boot-test.version>3.5.5</org.springframework.spring-boot-test.version>
         <org.springframework.spring-test.version>6.2.10</org.springframework.spring-test.version>
-        <org.yaml.snakeyaml.version>2.4</org.yaml.snakeyaml.version>
+        <org.yaml.snakeyaml.version>2.5</org.yaml.snakeyaml.version>
         <slf4j.version>2.0.17</slf4j.version>
         <swagger-annotations.version>2.2.36</swagger-annotations.version>
         <testcontainers.version>1.21.3</testcontainers.version>
