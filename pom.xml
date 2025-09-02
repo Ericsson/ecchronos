@@ -59,8 +59,8 @@
         <awaitility.version>4.3.0</awaitility.version>
         <caffeine.version>3.2.2</caffeine.version>
         <cassandra.driver.core.version>4.19.0</cassandra.driver.core.version>
-        <com.fasterxml.jackson.core.version>2.19.2</com.fasterxml.jackson.core.version>
-        <com.fasterxml.jackson.dataformat.version>2.20.0</com.fasterxml.jackson.dataformat.version>
+        <com.fasterxml.jackson.annotations.version>2.20</com.fasterxml.jackson.annotations.version>
+        <com.fasterxml.jackson.core.version>2.20.0</com.fasterxml.jackson.core.version>
         <com.typesafe.config.version>1.4.4</com.typesafe.config.version>
         <equalsverifier.version>4.0.9</equalsverifier.version>
         <guava.version>33.4.8-jre</guava.version>
@@ -226,7 +226,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
-                <version>${com.fasterxml.jackson.core.version}</version>
+                <version>${com.fasterxml.jackson.annotations.version}</version>
             </dependency>
 
             <dependency>
@@ -238,7 +238,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.dataformat</groupId>
                 <artifactId>jackson-dataformat-yaml</artifactId>
-                <version>${com.fasterxml.jackson.dataformat.version}</version>
+                <version>${com.fasterxml.jackson.core.version}</version>
             </dependency>
 
             <dependency>
