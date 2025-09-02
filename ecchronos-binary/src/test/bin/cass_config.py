@@ -55,11 +55,10 @@ class CassandraCluster:
             self.stop_cluster()
             raise e
         self._set_env()
-        self._wait_for_nodes_to_be_up(4, DEFAULT_WAIT_TIME_IN_SECS*1000)
+        self._wait_for_nodes_to_be_up(4, DEFAULT_WAIT_TIME_IN_SECS * 1000)
         self._modify_system_auth_keyspace()
         self._run_full_repair()
         self._setup_db()
-
 
     def _set_env(self):
         try:
@@ -90,7 +89,6 @@ class CassandraCluster:
         else:
             return next(iter(networks.values()))["IPAddress"]
 
-
     def _get_node_count(self):
         if global_vars.LOCAL != "true":
             command = ["docker", "exec", self.container_id, "sh", "-c", "~/.cassandra/nodetool-status-ssl.sh"]
@@ -101,7 +99,7 @@ class CassandraCluster:
             command,
             check=True,
             timeout=DEFAULT_WAIT_TIME_IN_SECS,
-            encoding='utf-8',
+            encoding="utf-8",
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
@@ -127,44 +125,56 @@ class CassandraCluster:
 
         subprocess.run(
             command,
-            timeout=DEFAULT_WAIT_TIME_IN_SECS*3,
-            encoding='utf-8',
+            timeout=DEFAULT_WAIT_TIME_IN_SECS * 3,
+            encoding="utf-8",
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
         )
-
 
     def _modify_system_auth_keyspace(self):
         logger.info("Changing system_auth replication strategy")
-        command = ["docker", "exec", self.container_id, "cqlsh", "-e",f"{ALTER_SYSTEM_AUTH_CQL}"]
+        command = ["docker", "exec", self.container_id, "cqlsh", "-e", f"{ALTER_SYSTEM_AUTH_CQL}"]
         subprocess.run(
             command,
-            timeout=DEFAULT_WAIT_TIME_IN_SECS*3,
-            encoding='utf-8',
+            timeout=DEFAULT_WAIT_TIME_IN_SECS * 3,
+            encoding="utf-8",
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
         )
 
     def _run_full_repair(self):
         logger.info("Running Full Repair")
         if global_vars.LOCAL != "true":
-            command = ["docker", "exec", self.container_id, "bash", "-c", "nodetool -ssl -u cassandra -pw cassandra repair --full"]
+            command = [
+                "docker",
+                "exec",
+                self.container_id,
+                "bash",
+                "-c",
+                "nodetool -ssl -u cassandra -pw cassandra repair --full",
+            ]
         else:
             command = ["docker", "exec", self.container_id, "bash", "-c", "nodetool -u cassandra -pw cassandra status"]
 
         subprocess.run(
             command,
-            timeout=DEFAULT_WAIT_TIME_IN_SECS*3,
-            encoding='utf-8',
+            timeout=DEFAULT_WAIT_TIME_IN_SECS * 3,
+            encoding="utf-8",
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
         )
 
-
     def stop_cluster(self):
-        subprocess.run([
-            "docker", "compose", "-f", f"{global_vars.CASSANDRA_DOCKER_COMPOSE_FILE_PATH}/docker-compose.yml",
-            "down", "--volumes", "--remove-orphans", "--rmi", "all"
-        ])
-
-
+        subprocess.run(
+            [
+                "docker",
+                "compose",
+                "-f",
+                f"{global_vars.CASSANDRA_DOCKER_COMPOSE_FILE_PATH}/docker-compose.yml",
+                "down",
+                "--volumes",
+                "--remove-orphans",
+                "--rmi",
+                "all",
+            ]
+        )

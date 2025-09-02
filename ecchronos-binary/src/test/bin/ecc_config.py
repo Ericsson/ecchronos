@@ -84,7 +84,7 @@ class EcchronosConfig:
         data["jmx"]["tls"]["keystore_password"] = "ecctest"
         data["jmx"]["tls"]["truststore"] = f"{global_vars.CERTIFICATE_DIRECTORY}/.truststore"
         data["jmx"]["tls"]["truststore_password"] = "ecctest"
-        
+
         self._modify_yaml_data(global_vars.SECURITY_YAML_FILE_PATH, data)
 
     def _modify_cql_configuration(self):
@@ -111,7 +111,6 @@ class EcchronosConfig:
         data["server"]["ssl"]["trust-store-password"] = "ecctest"
         data["server"]["ssl"]["client-auth"] = "need"
         self._modify_yaml_data(global_vars.APPLICATION_YAML_FILE_PATH, data)
-
 
     def _modify_spring_doc_configuration(self):
         data = self._read_yaml_data(global_vars.APPLICATION_YAML_FILE_PATH)
@@ -165,8 +164,8 @@ class EcchronosConfig:
                     {"name": "resource_role_permissons_index", "enabled": False},
                     {"name": "role_members", "enabled": False},
                     {"name": "role_permissions", "enabled": False},
-                    {"name": "roles", "enabled": False}
-                ]
+                    {"name": "roles", "enabled": False},
+                ],
             },
             {
                 "name": "ecchronos",
@@ -175,9 +174,9 @@ class EcchronosConfig:
                     {"name": "lock_priority", "enabled": False},
                     {"name": "on_demand_repair_status", "enabled": False},
                     {"name": "reject_configuration", "enabled": False},
-                    {"name": "repair_history", "enabled": False}
-                ]
-                }
+                    {"name": "repair_history", "enabled": False},
+                ],
+            },
         ]
         self._modify_yaml_data(global_vars.SCHEDULE_YAML_FILE_PATH, data)
 

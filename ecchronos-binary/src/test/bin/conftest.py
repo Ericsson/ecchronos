@@ -45,11 +45,11 @@ class TestFixture:
             logger.info(f"Creating cluster with version {global_vars.CASSANDRA_VERSION}")
             self.cassandra_cluster = CassandraCluster(global_vars.LOCAL)
             self.cassandra_cluster.create_cluster()
-            
+
             logger.info("Configuring ecChronos")
             ecc_config = EcchronosConfig(context=self.cassandra_cluster)
             ecc_config.modify_configuration()
-            
+
             self.is_setup = True
             return self.cassandra_cluster
 
@@ -68,10 +68,7 @@ class TestFixture:
         try:
             logger.info("Starting ecChronos")
             self.ecchronos_process = subprocess.Popen(
-                command, 
-                stdout=subprocess.PIPE, 
-                stderr=subprocess.PIPE, 
-                text=True
+                command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
             )
             time.sleep(STARTUP_WAIT_TIME)
             logger.info(f"ecChronos started with PID file: {global_vars.PIDFILE}")
@@ -84,11 +81,16 @@ class TestFixture:
         """Wait for ecChronos to be ready to accept requests"""
         url = global_vars.BASE_URL_TLS if global_vars.LOCAL != "true" else global_vars.BASE_URL
         curl_cmd = ["curl", "--silent", "--fail", "--head", "--output", "/dev/null", url]
-        
+
         if global_vars.LOCAL != "true":
-            curl_cmd += ["--cert", f"{global_vars.CERTIFICATE_DIRECTORY}/clientcert.crt",
-                "--key", f"{global_vars.CERTIFICATE_DIRECTORY}/clientkey.pem",
-                "--cacert", f"{global_vars.CERTIFICATE_DIRECTORY}/serverca.crt"]
+            curl_cmd += [
+                "--cert",
+                f"{global_vars.CERTIFICATE_DIRECTORY}/clientcert.crt",
+                "--key",
+                f"{global_vars.CERTIFICATE_DIRECTORY}/clientkey.pem",
+                "--cacert",
+                f"{global_vars.CERTIFICATE_DIRECTORY}/serverca.crt",
+            ]
 
         for attempt in range(MAX_CHECK + 1):
             try:
@@ -98,7 +100,7 @@ class TestFixture:
                     return
             except subprocess.SubprocessError as e:
                 logger.warning(f"Health check attempt {attempt + 1} failed: {e}")
-            
+
             if attempt < MAX_CHECK:
                 logger.info(f"Waiting for ecChronos... (attempt {attempt + 1}/{MAX_CHECK})")
                 time.sleep(STARTUP_WAIT_TIME)
@@ -140,22 +142,32 @@ def build_behave_command(cassandra_cluster: CassandraCluster) -> list[str]:
     """Build behave command based on configuration"""
     base_command = [
         "behave",
-        "--define", f"ecctool={global_vars.BASE_DIR}/bin/ecctool",
-        "--define", f"cassandra_address={cassandra_cluster.cassandra_ip}",
-        "--define", "cql_user=eccuser",
-        "--define", "cql_password=eccpassword",
+        "--define",
+        f"ecctool={global_vars.BASE_DIR}/bin/ecctool",
+        "--define",
+        f"cassandra_address={cassandra_cluster.cassandra_ip}",
+        "--define",
+        "cql_user=eccuser",
+        "--define",
+        "cql_password=eccpassword",
     ]
 
     if global_vars.LOCAL == "true":
         base_command.extend(["--define", "no_tls"])
     else:
         tls_options = [
-            "--define", f"ecc_client_cert={global_vars.CERTIFICATE_DIRECTORY}/clientcert.crt",
-            "--define", f"ecc_client_key={global_vars.CERTIFICATE_DIRECTORY}/clientkey.pem",
-            "--define", f"ecc_client_ca={global_vars.CERTIFICATE_DIRECTORY}/serverca.crt",
-            "--define", f"cql_client_cert={global_vars.CERTIFICATE_DIRECTORY}/cert.crt",
-            "--define", f"cql_client_key={global_vars.CERTIFICATE_DIRECTORY}/key.pem",
-            "--define", f"cql_client_ca={global_vars.CERTIFICATE_DIRECTORY}/ca.crt",
+            "--define",
+            f"ecc_client_cert={global_vars.CERTIFICATE_DIRECTORY}/clientcert.crt",
+            "--define",
+            f"ecc_client_key={global_vars.CERTIFICATE_DIRECTORY}/clientkey.pem",
+            "--define",
+            f"ecc_client_ca={global_vars.CERTIFICATE_DIRECTORY}/serverca.crt",
+            "--define",
+            f"cql_client_cert={global_vars.CERTIFICATE_DIRECTORY}/cert.crt",
+            "--define",
+            f"cql_client_key={global_vars.CERTIFICATE_DIRECTORY}/key.pem",
+            "--define",
+            f"cql_client_ca={global_vars.CERTIFICATE_DIRECTORY}/ca.crt",
         ]
         base_command.extend(tls_options)
 
