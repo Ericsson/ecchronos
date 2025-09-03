@@ -1,5 +1,8 @@
 # Changes
 
+## Version 6.1.1
+
+
 ## Version 6.1.0
 
 * Add Rejections sub-command - Issue #1015
