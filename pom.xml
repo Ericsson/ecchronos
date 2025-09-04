@@ -120,6 +120,7 @@
         <org.jacoco.jacoco-maven-plugin.version>0.8.4</org.jacoco.jacoco-maven-plugin.version>
         <org.codehaus.mojo.exec-maven-plugin.version>3.0.0</org.codehaus.mojo.exec-maven-plugin.version>
         <org.codehaus.mojo.license-maven-plugin.version>1.19</org.codehaus.mojo.license-maven-plugin.version>
+        <org.sonatype.central-central-publishing-maven-plugin>0.8.0</org.sonatype.central-central-publishing-maven-plugin>
 
         <org.apache.maven.plugins.maven-release-plugin.version>2.5.3</org.apache.maven.plugins.maven-release-plugin.version>
         <org.apache.maven.plugins.maven-deploy-plugin.version>2.8.2</org.apache.maven.plugins.maven-deploy-plugin.version>
@@ -749,6 +750,9 @@ limitations under the License.
                 <plugin>
                     <artifactId>maven-deploy-plugin</artifactId>
                     <version>${org.apache.maven.plugins.maven-deploy-plugin.version}</version>
+                    <configuration>
+                        <skip>true</skip>
+                    </configuration>
                 </plugin>
 
                 <plugin>
@@ -830,6 +834,23 @@ limitations under the License.
 
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>${org.sonatype.central-central-publishing-maven-plugin}</version>
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>publish</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <publishingServerId>publisher</publishingServerId>
+                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -1097,17 +1118,6 @@ limitations under the License.
             </plugin>
         </plugins>
     </reporting>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 
     <organization>
         <name>Ericsson AB</name>

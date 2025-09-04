@@ -234,9 +234,10 @@
             </plugin>
 
             <plugin>
-                <artifactId>maven-deploy-plugin</artifactId>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
                 <configuration>
-                    <skip>true</skip>
+                    <excludeArtifacts>osgi-integration</excludeArtifacts>
                 </configuration>
             </plugin>
 
