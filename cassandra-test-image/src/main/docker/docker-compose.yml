@@ -5,9 +5,9 @@ services:
       context: .
       args:
         CASSANDRA_VERSION: "${CASSANDRA_VERSION}"
-    ports:
-      - "9042:9042"
-      - "7100:7199"
+    expose:
+      - "9042"
+      - "7199"
     environment:
       - CASSANDRA_CLUSTER_NAME=cassandra-cluster
       - CASSANDRA_DC=datacenter1
@@ -30,9 +30,9 @@ services:
       context: .
       args:
         CASSANDRA_VERSION: "${CASSANDRA_VERSION}"
-    ports:
-      - "9043:9042"
-      - "7200:7199"
+    expose:
+      - "9042"
+      - "7199"
     environment:
       - CASSANDRA_CLUSTER_NAME=cassandra-cluster
       - CASSANDRA_DC=datacenter2
@@ -55,8 +55,8 @@ services:
       context: .
       args:
         CASSANDRA_VERSION: "${CASSANDRA_VERSION}"
-    ports:
-      - "7300:7199"
+    expose:
+      - "7199"
     environment:
       - CASSANDRA_CLUSTER_NAME=cassandra-cluster
       - CASSANDRA_DC=datacenter1
@@ -79,8 +79,8 @@ services:
       context: .
       args:
         CASSANDRA_VERSION: "${CASSANDRA_VERSION}"
-    ports:
-      - "7400:7199"
+    expose:
+      - "7199"
     environment:
       - CASSANDRA_CLUSTER_NAME=cassandra-cluster
       - CASSANDRA_DC=datacenter2

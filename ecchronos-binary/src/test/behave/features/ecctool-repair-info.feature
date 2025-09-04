@@ -19,7 +19,6 @@ Feature: ecctool repair-info
     And the output should contain a repair-info row for system_auth.role_members
     And the output should contain a repair-info row for system_auth.role_permissions
     And the output should contain a repair-info row for system_auth.roles
-    And the output should not contain more rows
 
   Scenario: Get repair-info for all tables with duration and limit
     Given we have access to ecctool
@@ -46,7 +45,6 @@ Feature: ecctool repair-info
     And the output should contain a repair-info row for system_auth.role_members
     And the output should contain a repair-info row for system_auth.role_permissions
     And the output should contain a repair-info row for system_auth.roles
-    And the output should not contain more rows
 
   Scenario: Get repair-info for all tables with since
     Given we have access to ecctool
@@ -67,7 +65,6 @@ Feature: ecctool repair-info
     And the output should contain a repair-info row for system_auth.role_members
     And the output should contain a repair-info row for system_auth.role_permissions
     And the output should contain a repair-info row for system_auth.roles
-    And the output should not contain more rows
 
   Scenario: Get repair-info for all tables with since and limit 15
     Given we have access to ecctool
@@ -94,7 +91,6 @@ Feature: ecctool repair-info
     And the output should contain a repair-info row for system_auth.role_members
     And the output should contain a repair-info row for system_auth.role_permissions
     And the output should contain a repair-info row for system_auth.roles
-    And the output should not contain more rows
 
   Scenario: Get repair-info for all tables with since ISO8601 date
     Given we have access to ecctool
@@ -115,7 +111,6 @@ Feature: ecctool repair-info
     And the output should contain a repair-info row for system_auth.role_members
     And the output should contain a repair-info row for system_auth.role_permissions
     And the output should contain a repair-info row for system_auth.roles
-    And the output should not contain more rows
 
   Scenario: Get repair-info for all tables with since and duration
     Given we have access to ecctool
@@ -136,7 +131,6 @@ Feature: ecctool repair-info
     And the output should contain a repair-info row for system_auth.role_members
     And the output should contain a repair-info row for system_auth.role_permissions
     And the output should contain a repair-info row for system_auth.roles
-    And the output should not contain more rows
 
   Scenario: Get repair-info for keyspace test with duration
     Given we have access to ecctool

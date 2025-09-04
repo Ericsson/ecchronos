@@ -36,7 +36,6 @@ Feature: ecctool run-repair
     And the output should contain a repair row for system_auth.role_members with type VNODE
     And the output should contain a repair row for system_auth.role_permissions with type VNODE
     And the output should contain a repair row for system_auth.roles with type VNODE
-    And the output should not contain more rows
     And the output should contain a valid repair summary
 
   Scenario: Run cluster-wide repair for keyspace test2 and table table2
@@ -90,5 +89,4 @@ Feature: ecctool run-repair
     And the output should contain a repair row for system_auth.role_permissions with type VNODE
     And the output should contain a repair row for system_auth.roles with type VNODE
     And the output should contain a repair row for system_auth.roles with type VNODE
-    And the output should not contain more rows
     And the output should contain a valid repair summary

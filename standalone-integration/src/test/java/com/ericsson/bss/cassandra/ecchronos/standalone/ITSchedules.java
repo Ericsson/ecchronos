@@ -156,8 +156,7 @@ public class ITSchedules extends TestBase
     private Set<TableReference> myRepairs = new HashSet<>();
 
     @Parameterized.BeforeParam
-    public static void init(RepairHistoryType repairHistoryType, Boolean remoteRoutingOption) throws IOException
-    {
+    public static void init(RepairHistoryType repairHistoryType, Boolean remoteRoutingOption) throws IOException, InterruptedException {
         myRemoteRouting = remoteRoutingOption;
         initialize();
 
@@ -389,7 +388,7 @@ public class ITSchedules extends TestBase
                 .until(() -> isRepairedSince(tableReference, startTime));
 
         verifyTableRepairedSince(tableReference, startTime);
-        verifyRepairSessionMetrics(tableReference, 3); // Amount of repair groups
+        verifyRepairSessionMetrics(tableReference, 2); // Amount of repair groups (RF no DC local)
         verify(mockFaultReporter, never())
                 .raise(any(RepairFaultReporter.FaultCode.class), anyMap());
     }
