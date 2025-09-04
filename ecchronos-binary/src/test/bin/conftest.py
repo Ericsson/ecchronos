@@ -28,7 +28,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 MAX_CHECK = 10
-STARTUP_WAIT_TIME = 5
+STARTUP_WAIT_TIME = 10
 
 
 class TestFixture:

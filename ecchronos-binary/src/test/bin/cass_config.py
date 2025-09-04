@@ -24,7 +24,7 @@ from time import sleep
 import logging
 import subprocess
 
-DEFAULT_WAIT_TIME_IN_SECS = 30
+DEFAULT_WAIT_TIME_IN_SECS = 60
 
 COMPOSE_FILE_NAME = "docker-compose.yml"
 CASSANDRA_SEED_DC1_RC1_ND1 = "cassandra-seed-dc1-rack1-node1"

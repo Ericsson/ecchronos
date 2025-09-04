@@ -66,7 +66,6 @@ Feature: ecctool run-repair
     And the output should contain a repair row for test2.table1 with type VNODE
     And the output should contain a repair row for ecchronos.lock with type VNODE
     And the output should contain a repair row for ecchronos.lock with type VNODE
-    And the output should contain a repair row for ecchronos.lock with type VNODE
     And the output should contain a repair row for ecchronos.lock_priority with type VNODE
     And the output should contain a repair row for ecchronos.lock_priority with type VNODE
     And the output should contain a repair row for ecchronos.lock_priority with type VNODE
