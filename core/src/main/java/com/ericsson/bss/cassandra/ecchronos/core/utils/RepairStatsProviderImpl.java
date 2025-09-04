@@ -22,7 +22,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.repair.state.VnodeRepairStates;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.types.RepairStats;
 
 import java.util.Collection;
-import java.util.stream.Collectors;
 
 public class RepairStatsProviderImpl implements RepairStatsProvider
 {
@@ -49,8 +48,7 @@ public class RepairStatsProviderImpl implements RepairStatsProvider
             vnodeRepairStates = myVnodeRepairStateFactory.calculateClusterWideState(tableReference, to, since);
         }
         Collection<VnodeRepairState> states = vnodeRepairStates.getVnodeRepairStates();
-        Collection<VnodeRepairState> repairedStates = states.stream().filter(s -> isRepaired(s, since, to)).collect(
-                Collectors.toList());
+        Collection<VnodeRepairState> repairedStates = states.stream().filter(s -> isRepaired(s, since, to)).toList();
         double repairedRatio = states.isEmpty() ? 0 : (double) repairedStates.size() / states.size();
         return new RepairStats(tableReference.getKeyspace(), tableReference.getTable(), repairedRatio,
                 VnodeRepairStateUtils.getRepairTime(repairedStates));

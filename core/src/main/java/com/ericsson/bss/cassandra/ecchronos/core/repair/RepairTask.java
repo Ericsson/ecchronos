@@ -223,33 +223,31 @@ public abstract class RepairTask implements NotificationListener
         LOG.debug("Processing notification {}", notification.toString());
         switch (notification.getType())
         {
-        case "progress":
-            rescheduleHangPrevention();
-            String tag = (String) notification.getSource();
-            if (tag.equals("repair:" + myCommand))
+            case "progress" ->
             {
-                Map<String, Integer> progress = (Map<String, Integer>) notification.getUserData();
+                rescheduleHangPrevention();
+                String tag = (String) notification.getSource();
+                if (tag.equals("repair:" + myCommand))
+                {
+                    Map<String, Integer> progress = (Map<String, Integer>) notification.getUserData();
 
-                String message = notification.getMessage();
-                ProgressEventType type = ProgressEventType.values()[progress.get("type")];
+                    String message = notification.getMessage();
+                    ProgressEventType type = ProgressEventType.values()[progress.get("type")];
 
-                this.progress(type, message);
+                    this.progress(type, message);
+                }
             }
-            break;
-
-        case JMXConnectionNotification.NOTIFS_LOST:
-            hasLostNotification = true;
-            break;
-
-        case JMXConnectionNotification.FAILED:
-        case JMXConnectionNotification.CLOSED:
-            myLastError = new ScheduledJobException(
-                    String.format("Unable to repair %s, error: %s", myTableReference, notification.getType()));
-            myLatch.countDown();
-            break;
-        default:
-            LOG.warn("Unknown JMXConnectionNotification type: {}", notification.getType());
-            break;
+            case JMXConnectionNotification.NOTIFS_LOST ->
+            {
+                hasLostNotification = true;
+            }
+            case JMXConnectionNotification.FAILED, JMXConnectionNotification.CLOSED ->
+            {
+                myLastError = new ScheduledJobException(
+                        String.format("Unable to repair %s, error: %s", myTableReference, notification.getType()));
+                myLatch.countDown();
+            }
+            default -> LOG.warn("Unknown JMXConnectionNotification type: {}", notification.getType());
         }
     }
 

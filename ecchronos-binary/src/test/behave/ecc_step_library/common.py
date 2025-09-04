@@ -20,7 +20,7 @@ import json
 import io
 import requests
 from jsonschema import validate
-from behave import given, then, when  # pylint: disable=no-name-in-module
+from behave import given, then, when
 
 
 ID_PATTERN = r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
@@ -86,13 +86,13 @@ def get_job_id(context):
     return job_id
 
 
-@given("we have access to ecctool")
+@given("we have access to ecctool")  # pylint: disable=not-callable
 def step_init(context):
     assert context.config.userdata.get("ecctool") is not False
     assert os.path.isfile(context.config.userdata.get("ecctool"))
 
 
-@then("the output should contain a valid repair summary")
+@then("the output should contain a valid repair summary")  # pylint: disable=not-callable
 def step_validate_list_repairs_contains_summary(context):
     assert len(context.summary) == 1, "Expecting only 1 row summary"
 
@@ -100,17 +100,19 @@ def step_validate_list_repairs_contains_summary(context):
     assert re.match(REPAIR_SUMMARY_PATTERN, summary), "Faulty summary '{0}'".format(summary)
 
 
-@then("the output should not contain more rows")
+@then("the output should not contain more rows")  # pylint: disable=not-callable
 def step_validate_list_rows_clear(context):
     validate_last_table_row(context.rows)
 
 
-@then("the output should contain a valid repair header")
+@then("the output should contain a valid repair header")  # pylint: disable=not-callable
 def step_validate_list_tables_header(context):
     validate_header(context.header, REPAIR_HEADER)
 
 
-@then("the output should contain a repair row for {keyspace}.{table} with type {repair_type}")
+@then(  # pylint: disable=not-callable
+    "the output should contain a repair row for {keyspace}.{table} with type {repair_type}"
+)
 def step_validate_repair_row(context, keyspace, table, repair_type):
     expected_row = table_row(REPAIR_ROW_FORMAT_PATTERN, keyspace, table, repair_type)
     match_and_remove_row(context.rows, expected_row)
@@ -121,7 +123,7 @@ def get_behave_dir():
     return os.path.abspath(os.path.join(current_dir, "../features"))
 
 
-@given("I have a json schema {schema_name}")
+@given("I have a json schema {schema_name}")  # pylint: disable=not-callable
 def step_import_schema(context, schema_name):
     schema_file = os.path.join(get_behave_dir(), "schemas", "{0}.json".format(schema_name))
 
@@ -129,12 +131,12 @@ def step_import_schema(context, schema_name):
         setattr(context, schema_name, json.loads(jsonfile.read()))
 
 
-@given("I use the url {url}")
+@given("I use the url {url}")  # pylint: disable=not-callable
 def step_set_url(context, url):
     context.url = url
 
 
-@when("I send a GET request")
+@when("I send a GET request")  # pylint: disable=not-callable
 def step_send_get_request(context):
     assert context.url is not None
     assert not context.url.startswith("http"), "context.url cannot contain protocol 'http' or 'https'"
@@ -149,7 +151,7 @@ def step_send_get_request(context):
         context.response = requests.get(url, timeout=10)
 
 
-@when("I send a POST request")
+@when("I send a POST request")  # pylint: disable=not-callable
 def step_send_post_request(context):
     assert context.url is not None
     assert not context.url.startswith("http"), "context.url cannot contain protocol 'http' or 'https'"
@@ -164,13 +166,13 @@ def step_send_post_request(context):
         context.response = requests.post(url, timeout=10)
 
 
-@then("the response is successful")
+@then("the response is successful")  # pylint: disable=not-callable
 def step_verify_response_is_successful(context):
     assert context.response is not None
     assert context.response.status_code == 200
 
 
-@then("the response matches the json schema {schema_name}")
+@then("the response matches the json schema {schema_name}")  # pylint: disable=not-callable
 def step_verify_schema(context, schema_name):
     schema = getattr(context, schema_name, None)
     assert schema is not None
@@ -180,7 +182,7 @@ def step_verify_schema(context, schema_name):
     validate(instance=context.json, schema=schema)
 
 
-@then("the id from response is extracted for {keyspace}.{table}")
+@then("the id from response is extracted for {keyspace}.{table}")  # pylint: disable=not-callable
 def step_extract_id(context, keyspace, table):
     assert context.response is not None
     context.json = context.response.json()
@@ -191,7 +193,7 @@ def step_extract_id(context, keyspace, table):
     assert context.id is not None
 
 
-@then("the job list contains only keyspace {keyspace}")
+@then("the job list contains only keyspace {keyspace}")  # pylint: disable=not-callable
 def step_verify_job_list(context, keyspace):
     for obj in context.json:
         assert obj["keyspace"] == keyspace

@@ -22,7 +22,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.exceptions.EcChronosException;
 import com.google.common.base.Preconditions;
 
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -93,19 +92,14 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
         return tableReferences;
     }
 
-    class UuidTableReference implements TableReference
+    record UuidTableReference(UUID uuid, String keyspace, String table, int gcGraceSeconds) implements TableReference
     {
-        private final UUID uuid;
-        private final String keyspace;
-        private final String table;
-        private final int gcGraceSeconds;
-
         UuidTableReference(final TableMetadata tableMetadata)
         {
-            uuid = tableMetadata.getId().get();
-            keyspace = tableMetadata.getKeyspace().asInternal();
-            table = tableMetadata.getName().asInternal();
-            gcGraceSeconds = (int) tableMetadata.getOptions().get(CqlIdentifier.fromInternal("gc_grace_seconds"));
+            this(tableMetadata.getId().get(),
+                    tableMetadata.getKeyspace().asInternal(),
+                    tableMetadata.getName().asInternal(),
+                    (int) tableMetadata.getOptions().get(CqlIdentifier.fromInternal("gc_grace_seconds")));
         }
 
         @Override
@@ -136,27 +130,6 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
         public String toString()
         {
             return keyspace + "." + table;
-        }
-
-        @Override
-        public boolean equals(final Object o)
-        {
-            if (this == o)
-            {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass())
-            {
-                return false;
-            }
-            UuidTableReference that = (UuidTableReference) o;
-            return uuid.equals(that.uuid) && keyspace.equals(that.keyspace) && table.equals(that.table);
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash(uuid, keyspace, table);
         }
     }
 }

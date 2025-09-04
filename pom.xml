@@ -20,7 +20,7 @@
 
     <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
     <artifactId>parent</artifactId>
-    <version>6.0.7-SNAPSHOT</version>
+    <version>6.0.8-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Ericsson Cassandra Chronos</name>
@@ -55,37 +55,44 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Dependency versions -->
-        <assertj.version>3.27.3</assertj.version>
+        <assertj.version>3.27.4</assertj.version>
         <awaitility.version>4.3.0</awaitility.version>
         <caffeine.version>3.2.2</caffeine.version>
         <cassandra.driver.core.version>4.19.0</cassandra.driver.core.version>
-        <com.fasterxml.jackson.core.version>2.19.2</com.fasterxml.jackson.core.version>
-        <com.fasterxml.jackson.dataformat.version>2.19.2</com.fasterxml.jackson.dataformat.version>
+        <com.fasterxml.jackson.annotations.version>2.20</com.fasterxml.jackson.annotations.version>
+        <com.fasterxml.jackson.core.version>2.20.0</com.fasterxml.jackson.core.version>
         <com.typesafe.config.version>1.4.4</com.typesafe.config.version>
-        <equalsverifier.version>4.0.6</equalsverifier.version>
+        <equalsverifier.version>4.0.9</equalsverifier.version>
         <guava.version>33.4.8-jre</guava.version>
-        <io.dropwizard.metrics.version>4.2.33</io.dropwizard.metrics.version>
-        <io.micrometer.version>1.15.2</io.micrometer.version>
-        <io.netty.version>4.1.123.Final</io.netty.version>
+        <io.dropwizard.metrics.version>4.2.36</io.dropwizard.metrics.version>
+        <io.micrometer.version>1.15.3</io.micrometer.version>
+        <io.netty.version>4.1.124.Final</io.netty.version>
         <io.prometheus.simpleclient.version>0.16.0</io.prometheus.simpleclient.version>
-        <io.prometheus.client-java.version>1.3.10</io.prometheus.client-java.version>
+        <io.prometheus.client-java.version>1.4.1</io.prometheus.client-java.version>
+        <io.prometheus.prometheus-metrics-core.version>1.4.1</io.prometheus.prometheus-metrics-core.version>
+        <io.prometheus.prometheus-metrics-tracer-common.version>1.4.1</io.prometheus.prometheus-metrics-tracer-common.version>
         <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
         <javax.inject-api.version>2.0.1</javax.inject-api.version>
         <jcip.version>1.0</jcip.version>
-        <junit.version>5.13.4</junit.version>
+        <junit.junit.version>4.13.2</junit.junit.version>
+        <junit.junit-vintage-engine.version>5.13.4</junit.junit-vintage-engine.version>
         <junitparams.version>1.1.1</junitparams.version>
         <logback.version>1.5.18</logback.version>
-        <mockito.core.version>5.18.0</mockito.core.version>
+        <mockito.core.version>5.19.0</mockito.core.version>
         <org.apache.commons.io.version>2.20.0</org.apache.commons.io.version>
-        <org.apache.commons.commons-compress.version>1.27.1</org.apache.commons.commons-compress.version>
-        <org.apache.commons.commons-lang3.version>3.18.0</org.apache.commons.commons-lang3.version>
+        <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
+        <org.apache.httpcomponents.client5.httpclient5.version>5.5</org.apache.httpcomponents.client5.httpclient5.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.81</org.bouncycastle.bcpkix-jdk18on.version>
-        <org.springframework.boot.version>3.5.3</org.springframework.boot.version>
-        <org.yaml.snakeyaml.version>2.4</org.yaml.snakeyaml.version>
+        <org.springdoc.openapi-starter-webmvc-ui.version>2.8.12</org.springdoc.openapi-starter-webmvc-ui.version>
+        <org.springframework.boot.spring-boot-starter-actuator.version>3.5.5</org.springframework.boot.spring-boot-starter-actuator.version>
+        <org.springframework.boot.spring-boot-starter-thymeleaf.version>3.5.5</org.springframework.boot.spring-boot-starter-thymeleaf.version>
+        <org.springframework.boot.spring-boot-starter-web.version>3.5.5</org.springframework.boot.spring-boot-starter-web.version>
+        <org.springframework.spring-boot-test.version>3.5.5</org.springframework.spring-boot-test.version>
+        <org.springframework.spring-test.version>6.2.10</org.springframework.spring-test.version>
+        <org.yaml.snakeyaml.version>2.5</org.yaml.snakeyaml.version>
         <slf4j.version>2.0.17</slf4j.version>
-        <springdoc.openapi-starter-webmvc-ui.version>2.8.9</springdoc.openapi-starter-webmvc-ui.version>
-        <swagger-annotations.version>2.2.34</swagger-annotations.version>
+        <swagger-annotations.version>2.2.36</swagger-annotations.version>
         <testcontainers.version>1.21.3</testcontainers.version>
 
         <!-- Plugin versions -->
@@ -101,7 +108,7 @@
         <org.apache.maven.plugins.maven-gpg-plugin.version>3.2.8</org.apache.maven.plugins.maven-gpg-plugin.version>
         <org.apache.maven.plugins.maven-install-plugin.version>3.1.4</org.apache.maven.plugins.maven-install-plugin.version>
         <org.apache.maven.plugins-maven-jar-plugin.version>3.4.2</org.apache.maven.plugins-maven-jar-plugin.version>
-        <org.apache.maven.plugins.maven-javadoc-plugin.version>3.11.2</org.apache.maven.plugins.maven-javadoc-plugin.version>
+        <org.apache.maven.plugins.maven-javadoc-plugin.version>3.11.3</org.apache.maven.plugins.maven-javadoc-plugin.version>
         <org.apache.maven.plugins-maven-pmd-plugin.version>3.27.0</org.apache.maven.plugins-maven-pmd-plugin.version>
         <org.apache.maven.plugins.maven-release-plugin.version>3.1.1</org.apache.maven.plugins.maven-release-plugin.version>
         <org.apache.maven.plugins-maven-resources-plugin.version>3.3.1</org.apache.maven.plugins-maven-resources-plugin.version>
@@ -138,18 +145,23 @@
                 <scope>test</scope>
             </dependency>
 
-            <!-- Used by testcontainers and springdoc-openapi-starter-webmvc-ui, steped due to CVE-2025-48924 -->
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>${org.apache.commons.commons-lang3.version}</version>
-            </dependency>
-
             <!-- Used by java-driver -->
             <dependency>
                 <groupId>com.typesafe</groupId>
                 <artifactId>config</artifactId>
                 <version>${com.typesafe.config.version}</version>
+            </dependency>
+
+            <!-- Used within prometheus, steped to keep them in sync -->
+            <dependency>
+                <groupId>io.prometheus</groupId>
+                <artifactId>prometheus-metrics-core</artifactId>
+                <version>${io.prometheus.prometheus-metrics-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.prometheus</groupId>
+                <artifactId>prometheus-metrics-tracer-common</artifactId>
+                <version>${io.prometheus.prometheus-metrics-tracer-common.version}</version>
             </dependency>
 
             <!-- End of temporary override section -->
@@ -214,7 +226,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
-                <version>${com.fasterxml.jackson.core.version}</version>
+                <version>${com.fasterxml.jackson.annotations.version}</version>
             </dependency>
 
             <dependency>
@@ -226,7 +238,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.dataformat</groupId>
                 <artifactId>jackson-dataformat-yaml</artifactId>
-                <version>${com.fasterxml.jackson.dataformat.version}</version>
+                <version>${com.fasterxml.jackson.core.version}</version>
             </dependency>
 
             <dependency>
@@ -357,25 +369,28 @@
                 <version>${logback.version}</version>
             </dependency>
 
-            <!-- Spring boot -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${org.springframework.boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
+                <artifactId>spring-boot-starter-actuator</artifactId>
+                <version>${org.springframework.boot.spring-boot-starter-actuator.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-thymeleaf</artifactId>
-                <version>${org.springframework.boot.version}</version>
+                <version>${org.springframework.boot.spring-boot-starter-thymeleaf.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-web</artifactId>
+                <version>${org.springframework.boot.spring-boot-starter-web.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-                <version>${springdoc.openapi-starter-webmvc-ui.version}</version>
+                <version>${org.springdoc.openapi-starter-webmvc-ui.version}</version>
             </dependency>
 
             <!-- OpenAPI annotations -->
@@ -420,11 +435,17 @@
             </dependency>
 
             <dependency>
-                <groupId>org.junit</groupId>
-                <artifactId>junit-bom</artifactId>
-                <version>${junit.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.junit.vintage</groupId>
+                <artifactId>junit-vintage-engine</artifactId>
+                <version>${junit.junit-vintage-engine.version}</version>
+                <scope>test</scope>
             </dependency>
 
             <dependency>
@@ -438,13 +459,6 @@
                 <groupId>org.testcontainers</groupId>
                 <artifactId>cassandra</artifactId>
                 <version>${testcontainers.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.bouncycastle</groupId>
-                <artifactId>bcpkix-jdk18on</artifactId>
-                <version>${org.bouncycastle.bcpkix-jdk18on.version}</version>
                 <scope>test</scope>
             </dependency>
 
@@ -480,6 +494,35 @@
                 <groupId>nl.jqno.equalsverifier</groupId>
                 <artifactId>equalsverifier</artifactId>
                 <version>${equalsverifier.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- Test Spring Boot -->
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-test</artifactId>
+                <version>${org.springframework.spring-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-test</artifactId>
+                <version>${org.springframework.spring-boot-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk18on</artifactId>
+                <version>${org.bouncycastle.bcpkix-jdk18on.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.httpcomponents.client5</groupId>
+                <artifactId>httpclient5</artifactId>
+                <version>${org.apache.httpcomponents.client5.httpclient5.version}</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>
@@ -889,7 +932,7 @@ limitations under the License.
         <url>https://github.com/ericsson/ecchronos</url>
         <connection>scm:git:git@github.com:ericsson/ecchronos.git</connection>
         <developerConnection>scm:git:git@github.com:ericsson/ecchronos.git</developerConnection>
-        <tag>ecchronos-6.0.6</tag>
+        <tag>ecchronos-6.0.7</tag>
     </scm>
 
 </project>

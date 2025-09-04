@@ -113,7 +113,7 @@ public class TestOnDemandRepairManagementRESTImpl
         List<OnDemandRepairJobView> repairJobViews = Arrays.asList(job1, job2, job3);
 
         List<OnDemandRepair> expectedResponse = repairJobViews.stream().map(OnDemandRepair::new)
-                .collect(Collectors.toList());
+                .toList();
 
         when(myOnDemandRepairScheduler.getAllClusterWideRepairJobs()).thenReturn(repairJobViews);
 
@@ -174,7 +174,7 @@ public class TestOnDemandRepairManagementRESTImpl
         List<OnDemandRepairJobView> repairJobViews = Arrays.asList(job1, job2, job3);
 
         List<OnDemandRepair> expectedResponse = repairJobViews.stream().map(OnDemandRepair::new)
-                .collect(Collectors.toList());
+                .toList();
 
         when(myOnDemandRepairScheduler.getAllClusterWideRepairJobs()).thenReturn(repairJobViews);
         ResponseEntity<List<OnDemandRepair>> response = null;
