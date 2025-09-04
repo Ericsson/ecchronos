@@ -66,7 +66,7 @@
         <guava.version>33.4.8-jre</guava.version>
         <io.dropwizard.metrics.version>4.2.36</io.dropwizard.metrics.version>
         <io.micrometer.version>1.15.3</io.micrometer.version>
-        <io.netty.version>4.1.124.Final</io.netty.version>
+        <io.netty.version>4.1.125.Final</io.netty.version>
         <io.prometheus.simpleclient.version>0.16.0</io.prometheus.simpleclient.version>
         <io.prometheus.client-java.version>1.4.1</io.prometheus.client-java.version>
         <io.prometheus.prometheus-metrics-core.version>1.4.1</io.prometheus.prometheus-metrics-core.version>
