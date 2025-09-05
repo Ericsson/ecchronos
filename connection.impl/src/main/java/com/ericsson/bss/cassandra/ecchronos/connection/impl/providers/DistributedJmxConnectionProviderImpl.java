@@ -64,7 +64,7 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
         {
             jmxConnector.getConnectionId();
         }
-        catch (IOException e)
+        catch (IOException | NullPointerException e)
         {
             return false;
         }
