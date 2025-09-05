@@ -17,9 +17,8 @@ If HTTP related functionality is changed then `ecchronos-binary` test cases shou
 There are a few different tests that can be run:
 
 * Unit tests
-* Docker tests
-    * Integration tests
-    * Acceptance tests
+* Integration tests
+* Acceptance tests (Python/behave)
 
 It's recommended to run all tests `mvn clean verify -Dprecommit.tests` before creating a PR.
 Make sure to add test cases to the appropriate test suite.
@@ -29,12 +28,6 @@ Make sure to add test cases to the appropriate test suite.
 The unit tests are run by `mvn clean test`.
 They are running simple tests that sometimes utilize a single embedded Cassandra node.
 
-### Docker tests
-
-The acceptance tests and integration tests use docker compose instances by default.
-The docker containers are managed by testcontainers and started automatically during test execution.
-The docker command must be runnable without *sudo* for the user running the tests.
-
 ### Integration tests
 
 The integration tests tries to start ecChronos with a cluster of nodes and verify that repairs are run.
@@ -42,59 +35,83 @@ It is activated by using `-P standalone-integration-tests`.
 
 ### Acceptance tests
 
-The acceptance test use behave to verify the python scripts as well as the REST server in ecChronos.
-They are activated by using `-P python-integration-tests` and use testcontainers to manage Docker instances automatically.
+The acceptance tests use pytest and behave to verify the Python scripts as well as the REST server in ecChronos.
 
-### Running acceptance/integration tests towards local ccm cluster
+#### Full Integration Tests (`python-integration-tests`)
+This profile is designed for CI environments and provides complete test coverage:
+- Creates certificates and sets up TLS authentication
+- Uses Docker containers with full security configuration
+- Does **not** create a virtual environment automatically
+- Installs Python dependencies directly to the system/current environment
 
-Running acceptance and integration tests towards local ccm cluster will save a lot of time because the Cassandra instances
+To run locally:
+```bash
+mvn clean verify -Dprecommit.tests
+```
+
+**Prerequisites:**
+- Install Python dependencies manually: `pip install -r ecchronos-binary/target/test/requirements.txt`
+- OR create and activate your own virtual environment before running
+
+#### Local Development Tests (`local-python-integration-tests`)
+This profile is optimized for local development:
+- Automatically creates a Python virtual environment
+- Installs all required dependencies in isolation
+- Uses simplified configuration (no TLS/auth)
+- Faster execution for development cycles
+
+To run:
+```bash
+mvn clean install -Dlocalprecommit.tests
+```
+
+### Running tests towards local ccm cluster
+
+Running tests towards local ccm cluster will save a lot of time because the Cassandra instances
 will be reused for the tests.
 This is especially useful during test development to have shorter feedback loop.
 
-**NOTE: These tests does not use TLS or auth therefore,
+**NOTE: These tests do not use TLS or auth therefore,
 it's recommended to run all the tests using `mvn clean verify -Dprecommit.tests` once you're done with development**
 
 1. Setup local ccm cluster
 
-```
+```bash
 ccm create test -n 4 -v 4.0 --vnodes; ccm updateconf "num_tokens: 16"; ccm start;
 ```
 
 2. Prepare keyspaces and tables:
 
-```
+```bash
 ccm node1 cqlsh -f cassandra-test-image/src/main/docker/create_keyspaces.cql
 ```
 
 3. Run the tests.
 
-Python integration tests
-```
+Python integration tests (with automatic venv setup):
+```bash
 mvn clean install -P local-python-integration-tests
 ```
 
-Standalone integration tests
-```
+Standalone integration tests:
+```bash
 mvn clean install -P local-standalone-integration-tests
 ```
 
-All the above in one property.
-```
+All local tests:
+```bash
 mvn clean install -Dlocalprecommit.tests
 ```
 
 ### Running acceptance tests towards local ecChronos & Cassandra
 
 For development, it's much faster to run behave tests without needing to do the ecChronos/Cassandra setup each time.
-Running behave tests manually is roughly 7x faster than running through `python-integration-tests`.
+Running behave tests manually is roughly 7x faster than running through Maven profiles.
 
-1. Install behave and dependencies (this is only needed first time)
+1. Install dependencies (this is only needed first time)
 
-```
-pip install behave
-pip install requests
-pip install jsonschema
-pip install cassandra-driver
+```bash
+pip install -r ecchronos-binary/target/test/requirements.txt
 ```
 
 2. Prepare tables and configuration for tests

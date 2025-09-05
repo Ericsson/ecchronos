@@ -284,10 +284,14 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>bash</executable>
+                                    <executable>python</executable>
                                     <arguments>
-                                        <argument>-c</argument>
-                                        <argument>source venv/bin/activate &amp;&amp; python -m pytest test_ecchronos.py -s -v --tb=short</argument>
+                                    <argument>-m</argument>
+                                        <argument>pytest</argument>
+                                        <argument>test_ecchronos.py</argument>
+                                        <argument>-s</argument>
+                                        <argument>-v</argument>
+                                        <argument>--tb=short</argument>
                                     </arguments>
                                     <workingDirectory>${project.build.directory}/test</workingDirectory>
                                     <environmentVariables>
@@ -379,7 +383,7 @@
                                     <executable>bash</executable>
                                     <arguments>
                                         <argument>-c</argument>
-                                        <argument>source venv/bin/activate &amp;&amp; python -m pytest test_ecchronos.py -s -v --tb=short</argument>
+                                        <argument>if [ -f venv/bin/activate ]; then source venv/bin/activate; fi &amp;&amp; python -m pytest test_ecchronos.py -s -v --tb=short</argument>
                                     </arguments>
                                     <workingDirectory>${project.build.directory}/test</workingDirectory>
                                     <environmentVariables>
