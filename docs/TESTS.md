@@ -1,5 +1,12 @@
 # Tests
 
+To run the tests autonomously, you need to have Docker and Docker Compose installed:
+
+- **Docker**: Follow the installation guide at https://docs.docker.com/engine/install/
+- **Docker Compose Plugin**: Follow the installation guide at https://docs.docker.com/compose/install/linux/#install-the-plugin-manually
+
+The docker command must be runnable without *sudo* for the user running the tests.
+
 Make sure to add tests to the relevant phase(s) when possible.
 If mocks or a single Apache Cassandra instance is necessary it may be run as a unit test.
 If multiple Apache Cassandra instances are necessary then test cases should be added to the `standalone-integration` tests.

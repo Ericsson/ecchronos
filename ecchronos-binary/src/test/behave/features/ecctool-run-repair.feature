@@ -68,14 +68,10 @@ Feature: ecctool run-repair
     And the output should contain a repair row for ecchronos.lock with type VNODE
     And the output should contain a repair row for ecchronos.lock_priority with type VNODE
     And the output should contain a repair row for ecchronos.lock_priority with type VNODE
-    And the output should contain a repair row for ecchronos.lock_priority with type VNODE
-    And the output should contain a repair row for ecchronos.on_demand_repair_status with type VNODE
     And the output should contain a repair row for ecchronos.on_demand_repair_status with type VNODE
     And the output should contain a repair row for ecchronos.on_demand_repair_status with type VNODE
     And the output should contain a repair row for ecchronos.reject_configuration with type VNODE
     And the output should contain a repair row for ecchronos.reject_configuration with type VNODE
-    And the output should contain a repair row for ecchronos.reject_configuration with type VNODE
-    And the output should contain a repair row for ecchronos.repair_history with type VNODE
     And the output should contain a repair row for ecchronos.repair_history with type VNODE
     And the output should contain a repair row for ecchronos.repair_history with type VNODE
     And the output should contain a repair row for system_auth.network_permissions with type VNODE

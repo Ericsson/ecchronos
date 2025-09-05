@@ -50,7 +50,7 @@ public class AbstractCassandraCluster
         {
             return;
         }
-        String cassandraVersion = System.getProperty("it.cassandra.version", "4.0"); // valor padrão
+        String cassandraVersion = System.getProperty("it.cassandra.version", "4.0");
         String certificateDirectory = Paths.get(System.getProperty("project.build.directory", "target"))
                 .resolve("certificates/cert")
                 .toAbsolutePath()

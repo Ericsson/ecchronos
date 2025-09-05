@@ -103,7 +103,6 @@ public class TestBase
         if (myNativeConnectionProvider != null) {
             myNativeConnectionProvider.close();
         }
-        // Cluster compartilhado será limpo automaticamente pelo Testcontainers
     }
 
     protected static LocalNativeConnectionProvider getNativeConnectionProvider()

@@ -284,14 +284,10 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>python</executable>
+                                    <executable>bash</executable>
                                     <arguments>
-                                        <argument>-m</argument>
-                                        <argument>pytest</argument>
-                                        <argument>test_ecchronos.py</argument>
-                                        <argument>-s</argument>
-                                        <argument>-v</argument>
-                                        <argument>--tb=short</argument>
+                                        <argument>-c</argument>
+                                        <argument>source venv/bin/activate &amp;&amp; python -m pytest test_ecchronos.py -s -v --tb=short</argument>
                                     </arguments>
                                     <workingDirectory>${project.build.directory}/test</workingDirectory>
                                     <environmentVariables>
@@ -380,14 +376,10 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>python</executable>
+                                    <executable>bash</executable>
                                     <arguments>
-                                        <argument>-m</argument>
-                                        <argument>pytest</argument>
-                                        <argument>test_ecchronos.py</argument>
-                                        <argument>-s</argument>
-                                        <argument>-v</argument>
-                                        <argument>--tb=short</argument>
+                                        <argument>-c</argument>
+                                        <argument>source venv/bin/activate &amp;&amp; python -m pytest test_ecchronos.py -s -v --tb=short</argument>
                                     </arguments>
                                     <workingDirectory>${project.build.directory}/test</workingDirectory>
                                     <environmentVariables>
