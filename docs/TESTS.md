@@ -20,7 +20,7 @@ There are a few different tests that can be run:
 * Integration tests
 * Acceptance tests (Python/behave)
 
-It's recommended to run all tests `mvn clean verify -Dprecommit.tests` before creating a PR.
+It's recommended to run all tests `mvn clean verify -Dlocalprecommit.tests` before creating a PR.
 Make sure to add test cases to the appropriate test suite.
 
 ### Unit tests
