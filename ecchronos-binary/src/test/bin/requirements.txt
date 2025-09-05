@@ -1,0 +1,24 @@
+# Core testing frameworks
+pytest
+pytest-dependency
+behave
+
+# Cassandra driver and database connectivity
+cassandra-driver
+
+# Docker and container management
+testcontainers
+docker
+
+# OpenAPI validation
+openapi-spec-validator
+
+# Code quality and linting
+pylint
+
+# HTTP requests and API testing
+requests
+
+# Object processing
+PyYAML
+jsonschema

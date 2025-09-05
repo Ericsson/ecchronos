@@ -104,8 +104,7 @@ public class ITIncrementalSchedules extends TestBase
     private Set<TableReference> myRepairs = new HashSet<>();
 
     @Parameterized.BeforeParam
-    public static void init(Boolean remoteRoutingOption) throws IOException
-    {
+    public static void init(Boolean remoteRoutingOption) throws IOException, InterruptedException {
         myRemoteRouting = remoteRoutingOption;
         initialize();
 

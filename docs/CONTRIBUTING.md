@@ -92,7 +92,7 @@ On top of that, if there's any change in the output of ecctool the [examples](EC
 
 ### Tests
 
-It is recommended to run all tests `mvn clean verify -Dprecommit.tests` before creating a PR.
+It is recommended to run all tests `mvn clean verify -Dlocalprecommit.tests` before creating a PR.
 If applicable, please add test cases to the appropriate test suites.
 More information can be found on the [tests page](TESTS.md).
 

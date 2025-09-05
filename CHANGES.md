@@ -2,6 +2,8 @@
 
 ## Version 6.0.8
 
+* Refactor ecchronos-binary Test Infrastructure - Issue #1093
+
 ## Version 6.0.7
 
 * Revert Switch to prometheus-metrics-exposition-textformats due to a licence issue - Issue #972

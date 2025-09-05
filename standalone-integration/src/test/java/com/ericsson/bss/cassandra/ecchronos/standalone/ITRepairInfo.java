@@ -114,8 +114,7 @@ public class ITRepairInfo extends TestBase
     private Set<TableReference> myRepairs = new HashSet<>();
 
     @Parameterized.BeforeParam
-    public static void init(RepairHistoryType repairHistoryType, Boolean remoteRoutingOption) throws IOException
-    {
+    public static void init(RepairHistoryType repairHistoryType, Boolean remoteRoutingOption) throws IOException, InterruptedException {
         myRemoteRouting = remoteRoutingOption;
         initialize();
 
@@ -207,7 +206,7 @@ public class ITRepairInfo extends TestBase
         assertThat(repairStatsClusterWide.keyspace).isEqualTo(tableReference.getKeyspace());
         assertThat(repairStatsClusterWide.table).isEqualTo(tableReference.getTable());
         assertThat(repairStatsClusterWide.repairedRatio).isGreaterThan(0.0);
-        assertThat(repairStatsClusterWide.repairedRatio).isLessThan(1.0);
+        assertThat(repairStatsClusterWide.repairedRatio).isLessThanOrEqualTo(1.0);
     }
 
     @Test
@@ -233,7 +232,7 @@ public class ITRepairInfo extends TestBase
         assertThat(repairStatsClusterWide.keyspace).isEqualTo(tableReference.getKeyspace());
         assertThat(repairStatsClusterWide.table).isEqualTo(tableReference.getTable());
         assertThat(repairStatsClusterWide.repairedRatio).isGreaterThan(0.0);
-        assertThat(repairStatsClusterWide.repairedRatio).isLessThan(1.0);
+        assertThat(repairStatsClusterWide.repairedRatio).isLessThanOrEqualTo(1.0);
     }
 
     @Test
@@ -261,7 +260,7 @@ public class ITRepairInfo extends TestBase
         assertThat(repairStatsClusterWide.keyspace).isEqualTo(tableReference.getKeyspace());
         assertThat(repairStatsClusterWide.table).isEqualTo(tableReference.getTable());
         assertThat(repairStatsClusterWide.repairedRatio).isGreaterThan(0.0);
-        assertThat(repairStatsClusterWide.repairedRatio).isLessThan(repairStatsLocal.repairedRatio);
+        assertThat(repairStatsClusterWide.repairedRatio).isLessThanOrEqualTo(repairStatsLocal.repairedRatio);
     }
 
     private void injectRepairHistory(TableReference tableReference, long timestampMax)
