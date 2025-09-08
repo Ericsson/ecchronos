@@ -103,7 +103,7 @@ class TestFixture:
 
             if attempt < MAX_CHECK:
                 logger.info(f"Waiting for ecChronos... (attempt {attempt + 1}/{MAX_CHECK})")
-                time.sleep(STARTUP_WAIT_TIME*2)
+                time.sleep(STARTUP_WAIT_TIME * 2)
 
         raise TimeoutError(f"ecChronos failed to become ready after {MAX_CHECK} attempts")
 

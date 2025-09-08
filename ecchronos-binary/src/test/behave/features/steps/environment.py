@@ -22,7 +22,6 @@ from cassandra.auth import PlainTextAuthProvider
 
 
 class Environment:
-
     cluster = None
     session = None
     host_id = None
@@ -38,8 +37,8 @@ def before_all(context):
     username = context.config.userdata.get("cql_user")
     password = context.config.userdata.get("cql_password")
 
-    auth_provider=None
-    if (username and username != '') and (password and password != ''):
+    auth_provider = None
+    if (username and username != "") and (password and password != ""):
         auth_provider = PlainTextAuthProvider(username=username, password=password)
 
     no_tls = context.config.userdata.get("no_tls")
@@ -61,10 +60,11 @@ def before_all(context):
     host = cluster.metadata.get_host(cassandra_address)
     context.environment.host_id = host.host_id
 
-def after_feature(context, feature): # pylint: disable=unused-argument
+
+def after_feature(context, feature):  # pylint: disable=unused-argument
     wait_for_local_repairs_to_complete(context)
-    context.environment.session.execute('TRUNCATE TABLE ecchronos.on_demand_repair_status')
-    context.environment.session.execute('TRUNCATE TABLE ecchronos.repair_history')
+    context.environment.session.execute("TRUNCATE TABLE ecchronos.on_demand_repair_status")
+    context.environment.session.execute("TRUNCATE TABLE ecchronos.repair_history")
 
 
 def wait_for_local_repairs_to_complete(context):
@@ -73,15 +73,15 @@ def wait_for_local_repairs_to_complete(context):
     while count < timeout_seconds:
         uncompleted_repairs = 0
         rows = context.environment.session.execute(
-            'SELECT host_id, job_id, status FROM ecchronos.on_demand_repair_status'
+            "SELECT host_id, job_id, status FROM ecchronos.on_demand_repair_status"
         )
         for row in rows:
-             if row.status == 'started':
-                 uncompleted_repairs += 1
+            if row.status == "started":
+                uncompleted_repairs += 1
         if uncompleted_repairs < 1:
             break
         count += 1
         time.sleep(1)
 
     # assert count < timeout_seconds, 'All repairs did not finish in {0} seconds'.format(timeout_seconds)
-    print('Waiting for repairs to finish took {0} seconds'.format(count))
+    print("Waiting for repairs to finish took {0} seconds".format(count))

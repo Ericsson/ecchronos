@@ -56,6 +56,7 @@ def step_show_repair(context, keyspace, table):
     run_ecc_repair_status(context, ["--keyspace", keyspace, "--table", table])
     handle_repair_output(context)
 
+
 @when("we list repairs for hostid and table {keyspace}.{table}")
 def step_show_repair_with_nodeid(context, keyspace, table):
     run_ecc_repair_status(

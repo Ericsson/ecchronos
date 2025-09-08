@@ -22,6 +22,7 @@ import global_variables as global_vars
 DC1 = "datacenter1"
 DC2 = "datacenter2"
 
+
 class EcchronosConfig:
     def __init__(self, context):
         self.context = context
@@ -58,19 +59,9 @@ class EcchronosConfig:
         data = self._read_yaml_data(global_vars.ECC_YAML_FILE_PATH)
 
         data["connection"]["cql"]["agent"]["contactPoints"] = [
-            {
-                "host": self.context.cassandra_ip,
-                "port": self.context.cassandra_native_port
-            }
+            {"host": self.context.cassandra_ip, "port": self.context.cassandra_native_port}
         ]
-        data["connection"]["cql"]["agent"]["datacenterAware"]["datacenters"] = [
-            {
-                "name": DC1
-            },
-            {
-                "name": DC2
-            }
-        ]
+        data["connection"]["cql"]["agent"]["datacenterAware"]["datacenters"] = [{"name": DC1}, {"name": DC2}]
         self._modify_yaml_data(global_vars.ECC_YAML_FILE_PATH, data)
 
     def _modify_scheduler_configuration(self):
@@ -158,7 +149,7 @@ class EcchronosConfig:
                         "name": "table1",
                         "interval": {"time": 1, "unit": "days"},
                         "initial_delay": {"time": 1, "unit": "hours"},
-                        "unwind_ratio": 0.1
+                        "unwind_ratio": 0.1,
                     }
                 ],
             },
