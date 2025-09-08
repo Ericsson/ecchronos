@@ -15,6 +15,7 @@
 
 package com.ericsson.bss.cassandra.ecchronos.standalone;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.Node;
@@ -44,6 +45,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -81,17 +84,20 @@ public class ITIncrementalSchedules extends TestBase
     private static TableReferenceFactory myTableReferenceFactory;
     private static CassandraMetrics myCassandraMetrics;
     protected static Metadata myMetadata;
+    private static CqlSession myAdminSession;
 
     private final Set<TableReference> myRepairs = new HashSet<>();
 
     @Before
-    public void init()
+    public void init() throws IOException
     {
+        initialize();
         mockFaultReporter = mock(RepairFaultReporter.class);
         mockTableRepairMetrics = mock(TableRepairMetrics.class);
-        myMetadata = mySession.getMetadata();
+        myAdminSession = getAdminNativeConnectionProvider().getCqlSession();
+        myMetadata = getSession().getMetadata();
 
-        myTableReferenceFactory = new TableReferenceFactoryImpl(mySession);
+        myTableReferenceFactory = new TableReferenceFactoryImpl(getSession());
 
         myHostStates = HostStatesImpl.builder()
                 .withRefreshIntervalInMs(1000)
@@ -123,7 +129,7 @@ public class ITIncrementalSchedules extends TestBase
                 .withScheduleManager(myScheduleManagerImpl)
                 .withRepairLockType(RepairLockType.VNODE)
                 .withCassandraMetrics(myCassandraMetrics)
-                .withReplicationState(new ReplicationStateImpl(new NodeResolverImpl(mySession), mySession))
+                .withReplicationState(new ReplicationStateImpl(new NodeResolverImpl(getSession()), getSession()))
                 .build();
 
         myRepairConfiguration = RepairConfiguration.newBuilder()
@@ -138,10 +144,10 @@ public class ITIncrementalSchedules extends TestBase
         List<CompletionStage<AsyncResultSet>> stages = new ArrayList<>();
         for (TableReference tableReference : myRepairs)
         {
-            Node node = getNodeFromDatacenterOne();
+            Node node = getNode();
             myRepairSchedulerImpl.removeConfiguration(node, tableReference);
 
-            stages.add(mySession.executeAsync(QueryBuilder.deleteFrom("system_distributed", "repair_history")
+            stages.add(myAdminSession.executeAsync(QueryBuilder.deleteFrom("system_distributed", "repair_history")
                     .whereColumn("keyspace_name")
                     .isEqualTo(literal(tableReference.getKeyspace()))
                     .whereColumn("columnfamily_name")
@@ -181,9 +187,9 @@ public class ITIncrementalSchedules extends TestBase
     @Test
     public void repairSingleTable() throws Exception
     {
-        Node node = getNodeFromDatacenterOne();
+        Node node = getNode();
         TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
-        insertSomeDataAndFlush(tableReference, mySession, node);
+        insertSomeDataAndFlush(tableReference, myAdminSession, node);
         long startTime = System.currentTimeMillis();
 
         // Wait for metrics to be updated, wait at least 3 times the update time for metrics (worst case scenario)

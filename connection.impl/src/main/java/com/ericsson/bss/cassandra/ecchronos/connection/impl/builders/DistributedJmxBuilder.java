@@ -258,11 +258,19 @@ public class DistributedJmxBuilder
 
     private String[] getCredentialsConfig()
     {
+        if (myCredentialsSupplier == null)
+        {
+            return null;
+        }
         return myCredentialsSupplier.get();
     }
 
     private Map<String, String> getTLSConfig()
     {
+        if (myTLSSupplier == null)
+        {
+            return new HashMap<>();
+        }
         return myTLSSupplier.get();
     }
 

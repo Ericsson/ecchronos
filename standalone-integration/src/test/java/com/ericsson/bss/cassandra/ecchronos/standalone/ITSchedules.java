@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.standalone;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
@@ -59,6 +60,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
+
+import java.io.IOException;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -124,28 +127,32 @@ public class ITSchedules extends TestBase
 
     private final Set<TableReference> myRepairs = new HashSet<>();
 
+    private static CqlSession myAdminSession;
+
     @BeforeClass
-    public static void init()
+    public static void init() throws IOException
     {
+        initialize();
         mockFaultReporter = mock(RepairFaultReporter.class);
         mockTableRepairMetrics = mock(TableRepairMetrics.class);
         mockTableStorageStates = mock(TableStorageStates.class);
-        myLocalHost = getNodeFromDatacenterOne();
-        myMetadata = mySession.getMetadata();
+        myLocalHost = getNode();
+        myMetadata = getSession().getMetadata();
+        myAdminSession = getAdminNativeConnectionProvider().getCqlSession();
 
-        myTableReferenceFactory = new TableReferenceFactoryImpl(mySession);
+        myTableReferenceFactory = new TableReferenceFactoryImpl(getSession());
 
         myHostStates = HostStatesImpl.builder()
                 .withRefreshIntervalInMs(1000)
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .build();
 
-        myNodeResolver = new NodeResolverImpl(mySession);
+        myNodeResolver = new NodeResolverImpl(getSession());
         myLocalNode = myNodeResolver.fromUUID(myLocalHost.getHostId()).orElseThrow(IllegalStateException::new);
 
-        ReplicationState replicationState = new ReplicationStateImpl(myNodeResolver, mySession);
+        ReplicationState replicationState = new ReplicationStateImpl(myNodeResolver, getSession());
 
-        myRepairHistoryService = new RepairHistoryService(mySession, replicationState, myNodeResolver, TimeUnit.DAYS.toMillis(30));
+        myRepairHistoryService = new RepairHistoryService(getSession(), replicationState, myNodeResolver, TimeUnit.DAYS.toMillis(30));
 
         myLockFactory = CASLockFactory.builder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
@@ -196,7 +203,7 @@ public class ITSchedules extends TestBase
         {
             myRepairSchedulerImpl.removeConfiguration(myLocalHost, tableReference);
 
-            stages.add(mySession.executeAsync(QueryBuilder.deleteFrom("system_distributed", "repair_history")
+            stages.add(myAdminSession.executeAsync(QueryBuilder.deleteFrom("system_distributed", "repair_history")
                     .whereColumn("keyspace_name")
                     .isEqualTo(literal(tableReference.getKeyspace()))
                     .whereColumn("columnfamily_name")
@@ -204,7 +211,7 @@ public class ITSchedules extends TestBase
                     .build()));
             for (Node node : myMetadata.getNodes().values())
             {
-                stages.add(mySession.executeAsync(QueryBuilder.deleteFrom("ecchronos", "repair_history")
+                stages.add(myAdminSession.executeAsync(QueryBuilder.deleteFrom("ecchronos", "repair_history")
                         .whereColumn("table_id")
                         .isEqualTo(literal(tableReference.getId()))
                         .whereColumn("node_id")
@@ -552,7 +559,7 @@ public class ITSchedules extends TestBase
                 .value("finished_at", literal(Instant.ofEpochMilli(finished_at)))
                 .build();
 
-        mySession.execute(statement);
+        myAdminSession.execute(statement);
     }
 
     private Set<TokenRange> halfOfTokenRanges(TableReference tableReference)
