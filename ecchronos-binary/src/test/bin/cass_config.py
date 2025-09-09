@@ -132,6 +132,33 @@ class CassandraCluster:
             stderr=subprocess.PIPE,
         )
 
+        # Verify ecchronos keyspace exists before proceeding
+        self._verify_keyspace_exists("ecchronos")
+        logger.info("Database setup completed and verified")
+
+    def _verify_keyspace_exists(self, keyspace_name):
+        """Verify that a keyspace exists and is available on all nodes"""
+        max_attempts = 30
+        for attempt in range(max_attempts):
+            try:
+                command = ["docker", "exec", self.container_id, "cqlsh", "-e", f"DESCRIBE KEYSPACE {keyspace_name};"]
+                result = subprocess.run(
+                    command,
+                    timeout=10,
+                    encoding="utf-8",
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+                if result.returncode == 0 and keyspace_name in result.stdout:
+                    logger.info(f"Keyspace {keyspace_name} verified on attempt {attempt + 1}")
+                    return
+            except Exception as e:
+                logger.warning(f"Attempt {attempt + 1} to verify keyspace {keyspace_name} failed: {e}")
+
+            sleep(2)
+
+        raise TimeoutError(f"Keyspace {keyspace_name} not available after {max_attempts} attempts")
+
     def _modify_system_auth_keyspace(self):
         logger.info("Changing system_auth replication strategy")
         command = ["docker", "exec", self.container_id, "cqlsh", "-e", f"{ALTER_SYSTEM_AUTH_CQL}"]

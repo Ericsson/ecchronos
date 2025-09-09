@@ -21,7 +21,7 @@ from cassandra.cluster import Cluster  # pylint: disable=no-name-in-module
 from cassandra.auth import PlainTextAuthProvider
 
 
-class Environment:
+class Environment:  # pylint: disable=too-few-public-methods
     cluster = None
     session = None
     host_id = None
@@ -68,7 +68,7 @@ def after_feature(context, feature):  # pylint: disable=unused-argument
 
 
 def wait_for_local_repairs_to_complete(context):
-    timeout_seconds = 180
+    timeout_seconds = 30
     count = 0
     while count < timeout_seconds:
         uncompleted_repairs = 0
@@ -83,5 +83,5 @@ def wait_for_local_repairs_to_complete(context):
         count += 1
         time.sleep(1)
 
-    # assert count < timeout_seconds, 'All repairs did not finish in {0} seconds'.format(timeout_seconds)
-    print("Waiting for repairs to finish took {0} seconds".format(count))
+    if count > 0:
+        print("Waiting for repairs to finish took {0} seconds".format(count))

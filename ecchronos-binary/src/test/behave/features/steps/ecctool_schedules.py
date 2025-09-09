@@ -117,19 +117,6 @@ def step_validate_list_schedule_contains_summary(context):
     assert re.match(SCHEDULE_SUMMARY, summary), "Faulty summary '{0}'".format(summary)
 
 
-@then("the output should contain a valid schedule for {keyspace}.{table} with type {repair_type}")
-def step_validate_list_schedule_contains_rows(context, keyspace, table, repair_type):
-    print(context.table_info)
-    print("Here")
-    print(context.conf)
-
-    assert len(context.table_info) == 4, "Expecting 4 rows"
-    assert len(context.conf) == 1, "Expecting 1 row"
-
-
-#   step_validate_expected_show_table_header(context, keyspace, table, repair_type)
-
-
 @then("the output should contain a valid snapshot header")
 def step_validate_list_snapshot_header(context):
     match_and_remove_row(context.snapshot, SNAPSHOT_HEADER)

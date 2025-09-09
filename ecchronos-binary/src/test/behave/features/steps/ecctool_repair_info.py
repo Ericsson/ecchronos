@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 
-from behave import when, then  # pylint: disable=no-name-in-module
+from behave import given, when, then  # pylint: disable=no-name-in-module
 from ecc_step_library.common import match_and_remove_row, validate_header, run_ecctool, table_row
 
 
@@ -33,7 +33,7 @@ def handle_repair_info_output(context):
 
 
 @given("I fetch repair info with nodeid")
-def step_fetch_schedule_with_id(context):
+def step_fetch_repair_info_with_id(context):
     assert context.nodeid is not None
     context.url = "localhost:8080/repair-management/repairInfo/{0}?keyspace=test&table=table1&duration=5m".format(
         context.nodeid
@@ -41,7 +41,7 @@ def step_fetch_schedule_with_id(context):
 
 
 @given("I fetch local repair info with nodeid")
-def step_fetch_schedule_with_id(context):
+def step_fetch_local_repair_info_with_id(context):
     assert context.nodeid is not None
     context.url = (
         "localhost:8080/repair-management/repairInfo/{0}?keyspace=test&table=table1&duration=5m&isLocal=true".format(
@@ -51,31 +51,31 @@ def step_fetch_schedule_with_id(context):
 
 
 @given("I fetch repair for keyspace info with nodeid")
-def step_fetch_schedule_with_id(context):
+def step_fetch_repair_for_keyspace_with_id(context):
     assert context.nodeid is not None
     context.url = "localhost:8080/repair-management/repairInfo/{0}?keyspace=test&duration=5m".format(context.nodeid)
 
 
 @given("I fetch repair for all tables info with nodeid")
-def step_fetch_schedule_with_id(context):
+def step_fetch_repair_for_all_tables_with_id(context):
     assert context.nodeid is not None
     context.url = "localhost:8080/repair-management/repairInfo/{0}?duration=5m".format(context.nodeid)
 
 
 @given("I fetch repair info for all tables since epoch with nodeid")
-def step_fetch_schedule_with_id(context):
+def step_fetch_repair_since_epoch_with_id(context):
     assert context.nodeid is not None
     context.url = "localhost:8080/repair-management/repairInfo/{0}?since=0".format(context.nodeid)
 
 
 @given("I fetch repair info for all tables between epoch and epoch+5 minutes with nodeid")
-def step_fetch_schedule_with_id(context):
+def step_fetch_repair_between_epochs_with_id(context):
     assert context.nodeid is not None
     context.url = "localhost:8080/repair-management/repairInfo/{0}?since=0&duration=5m".format(context.nodeid)
 
 
 @given("I fetch repair local info for all tables between epoch and epoch+5 minutes with nodeid")
-def step_fetch_schedule_with_id(context):
+def step_fetch_local_repair_between_epochs_with_id(context):
     assert context.nodeid is not None
     context.url = "localhost:8080/repair-management/repairInfo/{0}?since=0&duration=5m&isLocal=true".format(
         context.nodeid

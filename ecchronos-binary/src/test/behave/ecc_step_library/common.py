@@ -105,8 +105,8 @@ def get_node_id(context):
     step_send_get_request(context)
     assert context.response is not None
     assert context.response.status_code == 200
-    json = context.response.json()
-    context.nodeid = json[0]["nodeId"]
+    data = context.response.json()
+    context.nodeid = data[0]["nodeId"]
 
 
 @then("the output should contain a valid repair summary")
@@ -141,7 +141,7 @@ def step_validate_repair_row(context, keyspace, table, repair_type):
 @then("the output should contain {num} repair rows for {keyspace}.{table} with type {repair_type}")
 def step_validate_multiple_repair_rows(context, num, keyspace, table, repair_type):
     expected_row = table_row(REPAIR_ROW_FORMAT_PATTERN, keyspace, table, repair_type)
-    for x in range(int(num)):
+    for _ in range(int(num)):
         match_and_remove_row(context.rows, expected_row)
 
 
@@ -229,7 +229,7 @@ def step_extract_id(context, keyspace, table):
 
 
 @then("the jobid from response is extracted for {keyspace}.{table}")
-def step_extract_id(context, keyspace, table):
+def step_extract_node_id(context, keyspace, table):
     assert context.response is not None
     context.json = context.response.json()
     for obj in context.json:
@@ -240,7 +240,7 @@ def step_extract_id(context, keyspace, table):
 
 
 @then("the job list contains only keyspace {keyspace}")
-def step_verify_job_list(context, keyspace):
+def step_extract_job_id(context, keyspace):
     for obj in context.json:
         assert obj["keyspace"] == keyspace
 

@@ -13,16 +13,7 @@
 # limitations under the License.
 #
 
-from behave import given, then  # pylint: disable=no-name-in-module
-from ecc_step_library.common import (
-    get_job_id,
-    match_and_remove_row,
-    strip_and_collapse,
-    validate_header,
-    step_validate_list_rows_clear,
-    run_ecctool,
-    table_row,
-)  # pylint: disable=line-too-long
+from behave import then  # pylint: disable=no-name-in-module
 
 
 @then("the number of nodes is {count}")

@@ -254,10 +254,10 @@ class RepairSchedulerRequest(RestRequest):
         node_id=None,
         keyspace=None,
         table=None,
-        since=None,  # pylint: disable=too-many-arguments, too-many-positional-arguments
+        since=None,
         duration=None,
         local=False,
-    ):
+    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
         request_url = RepairSchedulerRequest.repair_info_url.format(node_id)
         if keyspace:
             request_url += "?keyspace=" + quote(keyspace)
