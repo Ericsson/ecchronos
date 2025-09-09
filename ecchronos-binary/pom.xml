@@ -25,7 +25,7 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>ecchronos-binary</artifactId>
+    <artifactId>ecchronos-binary-agent</artifactId>
     <packaging>pom</packaging>
     <description>Packaging of ecChronos as a standalone application</description>
     <name>EcChronos Binary</name>
@@ -39,14 +39,14 @@
         <!-- Internal -->
         <dependency>
             <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-            <artifactId>application</artifactId>
+            <artifactId>application-agent</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <!-- Test -->
         <dependency>
             <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-            <artifactId>cassandra-test-image</artifactId>
+            <artifactId>cassandra-test-image-agent</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

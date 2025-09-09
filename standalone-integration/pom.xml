@@ -23,7 +23,7 @@
         <artifactId>agent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
-    <artifactId>standalone-integration</artifactId>
+    <artifactId>standalone-integration-agent</artifactId>
     <description>Integration tests for a standalone environment</description>
     <name>EcChronos Standalone Integration</name>
 
@@ -31,27 +31,27 @@
         <!-- Internal -->
         <dependency>
             <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-            <artifactId>connection</artifactId>
+            <artifactId>connection-agent</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-            <artifactId>application</artifactId>
+            <artifactId>application-agent</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-            <artifactId>connection.impl</artifactId>
+            <artifactId>connection.impl-agent</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-            <artifactId>cassandra-test-image</artifactId>
+            <artifactId>cassandra-test-image-agent</artifactId>
             <version>${project.version}</version>
             <classifier>tests</classifier>
             <scope>test</scope>
@@ -59,21 +59,21 @@
 
         <dependency>
             <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-            <artifactId>data</artifactId>
+            <artifactId>data-agent</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-            <artifactId>core</artifactId>
+            <artifactId>core-agent</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-            <artifactId>core.impl</artifactId>
+            <artifactId>core.impl-agent</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

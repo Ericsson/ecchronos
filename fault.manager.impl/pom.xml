@@ -25,13 +25,13 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>fault.manager.impl</artifactId>
+    <artifactId>fault.manager.impl-agent</artifactId>
 
     <dependencies>
         <!-- Internal -->
         <dependency>
             <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-            <artifactId>fault.manager</artifactId>
+            <artifactId>fault.manager-agent</artifactId>
             <version>${project.version}</version>
         </dependency>
 
