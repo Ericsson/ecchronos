@@ -25,7 +25,7 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>connection</artifactId>
+    <artifactId>connection-agent</artifactId>
 
     <description>Interfaces that ecChronos rely on to connect to Apache Cassandra</description>
     <name>EcChronos Connection</name>
@@ -34,7 +34,7 @@
 
         <dependency>
             <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-            <artifactId>utils</artifactId>
+            <artifactId>utils-agent</artifactId>
             <version>${project.version}</version>
         </dependency>
 

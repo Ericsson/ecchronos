@@ -25,13 +25,13 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>core</artifactId>
+    <artifactId>core-agent</artifactId>
 
     <dependencies>
         <!-- Internal -->
         <dependency>
             <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-            <artifactId>utils</artifactId>
+            <artifactId>utils-agent</artifactId>
             <version>${project.version}</version>
         </dependency>
 
