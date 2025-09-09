@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.standalone;
 
 import cassandracluster.AbstractCassandraCluster;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.auth.AuthProvider;
 import com.datastax.oss.driver.api.core.auth.ProgrammaticPlainTextAuthProvider;
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -90,9 +91,14 @@ abstract public class TestBase
             Thread.currentThread().interrupt();
             throw new IOException("Cluster initialization interrupted", e);
         }
-        String containerIP = SharedCassandraCluster.getContainerIP();
         List<InetSocketAddress> contactPoints = new ArrayList<>();
-        contactPoints.add(new InetSocketAddress(containerIP, CASSANDRA_NATIVE_PORT));
+
+        for (Node node : createDefaultSession().getMetadata().getNodes().values())
+        {
+            String hostname = node.getBroadcastRpcAddress().get().getHostName();
+            int port = node.getBroadcastRpcAddress().get().getPort();
+            contactPoints.add(new InetSocketAddress(hostname, port));
+        }
 
         AuthProvider authProvider = new ProgrammaticPlainTextAuthProvider("eccuser", "eccpassword");
         AuthProvider adminAuthProvider = new ProgrammaticPlainTextAuthProvider("cassandra", "cassandra");
@@ -116,6 +122,9 @@ abstract public class TestBase
                 .withNativeConnection(myNativeConnectionProvider)
                 .withEcchronosID(ECCHRONOS_ID)
                 .build();
+
+        // Wait for all nodes to have proper broadcast_rpc_address configured
+        waitForNodesRpcAddressReady();
 
         myJmxConnectionProvider = DistributedJmxConnectionProviderImpl.builder()
                 .withCqlSession(myNativeConnectionProvider.getCqlSession())
@@ -185,6 +194,70 @@ abstract public class TestBase
     protected static CqlSession getSession()
     {
         return getNativeConnectionProvider().getCqlSession();
+    }
+
+    private static void waitForNodesRpcAddressReady()
+    {
+        LOG.info("Waiting for all nodes to have proper broadcast_rpc_address configured...");
+        int maxAttempts = 30;
+        int attempt = 0;
+        
+        while (attempt < maxAttempts)
+        {
+            boolean allNodesReady = true;
+            
+            for (Node node : myNativeConnectionProvider.getNodes().values())
+            {
+                if (node.getBroadcastRpcAddress().isPresent())
+                {
+                    String rpcAddress = node.getBroadcastRpcAddress().get().getHostString();
+                    if ("0.0.0.0".equals(rpcAddress))
+                    {
+                        LOG.debug("Node {} still has broadcast_rpc_address as 0.0.0.0", node.getHostId());
+                        allNodesReady = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    LOG.debug("Node {} does not have broadcast_rpc_address set", node.getHostId());
+                    allNodesReady = false;
+                    break;
+                }
+            }
+            
+            if (allNodesReady)
+            {
+                LOG.info("All nodes have proper broadcast_rpc_address configured");
+                return;
+            }
+            
+            attempt++;
+            try
+            {
+                Thread.sleep(2000); // Wait 2 seconds before retry
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Interrupted while waiting for nodes RPC address", e);
+            }
+        }
+        
+        LOG.warn("Some nodes may still have broadcast_rpc_address as 0.0.0.0 after {} attempts", maxAttempts);
+    }
+
+    private static CqlSession createDefaultSession()
+    {
+       return defaultBuilder().build();
+    }
+
+    private static CqlSessionBuilder defaultBuilder()
+    {
+        return CqlSession.builder()
+                .addContactPoint(new InetSocketAddress(SharedCassandraCluster.getContainerIP(), 9042))
+                .withLocalDatacenter("datacenter1")
+                .withAuthCredentials("cassandra", "cassandra");
     }
 
     protected void insertSomeDataAndFlush(TableReference tableReference, CqlSession session, Node node)

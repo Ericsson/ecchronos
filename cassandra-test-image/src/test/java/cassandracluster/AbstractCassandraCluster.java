@@ -74,6 +74,7 @@ public class AbstractCassandraCluster
         modifySystemAuthKeyspace();
         runFullRepair();
         setupDb();
+        verifyKeyspaceExists();
     }
 
     protected static void createDefaultSession()
@@ -150,6 +151,21 @@ public class AbstractCassandraCluster
     {
         composeContainer.getContainerByServiceName(CASSANDRA_SEED_NODE_NAME).get()
                 .execInContainer("nodetool", "-u", "cassandra", "-pw", "cassandra", "repair", "--full");
+    }
+
+    private static void verifyKeyspaceExists() throws IOException, InterruptedException
+    {
+        for (int i = 1; i < 20; i++)
+        {
+            int stdout = composeContainer.getContainerByServiceName(CASSANDRA_SEED_NODE_NAME).get()
+                    .execInContainer("cqlsh", "-e", "DESCRIBE KEYSPACE ecchronos;").getExitCode();
+            if (stdout == 0)
+            {
+                LOG.info("Keyspace verified on attempt " + i);
+                return;
+            }
+            Thread.sleep(1000);
+        }
     }
 }
 

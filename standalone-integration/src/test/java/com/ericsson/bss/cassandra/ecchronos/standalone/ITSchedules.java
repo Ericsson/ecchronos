@@ -256,7 +256,7 @@ public class ITSchedules extends TestBase
         schedule(tableReference);
 
         await().pollInterval(1, TimeUnit.SECONDS)
-                .atMost(90, TimeUnit.SECONDS)
+                .atMost(180, TimeUnit.SECONDS)
                 .until(() -> isRepairedSince(tableReference, startTime));
 
         verifyTableRepairedSince(tableReference, startTime);

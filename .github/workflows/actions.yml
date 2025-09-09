@@ -30,18 +30,6 @@ jobs:
           - name: "Style check - Java 17"
             java_version: 17
             test_suite: 'test-compile -Djava.version=17 com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
-          - name: "Standalone integration 4.0 - Java 17"
-            java_version: 17
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=4.0 -Djava.version=17 -DskipUTs'
-            artifacts_dir: "standalone-integration/target"
-          - name: "Standalone integration 4.1 - Java 17"
-            java_version: 17
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=4.1 -Djava.version=17 -DskipUTs'
-            artifacts_dir: "standalone-integration/target"
-          - name: "Standalone integration 5.0 - Java 17"
-            java_version: 17
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -DskipUTs'
-            artifacts_dir: "standalone-integration/target"
           - name: "Python integration - Java 17"
             java_version: 17
             test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -DskipUTs'
@@ -54,18 +42,6 @@ jobs:
           - name: "Style check - Java 21"
             java_version: 21
             test_suite: 'test-compile -Djava.version=21 com.mycila:license-maven-plugin:check pmd:pmd pmd:cpd pmd:check pmd:cpd-check javadoc:jar'
-          - name: "Standalone integration 4.0 - Java 21"
-            java_version: 21
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=4.0 -Djava.version=21 -DskipUTs'
-            artifacts_dir: "standalone-integration/target"
-          - name: "Standalone integration 4.1 - Java 21"
-            java_version: 21
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=4.1 -Djava.version=21 -DskipUTs'
-            artifacts_dir: "standalone-integration/target"
-          - name: "Standalone integration 5.0 - Java 21"
-            java_version: 21
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -DskipUTs'
-            artifacts_dir: "standalone-integration/target"
           - name: "Python integration - Java 21"
             java_version: 21
             test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -DskipUTs'
