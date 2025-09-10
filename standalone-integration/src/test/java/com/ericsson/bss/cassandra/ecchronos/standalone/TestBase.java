@@ -94,13 +94,16 @@ public class TestBase
     @AfterClass
     public static void cleanup() throws IOException
     {
-        if (myJmxConnectionProvider != null) {
+        if (myJmxConnectionProvider != null)
+        {
             myJmxConnectionProvider.close();
         }
-        if (myAdminNativeConnectionProvider != null) {
+        if (myAdminNativeConnectionProvider != null)
+        {
             myAdminNativeConnectionProvider.close();
         }
-        if (myNativeConnectionProvider != null) {
+        if (myNativeConnectionProvider != null)
+        {
             myNativeConnectionProvider.close();
         }
     }
