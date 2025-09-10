@@ -26,6 +26,62 @@
     <description>Test image for integration tests using Apache Cassandra</description>
     <name>EcChronos Cassandra Test Image</name>
 
+    <dependencies>
+        <!-- Internal -->
+        <dependency>
+            <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
+            <artifactId>application</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Cassandra driver -->
+        <dependency>
+            <groupId>org.apache.cassandra</groupId>
+            <artifactId>java-driver-core</artifactId>
+        </dependency>
+
+        <!-- Tests -->
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>cassandra</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>
@@ -42,51 +98,41 @@
                     <excludeArtifacts>cassandra-test-image</excludeArtifacts>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>test-jar</id>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
     <profiles>
         <profile>
-            <id>docker-integration-test</id>
+            <id>build-cassandra-test-jar</id>
             <activation>
                 <property>
-                    <name>precommit.tests</name>
+                    <name>build-cassandra-test-jar</name>
+                    <value>true</value>
                 </property>
             </activation>
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>io.fabric8</groupId>
-                        <artifactId>docker-maven-plugin</artifactId>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>build-cassandra-test-image</id>
-                                <phase>package</phase>
+                                <id>test-jar</id>
                                 <goals>
-                                    <goal>build</goal>
+                                    <goal>test-jar</goal>
                                 </goals>
-                                <configuration>
-                                    <images>
-                                        <image>
-                                            <name>ecc-cassandra-test</name>
-                                            <build>
-                                                <dockerFile>Dockerfile</dockerFile>
-                                                <tags>
-                                                    <tag>${it.cassandra.version}</tag>
-                                                </tags>
-                                                <filter>@</filter>
-                                            </build>
-                                        </image>
-                                    </images>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>start-it-cassandra</id>
-                                <phase />
-                            </execution>
-                            <execution>
-                                <id>stop-it-cassandra</id>
-                                <phase />
                             </execution>
                         </executions>
                     </plugin>
