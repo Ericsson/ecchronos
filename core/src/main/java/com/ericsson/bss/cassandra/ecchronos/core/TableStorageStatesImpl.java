@@ -155,7 +155,7 @@ public final class TableStorageStatesImpl implements TableStorageStates, Closeab
             }
             catch (IOException e)
             {
-                LOG.error("Unable to update table sizes, future metrics might contain stale data", e);
+                LOG.warn("Unable to update table sizes, future metrics might contain stale data", e);
             }
         }
     }

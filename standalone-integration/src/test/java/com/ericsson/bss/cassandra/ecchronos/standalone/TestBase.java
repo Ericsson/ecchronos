@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.standalone;
 
+
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.auth.AuthProvider;
 import com.datastax.oss.driver.api.core.auth.ProgrammaticPlainTextAuthProvider;
@@ -25,6 +26,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.JmxProxyFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.TableReference;
 import net.jcip.annotations.NotThreadSafe;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanException;
@@ -40,9 +42,8 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.literal;
 @NotThreadSafe
 public class TestBase
 {
-    private static final String CASSANDRA_HOST = System.getProperty("it-cassandra.ip");
-    private static final int CASSANDRA_NATIVE_PORT = Integer.parseInt(System.getProperty("it-cassandra.native.port"));
-    private static final int CASSANDRA_JMX_PORT = Integer.parseInt(System.getProperty("it-cassandra.jmx.port"));
+    private static final int CASSANDRA_NATIVE_PORT = 9042;
+    private static final int CASSANDRA_JMX_PORT = 7199;
     private static final String IS_LOCAL = System.getProperty("it-local-cassandra");
     private static final int DEFAULT_INSERT_DATA_COUNT = 1000;
 
@@ -54,6 +55,17 @@ public class TestBase
 
     public static void initialize() throws IOException
     {
+        try
+        {
+            SharedCassandraCluster.ensureInitialized();
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+            throw new IOException("Cluster initialization interrupted", e);
+        }
+        
+        String containerIP = SharedCassandraCluster.getContainerIP();
         AuthProvider authProvider = new ProgrammaticPlainTextAuthProvider("eccuser", "eccpassword");
         AuthProvider adminAuthProvider = new ProgrammaticPlainTextAuthProvider("cassandra", "cassandra");
         if (IS_LOCAL != null)
@@ -63,16 +75,16 @@ public class TestBase
         }
         myNativeConnectionProvider = LocalNativeConnectionProvider.builder()
                 .withPort(CASSANDRA_NATIVE_PORT)
-                .withLocalhost(CASSANDRA_HOST)
+                .withLocalhost(containerIP)
                 .withAuthProvider(authProvider)
                 .build();
         myAdminNativeConnectionProvider = LocalNativeConnectionProvider.builder()
                 .withPort(CASSANDRA_NATIVE_PORT)
-                .withLocalhost(CASSANDRA_HOST)
+                .withLocalhost(containerIP)
                 .withAuthProvider(adminAuthProvider)
                 .withRemoteRouting(myRemoteRouting)
                 .build();
-        myJmxConnectionProvider = new LocalJmxConnectionProvider(CASSANDRA_HOST, CASSANDRA_JMX_PORT);
+        myJmxConnectionProvider = new LocalJmxConnectionProvider(containerIP, CASSANDRA_JMX_PORT);
 
         myJmxProxyFactory = JmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(myJmxConnectionProvider)
@@ -82,9 +94,18 @@ public class TestBase
     @AfterClass
     public static void cleanup() throws IOException
     {
-        myJmxConnectionProvider.close();
-        myAdminNativeConnectionProvider.close();
-        myNativeConnectionProvider.close();
+        if (myJmxConnectionProvider != null)
+        {
+            myJmxConnectionProvider.close();
+        }
+        if (myAdminNativeConnectionProvider != null)
+        {
+            myAdminNativeConnectionProvider.close();
+        }
+        if (myNativeConnectionProvider != null)
+        {
+            myNativeConnectionProvider.close();
+        }
     }
 
     protected static LocalNativeConnectionProvider getNativeConnectionProvider()

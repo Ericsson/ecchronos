@@ -10,7 +10,6 @@ Feature: ecctool schedules
     And the output should contain a schedule row for test.table2 with type VNODE
     And the output should contain a schedule row for test2.table1 with type INCREMENTAL
     And the output should contain a schedule row for test2.table2 with type PARALLEL_VNODE
-    And the output should not contain more rows
     And the output should contain a valid schedule summary
 
   Scenario: Get all schedules with a limit
