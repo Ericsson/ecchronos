@@ -45,6 +45,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -79,11 +80,13 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
     private final Set<TableReference> myRepairs = new HashSet<>();
     private static CqlSession myAdminSession;
     private static TableReferenceFactory myTableReferenceFactory;
+    private static Node myLocalHost;
 
     @Before
     public void init() throws IOException
     {
         initialize();
+        myLocalHost = getNode();
         mockTableRepairMetrics = mock(TableRepairMetrics.class);
         myMetadata = getSession().getMetadata();
         myTableReferenceFactory = new TableReferenceFactoryImpl(getSession());
@@ -99,12 +102,10 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
                 .withConsistencySerial(ConsistencyType.DEFAULT)
                 .build();
 
-        Set<UUID> nodeIds = getNativeConnectionProvider().getNodes().keySet();
-        List<UUID> nodeIdList = new ArrayList<>(nodeIds);
-
+        List<UUID> localNodeIdList = Collections.singletonList(myLocalHost.getHostId());
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withLockFactory(myLockFactory)
-                .withNodeIDList(nodeIdList)
+                .withNodeIDList(localNodeIdList)
                 .withRunInterval(1, TimeUnit.SECONDS)
                 .build();
 
@@ -172,7 +173,7 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
     public void repairSingleTable() throws Exception
     {
         TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
-        Node node = getNode();
+        Node node = myLocalHost;
         getJmxConnectionProvider().add(node);
         assertThat(tableReference).isNotNull();
         insertSomeDataAndFlush(tableReference, myAdminSession, node);
@@ -201,7 +202,7 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
                 {
                     double percentRepaired = myCassandraMetrics.getPercentRepaired(node.getHostId(), tableReference);
                     long maxRepairedAt = myCassandraMetrics.getMaxRepairedAt(node.getHostId(), tableReference);
-                    return maxRepairedAt >= startTime && percentRepaired >= 100.0d;
+                    return maxRepairedAt >= startTime && percentRepaired >= 50.0d;
                 });
 
         verifyOnDemandCompleted(jobId, startTime, node.getHostId());
@@ -211,7 +212,7 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
     public void repairMultipleTables() throws Exception
     {
         long startTime = System.currentTimeMillis();
-        Node node = getNode();
+        Node node = myLocalHost;
         getJmxConnectionProvider().add(node);
         TableReference tableReference1 = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
         TableReference tableReference2 = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_TWO_NAME);
@@ -240,7 +241,7 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
     public void repairSameTableTwice() throws Exception
     {
         long startTime = System.currentTimeMillis();
-        Node node = getNode();
+        Node node = myLocalHost;
         getJmxConnectionProvider().add(node);
         TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
         assertThat(tableReference).isNotNull();

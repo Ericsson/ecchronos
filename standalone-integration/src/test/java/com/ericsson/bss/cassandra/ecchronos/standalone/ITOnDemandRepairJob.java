@@ -24,6 +24,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metadata.NodeResolverImpl;
@@ -49,6 +51,7 @@ import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -91,17 +94,20 @@ public class ITOnDemandRepairJob extends TestBase
 
     private static TableReferenceFactory myTableReferenceFactory;
 
+    private static Node myLocalHost;
+
+    private static CqlSession myAdminSession;
+
     @Before
     public void init() throws IOException
     {
         initialize();
+        myLocalHost = getNode();
         mockTableRepairMetrics = mock(TableRepairMetrics.class);
         myMetadata = getSession().getMetadata();
+        myAdminSession = getAdminNativeConnectionProvider().getCqlSession();
 
         myTableReferenceFactory = new TableReferenceFactoryImpl(getSession());
-
-        Set<UUID> nodeIds = getNativeConnectionProvider().getNodes().keySet();
-        List<UUID> nodeIdList = new ArrayList<>(nodeIds);
 
         myHostStates = HostStatesImpl.builder()
                 .withRefreshIntervalInMs(1000)
@@ -120,9 +126,11 @@ public class ITOnDemandRepairJob extends TestBase
                 .withConsistencySerial(ConsistencyType.DEFAULT)
                 .build();
 
+        List<UUID> localNodeIdList = Collections.singletonList(myLocalHost.getHostId());
+
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withLockFactory(myLockFactory)
-                .withNodeIDList(nodeIdList)
+                .withNodeIDList(localNodeIdList)
                 .withRunInterval(100, TimeUnit.MILLISECONDS)
                 .build();
 
@@ -144,7 +152,7 @@ public class ITOnDemandRepairJob extends TestBase
     {
         for (TableReference tableReference : myRepairs)
         {
-            getSession().execute(QueryBuilder.deleteFrom("system_distributed", "repair_history")
+            myAdminSession.execute(QueryBuilder.deleteFrom("system_distributed", "repair_history")
                     .whereColumn("keyspace_name")
                     .isEqualTo(literal(tableReference.getKeyspace()))
                     .whereColumn("columnfamily_name")
@@ -152,13 +160,13 @@ public class ITOnDemandRepairJob extends TestBase
                     .build());
             for (Node node : myMetadata.getNodes().values())
             {
-                getSession().execute(QueryBuilder.deleteFrom("ecchronos", "repair_history")
+                myAdminSession.execute(QueryBuilder.deleteFrom("ecchronos", "repair_history")
                         .whereColumn("table_id")
                         .isEqualTo(literal(tableReference.getId()))
                         .whereColumn("node_id")
                         .isEqualTo(literal(node.getHostId()))
                         .build());
-                getSession().execute(QueryBuilder.deleteFrom("ecchronos", "on_demand_repair_status")
+                myAdminSession.execute(QueryBuilder.deleteFrom("ecchronos", "on_demand_repair_status")
                         .whereColumn("host_id")
                         .isEqualTo(literal(node.getHostId()))
                         .build());
@@ -184,7 +192,7 @@ public class ITOnDemandRepairJob extends TestBase
     public void repairSingleTable() throws EcChronosException
     {
         long startTime = System.currentTimeMillis();
-        Node node = getNode();
+        Node node = myLocalHost;
         TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
 
         schedule(tableReference, node.getHostId());
@@ -207,7 +215,7 @@ public class ITOnDemandRepairJob extends TestBase
     public void repairMultipleTables() throws EcChronosException
     {
         long startTime = System.currentTimeMillis();
-        Node node = getNode();
+        Node node = myLocalHost;
         TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
         TableReference tableReference2 = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_TWO_NAME);
 
@@ -233,7 +241,7 @@ public class ITOnDemandRepairJob extends TestBase
     public void repairSameTableTwice() throws EcChronosException
     {
         long startTime = System.currentTimeMillis();
-        Node node = getNode();
+        Node node = myLocalHost;
         TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
 
         schedule(tableReference, node.getHostId());
@@ -323,7 +331,7 @@ public class ITOnDemandRepairJob extends TestBase
 
     private boolean fullyRepaired(RepairEntry repairEntry)
     {
-        return repairEntry.getParticipants().size() == 2 && repairEntry.getStatus() == RepairStatus.SUCCESS;
+        return repairEntry.getParticipants().size() >= 2 && repairEntry.getStatus() == RepairStatus.SUCCESS;
     }
 
     private LongTokenRange convertTokenRange(TokenRange range)

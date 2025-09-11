@@ -14,7 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.standalone;
 
-import cassandracluster.AbstractCassandraCluster;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.auth.AuthProvider;
 import com.datastax.oss.driver.api.core.auth.ProgrammaticPlainTextAuthProvider;
@@ -22,14 +21,12 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
-import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedJmxConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedNativeConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.DistributedJmxProxyFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
-import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import java.net.InetSocketAddress;
@@ -37,8 +34,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import net.jcip.annotations.NotThreadSafe;
 import org.junit.AfterClass;
 import javax.management.InstanceNotFoundException;
@@ -92,13 +87,15 @@ abstract public class TestBase
             throw new IOException("Cluster initialization interrupted", e);
         }
         List<InetSocketAddress> contactPoints = new ArrayList<>();
+        CqlSession initialSession = createDefaultSession();
 
-        for (Node node : createDefaultSession().getMetadata().getNodes().values())
+        for (Node node : initialSession.getMetadata().getNodes().values())
         {
             String hostname = node.getBroadcastRpcAddress().get().getHostName();
             int port = node.getBroadcastRpcAddress().get().getPort();
             contactPoints.add(new InetSocketAddress(hostname, port));
         }
+        initialSession.close();
 
         AuthProvider authProvider = new ProgrammaticPlainTextAuthProvider("eccuser", "eccpassword");
         AuthProvider adminAuthProvider = new ProgrammaticPlainTextAuthProvider("cassandra", "cassandra");
@@ -123,9 +120,6 @@ abstract public class TestBase
                 .withEcchronosID(ECCHRONOS_ID)
                 .build();
 
-        // Wait for all nodes to have proper broadcast_rpc_address configured
-        waitForNodesRpcAddressReady();
-
         myJmxConnectionProvider = DistributedJmxConnectionProviderImpl.builder()
                 .withCqlSession(myNativeConnectionProvider.getCqlSession())
                 .withNativeConnection(myNativeConnectionProvider)
@@ -136,13 +130,7 @@ abstract public class TestBase
         Map<UUID, Node> nodesMap = myNativeConnectionProvider.getCqlSession().getMetadata().getNodes();
         myJmxProxyFactory = DistributedJmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(myJmxConnectionProvider)
-                .withEccNodesSync(new EccNodesSync.Builder()
-                        .withConnectionDelayValue(10L)
-                        .withConnectionDelayUnit(TimeUnit.SECONDS)
-                        .withNativeConnection(getNativeConnectionProvider())
-                        .withSession(myNativeConnectionProvider.getCqlSession())
-                        .withEcchronosID(ECCHRONOS_ID)
-                        .build())
+                .withEccNodesSync(myEccNodesSync)
                 .withNodesMap(nodesMap)
                 .build();
     }
@@ -163,7 +151,6 @@ abstract public class TestBase
         {
             myNativeConnectionProvider.close();
         }
-
     }
 
     protected static DistributedNativeConnectionProvider getNativeConnectionProvider()
@@ -194,57 +181,6 @@ abstract public class TestBase
     protected static CqlSession getSession()
     {
         return getNativeConnectionProvider().getCqlSession();
-    }
-
-    private static void waitForNodesRpcAddressReady()
-    {
-        LOG.info("Waiting for all nodes to have proper broadcast_rpc_address configured...");
-        int maxAttempts = 30;
-        int attempt = 0;
-        
-        while (attempt < maxAttempts)
-        {
-            boolean allNodesReady = true;
-            
-            for (Node node : myNativeConnectionProvider.getNodes().values())
-            {
-                if (node.getBroadcastRpcAddress().isPresent())
-                {
-                    String rpcAddress = node.getBroadcastRpcAddress().get().getHostString();
-                    if ("0.0.0.0".equals(rpcAddress))
-                    {
-                        LOG.debug("Node {} still has broadcast_rpc_address as 0.0.0.0", node.getHostId());
-                        allNodesReady = false;
-                        break;
-                    }
-                }
-                else
-                {
-                    LOG.debug("Node {} does not have broadcast_rpc_address set", node.getHostId());
-                    allNodesReady = false;
-                    break;
-                }
-            }
-            
-            if (allNodesReady)
-            {
-                LOG.info("All nodes have proper broadcast_rpc_address configured");
-                return;
-            }
-            
-            attempt++;
-            try
-            {
-                Thread.sleep(2000); // Wait 2 seconds before retry
-            }
-            catch (InterruptedException e)
-            {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Interrupted while waiting for nodes RPC address", e);
-            }
-        }
-        
-        LOG.warn("Some nodes may still have broadcast_rpc_address as 0.0.0.0 after {} attempts", maxAttempts);
     }
 
     private static CqlSession createDefaultSession()
