@@ -46,7 +46,6 @@ import org.slf4j.LoggerFactory;
  * A repair configuration provider that adds configuration to {@link NodeWorkerManager} based on whether the table
  * is replicated locally using the default repair configuration provided during construction of this object.
  */
-@SuppressWarnings("PMD.GodClass")
 public class DefaultRepairConfigurationProvider extends NodeStateListenerBase implements SchemaChangeListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultRepairConfigurationProvider.class);
