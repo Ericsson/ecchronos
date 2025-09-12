@@ -37,6 +37,7 @@
     <rule ref="category/java/bestpractices.xml">
         <exclude name="LooseCoupling"/>
         <exclude name="GuardLogStatement"/>
+        <exclude name="ImplicitFunctionalInterface"/>
     </rule>
 
     <rule ref="category/java/errorprone.xml">
