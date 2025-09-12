@@ -50,6 +50,7 @@ public class AbstractCassandraCluster
             return;
         }
         String cassandraVersion = System.getProperty("it.cassandra.version", "4.0");
+        String jolokiaEnabled = System.getProperty("it.jolokia.enabled", "false");
         String certificateDirectory = Paths.get(System.getProperty("project.build.directory", "target"))
                 .resolve("certificates/cert")
                 .toAbsolutePath()
@@ -59,7 +60,7 @@ public class AbstractCassandraCluster
                 .getParent()
                 .resolve(DOCKER_COMPOSE_FILE_PATH);
         composeContainer = new DockerComposeContainer<>(dockerComposePath.toFile())
-                .withEnv("JOLOKIA", "false")
+                .withEnv("JOLOKIA", jolokiaEnabled)
                 .withEnv("CASSANDRA_VERSION", cassandraVersion)
                 .withEnv("CERTIFICATE_DIRECTORY", certificateDirectory)
                 .withLogConsumer(CASSANDRA_SEED_NODE_NAME, new Slf4jLogConsumer(LOG));

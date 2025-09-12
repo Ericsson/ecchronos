@@ -74,6 +74,8 @@ abstract public class TestBase
     private static DistributedJmxProxyFactoryImpl myJmxProxyFactory;
     protected static EccNodesSync myEccNodesSync;
 
+    protected static Node MyLocalNode;
+
     @BeforeClass
     public static void initialize() throws IOException
     {
@@ -133,6 +135,13 @@ abstract public class TestBase
                 .withEccNodesSync(myEccNodesSync)
                 .withNodesMap(nodesMap)
                 .build();
+        MyLocalNode = getNativeConnectionProvider()
+            .getNodes()
+            .values()
+            .stream()
+            .filter(node -> DC1.equals(node.getDatacenter()))
+            .findFirst()
+            .orElse(null);
     }
 
 
@@ -175,7 +184,7 @@ abstract public class TestBase
 
     protected static Node getNode()
     {
-        return getNativeConnectionProvider().getNodes().values().stream().findFirst().get();
+        return MyLocalNode;
     }
 
     protected static CqlSession getSession()
