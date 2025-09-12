@@ -41,7 +41,8 @@ if [ -f /etc/certificates/.keystore ]; then
   sed -i "/client_encryption_options:/{n;s/enabled: false/enabled: true/}" "$CASSANDRA_CONF"/cassandra.yaml
 
   sed -i "s;keystore: .*;keystore: /etc/certificates/.keystore;g" "$CASSANDRA_CONF"/cassandra.yaml
-  sed -i "s/keystore_password: .*/keystore_password: ecctest/g" "$CASSANDRA_CONF"/cassandra.yaml
+  # Cassandra 5: 'keystore_password' must not be empty, e.g. remove comment if present
+  sed -ri "s/( *)(# *)?keystore_password: .*/\1keystore_password: ecctest/g" "$CASSANDRA_CONF"/cassandra.yaml
 
   sed -ri "s;(# )?truststore: .*;truststore: /etc/certificates/.truststore;g" "$CASSANDRA_CONF"/cassandra.yaml
   sed -ri "s/(# )?truststore_password: .*/truststore_password: ecctest/g" "$CASSANDRA_CONF"/cassandra.yaml
@@ -84,6 +85,41 @@ EOF
   sed -ri 's/#(.*trustStorePassword)=.*/\1=ecctest"/g' "$CASSANDRA_CONF"/cassandra-env.sh
 
 fi
+
+#
+# Setup nodetool SSL properties
+#
+  cat <<EOF > ~/.cassandra/nodetool-ssl.properties
+-Djavax.net.ssl.keyStore=/etc/certificates/.keystore
+-Djavax.net.ssl.keyStorePassword=ecctest
+-Djavax.net.ssl.trustStore=/etc/certificates/.truststore
+-Djavax.net.ssl.trustStorePassword=ecctest
+-Dcom.sun.management.jmxremote.ssl.need.client.auth=true
+EOF
+
+#
+# Setup nodetool status with SSL
+#
+  cat <<EOF > ~/.cassandra/nodetool-status-ssl.sh
+#!/bin/bash
+#
+# Copyright 2025 Telefonaktiebolaget LM Ericsson
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+nodetool --ssl -u cassandra -pw cassandra status
+EOF
+
+chmod 755 ~/.cassandra/nodetool-status-ssl.sh
 
 JOLOKIA_JAR="/opt/jolokia-jvm-agent.jar"
 

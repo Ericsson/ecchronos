@@ -167,8 +167,13 @@
 
         <jolokia.adapter.version>2.1.1</jolokia.adapter.version>
 
+        <!-- Test defaults -->
         <skipTests>false</skipTests>
         <skipUTs>${skipTests}</skipUTs>
+
+        <!-- Integration tests -->
+        <it.cassandra.version>latest</it.cassandra.version>
+        <it.jolokia.enabled>false</it.jolokia.enabled>
     </properties>
 
     <dependencyManagement>
@@ -496,8 +501,8 @@
                         <compilerArgs>
                             <arg>-parameters</arg>
                         </compilerArgs>
-                        <source>${maven.compiler.source}</source>
-                        <target>${maven.compiler.target}</target>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
                     </configuration>
                 </plugin>
 
@@ -598,6 +603,8 @@ limitations under the License.
                             <exclude>**/*.crl</exclude>
                             <exclude>**/*.csr</exclude>
                             <exclude>**/*.old</exclude>
+                            <exclude>**/docker/*.properties</exclude>
+                            <exclude>**/docker/*.yml</exclude>
                         </excludes>
                     </configuration>
                 </plugin>

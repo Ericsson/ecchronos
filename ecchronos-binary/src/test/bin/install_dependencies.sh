@@ -14,9 +14,13 @@
 # limitations under the License.
 #
 
+set -e
+
 source variables.sh
 
-# Install virtualenv and pylint
+echo "Setting up Python environment and dependencies..."
+
+# Setup virtual environment for non-CI environments
 if [ -z "${CI}" ]; then
   echo "Installing virtualenv"
   pip install --user virtualenv
@@ -24,19 +28,17 @@ if [ -z "${CI}" ]; then
   source "$VENV_DIR"/bin/activate
 fi
 
-echo "Installing pylint"
+echo "Installing Python dependencies from requirements.txt"
+pip install -r requirements.txt
 
-pip install pylint
+echo "Installing ecChronos Python library"
+BASE_DIR="$TEST_DIR"/ecchronos-binary-${PROJECT_VERSION}
+PYLIB_DIR="$BASE_DIR"/pylib
 
-echo "Installing behave dependencies"
+if [ -d "$PYLIB_DIR" ]; then
+  pip install "$PYLIB_DIR"
+else
+  echo "Warning: ecChronos Python library directory not found at $PYLIB_DIR"
+fi
 
-pip install behave
-pip install requests
-pip install jsonschema
-pip install cassandra-driver
-
-for directory in "$@"
-do
-  echo "Running pylint for $directory"
-  pylint "$directory" || exit 1
-done
+echo "All dependencies installed successfully!"

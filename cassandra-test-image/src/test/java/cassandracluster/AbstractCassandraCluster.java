@@ -40,27 +40,42 @@ public class AbstractCassandraCluster
     protected static String containerIP;
     protected static CqlSession mySession;
     private static final long DEFAULT_WAIT_TIME_IN_SECS= 10000;
+    private static final String ALTER_SYSTEM_AUTH_CQL = "ALTER KEYSPACE system_auth WITH REPLICATION = {'class': 'NetworkTopologyStrategy', 'datacenter1': 1, 'datacenter2': 2};";
 
     @BeforeClass
     public static void setup() throws IOException, InterruptedException
     {
+        if (composeContainer != null)
+        {
+            return;
+        }
+        String cassandraVersion = System.getProperty("it.cassandra.version", "4.0");
+        String jolokiaEnabled = System.getProperty("it.jolokia.enabled", "false");
+        String certificateDirectory = Paths.get(System.getProperty("project.build.directory", "target"))
+                .resolve("certificates/cert")
+                .toAbsolutePath()
+                .toString();
         Path dockerComposePath = Paths.get("")
                 .toAbsolutePath()
                 .getParent()
                 .resolve(DOCKER_COMPOSE_FILE_PATH);
         composeContainer = new DockerComposeContainer<>(dockerComposePath.toFile())
-                .withEnv("JOLOKIA", "false")
+                .withEnv("JOLOKIA", jolokiaEnabled)
+                .withEnv("CASSANDRA_VERSION", cassandraVersion)
+                .withEnv("CERTIFICATE_DIRECTORY", certificateDirectory)
                 .withLogConsumer(CASSANDRA_SEED_NODE_NAME, new Slf4jLogConsumer(LOG));
 
         composeContainer.start();
-        LOG.info("Waiting for the Cassandra cluster to finish starting up.");
-        waitForNodesToBeUp(CASSANDRA_SEED_NODE_NAME,4,DEFAULT_WAIT_TIME_IN_MS);
 
         containerIP = composeContainer.getContainerByServiceName(CASSANDRA_SEED_NODE_NAME).get()
                 .getContainerInfo()
                 .getNetworkSettings().getNetworks().values().stream().findFirst().get().getIpAddress();
-        composeContainer.getContainerByServiceName(CASSANDRA_SEED_NODE_NAME).get()
-                .execInContainer("bash", CASSANDRA_SETUP_DB_SCRIPT_PATH);
+        LOG.info("Waiting for the Cassandra cluster to finish starting up.");
+        waitForNodesToBeUp(CASSANDRA_SEED_NODE_NAME,4,DEFAULT_WAIT_TIME_IN_MS);
+        modifySystemAuthKeyspace();
+        runFullRepair();
+        setupDb();
+        verifyKeyspaceExists();
     }
 
     protected static void createDefaultSession()
@@ -119,6 +134,39 @@ public class AbstractCassandraCluster
             }
         }
         LOG.info("Timed out waiting for the Cassandra cluster to finish starting up.");
+    }
+
+    private static void setupDb() throws IOException, InterruptedException
+    {
+        composeContainer.getContainerByServiceName(CASSANDRA_SEED_NODE_NAME).get()
+                .execInContainer("bash", CASSANDRA_SETUP_DB_SCRIPT_PATH);
+    }
+
+    private static void modifySystemAuthKeyspace() throws IOException, InterruptedException
+    {
+        composeContainer.getContainerByServiceName(CASSANDRA_SEED_NODE_NAME).get()
+                .execInContainer("cqlsh", "-e", ALTER_SYSTEM_AUTH_CQL);
+    }
+
+    private static void runFullRepair() throws IOException, InterruptedException
+    {
+        composeContainer.getContainerByServiceName(CASSANDRA_SEED_NODE_NAME).get()
+                .execInContainer("nodetool", "-u", "cassandra", "-pw", "cassandra", "repair", "--full");
+    }
+
+    private static void verifyKeyspaceExists() throws IOException, InterruptedException
+    {
+        for (int i = 1; i < 20; i++)
+        {
+            int stdout = composeContainer.getContainerByServiceName(CASSANDRA_SEED_NODE_NAME).get()
+                    .execInContainer("cqlsh", "-e", "DESCRIBE KEYSPACE ecchronos;").getExitCode();
+            if (stdout == 0)
+            {
+                LOG.info("Keyspace verified on attempt " + i);
+                return;
+            }
+            Thread.sleep(1000);
+        }
     }
 }
 

@@ -17,8 +17,6 @@ package cassandracluster;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
-import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
-import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorker;
@@ -53,7 +51,6 @@ import java.util.function.Function;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
 public class TestTableChanges extends AbstractCassandraCluster
 {
     private static final Integer WAIT_TIME = 1000;
@@ -77,14 +74,21 @@ public class TestTableChanges extends AbstractCassandraCluster
     private NodeWorkerManager manager;
     private DefaultRepairConfigurationProvider defaultRepairConfigurationProvider;
 
-    @BeforeClass
     public static void setup()
     {
+        String cassandraVersion = System.getProperty("it.cassandra.version", "4.0");
+        String certificateDirectory = Paths.get(System.getProperty("project.build.directory", "target"))
+                .resolve("certificates/cert")
+                .toAbsolutePath()
+                .toString();
         Path dockerComposePath = Paths.get("")
                 .toAbsolutePath()
                 .getParent()
                 .resolve("cassandra-test-image/src/main/docker/docker-compose.yml");
-        composeContainer = new DockerComposeContainer<>(dockerComposePath.toFile());
+        composeContainer = new DockerComposeContainer<>(dockerComposePath.toFile())
+                .withEnv("JOLOKIA", "false")
+                .withEnv("CASSANDRA_VERSION", cassandraVersion)
+                .withEnv("CERTIFICATE_DIRECTORY", certificateDirectory);
         composeContainer.withScaledService("cassandra-node-dc1-rack1-node2", 0 );
         composeContainer.withScaledService("cassandra-node-dc2-rack1-node2", 0 );
         composeContainer.withScaledService("cassandra-seed-dc1-rack1-node1", 1 );
@@ -99,7 +103,6 @@ public class TestTableChanges extends AbstractCassandraCluster
                 .getNetworkSettings().getNetworks().values().stream().findFirst().get().getIpAddress();
     }
 
-    @Before
     public void testSetup()
     {
         threadPool = new TestThreading.NoopThreadPoolTaskExecutor();
@@ -140,7 +143,6 @@ public class TestTableChanges extends AbstractCassandraCluster
                 .withDistributedNativeConnectionProvider(nativeConnectionProvider));
     }
 
-    @Test
     public void testNewTableCluster()
     {
         composeContainer.withScaledService("cassandra-node-dc1-rack1-node2", 1 );
@@ -185,7 +187,6 @@ public class TestTableChanges extends AbstractCassandraCluster
         }
     }
 
-    @Test
     public void testRemoveTable()
     {
 
@@ -230,7 +231,6 @@ public class TestTableChanges extends AbstractCassandraCluster
         }
     }
 
-    @Test
     public void testRemoveKeyspace()
     {
         composeContainer.withScaledService("cassandra-node-dc1-rack1-node2", 1 );

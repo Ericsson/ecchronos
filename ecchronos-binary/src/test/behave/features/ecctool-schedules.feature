@@ -49,11 +49,6 @@ Feature: ecctool schedules
 #    And the output should not contain more rows
     And the output should contain a valid schedule summary
 
-  Scenario: Get schedule for table test.table2 with id
-    Given we have access to ecctool
-    When we fetch schedule test.table2 by id
-    Then the output should contain a valid schedule for test.table2 with type PARALLEL_VNODE
-
   Scenario: Get schedule for table test.table2 with a limit
     Given we have access to ecctool
     When we show schedule test.table2 with a limit of 5

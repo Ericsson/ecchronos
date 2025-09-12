@@ -14,7 +14,7 @@
 #
 
 from behave import when, then  # pylint: disable=no-name-in-module
-from ecc_step_library.common import get_job_id, handle_repair_output, step_validate_repair_row, run_ecctool
+from ecc_step_library.common import handle_repair_output, step_validate_repair_row, run_ecctool
 
 
 def run_ecc_repair_status(context, params):
@@ -55,6 +55,7 @@ def step_show_repair_with_limit(context, keyspace, table, limit):
 def step_show_repair(context, keyspace, table):
     run_ecc_repair_status(context, ["--keyspace", keyspace, "--table", table])
     handle_repair_output(context)
+
 
 @when("we list repairs for hostid and table {keyspace}.{table}")
 def step_show_repair_with_nodeid(context, keyspace, table):

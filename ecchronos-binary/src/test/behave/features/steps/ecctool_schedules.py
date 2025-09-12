@@ -27,7 +27,9 @@ from ecc_step_library.common import (
 
 SCHEDULE_SUMMARY = r"Summary: \d+ completed, \d+ on time, \d+ blocked, \d+ late, \d+ overdue"
 
-SCHEDULE_HEADER = r"| NodeID | JobID | Keyspace | Table | Status | Repaired(%) | Completed at | Next repair | Repair type |"
+SCHEDULE_HEADER = (
+    r"| NodeID | JobID | Keyspace | Table | Status | Repaired(%) | Completed at | Next repair | Repair type |"
+)
 SNAPSHOT_HEADER = r"Snapshot as of .*"
 SCHEDULE_ROW_FORMAT_PATTERN = r"\| .* \| .* \| {0} \| {1} \| (COMPLETED|ON_TIME|LATE|OVERDUE) \| \d+[.]\d+ \| .* \| {2} \|"  # pylint: disable=line-too-long
 
@@ -89,7 +91,7 @@ def step_validate_list_tables_row(context, keyspace, table, repair_type):
 
 @when("we fetch schedule {keyspace}.{table} by id")
 def step_show_schedule_with_id(context, keyspace, table):
-    run_ecc_schedule_status(context, [ "--keyspace", keyspace, "--table", table])
+    run_ecc_schedule_status(context, ["--keyspace", keyspace, "--table", table])
     run_ecc_schedule_status(context, ["--id", get_job_id(context), "--keyspace", keyspace, "--table", table])
     output_data = context.out.decode("ascii").lstrip().rstrip().split("\n")
     context.table_info = output_data[2:6]
@@ -113,21 +115,6 @@ def step_validate_list_schedule_contains_summary(context):
 
     summary = context.summary[0]
     assert re.match(SCHEDULE_SUMMARY, summary), "Faulty summary '{0}'".format(summary)
-
-
-@then("the output should contain a valid schedule for {keyspace}.{table} with type {repair_type}")
-def step_validate_list_schedule_contains_rows(context, keyspace, table, repair_type):
-
-    print (context.table_info)
-    print("Here")
-    print (context.conf)
-
-    assert len(context.table_info) == 4, "Expecting 4 rows"
-    assert len(context.conf) == 1, "Expecting 1 row"
-
-
-
- #   step_validate_expected_show_table_header(context, keyspace, table, repair_type)
 
 
 @then("the output should contain a valid snapshot header")

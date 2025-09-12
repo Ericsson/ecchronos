@@ -19,7 +19,7 @@ try:
     from urllib.parse import quote
 except ImportError:
     from urllib3 import urlopen, Request, HTTPError, URLError
-    from urllib import quote # pylint: disable=ungrouped-imports
+    from urllib import quote  # pylint: disable=ungrouped-imports
 import json
 import os
 import ssl
@@ -51,15 +51,14 @@ class RequestResult(object):
         return self.status_code == 200
 
     def transform_with_data(self, new_data):
-        return RequestResult(status_code=self.status_code,
-                             data=new_data,
-                             exception=self.exception,
-                             message=self.message)
+        return RequestResult(
+            status_code=self.status_code, data=new_data, exception=self.exception, message=self.message
+        )
 
 
 class RestRequest(object):
-    default_base_url = 'http://localhost:8080'
-    default_https_base_url = 'https://localhost:8080'
+    default_base_url = "http://localhost:8080"
+    default_https_base_url = "https://localhost:8080"
 
     def __init__(self, base_url=None):
         if base_url:
@@ -78,9 +77,9 @@ class RestRequest(object):
 
     @staticmethod
     def get_charset(response):
-        return RestRequest.get_param(response.info(), 'charset') or 'utf-8'
+        return RestRequest.get_param(response.info(), "charset") or "utf-8"
 
-    def request(self, url, method='GET'):
+    def request(self, url, method="GET"):
         request_url = "{0}/{1}".format(self.base_url, url)
         try:
             request = Request(request_url)
@@ -99,17 +98,15 @@ class RestRequest(object):
             response.close()
             return RequestResult(status_code=response.getcode(), data=json_data)
         except HTTPError as e:
-            return RequestResult(status_code=e.code,
-                                 message="Unable to retrieve resource {0}".format(request_url),
-                                 exception=e)
+            return RequestResult(
+                status_code=e.code, message="Unable to retrieve resource {0}".format(request_url), exception=e
+            )
         except URLError as e:
-            return RequestResult(status_code=404,
-                                 message="Unable to connect to {0}".format(request_url),
-                                 exception=e)
+            return RequestResult(status_code=404, message="Unable to connect to {0}".format(request_url), exception=e)
         except Exception as e:  # pylint: disable=broad-except
-            return RequestResult(exception=e,
-                                 message="Unable to retrieve resource {0}".format(request_url))
-    def basic_request(self, url, method='GET'):
+            return RequestResult(exception=e, message="Unable to retrieve resource {0}".format(request_url))
+
+    def basic_request(self, url, method="GET"):
         request_url = "{0}/{1}".format(self.base_url, url)
         try:
             request = Request(request_url)
@@ -127,47 +124,43 @@ class RestRequest(object):
             data = response.read()
 
             response.close()
-            return data.decode('UTF-8')
+            return data.decode("UTF-8")
         except HTTPError as e:
-            return RequestResult(status_code=e.code,
-                                 message="Unable to retrieve resource {0}".format(request_url),
-                                 exception=e)
+            return RequestResult(
+                status_code=e.code, message="Unable to retrieve resource {0}".format(request_url), exception=e
+            )
         except URLError as e:
-            return RequestResult(status_code=404,
-                                 message="Unable to connect to {0}".format(request_url),
-                                 exception=e)
+            return RequestResult(status_code=404, message="Unable to connect to {0}".format(request_url), exception=e)
         except Exception as e:  # pylint: disable=broad-except
-            return RequestResult(exception=e,
-                                 message="Unable to retrieve resource {0}".format(request_url))
+            return RequestResult(exception=e, message="Unable to retrieve resource {0}".format(request_url))
 
 
 class RepairSchedulerRequest(RestRequest):
-    ROOT = 'repair-management/'
-    REPAIRS = ROOT + 'repairs'
-    SCHEDULES = ROOT + 'schedules'
+    ROOT = "repair-management/"
+    REPAIRS = ROOT + "repairs"
+    SCHEDULES = ROOT + "schedules"
 
     schedule_status_url = SCHEDULES
-    schedule_id_status_url = SCHEDULES + '/{0}'
-    schedule_id_job_status_url = SCHEDULES + '/{0}/{1}'
-    keyspace_and_table_url = '?keyspace={0}&table={1}'
-    keyspace_url = '?keyspace={0}'
-
-
+    schedule_id_status_url = SCHEDULES + "/{0}"
+    schedule_id_job_status_url = SCHEDULES + "/{0}/{1}"
+    keyspace_and_table_url = "?keyspace={0}&table={1}"
+    keyspace_url = "?keyspace={0}"
 
     repair_status_url = REPAIRS
-    repair_id_status_url = REPAIRS + '/{0}'
+    repair_id_status_url = REPAIRS + "/{0}"
 
     repair_run_url = REPAIRS
 
-    repair_info_url = ROOT + 'repairInfo/{0}'
+    repair_info_url = ROOT + "repairInfo/{0}"
 
-    running_job_url = ROOT + 'running-job'
+    running_job_url = ROOT + "running-job"
 
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
 
-    def get_schedule(self, node_id, keyspace, table, job_id=None, full=False): # pylint: disable=too-many-arguments, too-many-positional-arguments
-
+    def get_schedule(
+        self, node_id, keyspace, table, job_id=None, full=False
+    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
         if job_id is not None:
             request_url = RepairSchedulerRequest.schedule_id_job_status_url.format(node_id, job_id)
         else:
@@ -181,8 +174,6 @@ class RepairSchedulerRequest(RestRequest):
             request_url = request_url + "&full=true"
         if full and keyspace is None:
             request_url = request_url + "?full=true"
-
-
 
         result = self.request(request_url)
         if result.is_successful():
@@ -234,7 +225,10 @@ class RepairSchedulerRequest(RestRequest):
             result = result.transform_with_data(new_data=[Repair(x) for x in result.data])
 
         return result
-    def post(self, node_id=None, keyspace=None, table=None, repair_type="vnode", allnodes="false"): # pylint: disable=too-many-arguments, too-many-positional-arguments
+
+    def post(
+        self, node_id=None, keyspace=None, table=None, repair_type="vnode", allnodes="false"
+    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
         request_url = RepairSchedulerRequest.repair_run_url
         separator = "?"
         if node_id:
@@ -248,15 +242,22 @@ class RepairSchedulerRequest(RestRequest):
         if repair_type:
             request_url += separator + "repairType=" + repair_type
             separator = "&"
-        if allnodes is True :
+        if allnodes is True:
             request_url += separator + "all=true"
-        result = self.request(request_url, 'POST')
+        result = self.request(request_url, "POST")
         if result.is_successful():
             result = result.transform_with_data(new_data=[Repair(x) for x in result.data])
         return result
 
-    def get_repair_info(self, node_id=None, keyspace=None, table=None, since=None,  # pylint: disable=too-many-arguments, too-many-positional-arguments
-                        duration=None, local=False):
+    def get_repair_info(
+        self,
+        node_id=None,
+        keyspace=None,
+        table=None,
+        since=None,
+        duration=None,
+        local=False,
+    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
         request_url = RepairSchedulerRequest.repair_info_url.format(node_id)
         if keyspace:
             request_url += "?keyspace=" + quote(keyspace)

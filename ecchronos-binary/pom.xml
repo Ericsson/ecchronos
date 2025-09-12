@@ -123,6 +123,7 @@
                                 <includedLicense>Public Domain, per Creative Commons CC0</includedLicense>
                                 <includedLicense>CC0</includedLicense>
                                 <includedLicense>BSD-2-Clause</includedLicense>
+                                <includedLicense>BSD-3-Clause</includedLicense>
                             </includedLicenses>
                             <failOnBlacklist>true</failOnBlacklist>
                         </configuration>
@@ -151,6 +152,10 @@
                                         <include>application.yml</include>
                                         <include>schedule.yml</include>
                                     </includes>
+                                    <excludes>
+                                        <exclude>**/__pycache__/**</exclude>
+                                        <exclude>**/*.pyc</exclude>
+                                    </excludes>
                                 </resource>
                             </resources>
                         </configuration>
@@ -167,10 +172,18 @@
                                 <resource>
                                     <directory>src/test/bin</directory>
                                     <filtering>true</filtering>
+                                    <excludes>
+                                        <exclude>**/__pycache__/**</exclude>
+                                        <exclude>**/*.pyc</exclude>
+                                    </excludes>
                                 </resource>
                                 <resource>
                                     <directory>src/test/behave</directory>
                                     <filtering>false</filtering>
+                                    <excludes>
+                                        <exclude>**/__pycache__/**</exclude>
+                                        <exclude>**/*.pyc</exclude>
+                                    </excludes>
                                 </resource>
                             </resources>
                         </configuration>
@@ -178,29 +191,7 @@
                 </executions>
             </plugin>
 
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>code-validation</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${skipTests}</skip>
-                            <executable>bash</executable>
-                            <arguments>
-                                <argument>codestyle.sh</argument>
-                                <argument>${project.basedir}/src/bin</argument>
-                                <argument>${project.basedir}/src/pylib/ecchronoslib</argument>
-                            </arguments>
-                            <workingDirectory>${project.build.directory}/test</workingDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+
         </plugins>
     </build>
 
@@ -275,50 +266,53 @@
                                 </configuration>
                             </execution>
                             <execution>
+                                <id>install-python-dependencies</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>install_dependencies.sh</argument>
+                                    </arguments>
+                                    <workingDirectory>${project.build.directory}/test</workingDirectory>
+                                    <environmentVariables>
+                                        <PROJECT_VERSION>${project.version}</PROJECT_VERSION>
+                                        <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
+                                        <BASE_DIR>${project.basedir}</BASE_DIR>
+                                        <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
+                                        <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
+                                    </environmentVariables>
+                                </configuration>
+                            </execution>
+                            <execution>
                                 <id>python-integration-tests</id>
                                 <phase>integration-test</phase>
                                 <goals>
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>bash</executable>
+                                    <executable>python</executable>
                                     <arguments>
-                                        <argument>testwrapper.sh</argument>
-                                        <argument>pytests.sh</argument>
-                                        <argument>pytests.ret</argument>
+                                    <argument>-m</argument>
+                                        <argument>pytest</argument>
+                                        <argument>test_ecchronos.py</argument>
+                                        <argument>-s</argument>
+                                        <argument>-v</argument>
+                                        <argument>--tb=short</argument>
                                     </arguments>
                                     <workingDirectory>${project.build.directory}/test</workingDirectory>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>post-python-integration-tests</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>bash</executable>
-                                    <arguments>
-                                        <argument>testwrapper.sh</argument>
-                                        <argument>cleanup.sh</argument>
-                                        <argument>cleanup.ret</argument>
-                                    </arguments>
-                                    <workingDirectory>${project.build.directory}/test</workingDirectory>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>verify-python-integration-tests</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>bash</executable>
-                                    <arguments>
-                                        <argument>verify.sh</argument>
-                                        <argument>pytests.ret</argument>
-                                    </arguments>
-                                    <workingDirectory>${project.build.directory}/test</workingDirectory>
+                                    <environmentVariables>
+                                        <LOCAL>false</LOCAL>
+                                        <PROJECT_VERSION>${project.version}</PROJECT_VERSION>
+                                        <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
+                                        <BASE_DIR>${project.basedir}</BASE_DIR>
+                                        <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
+                                        <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
+                                    </environmentVariables>
+                                    <redirectOutput>true</redirectOutput>
+                                    <redirectErrorStream>true</redirectErrorStream>
                                 </configuration>
                             </execution>
                         </executions>
@@ -332,7 +326,7 @@
                 </plugins>
             </build>
         </profile>
-        <profile>
+         <profile>
             <activation>
                 <property>
                     <name>localprecommit.tests</name>
@@ -370,6 +364,27 @@
                         <artifactId>exec-maven-plugin</artifactId>
                         <executions>
                             <execution>
+                                <id>install-python-dependencies</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>install_dependencies.sh</argument>
+                                    </arguments>
+                                    <workingDirectory>${project.build.directory}/test</workingDirectory>
+                                    <environmentVariables>
+                                        <PROJECT_VERSION>${project.version}</PROJECT_VERSION>
+                                        <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
+                                        <BASE_DIR>${project.basedir}</BASE_DIR>
+                                        <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
+                                        <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
+                                    </environmentVariables>
+                                </configuration>
+                            </execution>
+                            <execution>
                                 <id>python-integration-tests</id>
                                 <phase>integration-test</phase>
                                 <goals>
@@ -378,42 +393,20 @@
                                 <configuration>
                                     <executable>bash</executable>
                                     <arguments>
-                                        <argument>testwrapper.sh</argument>
-                                        <argument>pytests.sh</argument>
-                                        <argument>pytests.ret</argument>
+                                        <argument>-c</argument>
+                                        <argument>if [ -f venv/bin/activate ]; then source venv/bin/activate; fi &amp;&amp; python -m pytest test_ecchronos.py -s -v --tb=short</argument>
                                     </arguments>
                                     <workingDirectory>${project.build.directory}/test</workingDirectory>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>post-python-integration-tests</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>bash</executable>
-                                    <arguments>
-                                        <argument>testwrapper.sh</argument>
-                                        <argument>cleanup.sh</argument>
-                                        <argument>cleanup.ret</argument>
-                                    </arguments>
-                                    <workingDirectory>${project.build.directory}/test</workingDirectory>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>verify-python-integration-tests</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>bash</executable>
-                                    <arguments>
-                                        <argument>verify.sh</argument>
-                                        <argument>pytests.ret</argument>
-                                    </arguments>
-                                    <workingDirectory>${project.build.directory}/test</workingDirectory>
+                                    <environmentVariables>
+                                        <LOCAL>true</LOCAL>
+                                        <PROJECT_VERSION>${project.version}</PROJECT_VERSION>
+                                        <PROJECT_BUILD_DIRECTORY>${project.build.directory}</PROJECT_BUILD_DIRECTORY>
+                                        <BASE_DIR>${project.basedir}</BASE_DIR>
+                                        <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
+                                        <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
+                                    </environmentVariables>
+                                    <redirectOutput>true</redirectOutput>
+                                    <redirectErrorStream>true</redirectErrorStream>
                                 </configuration>
                             </execution>
                         </executions>

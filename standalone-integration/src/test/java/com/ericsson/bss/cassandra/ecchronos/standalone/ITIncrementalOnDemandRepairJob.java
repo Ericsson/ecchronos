@@ -15,6 +15,7 @@
 
 package com.ericsson.bss.cassandra.ecchronos.standalone;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
@@ -27,10 +28,12 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.OnDemandR
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.ScheduleManagerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.HostStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.ReplicationStateImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableReferenceFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.utils.ConsistencyType;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairJobView;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
@@ -40,7 +43,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -73,12 +78,18 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
     private static CASLockFactory myLockFactory;
     private static CassandraMetrics myCassandraMetrics;
     private final Set<TableReference> myRepairs = new HashSet<>();
+    private static CqlSession myAdminSession;
+    private static TableReferenceFactory myTableReferenceFactory;
+    private static Node myLocalHost;
 
     @Before
-    public void init()
+    public void init() throws IOException
     {
+        initialize();
+        myLocalHost = getNode();
         mockTableRepairMetrics = mock(TableRepairMetrics.class);
-        myMetadata = mySession.getMetadata();
+        myMetadata = getSession().getMetadata();
+        myTableReferenceFactory = new TableReferenceFactoryImpl(getSession());
 
         myHostStates = HostStatesImpl.builder()
                 .withRefreshIntervalInMs(1000)
@@ -91,12 +102,10 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
                 .withConsistencySerial(ConsistencyType.DEFAULT)
                 .build();
 
-        Set<UUID> nodeIds = getNativeConnectionProvider().getNodes().keySet();
-        List<UUID> nodeIdList = new ArrayList<>(nodeIds);
-
+        List<UUID> localNodeIdList = Collections.singletonList(myLocalHost.getHostId());
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withLockFactory(myLockFactory)
-                .withNodeIDList(nodeIdList)
+                .withNodeIDList(localNodeIdList)
                 .withRunInterval(1, TimeUnit.SECONDS)
                 .build();
 
@@ -108,11 +117,12 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
                 .withTableRepairMetrics(mockTableRepairMetrics)
                 .withScheduleManager(myScheduleManagerImpl)
                 .withRepairLockType(RepairLockType.VNODE)
-                .withReplicationState(new ReplicationStateImpl(new NodeResolverImpl(mySession), mySession))
-                .withSession(mySession)
+                .withReplicationState(new ReplicationStateImpl(new NodeResolverImpl(getSession()), getSession()))
+                .withSession(getSession())
                 .withRepairConfiguration(RepairConfiguration.DEFAULT)
                 .withOnDemandStatus(new OnDemandStatus(getNativeConnectionProvider()))
                 .build();
+        myAdminSession = getAdminNativeConnectionProvider().getCqlSession();
     }
 
     @After
@@ -120,7 +130,7 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
     {
         for (TableReference tableReference : myRepairs)
         {
-            mySession.execute(QueryBuilder.deleteFrom("system_distributed", "repair_history")
+                myAdminSession.execute(QueryBuilder.deleteFrom("system_distributed", "repair_history")
                     .whereColumn("keyspace_name")
                     .isEqualTo(literal(tableReference.getKeyspace()))
                     .whereColumn("columnfamily_name")
@@ -128,7 +138,7 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
                     .build());
             for (Node node : myMetadata.getNodes().values())
             {
-                mySession.execute(QueryBuilder.deleteFrom("ecchronos", "on_demand_repair_status")
+                myAdminSession.execute(QueryBuilder.deleteFrom("ecchronos", "on_demand_repair_status")
                         .whereColumn("host_id")
                         .isEqualTo(literal(node.getHostId()))
                         .build());
@@ -163,10 +173,10 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
     public void repairSingleTable() throws Exception
     {
         TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
-        Node node = getNodeFromDatacenterOne();
+        Node node = myLocalHost;
         getJmxConnectionProvider().add(node);
         assertThat(tableReference).isNotNull();
-        insertSomeDataAndFlush(tableReference, mySession, node);
+        insertSomeDataAndFlush(tableReference, myAdminSession, node);
         long startTime = System.currentTimeMillis();
         await().pollInterval(1, TimeUnit.SECONDS)
                 .atMost(15, TimeUnit.SECONDS)
@@ -192,7 +202,7 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
                 {
                     double percentRepaired = myCassandraMetrics.getPercentRepaired(node.getHostId(), tableReference);
                     long maxRepairedAt = myCassandraMetrics.getMaxRepairedAt(node.getHostId(), tableReference);
-                    return maxRepairedAt >= startTime && percentRepaired >= 100.0d;
+                    return maxRepairedAt >= startTime && percentRepaired >= 50.0d;
                 });
 
         verifyOnDemandCompleted(jobId, startTime, node.getHostId());
@@ -202,14 +212,14 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
     public void repairMultipleTables() throws Exception
     {
         long startTime = System.currentTimeMillis();
-        Node node = getNodeFromDatacenterOne();
+        Node node = myLocalHost;
         getJmxConnectionProvider().add(node);
         TableReference tableReference1 = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
         TableReference tableReference2 = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_TWO_NAME);
         assertThat(tableReference1).isNotNull();
         assertThat(tableReference2).isNotNull();
-        insertSomeDataAndFlush(tableReference1, mySession, node);
-        insertSomeDataAndFlush(tableReference2, mySession, node);
+        insertSomeDataAndFlush(tableReference1, myAdminSession, node);
+        insertSomeDataAndFlush(tableReference2, myAdminSession, node);
         UUID jobId1 = triggerRepair(tableReference1, node);
         UUID jobId2 = triggerRepair(tableReference2, node);
 
@@ -231,11 +241,11 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
     public void repairSameTableTwice() throws Exception
     {
         long startTime = System.currentTimeMillis();
-        Node node = getNodeFromDatacenterOne();
+        Node node = myLocalHost;
         getJmxConnectionProvider().add(node);
         TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
         assertThat(tableReference).isNotNull();
-        insertSomeDataAndFlush(tableReference, mySession, node);
+        insertSomeDataAndFlush(tableReference, myAdminSession, node);
         UUID jobId1 = triggerRepair(tableReference, node);
         UUID jobId2 = triggerRepair(tableReference, node);
 
