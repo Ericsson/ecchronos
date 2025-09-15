@@ -23,6 +23,7 @@ import com.datastax.oss.driver.api.core.config.ProgrammaticDriverConfigLoaderBui
 import com.datastax.oss.driver.api.core.metadata.EndPoint;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.NodeStateListener;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import com.datastax.oss.driver.api.core.metrics.DefaultNodeMetric;
 import com.datastax.oss.driver.api.core.metrics.DefaultSessionMetric;
@@ -39,6 +40,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.Optional;
+import java.util.Map;
 
 public final class LocalNativeConnectionProvider implements NativeConnectionProvider
 {
@@ -242,6 +245,13 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
                 {
                     if (node.getEndPoint().equals(contactEndPoint))
                     {
+                        // check to ensure ecchronos keyspace is replicated correctly
+                        Optional<KeyspaceMetadata> keyspaceMetadata = session.getMetadata().getKeyspace("ecchronos");
+                        Map<String, String> replication = keyspaceMetadata.get().getReplication();
+                        if (!replication.containsKey(node.getDatacenter()))
+                        {
+                            throw new IllegalStateException("Keyspace ecchronos not replicated on local node.");
+                        }
                         return new InitialContact(node.getDatacenter(), node.getHostId());
                     }
                 }
