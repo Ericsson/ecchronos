@@ -182,9 +182,19 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
                 .atMost(15, TimeUnit.SECONDS)
                 .until(() ->
                 {
-                    double percentRepaired = myCassandraMetrics.getPercentRepaired(node.getHostId(), tableReference);
-                    long maxRepairedAt = myCassandraMetrics.getMaxRepairedAt(node.getHostId(), tableReference);
-                    return maxRepairedAt < startTime && percentRepaired < 100.0d;
+                    try
+                    {
+                        double percentRepaired = myCassandraMetrics.getPercentRepaired(node.getHostId(), tableReference);
+                        long maxRepairedAt = myCassandraMetrics.getMaxRepairedAt(node.getHostId(), tableReference);
+                        System.out.println("[Initial check] Java: " + System.getProperty("java.version") + ", percentRepaired: " + percentRepaired + ", maxRepairedAt: " + maxRepairedAt + ", startTime: " + startTime);
+                        return maxRepairedAt < startTime && percentRepaired < 100.0d;
+                    }
+                    catch (Exception e)
+                    {
+                        System.out.println("[Initial check] Error getting metrics: " + e.getMessage());
+                        e.printStackTrace();
+                        return false;
+                    }
                 });
 
         UUID jobId = triggerRepair(tableReference, node);
@@ -200,9 +210,19 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
                 .atMost(15, TimeUnit.SECONDS)
                 .until(() ->
                 {
-                    double percentRepaired = myCassandraMetrics.getPercentRepaired(node.getHostId(), tableReference);
-                    long maxRepairedAt = myCassandraMetrics.getMaxRepairedAt(node.getHostId(), tableReference);
-                    return maxRepairedAt >= startTime && percentRepaired >= 50.0d;
+                    try
+                    {
+                        double percentRepaired = myCassandraMetrics.getPercentRepaired(node.getHostId(), tableReference);
+                        long maxRepairedAt = myCassandraMetrics.getMaxRepairedAt(node.getHostId(), tableReference);
+                        LOG.info("[Final check] Java: " + System.getProperty("java.version") + ", percentRepaired: " + percentRepaired + ", maxRepairedAt: " + maxRepairedAt + ", startTime: " + startTime);
+                        return maxRepairedAt >= startTime && percentRepaired >= 50.0d;
+                    }
+                    catch (Exception e)
+                    {
+                        LOG.info("[Final check] Error getting metrics: " + e.getMessage());
+                        e.printStackTrace();
+                        return false;
+                    }
                 });
 
         verifyOnDemandCompleted(jobId, startTime, node.getHostId());
@@ -225,10 +245,18 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
 
         await().pollInterval(1, TimeUnit.SECONDS)
                 .atMost(DEFAULT_JOB_TIMEOUT_IN_SECONDS * 2, TimeUnit.SECONDS)
-                .until(() -> myOnDemandRepairSchedulerImpl.getActiveRepairJobs().isEmpty());
+                .until(() -> {
+                    int activeJobs = myOnDemandRepairSchedulerImpl.getActiveRepairJobs().size();
+                    LOG.info("[repairMultipleTables] Active repair jobs: " + activeJobs);
+                    return activeJobs == 0;
+                });
         await().pollInterval(1, TimeUnit.SECONDS)
                 .atMost(DEFAULT_JOB_TIMEOUT_IN_SECONDS * 2, TimeUnit.SECONDS)
-                .until(() -> myScheduleManagerImpl.getQueueSize(node.getHostId()) == 0);
+                .until(() -> {
+                    int queueSize = myScheduleManagerImpl.getQueueSize(node.getHostId());
+                    LOG.info("[repairMultipleTables] Queue size for node " + node.getHostId() + ": " + queueSize);
+                    return queueSize == 0;
+                });
         verifyOnDemandCompleted(jobId1, startTime, node.getHostId());
         verify(mockTableRepairMetrics).repairSession(eq(tableReference1), any(long.class), any(TimeUnit.class),
                 eq(true));
@@ -251,10 +279,18 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
 
         await().pollInterval(1, TimeUnit.SECONDS)
                 .atMost(DEFAULT_JOB_TIMEOUT_IN_SECONDS * 2, TimeUnit.SECONDS)
-                .until(() -> myOnDemandRepairSchedulerImpl.getActiveRepairJobs().isEmpty());
+                .until(() -> {
+                    int activeJobs = myOnDemandRepairSchedulerImpl.getActiveRepairJobs().size();
+                    LOG.info("[repairSameTableTwice] Active repair jobs: " + activeJobs);
+                    return activeJobs == 0;
+                });
         await().pollInterval(1, TimeUnit.SECONDS)
                 .atMost(DEFAULT_JOB_TIMEOUT_IN_SECONDS * 2, TimeUnit.SECONDS)
-                .until(() -> myScheduleManagerImpl.getQueueSize(node.getHostId()) == 0);
+                .until(() -> {
+                    int queueSize = myScheduleManagerImpl.getQueueSize(node.getHostId());
+                    LOG.info("[repairSameTableTwice] Queue size for node " + node.getHostId() + ": " + queueSize);
+                    return queueSize == 0;
+                });
         verifyOnDemandCompleted(jobId1, startTime, node.getHostId());
         verifyOnDemandCompleted(jobId2, startTime, node.getHostId());
         verify(mockTableRepairMetrics, times(2)).repairSession(eq(tableReference),

@@ -199,7 +199,11 @@ public class ITOnDemandRepairJob extends TestBase
 
         await().pollInterval(1, TimeUnit.SECONDS)
                 .atMost(90, TimeUnit.SECONDS)
-                .until(() -> myRepairSchedulerImpl.getActiveRepairJobs().isEmpty());
+                .until(() -> {
+                    int queueSize = myRepairSchedulerImpl.getActiveRepairJobs().size();
+                    System.out.println("[repairSingleTable] Queue size for node " + node.getHostId() + ": " + queueSize);
+                    return myRepairSchedulerImpl.getActiveRepairJobs().isEmpty();
+                });
         await().pollInterval(1, TimeUnit.SECONDS)
                 .atMost(90, TimeUnit.SECONDS)
                 .until(() -> myScheduleManagerImpl.getQueueSize(node.getHostId()) == 0);

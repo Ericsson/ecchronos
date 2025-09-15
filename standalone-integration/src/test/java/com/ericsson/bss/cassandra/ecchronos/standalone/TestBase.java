@@ -75,6 +75,7 @@ abstract public class TestBase
     protected static EccNodesSync myEccNodesSync;
 
     protected static Node MyLocalNode;
+    private static final Object lock = new Object();
 
     @BeforeClass
     public static void initialize() throws IOException
@@ -139,7 +140,7 @@ abstract public class TestBase
             .getNodes()
             .values()
             .stream()
-            .filter(node -> DC1.equals(node.getDatacenter()))
+            .filter(node -> "0.0.0.0" != node.getBroadcastRpcAddress().get().getAddress().getHostAddress())
             .findFirst()
             .orElse(null);
     }
@@ -184,7 +185,11 @@ abstract public class TestBase
 
     protected static Node getNode()
     {
-        return MyLocalNode;
+        synchronized (lock)
+        {
+            return MyLocalNode;
+        }
+        
     }
 
     protected static CqlSession getSession()
