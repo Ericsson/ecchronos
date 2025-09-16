@@ -4,6 +4,7 @@
 
 ## Merged from Version 6.0
 
+* Schedule not showing if ecchronos keyspace is not replicated correctly - Issue #1112
 * Refactor ecchronos-binary Test Infrastructure - Issue #1093
 
 ## Version 6.1.0
@@ -14,6 +15,7 @@
 ## Version 6.0.8
 
 * Refactor ecchronos-binary Test Infrastructure - Issue #1093
+* Schedule not showing if ecchronos keyspace is not replicated correctly - Issue #1112
 
 ## Version 6.0.7
 
