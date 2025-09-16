@@ -250,11 +250,13 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
                     if (node.getEndPoint().equals(contactEndPoint))
                     {
                         // check to ensure ecchronos keyspace is replicated correctly
-                        Optional<KeyspaceMetadata> keyspaceMetadata = session.getMetadata().getKeyspace(builder.myRepairHistoryKeyspace);
+                        Optional<KeyspaceMetadata> keyspaceMetadata =
+                                session.getMetadata().getKeyspace(builder.myRepairHistoryKeyspace);
                         Map<String, String> replication = keyspaceMetadata.get().getReplication();
                         if (!replication.containsKey(node.getDatacenter()))
                         {
-                            throw new IllegalStateException("Keyspace " + builder.myRepairHistoryKeyspace + " not replicated on local node.");
+                            throw new IllegalStateException("Keyspace " + builder.myRepairHistoryKeyspace
+                                    + " not replicated on local node.");
                         }
                         return new InitialContact(node.getDatacenter(), node.getHostId());
                     }
