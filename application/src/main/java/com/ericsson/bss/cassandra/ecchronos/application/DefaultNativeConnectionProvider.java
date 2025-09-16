@@ -41,7 +41,6 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
     private static final Logger LOG = LoggerFactory.getLogger(DefaultNativeConnectionProvider.class);
 
     private final LocalNativeConnectionProvider myLocalNativeConnectionProvider;
-    
     public DefaultNativeConnectionProvider(final Config config,
                                            final Supplier<Security.CqlSecurity> cqlSecuritySupplier,
                                            final CertificateHandler certificateHandler,
