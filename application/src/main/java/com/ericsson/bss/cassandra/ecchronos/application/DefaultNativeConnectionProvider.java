@@ -41,6 +41,7 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
     private static final Logger LOG = LoggerFactory.getLogger(DefaultNativeConnectionProvider.class);
 
     private final LocalNativeConnectionProvider myLocalNativeConnectionProvider;
+    protected String myRepairHistoryKeyspace;
 
     public DefaultNativeConnectionProvider(final Config config,
                                            final Supplier<Security.CqlSecurity> cqlSecuritySupplier,
@@ -49,6 +50,7 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
                                            final MeterRegistry meterRegistry)
     {
         NativeConnection nativeConfig = config.getConnectionConfig().getCqlConnection();
+        String repairHistoryKeyspace = config.getRepairConfig().getRepairHistory().getKeyspaceName();
         String host = nativeConfig.getHost();
         int port = nativeConfig.getPort();
         boolean remoteRouting = nativeConfig.getRemoteRouting();
@@ -81,7 +83,8 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
                 .withMetricsEnabled(config.getStatisticsConfig().isEnabled())
                 .withMeterRegistry(meterRegistry)
                 .withSchemaChangeListener(defaultRepairConfigurationProvider)
-                .withNodeStateListener(defaultRepairConfigurationProvider);
+                .withNodeStateListener(defaultRepairConfigurationProvider)
+                .withRepairHistoryKeyspace(repairHistoryKeyspace);
 
         myLocalNativeConnectionProvider = establishConnection(nativeConnectionBuilder,
                 host, port, nativeConfig.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS),
@@ -194,4 +197,5 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
     {
         myLocalNativeConnectionProvider.close();
     }
+
 }

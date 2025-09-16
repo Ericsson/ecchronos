@@ -100,7 +100,6 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
     {
         return myRemoteRouting;
     }
-
     @Override
     public void close()
     {
@@ -125,6 +124,7 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
         private SchemaChangeListener mySchemaChangeListener = null;
         private NodeStateListener myNodeStateListener = null;
         private MeterRegistry myMeterRegistry = null;
+        private String myRepairHistoryKeyspace = "ecchronos";
 
         public final Builder withLocalhost(final String localhost)
         {
@@ -179,7 +179,11 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
             myMeterRegistry = meterRegistry;
             return this;
         }
-
+        public final Builder withRepairHistoryKeyspace(final String repairHistoryKeyspace)
+        {
+            myRepairHistoryKeyspace = repairHistoryKeyspace;
+            return this;
+        }
         public final LocalNativeConnectionProvider build()
         {
             CqlSession session = createSession(this);
@@ -246,11 +250,11 @@ public final class LocalNativeConnectionProvider implements NativeConnectionProv
                     if (node.getEndPoint().equals(contactEndPoint))
                     {
                         // check to ensure ecchronos keyspace is replicated correctly
-                        Optional<KeyspaceMetadata> keyspaceMetadata = session.getMetadata().getKeyspace("ecchronos");
+                        Optional<KeyspaceMetadata> keyspaceMetadata = session.getMetadata().getKeyspace(builder.myRepairHistoryKeyspace);
                         Map<String, String> replication = keyspaceMetadata.get().getReplication();
                         if (!replication.containsKey(node.getDatacenter()))
                         {
-                            throw new IllegalStateException("Keyspace ecchronos not replicated on local node.");
+                            throw new IllegalStateException("Keyspace " + builder.myRepairHistoryKeyspace + " not replicated on local node.");
                         }
                         return new InitialContact(node.getDatacenter(), node.getHostId());
                     }
