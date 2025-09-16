@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 
-from behave import when, then  # pylint: disable=no-name-in-module
+from behave import given, when, then  # pylint: disable=no-name-in-module
 from ecc_step_library.common import match_and_remove_row, validate_header, run_ecctool, table_row
 
 
@@ -31,45 +31,62 @@ def handle_repair_info_output(context):
     context.header = output_data[1:4]
     context.rows = output_data[4:]
 
+
 @given("I fetch repair info with nodeid")
-def step_fetch_schedule_with_id(context):
+def step_fetch_repair_info_with_id(context):
     assert context.nodeid is not None
-    context.url = "localhost:8080/repair-management/repairInfo/{0}?keyspace=test&table=table1&duration=5m".format(context.nodeid)
+    context.url = "localhost:8080/repair-management/repairInfo/{0}?keyspace=test&table=table1&duration=5m".format(
+        context.nodeid
+    )
+
 
 @given("I fetch local repair info with nodeid")
-def step_fetch_schedule_with_id(context):
+def step_fetch_local_repair_info_with_id(context):
     assert context.nodeid is not None
-    context.url = "localhost:8080/repair-management/repairInfo/{0}?keyspace=test&table=table1&duration=5m&isLocal=true".format(context.nodeid)
+    context.url = (
+        "localhost:8080/repair-management/repairInfo/{0}?keyspace=test&table=table1&duration=5m&isLocal=true".format(
+            context.nodeid
+        )
+    )
+
 
 @given("I fetch repair for keyspace info with nodeid")
-def step_fetch_schedule_with_id(context):
+def step_fetch_repair_for_keyspace_with_id(context):
     assert context.nodeid is not None
     context.url = "localhost:8080/repair-management/repairInfo/{0}?keyspace=test&duration=5m".format(context.nodeid)
 
+
 @given("I fetch repair for all tables info with nodeid")
-def step_fetch_schedule_with_id(context):
+def step_fetch_repair_for_all_tables_with_id(context):
     assert context.nodeid is not None
     context.url = "localhost:8080/repair-management/repairInfo/{0}?duration=5m".format(context.nodeid)
 
+
 @given("I fetch repair info for all tables since epoch with nodeid")
-def step_fetch_schedule_with_id(context):
+def step_fetch_repair_since_epoch_with_id(context):
     assert context.nodeid is not None
     context.url = "localhost:8080/repair-management/repairInfo/{0}?since=0".format(context.nodeid)
 
+
 @given("I fetch repair info for all tables between epoch and epoch+5 minutes with nodeid")
-def step_fetch_schedule_with_id(context):
+def step_fetch_repair_between_epochs_with_id(context):
     assert context.nodeid is not None
     context.url = "localhost:8080/repair-management/repairInfo/{0}?since=0&duration=5m".format(context.nodeid)
 
+
 @given("I fetch repair local info for all tables between epoch and epoch+5 minutes with nodeid")
-def step_fetch_schedule_with_id(context):
+def step_fetch_local_repair_between_epochs_with_id(context):
     assert context.nodeid is not None
-    context.url = "localhost:8080/repair-management/repairInfo/{0}?since=0&duration=5m&isLocal=true".format(context.nodeid)
+    context.url = "localhost:8080/repair-management/repairInfo/{0}?since=0&duration=5m&isLocal=true".format(
+        context.nodeid
+    )
+
 
 @when("we get repair-info with since {since} and duration {duration}")
 def step_get_repair_info_with_since_and_duration(context, since, duration):
     run_ecc_repair_info(context, ["--since", since, "--duration", duration, "-i", context.nodeid])
     handle_repair_info_output(context)
+
 
 @when("we get repair-info with duration {duration} and limit {limit}")
 def step_get_repair_info_with_duration_and_limit(context, duration, limit):
@@ -103,31 +120,38 @@ def step_get_local_repair_info_with_since(context, since):
 
 @when("we get repair-info for keyspace {keyspace} with since {since} and duration {duration}")
 def step_get_repair_info_for_keyspace_with_since_and_duration(context, keyspace, since, duration):
-    run_ecc_repair_info(context, ["--keyspace", keyspace, "--since", since, "--duration", duration, "-i", context.nodeid])
+    run_ecc_repair_info(
+        context, ["--keyspace", keyspace, "--since", since, "--duration", duration, "-i", context.nodeid]
+    )
     handle_repair_info_output(context)
 
 
 @when("we get repair-info for keyspace {keyspace} with duration {duration}")
 def step_get_repair_info_for_keyspace_with_duration(context, keyspace, duration):
-    run_ecc_repair_info(context, ["--keyspace", keyspace, "--duration", duration,"-i", context.nodeid])
+    run_ecc_repair_info(context, ["--keyspace", keyspace, "--duration", duration, "-i", context.nodeid])
     handle_repair_info_output(context)
 
 
 @when("we get repair-info for keyspace {keyspace} with since {since}")
 def step_get_repair_info_for_keyspace_with_since(context, keyspace, since):
-    run_ecc_repair_info(context, ["--keyspace", keyspace, "--since", since,"-i", context.nodeid])
+    run_ecc_repair_info(context, ["--keyspace", keyspace, "--since", since, "-i", context.nodeid])
     handle_repair_info_output(context)
 
 
 @when("we get repair-info for table {keyspace}.{table} with since {since} and duration {duration}")
 def step_get_repair_info_for_table_with_since_and_duration(context, keyspace, table, since, duration):
-    run_ecc_repair_info(context, ["--keyspace", keyspace, "--table", table, "--since", since, "--duration", duration, "-i", context.nodeid])
+    run_ecc_repair_info(
+        context,
+        ["--keyspace", keyspace, "--table", table, "--since", since, "--duration", duration, "-i", context.nodeid],
+    )
     handle_repair_info_output(context)
 
 
 @when("we get repair-info for table {keyspace}.{table} with duration {duration}")
 def step_get_repair_info_for_table_with_duration(context, keyspace, table, duration):
-    run_ecc_repair_info(context, ["--keyspace", keyspace, "--table", table, "--duration", duration, "-i", context.nodeid])
+    run_ecc_repair_info(
+        context, ["--keyspace", keyspace, "--table", table, "--duration", duration, "-i", context.nodeid]
+    )
     handle_repair_info_output(context)
 
 

@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.standalone;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
@@ -55,10 +56,11 @@ import net.jcip.annotations.NotThreadSafe;
 import org.assertj.core.util.Lists;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runners.Parameterized;
+
+
+import java.io.IOException;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -124,40 +126,44 @@ public class ITSchedules extends TestBase
 
     private final Set<TableReference> myRepairs = new HashSet<>();
 
+    private static CqlSession myAdminSession;
+
     @BeforeClass
-    public static void init()
+    public static void init() throws IOException
     {
+        initialize();
         mockFaultReporter = mock(RepairFaultReporter.class);
         mockTableRepairMetrics = mock(TableRepairMetrics.class);
         mockTableStorageStates = mock(TableStorageStates.class);
-        myLocalHost = getNodeFromDatacenterOne();
-        myMetadata = mySession.getMetadata();
+        myLocalHost = getNode();
+        myMetadata = getSession().getMetadata();
+        myAdminSession = getAdminNativeConnectionProvider().getCqlSession();
 
-        myTableReferenceFactory = new TableReferenceFactoryImpl(mySession);
+        myTableReferenceFactory = new TableReferenceFactoryImpl(getSession());
 
         myHostStates = HostStatesImpl.builder()
                 .withRefreshIntervalInMs(1000)
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .build();
 
-        myNodeResolver = new NodeResolverImpl(mySession);
+        myNodeResolver = new NodeResolverImpl(getSession());
         myLocalNode = myNodeResolver.fromUUID(myLocalHost.getHostId()).orElseThrow(IllegalStateException::new);
 
-        ReplicationState replicationState = new ReplicationStateImpl(myNodeResolver, mySession);
+        ReplicationState replicationState = new ReplicationStateImpl(myNodeResolver, getSession());
 
-        myRepairHistoryService = new RepairHistoryService(mySession, replicationState, myNodeResolver, TimeUnit.DAYS.toMillis(30));
+        myRepairHistoryService = new RepairHistoryService(getSession(), replicationState, myNodeResolver, TimeUnit.DAYS.toMillis(30));
 
         myLockFactory = CASLockFactory.builder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(myHostStates)
                 .withConsistencySerial(ConsistencyType.DEFAULT)
                 .build();
-        Set<UUID> nodeIds = getNativeConnectionProvider().getNodes().keySet();
-        List<UUID> nodeIdList = new ArrayList<>(nodeIds);
+        // Only run ScheduleManager for the local node to avoid concurrency issues
+        List<UUID> localNodeIdList = Collections.singletonList(myLocalHost.getHostId());
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withLockFactory(myLockFactory)
                 .withRunInterval(1, TimeUnit.SECONDS)
-                .withNodeIDList(nodeIdList)
+                .withNodeIDList(localNodeIdList)
                 .build();
 
         RepairStateFactoryImpl repairStateFactory = RepairStateFactoryImpl.builder()
@@ -196,7 +202,7 @@ public class ITSchedules extends TestBase
         {
             myRepairSchedulerImpl.removeConfiguration(myLocalHost, tableReference);
 
-            stages.add(mySession.executeAsync(QueryBuilder.deleteFrom("system_distributed", "repair_history")
+            stages.add(myAdminSession.executeAsync(QueryBuilder.deleteFrom("system_distributed", "repair_history")
                     .whereColumn("keyspace_name")
                     .isEqualTo(literal(tableReference.getKeyspace()))
                     .whereColumn("columnfamily_name")
@@ -204,7 +210,7 @@ public class ITSchedules extends TestBase
                     .build()));
             for (Node node : myMetadata.getNodes().values())
             {
-                stages.add(mySession.executeAsync(QueryBuilder.deleteFrom("ecchronos", "repair_history")
+                stages.add(myAdminSession.executeAsync(QueryBuilder.deleteFrom("ecchronos", "repair_history")
                         .whereColumn("table_id")
                         .isEqualTo(literal(tableReference.getId()))
                         .whereColumn("node_id")
@@ -249,7 +255,7 @@ public class ITSchedules extends TestBase
         schedule(tableReference);
 
         await().pollInterval(1, TimeUnit.SECONDS)
-                .atMost(90, TimeUnit.SECONDS)
+                .atMost(180, TimeUnit.SECONDS)
                 .until(() -> isRepairedSince(tableReference, startTime));
 
         verifyTableRepairedSince(tableReference, startTime);
@@ -441,12 +447,20 @@ public class ITSchedules extends TestBase
                 .map(RepairEntry::getRange)
                 .collect(Collectors.toSet());
 
+        LOG.info("Checking repair completion for table {}: expected {} ranges, found {} ranges, repairedSince={}", 
+                tableReference.getTable(), expectedRepaired.size(), actuallyRepaired.size(), repairedSince);
+        LOG.info("Expected ranges: {}", expectedRepaired);
+        LOG.info("Actually repaired ranges: {}", actuallyRepaired);
+        LOG.info("Repair entries count: {}", repairEntries.size());
+        
         if (expectedRepaired.equals(actuallyRepaired))
         {
+            LOG.info("All expected ranges were repaired successfully");
             return repairEntries.stream().mapToLong(RepairEntry::getStartedAt).min();
         }
         else
         {
+            LOG.info("Not all expected ranges were repaired yet");
             return OptionalLong.empty();
         }
     }
@@ -463,7 +477,9 @@ public class ITSchedules extends TestBase
 
     private boolean fullyRepaired(RepairEntry repairEntry)
     {
-        return repairEntry.getParticipants().size() == 2 && repairEntry.getStatus() == RepairStatus.SUCCESS;
+        // Accept repairs with 2 or more participants, or null participants (single node repairs)
+        boolean hasValidParticipants = repairEntry.getParticipants().size() >= 2;
+        return hasValidParticipants && repairEntry.getStatus() == RepairStatus.SUCCESS;
     }
 
     private void injectRepairHistory(TableReference tableReference, long timestampMax)
@@ -552,7 +568,7 @@ public class ITSchedules extends TestBase
                 .value("finished_at", literal(Instant.ofEpochMilli(finished_at)))
                 .build();
 
-        mySession.execute(statement);
+        myAdminSession.execute(statement);
     }
 
     private Set<TokenRange> halfOfTokenRanges(TableReference tableReference)

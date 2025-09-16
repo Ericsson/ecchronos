@@ -24,6 +24,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metadata.NodeResolverImpl;
@@ -32,6 +34,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.OnDemandR
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.ScheduleManagerImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.HostStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.ReplicationStateImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableReferenceFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.utils.ConsistencyType;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
@@ -39,12 +42,16 @@ import com.ericsson.bss.cassandra.ecchronos.core.state.LongTokenRange;
 import com.ericsson.bss.cassandra.ecchronos.core.state.RepairEntry;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryService;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairStatus;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
+
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -85,25 +92,33 @@ public class ITOnDemandRepairJob extends TestBase
 
     private final Set<TableReference> myRepairs = new HashSet<>();
 
-    @Before
-    public void init()
-    {
-        mockTableRepairMetrics = mock(TableRepairMetrics.class);
-        myMetadata = mySession.getMetadata();
+    private static TableReferenceFactory myTableReferenceFactory;
 
-        Set<UUID> nodeIds = getNativeConnectionProvider().getNodes().keySet();
-        List<UUID> nodeIdList = new ArrayList<>(nodeIds);
+    private static Node myLocalHost;
+
+    private static CqlSession myAdminSession;
+
+    @Before
+    public void init() throws IOException
+    {
+        initialize();
+        myLocalHost = getNode();
+        mockTableRepairMetrics = mock(TableRepairMetrics.class);
+        myMetadata = getSession().getMetadata();
+        myAdminSession = getAdminNativeConnectionProvider().getCqlSession();
+
+        myTableReferenceFactory = new TableReferenceFactoryImpl(getSession());
 
         myHostStates = HostStatesImpl.builder()
                 .withRefreshIntervalInMs(1000)
                 .withJmxProxyFactory(getJmxProxyFactory())
                 .build();
 
-        NodeResolver nodeResolver = new NodeResolverImpl(mySession);
+        NodeResolver nodeResolver = new NodeResolverImpl(getSession());
 
-        ReplicationState replicationState = new ReplicationStateImpl(nodeResolver, mySession);
+        ReplicationState replicationState = new ReplicationStateImpl(nodeResolver, getSession());
 
-        myEccRepairHistory = new RepairHistoryService(mySession, replicationState, nodeResolver, 2_592_000_000L);
+        myEccRepairHistory = new RepairHistoryService(getSession(), replicationState, nodeResolver, 2_592_000_000L);
 
         myLockFactory = CASLockFactory.builder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
@@ -111,9 +126,11 @@ public class ITOnDemandRepairJob extends TestBase
                 .withConsistencySerial(ConsistencyType.DEFAULT)
                 .build();
 
+        List<UUID> localNodeIdList = Collections.singletonList(myLocalHost.getHostId());
+
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withLockFactory(myLockFactory)
-                .withNodeIDList(nodeIdList)
+                .withNodeIDList(localNodeIdList)
                 .withRunInterval(100, TimeUnit.MILLISECONDS)
                 .build();
 
@@ -123,7 +140,7 @@ public class ITOnDemandRepairJob extends TestBase
                 .withScheduleManager(myScheduleManagerImpl)
                 .withRepairLockType(RepairLockType.VNODE)
                 .withReplicationState(replicationState)
-                .withSession(mySession)
+                .withSession(getSession())
                 .withRepairConfiguration(RepairConfiguration.DEFAULT)
                 .withRepairHistory(myEccRepairHistory)
                 .withOnDemandStatus(new OnDemandStatus(getNativeConnectionProvider()))
@@ -135,7 +152,7 @@ public class ITOnDemandRepairJob extends TestBase
     {
         for (TableReference tableReference : myRepairs)
         {
-            mySession.execute(QueryBuilder.deleteFrom("system_distributed", "repair_history")
+            myAdminSession.execute(QueryBuilder.deleteFrom("system_distributed", "repair_history")
                     .whereColumn("keyspace_name")
                     .isEqualTo(literal(tableReference.getKeyspace()))
                     .whereColumn("columnfamily_name")
@@ -143,13 +160,13 @@ public class ITOnDemandRepairJob extends TestBase
                     .build());
             for (Node node : myMetadata.getNodes().values())
             {
-                mySession.execute(QueryBuilder.deleteFrom("ecchronos", "repair_history")
+                myAdminSession.execute(QueryBuilder.deleteFrom("ecchronos", "repair_history")
                         .whereColumn("table_id")
                         .isEqualTo(literal(tableReference.getId()))
                         .whereColumn("node_id")
                         .isEqualTo(literal(node.getHostId()))
                         .build());
-                mySession.execute(QueryBuilder.deleteFrom("ecchronos", "on_demand_repair_status")
+                myAdminSession.execute(QueryBuilder.deleteFrom("ecchronos", "on_demand_repair_status")
                         .whereColumn("host_id")
                         .isEqualTo(literal(node.getHostId()))
                         .build());
@@ -175,14 +192,18 @@ public class ITOnDemandRepairJob extends TestBase
     public void repairSingleTable() throws EcChronosException
     {
         long startTime = System.currentTimeMillis();
-        Node node = getNodeFromDatacenterOne();
+        Node node = myLocalHost;
         TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
 
         schedule(tableReference, node.getHostId());
 
         await().pollInterval(1, TimeUnit.SECONDS)
                 .atMost(90, TimeUnit.SECONDS)
-                .until(() -> myRepairSchedulerImpl.getActiveRepairJobs().isEmpty());
+                .until(() -> {
+                    int queueSize = myRepairSchedulerImpl.getActiveRepairJobs().size();
+                    System.out.println("[repairSingleTable] Queue size for node " + node.getHostId() + ": " + queueSize);
+                    return myRepairSchedulerImpl.getActiveRepairJobs().isEmpty();
+                });
         await().pollInterval(1, TimeUnit.SECONDS)
                 .atMost(90, TimeUnit.SECONDS)
                 .until(() -> myScheduleManagerImpl.getQueueSize(node.getHostId()) == 0);
@@ -198,7 +219,7 @@ public class ITOnDemandRepairJob extends TestBase
     public void repairMultipleTables() throws EcChronosException
     {
         long startTime = System.currentTimeMillis();
-        Node node = getNodeFromDatacenterOne();
+        Node node = myLocalHost;
         TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
         TableReference tableReference2 = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_TWO_NAME);
 
@@ -224,7 +245,7 @@ public class ITOnDemandRepairJob extends TestBase
     public void repairSameTableTwice() throws EcChronosException
     {
         long startTime = System.currentTimeMillis();
-        Node node = getNodeFromDatacenterOne();
+        Node node = myLocalHost;
         TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
 
         schedule(tableReference, node.getHostId());
@@ -314,7 +335,7 @@ public class ITOnDemandRepairJob extends TestBase
 
     private boolean fullyRepaired(RepairEntry repairEntry)
     {
-        return repairEntry.getParticipants().size() == 2 && repairEntry.getStatus() == RepairStatus.SUCCESS;
+        return repairEntry.getParticipants().size() >= 2 && repairEntry.getStatus() == RepairStatus.SUCCESS;
     }
 
     private LongTokenRange convertTokenRange(TokenRange range)

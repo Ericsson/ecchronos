@@ -16,6 +16,7 @@
 package com.ericsson.bss.cassandra.ecchronos.standalone;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
@@ -29,6 +30,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.metadata.NodeResolverImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.RepairStatsProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairStateFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableReferenceFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairStatsProvider;
@@ -38,6 +40,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.state.RepairHistoryProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.state.TokenSubRangeUtil;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.CassandraRepairHistoryService;
 import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryService;
 import net.jcip.annotations.NotThreadSafe;
@@ -45,6 +48,8 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.io.IOException;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -94,16 +99,24 @@ public class ITRepairInfo extends TestBase
 
     private final Set<TableReference> myRepairs = new HashSet<>();
 
+    private static CqlSession myAdminSession;
+
+    private static TableReferenceFactory myTableReferenceFactory;
+
     @Parameterized.BeforeParam
-    public static void init(RepairHistoryType repairHistoryType)
+    public static void init(RepairHistoryType repairHistoryType) throws IOException
     {
-        Node node = getNodeFromDatacenterOne();
-        myNodeResolver = new NodeResolverImpl(mySession);
+        initialize();
+        myAdminSession = getAdminNativeConnectionProvider().getCqlSession();
+        Node node = getNode();
+        myNodeResolver = new NodeResolverImpl(getSession());
         myLocalDriverNode = myNodeResolver.fromUUID(node.getHostId()).orElseThrow(IllegalStateException::new);
 
-        ReplicationState replicationState = new ReplicationStateImpl(myNodeResolver, mySession);
+        myTableReferenceFactory = new TableReferenceFactoryImpl(getSession());
+
+        ReplicationState replicationState = new ReplicationStateImpl(myNodeResolver, getSession());
         RepairHistoryService repairHistoryService =
-                new RepairHistoryService(mySession, replicationState, myNodeResolver, TimeUnit.DAYS.toMillis(30));
+                new RepairHistoryService(getSession(), replicationState, myNodeResolver, TimeUnit.DAYS.toMillis(30));
 
         RepairHistoryProvider repairHistoryProvider;
         if (repairHistoryType == RepairHistoryType.ECC)
@@ -112,7 +125,7 @@ public class ITRepairInfo extends TestBase
         }
         else if (repairHistoryType == RepairHistoryType.CASSANDRA)
         {
-            repairHistoryProvider = new CassandraRepairHistoryService(myNodeResolver, mySession, TimeUnit.DAYS.toMillis(30));
+            repairHistoryProvider = new CassandraRepairHistoryService(myNodeResolver, getSession(), TimeUnit.DAYS.toMillis(30));
         }
         else
         {
@@ -127,10 +140,10 @@ public class ITRepairInfo extends TestBase
     {
         List<CompletionStage<AsyncResultSet>> stages = new ArrayList<>();
 
-        Metadata metadata = mySession.getMetadata();
+        Metadata metadata = getSession().getMetadata();
         for (TableReference tableReference : myRepairs)
         {
-            stages.add(mySession.executeAsync(QueryBuilder.deleteFrom("system_distributed", "repair_history")
+            stages.add(myAdminSession.executeAsync(QueryBuilder.deleteFrom("system_distributed", "repair_history")
                     .whereColumn("keyspace_name")
                     .isEqualTo(literal(tableReference.getKeyspace()))
                     .whereColumn("columnfamily_name")
@@ -139,7 +152,7 @@ public class ITRepairInfo extends TestBase
                     .setConsistencyLevel(ConsistencyLevel.ALL)));
             for (Node node : metadata.getNodes().values())
             {
-                stages.add(mySession.executeAsync(QueryBuilder.deleteFrom(ECCHRONOS_KEYSPACE, "repair_history")
+                stages.add(myAdminSession.executeAsync(QueryBuilder.deleteFrom(ECCHRONOS_KEYSPACE, "repair_history")
                         .whereColumn("table_id")
                         .isEqualTo(literal(tableReference.getId()))
                         .whereColumn("node_id")
@@ -159,7 +172,7 @@ public class ITRepairInfo extends TestBase
     @Test
     public void repairInfoForRepaired()
     {
-        Node node = getNodeFromDatacenterOne();
+        Node node = getNode();
         assertThat(node).isNotNull();
         long maxRepairedTime = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(2);
         TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
@@ -181,7 +194,7 @@ public class ITRepairInfo extends TestBase
     @Test
     public void repairInfoForRepairedInSubRanges()
     {
-        Node node = getNodeFromDatacenterOne();
+        Node node = getNode();
         assertThat(node).isNotNull();
         long maxRepairedTime = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(2);
         TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
@@ -203,7 +216,7 @@ public class ITRepairInfo extends TestBase
     @Test
     public void repairInfoForHalfOfRangesRepaired()
     {
-        Node node = getNodeFromDatacenterOne();
+        Node node = getNode();
         assertThat(node).isNotNull();
         long maxRepairedTime = System.currentTimeMillis() - TimeUnit.HOURS.toMillis(2);
         TableReference tableReference = myTableReferenceFactory.forTable(TEST_KEYSPACE, TEST_TABLE_ONE_NAME);
@@ -230,7 +243,7 @@ public class ITRepairInfo extends TestBase
 
     private void injectRepairHistory(Node node, TableReference tableReference, long timestampMax, boolean splitRanges)
     {
-        Set<TokenRange> tokenRanges = mySession.getMetadata().getTokenMap().get().getTokenRanges(tableReference.getKeyspace(), node);
+        Set<TokenRange> tokenRanges = getSession().getMetadata().getTokenMap().get().getTokenRanges(tableReference.getKeyspace(), node);
         injectRepairHistory(tableReference, timestampMax, tokenRanges, splitRanges);
     }
 
@@ -248,7 +261,7 @@ public class ITRepairInfo extends TestBase
 
         for (TokenRange tokenRange : tokenRanges)
         {
-            Set<InetAddress> participants = mySession.getMetadata()
+            Set<InetAddress> participants = getSession().getMetadata()
                     .getTokenMap()
                     .get()
                     .getReplicas(tableReference.getKeyspace(), tokenRange)
@@ -331,13 +344,13 @@ public class ITRepairInfo extends TestBase
                     .value("finished_at", literal(Instant.ofEpochMilli(finished_at)))
                     .build();
         }
-        mySession.execute(statement.setConsistencyLevel(ConsistencyLevel.ALL));
+        myAdminSession.execute(statement.setConsistencyLevel(ConsistencyLevel.ALL));
     }
 
     private Set<TokenRange> halfOfTokenRanges(Node node, TableReference tableReference)
     {
         Set<TokenRange> halfOfRanges = new HashSet<>();
-        Set<TokenRange> allTokenRanges = mySession.getMetadata()
+        Set<TokenRange> allTokenRanges = getSession().getMetadata()
                 .getTokenMap()
                 .get()
                 .getTokenRanges(tableReference.getKeyspace(), node);

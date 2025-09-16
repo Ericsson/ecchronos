@@ -133,13 +133,12 @@ public class TestCRLFileManager
      * Test case for where the getCurrentCRLs actually returns a valid CRL.
      */
     @Test
-    public void testRefreshWithValidCRLFile() throws Exception
+    public void testRefreshWithValidCRLFile()
     {
         CRLConfig crlConfig = getCustomCRLConfig(true, crlNotRevoked, true, 5, 1);
         CRLFileManager manager = new CRLFileManager(crlConfig);
-        await().atLeast(5, TimeUnit.SECONDS);
+        await().atMost(10, TimeUnit.SECONDS).until(() -> !manager.getCurrentCRLs().isEmpty());
         Collection<? extends CRL> crls = manager.getCurrentCRLs();
-        await().atMost(5, TimeUnit.SECONDS).until(() -> !manager.getCurrentCRLs().isEmpty());
         assertNotNull(crls);
         assertFalse(crls.isEmpty());
     }
@@ -148,7 +147,7 @@ public class TestCRLFileManager
      * Test case for where the getCurrentCRLs actually returns a valid CRL (but the file has a duplicate entry).
      */
     @Test
-    public void testRefreshWithValidCRLFileWithDuplicates() throws Exception
+    public void testRefreshWithValidCRLFileWithDuplicates()
     {
         CRLConfig crlConfig = getCustomCRLConfig(true, crlNotRevokedDuplicate, true, 5, 1);
         CRLFileManager manager = new CRLFileManager(crlConfig);

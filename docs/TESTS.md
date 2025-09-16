@@ -1,3 +1,91 @@
+# Contributing
+
+You are most welcome to create pull requests and issues to ecChronos.
+Before creating pull requests it is recommended to first discuss your idea with at least one of the owners of the repository.
+For keeping track of the history it is recommended that most communication is performed or summarized within pull requests or issues.
+
+## Development
+
+### Prerequisites
+
+* Maven
+* Java 17 / 21
+* Docker (for test setup)
+* Python 3
+
+### Branches
+
+Target the lowest applicable version of ecChronos when fixing an issue.
+Bug fixes should be targeted to the lowest maintained version where the bug reside.
+New features should, in general, be added to the master branch.
+
+### Code Style
+
+This project uses the cassandra code style which is based on Sun’s Java coding conventions.
+Formatting rules for eclipse can be found [here](../code_style.xml).
+
+Provided patches should be contained and should not modify code outside the scope of the patch.
+This will make it quicker to perform reviews and merging the pull requests.
+
+### Logging
+
+The table below describe the main criteria(s) for each debugging level. The levels are in the order of (from most to least):
+<br>
+<pre>
+  all > trace > debug > info > warn > error > off
+</pre>
+
+| Log&nbsp;level | Description                                                                                                                                                                                                                                                                                                                                          |
+|----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| all            | All levels will be logged <br> <b>Example:</b> -                                                                                                                                                                                                                                                                                                     |
+| trace          | Detailed debugging (flows, request/response, details, etc). Will have a performance impact and is therefore not for production, unless it is a planned troubleshooting activity. Mainly used during development. <br>  <b>Example:</b> Every method call is logged in detail for a certain request and response flow. Used data is logged in detail. |
+| debug          | Simple debug logging which can be turned on and used in production if necessary (should have no impact on performance). The logs at this level should be of the type a developer might need to spot a quick fix to a problem or to at least isolate the problem further. <br> <b>Example:</b> Specific events with contextual details.               |
+| info           | For logging the normal flow and operation of the service(s). <br> <b>Example:</b> Service health, progress of requests/responses etc.                                                                                                                                                                                                                |
+| warn           | Behaviors in the service(s) which are unexpected and potentially could lead to errors, but were handled for the moment. However, the service(s) as such are still working normally and as expected. <br> <b>Example:</b> A primary service switching to a secondary one, connection retries, reverting to defaults etc.                              |
+| error          | A service or dependency have failed in the sense no requests can be served and/or data processed cannot be trusted. <br> <b>Example:</b> Connection attempts that ultimate fail. Crucial resources not available.                                                                                                                                    |
+| off            | No levels will be logged at all. <br> <b>Example:</b> -                                                                                                                                                                                                                                                                                              |                                                                                                                                                                                                                                                |
+
+If the log message may require lengthy calculations, method calls to collect data or concatenations, use an <i>is...Enabled</i> block to guard it. An example would be:
+<pre>
+  if (LOG.isDebugEnabled())
+  {
+    LOG.debug("Environment status: {}", <b>getSyncEnvironmentStatus()</b>);
+  }
+</pre>
+
+### Builds
+
+The builds required to merge a pull request are contained within the [Github configuration](../.github/workflows/actions.yml) and include tests, code coverage as well as PMD checks.
+
+All checks need to pass before merging a pull request.
+The current PMD rules are constantly evolving.
+If you encounter a PMD rule that seems odd or non-relevant feel free to discuss it within an issue or pull request.
+
+#### Built with
+
+* [Maven](https://maven.apache.org) - Dependency and build management
+* [docker-maven-plugin](https://github.com/fabric8io/docker-maven-plugin) - For integration tests
+
+### Maintained versions
+
+The following table state what versions of ecChronos is still under active maintenance.
+
+| Version |  First Release   | Status |
+|:-------:|:----------------:|:------:|
+|  1.x.x  | Not yet released |   -    |
+
+
+### REST API
+
+Whenever there are any changes to the REST API, the OpenAPI specification must be generated.
+Generation of the OpenAPI specification is done by running the `python-integration-tests` tests.
+The generated specification is stored in `docs/autogenerated`.
+
+### ecctool documentation
+
+If changes have been made to ecctool, the documentation must be generated using `mvn clean install -P generate-ecctool-doc -DskipUTs`.
+On top of that, if there's any change in the output of ecctool the [examples](ECCTOOL_EXAMPLES.md) must be updated manually.
+
 # Tests
 
 Make sure to add tests to the relevant phase(s) when possible.
@@ -57,8 +145,34 @@ This can be done by running either `mvn clean install -P docker-integration-test
 
 ### Acceptance tests
 
-The acceptance test use behave to verify the python scripts as well as the REST server in ecChronos.
-They are activated by using `-P python-integration-tests` in combination with the docker flag.
+The acceptance tests use pytest and behave to verify the Python scripts as well as the REST server in ecChronos.
+
+#### Full Integration Tests (`python-integration-tests`)
+This profile is designed for CI environments and provides complete test coverage:
+- Creates certificates and sets up TLS authentication
+- Uses Docker containers with full security configuration
+- Does **not** create a virtual environment automatically
+- Installs Python dependencies directly to the system/current environment
+
+To run locally:
+```bash
+mvn clean verify -Dprecommit.tests
+```
+
+**Prerequisites:**
+- Install Python dependencies manually: `pip install -r ecchronos-binary/target/test/requirements.txt`
+- OR create and activate your own virtual environment before running
+
+#### Local Development Tests (`local-python-integration-tests`)
+This profile is optimized for local development:
+- Automatically creates a Python virtual environment
+- Installs all required dependencies in isolation
+- Uses simplified configuration (no TLS/auth)
+- Faster execution for development cycles
+
+To run:
+```bash
+mvn clean install -Dlocalprecommit.tests
 
 ### Running acceptance/integration tests towards local ccm cluster
 
@@ -123,20 +237,23 @@ Create keyspaces and tables in Cassandra (make sure to replace datacenter name w
 It is important that `ecchronos` keyspace has replication factor of 1 (tests depend on this).
 
 ```
-CREATE KEYSPACE IF NOT EXISTS ecchronos WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 1};
+CREATE KEYSPACE IF NOT EXISTS ecchronos WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 1, 'datacenter2': 1};
 CREATE TYPE IF NOT EXISTS ecchronos.token_range (start text, end text);
 CREATE TYPE IF NOT EXISTS ecchronos.table_reference (id uuid, keyspace_name text, table_name text);
-CREATE TABLE IF NOT EXISTS ecchronos.on_demand_repair_status (host_id uuid, job_id uuid, table_reference frozen<table_reference>, token_map_hash int, repaired_tokens frozen<set<frozen<token_range>>>, status text, completed_time timestamp, PRIMARY KEY(host_id, job_id)) WITH default_time_to_live = 2592000 AND gc_grace_seconds = 0;
+CREATE TABLE IF NOT EXISTS ecchronos.nodes_sync(ecchronos_id TEXT, datacenter_name TEXT, node_id UUID, node_endpoint TEXT, node_status TEXT, last_connection TIMESTAMP, next_connection TIMESTAMP, PRIMARY KEY(ecchronos_id, datacenter_name, node_id)) WITH CLUSTERING ORDER BY(datacenter_name DESC, node_id DESC);
+CREATE TABLE IF NOT EXISTS ecchronos.on_demand_repair_status (host_id uuid, job_id uuid, table_reference frozen<table_reference>, token_map_hash int, repaired_tokens frozen<set<frozen<token_range>>>, status text, completed_time timestamp, repair_type text, PRIMARY KEY(host_id, job_id)) WITH default_time_to_live = 2592000 AND gc_grace_seconds = 0;
 CREATE TABLE IF NOT EXISTS ecchronos.lock (resource text, node uuid, metadata map<text,text>, PRIMARY KEY(resource)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0;
 CREATE TABLE IF NOT EXISTS ecchronos.lock_priority (resource text, node uuid, priority int, PRIMARY KEY(resource, node)) WITH default_time_to_live = 600 AND gc_grace_seconds = 0;
 CREATE TABLE IF NOT EXISTS ecchronos.reject_configuration (keyspace_name text, table_name text, start_hour int, start_minute int, end_hour int, end_minute int, PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute));
 CREATE TABLE IF NOT EXISTS ecchronos.repair_history(table_id uuid, node_id uuid, repair_id timeuuid, job_id uuid, coordinator_id uuid, range_begin text, range_end text, participants set<uuid>, status text, started_at timestamp, finished_at timestamp, PRIMARY KEY((table_id,node_id), repair_id)) WITH compaction = {'class': 'TimeWindowCompactionStrategy'} AND default_time_to_live = 1728000 AND CLUSTERING ORDER BY (repair_id DESC);
-CREATE KEYSPACE IF NOT EXISTS test WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 3};
+CREATE KEYSPACE IF NOT EXISTS test WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 2, 'datacenter2': 1};
 CREATE TABLE IF NOT EXISTS test.table1 (key1 text, key2 int, value int, PRIMARY KEY(key1, key2));
 CREATE TABLE IF NOT EXISTS test.table2 (key1 text, key2 int, value int, PRIMARY KEY(key1, key2));
-CREATE KEYSPACE IF NOT EXISTS test2 WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 3};
+CREATE KEYSPACE IF NOT EXISTS test2 WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 2, 'datacenter2': 1};
 CREATE TABLE IF NOT EXISTS test2.table1 (key1 text, key2 int, value int, PRIMARY KEY(key1, key2));
 CREATE TABLE IF NOT EXISTS test2.table2 (key1 text, key2 int, value int, PRIMARY KEY(key1, key2));
+CREATE KEYSPACE IF NOT EXISTS "keyspaceWithCamelCase" WITH replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 2, 'datacenter2': 1};
+CREATE TABLE IF NOT EXISTS "keyspaceWithCamelCase"."tableWithCamelCase" (key1 text, key2 int, value int, PRIMARY KEY(key1, key2));
 ```
 
 To speed up tests it is recommended to change scheduler frequency to 5 seconds in ecc.yml.

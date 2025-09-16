@@ -74,18 +74,16 @@ def validate_header(header, expected_main_header):
 
     assert header[2] == len(header[2]) * header[2][0], header[2]  # -----
 
+
 def validate_nodeid_error(header, expected_error):
     assert len(header) == 1, header
     assert header[0] == expected_error, header[0]
-
 
 
 def validate_last_table_row(rows):
     assert len(rows) == 1, "Expecting last element to be '---' in {0}".format(rows)
     assert rows[0] == len(rows[0]) * rows[0][0], rows[0]  # -----
     assert len(rows) == 1, "{0} not empty".format(rows)
-
-
 
 
 def get_job_id(context):
@@ -100,15 +98,15 @@ def step_init(context):
     assert context.config.userdata.get("ecctool") is not False
     assert os.path.isfile(context.config.userdata.get("ecctool"))
 
+
 @given("we have a nodeid")
 def get_node_id(context):
     context.url = "localhost:8080/state/nodes"
     step_send_get_request(context)
     assert context.response is not None
     assert context.response.status_code == 200
-    json = context.response.json()
-    context.nodeid = json[0]["nodeId"]
-
+    data = context.response.json()
+    context.nodeid = data[0]["nodeId"]
 
 
 @then("the output should contain a valid repair summary")
@@ -128,9 +126,10 @@ def step_validate_list_rows_clear(context):
 def step_validate_list_tables_header(context):
     validate_header(context.header, REPAIR_HEADER)
 
+
 @then("the output should contain a nodeid error message")
 def step_validate_nodeid_error(context):
-    validate_nodeid_error(context.header,REPAIR_NODEID_ERROR)
+    validate_nodeid_error(context.header, REPAIR_NODEID_ERROR)
 
 
 @then("the output should contain a repair row for {keyspace}.{table} with type {repair_type}")
@@ -138,10 +137,11 @@ def step_validate_repair_row(context, keyspace, table, repair_type):
     expected_row = table_row(REPAIR_ROW_FORMAT_PATTERN, keyspace, table, repair_type)
     match_and_remove_row(context.rows, expected_row)
 
+
 @then("the output should contain {num} repair rows for {keyspace}.{table} with type {repair_type}")
 def step_validate_multiple_repair_rows(context, num, keyspace, table, repair_type):
     expected_row = table_row(REPAIR_ROW_FORMAT_PATTERN, keyspace, table, repair_type)
-    for x in range(int(num)):
+    for _ in range(int(num)):
         match_and_remove_row(context.rows, expected_row)
 
 
@@ -198,6 +198,7 @@ def step_verify_response_is_successful(context):
     assert context.response is not None
     assert context.response.status_code == 200
 
+
 @then("the response is bad request")
 def step_verify_response_is_bad_request(context):
     assert context.response is not None
@@ -226,8 +227,9 @@ def step_extract_id(context, keyspace, table):
             break
     assert context.nodeid is not None
 
+
 @then("the jobid from response is extracted for {keyspace}.{table}")
-def step_extract_id(context, keyspace, table):
+def step_extract_node_id(context, keyspace, table):
     assert context.response is not None
     context.json = context.response.json()
     for obj in context.json:
@@ -236,8 +238,9 @@ def step_extract_id(context, keyspace, table):
             break
     assert context.jobid is not None
 
-@then('the job list contains only keyspace {keyspace}')
-def step_verify_job_list(context, keyspace):
+
+@then("the job list contains only keyspace {keyspace}")
+def step_extract_job_id(context, keyspace):
     for obj in context.json:
         assert obj["keyspace"] == keyspace
 
