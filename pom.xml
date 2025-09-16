@@ -61,7 +61,7 @@
         <cassandra.driver.core.version>4.19.0</cassandra.driver.core.version>
         <com.fasterxml.jackson.annotations.version>2.20</com.fasterxml.jackson.annotations.version>
         <com.fasterxml.jackson.core.version>2.20.0</com.fasterxml.jackson.core.version>
-        <com.typesafe.config.version>1.4.4</com.typesafe.config.version>
+        <com.typesafe.config.version>1.4.5</com.typesafe.config.version>
         <equalsverifier.version>4.1</equalsverifier.version>
         <guava.version>33.4.8-jre</guava.version>
         <io.dropwizard.metrics.version>4.2.36</io.dropwizard.metrics.version>
@@ -89,7 +89,7 @@
         <org.springframework.boot.spring-boot-starter-thymeleaf.version>3.5.5</org.springframework.boot.spring-boot-starter-thymeleaf.version>
         <org.springframework.boot.spring-boot-starter-web.version>3.5.5</org.springframework.boot.spring-boot-starter-web.version>
         <org.springframework.spring-boot-test.version>3.5.5</org.springframework.spring-boot-test.version>
-        <org.springframework.spring-test.version>6.2.10</org.springframework.spring-test.version>
+        <org.springframework.spring-test.version>6.2.11</org.springframework.spring-test.version>
         <org.yaml.snakeyaml.version>2.5</org.yaml.snakeyaml.version>
         <slf4j.version>2.0.17</slf4j.version>
         <swagger-annotations.version>2.2.36</swagger-annotations.version>
@@ -104,7 +104,7 @@
         <org.apache.maven.plugins.maven-compiler-plugin.version>3.14.0</org.apache.maven.plugins.maven-compiler-plugin.version>
         <org.apache.maven.plugins-maven-dependency-plugin.version>3.8.1</org.apache.maven.plugins-maven-dependency-plugin.version>
         <org.apache.maven.plugins.maven-deploy-plugin.version>3.1.4</org.apache.maven.plugins.maven-deploy-plugin.version>
-        <org.apache.maven.plugins.maven-failsafe-plugin.version>3.5.3</org.apache.maven.plugins.maven-failsafe-plugin.version>
+        <org.apache.maven.plugins.maven-failsafe-plugin.version>3.5.4</org.apache.maven.plugins.maven-failsafe-plugin.version>
         <org.apache.maven.plugins.maven-gpg-plugin.version>3.2.8</org.apache.maven.plugins.maven-gpg-plugin.version>
         <org.apache.maven.plugins.maven-install-plugin.version>3.1.4</org.apache.maven.plugins.maven-install-plugin.version>
         <org.apache.maven.plugins-maven-jar-plugin.version>3.4.2</org.apache.maven.plugins-maven-jar-plugin.version>
@@ -112,9 +112,9 @@
         <org.apache.maven.plugins-maven-pmd-plugin.version>3.27.0</org.apache.maven.plugins-maven-pmd-plugin.version>
         <org.apache.maven.plugins.maven-release-plugin.version>3.1.1</org.apache.maven.plugins.maven-release-plugin.version>
         <org.apache.maven.plugins-maven-resources-plugin.version>3.3.1</org.apache.maven.plugins-maven-resources-plugin.version>
-        <org.apache.maven.plugins-maven-shade-plugin.version>3.6.0</org.apache.maven.plugins-maven-shade-plugin.version>
+        <org.apache.maven.plugins-maven-shade-plugin.version>3.6.1</org.apache.maven.plugins-maven-shade-plugin.version>
         <org.apache.maven.plugins.maven-source-plugin.version>3.3.1</org.apache.maven.plugins.maven-source-plugin.version>
-        <org.apache.maven.plugins.maven-surefire-plugin.version>3.5.3</org.apache.maven.plugins.maven-surefire-plugin.version>
+        <org.apache.maven.plugins.maven-surefire-plugin.version>3.5.4</org.apache.maven.plugins.maven-surefire-plugin.version>
         <org.apache.servicemix.tooling.depends-maven-plugin.version>1.5.0</org.apache.servicemix.tooling.depends-maven-plugin.version>
         <org.codehaus.mojo.exec-maven-plugin.version>3.5.1</org.codehaus.mojo.exec-maven-plugin.version>
         <org.codehaus.mojo.license-maven-plugin.version>2.6.0</org.codehaus.mojo.license-maven-plugin.version>
