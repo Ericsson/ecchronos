@@ -349,7 +349,7 @@
                                     <artifactItems>
                                         <artifactItem>
                                             <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-                                            <artifactId>ecchronos-binary</artifactId>
+                                            <artifactId>ecchronos-binary-agent</artifactId>
                                             <version>${project.version}</version>
                                             <type>tar.gz</type>
                                             <outputDirectory>${project.build.directory}/test</outputDirectory>
