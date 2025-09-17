@@ -265,6 +265,11 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 throw new ResponseStatusException(NOT_FOUND,
                         "Table " + keyspace + "." + table + " does not exist");
             }
+            if (rejectForTWCS(tableReference))
+            {
+                throw new ResponseStatusException(BAD_REQUEST,
+                        "Table " + keyspace + "." + table + " uses TWCS");
+            }
             onDemandRepairs = runLocalOrCluster(nodeUUID, repairType,
                     Collections.singleton(myTableReferenceFactory.forTable(keyspace, table)));
         }
@@ -301,6 +306,10 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 .map(OnDemandRepair::new)
                 .collect(Collectors.toList());
     }
+    private Boolean rejectForTWCS(final TableReference tableReference)
+    {
+        return (tableReference.getTwcs() && myOnDemandRepairScheduler.getRepairConfiguration().getIgnoreTWCSTables());
+    }
 
     private List<OnDemandRepair> runLocalOrCluster(
             final UUID nodeID,
@@ -316,10 +325,13 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         Node node = myDistributedNativeConnectionProvider.getNodes().get(nodeID);
         for (TableReference tableReference : tables)
         {
-           if (myReplicatedTableProvider.accept(node, tableReference.getKeyspace()))
+            if (!rejectForTWCS(tableReference))
             {
-                onDemandRepairs.add(new OnDemandRepair(
-                        myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, nodeID)));
+                if (myReplicatedTableProvider.accept(node, tableReference.getKeyspace()))
+                {
+                    onDemandRepairs.add(new OnDemandRepair(
+                            myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, nodeID)));
+                }
             }
         }
         return onDemandRepairs;

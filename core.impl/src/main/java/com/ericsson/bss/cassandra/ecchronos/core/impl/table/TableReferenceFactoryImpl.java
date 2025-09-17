@@ -25,10 +25,11 @@ import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
 import com.google.common.base.Preconditions;
 
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * A table reference factory using tables existing in Cassandra.
@@ -98,6 +99,7 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
         private final String keyspace;
         private final String table;
         private final int gcGraceSeconds;
+        private final boolean twcs;
 
         UuidTableReference(final TableMetadata tableMetadata)
         {
@@ -105,6 +107,17 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
             keyspace = tableMetadata.getKeyspace().asInternal();
             table = tableMetadata.getName().asInternal();
             gcGraceSeconds = (int) tableMetadata.getOptions().get(CqlIdentifier.fromInternal("gc_grace_seconds"));
+            Map<CqlIdentifier, Object> tableOptions = tableMetadata.getOptions();
+            Map<String, String> compaction
+                    = (Map<String, String>) tableOptions.get(CqlIdentifier.fromInternal("compaction"));
+            if (compaction == null)
+            {
+                twcs = false;
+            }
+            else
+            {
+                twcs = "org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy".equals(compaction.get("class"));
+            }
         }
 
         @Override
@@ -129,6 +142,11 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
         public int getGcGraceSeconds()
         {
             return gcGraceSeconds;
+        }
+        @Override
+        public boolean getTwcs()
+        {
+            return twcs;
         }
 
         @Override

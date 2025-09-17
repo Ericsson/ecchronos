@@ -28,4 +28,6 @@ public interface TableReference
     String getKeyspace();
 
     int getGcGraceSeconds();
+
+    boolean getTwcs();
 }

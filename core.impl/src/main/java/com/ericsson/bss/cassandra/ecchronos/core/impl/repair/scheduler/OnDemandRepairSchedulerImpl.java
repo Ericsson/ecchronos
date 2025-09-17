@@ -368,6 +368,12 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
                 .orElseThrow(() -> new NoSuchElementException("No node found with host ID: " + hostId));
     }
 
+    public RepairConfiguration getRepairConfiguration()
+    {
+        return myRepairConfiguration;
+    }
+
+
     public static Builder builder()
     {
         return new Builder();
