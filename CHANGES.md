@@ -1,5 +1,7 @@
 # Changes
 
+## Version 6.1.2
+
 ## Version 6.1.1
 
 ## Merged from Version 6.0
