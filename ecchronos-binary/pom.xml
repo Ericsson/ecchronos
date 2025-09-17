@@ -237,7 +237,7 @@
                                     <artifactItems>
                                         <artifactItem>
                                             <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
-                                            <artifactId>cassandra-test-image</artifactId>
+                                            <artifactId>cassandra-test-image-agent</artifactId>
                                             <version>${project.version}</version>
                                             <outputDirectory>${project.build.directory}/certificates</outputDirectory>
                                         </artifactItem>
