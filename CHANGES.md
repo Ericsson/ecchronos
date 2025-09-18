@@ -2,6 +2,7 @@
 
 ## Version 6.0.8
 
+* Mitigate CVE-2025-41249
 * Refactor ecchronos-binary Test Infrastructure - Issue #1093
 * Schedule not showing if ecchronos keyspace is not replicated correctly - Issue #1112
 
