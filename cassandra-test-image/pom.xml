@@ -87,7 +87,7 @@
                 <groupId>org.sonatype.central</groupId>
                 <artifactId>central-publishing-maven-plugin</artifactId>
                 <configuration>
-                    <excludeArtifacts>cassandra-test-image</excludeArtifacts>
+                    <excludeArtifacts>cassandra-test-image-agent</excludeArtifacts>
                 </configuration>
             </plugin>
 

@@ -32,7 +32,7 @@ echo "Installing Python dependencies from requirements.txt"
 pip install -r requirements.txt
 
 echo "Installing ecChronos Python library"
-BASE_DIR="$TEST_DIR"/ecchronos-binary-${PROJECT_VERSION}
+BASE_DIR="$TEST_DIR"/ecchronos-binary-agent-${PROJECT_VERSION}
 PYLIB_DIR="$BASE_DIR"/pylib
 
 if [ -d "$PYLIB_DIR" ]; then

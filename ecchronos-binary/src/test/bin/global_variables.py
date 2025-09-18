@@ -33,7 +33,7 @@ def get():
     PIDFILE = os.path.join(TEST_DIR, "ecc.pid")
     PROJECT_VERSION = os.environ.get("PROJECT_VERSION")
     PROJECT_BUILD_DIRECTORY = os.environ.get("PROJECT_BUILD_DIRECTORY")
-    BASE_DIR = f"{TEST_DIR}/ecchronos-binary-{PROJECT_VERSION}"
+    BASE_DIR = f"{TEST_DIR}/ecchronos-binary-agent-{PROJECT_VERSION}"
     CONF_DIR = f"{BASE_DIR}/conf"
     PYLIB_DIR = f"{BASE_DIR}/pylib"
     CERTIFICATE_DIRECTORY = f"{PROJECT_BUILD_DIRECTORY}/certificates/cert"
