@@ -1,5 +1,7 @@
 # Changes
 
+## Version 6.1.3
+
 ## Version 6.1.2
 
 * Rework the status commands of the ecctool for more details - Issue #946
