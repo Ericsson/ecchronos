@@ -140,6 +140,7 @@ class V2RepairSchedulerRequest(RestRequest):
     PROTOCOL = ROOT + "v2/"
     REPAIRS = PROTOCOL + "repairs"
     SCHEDULES = PROTOCOL + "schedules"
+    STATE = PROTOCOL + "state"
 
     v2_schedule_status_url = SCHEDULES
     v2_schedule_id_status_url = SCHEDULES + "/{0}"
@@ -156,6 +157,11 @@ class V2RepairSchedulerRequest(RestRequest):
 
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
+
+    def get_state(self):
+        request_url = V2RepairSchedulerRequest.STATE
+        result = self.request(request_url)
+        return result
 
     def get_schedule(self, job_id, full=False):
         if full:

@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.CRLConfig;
 
+import com.ericsson.bss.cassandra.ecchronos.core.state.ApplicationStateHolder;
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,11 @@ import java.util.Date;
 public final class CustomCRLValidator
 {
     private static final Logger LOG = LoggerFactory.getLogger(CustomCRLValidator.class);
+
+    private static final String CRL_STATUS = "crl.status";
+    private static final String VALID = "valid";
+    private static final String INVALID = "invalid";
+    private static final String REVOKED = "revoked";
 
     public enum CRLState
     {
@@ -48,9 +54,13 @@ public final class CustomCRLValidator
 
     public CRLState isCertificateCRLValid(final X509Certificate cert) // NOPMD
     {
+        // Make sure previous state is cleared
+        ApplicationStateHolder.getInstance().put(CRL_STATUS, null);
+
         // Sanity check of the provided certificate and chain
         if (cert == null)
         {
+            ApplicationStateHolder.getInstance().put(CRL_STATUS, INVALID);
             return CRLState.INVALID;
         }
 
@@ -58,6 +68,7 @@ public final class CustomCRLValidator
         Collection<? extends CRL> crls = myCRLFileManager.getCurrentCRLs();
         if (crls == null || crls.isEmpty())
         {
+            ApplicationStateHolder.getInstance().put(CRL_STATUS, INVALID);
             return CRLState.INVALID;
         }
 
@@ -72,6 +83,7 @@ public final class CustomCRLValidator
                 if (x509Crl.isRevoked(cert))
                 {
                     LOG.warn("Certificate with serial number {} is revoked by CRL", cert.getSerialNumber());
+                    ApplicationStateHolder.getInstance().put(CRL_STATUS, REVOKED);
                     return CRLState.REVOKED;
                 }
                 // Also, verify the CRL is actually current
@@ -80,17 +92,20 @@ public final class CustomCRLValidator
                 {
                     if (next.before(new Date()))
                     {
-                        LOG.debug("CRL for issuer {} is expired", ((X509CRL) crl).getIssuerX500Principal().getName());
+                        LOG.debug("CRL for issuer {} is expired", x509Crl.getIssuerX500Principal().getName());
+                        ApplicationStateHolder.getInstance().put(CRL_STATUS, INVALID);
                         return CRLState.INVALID;
                     }
                     else
                     {
+                        ApplicationStateHolder.getInstance().put(CRL_STATUS, VALID);
                         return CRLState.VALID;
                     }
                 }
             }
         }
         // Gone through all CRLs, nothing was valid for this certificate
+        ApplicationStateHolder.getInstance().put(CRL_STATUS, INVALID);
         return CRLState.INVALID;
     }
 

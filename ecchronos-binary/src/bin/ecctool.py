@@ -21,6 +21,7 @@ import os
 import signal
 import sys
 import glob
+import json
 import subprocess
 from argparse import ArgumentParser, ArgumentTypeError
 from io import open
@@ -358,6 +359,7 @@ def add_status_subcommand(sub_parsers):
         help="The ecChronos host to connect to, specified in the format " "http://<host>:<port>.",
         default=None,
     )
+    parser_status.add_argument("-o", "--output", type=str, help="Output format. One of: (json).", default="")
 
 
 def add_rejections_subcommand(sub_parsers):
@@ -748,12 +750,18 @@ def stop(arguments):
 
 def status(arguments, print_running=False):
     request = rest.V2RepairSchedulerRequest(base_url=arguments.url)
-    result = request.list_schedules()
+    result = request.get_state()
     if result.is_successful():
         if print_running:
-            print("ecChronos is running")
+            if arguments.output == "json":
+                print(json.dumps((result.data), indent=4))
+            elif print_running:
+                print("ecChronos is running")
     else:
-        print("ecChronos is not running")
+        if arguments.output == "json":
+            print(json.dumps({"running": False}, indent=4))
+        else:
+            print("ecChronos is not running")
         sys.exit(1)
 
 

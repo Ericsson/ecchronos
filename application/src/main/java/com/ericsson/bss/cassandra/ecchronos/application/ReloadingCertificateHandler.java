@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 import com.datastax.oss.driver.api.core.metadata.EndPoint;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.CqlTLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
+import com.ericsson.bss.cassandra.ecchronos.core.state.ApplicationStateHolder;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -44,17 +45,21 @@ import java.security.KeyStoreException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CRLException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Enumeration;
 import java.util.HashMap;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -66,7 +71,6 @@ public class ReloadingCertificateHandler implements CertificateHandler
 
     private final AtomicReference<Context> currentContext = new AtomicReference<>();
     private final Supplier<CqlTLSConfig> myCqlTLSConfigSupplier;
-
     private static final String DEFAULT_STORE_TYPE_JKS = "JKS";
 
     public ReloadingCertificateHandler(final Supplier<CqlTLSConfig> cqlTLSConfigSupplier)
@@ -206,7 +210,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
         }
     }
 
-    protected static SslContext createSSLContext(final CqlTLSConfig tlsConfig) throws IOException,
+    protected static SslContext createSSLContext(final CqlTLSConfig tlsConfig) throws IOException,  // NOPMD
             NoSuchAlgorithmException,
             KeyStoreException,
             CertificateException,
@@ -218,6 +222,8 @@ public class ReloadingCertificateHandler implements CertificateHandler
         if (tlsConfig.isCertificateConfigured())
         {
             LOG.info("Will use PEM certificates for CQL connections, using internal store type {}", storeType);
+
+            ApplicationStateHolder.getInstance().put("certificates.type", "pem_files");
 
             // Get certificate and key files from config
             File certificateFile = new File(tlsConfig.getCertificatePath().get());
@@ -271,12 +277,23 @@ public class ReloadingCertificateHandler implements CertificateHandler
                 }
                 else
                 {
-                    LOG.debug("Number of certificates in trusted certificate chain: {}", trustedCertificates.size());
                     // Add all certificates in the trusted chain to the internal truststore
+                    LOG.debug("Number of certificates in trusted certificate chain: {}", trustedCertificates.size());
+
+                    List<Map<String, Object>> result = new ArrayList<>();
                     for (int i = 0; i < trustedCertificates.size(); i++)
                     {
-                        trustStore.setCertificateEntry("trusted-certs" + i, trustedCertificates.get(i));
+                        Certificate cert = trustedCertificates.get(i);
+                        trustStore.setCertificateEntry("trusted-certs" + i, cert);
+
+                        X509Certificate x509cert = (X509Certificate) cert;
+                        Map<String, Object> details = new HashMap<>();
+                        details.put("serial_number", x509cert.getSerialNumber());
+                        details.put("issuer", x509cert.getIssuerX500Principal());
+                        details.put("signature", x509cert.getSignature());
+                        result.add(details);
                     }
+                    ApplicationStateHolder.getInstance().put("certificates", result);
 
                     tmf.init(trustStore);
                 }
@@ -289,6 +306,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
         else
         {
             LOG.info("Will use keystore/truststore for CQL connections, expecting store type {}", storeType);
+            ApplicationStateHolder.getInstance().put("certificates.type", "stores");
 
             KeyManagerFactory keyManagerFactory = getKeyManagerFactory(tlsConfig);
             builder.keyManager(keyManagerFactory);
@@ -308,17 +326,27 @@ public class ReloadingCertificateHandler implements CertificateHandler
         {
             builder.ciphers(Arrays.asList(tlsConfig.getCipherSuites().get()));
         }
-        return builder.protocols(tlsConfig.getProtocols()).build();
+        SslContext sslContext = builder.protocols(tlsConfig.getProtocols()).build();
+        return sslContext;
     }
 
     protected static void setTrustManagers(final SslContextBuilder builder,
                                            final CqlTLSConfig config,
                                            final TrustManagerFactory tmf)
     {
+        // Clear current state
+        ApplicationStateHolder.getInstance().put("crl", null);
+
         if (config.getCRLConfig().getEnabled())
         {
             // If CRL is enabled, use the CustomX509TrustManager (CRL checking is added to the SSL context)
-            LOG.info("CRL enabled using strict mode: {}", config.getCRLConfig().getStrict());
+            boolean strict = config.getCRLConfig().getStrict();
+            LOG.info("CRL enabled using strict mode: {}", strict);
+            ApplicationStateHolder.getInstance().put("crl.enabled", true);
+            ApplicationStateHolder.getInstance().put("crl.strict", strict);
+            ApplicationStateHolder.getInstance().put("crl.path", config.getCRLConfig().getPath());
+            ApplicationStateHolder.getInstance().put("crl.interval", config.getCRLConfig().getInterval());
+            ApplicationStateHolder.getInstance().put("crl.attempts_max", config.getCRLConfig().getAttempts());
             TrustManager[] trustManagers = tmf.getTrustManagers();
             for (int i = 0; i < trustManagers.length; i++)
             {
@@ -338,6 +366,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
         {
             // No CRL, use TrustManagerFactory as-is
             LOG.info("CRL not enabled");
+            ApplicationStateHolder.getInstance().put("crl.enabled", false);
             builder.trustManager(tmf);
         }
     }
@@ -405,6 +434,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
             KeyStore keyStore = KeyStore.getInstance(tlsConfig.getStoreType().orElse(DEFAULT_STORE_TYPE_JKS));
             keyStore.load(keystoreFile, keystorePassword);
             keyManagerFactory.init(keyStore, keystorePassword);
+            ApplicationStateHolder.getInstance().put("certificates.keystore", getCertificatesList(keyStore));
             return keyManagerFactory;
         }
     }
@@ -421,8 +451,59 @@ public class ReloadingCertificateHandler implements CertificateHandler
             KeyStore keyStore = KeyStore.getInstance(tlsConfig.getStoreType().orElse(DEFAULT_STORE_TYPE_JKS));
             keyStore.load(truststoreFile, truststorePassword);
             trustManagerFactory.init(keyStore);
+            ApplicationStateHolder.getInstance().put("certificates.truststore", getCertificatesList(keyStore));
             return trustManagerFactory;
         }
+    }
+
+
+    protected static List<Map<String, Object>> getCertificatesList(final KeyStore keyStore)
+    {
+        List<Map<String, Object>> certificates = new ArrayList<>();
+
+        try
+        {
+            // Iterate through all aliases in the store
+            Enumeration<String> aliases = keyStore.aliases();
+            while (aliases.hasMoreElements())
+            {
+                String alias = aliases.nextElement();
+
+                // Get the certificate for this alias
+                Certificate cert = keyStore.getCertificate(alias);
+                if (cert instanceof X509Certificate x509Cert)
+                {
+                    Map<String, Object> temp = new HashMap<>();
+
+                    temp.put("alias", alias);
+                    temp.put("issuer", x509Cert.getIssuerX500Principal().getName());
+                    temp.put("subject", x509Cert.getSubjectX500Principal().getName());
+                    temp.put("valid_from", x509Cert.getNotBefore().toString());
+                    temp.put("valid_until", x509Cert.getNotAfter().toString());
+                    temp.put("serial_number", x509Cert.getSerialNumber());
+                    temp.put("signature_algorithm", x509Cert.getSigAlgName());
+                    temp.put("critical_extensions", String.join(",", x509Cert.getCriticalExtensionOIDs()));
+                    temp.put("is_ca", (x509Cert.getBasicConstraints() != -1));
+
+                    // Get the public key
+                    PublicKey publicKey = x509Cert.getPublicKey();
+                    temp.put("public_key_algorithm", publicKey.getAlgorithm());
+                    temp.put("public_key_format", publicKey.getFormat());
+
+                    // Check if this alias has a private key entry
+                    temp.put("has_private_key", keyStore.isKeyEntry(alias));
+
+                    // Add the certificate to the resulting list
+                    certificates.add(temp);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Failed to get certificates list", e);
+        }
+
+        return certificates;
     }
 
 }

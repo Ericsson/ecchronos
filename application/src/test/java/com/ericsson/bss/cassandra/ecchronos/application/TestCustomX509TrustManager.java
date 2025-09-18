@@ -75,8 +75,11 @@ public class TestCustomX509TrustManager
         // Create mocks
         X509TrustManager mockDelegate = mock(X509TrustManager.class);
         CustomCRLValidator mockCRLValidator = mock(CustomCRLValidator.class);
+        CRLFileManager mockCRLFileManager = mock(CRLFileManager.class);
         // Create spy of the class
         CustomX509TrustManager trustManager = spy(new CustomX509TrustManager(mockDelegate, mockCRLValidator));
+        // Mock the myCRLFileManager field
+        mockCRLValidator.myCRLFileManager = mockCRLFileManager;
         // Configure mock behavior to throw exception
         doThrow(new CertificateException()).when(trustManager).revalidateServerTrust();
         when(mockCRLValidator.inStrictMode()).thenReturn(true);
