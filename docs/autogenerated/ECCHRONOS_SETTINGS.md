@@ -60,7 +60,7 @@ connection:
     ## Primarily used by the default connection provider.
     ##
     host: localhost
-    port: 7199
+    port: 7199 # 7100
     ##
     ## The class used to provide JMX connections to Apache Cassandra.
     ## The default provider will be used unless another is specified.
@@ -81,14 +81,14 @@ repair:
   ##
   interval:
     time: 7
-    unit: days
+    unit: days # minutes
   ##
   ## Initial delay for new tables. New tables are always assumed to have been repaired in the past by the interval.
   ## However, a delay can be set for the first repair. This will not affect subsequent repairs and defaults to one day.
   ##
   initial_delay:
     time: 1
-    unit: days
+    unit: days # minutes
   ##
   ## The unit of time granularity for priority calculation, can be HOURS, MINUTES, or SECONDS.
   ## This unit is used in the calculation of priority.

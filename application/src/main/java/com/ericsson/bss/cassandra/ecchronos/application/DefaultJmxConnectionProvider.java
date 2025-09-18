@@ -23,6 +23,7 @@ import javax.management.remote.JMXConnector;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.Connection;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.JmxTLSConfig;
+import com.ericsson.bss.cassandra.ecchronos.core.state.ApplicationStateHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +57,10 @@ public class DefaultJmxConnectionProvider implements JmxConnectionProvider
         Supplier<Map<String, String>> tls = () -> convertTls(jmxSecurity);
 
         myLocalJmxConnectionProvider = new LocalJmxConnectionProvider(host, port, credentials, tls);
+
+        ApplicationStateHolder.getInstance().put("connections.jmx." + host + ".port", port);
+        ApplicationStateHolder.getInstance().put("connections.jmx." + host + ".authentication", authEnabled);
+        ApplicationStateHolder.getInstance().put("connections.jmx." + host + ".tls", tlsEnabled);
     }
 
     @Override

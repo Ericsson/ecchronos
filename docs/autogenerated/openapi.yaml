@@ -15,6 +15,8 @@ tags:
   description: Management of repairs
 - name: Metrics
   description: Retrieve metrics about ecChronos
+- name: State-Management
+  description: Management of application state
 - name: Actuator
   description: Monitor and interact
   externalDocs:
@@ -200,6 +202,43 @@ paths:
                 type: object
                 additionalProperties:
                   type: object
+  /repair-management/v2/state:
+    get:
+      tags:
+      - State-Management
+      summary: Get all state
+      description: Get all application state entries
+      operationId: get-all-state
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+  /repair-management/v2/state/{key}:
+    get:
+      tags:
+      - State-Management
+      summary: Get state by key
+      description: Get a specific state value by key
+      operationId: get-state-by-key
+      parameters:
+      - name: key
+        in: path
+        description: The state key to retrieve
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
   /repair-management/v2/schedules:
     get:
       tags:

@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.application;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.CRLConfig;
 
+import com.ericsson.bss.cassandra.ecchronos.core.state.ApplicationStateHolder;
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,10 +31,15 @@ import java.security.cert.CRL;
 import java.security.cert.CRLException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.security.cert.X509CRL;
+import java.security.cert.X509CRLEntry;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -137,6 +143,11 @@ public final class CRLFileManager
         return myMaxAttempts;
     }
 
+    public int getAttempt()
+    {
+        return myAttempt;
+    }
+
     @VisibleForTesting
     public void notifyRefresh()
     {
@@ -183,11 +194,42 @@ public final class CRLFileManager
             // CRL file was refreshed; notify and log the details
             LOG.info("CRL file refreshed in {} ms; read {} record(s), discarded {} duplicate(s)",
                     duration, this.myCRLs.size(), dupes);
+            ApplicationStateHolder.getInstance().put("crl.last_refresh", startTime);
+
+            // Update internal status with the latest CRLs read
+            List<Map<String, Object>> result = new ArrayList<>();
+            for (CRL crl : this.myCRLs)
+            {
+                if (crl instanceof X509CRL x509Crl)
+                {
+                    Map<String, Object> temp = new HashMap<>();
+                    temp.put("issuer", x509Crl.getIssuerX500Principal().getName());
+                    temp.put("next_update", x509Crl.getNextUpdate());
+                    temp.put("type", x509Crl.getType());
+                    Set<? extends X509CRLEntry> revokedCerts = x509Crl.getRevokedCertificates();
+                    List<Map<String, Object>> revokedList = new ArrayList<>();
+                    if (revokedCerts != null)
+                    {
+                        for (X509CRLEntry cert : revokedCerts)
+                        {
+                             Map<String, Object> revoked = new HashMap<>();
+                             revoked.put("serial_number", cert.getSerialNumber());
+                             revoked.put("revocation_date", cert.getRevocationDate());
+                             revoked.put("critical_extensions", cert.getCriticalExtensionOIDs());
+                             revokedList.add(revoked);
+                        }
+                    }
+                    temp.put("revoked_certificates", revokedList);
+                    result.add(temp);
+                }
+            }
+            ApplicationStateHolder.getInstance().put("crl.entries", result);
         }
         catch (IOException | CRLException e)
         {
             myCRLs.clear();
             LOG.error("Failed to read CRL file; any previously cached CRLs have been purged");
+            ApplicationStateHolder.getInstance().put("crl.last_refresh", -1);
         }
         // Make sure listeners are aware of the changes
         updateFileMetadata();

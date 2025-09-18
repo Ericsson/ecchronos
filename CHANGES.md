@@ -2,6 +2,8 @@
 
 ## Version 6.1.2
 
+* Rework the status commands of the ecctool for more details - Issue #946
+
 ## Merged from Version 6.0
 
 * Mitigate CVE-2025-41249

@@ -26,6 +26,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.connection.Native
 import com.ericsson.bss.cassandra.ecchronos.application.config.exceptions.RetryPolicyException;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.DefaultRepairConfigurationProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.state.ApplicationStateHolder;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +88,10 @@ public class DefaultNativeConnectionProvider implements NativeConnectionProvider
         myLocalNativeConnectionProvider = establishConnection(nativeConnectionBuilder,
                 host, port, nativeConfig.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS),
                 nativeConfig.getRetryPolicy());
+
+        ApplicationStateHolder.getInstance().put("connections.cql." + host + ".port", port);
+        ApplicationStateHolder.getInstance().put("connections.cql." + host + ".authentication", authEnabled);
+        ApplicationStateHolder.getInstance().put("connections.cql." + host + ".tls", tlsEnabled);
     }
 
     public DefaultNativeConnectionProvider(final Config config,

@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application;
 
+import com.ericsson.bss.cassandra.ecchronos.core.state.ApplicationStateHolder;
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -187,12 +188,16 @@ public final class CustomX509TrustManager implements X509TrustManager
             revalidateServerTrust();
             revalidateClientTrust();
             myCRLValidator.resetAttempts();
+            // If successful, no "attempts" necessary
+            ApplicationStateHolder.getInstance().put("crl.attempts_made", 0);
             LOG.info("Certificates are not revoked by current CRL (any previous failed attempts was reset)");
         }
         catch (CertificateException e)
         {
             if (myCRLValidator.inStrictMode())
             {
+                ApplicationStateHolder.getInstance().put("crl.attempts_made",
+                        myCRLValidator.myCRLFileManager.getAttempt());
                 // Strict mode: Log it, check for attempts made and eventually shut down if all attempts are consumed
                 LOG.warn("Certificates are revoked by current CRL (strict mode, attempt {} of {} made)",
                         myCRLValidator.increaseAttempts(),
