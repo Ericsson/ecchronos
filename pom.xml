@@ -73,11 +73,9 @@
         <io.prometheus.prometheus-metrics-tracer-common.version>1.4.1</io.prometheus.prometheus-metrics-tracer-common.version>
         <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
-        <javax.inject-api.version>2.0.1</javax.inject-api.version>
         <jcip.version>1.0</jcip.version>
         <junit.junit.version>4.13.2</junit.junit.version>
         <junit.junit-vintage-engine.version>5.13.4</junit.junit-vintage-engine.version>
-        <junitparams.version>1.1.1</junitparams.version>
         <logback.version>1.5.18</logback.version>
         <mockito.core.version>5.19.0</mockito.core.version>
         <org.apache.commons.io.version>2.20.0</org.apache.commons.io.version>
