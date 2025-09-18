@@ -359,13 +359,7 @@ def add_status_subcommand(sub_parsers):
         help="The ecChronos host to connect to, specified in the format " "http://<host>:<port>.",
         default=None,
     )
-    parser_status.add_argument(
-        "-o",
-        "--output",
-        type=str,
-        help="Output format. One of: (json).",
-        default=""
-    )
+    parser_status.add_argument("-o", "--output", type=str, help="Output format. One of: (json).", default="")
 
 
 def add_rejections_subcommand(sub_parsers):
@@ -765,7 +759,7 @@ def status(arguments, print_running=False):
                 print("ecChronos is running")
     else:
         if arguments.output == "json":
-            print(json.dumps({ "running": False }, indent=4))
+            print(json.dumps({"running": False}, indent=4))
         else:
             print("ecChronos is not running")
         sys.exit(1)
