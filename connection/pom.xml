@@ -20,7 +20,7 @@
     <parent>
         <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
         <artifactId>parent</artifactId>
-        <version>6.1.2-SNAPSHOT</version>
+        <version>6.1.2</version>
     </parent>
     <artifactId>connection</artifactId>
     <description>Interfaces that ecChronos rely on to connect to Apache Cassandra</description>
