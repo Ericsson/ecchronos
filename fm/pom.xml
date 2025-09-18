@@ -20,7 +20,7 @@
     <parent>
         <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
         <artifactId>parent</artifactId>
-        <version>6.1.2-SNAPSHOT</version>
+        <version>6.1.3-SNAPSHOT</version>
     </parent>
     <artifactId>fm</artifactId>
     <description>Interfaces that ecChronos rely on for fault reporting</description>
