@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* ecc.sh in evolved ecchronos uses old SpringBooter package reference - Issue #1123
 * ecctool with node and keyspace gives an error -Issue #1055
 * REST Interface to provide list of nodes - Issue #1045
 * Fix REST interface only shows the schedules for the last table added - Issue #1030
