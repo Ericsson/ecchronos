@@ -76,6 +76,7 @@ abstract public class TestBase
 
     protected static Node MyLocalNode;
     private static final Object lock = new Object();
+    private static boolean myJolokiaEnabled;
 
     @BeforeClass
     public static void initialize() throws IOException
@@ -89,6 +90,8 @@ abstract public class TestBase
             Thread.currentThread().interrupt();
             throw new IOException("Cluster initialization interrupted", e);
         }
+        String jolokiaEnabled = System.getProperty("it.jolokia.enabled", "false");
+        myJolokiaEnabled = jolokiaEnabled == "true" ? true : false;
         List<InetSocketAddress> contactPoints = new ArrayList<>();
         CqlSession initialSession = createDefaultSession();
 
@@ -126,7 +129,7 @@ abstract public class TestBase
         myJmxConnectionProvider = DistributedJmxConnectionProviderImpl.builder()
                 .withCqlSession(myNativeConnectionProvider.getCqlSession())
                 .withNativeConnection(myNativeConnectionProvider)
-                .withJolokiaEnabled(false)
+                .withJolokiaEnabled(myJolokiaEnabled)
                 .withEccNodesSync(myEccNodesSync)
                 .build();
 
@@ -205,7 +208,7 @@ abstract public class TestBase
     private static CqlSessionBuilder defaultBuilder()
     {
         return CqlSession.builder()
-                .addContactPoint(new InetSocketAddress(SharedCassandraCluster.getContainerIP(), 9042))
+                .addContactPoint(new InetSocketAddress(SharedCassandraCluster.getContainerIP(), CASSANDRA_NATIVE_PORT))
                 .withLocalDatacenter("datacenter1")
                 .withAuthCredentials("cassandra", "cassandra");
     }

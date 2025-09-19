@@ -33,6 +33,9 @@ class EcchronosConfig:
         self._modify_scheduler_configuration()
         self._modify_spring_doc_configuration()
 
+        if global_vars.JOLOKIA_ENABLED == "true":
+            self._modify_jolokia_configuration()
+
         if self.context.local != "true":
             self._modify_security_configuration()
             self._modify_application_configuration()
@@ -182,6 +185,11 @@ class EcchronosConfig:
             },
         ]
         self._modify_yaml_data(global_vars.SCHEDULE_YAML_FILE_PATH, data)
+
+    def _modify_jolokia_configuration(self):
+        data = self._read_yaml_data(global_vars.ECC_YAML_FILE_PATH)
+        data["connection"]["jmx"]["jolokia"]["enabled"] = True
+        self._modify_yaml_data(global_vars.ECC_YAML_FILE_PATH, data)
 
     def _read_yaml_data(self, filename):
         with open(filename, "r") as f:
