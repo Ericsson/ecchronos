@@ -664,74 +664,97 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
                 final TableReference tableReference)
         {
             JMXConnector nodeConnection = myDistributedJmxConnectionProvider.getJmxConnector(nodeID);
-            boolean isConnectionAvailable = validateJmxConnection(nodeConnection);
-            if (isConnectionAvailable)
-            {
-                try
-                {
-                    List<String> args = new ArrayList<>();
-                    args.add(tableReference.getKeyspace());
-                    args.add(tableReference.getTable());
-                    Object result = nodeConnection
-                            .getMBeanServerConnection().invoke(
-                                    myRepairServiceObject, REPAIR_STATS_METHOD,
-                                    new Object[]
-                                            {
-                                                    args, null
-                                            },
-                                    new String[]
-                                            {
-                                                    List.class.getName(),
-                                                    String.class.getName()
-                                            });
-                    if (isJolokiaEnabled && result instanceof List)
-                    {
-                        List<?> resultList = (List<?>) result;
-                        for (Object item : resultList)
-                        {
-                            if (item instanceof JSONObject)
-                            {
-                                JSONObject jsonObj = (JSONObject) item;
-                                Object maxRepaired = jsonObj.get("maxRepaired");
-                                if (maxRepaired instanceof Number)
-                                {
-                                    return ((Number) maxRepaired).longValue();
-                                }
-                            }
-                            else if (item instanceof CompositeData)
-                            {
-                                CompositeData data = (CompositeData) item;
-                                return (long) data.getAll(new String[] {"maxRepaired"})[0];
-                            }
-                        }
-                    }
-                    else if (result instanceof List)
-                    {
-                        List<CompositeData> compositeDatas = (List<CompositeData>) result;
-                        for (CompositeData data : compositeDatas)
-                        {
-                            return (long) data.getAll(new String[] {"maxRepaired"})[0];
-                        }
-                    }
-                }
-                catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
-                {
-                    LOG.error("Unable to get maxRepaired for table {} in node {} because of {}", tableReference, nodeID, e.getMessage());
-                }
-                catch (ClassCastException e)
-                {
-                    LOG.error("ClassCastException when getting maxRepaired for table {} in node {} (Jolokia enabled: {}): {}",
-                            tableReference, nodeID, isJolokiaEnabled, e.getMessage());
-                }
-            }
-            else
+            if (!validateJmxConnection(nodeConnection))
             {
                 LOG.error("Unable to get maxRepaired for table {} in node {} because the connection is unavailable",
-                        tableReference,
-                        nodeID);
+                        tableReference, nodeID);
                 markNodeAsUnavailable(nodeID);
+                return 0;
+            }
+
+            try
+            {
+                Object result = invokeRepairStats(nodeConnection, tableReference);
+                return extractMaxRepairedValue(result);
+            }
+            catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
+            {
+                LOG.error("Unable to get maxRepaired for table {} in node {} because of {}", tableReference, nodeID, e.getMessage());
+            }
+            catch (ClassCastException e)
+            {
+                LOG.error("ClassCastException when getting maxRepaired for table {} in node {} (Jolokia enabled: {}): {}",
+                        tableReference, nodeID, isJolokiaEnabled, e.getMessage());
             }
             return 0;
+        }
+
+        private Object invokeRepairStats(final JMXConnector nodeConnection, final TableReference tableReference)
+                throws InstanceNotFoundException, MBeanException, ReflectionException, IOException
+        {
+            List<String> args = new ArrayList<>();
+            args.add(tableReference.getKeyspace());
+            args.add(tableReference.getTable());
+            return nodeConnection.getMBeanServerConnection().invoke(
+                    myRepairServiceObject, REPAIR_STATS_METHOD,
+                    new Object[]{args, null},
+                    new String[]{List.class.getName(), String.class.getName()});
+        }
+
+        @SuppressWarnings("unchecked")
+        private long extractMaxRepairedValue(final Object result)
+        {
+            if (!(result instanceof List))
+            {
+                return 0;
+            }
+
+            List<?> resultList = (List<?>) result;
+            if (isJolokiaEnabled)
+            {
+                return extractFromJolokiaResult(resultList);
+            }
+            return extractFromCompositeDataResult((List<CompositeData>) resultList);
+        }
+
+        private long extractFromJolokiaResult(final List<?> resultList)
+        {
+            for (Object item : resultList)
+            {
+                if (item instanceof JSONObject)
+                {
+                    long value = extractFromJsonObject((JSONObject) item);
+                    if (value > 0)
+                    {
+                        return value;
+                    }
+                }
+                else if (item instanceof CompositeData)
+                {
+                    return extractFromCompositeData((CompositeData) item);
+                }
+            }
+            return 0;
+        }
+
+        private long extractFromJsonObject(final JSONObject jsonObj)
+        {
+            Object maxRepaired = jsonObj.get("maxRepaired");
+            return (maxRepaired instanceof Number) ? ((Number) maxRepaired).longValue() : 0;
+        }
+
+        private long extractFromCompositeDataResult(final List<CompositeData> compositeDatas)
+        {
+            for (CompositeData data : compositeDatas)
+            {
+                return extractFromCompositeData(data);
+            }
+            return 0;
+        }
+
+        private long extractFromCompositeData(final CompositeData data)
+        {
+            return (long) data.getAll(new String[]{"maxRepaired"})[0];
         }
 
         @Override
