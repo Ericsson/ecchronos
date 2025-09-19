@@ -207,12 +207,20 @@ public final class OnDemandStatus
             OngoingJob.Status status;
             try
             {
-                status = OngoingJob.Status.valueOf(row.getString(STATUS_COLUMN_NAME));
+                String statusStr = row.getString(STATUS_COLUMN_NAME);
+                if (statusStr == null || statusStr.trim().isEmpty())
+                {
+                    LOG.warn("Ignoring table repair job with id {}, status is null or empty",
+                            row.getUuid(JOB_ID_COLUMN_NAME));
+                    continue;
+                }
+                status = OngoingJob.Status.valueOf(statusStr);
             }
             catch (IllegalArgumentException e)
             {
-                LOG.warn("Ignoring table repair job with id {}, unable to parse status",
-                        row.getUuid(JOB_ID_COLUMN_NAME));
+                LOG.warn("Ignoring table repair job with id {}, unable to parse status: {}",
+                        row.getUuid(JOB_ID_COLUMN_NAME),
+                        row.getString(STATUS_COLUMN_NAME));
                 continue;
             }
 
@@ -263,13 +271,22 @@ public final class OnDemandStatus
             OngoingJob.Status status;
             try
             {
-                status = OngoingJob.Status.valueOf(row.getString(STATUS_COLUMN_NAME));
+                String statusStr = row.getString(STATUS_COLUMN_NAME);
+                if (statusStr == null || statusStr.trim().isEmpty())
+                {
+                    LOG.warn("Ignoring table repair job with id {} and hostId {}, status is null or empty",
+                            row.getUuid(JOB_ID_COLUMN_NAME),
+                            hostId);
+                    continue;
+                }
+                status = OngoingJob.Status.valueOf(statusStr);
             }
             catch (IllegalArgumentException e)
             {
-                LOG.warn("Ignoring table repair job with id {} and hostId {}, unable to parse status",
+                LOG.warn("Ignoring table repair job with id {} and hostId {}, unable to parse status: {}",
                         row.getUuid(JOB_ID_COLUMN_NAME),
-                        hostId);
+                        hostId,
+                        row.getString(STATUS_COLUMN_NAME));
                 continue;
             }
 

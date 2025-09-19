@@ -622,8 +622,18 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
                             .format("org.apache.cassandra.metrics:type=Table,keyspace=%s,scope=%s,name=LiveDiskSpaceUsed",
                                     tableReference.getKeyspace(), tableReference.getTable()));
 
-                    return (Long) nodeConnection
+                    Object result = nodeConnection
                             .getMBeanServerConnection().getAttribute(objectName, "Count");
+                    if (result instanceof Number)
+                    {
+                        return ((Number) result).longValue();
+                    }
+                    else
+                    {
+                        LOG.warn("Unexpected type for LiveDiskSpaceUsed: {} for table {} in node {}",
+                                result.getClass().getSimpleName(), tableReference, nodeID);
+                        return 0L;
+                    }
                 }
                 catch (AttributeNotFoundException
                        | InstanceNotFoundException
@@ -662,7 +672,7 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
                     List<String> args = new ArrayList<>();
                     args.add(tableReference.getKeyspace());
                     args.add(tableReference.getTable());
-                    List<CompositeData> compositeDatas = (List<CompositeData>) nodeConnection
+                    Object result = nodeConnection
                             .getMBeanServerConnection().invoke(
                                     myRepairServiceObject, REPAIR_STATS_METHOD,
                                     new Object[]
@@ -674,14 +684,44 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
                                                     List.class.getName(),
                                                     String.class.getName()
                                             });
-                    for (CompositeData data : compositeDatas)
+                    if (isJolokiaEnabled && result instanceof List)
                     {
-                        return (long) data.getAll(new String[] {"maxRepaired"})[0];
+                        List<?> resultList = (List<?>) result;
+                        for (Object item : resultList)
+                        {
+                            if (item instanceof JSONObject)
+                            {
+                                JSONObject jsonObj = (JSONObject) item;
+                                Object maxRepaired = jsonObj.get("maxRepaired");
+                                if (maxRepaired instanceof Number)
+                                {
+                                    return ((Number) maxRepaired).longValue();
+                                }
+                            }
+                            else if (item instanceof CompositeData)
+                            {
+                                CompositeData data = (CompositeData) item;
+                                return (long) data.getAll(new String[] {"maxRepaired"})[0];
+                            }
+                        }
+                    }
+                    else if (result instanceof List)
+                    {
+                        List<CompositeData> compositeDatas = (List<CompositeData>) result;
+                        for (CompositeData data : compositeDatas)
+                        {
+                            return (long) data.getAll(new String[] {"maxRepaired"})[0];
+                        }
                     }
                 }
                 catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
                 {
                     LOG.error("Unable to get maxRepaired for table {} in node {} because of {}", tableReference, nodeID, e.getMessage());
+                }
+                catch (ClassCastException e)
+                {
+                    LOG.error("ClassCastException when getting maxRepaired for table {} in node {} (Jolokia enabled: {}): {}",
+                            tableReference, nodeID, isJolokiaEnabled, e.getMessage());
                 }
             }
             else
@@ -710,8 +750,23 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
                             .format("org.apache.cassandra.metrics:type=Table,keyspace=%s,scope=%s,name=PercentRepaired",
                                     tableReference.getKeyspace(), tableReference.getTable()));
 
-                    return (double) nodeConnection
+                    Object result = nodeConnection
                             .getMBeanServerConnection().getAttribute(objectName, "Value");
+                    // Handle different numeric types that Jolokia might return
+                    if (result instanceof Number)
+                    {
+                        return ((Number) result).doubleValue();
+                    }
+                    else if (result instanceof Double)
+                    {
+                        return (Double) result;
+                    }
+                    else
+                    {
+                        LOG.warn("Unexpected type for PercentRepaired: {} for table {} in node {}",
+                                result.getClass().getSimpleName(), tableReference, nodeID);
+                        return 0.0;
+                    }
                 }
                 catch (AttributeNotFoundException
                        | InstanceNotFoundException
@@ -720,8 +775,13 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
                        | IOException
                        | MalformedObjectNameException e)
                 {
-                    LOG.error("Unable to retrieve disk space usage for {} in node {}, because of {}",
+                    LOG.error("Unable to retrieve percent repaired for {} in node {}, because of {}",
                             tableReference, nodeID, e.getMessage());
+                }
+                catch (ClassCastException e)
+                {
+                    LOG.error("ClassCastException when getting percent repaired for table {} in node {} (Jolokia enabled: {}): {}",
+                            tableReference, nodeID, isJolokiaEnabled, e.getMessage());
                 }
             }
             else
