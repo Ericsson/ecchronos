@@ -109,8 +109,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Spring boot -->
-        <org.springframework.boot.version>3.5.5</org.springframework.boot.version>
-        <springdoc.openapi-starter-webmvc-ui.version>2.8.13</springdoc.openapi-starter-webmvc-ui.version>
+        <org.springframework.boot.spring-boot-starter-thymeleaf.version>3.5.5</org.springframework.boot.spring-boot-starter-thymeleaf.version>
+        <org.springframework.boot.spring-boot-starter-web.version>3.5.5</org.springframework.boot.spring-boot-starter-web.version>
+        <org.springframework.spring-context.version>6.2.11</org.springframework.spring-context.version>
+        <org.springframework.spring-boot-test.version>3.5.5</org.springframework.spring-boot-test.version>
+        <org.springframework.spring-core.version>6.2.11</org.springframework.spring-core.version>
+        <org.springframework.spring-test.version>6.2.11</org.springframework.spring-test.version>
+        <org.springdoc.openapi-starter-webmvc-ui.version>2.8.13</org.springdoc.openapi-starter-webmvc-ui.version>
         <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
         <swagger-annotations.version>2.2.36</swagger-annotations.version>
@@ -129,10 +134,17 @@
         <com.fasterxml.jackson.dataformat.version>2.20.0</com.fasterxml.jackson.dataformat.version>
         <org.yaml.snakeyaml.version>2.5</org.yaml.snakeyaml.version>
 
+        <!-- Other -->
+        <io.micrometer.version>1.15.4</io.micrometer.version>
+        <io.netty.version>4.1.127.Final</io.netty.version>
+
         <!-- Tests -->
+        <awaitility.version>4.3.0</awaitility.version>
         <mockito.core.version>5.19.0</mockito.core.version>
         <assertj.version>3.27.4</assertj.version>
-        <junit.version>5.13.4</junit.version>
+        <junit.junit.version>4.13.2</junit.junit.version>
+        <junit.junit-vintage-engine.version>5.13.4</junit.junit-vintage-engine.version>
+        <junit.jupiter.junit-jupiter.version>5.13.4</junit.jupiter.junit-jupiter.version>
         <org.apache.commons.io.version>2.20.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
         <equalsverifier.version>4.1</equalsverifier.version>
@@ -196,21 +208,44 @@
                 <version>${com.typesafe.config.version}</version>
             </dependency>
 
+            <!-- Used by spring-boot-starter-web, spring-test and spring-boot-test, steped due to CVE-2025-41249 -->
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-core</artifactId>
+                <version>${org.springframework.spring-core.version}</version>
+            </dependency>
+
             <!-- End of temporary override section -->
+
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-handler</artifactId>
+                <version>${io.netty.version}</version>
+            </dependency>
 
             <!-- Spring boot -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${org.springframework.boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
+                <artifactId>spring-boot-starter-thymeleaf</artifactId>
+                <version>${org.springframework.boot.spring-boot-starter-thymeleaf.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-web</artifactId>
+                <version>${org.springframework.boot.spring-boot-starter-web.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-context</artifactId>
+                <version>${org.springframework.spring-context.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-                <version>${springdoc.openapi-starter-webmvc-ui.version}</version>
+                <version>${org.springdoc.openapi-starter-webmvc-ui.version}</version>
             </dependency>
 
             <dependency>
@@ -257,7 +292,7 @@
                 <version>${cassandra.driver.core.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.datastax.oss</groupId>
+                <groupId>org.apache.cassandra</groupId>
                 <artifactId>java-driver-query-builder</artifactId>
                 <version>${cassandra.driver.core.version}</version>
                 <exclusions>
@@ -368,6 +403,13 @@
                 <version>${swagger-annotations.version}</version>
             </dependency>
 
+            <!-- Other -->
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-core</artifactId>
+                <version>${io.micrometer.version}</version>
+            </dependency>
+
             <!-- test -->
             <dependency>
                 <groupId>org.mockito</groupId>
@@ -384,11 +426,24 @@
             </dependency>
 
             <dependency>
-                <groupId>org.junit</groupId>
-                <artifactId>junit-bom</artifactId>
-                <version>${junit.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.junit.vintage</groupId>
+                <artifactId>junit-vintage-engine</artifactId>
+                <version>${junit.junit-vintage-engine.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${junit.jupiter.junit-jupiter.version}</version>
+                <scope>test</scope>
             </dependency>
 
             <dependency>
@@ -420,9 +475,30 @@
             </dependency>
 
             <dependency>
+                <groupId>org.awaitility</groupId>
+                <artifactId>awaitility</artifactId>
+                <version>${awaitility.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcpkix-jdk18on</artifactId>
                 <version>${org.bouncycastle.bcpkix-jdk18on.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-test</artifactId>
+                <version>${org.springframework.spring-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-test</artifactId>
+                <version>${org.springframework.spring-boot-test.version}</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>
