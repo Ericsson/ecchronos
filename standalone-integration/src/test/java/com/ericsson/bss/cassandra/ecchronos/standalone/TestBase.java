@@ -91,7 +91,7 @@ abstract public class TestBase
             throw new IOException("Cluster initialization interrupted", e);
         }
         String jolokiaEnabled = System.getProperty("it.jolokia.enabled", "false");
-        myJolokiaEnabled = jolokiaEnabled == "true" ? true : false;
+        myJolokiaEnabled = jolokiaEnabled.equals("true");
         List<InetSocketAddress> contactPoints = new ArrayList<>();
         CqlSession initialSession = createDefaultSession();
 
