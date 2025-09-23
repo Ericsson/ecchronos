@@ -57,8 +57,8 @@ done
 JVM_OPTS="$JVM_OPTS -Decchronos.config="$ECCHRONOS_HOME"/conf/"
 
 if [ "$FOREGROUND" = "-f" ]; then
-    java $JVM_OPTS -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.spring.SpringBooter $FOREGROUND
+    java $JVM_OPTS -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.SpringBooter $FOREGROUND
 else
-    java $JVM_OPTS -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.spring.SpringBooter $@ <&- 1>&- 2>&- &
+    java $JVM_OPTS -cp $CLASSPATH com.ericsson.bss.cassandra.ecchronos.application.SpringBooter $@ <&- 1>&- 2>&- &
     [ ! -z "$PIDFILE" ] && echo "$!" > "$PIDFILE"
 fi

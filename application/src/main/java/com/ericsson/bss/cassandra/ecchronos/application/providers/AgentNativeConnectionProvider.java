@@ -116,23 +116,27 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
           final DistributedNativeBuilder builder,
           final AgentConnectionConfig agentConnectionConfig)
     {
-        switch (agentConnectionConfig.getType())
+        return switch (agentConnectionConfig.getType())
         {
-            case datacenterAware:
+            case datacenterAware ->
+            {
                 LOG.info("Using DatacenterAware as Agent Config");
-                return builder.withDatacenterAware(resolveDatacenterAware(
+                yield builder.withDatacenterAware(resolveDatacenterAware(
                         agentConnectionConfig.getDatacenterAware()));
-            case rackAware:
+            }
+            case rackAware ->
+            {
                 LOG.info("Using RackAware as Agent Config");
-                return builder.withRackAware(resolveRackAware(
+                yield builder.withRackAware(resolveRackAware(
                         agentConnectionConfig.getRackAware()));
-            case hostAware:
+            }
+            case hostAware ->
+            {
                 LOG.info("Using HostAware as Agent Config");
-                return builder.withHostAware(resolveHostAware(
+                yield builder.withHostAware(resolveHostAware(
                         agentConnectionConfig.getHostAware()));
-            default:
-        }
-        return builder;
+            }
+        };
     }
 
     /**

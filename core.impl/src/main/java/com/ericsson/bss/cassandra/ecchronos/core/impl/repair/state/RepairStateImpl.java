@@ -217,7 +217,6 @@ public class RepairStateImpl implements RepairState
         return repairedAt;
     }
 
-    @SuppressWarnings("PMD.GuardLogStatement")
     private long newTableRepairedAt()
     {
         long runIntervalInMs = myRepairConfiguration.getRepairIntervalInMs();

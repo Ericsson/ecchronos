@@ -56,7 +56,6 @@
  import static org.junit.Assert.assertTrue;
  import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
 public class TestThreading  extends AbstractCassandraCluster
  {
      private static final Logger LOG = LoggerFactory.getLogger(TestThreading.class);
@@ -79,22 +78,25 @@ public class TestThreading  extends AbstractCassandraCluster
      private NodeWorkerManager manager;
      private DefaultRepairConfigurationProvider defaultRepairConfigurationProvider;
 
-     @BeforeClass
      public static void setup()
      {
+        String cassandraVersion = System.getProperty("it.cassandra.version", "4.0");
+        String certificateDirectory = Paths.get(System.getProperty("project.build.directory", "target"))
+                .resolve("certificates/cert")
+                .toAbsolutePath()
+                .toString();
          Path dockerComposePath = Paths.get("")
                  .toAbsolutePath()
                  .getParent()
                  .resolve("cassandra-test-image/src/main/docker/docker-compose.yml");
-         composeContainer = new DockerComposeContainer<>(dockerComposePath.toFile());
-         composeContainer.withScaledService("cassandra-node-dc1-rack1-node2", 0 );
-         composeContainer.withScaledService("cassandra-node-dc2-rack1-node2", 0 );
-         composeContainer.withScaledService("cassandra-seed-dc1-rack1-node1", 1 );
-         composeContainer.withScaledService("cassandra-seed-dc2-rack1-node1", 0 );
+         composeContainer = new DockerComposeContainer<>(dockerComposePath.toFile())
+                .withEnv("JOLOKIA", "false")
+                .withEnv("CASSANDRA_VERSION", cassandraVersion)
+                .withEnv("CERTIFICATE_DIRECTORY", certificateDirectory);
          composeContainer.start();
 
          LOG.info("Waiting for the Cassandra cluster to finish starting up.");
-         waitForNodesToBeUp("cassandra-seed-dc1-rack1-node1",1,DEFAULT_WAIT_TIME_IN_MS);
+         waitForNodesToBeUp("cassandra-seed-dc1-rack1-node1",4,DEFAULT_WAIT_TIME_IN_MS);
 
          containerIP = composeContainer.getContainerByServiceName(CASSANDRA_SEED_NODE_NAME).get()
                  .getContainerInfo()
@@ -102,7 +104,6 @@ public class TestThreading  extends AbstractCassandraCluster
 
      }
 
-     @Before
      public void testSetup()
      {
          threadPool = new NoopThreadPoolTaskExecutor();
@@ -143,7 +144,6 @@ public class TestThreading  extends AbstractCassandraCluster
                  .withDistributedNativeConnectionProvider(nativeConnectionProvider));
      }
 
-     @Test
      public void testCassandraCluster()
      {
          composeContainer.withScaledService("cassandra-node-dc1-rack1-node2", 1 );
