@@ -191,29 +191,7 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
 
                         for (NotificationListenerResponse.Notification notificationObj : notifications)
                         {
-                            Notification notification = new Notification(
-                                    notificationObj.getType(),
-                                    notificationObj.getSource(),
-                                    notificationObj.getTimeStamp(),
-                                    notificationObj.getMessage()
-                            );
-                            notification.setUserData(notificationObj.getUserData());
-                            if (!notificationController.contains(notification.hashCode()))
-                            {
-                                notificationController.add(notification.hashCode());
-                                synchronized (myNodeListenersMap)
-                                {
-                                    NotificationListener listener = myNodeListenersMap.get(myNodeID).get(myNotificationID);
-                                    if (listener != null)
-                                    {
-                                        listener.handleNotification(notification, null);
-                                    }
-                                    else
-                                    {
-                                        LOG.warn("Listener not found for node {} and notificationID {}", myNodeID, myNotificationID);
-                                    }
-                                }
-                            }
+                            createNotification(notificationObj);
                         }
                     }
 
@@ -221,6 +199,37 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
                 catch (Exception e)
                 {
                     LOG.error("Error monitoring notifications for node {} and notificationID {}: {}", myNodeID, myNotificationID, e.getMessage());
+                }
+            }
+
+            private void createNotification(NotificationListenerResponse.Notification notificationObj)
+            {
+                Notification notification = new Notification(
+                        notificationObj.getType(),
+                        notificationObj.getSource(),
+                        notificationObj.getTimeStamp(),
+                        notificationObj.getMessage()
+                );
+                notification.setUserData(notificationObj.getUserData());
+                if (!notificationController.contains(notification.hashCode()))
+                {
+                    notificationController.add(notification.hashCode());
+                    synchronized (myNodeListenersMap)
+                    {
+                        Map<String, NotificationListener> nodeListeners = myNodeListenersMap.get(myNodeID);
+                        if (nodeListeners != null)
+                        {
+                            NotificationListener listener = nodeListeners.get(myNotificationID);
+                            if (listener != null)
+                            {
+                                listener.handleNotification(notification, null);
+                            }
+                            else
+                            {
+                                LOG.warn("Listener not found for node {} and notificationID {}", myNodeID, myNotificationID);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -364,7 +373,32 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
         @Override
         public void close()
         {
-            // Should not close
+            // Cancel all notification monitors
+            synchronized (myNotificationMonitors)
+            {
+                for (Map<String, ScheduledFuture<?>> nodeMonitors : myNotificationMonitors.values())
+                {
+                    for (ScheduledFuture<?> future : nodeMonitors.values())
+                    {
+                        future.cancel(true);
+                    }
+                }
+                myNotificationMonitors.clear();
+            }
+
+            // Shutdown executor
+            myNotificationExecutor.shutdown();
+            try
+            {
+                if (!myNotificationExecutor.awaitTermination(1, TimeUnit.SECONDS))
+                {
+                    myNotificationExecutor.shutdownNow();
+                }
+            }
+            catch (InterruptedException e)
+            {
+                myNotificationExecutor.shutdownNow();
+            }
         }
 
         @Override
@@ -845,7 +879,24 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
         @Override
         public boolean validateJmxConnection(final JMXConnector jmxConnector)
         {
-            return myDistributedJmxConnectionProvider.isConnected(jmxConnector);
+            if (!myDistributedJmxConnectionProvider.isConnected(jmxConnector))
+            {
+                return false;
+            }
+            // Additional check for MBeanServerConnection when using Jolokia
+            if (isJolokiaEnabled && jmxConnector != null)
+            {
+                try
+                {
+                    return jmxConnector.getMBeanServerConnection() != null;
+                }
+                catch (IOException e)
+                {
+                    LOG.debug("MBeanServerConnection not available: {}", e.getMessage());
+                    return false;
+                }
+            }
+            return true;
         }
 
         private void markNodeAsUnavailable(final UUID nodeID)

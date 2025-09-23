@@ -138,6 +138,7 @@ abstract public class TestBase
                 .withJmxConnectionProvider(myJmxConnectionProvider)
                 .withEccNodesSync(myEccNodesSync)
                 .withNodesMap(nodesMap)
+                .withJolokiaEnabled(myJolokiaEnabled)
                 .build();
         MyLocalNode = getNativeConnectionProvider()
             .getNodes()
@@ -199,6 +200,11 @@ abstract public class TestBase
     {
         return getNativeConnectionProvider().getCqlSession();
     }
+    
+    protected static boolean isJolokiaEnabled()
+    {
+        return myJolokiaEnabled;
+    }
 
     private static CqlSession createDefaultSession()
     {
@@ -242,7 +248,7 @@ abstract public class TestBase
     {
         try (JMXConnector jmxConnector = getJmxConnectionProvider().getJmxConnector(node.getHostId()))
         {
-            if (jmxConnector != null) {
+            if (jmxConnector != null && jmxConnector.getMBeanServerConnection() != null) {
                 String[] table = new String[] { tableReference.getTable() };
                 jmxConnector.getMBeanServerConnection()
                         .invoke(new ObjectName("org.apache.cassandra.db:type=StorageService"),
@@ -253,6 +259,10 @@ abstract public class TestBase
                                 new String[] {
                                                String.class.getName(), String[].class.getName()
                                 });
+            }
+            else
+            {
+                LOG.warn("JMX connector or MBeanServerConnection is null for node {}, skipping flush", node.getHostId());
             }
         }
     }
