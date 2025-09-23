@@ -37,13 +37,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-
 import java.util.List;
+import java.util.Collection;
+import java.util.ArrayList;
 import java.util.UUID;
 import java.util.Collections;
-import java.util.Collection;
 import java.util.Set;
-import java.util.ArrayList;
+
 
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -156,39 +156,27 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
     private List<OnDemandRepair> getListOfOnDemandRepairs(final String keyspace, final String table,
             final String hostId)
     {
+
+        Collection<Predicate<OnDemandRepairJobView>> filters = new ArrayList<Predicate<OnDemandRepairJobView>>();
+
         if (keyspace != null)
         {
+            Predicate<OnDemandRepairJobView> keyspaceFilter = job -> keyspace.equals(job.getTableReference().getKeyspace());
+            filters.add(keyspaceFilter);
             if (table != null)
             {
-                if (hostId == null)
-                {
-                    return getClusterWideOnDemandJobs(forTableOnDemand(keyspace, table));
-                }
-                UUID host = parseIdOrThrow(hostId);
-                return getClusterWideOnDemandJobs(job -> keyspace.equals(job.getTableReference().getKeyspace())
-                        && table.equals(job.getTableReference().getTable())
-                        && host.equals(job.getNodeId()));
+                Predicate<OnDemandRepairJobView> tableFilter = job -> table.equals(job.getTableReference().getTable());
+                filters.add(tableFilter);
             }
-            if (hostId == null)
-            {
-                return getClusterWideOnDemandJobs(
-                        job -> keyspace.equals(job.getTableReference().getKeyspace()));
-            }
-            UUID host = parseIdOrThrow(hostId);
-            return getClusterWideOnDemandJobs(
-                    job -> keyspace.equals(job.getTableReference().getKeyspace())
-                            && host.equals(job.getNodeId()));
         }
-        else if (table == null)
+        if (hostId != null)
         {
-            if (hostId == null)
-            {
-                return getClusterWideOnDemandJobs(job -> true);
-            }
             UUID host = parseIdOrThrow(hostId);
-            return getClusterWideOnDemandJobs(job -> host.equals(job.getNodeId()));
+            Predicate<OnDemandRepairJobView> hostFilter = job -> host.equals(job.getNodeId());
+            filters.add(hostFilter);
         }
-        throw new ResponseStatusException(BAD_REQUEST);
+        Predicate<OnDemandRepairJobView> filter = filters.stream().reduce(Predicate::and).orElse(x -> true);
+        return getClusterWideOnDemandJobs(filter);
     }
 
     private List<OnDemandRepair> getListOfOnDemandRepairs(final String nodeID, final String jobID)
@@ -219,7 +207,8 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         try
         {
             List<OnDemandRepair> onDemandRepairs;
-            checkValidClusterRun(nodeID, all);
+            checkValidClusterRun(nodeID, all, keyspace, table);
+
 
             UUID nodeUUID = nodeID == null  ? null : parseIdOrThrow(nodeID);
 
@@ -229,10 +218,6 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             }
             else
             {
-                if (table != null)
-                {
-                    throw new ResponseStatusException(BAD_REQUEST, "Keyspace must be provided if table is provided");
-                }
                 onDemandRepairs = runLocalOrCluster(nodeUUID, repairType, myTableReferenceFactory.forCluster());
             }
             return onDemandRepairs;
@@ -243,14 +228,18 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         }
     }
 
-    private static void checkValidClusterRun(final String nodeID, final boolean all)
+    private void checkValidClusterRun(final String nodeID, final boolean all, final String keyspace, final String table)
     {
         if (nodeID == null && !all)
         {
             throw new ResponseStatusException(BAD_REQUEST, "If a node is not specified then parameter all should be true");
         }
-    }
+        if (keyspace == null && table != null)
+        {
+            throw new ResponseStatusException(BAD_REQUEST, "Keyspace must be provided if table is provided");
+        }
 
+    }
     private List<OnDemandRepair> getOnDemandRepairsForKeyspace(final String keyspace,
                                                                final String table,
                                                                final RepairType repairType,
@@ -280,17 +269,6 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         }
         return onDemandRepairs;
     }
-
-    private static Predicate<OnDemandRepairJobView> forTableOnDemand(final String keyspace, final String table)
-    {
-        return tableView ->
-        {
-            TableReference tableReference = tableView.getTableReference();
-            return tableReference.getKeyspace().equals(keyspace)
-                    && tableReference.getTable().equals(table);
-        };
-    }
-
     private List<OnDemandRepair> getClusterWideOnDemandJobs(final Predicate<OnDemandRepairJobView> filter)
     {
         return myOnDemandRepairScheduler.getAllClusterWideRepairJobs().stream()
@@ -325,13 +303,10 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         Node node = myDistributedNativeConnectionProvider.getNodes().get(nodeID);
         for (TableReference tableReference : tables)
         {
-            if (!rejectForTWCS(tableReference))
+            if (!rejectForTWCS(tableReference) && myReplicatedTableProvider.accept(node, tableReference.getKeyspace()))
             {
-                if (myReplicatedTableProvider.accept(node, tableReference.getKeyspace()))
-                {
-                    onDemandRepairs.add(new OnDemandRepair(
-                            myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, nodeID)));
-                }
+                onDemandRepairs.add(new OnDemandRepair(
+                        myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, nodeID)));
             }
         }
         return onDemandRepairs;
