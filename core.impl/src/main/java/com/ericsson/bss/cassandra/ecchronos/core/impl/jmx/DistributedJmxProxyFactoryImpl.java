@@ -202,7 +202,7 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
                 }
             }
 
-            private void createNotification(NotificationListenerResponse.Notification notificationObj)
+            private void createNotification(final NotificationListenerResponse.Notification notificationObj)
             {
                 Notification notification = new Notification(
                         notificationObj.getType(),
