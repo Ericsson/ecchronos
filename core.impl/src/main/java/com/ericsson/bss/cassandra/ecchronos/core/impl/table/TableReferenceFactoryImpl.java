@@ -38,6 +38,7 @@ import java.util.Objects;
 public class TableReferenceFactoryImpl implements TableReferenceFactory
 {
     private final CqlSession session;
+    private static String TIMEWINDOWCOMPACTIONSTRATEGY =  "org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy";
 
     public TableReferenceFactoryImpl(final CqlSession aSession)
     {
@@ -116,7 +117,7 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
             }
             else
             {
-                twcs = "org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy".equals(compaction.get("class"));
+                twcs = TIMEWINDOWCOMPACTIONSTRATEGY.equals(compaction.get("class"));
             }
         }
 

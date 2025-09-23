@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* ecchronos manual repairs via ecctool should obey the ignore_twcs_tables flag - Issue 1107
 * ecctool with node and keyspace gives an error -Issue #1055
 * REST Interface to provide list of nodes - Issue #1045
 * Fix REST interface only shows the schedules for the last table added - Issue #1030
