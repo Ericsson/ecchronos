@@ -255,24 +255,12 @@ public class DistributedNativeBuilder
      */
     public Map<UUID, Node> createNodesMap(final CqlSession session)
     {
-        Map<UUID, Node> tmpNodeMap = new HashMap<>();
-        switch (myType)
+        return switch (myType)
         {
-        case datacenterAware:
-            tmpNodeMap = generateNodesMap(resolveDatacenterNodes(session, myDatacenterAware));
-            return tmpNodeMap;
-
-        case rackAware:
-            tmpNodeMap = generateNodesMap(resolveRackNodes(session, myRackAware));
-            return tmpNodeMap;
-
-        case hostAware:
-            tmpNodeMap = generateNodesMap(resolveHostAware(session, myHostAware));
-            return tmpNodeMap;
-
-        default:
-        }
-        return tmpNodeMap;
+            case datacenterAware -> generateNodesMap(resolveDatacenterNodes(session, myDatacenterAware));
+            case rackAware -> generateNodesMap(resolveRackNodes(session, myRackAware));
+            case hostAware -> generateNodesMap(resolveHostAware(session, myHostAware));
+        };
     }
 
     private Map<UUID, Node> generateNodesMap(final List<Node> nodes)
@@ -289,17 +277,12 @@ public class DistributedNativeBuilder
      */
     public Boolean confirmNodeValid(final Node node)
     {
-        switch (myType)
+        return switch (myType)
         {
-            case datacenterAware:
-                return confirmDatacenterNodeValid(node, myDatacenterAware);
-            case rackAware:
-                return confirmRackNodeValid(node, myRackAware);
-            case hostAware:
-                return confirmHostNodeValid(node, myHostAware);
-            default:
-        }
-        return false;
+            case datacenterAware -> confirmDatacenterNodeValid(node, myDatacenterAware);
+            case rackAware -> confirmRackNodeValid(node, myRackAware);
+            case hostAware -> confirmHostNodeValid(node, myHostAware);
+        };
     }
 
     private Boolean confirmDatacenterNodeValid(final Node node, final List<String> datacenterNames)
