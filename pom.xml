@@ -63,7 +63,7 @@
         <com.fasterxml.jackson.core.version>2.20.0</com.fasterxml.jackson.core.version>
         <com.typesafe.config.version>1.4.5</com.typesafe.config.version>
         <equalsverifier.version>4.1</equalsverifier.version>
-        <guava.version>33.4.8-jre</guava.version>
+        <guava.version>33.5.0-jre</guava.version>
         <io.dropwizard.metrics.version>4.2.37</io.dropwizard.metrics.version>
         <io.micrometer.version>1.15.4</io.micrometer.version>
         <io.netty.version>4.1.127.Final</io.netty.version>
@@ -91,7 +91,7 @@
         <org.springframework.spring-test.version>6.2.11</org.springframework.spring-test.version>
         <org.yaml.snakeyaml.version>2.5</org.yaml.snakeyaml.version>
         <slf4j.version>2.0.17</slf4j.version>
-        <swagger-annotations.version>2.2.36</swagger-annotations.version>
+        <swagger-annotations.version>2.2.37</swagger-annotations.version>
         <testcontainers.version>1.21.3</testcontainers.version>
 
         <!-- Plugin versions -->
@@ -100,7 +100,7 @@
         <org.apache.maven.plugin.maven-jxr-plugin.version>3.6.0</org.apache.maven.plugin.maven-jxr-plugin.version>
         <org.apache.maven.plugins.maven-assembly-plugin.version>3.7.1</org.apache.maven.plugins.maven-assembly-plugin.version>
         <org.apache.maven.plugins-maven-checkstyle-plugin.version>3.6.0</org.apache.maven.plugins-maven-checkstyle-plugin.version>
-        <org.apache.maven.plugins.maven-compiler-plugin.version>3.14.0</org.apache.maven.plugins.maven-compiler-plugin.version>
+        <org.apache.maven.plugins.maven-compiler-plugin.version>3.14.1</org.apache.maven.plugins.maven-compiler-plugin.version>
         <org.apache.maven.plugins-maven-dependency-plugin.version>3.8.1</org.apache.maven.plugins-maven-dependency-plugin.version>
         <org.apache.maven.plugins.maven-deploy-plugin.version>3.1.4</org.apache.maven.plugins.maven-deploy-plugin.version>
         <org.apache.maven.plugins.maven-failsafe-plugin.version>3.5.4</org.apache.maven.plugins.maven-failsafe-plugin.version>
