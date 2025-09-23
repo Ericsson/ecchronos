@@ -86,7 +86,7 @@
         <org.springframework.boot.spring-boot-starter-actuator.version>3.5.6</org.springframework.boot.spring-boot-starter-actuator.version>
         <org.springframework.boot.spring-boot-starter-thymeleaf.version>3.5.5</org.springframework.boot.spring-boot-starter-thymeleaf.version>
         <org.springframework.boot.spring-boot-starter-web.version>3.5.6</org.springframework.boot.spring-boot-starter-web.version>
-        <org.springframework.spring-boot-test.version>3.5.5</org.springframework.spring-boot-test.version>
+        <org.springframework.spring-boot-test.version>3.5.6</org.springframework.spring-boot-test.version>
         <org.springframework.spring-core.version>6.2.11</org.springframework.spring-core.version>
         <org.springframework.spring-test.version>6.2.11</org.springframework.spring-test.version>
         <org.yaml.snakeyaml.version>2.5</org.yaml.snakeyaml.version>
