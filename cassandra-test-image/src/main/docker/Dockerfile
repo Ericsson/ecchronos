@@ -9,4 +9,4 @@ COPY users.cql /etc/cassandra/
 COPY setup_db.sh /etc/cassandra/
 
 ENTRYPOINT ["ecc-entrypoint.sh"]
-EXPOSE 7000 7001 7199 9042
+EXPOSE 7000 7001 7199 9042 8778

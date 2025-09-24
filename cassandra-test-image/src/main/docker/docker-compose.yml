@@ -8,6 +8,7 @@ services:
     expose:
       - "9042"
       - "7199"
+      - "8778"
     environment:
       - CASSANDRA_CLUSTER_NAME=cassandra-cluster
       - CASSANDRA_DC=datacenter1
@@ -34,6 +35,7 @@ services:
     expose:
       - "9042"
       - "7199"
+      - "8778"
     environment:
       - CASSANDRA_CLUSTER_NAME=cassandra-cluster
       - CASSANDRA_DC=datacenter2
@@ -60,6 +62,7 @@ services:
     expose:
       - "9042"
       - "7199"
+      - "8778"
     environment:
       - CASSANDRA_CLUSTER_NAME=cassandra-cluster
       - CASSANDRA_DC=datacenter1
@@ -86,6 +89,7 @@ services:
     expose:
       - "9042"
       - "7199"
+      - "8778"
     environment:
       - CASSANDRA_CLUSTER_NAME=cassandra-cluster
       - CASSANDRA_DC=datacenter2

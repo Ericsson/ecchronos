@@ -76,6 +76,7 @@ abstract public class TestBase
 
     protected static Node MyLocalNode;
     private static final Object lock = new Object();
+    private static boolean myJolokiaEnabled;
 
     @BeforeClass
     public static void initialize() throws IOException
@@ -89,6 +90,8 @@ abstract public class TestBase
             Thread.currentThread().interrupt();
             throw new IOException("Cluster initialization interrupted", e);
         }
+        String jolokiaEnabled = System.getProperty("it.jolokia.enabled", "false");
+        myJolokiaEnabled = jolokiaEnabled.equals("true");
         List<InetSocketAddress> contactPoints = new ArrayList<>();
         CqlSession initialSession = createDefaultSession();
 
@@ -126,7 +129,7 @@ abstract public class TestBase
         myJmxConnectionProvider = DistributedJmxConnectionProviderImpl.builder()
                 .withCqlSession(myNativeConnectionProvider.getCqlSession())
                 .withNativeConnection(myNativeConnectionProvider)
-                .withJolokiaEnabled(false)
+                .withJolokiaEnabled(myJolokiaEnabled)
                 .withEccNodesSync(myEccNodesSync)
                 .build();
 
@@ -135,6 +138,7 @@ abstract public class TestBase
                 .withJmxConnectionProvider(myJmxConnectionProvider)
                 .withEccNodesSync(myEccNodesSync)
                 .withNodesMap(nodesMap)
+                .withJolokiaEnabled(myJolokiaEnabled)
                 .build();
         MyLocalNode = getNativeConnectionProvider()
             .getNodes()
@@ -196,6 +200,11 @@ abstract public class TestBase
     {
         return getNativeConnectionProvider().getCqlSession();
     }
+    
+    protected static boolean isJolokiaEnabled()
+    {
+        return myJolokiaEnabled;
+    }
 
     private static CqlSession createDefaultSession()
     {
@@ -205,7 +214,7 @@ abstract public class TestBase
     private static CqlSessionBuilder defaultBuilder()
     {
         return CqlSession.builder()
-                .addContactPoint(new InetSocketAddress(SharedCassandraCluster.getContainerIP(), 9042))
+                .addContactPoint(new InetSocketAddress(SharedCassandraCluster.getContainerIP(), CASSANDRA_NATIVE_PORT))
                 .withLocalDatacenter("datacenter1")
                 .withAuthCredentials("cassandra", "cassandra");
     }
@@ -239,7 +248,7 @@ abstract public class TestBase
     {
         try (JMXConnector jmxConnector = getJmxConnectionProvider().getJmxConnector(node.getHostId()))
         {
-            if (jmxConnector != null) {
+            if (jmxConnector != null && jmxConnector.getMBeanServerConnection() != null) {
                 String[] table = new String[] { tableReference.getTable() };
                 jmxConnector.getMBeanServerConnection()
                         .invoke(new ObjectName("org.apache.cassandra.db:type=StorageService"),
@@ -250,6 +259,10 @@ abstract public class TestBase
                                 new String[] {
                                                String.class.getName(), String[].class.getName()
                                 });
+            }
+            else
+            {
+                LOG.warn("JMX connector or MBeanServerConnection is null for node {}, skipping flush", node.getHostId());
             }
         }
     }

@@ -177,6 +177,7 @@ public class DistributedJmxBuilder
         try
         {
             String host = node.getBroadcastRpcAddress().get().getHostString();
+            // For local node with 0.0.0.0, use the listen address
             JMXServiceURL jmxUrl;
             Integer port;
             JMXConnector jmxConnector;
@@ -195,6 +196,11 @@ public class DistributedJmxBuilder
                 LOG.info("Creating Jolokia JMXConnection with host: {} and port: {}", host, port);
                 jmxConnector = jolokiaJmxConnectionProvider.newJMXConnector(jmxUrl, createJMXEnv());
                 jmxConnector.connect();
+                // Verify MBeanServerConnection is available
+                if (jmxConnector.getMBeanServerConnection() == null)
+                {
+                    throw new IOException("MBeanServerConnection is null after Jolokia connection");
+                }
             }
             else
             {
