@@ -75,7 +75,7 @@ class EcchronosConfig:
 
     def _modify_twcs_configuration(self):
         data = self._read_yaml_data(global_vars.ECC_YAML_FILE_PATH)
-        data["repair"]["ignore_twcs_tables"] = true
+        data["repair"]["ignore_twcs_tables"] = True
         self._modify_yaml_data(global_vars.ECC_YAML_FILE_PATH, data)
 
     def _modify_security_configuration(self):
