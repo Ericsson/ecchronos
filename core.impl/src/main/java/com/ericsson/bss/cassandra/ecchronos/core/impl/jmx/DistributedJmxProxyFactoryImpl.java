@@ -48,8 +48,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A factory creating JMX proxies to Cassandra.
  */
-@SuppressWarnings({"PMD.ClassWithOnlyPrivateConstructorsShouldBeFinal"})
-public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactory
+public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactory
 {
     private static final int DEFAULT_JOLOKIA_PORT = 8778;
     private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxProxyFactoryImpl.class);

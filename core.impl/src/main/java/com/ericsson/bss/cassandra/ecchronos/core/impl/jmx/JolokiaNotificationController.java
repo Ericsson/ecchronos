@@ -51,6 +51,8 @@ public class JolokiaNotificationController
     private static final Logger LOG = LoggerFactory.getLogger(JolokiaNotificationController.class);
     private static final long DEFAULT_RUN_DELAY_IN_MS = 500; // Increased from 100ms to reduce load
     private static final int SHUTDOWN_TIMEOUT_SECONDS = 1;
+    private static final int HTTP_TIMEOUT_SECONDS = 5;
+    private static final int HTTP_REQUEST_TIMEOUT_SECONDS = 10;
     private static final String CLIENT_ID_PROPERTY = "clientID";
     private static final String SS_OBJ_NAME = "org.apache.cassandra.db:type=StorageService";
 
@@ -65,7 +67,7 @@ public class JolokiaNotificationController
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient client = HttpClient.newBuilder()
-            .connectTimeout(java.time.Duration.ofSeconds(5))
+            .connectTimeout(java.time.Duration.ofSeconds(HTTP_TIMEOUT_SECONDS))
             .build();
 
     private final Map<UUID, Node> myNodesMap;
@@ -200,7 +202,7 @@ public class JolokiaNotificationController
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
-                    .timeout(java.time.Duration.ofSeconds(10))
+                    .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
                     .GET()
                     .build();
 
@@ -227,7 +229,7 @@ public class JolokiaNotificationController
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
-                .timeout(java.time.Duration.ofSeconds(10))
+                .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
                 .POST(HttpRequest.BodyPublishers.ofString(jolokiaCreateNotificationOptions(nodeID)))
                 .build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -243,7 +245,7 @@ public class JolokiaNotificationController
         String url = mountJolokiaBaseURL(nodeID) + "/notification";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
-                .timeout(java.time.Duration.ofSeconds(10))
+                .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
                 .POST(HttpRequest.BodyPublishers.ofString(
                         jolokiaRemoveNotificationOptions(nodeID, notificationID)))
                 .build();
@@ -329,7 +331,6 @@ public class JolokiaNotificationController
                     LOG.debug("No client info found for node {}, skipping notification check", nodeID);
                     return new JSONObject();
                 }
-                
                 J4pExecRequest execRequest = new J4pExecRequest(
                         clientInfo.get("store"),
                         operation, clientInfo.get(CLIENT_ID_PROPERTY),
