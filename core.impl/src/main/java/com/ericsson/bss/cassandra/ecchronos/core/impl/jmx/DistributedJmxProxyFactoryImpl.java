@@ -74,6 +74,8 @@ import org.slf4j.LoggerFactory;
 public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactory
 {
     private static final long DEFAULT_RUN_DELAY_IN_MS = 100;
+    private static final int DEFAULT_JOLOKIA_PORT = 8778;
+    private static final int SHUTDOWN_TIMEOUT_SECONDS = 1;
     private static final String CLIENT_ID_PROPERTY = "clientID";
     private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxProxyFactoryImpl.class);
     private static final String SS_OBJ_NAME = "org.apache.cassandra.db:type=StorageService";
@@ -88,264 +90,271 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
     private final Map<UUID, Node> nodesMap;
     private final EccNodesSync eccNodesSync;
     private final boolean isJolokiaEnabled;
+    private final int jolokiaPort;
 
-    private DistributedJmxProxyFactoryImpl(final Builder builder)
-    {
-        myDistributedJmxConnectionProvider = builder.myDistributedJmxConnectionProvider;
-        nodesMap = builder.myNodesMap;
-        eccNodesSync = builder.myEccNodesSync;
-        isJolokiaEnabled = builder.isJolokiaEnabled;
-    }
-
-    @Override
-    public DistributedJmxProxy connect() throws IOException
-    {
-        try
+        private DistributedJmxProxyFactoryImpl(final Builder builder)
         {
-            return new InternalDistributedJmxProxy(
-                    myDistributedJmxConnectionProvider,
-                    nodesMap,
-                    eccNodesSync,
-                    isJolokiaEnabled);
-        }
-        catch (MalformedObjectNameException e)
-        {
-            throw new IOException("Unable to get StorageService object", e);
-        }
-    }
-
-    private static final class InternalDistributedJmxProxy implements DistributedJmxProxy
-    {
-        private final DistributedJmxConnectionProvider myDistributedJmxConnectionProvider;
-        private final Map<UUID, Node> myNodesMap;
-        private final Map<NotificationListener, String> myJolokiaRelationshipListeners = new HashMap<>();
-
-        private final ScheduledExecutorService myNotificationExecutor = Executors.newSingleThreadScheduledExecutor(
-                new ThreadFactoryBuilder().setNameFormat("NotificationRefresher-%d").build());
-
-        private final Map<UUID, Map<String, String>> myClientIdMap = new ConcurrentHashMap<>();
-        private final Map<UUID, Map<String, NotificationListener>> myNodeListenersMap = new ConcurrentHashMap<>();
-        private final Map<UUID, Map<String, ScheduledFuture<?>>> myNotificationMonitors = new ConcurrentHashMap<>();
-
-        private final boolean isJolokiaEnabled;
-        private final EccNodesSync myEccNodesSync;
-        private final ObjectName myStorageServiceObject;
-        private final ObjectName myRepairServiceObject;
-
-        private final ObjectMapper objectMapper = new ObjectMapper();
-        private final HttpClient client = HttpClient.newHttpClient();
-
-        private InternalDistributedJmxProxy(
-                final DistributedJmxConnectionProvider distributedJmxConnectionProvider,
-                final Map<UUID, Node> nodesMap,
-                final EccNodesSync eccNodesSync,
-                final boolean jolokiaEnabled
-        ) throws MalformedObjectNameException
-        {
-            myDistributedJmxConnectionProvider = distributedJmxConnectionProvider;
-            myNodesMap = nodesMap;
-            myEccNodesSync = eccNodesSync;
-            myStorageServiceObject = new ObjectName(SS_OBJ_NAME);
-            myRepairServiceObject = new ObjectName(RS_OBJ_NAME);
-            isJolokiaEnabled = jolokiaEnabled;
+            myDistributedJmxConnectionProvider = builder.myDistributedJmxConnectionProvider;
+            nodesMap = builder.myNodesMap;
+            eccNodesSync = builder.myEccNodesSync;
+            isJolokiaEnabled = builder.isJolokiaEnabled;
+            jolokiaPort = builder.myJolokiaPort;
         }
 
-        private void startNotificationMonitor(final UUID nodeID, final String notificationID)
+        @Override
+        public DistributedJmxProxy connect() throws IOException
         {
-            ScheduledFuture<?> future = myNotificationExecutor.scheduleWithFixedDelay(
-                    new NotificationRunTask(nodeID, notificationID), 0, DEFAULT_RUN_DELAY_IN_MS, TimeUnit.MILLISECONDS);
-
-            synchronized (myNotificationMonitors)
+            try
             {
-                myNotificationMonitors
-                        .computeIfAbsent(nodeID, k -> new ConcurrentHashMap<>())
-                        .put(notificationID, future);
+                return new InternalDistributedJmxProxy(
+                        myDistributedJmxConnectionProvider,
+                        nodesMap,
+                        eccNodesSync,
+                        isJolokiaEnabled,
+                        jolokiaPort);
+            }
+            catch (MalformedObjectNameException e)
+            {
+                throw new IOException("Unable to get StorageService object", e);
             }
         }
 
-        private final class NotificationRunTask implements Runnable
+        private static final class InternalDistributedJmxProxy implements DistributedJmxProxy
         {
-            private final UUID myNodeID;
-            private final String myNotificationID;
-            private final Set<Integer> notificationController = new HashSet<>();
+            private final DistributedJmxConnectionProvider myDistributedJmxConnectionProvider;
+            private final Map<UUID, Node> myNodesMap;
+            private final Map<NotificationListener, String> myJolokiaRelationshipListeners = new HashMap<>();
 
-            private NotificationRunTask(final UUID nodeID, final String notificationID)
+            private final ScheduledExecutorService myNotificationExecutor = Executors.newSingleThreadScheduledExecutor(
+                    new ThreadFactoryBuilder().setNameFormat("NotificationRefresher-%d").build());
+
+            private final Map<UUID, Map<String, String>> myClientIdMap = new ConcurrentHashMap<>();
+            private final Map<UUID, Map<String, NotificationListener>> myNodeListenersMap = new ConcurrentHashMap<>();
+            private final Map<UUID, Map<String, ScheduledFuture<?>>> myNotificationMonitors = new ConcurrentHashMap<>();
+
+            private final boolean isJolokiaEnabled;
+            private final EccNodesSync myEccNodesSync;
+            private final ObjectName myStorageServiceObject;
+            private final ObjectName myRepairServiceObject;
+
+            private final ObjectMapper objectMapper = new ObjectMapper();
+            private final HttpClient client = HttpClient.newHttpClient();
+
+            private final int jolokiaPort;
+
+            private InternalDistributedJmxProxy(
+                    final DistributedJmxConnectionProvider distributedJmxConnectionProvider,
+                    final Map<UUID, Node> nodesMap,
+                    final EccNodesSync eccNodesSync,
+                    final boolean jolokiaEnabled,
+                    final int jolokiaPortValue
+            ) throws MalformedObjectNameException
             {
-                myNodeID = nodeID;
-                myNotificationID = notificationID;
+                myDistributedJmxConnectionProvider = distributedJmxConnectionProvider;
+                myNodesMap = nodesMap;
+                myEccNodesSync = eccNodesSync;
+                myStorageServiceObject = new ObjectName(SS_OBJ_NAME);
+                myRepairServiceObject = new ObjectName(RS_OBJ_NAME);
+                isJolokiaEnabled = jolokiaEnabled;
+                jolokiaPort = jolokiaPortValue;
             }
 
-            @Override
-            public void run()
+            private void startNotificationMonitor(final UUID nodeID, final String notificationID)
+            {
+                ScheduledFuture<?> future = myNotificationExecutor.scheduleWithFixedDelay(
+                        new NotificationRunTask(nodeID, notificationID), 0, DEFAULT_RUN_DELAY_IN_MS, TimeUnit.MILLISECONDS);
+
+                synchronized (myNotificationMonitors)
+                {
+                    myNotificationMonitors
+                            .computeIfAbsent(nodeID, k -> new ConcurrentHashMap<>())
+                            .put(notificationID, future);
+                }
+            }
+
+            private final class NotificationRunTask implements Runnable
+            {
+                private final UUID myNodeID;
+                private final String myNotificationID;
+                private final Set<Integer> notificationController = new HashSet<>();
+
+                private NotificationRunTask(final UUID nodeID, final String notificationID)
+                {
+                    myNodeID = nodeID;
+                    myNotificationID = notificationID;
+                }
+
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        JSONObject response = checkForNotifications(myNodeID, myNotificationID);
+                        NotificationListenerResponse notificationListenerResponse = objectMapper.readValue(response.toJSONString(),
+                                NotificationListenerResponse.class);
+
+                        if (notificationListenerResponse.getValue() != null)
+                        {
+                            List<NotificationListenerResponse.Notification> notifications =
+                                    notificationListenerResponse.getValue().getNotifications();
+
+                            for (NotificationListenerResponse.Notification notificationObj : notifications)
+                            {
+                                createNotification(notificationObj);
+                            }
+                        }
+
+                    }
+                    catch (Exception e)
+                    {
+                        LOG.error("Error monitoring notifications for node {} and notificationID {}: {}", myNodeID, myNotificationID, e.getMessage());
+                    }
+                }
+
+                private void createNotification(final NotificationListenerResponse.Notification notificationObj)
+                {
+                    Notification notification = new Notification(
+                            notificationObj.getType(),
+                            notificationObj.getSource(),
+                            notificationObj.getTimeStamp(),
+                            notificationObj.getMessage()
+                    );
+                    notification.setUserData(notificationObj.getUserData());
+                    if (!notificationController.contains(notification.hashCode()))
+                    {
+                        notificationController.add(notification.hashCode());
+                        synchronized (myNodeListenersMap)
+                        {
+                            Map<String, NotificationListener> nodeListeners = myNodeListenersMap.get(myNodeID);
+                            if (nodeListeners != null)
+                            {
+                                NotificationListener listener = nodeListeners.get(myNotificationID);
+                                if (listener != null)
+                                {
+                                    listener.handleNotification(notification, null);
+                                }
+                                else
+                                {
+                                    LOG.warn("Listener not found for node {} and notificationID {}", myNodeID, myNotificationID);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            private void registerClientId(final UUID nodeID)
             {
                 try
                 {
-                    JSONObject response = checkForNotifications(myNodeID, myNotificationID);
-                    NotificationListenerResponse notificationListenerResponse = objectMapper.readValue(response.toJSONString(),
-                            NotificationListenerResponse.class);
+                    String url = mountJolokiaBaseURL(nodeID) + "/notification/register";
 
-                    if (notificationListenerResponse.getValue() != null)
-                    {
-                        List<NotificationListenerResponse.Notification> notifications =
-                                notificationListenerResponse.getValue().getNotifications();
+                    HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
 
-                        for (NotificationListenerResponse.Notification notificationObj : notifications)
-                        {
-                            createNotification(notificationObj);
-                        }
-                    }
+                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
+                    ClientRegisterResponse clientRegisterResponse = objectMapper.readValue(response.body(),
+                            ClientRegisterResponse.class);
+
+                    Map<String, String> properties = new HashMap<>();
+                    properties.put(CLIENT_ID_PROPERTY, clientRegisterResponse.getValue().getId());
+                    properties.put("store", clientRegisterResponse.getValue().getBackend().getPull().getStore());
+
+                    myClientIdMap.put(nodeID, properties);
                 }
-                catch (Exception e)
+                catch (IOException | InterruptedException e)
                 {
-                    LOG.error("Error monitoring notifications for node {} and notificationID {}: {}", myNodeID, myNotificationID, e.getMessage());
+                    LOG.error("Unable to register Jolokia Client in node with ID {} because of {}", nodeID, e.getMessage());
                 }
             }
 
-            private void createNotification(final NotificationListenerResponse.Notification notificationObj)
+            private String registerJolokiaNotification(final UUID nodeID) throws IOException, InterruptedException
             {
-                Notification notification = new Notification(
-                        notificationObj.getType(),
-                        notificationObj.getSource(),
-                        notificationObj.getTimeStamp(),
-                        notificationObj.getMessage()
-                );
-                notification.setUserData(notificationObj.getUserData());
-                if (!notificationController.contains(notification.hashCode()))
-                {
-                    notificationController.add(notification.hashCode());
-                    synchronized (myNodeListenersMap)
-                    {
-                        Map<String, NotificationListener> nodeListeners = myNodeListenersMap.get(myNodeID);
-                        if (nodeListeners != null)
-                        {
-                            NotificationListener listener = nodeListeners.get(myNotificationID);
-                            if (listener != null)
-                            {
-                                listener.handleNotification(notification, null);
-                            }
-                            else
-                            {
-                                LOG.warn("Listener not found for node {} and notificationID {}", myNodeID, myNotificationID);
-                            }
-                        }
-                    }
-                }
-            }
-        }
+                String url = mountJolokiaBaseURL(nodeID) + "/notification";
 
-        private void registerClientId(final UUID nodeID)
-        {
-            try
-            {
-                String url = mountJolokiaBaseURL(nodeID) + "/notification/register";
-
-                HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
-
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url)).POST(HttpRequest.BodyPublishers.ofString(jolokiaCreateNotificationOptions(nodeID))).build();
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-                ClientRegisterResponse clientRegisterResponse = objectMapper.readValue(response.body(),
-                        ClientRegisterResponse.class);
+                NotificationRegisterResponse notificationRegisterResponse = objectMapper.readValue(response.body(),
+                        NotificationRegisterResponse.class);
 
-                Map<String, String> properties = new HashMap<>();
-                properties.put(CLIENT_ID_PROPERTY, clientRegisterResponse.getValue().getId());
-                properties.put("store", clientRegisterResponse.getValue().getBackend().getPull().getStore());
-
-                myClientIdMap.put(nodeID, properties);
+                return notificationRegisterResponse.getValue();
             }
-            catch (IOException | InterruptedException e)
+
+            private void removeJolokiaNotification(final UUID nodeID, final String notificationID)
             {
-                LOG.error("Unable to register Jolokia Client in node with ID {} because of {}", nodeID, e.getMessage());
+                String url = mountJolokiaBaseURL(nodeID) + "/notification";
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url)).POST(HttpRequest.BodyPublishers.ofString(
+                            jolokiaRemoveNotificationOptions(nodeID, notificationID))).build();
+                try
+                {
+                    client.send(request, HttpResponse.BodyHandlers.ofString());
+                }
+                catch (IOException | InterruptedException e)
+                {
+                    LOG.error("Error trying to remove NotificationListener with ID {} in node {}, because of {}",
+                            notificationID, nodeID, e.getMessage());
+                }
             }
-        }
 
-        private String registerJolokiaNotification(final UUID nodeID) throws IOException, InterruptedException
-        {
-            String url = mountJolokiaBaseURL(nodeID) + "/notification";
-
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url)).POST(HttpRequest.BodyPublishers.ofString(jolokiaCreateNotificationOptions(nodeID))).build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-            NotificationRegisterResponse notificationRegisterResponse = objectMapper.readValue(response.body(),
-                    NotificationRegisterResponse.class);
-
-            return notificationRegisterResponse.getValue();
-        }
-
-        private void removeJolokiaNotification(final UUID nodeID, final String notificationID)
-        {
-            String url = mountJolokiaBaseURL(nodeID) + "/notification";
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url)).POST(HttpRequest.BodyPublishers.ofString(
-                        jolokiaRemoveNotificationOptions(nodeID, notificationID))).build();
-            try
+            private String jolokiaCreateNotificationOptions(final UUID nodeID)
             {
-                client.send(request, HttpResponse.BodyHandlers.ofString());
+                Map<String, Object> params = new HashMap<>();
+                params.put("type", "notification");
+                params.put("command", "add");
+                params.put("client", myClientIdMap.get(nodeID).get(CLIENT_ID_PROPERTY));
+                params.put("mode", "pull");
+                params.put("mbean", SS_OBJ_NAME);
+                List<String> filter = List.of(
+                        "progress",
+                        "jmx.remote.connection.lost.notifications",
+                        "jmx.remote.connection.failed",
+                        "jmx.remote.connection.closed"
+                );
+                params.put("filter", filter);
+
+                try
+                {
+                    return objectMapper.writeValueAsString(params);
+                }
+                catch (JsonProcessingException e)
+                {
+                    LOG.error("Unable to serialize notification options for node {} because of {}", nodeID, e.getMessage());
+                }
+                return "";
             }
-            catch (IOException | InterruptedException e)
+
+            private String jolokiaRemoveNotificationOptions(final UUID nodeID, final String notificationID)
             {
-                LOG.error("Error trying to remove NotificationListener with ID {} in node {}, because of {}",
-                        notificationID, nodeID, e.getMessage());
+                Map<String, Object> params = new HashMap<>();
+                params.put("type", "notification");
+                params.put("command", "remove");
+                params.put("client", myClientIdMap.get(nodeID).get(CLIENT_ID_PROPERTY));
+                params.put("handle", notificationID);
+
+                try
+                {
+                    return objectMapper.writeValueAsString(params);
+                }
+                catch (JsonProcessingException e)
+                {
+                    LOG.error("Unable to serialize Jolokia Notification Options for node {} because of {}", nodeID,
+                            e.getMessage());
+                }
+                return "";
             }
-        }
 
-        private String jolokiaCreateNotificationOptions(final UUID nodeID)
-        {
-            Map<String, Object> params = new HashMap<>();
-            params.put("type", "notification");
-            params.put("command", "add");
-            params.put("client", myClientIdMap.get(nodeID).get(CLIENT_ID_PROPERTY));
-            params.put("mode", "pull");
-            params.put("mbean", SS_OBJ_NAME);
-            List<String> filter = List.of(
-                    "progress",
-                    "jmx.remote.connection.lost.notifications",
-                    "jmx.remote.connection.failed",
-                    "jmx.remote.connection.closed"
-            );
-            params.put("filter", filter);
-
-            try
+            private J4pClient mountJolokiaClient(final UUID nodeID)
             {
-                return objectMapper.writeValueAsString(params);
+                return new J4pClient(mountJolokiaBaseURL(nodeID));
             }
-            catch (JsonProcessingException e)
+
+            private String mountJolokiaBaseURL(final UUID nodeID)
             {
-                LOG.error("Unable to serialize notification options for node {} because of {}", nodeID, e.getMessage());
-            }
-            return "";
-        }
-
-        private String jolokiaRemoveNotificationOptions(final UUID nodeID, final String notificationID)
-        {
-            Map<String, Object> params = new HashMap<>();
-            params.put("type", "notification");
-            params.put("command", "remove");
-            params.put("client", myClientIdMap.get(nodeID).get(CLIENT_ID_PROPERTY));
-            params.put("handle", notificationID);
-
-            try
-            {
-                return objectMapper.writeValueAsString(params);
-            }
-            catch (JsonProcessingException e)
-            {
-                LOG.error("Unable to serialize Jolokia Notification Options for node {} because of {}", nodeID,
-                        e.getMessage());
-            }
-            return "";
-        }
-
-        private J4pClient mountJolokiaClient(final UUID nodeID)
-        {
-            return new J4pClient(mountJolokiaBaseURL(nodeID));
-        }
-
-        private String mountJolokiaBaseURL(final UUID nodeID)
-        {
-            String host = myNodesMap.get(nodeID).getBroadcastRpcAddress().get().getHostString();
-            return "http://" + host + ":8778/jolokia";
+                String host = myNodesMap.get(nodeID).getBroadcastRpcAddress().get().getHostString();
+                return "http://" + host + ":" + jolokiaPort + "/jolokia";
         }
 
         private JSONObject checkForNotifications(final UUID nodeID, final String notificationID)
@@ -390,7 +399,7 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
             myNotificationExecutor.shutdown();
             try
             {
-                if (!myNotificationExecutor.awaitTermination(1, TimeUnit.SECONDS))
+                if (!myNotificationExecutor.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS))
                 {
                     myNotificationExecutor.shutdownNow();
                 }
@@ -900,8 +909,8 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
         }
 
         private void markNodeAsUnavailable(final UUID nodeID)
-        {
-            LOG.error("Unable to get connection with node {}, marking as UNREACHABLE", nodeID);
+            {
+                LOG.error("Unable to get connection with node {}, marking as UNREACHABLE", nodeID);
             myEccNodesSync.updateNodeStatus(NodeStatus.UNAVAILABLE, myNodesMap.get(nodeID).getDatacenter(), nodeID);
         }
 
@@ -918,6 +927,7 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
         private Map<UUID, Node> myNodesMap;
         private EccNodesSync myEccNodesSync;
         private boolean isJolokiaEnabled = false;
+        private int myJolokiaPort = DEFAULT_JOLOKIA_PORT;
 
         /**
          * Build with JMX connection provider.
@@ -964,6 +974,18 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
         public Builder withJolokiaEnabled(final boolean jolokiaEnabled)
         {
             isJolokiaEnabled = jolokiaEnabled;
+            return this;
+        }
+
+        /**
+         * Build with Jolokia Agent.
+         *
+         * @param jolokiaPort Define what is the Jolokia port.
+         * @return Builder
+         */
+        public Builder withJolokiaPort(final int jolokiaPort)
+        {
+            myJolokiaPort = jolokiaPort;
             return this;
         }
 
