@@ -141,6 +141,11 @@ public class MockTableReferenceFactory implements TableReferenceFactory
         }
 
         @Override
+        public boolean getTwcs() {
+            return false;
+        }
+
+        @Override
         public boolean equals(Object o)
         {
             if (this == o)

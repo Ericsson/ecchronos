@@ -33,7 +33,6 @@ Feature: ecctool run-repair
     And the output should contain a repair row for ecchronos.lock_priority with type VNODE
     And the output should contain a repair row for ecchronos.on_demand_repair_status with type VNODE
     And the output should contain a repair row for ecchronos.reject_configuration with type VNODE
-    And the output should contain a repair row for ecchronos.repair_history with type VNODE
     And the output should contain a repair row for system_auth.network_permissions with type VNODE
     And the output should contain a repair row for system_auth.resource_role_permissons_index with type VNODE
     And the output should contain a repair row for system_auth.role_members with type VNODE
@@ -79,3 +78,19 @@ Feature: ecctool run-repair
     And the output should contain 4 repair rows for ecchronos.repair_history with type VNODE
     And the output should contain 4 repair rows for ecchronos.nodes_sync with type VNODE
     And the output should contain a valid repair summary
+
+  Scenario: Run local twcs repair for keyspace ecchronos and table repair_history
+    Given we have access to ecctool
+    And we have a nodeid
+    When we run twcs repair for keyspace ecchronos and table repair_history with type VNODE
+    Then the output should contain a valid repair header
+    And the output should contain a repair row for ecchronos.repair_history with type VNODE
+    And the output should not contain more rows
+    And the output should contain a valid repair summary
+
+  Scenario: Run local invalid twcs repair for keyspace ecchronos and table repair_history
+    Given we have access to ecctool
+    And we have a nodeid
+    When we run local repair for keyspace ecchronos and table repair_history with type VNODE
+    Then the output should contain a repair request failed message
+
