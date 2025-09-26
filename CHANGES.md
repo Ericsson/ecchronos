@@ -3,6 +3,7 @@
 ## Version 1.0.0 (Not yet Released)
 
 * ecchronos manual repairs via ecctool should obey the ignore_twcs_tables flag - Issue #1107
+* Fail During Repair with Custom Jolokia Port - Issue #1149
 * Create Integration Tests Using the New Jolokia Functionality - Issue #845
 * ClassCastException when using Jolokia for JMX metrics retrieval - Issue #1126
 * ecc.sh in evolved ecchronos uses old SpringBooter package reference - Issue #1123
