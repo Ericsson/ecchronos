@@ -227,7 +227,7 @@ class RepairSchedulerRequest(RestRequest):
         return result
 
     def post(
-        self, node_id=None, keyspace=None, table=None, repair_type="vnode", allnodes="false", forceRepairTWCS="false"
+        self, node_id=None, keyspace=None, table=None, repair_type="vnode", allnodes="false", force_repair_twcs="false"
     ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
         request_url = RepairSchedulerRequest.repair_run_url
         separator = "?"
@@ -245,7 +245,7 @@ class RepairSchedulerRequest(RestRequest):
         if allnodes is True:
             request_url += separator + "all=true"
             separator = "&"
-        if forceRepairTWCS is True:
+        if force_repair_twcs is True:
             request_url += separator + "forceRepairTWCS=true"
         result = self.request(request_url, "POST")
         if result.is_successful():

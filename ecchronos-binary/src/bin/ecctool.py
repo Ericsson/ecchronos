@@ -391,7 +391,7 @@ def run_repair(arguments):
         table=arguments.table,
         repair_type=arguments.repair_type,
         allnodes=arguments.all,
-        forceRepairTWCS=arguments.forceRepairTWCS,
+        force_repair_twcs=arguments.forceRepairTWCS,
     )
     if result.is_successful():
         table_printer.print_repairs(result.data)
