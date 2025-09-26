@@ -196,11 +196,7 @@ def add_run_repair_subcommand(sub_parsers):
     )
     parser_run_repair.add_argument("-a", "--all", help="Run repair for all nodes ", required=False, action="store_true")
     parser_run_repair.add_argument(
-        "-f",
-        "--forceRepairTWCS",
-        help="Force repair of TWCS tables",
-        required=False,
-        action="store_true"
+        "-f", "--forceRepairTWCS", help="Force repair of TWCS tables", required=False, action="store_true"
     )
 
 

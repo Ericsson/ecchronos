@@ -31,7 +31,9 @@ SCHEDULE_HEADER = (
     r"| NodeID | JobID | Keyspace | Table | Status | Repaired(%) | Completed at | Next repair | Repair type |"
 )
 SNAPSHOT_HEADER = r"Snapshot as of .*"
-SCHEDULE_ROW_FORMAT_PATTERN = r"\| .* \| .* \| {0} \| {1} \| (COMPLETED|ON_TIME|LATE|OVERDUE) \| \d+[.]\d+ \| .* \| {2} \|"  # pylint: disable=line-too-long
+SCHEDULE_ROW_FORMAT_PATTERN = (
+    r"\| .* \| .* \| {0} \| {1} \| (COMPLETED|ON_TIME|LATE|OVERDUE) \| \d+[.]\d+ \| .* \| {2} \|"
+)  # pylint: disable=line-too-long
 
 
 def run_ecc_schedule_status(context, params):

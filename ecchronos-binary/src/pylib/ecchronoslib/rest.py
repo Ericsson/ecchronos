@@ -253,13 +253,7 @@ class RepairSchedulerRequest(RestRequest):
         return result
 
     def get_repair_info(
-        self,
-        node_id=None,
-        keyspace=None,
-        table=None,
-        since=None,
-        duration=None,
-        local=False,
+        self, node_id=None, keyspace=None, table=None, since=None, duration=None, local=False
     ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
         request_url = RepairSchedulerRequest.repair_info_url.format(node_id)
         if keyspace:

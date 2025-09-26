@@ -26,7 +26,9 @@ from behave import given, then, when  # pylint: disable=no-name-in-module
 ID_PATTERN = r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
 REPAIR_SUMMARY_PATTERN = r"Summary: \d+ completed, \d+ in queue, \d+ blocked, \d+ warning, \d+ error"
 REPAIR_HEADER = r"| NodeID | JobID | Keyspace | Table | Status | Repaired(%) | Completed at | Repair type |"
-REPAIR_ROW_FORMAT_PATTERN = r"\| .* \| .* \| {0} \| {1} \| (COMPLETED|IN_QUEUE|WARNING|ERROR) \| \d+[.]\d+ \| .* \| {2} \|"  # pylint: disable=line-too-long
+REPAIR_ROW_FORMAT_PATTERN = (
+    r"\| .* \| .* \| {0} \| {1} \| (COMPLETED|IN_QUEUE|WARNING|ERROR) \| \d+[.]\d+ \| .* \| {2} \|"
+)  # pylint: disable=line-too-long
 REPAIR_NODEID_ERROR = "--all must be specified if nodeid is not included"
 REPAIR_REQUEST_FAILED = "Repair Request Failed"
 
@@ -132,9 +134,10 @@ def step_validate_list_tables_header(context):
 def step_validate_nodeid_error(context):
     validate_nodeid_error(context.header, REPAIR_NODEID_ERROR)
 
+
 @then("the output should contain a repair request failed message")
 def step_validate_nodeid_error(context):
-        validate_nodeid_error(context.header, REPAIR_REQUEST_FAILED)
+    validate_nodeid_error(context.header, REPAIR_REQUEST_FAILED)
 
 
 @then("the output should contain a repair row for {keyspace}.{table} with type {repair_type}")
@@ -206,7 +209,7 @@ def step_verify_response_is_successful(context):
 
 @then("the response is bad request")
 def step_verify_response_is_bad_request(context):
-    print (context.response.status_code)
+    print(context.response.status_code)
     assert context.response is not None
     assert context.response.status_code == 400
 

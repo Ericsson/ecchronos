@@ -43,10 +43,8 @@ def step_fetch_repair_info_with_id(context):
 @given("I fetch local repair info with nodeid")
 def step_fetch_local_repair_info_with_id(context):
     assert context.nodeid is not None
-    context.url = (
-        "localhost:8080/repair-management/repairInfo/{0}?keyspace=test&table=table1&duration=5m&isLocal=true".format(
-            context.nodeid
-        )
+    context.url = "localhost:8080/repair-management/repairInfo/{0}?keyspace=test&table=table1&duration=5m&isLocal=true".format(
+        context.nodeid
     )
 
 
