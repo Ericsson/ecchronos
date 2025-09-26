@@ -191,29 +191,7 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
 
                         for (NotificationListenerResponse.Notification notificationObj : notifications)
                         {
-                            Notification notification = new Notification(
-                                    notificationObj.getType(),
-                                    notificationObj.getSource(),
-                                    notificationObj.getTimeStamp(),
-                                    notificationObj.getMessage()
-                            );
-                            notification.setUserData(notificationObj.getUserData());
-                            if (!notificationController.contains(notification.hashCode()))
-                            {
-                                notificationController.add(notification.hashCode());
-                                synchronized (myNodeListenersMap)
-                                {
-                                    NotificationListener listener = myNodeListenersMap.get(myNodeID).get(myNotificationID);
-                                    if (listener != null)
-                                    {
-                                        listener.handleNotification(notification, null);
-                                    }
-                                    else
-                                    {
-                                        LOG.warn("Listener not found for node {} and notificationID {}", myNodeID, myNotificationID);
-                                    }
-                                }
-                            }
+                            createNotification(notificationObj);
                         }
                     }
 
@@ -221,6 +199,37 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
                 catch (Exception e)
                 {
                     LOG.error("Error monitoring notifications for node {} and notificationID {}: {}", myNodeID, myNotificationID, e.getMessage());
+                }
+            }
+
+            private void createNotification(final NotificationListenerResponse.Notification notificationObj)
+            {
+                Notification notification = new Notification(
+                        notificationObj.getType(),
+                        notificationObj.getSource(),
+                        notificationObj.getTimeStamp(),
+                        notificationObj.getMessage()
+                );
+                notification.setUserData(notificationObj.getUserData());
+                if (!notificationController.contains(notification.hashCode()))
+                {
+                    notificationController.add(notification.hashCode());
+                    synchronized (myNodeListenersMap)
+                    {
+                        Map<String, NotificationListener> nodeListeners = myNodeListenersMap.get(myNodeID);
+                        if (nodeListeners != null)
+                        {
+                            NotificationListener listener = nodeListeners.get(myNotificationID);
+                            if (listener != null)
+                            {
+                                listener.handleNotification(notification, null);
+                            }
+                            else
+                            {
+                                LOG.warn("Listener not found for node {} and notificationID {}", myNodeID, myNotificationID);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -364,7 +373,32 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
         @Override
         public void close()
         {
-            // Should not close
+            // Cancel all notification monitors
+            synchronized (myNotificationMonitors)
+            {
+                for (Map<String, ScheduledFuture<?>> nodeMonitors : myNotificationMonitors.values())
+                {
+                    for (ScheduledFuture<?> future : nodeMonitors.values())
+                    {
+                        future.cancel(true);
+                    }
+                }
+                myNotificationMonitors.clear();
+            }
+
+            // Shutdown executor
+            myNotificationExecutor.shutdown();
+            try
+            {
+                if (!myNotificationExecutor.awaitTermination(1, TimeUnit.SECONDS))
+                {
+                    myNotificationExecutor.shutdownNow();
+                }
+            }
+            catch (InterruptedException e)
+            {
+                myNotificationExecutor.shutdownNow();
+            }
         }
 
         @Override
@@ -622,8 +656,18 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
                             .format("org.apache.cassandra.metrics:type=Table,keyspace=%s,scope=%s,name=LiveDiskSpaceUsed",
                                     tableReference.getKeyspace(), tableReference.getTable()));
 
-                    return (Long) nodeConnection
+                    Object result = nodeConnection
                             .getMBeanServerConnection().getAttribute(objectName, "Count");
+                    if (result instanceof Number)
+                    {
+                        return ((Number) result).longValue();
+                    }
+                    else
+                    {
+                        LOG.warn("Unexpected type for LiveDiskSpaceUsed: {} for table {} in node {}",
+                                result.getClass().getSimpleName(), tableReference, nodeID);
+                        return 0L;
+                    }
                 }
                 catch (AttributeNotFoundException
                        | InstanceNotFoundException
@@ -654,44 +698,97 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
                 final TableReference tableReference)
         {
             JMXConnector nodeConnection = myDistributedJmxConnectionProvider.getJmxConnector(nodeID);
-            boolean isConnectionAvailable = validateJmxConnection(nodeConnection);
-            if (isConnectionAvailable)
-            {
-                try
-                {
-                    List<String> args = new ArrayList<>();
-                    args.add(tableReference.getKeyspace());
-                    args.add(tableReference.getTable());
-                    List<CompositeData> compositeDatas = (List<CompositeData>) nodeConnection
-                            .getMBeanServerConnection().invoke(
-                                    myRepairServiceObject, REPAIR_STATS_METHOD,
-                                    new Object[]
-                                            {
-                                                    args, null
-                                            },
-                                    new String[]
-                                            {
-                                                    List.class.getName(),
-                                                    String.class.getName()
-                                            });
-                    for (CompositeData data : compositeDatas)
-                    {
-                        return (long) data.getAll(new String[] {"maxRepaired"})[0];
-                    }
-                }
-                catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
-                {
-                    LOG.error("Unable to get maxRepaired for table {} in node {} because of {}", tableReference, nodeID, e.getMessage());
-                }
-            }
-            else
+            if (!validateJmxConnection(nodeConnection))
             {
                 LOG.error("Unable to get maxRepaired for table {} in node {} because the connection is unavailable",
-                        tableReference,
-                        nodeID);
+                        tableReference, nodeID);
                 markNodeAsUnavailable(nodeID);
+                return 0;
+            }
+
+            try
+            {
+                Object result = invokeRepairStats(nodeConnection, tableReference);
+                return extractMaxRepairedValue(result);
+            }
+            catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
+            {
+                LOG.error("Unable to get maxRepaired for table {} in node {} because of {}", tableReference, nodeID, e.getMessage());
+            }
+            catch (ClassCastException e)
+            {
+                LOG.error("ClassCastException when getting maxRepaired for table {} in node {} (Jolokia enabled: {}): {}",
+                        tableReference, nodeID, isJolokiaEnabled, e.getMessage());
             }
             return 0;
+        }
+
+        private Object invokeRepairStats(final JMXConnector nodeConnection, final TableReference tableReference)
+                throws InstanceNotFoundException, MBeanException, ReflectionException, IOException
+        {
+            List<String> args = new ArrayList<>();
+            args.add(tableReference.getKeyspace());
+            args.add(tableReference.getTable());
+            return nodeConnection.getMBeanServerConnection().invoke(
+                    myRepairServiceObject, REPAIR_STATS_METHOD,
+                    new Object[]{args, null},
+                    new String[]{List.class.getName(), String.class.getName()});
+        }
+
+        @SuppressWarnings("unchecked")
+        private long extractMaxRepairedValue(final Object result)
+        {
+            if (!(result instanceof List))
+            {
+                return 0;
+            }
+
+            List<?> resultList = (List<?>) result;
+            if (isJolokiaEnabled)
+            {
+                return extractFromJolokiaResult(resultList);
+            }
+            return extractFromCompositeDataResult((List<CompositeData>) resultList);
+        }
+
+        private long extractFromJolokiaResult(final List<?> resultList)
+        {
+            for (Object item : resultList)
+            {
+                if (item instanceof JSONObject)
+                {
+                    long value = extractFromJsonObject((JSONObject) item);
+                    if (value > 0)
+                    {
+                        return value;
+                    }
+                }
+                else if (item instanceof CompositeData)
+                {
+                    return extractFromCompositeData((CompositeData) item);
+                }
+            }
+            return 0;
+        }
+
+        private long extractFromJsonObject(final JSONObject jsonObj)
+        {
+            Object maxRepaired = jsonObj.get("maxRepaired");
+            return (maxRepaired instanceof Number) ? ((Number) maxRepaired).longValue() : 0;
+        }
+
+        private long extractFromCompositeDataResult(final List<CompositeData> compositeDatas)
+        {
+            for (CompositeData data : compositeDatas)
+            {
+                return extractFromCompositeData(data);
+            }
+            return 0;
+        }
+
+        private long extractFromCompositeData(final CompositeData data)
+        {
+            return (long) data.getAll(new String[]{"maxRepaired"})[0];
         }
 
         @Override
@@ -710,8 +807,23 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
                             .format("org.apache.cassandra.metrics:type=Table,keyspace=%s,scope=%s,name=PercentRepaired",
                                     tableReference.getKeyspace(), tableReference.getTable()));
 
-                    return (double) nodeConnection
+                    Object result = nodeConnection
                             .getMBeanServerConnection().getAttribute(objectName, "Value");
+                    // Handle different numeric types that Jolokia might return
+                    if (result instanceof Number)
+                    {
+                        return ((Number) result).doubleValue();
+                    }
+                    else if (result instanceof Double)
+                    {
+                        return (Double) result;
+                    }
+                    else
+                    {
+                        LOG.warn("Unexpected type for PercentRepaired: {} for table {} in node {}",
+                                result.getClass().getSimpleName(), tableReference, nodeID);
+                        return 0.0;
+                    }
                 }
                 catch (AttributeNotFoundException
                        | InstanceNotFoundException
@@ -720,8 +832,13 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
                        | IOException
                        | MalformedObjectNameException e)
                 {
-                    LOG.error("Unable to retrieve disk space usage for {} in node {}, because of {}",
+                    LOG.error("Unable to retrieve percent repaired for {} in node {}, because of {}",
                             tableReference, nodeID, e.getMessage());
+                }
+                catch (ClassCastException e)
+                {
+                    LOG.error("ClassCastException when getting percent repaired for table {} in node {} (Jolokia enabled: {}): {}",
+                            tableReference, nodeID, isJolokiaEnabled, e.getMessage());
                 }
             }
             else
@@ -762,7 +879,24 @@ public class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactor
         @Override
         public boolean validateJmxConnection(final JMXConnector jmxConnector)
         {
-            return myDistributedJmxConnectionProvider.isConnected(jmxConnector);
+            if (!myDistributedJmxConnectionProvider.isConnected(jmxConnector))
+            {
+                return false;
+            }
+            // Additional check for MBeanServerConnection when using Jolokia
+            if (isJolokiaEnabled && jmxConnector != null)
+            {
+                try
+                {
+                    return jmxConnector.getMBeanServerConnection() != null;
+                }
+                catch (IOException e)
+                {
+                    LOG.debug("MBeanServerConnection not available: {}", e.getMessage());
+                    return false;
+                }
+            }
+            return true;
         }
 
         private void markNodeAsUnavailable(final UUID nodeID)

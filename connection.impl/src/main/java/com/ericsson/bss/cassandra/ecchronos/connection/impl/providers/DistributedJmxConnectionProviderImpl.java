@@ -60,16 +60,21 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
     @Override
     public boolean isConnected(final JMXConnector jmxConnector)
     {
-        try
-        {
-            jmxConnector.getConnectionId();
-        }
-        catch (IOException | NullPointerException e)
+        if (jmxConnector == null)
         {
             return false;
         }
-
-        return true;
+        try
+        {
+            jmxConnector.getConnectionId();
+            // Additional check for MBeanServerConnection availability
+            return jmxConnector.getMBeanServerConnection() != null;
+        }
+        catch (IOException | NullPointerException e)
+        {
+            LOG.debug("JMX connection validation failed: {}", e.getMessage());
+            return false;
+        }
     }
 
     /**
@@ -118,16 +123,29 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
         JMXConnector connector =  myJMXConnections.get(nodeID);
         if (isConnected(nodeID))
         {
+            LOG.debug("Using existing JMX connection for node {}", nodeID);
             return connector;
         }
-        LOG.info("Connection expired or disconnected with node Id {}", nodeID);
+        LOG.info("Connection expired or disconnected with node Id {}, attempting reconnection", nodeID);
         Node node = myNativeConnectionProvider.getNodes().get(nodeID);
+        if (node == null)
+        {
+            LOG.error("Node {} not found in native connection provider", nodeID);
+            return null;
+        }
         try
         {
             LOG.info("Attempting to create JMX connection with node {}", node.getHostId());
             myDistributedJmxBuilder.reconnect(node);
-            LOG.info("Connection created successfully with node {}", node.getHostId());
             connector = myJMXConnections.get(nodeID);
+            if (isConnected(connector))
+            {
+                LOG.info("Connection created successfully with node {}", node.getHostId());
+            }
+            else
+            {
+                LOG.warn("Connection created but validation failed for node {}", node.getHostId());
+            }
         }
         catch (EcChronosException e)
         {
