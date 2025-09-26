@@ -161,9 +161,9 @@ public final class OnDemandStatus
     }
 
     /**
-     * Retrieves the ongoing repair jobs with a 'started' status for all nodes in the cluster.
+     * Retrieves the ongoing repair jobs with a 'started' status for all nodes managed by this instance.
      *
-     * <p>This method iterates over the list of nodes and fetches ongoing repair jobs for each node.
+     * <p>This method iterates over the list of local nodes and fetches ongoing repair jobs for each node.
      * It uses the {@link #processResultSet(ReplicationState, UUID)} method to process the result set
      * for each node, filtering only those jobs whose status is 'started'. The results are aggregated
      * into a map, where the key is the host ID of the node, and the value is a set of ongoing jobs
@@ -172,8 +172,7 @@ public final class OnDemandStatus
      * @param replicationState The replication state used to determine the repair status for each node.
      *                         This parameter is required to evaluate the ongoing jobs accurately.
      * @return A map where each key represents a node's host ID and each value is a set of ongoing
-     *         repair jobs for that node. The map provides a comprehensive view of ongoing jobs with
-     *         status start across the entire cluster.
+     *         repair jobs for that node. Only includes nodes managed by this ecChronos instance.
      */
     public Map<UUID, Set<OngoingJob>> getOngoingStartedJobsForAllNodes(final ReplicationState replicationState)
     {
@@ -302,6 +301,14 @@ public final class OnDemandStatus
                                   final OngoingJob.Status status,
                                   final UUID hostId)
     {
+        // Only process jobs for nodes that exist in our node list (prevents OngoingJob constructor failure)
+        boolean nodeExistsInList = myNodeList.stream().anyMatch(node -> node.getHostId().equals(hostId));
+        if (!nodeExistsInList)
+        {
+            LOG.info("Skipping repair job for node {} as it's not in our node list", hostId);
+            return;
+        }
+
         UUID jobId = row.getUuid(JOB_ID_COLUMN_NAME);
         int tokenMapHash = row.getInt(TOKEN_MAP_HASH_COLUMN_NAME);
         Set<UdtValue> repairedTokens = row.getSet(REPAIRED_TOKENS_COLUMN_NAME, UdtValue.class);

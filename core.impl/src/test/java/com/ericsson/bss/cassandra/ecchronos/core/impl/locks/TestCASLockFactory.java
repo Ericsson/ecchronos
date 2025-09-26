@@ -510,7 +510,7 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
                 .withConsistencySerial(ConsistencyType.DEFAULT)
                 .build();
 
-        assertEquals(ConsistencyLevel.LOCAL_SERIAL, myLockFactory.getSerialConsistencyLevel());
+        assertEquals(ConsistencyLevel.SERIAL, myLockFactory.getSerialConsistencyLevel());
     }
 
     @Test
@@ -533,7 +533,7 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
                 .withConsistencySerial(ConsistencyType.DEFAULT)
                 .build();
 
-        assertEquals(ConsistencyLevel.SERIAL, myLockFactory.getSerialConsistencyLevel());
+        assertEquals(ConsistencyLevel.LOCAL_SERIAL, myLockFactory.getSerialConsistencyLevel());
     }
 
     @Test
