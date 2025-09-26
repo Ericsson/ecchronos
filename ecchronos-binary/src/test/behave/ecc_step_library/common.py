@@ -218,6 +218,7 @@ def step_verify_repair_failed(context):
     assert context.response is not None
     assert context.response.status_code == 400
 
+
 @then("the response matches the json schema {schema_name}")
 def step_verify_schema(context, schema_name):
     schema = getattr(context, schema_name, None)
