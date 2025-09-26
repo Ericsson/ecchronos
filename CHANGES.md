@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* On-demand repair jobs in multi-agent environments may be executed by the wrong agent - Issue #1146
 * Fail During Repair with Custom Jolokia Port - Issue #1149
 * Create Integration Tests Using the New Jolokia Functionality - Issue #845
 * ClassCastException when using Jolokia for JMX metrics retrieval - Issue #1126
