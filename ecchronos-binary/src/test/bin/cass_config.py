@@ -39,7 +39,7 @@ class CassandraCluster:
         self.local = local
         os.environ["CERTIFICATE_DIRECTORY"] = global_vars.CERTIFICATE_DIRECTORY
         os.environ["CASSANDRA_VERSION"] = global_vars.CASSANDRA_VERSION
-        os.environ["JOLOKIA_ENABLED"] = global_vars.JOLOKIA_ENABLED
+        os.environ["JOLOKIA"] = global_vars.JOLOKIA_ENABLED
         os.environ["DOCKER_BUILDKIT"] = "1"
         self.cassandra_compose = DockerCompose(
             global_vars.CASSANDRA_DOCKER_COMPOSE_FILE_PATH,
