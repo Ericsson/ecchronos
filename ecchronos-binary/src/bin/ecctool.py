@@ -199,7 +199,9 @@ def add_run_repair_subcommand(sub_parsers):
         "-f",
         "--forceRepairTWCS",
         help="Force repair of TWCS tables",
-        required=False, action="store_true")
+        required=False,
+        action="store_true"
+    )
 
 
 def add_repair_info_subcommand(sub_parsers):
