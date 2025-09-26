@@ -39,7 +39,6 @@ SCHEDULE_ROW_FORMAT_PATTERN = (
 def run_ecc_schedule_status(context, params):
     run_ecctool(context, ["schedules"] + params)
 
-
 def handle_schedule_output(context):
     output_data = context.out.decode("ascii").lstrip().rstrip().split("\n")
     context.snapshot = output_data[0:1]
