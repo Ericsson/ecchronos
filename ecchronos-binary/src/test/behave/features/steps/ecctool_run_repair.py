@@ -52,6 +52,14 @@ def step_run_local_repair(context, keyspace, table, repair_type):
     )
     handle_repair_output(context)
 
+@when("we run twcs repair for keyspace {keyspace} and table {table} with type {repair_type}")
+def step_run_local_repair(context, keyspace, table, repair_type):
+    run_ecc_run_repair(
+        context, ["-i", context.nodeid, "--keyspace", keyspace,
+                  "--table", table, "--repair_type", repair_type, "--forceRepairTWCS"]
+    )
+    handle_repair_output(context)
+
 
 @when("we run local repair for keyspace {keyspace}")
 def step_run_local_repair_for_keyspace(context, keyspace):

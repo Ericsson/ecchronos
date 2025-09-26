@@ -53,9 +53,10 @@ public interface OnDemandRepairManagementREST
      * @param table The table
      * @param repairType The type of repair (optional)
      * @param all run for all nodes, must be true if nodeIDis missing (optional)
+     * @param forceRepairTWCS Force repair of TWCS tables, which are normally ignored.
      * @return A JSON representation of {@link OnDemandRepair}
      */
     ResponseEntity<List<OnDemandRepair>> runRepair(
-            String nodeID, String keyspace, String table, RepairType repairType, boolean all);
+            String nodeID, String keyspace, String table, RepairType repairType, boolean all, boolean forceRepairTWCS);
 }
 

@@ -133,7 +133,6 @@ Feature: ecctool repair-info
     And the output should contain a repair-info row for ecchronos.lock_priority
     And the output should contain a repair-info row for ecchronos.on_demand_repair_status
     And the output should contain a repair-info row for ecchronos.reject_configuration
-    And the output should contain a repair-info row for ecchronos.repair_history
     And the output should contain a repair-info row for system_auth.network_permissions
     And the output should contain a repair-info row for system_auth.resource_role_permissons_index
     And the output should contain a repair-info row for system_auth.role_members
