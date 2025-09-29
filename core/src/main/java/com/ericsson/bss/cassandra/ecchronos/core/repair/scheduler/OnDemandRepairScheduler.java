@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
@@ -64,4 +65,6 @@ public interface OnDemandRepairScheduler
      * @return A list of all repair jobs for the specified host.
      */
     List<OnDemandRepairJobView> getAllRepairJobs(UUID hostId);
+
+    RepairConfiguration getRepairConfiguration();
 }

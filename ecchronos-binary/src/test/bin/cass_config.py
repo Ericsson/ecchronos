@@ -143,11 +143,7 @@ class CassandraCluster:
             try:
                 command = ["docker", "exec", self.container_id, "cqlsh", "-e", f"DESCRIBE KEYSPACE {keyspace_name};"]
                 result = subprocess.run(
-                    command,
-                    timeout=10,
-                    encoding="utf-8",
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+                    command, timeout=10, encoding="utf-8", stdout=subprocess.PIPE, stderr=subprocess.PIPE
                 )
                 if result.returncode == 0 and keyspace_name in result.stdout:
                     logger.info(f"Keyspace {keyspace_name} verified on attempt {attempt + 1}")
