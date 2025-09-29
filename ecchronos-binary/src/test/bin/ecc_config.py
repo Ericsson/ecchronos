@@ -30,6 +30,7 @@ class EcchronosConfig:
     def modify_configuration(self):
         self._uncomment_head_options()
         self._modify_connection_configuration()
+        self._modify_twcs_configuration()
         self._modify_scheduler_configuration()
         self._modify_spring_doc_configuration()
 
@@ -70,6 +71,11 @@ class EcchronosConfig:
     def _modify_scheduler_configuration(self):
         data = self._read_yaml_data(global_vars.ECC_YAML_FILE_PATH)
         data["scheduler"]["frequency"]["time"] = 1
+        self._modify_yaml_data(global_vars.ECC_YAML_FILE_PATH, data)
+
+    def _modify_twcs_configuration(self):
+        data = self._read_yaml_data(global_vars.ECC_YAML_FILE_PATH)
+        data["repair"]["ignore_twcs_tables"] = True
         self._modify_yaml_data(global_vars.ECC_YAML_FILE_PATH, data)
 
     def _modify_security_configuration(self):
