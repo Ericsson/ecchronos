@@ -52,8 +52,8 @@ public class CASLockProperties
         if (ConsistencyType.DEFAULT.equals(consistencyType))
         {
             serialConsistencyLevel = myConnectionType == ConnectionType.datacenterAware
-                    ? ConsistencyLevel.SERIAL
-                    : ConsistencyLevel.LOCAL_SERIAL;
+                    ? ConsistencyLevel.LOCAL_SERIAL
+                    : ConsistencyLevel.SERIAL;
         }
         else
         {
