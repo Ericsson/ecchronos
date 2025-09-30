@@ -80,7 +80,7 @@
         <mockito.core.version>5.20.0</mockito.core.version>
         <org.apache.commons.io.version>2.20.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
-        <org.apache.httpcomponents.client5.httpclient5.version>5.5</org.apache.httpcomponents.client5.httpclient5.version>
+        <org.apache.httpcomponents.client5.httpclient5.version>5.5.1</org.apache.httpcomponents.client5.httpclient5.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.82</org.bouncycastle.bcpkix-jdk18on.version>
         <org.springdoc.openapi-starter-webmvc-ui.version>2.8.13</org.springdoc.openapi-starter-webmvc-ui.version>
         <org.springframework.boot.spring-boot-starter-actuator.version>3.5.6</org.springframework.boot.spring-boot-starter-actuator.version>
@@ -90,7 +90,7 @@
         <org.springframework.spring-test.version>6.2.11</org.springframework.spring-test.version>
         <org.yaml.snakeyaml.version>2.5</org.yaml.snakeyaml.version>
         <slf4j.version>2.0.17</slf4j.version>
-        <swagger-annotations.version>2.2.37</swagger-annotations.version>
+        <swagger-annotations.version>2.2.38</swagger-annotations.version>
         <testcontainers.version>1.21.3</testcontainers.version>
 
         <!-- Plugin versions -->
