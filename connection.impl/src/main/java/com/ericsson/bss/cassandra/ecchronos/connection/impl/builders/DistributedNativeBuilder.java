@@ -14,7 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection.impl.builders;
 
-import com.ericsson.bss.cassandra.ecchronos.connection.CustomDriverOption;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.auth.AuthProvider;
