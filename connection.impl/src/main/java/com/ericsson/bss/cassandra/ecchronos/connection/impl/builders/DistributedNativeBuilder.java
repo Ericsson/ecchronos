@@ -58,7 +58,6 @@ public class DistributedNativeBuilder
             DefaultSessionMetric.CQL_PREPARED_CACHE_SIZE.getPath(), DefaultSessionMetric.THROTTLING_DELAY.getPath(),
             DefaultSessionMetric.THROTTLING_QUEUE_SIZE.getPath(), DefaultSessionMetric.THROTTLING_ERRORS.getPath());
 
-    private static final int MAX_NODES_PER_DC = 999;
     private ConnectionType myType = ConnectionType.datacenterAware;
     private List<InetSocketAddress> myInitialContactPoints = new ArrayList<>();
     private String myLocalDatacenter = "datacenter1";
