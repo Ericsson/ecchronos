@@ -177,10 +177,10 @@ public final class CASLockFactory implements LockFactory, Closeable
     }
 
     @Override
-    public Map<String, String> getLockMetadata(final String dataCenter, final String resource) throws LockException
+    public Map<String, String> getLockMetadata(final String resource) throws LockException
     {
         ResultSet resultSet = myCasLockStatement.execute(
-                dataCenter, myCasLockStatement.getLockMetadataStatement().bind(resource));
+                myCasLockStatement.getLockMetadataStatement().bind(resource));
 
         Row row = resultSet.one();
 
@@ -283,7 +283,7 @@ public final class CASLockFactory implements LockFactory, Closeable
             LOG.warn("Not sufficient nodes to lock resource {} in datacenter {}", resource, dataCenter);
             throw new LockException("Not sufficient nodes to lock");
         }
-        CASLock casLock = new CASLock(dataCenter, resource, priority, metadata, nodeId, myCasLockStatement); // NOSONAR
+        CASLock casLock = new CASLock(resource, priority, metadata, nodeId, myCasLockStatement); // NOSONAR
         if (casLock.lock())
         {
             return casLock;

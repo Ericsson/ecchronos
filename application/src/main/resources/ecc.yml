@@ -48,10 +48,6 @@ connection:
       ## Specifies the datacenter that is considered "local" by the load balancing policy,
       ## The specified datacenter should match with the contact point datacenter
       localDatacenter: datacenter1
-      ## A custom load balancing policy extended to allow the local
-      ## datacenter to be replaced with a specified data center when
-      ## creating a new plan, this is used just if the agent.type is datacenterAware
-      datacenterAwarePolicy: com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy
       ## Initial contact points list for ecChronos
       ## to establish first connection with Cassandra.
       contactPoints:
@@ -309,9 +305,6 @@ lock_factory:
     cache_expiry_time_in_seconds: 30
     ##
     ## Allow to override consistency level for LWT (lightweight transactions). Possible values are:
-    ## "DEFAULT" - Use consistency level based on the `datacenterAware` agent type.
-    ##  If the agent type is `datacenterAware`, LOCAL_SERIAL consistency will be used. Otherwise,
-    ##  SERIAL consistency will be applied.
     ## "SERIAL" - Use SERIAL consistency for LWT regardless of agent type.
     ## "LOCAL" - Use LOCAL_SERIAL consistency for LWT regardless agent type.
     ##
@@ -319,4 +312,4 @@ lock_factory:
     ## I.e There's a risk that multiple nodes in different datacenters will be able to lock the
     ## same nodes causing multiple repairs on the same range/node at the same time.
     ##
-    consistencySerial: "DEFAULT"
+    consistencySerial: "SERIAL"

@@ -24,7 +24,7 @@ public class CasLockFactoryConfig
     private static final String DEFAULT_KEYSPACE_NAME = "ecchronos";
     private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
     private long myExpiryTimeInSeconds = DEFAULT_EXPIRY_TIME_IN_SECONDS;
-    private ConsistencyType myConsistencySerial = ConsistencyType.DEFAULT;
+    private ConsistencyType myConsistencySerial = ConsistencyType.SERIAL;
 
     public final long getFailureCacheExpiryTimeInSeconds()
     {

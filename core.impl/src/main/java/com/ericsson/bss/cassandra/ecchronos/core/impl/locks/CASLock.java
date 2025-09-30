@@ -40,7 +40,6 @@ class CASLock implements DistributedLock, Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger(CASLock.class);
 
-    private final String myDataCenter;
     private final String myResource;
     private final int myPriority;
     private final Map<String, String> myMetadata;
@@ -56,14 +55,12 @@ class CASLock implements DistributedLock, Runnable
 
     private final CASLockStatement myCasLockStatement;
 
-    CASLock(final String dataCenter,
-            final String resource,
+    CASLock(final String resource,
             final int priority,
             final Map<String, String> metadata,
             final UUID uuid,
             final CASLockStatement casLockStatement)
     {
-        myDataCenter = dataCenter;
         myResource = resource;
         myPriority = priority;
         myMetadata = metadata;
@@ -136,13 +133,11 @@ class CASLock implements DistributedLock, Runnable
         {
             future.cancel(true);
             myCasLockStatement.execute(
-                    myDataCenter,
                     myCasLockStatement.getRemoveLockStatement().bind(myResource, myUuid));
 
             if (myLocallyHighestPriority <= myPriority)
             {
                 myCasLockStatement.execute(
-                        myDataCenter,
                         myCasLockStatement.getRemoveLockPriorityStatement().bind(myResource, myUuid));
             }
             else
@@ -156,7 +151,7 @@ class CASLock implements DistributedLock, Runnable
 
     private void updateLock() throws LockException
     {
-        ResultSet resultSet = myCasLockStatement.execute(myDataCenter,
+        ResultSet resultSet = myCasLockStatement.execute(
                 myCasLockStatement.getUpdateLockStatement().bind(myUuid, myMetadata, myResource, myUuid));
 
         if (!resultSet.wasApplied())
@@ -179,14 +174,12 @@ class CASLock implements DistributedLock, Runnable
     private void insertPriority()
     {
         myCasLockStatement.execute(
-                myDataCenter,
                 myCasLockStatement.getCompeteStatement().bind(myResource, myUuid, myPriority));
     }
 
     private boolean tryLock()
     {
         return myCasLockStatement.execute(
-                myDataCenter,
                 myCasLockStatement.getLockStatement().bind(myResource, myUuid, myMetadata)).wasApplied();
     }
 
@@ -195,7 +188,6 @@ class CASLock implements DistributedLock, Runnable
         List<NodePriority> nodePriorities = new ArrayList<>();
 
         ResultSet resultSet = myCasLockStatement.execute(
-                myDataCenter,
                 myCasLockStatement.getGetPriorityStatement().bind(myResource));
 
         for (Row row : resultSet)

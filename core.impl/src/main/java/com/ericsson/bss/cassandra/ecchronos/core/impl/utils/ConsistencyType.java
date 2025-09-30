@@ -16,7 +16,6 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.utils;
 
 public enum ConsistencyType
 {
-    DEFAULT,
     LOCAL,
     SERIAL
 }

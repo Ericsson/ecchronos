@@ -311,7 +311,7 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
 
         try (LockFactory.DistributedLock lock = myLockFactory.tryLock(DATA_CENTER, "lock", 1, expectedMetadata, nodeId))
         {
-            Map<String, String> actualMetadata = myLockFactory.getLockMetadata(DATA_CENTER, "lock");
+            Map<String, String> actualMetadata = myLockFactory.getLockMetadata("lock");
 
             assertThat(actualMetadata).isEqualTo(expectedMetadata);
         }
@@ -332,7 +332,6 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
         {
             Future<?> future = executorService.submit(
                     new CASLock(
-                            DATA_CENTER,
                             "lock",
                             1,
                             metadata,
@@ -361,7 +360,6 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
         Map<String, String> metadata = new HashMap<>();
         UUID nodeId= myNodeID;
         try (CASLock lockUpdateTask = new CASLock(
-                DATA_CENTER,
                 "lock",
                 1,
                 metadata,
@@ -488,52 +486,6 @@ public class TestCASLockFactory extends AbstractCassandraContainerTest
                         .withHostStates(hostStates)
                         .withKeyspaceName(myKeyspaceName)
                         .build());
-    }
-
-    @Test
-    public void testDataCenterAwareAgentTypeWithDefaultSerialConsistency()
-    {
-        Node nodeMock = mock(Node.class);
-        Map<UUID, Node> mockNodes = new HashMap<>();
-        mockNodes.put(UUID.randomUUID(), nodeMock);
-        DistributedNativeConnectionProvider connectionProviderMock = mock(DistributedNativeConnectionProvider.class);
-
-        when(nodeMock.getHostId()).thenReturn(UUID.randomUUID());
-        when(connectionProviderMock.getCqlSession()).thenReturn(mySession);
-        when(connectionProviderMock.getNodes()).thenReturn(mockNodes);
-        when(connectionProviderMock.getConnectionType()).thenReturn(ConnectionType.datacenterAware);
-
-        myLockFactory = new CASLockFactoryBuilder()
-                .withNativeConnectionProvider(getDataCenterAwareConnectionTypeProvider())
-                .withHostStates(hostStates)
-                .withKeyspaceName(myKeyspaceName)
-                .withConsistencySerial(ConsistencyType.DEFAULT)
-                .build();
-
-        assertEquals(ConsistencyLevel.LOCAL_SERIAL, myLockFactory.getSerialConsistencyLevel());
-    }
-
-    @Test
-    public void testOtherThanDataCenterAwareAgentTypeWithDefaultSerialConsistency()
-    {
-        Node nodeMock = mock(Node.class);
-        DistributedNativeConnectionProvider connectionProviderMock = mock(DistributedNativeConnectionProvider.class);
-
-        Map<UUID, Node> mockNodes = new HashMap<>();
-        mockNodes.put(UUID.randomUUID(), nodeMock);
-
-        when(nodeMock.getHostId()).thenReturn(UUID.randomUUID());
-        when(connectionProviderMock.getCqlSession()).thenReturn(mySession);
-        when(connectionProviderMock.getNodes()).thenReturn(mockNodes);
-
-        myLockFactory = new CASLockFactoryBuilder()
-                .withNativeConnectionProvider(connectionProviderMock)
-                .withHostStates(hostStates)
-                .withKeyspaceName(myKeyspaceName)
-                .withConsistencySerial(ConsistencyType.DEFAULT)
-                .build();
-
-        assertEquals(ConsistencyLevel.SERIAL, myLockFactory.getSerialConsistencyLevel());
     }
 
     @Test
