@@ -21,7 +21,6 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Interval;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Priority;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentNativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairHistoryProvider;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
@@ -171,12 +170,6 @@ public class TestConfig
     {
         assertThat(config.getRestServer().getHost()).isEqualTo("127.0.0.2");
         assertThat(config.getRestServer().getPort()).isEqualTo(8081);
-    }
-
-    @Test
-    public void testDefaultLoadBalancingPolicy()
-    {
-        assertThat(nativeConnection.getAgentConnectionConfig().getDatacenterAwarePolicy()).isEqualTo(DataCenterAwarePolicy.class);
     }
 
     @Test

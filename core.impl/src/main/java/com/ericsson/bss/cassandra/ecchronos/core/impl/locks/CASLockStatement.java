@@ -21,9 +21,7 @@ import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
-import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwareStatement;
 
 /**
  * Represents a container for builder configurations and state for the CASLockStatement.
@@ -65,13 +63,9 @@ public class CASLockStatement
         myGetLockMetadataStatement = myCasLockProperties.getSession().prepare(lockMetadataStatement());
     }
 
-    public final ResultSet execute(final String dataCenter, final BoundStatement statement)
+    public final ResultSet execute(final BoundStatement statement)
     {
-        Statement executeStatement = (dataCenter != null
-                && myCasLockProperties.isDatacenterAwareAgentType())
-                ? new DataCenterAwareStatement(statement, dataCenter)
-                : statement;
-        return myCasLockProperties.getSession().execute(executeStatement);
+        return myCasLockProperties.getSession().execute(statement);
     }
 
     private SimpleStatement insertLockStatement()

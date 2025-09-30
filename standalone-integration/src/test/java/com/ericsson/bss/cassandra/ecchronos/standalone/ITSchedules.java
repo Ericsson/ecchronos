@@ -156,7 +156,7 @@ public class ITSchedules extends TestBase
         myLockFactory = CASLockFactory.builder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(myHostStates)
-                .withConsistencySerial(ConsistencyType.DEFAULT)
+                .withConsistencySerial(ConsistencyType.SERIAL)
                 .build();
         // Only run ScheduleManager for the local node to avoid concurrency issues
         List<UUID> localNodeIdList = Collections.singletonList(myLocalHost.getHostId());
