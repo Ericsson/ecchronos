@@ -45,8 +45,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
     {
         for (RepairResource repairResource : repairResources)
         {
-            if (!lockFactory.sufficientNodesForLocking(repairResource.getDataCenter(),
-                    repairResource.getResourceName(LOCKS_PER_RESOURCE)))
+            if (!lockFactory.sufficientNodesForLocking(repairResource.getResourceName(LOCKS_PER_RESOURCE)))
             {
                 throw new LockException(repairResource + " not lockable. Repair will be retried later.");
             }
