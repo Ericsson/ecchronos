@@ -14,15 +14,19 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.locks;
 
+import java.util.Map;
+import java.util.UUID;
+
 /**
  * Represents a container for cache-related configurations and state for the CASLockFactory.
  * This class is used to decouple cache-related fields from CASLockFactory to avoid excessive field count.
  */
 public final class CASLockFactoryCacheContext
 {
-    private final LockCache myLockCache;
+    private final Map<UUID, LockCache> myLockCache;
     private final long myLockUpdateTimeInSeconds;
     private final int myFailedLockRetryAttempts;
+    private final Object myLock = new Object();
 
     public CASLockFactoryCacheContext(final Builder builder)
     {
@@ -31,9 +35,20 @@ public final class CASLockFactoryCacheContext
         myFailedLockRetryAttempts = builder.myFailedLockRetryAttempts;
     }
 
-    public LockCache getLockCache()
+    public LockCache getLockCache(final UUID uuid)
     {
-        return myLockCache;
+        synchronized (myLock)
+        {
+            return myLockCache.get(uuid);
+        }
+    }
+
+    public void addLockCache(final UUID uuid, final LockCache lockCache)
+    {
+        synchronized (myLock)
+        {
+            myLockCache.put(uuid, lockCache);
+        }
     }
 
     public long getLockUpdateTimeInSeconds()
@@ -51,9 +66,10 @@ public final class CASLockFactoryCacheContext
         return new Builder();
     }
 
+
     public static class Builder
     {
-        private LockCache myLockCache;
+        private Map<UUID, LockCache> myLockCache;
         private int myLockUpdateTimeInSeconds;
         private int myFailedLockRetryAttempts;
 
@@ -69,7 +85,7 @@ public final class CASLockFactoryCacheContext
             return this;
         }
 
-        public final Builder withLockCache(final LockCache lockCache)
+        public final Builder withLockCache(final Map<UUID, LockCache> lockCache)
         {
             myLockCache = lockCache;
             return this;

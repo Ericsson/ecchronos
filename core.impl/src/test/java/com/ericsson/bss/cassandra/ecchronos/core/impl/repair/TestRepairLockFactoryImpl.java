@@ -55,7 +55,7 @@ public class TestRepairLockFactoryImpl
     @Before
     public void setup()
     {
-        when(mockLockFactory.getCachedFailure(anyString(), anyString())).thenReturn(Optional.empty());
+        when(mockLockFactory.getCachedFailure(any(UUID.class), anyString(), anyString())).thenReturn(Optional.empty());
     }
 
     @Test
@@ -258,7 +258,7 @@ public class TestRepairLockFactoryImpl
 
     private void withUnsuccessfulCachedLock(RepairResource repairResource)
     {
-        when(mockLockFactory.getCachedFailure(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)))).thenReturn(Optional.of(new LockException("")));
+        when(mockLockFactory.getCachedFailure(any(UUID.class), eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)))).thenReturn(Optional.of(new LockException("")));
     }
 
     private void withSuccessfulLocking(RepairResource repairResource, int priority, Map<String, String> metadata) throws LockException
