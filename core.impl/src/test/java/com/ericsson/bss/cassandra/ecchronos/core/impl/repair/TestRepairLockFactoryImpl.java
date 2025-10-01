@@ -278,11 +278,11 @@ public class TestRepairLockFactoryImpl
 
     private void withSufficientNodesForLocking(RepairResource repairResource)
     {
-        when(mockLockFactory.sufficientNodesForLocking(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)))).thenReturn(true);
+        when(mockLockFactory.sufficientNodesForLocking(eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)))).thenReturn(true);
     }
 
     private void withoutSufficientNodesForLocking(RepairResource repairResource)
     {
-        when(mockLockFactory.sufficientNodesForLocking(eq(repairResource.getDataCenter()), eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)))).thenReturn(false);
+        when(mockLockFactory.sufficientNodesForLocking(eq(repairResource.getResourceName(LOCKS_PER_RESOURCE)))).thenReturn(false);
     }
 }
