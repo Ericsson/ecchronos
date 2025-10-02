@@ -23,6 +23,7 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.TokenMap;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.state.HostStates;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
@@ -41,6 +42,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -80,6 +82,8 @@ public final class CASLockFactory implements LockFactory, Closeable
 
     private final CASLockProperties myCasLockProperties;
     private final CASLockStatement myCasLockStatement;
+    private final DistributedNativeConnectionProvider myNativeConnectionProvider;
+    private final long myCacheExpiryTimeInSeconds;
 
     CASLockFactory(final CASLockFactoryBuilder builder)
     {
@@ -92,25 +96,41 @@ public final class CASLockFactory implements LockFactory, Closeable
                 builder.getNativeConnectionProvider().getCqlSession());
 
         myHostStates = builder.getHostStates();
+        myNativeConnectionProvider = builder.getNativeConnectionProvider();
 
         verifySchemasExists();
+        myCacheExpiryTimeInSeconds = builder.getCacheExpiryTimeInSecond();
 
-        myCasLockFactoryCacheContext = buildCasLockFactoryCacheContext(builder.getCacheExpiryTimeInSecond());
+        myCasLockFactoryCacheContext = buildCasLockFactoryCacheContext();
 
         myCasLockStatement = new CASLockStatement(myCasLockProperties, myCasLockFactoryCacheContext);
     }
 
-    private CASLockFactoryCacheContext buildCasLockFactoryCacheContext(final long cacheExpiryTimeInSeconds)
+    private CASLockFactoryCacheContext buildCasLockFactoryCacheContext()
     {
         int lockTimeInSeconds = getDefaultTimeToLiveFromLockTable();
         int lockUpdateTimeInSeconds = lockTimeInSeconds / REFRESH_INTERVAL_RATIO;
         int myFailedLockRetryAttempts = (lockTimeInSeconds / lockUpdateTimeInSeconds) - 1;
+        Map<UUID, LockCache> lockCache = new ConcurrentHashMap<>();
+        myNativeConnectionProvider.getNodes().keySet().stream().forEach(uuid ->
+        {
+            LockCache.LockSupplier nodeSpecificSupplier = (dataCenter, resource, priority, metadata) ->
+                doTryLock(dataCenter, resource, priority, metadata, uuid);
+            lockCache.put(uuid, new LockCache(nodeSpecificSupplier, myCacheExpiryTimeInSeconds));
+        });
 
         return CASLockFactoryCacheContext.newBuilder()
                 .withLockUpdateTimeInSeconds(lockUpdateTimeInSeconds)
                 .withFailedLockRetryAttempts(myFailedLockRetryAttempts)
-                .withLockCache(new LockCache(this::doTryLock, cacheExpiryTimeInSeconds))
+                .withLockCache(lockCache)
                 .build();
+    }
+
+    public void addLockCache(final UUID nodeId)
+    {
+        LockCache.LockSupplier nodeSpecificSupplier = (dataCenter, resource, priority, metadata) ->
+                doTryLock(dataCenter, resource, priority, metadata, nodeId);
+        myCasLockFactoryCacheContext.addLockCache(nodeId, new LockCache(nodeSpecificSupplier, myCacheExpiryTimeInSeconds));
     }
 
     private int getDefaultTimeToLiveFromLockTable()
@@ -136,8 +156,24 @@ public final class CASLockFactory implements LockFactory, Closeable
                                                final Map<String, String> metadata,
                                                final UUID nodeId) throws LockException
     {
-        return myCasLockFactoryCacheContext.getLockCache()
-                .getLock(dataCenter, resource, priority, metadata, nodeId);
+        verifyNodeOnLockCacheMap(nodeId);
+        return myCasLockFactoryCacheContext.getLockCache(nodeId)
+                .getLock(dataCenter, resource, priority, metadata);
+    }
+
+    private void verifyNodeOnLockCacheMap(final UUID nodeId) throws LockException
+    {
+        if (myCasLockFactoryCacheContext.getLockCache(nodeId) == null)
+        {
+            if (myNativeConnectionProvider.getNodes().keySet().contains(nodeId))
+            {
+                addLockCache(nodeId);
+            }
+            else
+            {
+                throw new LockException("Node " + nodeId + " is not managed by local instance");
+            }
+        }
     }
 
     @Override
@@ -181,9 +217,17 @@ public final class CASLockFactory implements LockFactory, Closeable
     }
 
     @Override
-    public Optional<LockException> getCachedFailure(final String dataCenter, final String resource)
+    public Optional<LockException> getCachedFailure(final UUID nodeID, final String dataCenter, final String resource)
     {
-        return myCasLockFactoryCacheContext.getLockCache().getCachedFailure(dataCenter, resource);
+        try
+        {
+            verifyNodeOnLockCacheMap(nodeID);
+        }
+        catch (LockException e)
+        {
+            LOG.debug("Unable to verify node on lock cache map for node {}", nodeID, e);
+        }
+        return myCasLockFactoryCacheContext.getLockCache(nodeID).getCachedFailure(dataCenter, resource);
     }
 
     @Override
