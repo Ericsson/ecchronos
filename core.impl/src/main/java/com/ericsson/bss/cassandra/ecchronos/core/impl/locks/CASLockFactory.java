@@ -83,7 +83,7 @@ public final class CASLockFactory implements LockFactory, Closeable
     private final CASLockProperties myCasLockProperties;
     private final CASLockStatement myCasLockStatement;
     private final DistributedNativeConnectionProvider myNativeConnectionProvider;
-    private final long cacheExpiryTimeInSeconds;
+    private final long myCacheExpiryTimeInSeconds;
 
     CASLockFactory(final CASLockFactoryBuilder builder)
     {
@@ -99,7 +99,7 @@ public final class CASLockFactory implements LockFactory, Closeable
         myNativeConnectionProvider = builder.getNativeConnectionProvider();
 
         verifySchemasExists();
-        cacheExpiryTimeInSeconds = builder.getCacheExpiryTimeInSecond();
+        myCacheExpiryTimeInSeconds = builder.getCacheExpiryTimeInSecond();
 
         myCasLockFactoryCacheContext = buildCasLockFactoryCacheContext();
 
@@ -116,7 +116,7 @@ public final class CASLockFactory implements LockFactory, Closeable
         {
             LockCache.LockSupplier nodeSpecificSupplier = (dataCenter, resource, priority, metadata) ->
                 doTryLock(dataCenter, resource, priority, metadata, uuid);
-            lockCache.put(uuid, new LockCache(nodeSpecificSupplier, cacheExpiryTimeInSeconds));
+            lockCache.put(uuid, new LockCache(nodeSpecificSupplier, myCacheExpiryTimeInSeconds));
         });
 
         return CASLockFactoryCacheContext.newBuilder()
@@ -130,7 +130,7 @@ public final class CASLockFactory implements LockFactory, Closeable
     {
         LockCache.LockSupplier nodeSpecificSupplier = (dataCenter, resource, priority, metadata) ->
                 doTryLock(dataCenter, resource, priority, metadata, nodeId);
-        myCasLockFactoryCacheContext.addLockCache(nodeId, new LockCache(nodeSpecificSupplier, cacheExpiryTimeInSeconds));
+        myCasLockFactoryCacheContext.addLockCache(nodeId, new LockCache(nodeSpecificSupplier, myCacheExpiryTimeInSeconds));
     }
 
     private int getDefaultTimeToLiveFromLockTable()
