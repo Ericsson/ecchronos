@@ -59,7 +59,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
             throw new LockException(msg);
         }
 
-        validateNoCachedFailures(lockFactory, repairResources);
+        validateNoCachedFailures(nodeId, lockFactory, repairResources);
 
         Collection<LockFactory.DistributedLock> locks = getRepairResourceLocks(lockFactory,
                 repairResources,
@@ -70,12 +70,12 @@ public class RepairLockFactoryImpl implements RepairLockFactory
         return new LockCollection(locks);
     }
 
-    private void validateNoCachedFailures(final LockFactory lockFactory, final Set<RepairResource> repairResources)
+    private void validateNoCachedFailures(final UUID nodeId, final LockFactory lockFactory, final Set<RepairResource> repairResources)
                                                                                                                     throws LockException
     {
         for (RepairResource repairResource : repairResources)
         {
-            Optional<LockException> cachedException = lockFactory.getCachedFailure(repairResource.getDataCenter(),
+            Optional<LockException> cachedException = lockFactory.getCachedFailure(nodeId, repairResource.getDataCenter(),
                     repairResource.getResourceName(LOCKS_PER_RESOURCE));
             if (cachedException.isPresent())
             {

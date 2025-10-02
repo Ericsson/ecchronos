@@ -14,16 +14,17 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.locks;
 
-import static com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory.DistributedLock;
+import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory.DistributedLock;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import java.util.UUID;
+
+import jakarta.validation.constraints.NotNull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -59,8 +60,7 @@ public final class LockCache
     public DistributedLock getLock(final String dataCenter,
                                    final String resource,
                                    final int priority,
-                                   final Map<String, String> metadata,
-                                   final UUID hostId)
+                                   final Map<String, String> metadata)
                                                                        throws LockException
     {
         LockKey lockKey = new LockKey(dataCenter, resource);
@@ -74,7 +74,7 @@ public final class LockCache
 
         try
         {
-            return myLockSupplier.getLock(dataCenter, resource, priority, metadata, hostId);
+            return myLockSupplier.getLock(dataCenter, resource, priority, metadata);
         }
         catch (LockException e)
         {
@@ -97,41 +97,15 @@ public final class LockCache
     @FunctionalInterface
     public interface LockSupplier
     {
-        DistributedLock getLock(String dataCenter, String resource, int priority, Map<String, String> metadata, UUID hostId)
-                                                                                                                throws LockException;
+        DistributedLock getLock(String dataCenter, String resource, int priority, Map<String, String> metadata)
+            throws LockException;
     }
 
-    static final class LockKey
+    record LockKey(String dataCenter, @NotNull String resource)
     {
-        private final String myDataCenter;
-        private final String myResourceName;
-
-        LockKey(final String dataCenter, final String resourceName)
+        LockKey
         {
-            myDataCenter = dataCenter;
-            myResourceName = checkNotNull(resourceName);
-        }
-
-        @Override
-        public boolean equals(final Object o)
-        {
-            if (this == o)
-            {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass())
-            {
-                return false;
-            }
-            LockKey lockKey = (LockKey) o;
-            return Objects.equals(myDataCenter, lockKey.myDataCenter)
-                    && Objects.equals(myResourceName, lockKey.myResourceName);
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash(myDataCenter, myResourceName);
+            checkNotNull(resource);
         }
     }
 }
