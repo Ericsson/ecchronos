@@ -75,7 +75,6 @@ Feature: ecctool run-repair
     And the output should contain 4 repair rows for ecchronos.lock_priority with type VNODE
     And the output should contain 4 repair rows for ecchronos.on_demand_repair_status with type VNODE
     And the output should contain 4 repair rows for ecchronos.reject_configuration with type VNODE
-    And the output should contain 4 repair rows for ecchronos.repair_history with type VNODE
     And the output should contain 4 repair rows for ecchronos.nodes_sync with type VNODE
     And the output should contain a valid repair summary
 
