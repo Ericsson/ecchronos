@@ -29,7 +29,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public final class AgentConnectionConfig
 {
     private ConnectionType myType = ConnectionType.datacenterAware;
-    private String myLocalDatacenter;
+    private String myLocalDatacenter = "datacenter1";
     private Map<String, Host> myContactPoints = new HashMap<>();
     private DatacenterAware myDatacenterAware = new DatacenterAware();
     private RackAware myRackAware = new RackAware();

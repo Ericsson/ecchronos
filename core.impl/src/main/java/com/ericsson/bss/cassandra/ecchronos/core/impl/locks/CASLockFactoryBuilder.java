@@ -33,7 +33,7 @@ public class CASLockFactoryBuilder
     private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
     private long myCacheExpiryTimeInSeconds = DEFAULT_EXPIRY_TIME_IN_SECONDS;
     private ConsistencyType myConsistencyType = DEFAULT_CONSISTENCY_SERIAL;
-    private String myLocalDatacenter;
+    private String myLocalDatacenter = "datacenter1";
 
     public final CASLockFactoryBuilder withNativeConnectionProvider(final DistributedNativeConnectionProvider nativeConnectionProvider)
     {
