@@ -306,7 +306,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
     {
         if (nodeID == null)
         {
-            return runForCluster(repairType, tables);
+            return runForCluster(repairType, tables, forceRepairTWCS);
         }
         List<OnDemandRepair> onDemandRepairs = new ArrayList<>();
         Node node = myDistributedNativeConnectionProvider.getNodes().get(nodeID);
@@ -322,7 +322,8 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
     }
     private List<OnDemandRepair> runForCluster(
             final RepairType repairType,
-            final Set<TableReference> tables)
+            final Set<TableReference> tables,
+            final boolean forceRepairTWCS)
             throws EcChronosException
     {
         List<OnDemandRepair> onDemandRepairs = new ArrayList<>();
@@ -331,7 +332,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             Collection<Node> availableNodes = myDistributedNativeConnectionProvider.getNodes().values();
             for (Node eachNode : availableNodes)
             {
-                if (myReplicatedTableProvider.accept(eachNode, tableReference.getKeyspace()))
+                if (!rejectForTWCS(tableReference, forceRepairTWCS) && myReplicatedTableProvider.accept(eachNode, tableReference.getKeyspace()))
                 {
                     onDemandRepairs.add(new OnDemandRepair(
                             myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, eachNode.getHostId())));
