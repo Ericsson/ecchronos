@@ -62,7 +62,7 @@
         <com.fasterxml.jackson.annotations.version>2.20</com.fasterxml.jackson.annotations.version>
         <com.fasterxml.jackson.core.version>2.20.0</com.fasterxml.jackson.core.version>
         <com.typesafe.config.version>1.4.5</com.typesafe.config.version>
-        <equalsverifier.version>4.1.1</equalsverifier.version>
+        <equalsverifier.version>4.2</equalsverifier.version>
         <guava.version>33.5.0-jre</guava.version>
         <io.dropwizard.metrics.version>4.2.37</io.dropwizard.metrics.version>
         <io.micrometer.version>1.15.4</io.micrometer.version>
@@ -75,8 +75,8 @@
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
         <jcip.version>1.0</jcip.version>
         <junit.junit.version>4.13.2</junit.junit.version>
-        <junit.junit-vintage-engine.version>5.13.4</junit.junit-vintage-engine.version>
-        <logback.version>1.5.18</logback.version>
+        <junit.junit-vintage-engine.version>6.0.0</junit.junit-vintage-engine.version>
+        <logback.version>1.5.19</logback.version>
         <mockito.core.version>5.20.0</mockito.core.version>
         <org.apache.commons.io.version>2.20.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
@@ -100,7 +100,7 @@
         <org.apache.maven.plugins.maven-assembly-plugin.version>3.7.1</org.apache.maven.plugins.maven-assembly-plugin.version>
         <org.apache.maven.plugins-maven-checkstyle-plugin.version>3.6.0</org.apache.maven.plugins-maven-checkstyle-plugin.version>
         <org.apache.maven.plugins.maven-compiler-plugin.version>3.14.1</org.apache.maven.plugins.maven-compiler-plugin.version>
-        <org.apache.maven.plugins-maven-dependency-plugin.version>3.8.1</org.apache.maven.plugins-maven-dependency-plugin.version>
+        <org.apache.maven.plugins-maven-dependency-plugin.version>3.9.0</org.apache.maven.plugins-maven-dependency-plugin.version>
         <org.apache.maven.plugins.maven-deploy-plugin.version>3.1.4</org.apache.maven.plugins.maven-deploy-plugin.version>
         <org.apache.maven.plugins.maven-failsafe-plugin.version>3.5.4</org.apache.maven.plugins.maven-failsafe-plugin.version>
         <org.apache.maven.plugins.maven-gpg-plugin.version>3.2.8</org.apache.maven.plugins.maven-gpg-plugin.version>
@@ -114,7 +114,7 @@
         <org.apache.maven.plugins.maven-source-plugin.version>3.3.1</org.apache.maven.plugins.maven-source-plugin.version>
         <org.apache.maven.plugins.maven-surefire-plugin.version>3.5.4</org.apache.maven.plugins.maven-surefire-plugin.version>
         <org.apache.servicemix.tooling.depends-maven-plugin.version>1.5.0</org.apache.servicemix.tooling.depends-maven-plugin.version>
-        <org.codehaus.mojo.exec-maven-plugin.version>3.5.1</org.codehaus.mojo.exec-maven-plugin.version>
+        <org.codehaus.mojo.exec-maven-plugin.version>3.6.1</org.codehaus.mojo.exec-maven-plugin.version>
         <org.codehaus.mojo.license-maven-plugin.version>2.7.0</org.codehaus.mojo.license-maven-plugin.version>
         <org.jacoco.jacoco-maven-plugin.version>0.8.13</org.jacoco.jacoco-maven-plugin.version>
         <org.sonatype.central-central-publishing-maven-plugin>0.9.0</org.sonatype.central-central-publishing-maven-plugin>
