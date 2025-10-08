@@ -14,8 +14,6 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.connection.impl.builders;
 
-import com.ericsson.bss.cassandra.ecchronos.connection.CustomDriverOption;
-import com.ericsson.bss.cassandra.ecchronos.connection.DataCenterAwarePolicy;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.auth.AuthProvider;
@@ -26,7 +24,6 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.NodeStateListener;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
-import com.datastax.oss.driver.internal.core.loadbalancing.DefaultLoadBalancingPolicy;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.datastax.oss.driver.api.core.metrics.DefaultSessionMetric;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedNativeConnectionProviderImpl;
@@ -60,11 +57,9 @@ public class DistributedNativeBuilder
             DefaultSessionMetric.CQL_PREPARED_CACHE_SIZE.getPath(), DefaultSessionMetric.THROTTLING_DELAY.getPath(),
             DefaultSessionMetric.THROTTLING_QUEUE_SIZE.getPath(), DefaultSessionMetric.THROTTLING_ERRORS.getPath());
 
-    private static final int MAX_NODES_PER_DC = 999;
     private ConnectionType myType = ConnectionType.datacenterAware;
     private List<InetSocketAddress> myInitialContactPoints = new ArrayList<>();
     private String myLocalDatacenter = "datacenter1";
-    private Class<? extends DefaultLoadBalancingPolicy> myDatacenterAwarePolicy = DataCenterAwarePolicy.class;
 
     private List<String> myDatacenterAware = new ArrayList<>();
     private List<Map<String, String>> myRackAware = new ArrayList<>();
@@ -112,20 +107,6 @@ public class DistributedNativeBuilder
     public final DistributedNativeBuilder withLocalDatacenter(final String localDatacenter)
     {
         myLocalDatacenter = localDatacenter;
-        return this;
-    }
-
-    /**
-     * Sets the DataCenterAwarePolicy used for load-balancing policy.
-     *
-     * @param datacenterAwarePolicy
-     *         the custom class of the load-balancing policy.
-     * @return the current instance of {@link DistributedNativeBuilder}.
-     */
-    public final DistributedNativeBuilder withDatacenterAwarePolicy(
-        final Class<? extends DefaultLoadBalancingPolicy> datacenterAwarePolicy)
-    {
-        myDatacenterAwarePolicy = datacenterAwarePolicy;
         return this;
     }
 
@@ -375,14 +356,6 @@ public class DistributedNativeBuilder
         ProgrammaticDriverConfigLoaderBuilder loaderBuilder = DriverConfigLoader.programmaticBuilder()
                 .withStringList(DefaultDriverOption.METADATA_SCHEMA_REFRESHED_KEYSPACES,
                         SCHEMA_REFRESHED_KEYSPACES);
-        if (builder.myType.equals(ConnectionType.datacenterAware))
-        {
-            loaderBuilder.withStringList(CustomDriverOption.PartitionAwarePolicyAllowedDCs, builder.myDatacenterAware);
-            loaderBuilder.withString(DefaultDriverOption.LOAD_BALANCING_POLICY_CLASS,
-                builder.myDatacenterAwarePolicy.getCanonicalName());
-            loaderBuilder.withInt(DefaultDriverOption.LOAD_BALANCING_DC_FAILOVER_MAX_NODES_PER_REMOTE_DC,
-                    MAX_NODES_PER_DC);
-        }
         if (builder.myIsMetricsEnabled)
         {
             loaderBuilder.withStringList(DefaultDriverOption.METRICS_SESSION_ENABLED, SESSION_METRICS);

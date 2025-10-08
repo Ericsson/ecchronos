@@ -84,6 +84,7 @@ public final class CASLockFactory implements LockFactory, Closeable
     private final CASLockStatement myCasLockStatement;
     private final DistributedNativeConnectionProvider myNativeConnectionProvider;
     private final long myCacheExpiryTimeInSeconds;
+    private final String myLocalDatacenter;
 
     CASLockFactory(final CASLockFactoryBuilder builder)
     {
@@ -97,6 +98,8 @@ public final class CASLockFactory implements LockFactory, Closeable
 
         myHostStates = builder.getHostStates();
         myNativeConnectionProvider = builder.getNativeConnectionProvider();
+
+        myLocalDatacenter = builder.getLocalDatacenter();
 
         verifySchemasExists();
         myCacheExpiryTimeInSeconds = builder.getCacheExpiryTimeInSecond();
@@ -177,10 +180,10 @@ public final class CASLockFactory implements LockFactory, Closeable
     }
 
     @Override
-    public Map<String, String> getLockMetadata(final String dataCenter, final String resource) throws LockException
+    public Map<String, String> getLockMetadata(final String resource) throws LockException
     {
         ResultSet resultSet = myCasLockStatement.execute(
-                dataCenter, myCasLockStatement.getLockMetadataStatement().bind(resource));
+                myCasLockStatement.getLockMetadataStatement().bind(resource));
 
         Row row = resultSet.one();
 
@@ -195,11 +198,11 @@ public final class CASLockFactory implements LockFactory, Closeable
     }
 
     @Override
-    public boolean sufficientNodesForLocking(final String dataCenter, final String resource)
+    public boolean sufficientNodesForLocking(final String resource)
     {
         try
         {
-            Set<Node> nodes = getNodesForResource(dataCenter, resource);
+            Set<Node> nodes = getNodesForResource(resource);
 
             int quorum = nodes.size() / 2 + 1;
             int liveNodes = liveNodes(nodes);
@@ -278,12 +281,12 @@ public final class CASLockFactory implements LockFactory, Closeable
     {
         LOG.trace("Trying lock for {} - {}", dataCenter, resource);
 
-        if (!sufficientNodesForLocking(dataCenter, resource))
+        if (!sufficientNodesForLocking(resource))
         {
-            LOG.warn("Not sufficient nodes to lock resource {} in datacenter {}", resource, dataCenter);
+            LOG.warn("Not sufficient nodes to lock resource {}", resource);
             throw new LockException("Not sufficient nodes to lock");
         }
-        CASLock casLock = new CASLock(dataCenter, resource, priority, metadata, nodeId, myCasLockStatement); // NOSONAR
+        CASLock casLock = new CASLock(resource, priority, metadata, nodeId, myCasLockStatement); // NOSONAR
         if (casLock.lock())
         {
             return casLock;
@@ -294,8 +297,7 @@ public final class CASLockFactory implements LockFactory, Closeable
         }
     }
 
-    private Set<Node> getNodesForResource(final String dataCenter,
-                                          final String resource) throws UnsupportedEncodingException
+    private Set<Node> getNodesForResource(final String resource) throws UnsupportedEncodingException
     {
         Set<Node> dataCenterNodes = new HashSet<>();
 
@@ -305,7 +307,7 @@ public final class CASLockFactory implements LockFactory, Closeable
         Set<Node> nodes = tokenMap.getReplicas(
                 myCasLockProperties.getKeyspaceName(), ByteBuffer.wrap(resource.getBytes("UTF-8")));
 
-        if (dataCenter != null)
+        if (myCasLockProperties.getSerialConsistencyLevel() == ConsistencyLevel.LOCAL_SERIAL)
         {
             Iterator<Node> iterator = nodes.iterator();
 
@@ -313,7 +315,7 @@ public final class CASLockFactory implements LockFactory, Closeable
             {
                 Node node = iterator.next();
 
-                if (dataCenter.equals(node.getDatacenter()))
+                if (myLocalDatacenter.equals(node.getDatacenter()))
                 {
                     dataCenterNodes.add(node);
                 }

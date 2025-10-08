@@ -99,7 +99,7 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
         myLockFactory = CASLockFactory.builder()
                 .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withHostStates(myHostStates)
-                .withConsistencySerial(ConsistencyType.DEFAULT)
+                .withConsistencySerial(ConsistencyType.SERIAL)
                 .build();
 
         List<UUID> localNodeIdList = Collections.singletonList(myLocalHost.getHostId());

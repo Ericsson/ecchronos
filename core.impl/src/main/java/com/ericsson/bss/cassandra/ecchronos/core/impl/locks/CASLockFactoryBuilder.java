@@ -26,13 +26,14 @@ public class CASLockFactoryBuilder
 {
     private static final String DEFAULT_KEYSPACE_NAME = "ecchronos";
     private static final long DEFAULT_EXPIRY_TIME_IN_SECONDS = 30L;
-    private static final ConsistencyType DEFAULT_CONSISTENCY_SERIAL = ConsistencyType.DEFAULT;
+    private static final ConsistencyType DEFAULT_CONSISTENCY_SERIAL = ConsistencyType.SERIAL;
 
     private DistributedNativeConnectionProvider myNativeConnectionProvider;
     private HostStates myHostStates;
     private String myKeyspaceName = DEFAULT_KEYSPACE_NAME;
     private long myCacheExpiryTimeInSeconds = DEFAULT_EXPIRY_TIME_IN_SECONDS;
     private ConsistencyType myConsistencyType = DEFAULT_CONSISTENCY_SERIAL;
+    private String myLocalDatacenter = "datacenter1";
 
     public final CASLockFactoryBuilder withNativeConnectionProvider(final DistributedNativeConnectionProvider nativeConnectionProvider)
     {
@@ -102,5 +103,16 @@ public class CASLockFactoryBuilder
     public final ConsistencyType getConsistencyType()
     {
         return myConsistencyType;
+    }
+
+    public final CASLockFactoryBuilder withLocalDatacenter(final String localDatacenter)
+    {
+        myLocalDatacenter = localDatacenter;
+        return this;
+    }
+
+    public final String getLocalDatacenter()
+    {
+        return myLocalDatacenter;
     }
 }

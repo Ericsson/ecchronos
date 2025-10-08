@@ -102,6 +102,7 @@ public class ECChronosInternals implements Closeable
                 .withKeyspaceName(casLockFactoryConfig.getKeyspaceName())
                 .withCacheExpiryInSeconds(casLockFactoryConfig.getFailureCacheExpiryTimeInSeconds())
                 .withConsistencySerial(casLockFactoryConfig.getConsistencySerial())
+                .withLocalDatacenter(configuration.getConnectionConfig().getCqlConnection().getAgentConnectionConfig().getLocalDatacenter())
                 .build();
 
         myScheduleManagerImpl = ScheduleManagerImpl.builder()

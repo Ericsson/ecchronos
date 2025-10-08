@@ -48,29 +48,22 @@ public interface LockFactory
     /**
      * Get the metadata of a resource lock.
      *
-     * @param dataCenter
-     *            The data center the lock belongs to or null if it's a global lock.
-     * @param resource
-     *            The data center resource:
-     *             i.e "RepairResource-DC1-1".
+     * @param resource The data center resource:
+     *                 i.e "RepairResource-DC1-1".
      * @return The metadata of the lock
-     *          containing keyspace and table to repair.
+     * containing keyspace and table to repair.
      * @throws LockException If an error occurs while trying to acquire the lock.
      */
-    Map<String, String> getLockMetadata(String dataCenter, String resource) throws LockException;
+    Map<String, String> getLockMetadata(String resource) throws LockException;
 
     /**
      * Checks if local_quorum is met.
      *
-     * @param dataCenter
-     *            The data center the lock belongs to or null if it's a global lock.
-     * @param resource
-     *            The data center resource.
-     *             i.e "RepairResource-DC1-1".
-     * @return boolean
-     *            Indicates if local_quorum is met.
+     * @param resource The data center resource.
+     *                 i.e "RepairResource-DC1-1".
+     * @return boolean Indicates if local_quorum is met.
      */
-    boolean sufficientNodesForLocking(String dataCenter, String resource);
+    boolean sufficientNodesForLocking(String resource);
 
     /**
      * Utility method to return a cached lock exception if one is available.

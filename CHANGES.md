@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Remove DatacenterAwarePolicy - Issue #1128
 * Run Repair --all Fails With "Repair Request Failed" in DatacenterAware Mode - Issue #1158
 * Separate Lock Failure Cache by Node to Prevent Cross-Node Lock Blocking - Issue #1159
 * On-demand repair jobs in multi-agent environments may be executed by the wrong agent - Issue #1146

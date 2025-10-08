@@ -49,6 +49,7 @@ public class DistributedJmxBuilder
     private static final String JMX_JOLOKIA_FORMAT_URL = "service:jmx:jolokia://%s:%d/jolokia/";
     private static final int DEFAULT_JOLOKIA_PORT = 8778;
     private static final int DEFAULT_PORT = 7199;
+    public static final String NO_BROADCAST_ADDRESS = "0.0.0.0"; //NOPMD AvoidUsingHardCodedIP
 
     private CqlSession mySession;
     private DistributedNativeConnectionProvider myNativeConnectionProvider;
@@ -177,7 +178,10 @@ public class DistributedJmxBuilder
         try
         {
             String host = node.getBroadcastRpcAddress().get().getHostString();
-            // For local node with 0.0.0.0, use the listen address
+            if (NO_BROADCAST_ADDRESS.equals(host))
+            {
+                host = node.getListenAddress().get().getHostString();
+            }
             JMXServiceURL jmxUrl;
             Integer port;
             JMXConnector jmxConnector;
@@ -292,25 +296,32 @@ public class DistributedJmxBuilder
 
     private Integer getJMXPort(final Node node)
     {
-        SimpleStatement simpleStatement = SimpleStatement
-                .builder("SELECT value FROM system_views.system_properties WHERE name = 'cassandra.jmx.remote.port';")
-                .setNode(node)
-                .build();
-        Row row = mySession.execute(simpleStatement).one();
-        if ((row == null) || (row.getString("value") == null))
+        try
         {
-            simpleStatement = SimpleStatement
-                    .builder("SELECT value FROM system_views.system_properties WHERE name = 'cassandra.jmx.local.port';")
+            SimpleStatement simpleStatement = SimpleStatement
+                    .builder("SELECT value FROM system_views.system_properties WHERE name = 'cassandra.jmx.remote.port';")
                     .setNode(node)
                     .build();
-            row = mySession.execute(simpleStatement).one();
+            Row row = mySession.execute(simpleStatement).one();
+            if ((row == null) || (row.getString("value") == null))
+            {
+                simpleStatement = SimpleStatement
+                        .builder("SELECT value FROM system_views.system_properties WHERE name = 'cassandra.jmx.local.port';")
+                        .setNode(node)
+                        .build();
+                row = mySession.execute(simpleStatement).one();
 
+            }
+            if ((row != null) && (row.getString("value") != null))
+            {
+                return Integer.parseInt(Objects.requireNonNull(row.getString("value")));
+            }
+            else
+            {
+                return DEFAULT_PORT;
+            }
         }
-        if ((row != null) && (row.getString("value") != null))
-        {
-            return Integer.parseInt(Objects.requireNonNull(row.getString("value")));
-        }
-        else
+        catch (AllNodesFailedException e)
         {
             return DEFAULT_PORT;
         }
