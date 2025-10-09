@@ -46,6 +46,11 @@ connection:
             port: 9042
           - host: 127.0.0.4
             port: 9042
+      retryPolicy:
+        maxAttempts: 10
+        delay: 10
+        maxDelay: 35
+        unit: minutes
     provider: com.ericsson.bss.cassandra.ecchronos.application.providers.AgentNativeConnectionProvider
     connectionDelay:
       time: 45

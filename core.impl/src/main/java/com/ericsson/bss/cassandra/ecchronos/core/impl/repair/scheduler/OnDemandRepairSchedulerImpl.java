@@ -157,8 +157,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
     public List<OnDemandRepairJobView> scheduleClusterWideJob(final TableReference tableReference,
                                                               final RepairType repairType) throws EcChronosException
     {
-        List<Node> availableNodes = myOnDemandStatus.getNodes();
-        for (Node node : availableNodes)
+        for (Node node : myOnDemandStatus.getNodes().values())
         {
             scheduleJob(tableReference, true, repairType, node.getHostId());
         }
@@ -361,11 +360,14 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
 
     private Node getNodeByHostId(final UUID hostId)
     {
-        return myOnDemandStatus.getNodes()
-                .stream()
-                .filter(node -> node.getHostId().equals(hostId))
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("No node found with host ID: " + hostId));
+        try
+        {
+            return myOnDemandStatus.getNodes().get(hostId);
+        }
+        catch (NoSuchElementException e)
+        {
+            throw new NoSuchElementException("No node found with host ID: " + hostId);
+        }
     }
     @Override
     public RepairConfiguration getRepairConfiguration()

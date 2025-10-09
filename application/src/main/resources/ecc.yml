@@ -89,6 +89,18 @@ connection:
             port: 9042
           - host: 127.0.0.4
             port: 9042
+      retryPolicy:
+        ## Max number of attempts ecChronos will try to connect with Cassandra.
+        maxAttempts: 5
+        ## Delay use to wait between an attempt and another, this value will be multiplied by the current attempt count powered by two.
+        ## If the current attempt is 4 and the default delay is 5 seconds, so ((4(attempt) x 2) x 5(default delay)) = 40 seconds.
+        ## If the calculated delay is greater than maxDelay, maxDelay will be used instead of the calculated delay.
+        delay: 5
+        ## Maximum delay before the next connection attempt is made.
+        ## Setting it as 0 will disable maxDelay and the delay interval will
+        ## be calculated based on the attempt count and the default delay.
+        maxDelay: 30
+        unit: seconds
     ##
     ## The class used to provide CQL connections to Apache Cassandra.
     ## The default provider will be used unless another is specified.

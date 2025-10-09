@@ -56,11 +56,7 @@ public final class OngoingJob
         myOnDemandStatus = builder.myOnDemandStatus;
         myJobId = builder.myJobId == null ? UUID.randomUUID() : builder.myJobId;
         myHostId = builder.myHostId;
-        myCurrentNode = myOnDemandStatus.getNodes()
-                .stream()
-                .filter(node -> myHostId.equals(node.getHostId()))
-                .findFirst()
-                .get();
+        myCurrentNode = myOnDemandStatus.getNodes().get(myHostId);
         myTableReference = builder.myTableReference;
         myReplicationState = builder.myReplicationState;
         myTokens = myReplicationState.getTokenRangeToReplicas(myTableReference, myCurrentNode);

@@ -35,6 +35,7 @@ public final class AgentConnectionConfig
     private RackAware myRackAware = new RackAware();
     private HostAware myHostAware = new HostAware();
     private String myInstanceName;
+    private CQLRetryPolicyConfig myCqlRetryPolicy = new CQLRetryPolicyConfig();
 
     /**
      * Default constructor for AgentConnectionConfig.
@@ -232,6 +233,29 @@ public final class AgentConnectionConfig
     public HostAware getHostAware()
     {
         return myHostAware;
+    }
+
+    /**
+     * Gets the retry policy configuration.
+     *
+     * @return the retry policy configuration.
+     */
+    @JsonProperty("retryPolicy")
+    public CQLRetryPolicyConfig getCqlRetryPolicy()
+    {
+        return myCqlRetryPolicy;
+    }
+
+    /**
+     * Sets the retry policy configuration.
+     *
+     * @param cqlRetryPolicyConfig
+     *         the retry policy configuration to set.
+     */
+    @JsonProperty("retryPolicy")
+    public void setCqlRetryPolicy(final CQLRetryPolicyConfig cqlRetryPolicyConfig)
+    {
+        myCqlRetryPolicy = cqlRetryPolicyConfig;
     }
 
     /**
