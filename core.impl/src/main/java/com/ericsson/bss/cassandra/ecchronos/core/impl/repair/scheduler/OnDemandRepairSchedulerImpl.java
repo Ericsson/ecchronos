@@ -360,14 +360,12 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
 
     private Node getNodeByHostId(final UUID hostId)
     {
-        try
-        {
-            return myOnDemandStatus.getNodes().get(hostId);
-        }
-        catch (NoSuchElementException e)
+        Node node = myOnDemandStatus.getNodes().get(hostId);
+        if (node == null)
         {
             throw new NoSuchElementException("No node found with host ID: " + hostId);
         }
+        return node;
     }
     @Override
     public RepairConfiguration getRepairConfiguration()
