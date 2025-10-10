@@ -105,13 +105,15 @@ public class TestOnDemandRepairSchedulerImpl
     @Before
     public void setup()
     {
+        Map<UUID, Node> mockMap = new HashMap<>();
+        mockMap.put(myNodeId, myNode);
         when(session.getMetadata()).thenReturn(metadata);
         when(myOngingJob.getTableReference()).thenReturn(TABLE_REFERENCE);
         when(myOngingJob.getHostId()).thenReturn(myNodeId);
         when(myOngingJob.getJobId()).thenReturn(UUID.randomUUID());
         when(myNode.getHostId()).thenReturn(myNodeId);
         when(myOngingJob.getRepairType()).thenReturn(RepairType.VNODE);
-        when(myOnDemandStatus.getNodes()).thenReturn(Arrays.asList(myNode));
+        when(myOnDemandStatus.getNodes()).thenReturn(mockMap);
     }
 
     @Test

@@ -34,9 +34,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,7 +74,6 @@ public final class OnDemandStatus
     private static final String COMPLETED_TIME_COLUMN_NAME = "completed_time";
 
     private final CqlSession mySession;
-    private final List<Node> myNodeList;
     private final UserDefinedType myUDTTokenType;
     private final UserDefinedType myUDTTableReferenceType;
     private final PreparedStatement myGetStatusStatement;
@@ -86,6 +83,8 @@ public final class OnDemandStatus
     private final PreparedStatement myUpdateJobToFailedStatement;
     private final TableReferenceFactory myTableReferenceFactory;
 
+    private final DistributedNativeConnectionProvider myNativeConnectionProvider;
+
     /**
      * Constructor.
      *
@@ -93,8 +92,8 @@ public final class OnDemandStatus
      */
     public OnDemandStatus(final DistributedNativeConnectionProvider nativeConnectionProvider)
     {
+        myNativeConnectionProvider = nativeConnectionProvider;
         mySession = nativeConnectionProvider.getCqlSession();
-        myNodeList = new ArrayList<>(nativeConnectionProvider.getNodes().values());
         myTableReferenceFactory = new TableReferenceFactoryImpl(mySession);
         myUDTTokenType = mySession.getMetadata()
                 .getKeyspace(KEYSPACE_NAME)
@@ -155,9 +154,9 @@ public final class OnDemandStatus
         myUpdateJobToFailedStatement = mySession.prepare(updateJobToFailedStatement);
     }
 
-    public List<Node> getNodes()
+    public Map<UUID, Node> getNodes()
     {
-        return Collections.unmodifiableList(myNodeList);
+        return myNativeConnectionProvider.getNodes();
     }
 
     /**
@@ -177,7 +176,7 @@ public final class OnDemandStatus
     public Map<UUID, Set<OngoingJob>> getOngoingStartedJobsForAllNodes(final ReplicationState replicationState)
     {
         Map<UUID, Set<OngoingJob>> allOngoingJobs = new HashMap<>();
-        for (Node node : getNodes())
+        for (Node node : getNodes().values())
         {
             Set<OngoingJob> ongoingJobs = processResultSet(replicationState, node.getHostId());
             allOngoingJobs.put(node.getHostId(), ongoingJobs);
@@ -240,7 +239,7 @@ public final class OnDemandStatus
     {
         NodeResolver nodeResolver = new NodeResolverImpl(mySession);
         Set<OngoingJob> ongoingJobs = new HashSet<>();
-        for (Node node : getNodes())
+        for (Node node : getNodes().values())
         {
             ReplicationState replState = new ReplicationStateImpl(nodeResolver, mySession);
             ongoingJobs.addAll(getAllJobsForHost(replState, node.getHostId()));
@@ -302,7 +301,7 @@ public final class OnDemandStatus
                                   final UUID hostId)
     {
         // Only process jobs for nodes that exist in our node list (prevents OngoingJob constructor failure)
-        boolean nodeExistsInList = myNodeList.stream().anyMatch(node -> node.getHostId().equals(hostId));
+        boolean nodeExistsInList = getNodes().containsKey(hostId);
         if (!nodeExistsInList)
         {
             LOG.info("Skipping repair job for node {} as it's not in our node list", hostId);

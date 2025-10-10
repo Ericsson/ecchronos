@@ -330,5 +330,16 @@ public class TestConfig
         assertThat(threadPoolTaskConfig.getQueueCapacity()).isEqualTo(10);
         assertThat(threadPoolTaskConfig.getKeepAliveSeconds()).isEqualTo(30);
     }
+
+    @Test
+    public void testCqlRetryPoliceConfig()
+    {
+        CQLRetryPolicyConfig cqlRetryPolicyConfig = config.getConnectionConfig().getCqlConnection().getAgentConnectionConfig().getCqlRetryPolicy();
+        assertNotNull(cqlRetryPolicyConfig);
+        assertThat(cqlRetryPolicyConfig.getMaxAttempts()).isEqualTo(10);
+        assertThat(cqlRetryPolicyConfig.getUnit()).isEqualTo(TimeUnit.MINUTES);
+        assertThat(cqlRetryPolicyConfig.getDelay()).isEqualTo(600000);
+        assertThat(cqlRetryPolicyConfig.getMaxDelay()).isEqualTo(2100000);
+    }
 }
 

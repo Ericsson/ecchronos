@@ -21,6 +21,7 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.AgentConnectionConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.connection.CQLRetryPolicyConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.ReloadingAuthProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
@@ -29,10 +30,12 @@ import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.Distributed
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedNativeConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.RetryPolicyException;
+
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -72,6 +75,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
         AgentConnectionConfig agentConnectionConfig = config.getConnectionConfig()
                 .getCqlConnection()
                 .getAgentConnectionConfig();
+        CQLRetryPolicyConfig retryPolicyConfig = agentConnectionConfig.getCqlRetryPolicy();
         Security.CqlSecurity cqlSecurity = cqlSecuritySupplier.get();
         boolean authEnabled = cqlSecurity.getCqlCredentials().isEnabled();
         boolean tlsEnabled = cqlSecurity.getCqlTlsConfig().isEnabled();
@@ -99,7 +103,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
         LOG.info("Preparing Agent Connection Config");
         nativeConnectionBuilder = resolveAgentProviderBuilder(nativeConnectionBuilder, agentConnectionConfig);
         LOG.info("Establishing Connection With Nodes");
-        myDistributedNativeConnectionProviderImpl = tryEstablishConnection(nativeConnectionBuilder);
+        myDistributedNativeConnectionProviderImpl = establishConnection(nativeConnectionBuilder, retryPolicyConfig);
     }
 
     /**
@@ -213,6 +217,54 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
         }
         return resolvedHosts;
     }
+
+    public final DistributedNativeConnectionProviderImpl establishConnection(
+        final DistributedNativeBuilder builder,
+        final CQLRetryPolicyConfig retryPolicy)
+    {
+        for (int attempt = 1; attempt <= retryPolicy.getMaxAttempts(); attempt++)
+        {
+            try
+            {
+                return tryEstablishConnection(builder);
+            }
+            catch (AllNodesFailedException | IllegalStateException e)
+            {
+                handleRetry(attempt, retryPolicy);
+            }
+        }
+        throw new RetryPolicyException("Failed to establish connection after all retry attempts.");
+    }
+
+
+    private static void handleRetry(
+        final int attempt,
+        final CQLRetryPolicyConfig retryPolicy)
+    {
+        LOG.warn("Unable to create CQLSession.");
+        long delay = retryPolicy.currentDelay(attempt);
+
+        if (attempt == retryPolicy.getMaxAttempts())
+        {
+            LOG.error("All connection attempts failed ({} were made)!", attempt);
+        }
+        else
+        {
+            LOG.warn("Connection attempt {} of {} failed. Retrying in {} seconds.",
+                    attempt,
+                    retryPolicy.getMaxAttempts(),
+                    TimeUnit.MILLISECONDS.toSeconds(delay));
+            try
+            {
+                Thread.sleep(delay);
+            }
+            catch (InterruptedException e)
+            {
+                LOG.error("Exception caught during the delay time, while trying to reconnect to Cassandra.", e);
+            }
+        }
+    }
+
 
     /**
      * Attempts to establish a connection to Cassandra nodes using the provided builder. This method handles exceptions
