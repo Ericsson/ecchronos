@@ -35,7 +35,8 @@ public class RepairStateImpl implements RepairState
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairStateImpl.class);
 
-    private static final DateTimeFormatter MY_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.US);
+    private static final DateTimeFormatter MY_DATE_FORMAT = DateTimeFormatter.ofPattern(
+            "yyyy-MM-dd HH:mm:ss", Locale.US);
 
     private final AtomicReference<RepairStateSnapshot> myRepairStateSnapshot = new AtomicReference<>();
 
