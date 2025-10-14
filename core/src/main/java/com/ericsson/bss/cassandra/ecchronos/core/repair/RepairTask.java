@@ -140,7 +140,7 @@ public abstract class RepairTask implements NotificationListener
                 }
                 LOG.debug("{} completed successfully", this);
             }
-            catch (InterruptedException e) // NOPMD Rule:ExceptionAsFlowControl
+            catch (InterruptedException e)
             {
                 LOG.warn("{} was interrupted", this, e);
                 Thread.currentThread().interrupt();
