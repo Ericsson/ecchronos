@@ -23,18 +23,19 @@ import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class RepairStateImpl implements RepairState
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairStateImpl.class);
 
-    private static final ThreadLocal<SimpleDateFormat> MY_DATE_FORMAT
-            = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US));
+    private static final DateTimeFormatter MY_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.US);
 
     private final AtomicReference<RepairStateSnapshot> myRepairStateSnapshot = new AtomicReference<>();
 
@@ -178,7 +179,10 @@ public class RepairStateImpl implements RepairState
                 next -= old.getEstimatedRepairTime();
             }
             LOG.debug("Table {} fully repaired at {}, next repair at/after {}", myTableReference,
-                    MY_DATE_FORMAT.get().format(new Date(repairedAt)), MY_DATE_FORMAT.get().format(new Date(next)));
+                    LocalDateTime.ofEpochSecond(TimeUnit.MILLISECONDS.toSeconds(repairedAt), 0,
+                            ZoneOffset.ofHours(0)).format(MY_DATE_FORMAT),
+                    LocalDateTime.ofEpochSecond(TimeUnit.MILLISECONDS.toSeconds(next), 0,
+                            ZoneOffset.ofHours(0)).format(MY_DATE_FORMAT));
         }
         return repairedAt;
     }
@@ -195,7 +199,10 @@ public class RepairStateImpl implements RepairState
                 next -= old.getEstimatedRepairTime();
             }
             LOG.debug("Table {} partially repaired at {}, next repair at/after {}", myTableReference,
-                    MY_DATE_FORMAT.get().format(new Date(repairedAt)), MY_DATE_FORMAT.get().format(new Date(next)));
+                    LocalDateTime.ofEpochSecond(TimeUnit.MILLISECONDS.toSeconds(repairedAt), 0,
+                            ZoneOffset.ofHours(0)).format(MY_DATE_FORMAT),
+                    LocalDateTime.ofEpochSecond(TimeUnit.MILLISECONDS.toSeconds(next), 0,
+                            ZoneOffset.ofHours(0)).format(MY_DATE_FORMAT));
         }
 
         return repairedAt;
@@ -208,7 +215,8 @@ public class RepairStateImpl implements RepairState
         long assumedRepairedAt = System.currentTimeMillis() - runIntervalInMs + initialDelayInMs;
         LOG.info("Assuming the table {} is new. Next repair will occur at {}.",
                 myTableReference,
-                MY_DATE_FORMAT.get().format(new Date(assumedRepairedAt + runIntervalInMs)));
+                LocalDateTime.ofEpochSecond(TimeUnit.MILLISECONDS.toSeconds(assumedRepairedAt + runIntervalInMs), 0,
+                        ZoneOffset.ofHours(0)).format(MY_DATE_FORMAT));
         return assumedRepairedAt;
     }
 

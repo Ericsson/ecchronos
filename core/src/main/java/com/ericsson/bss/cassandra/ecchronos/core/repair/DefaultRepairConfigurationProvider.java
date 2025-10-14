@@ -202,7 +202,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         }
     }
 
-    private void allTableOperation(final String keyspaceName, final Consumer<TableReference> consumer)
+    private void allTableOperation(final String keyspaceName, final Consumer<TableReference> consumer) // NOPMD Rule:UnusedPrivateMethod
     {
         for (TableMetadata tableMetadata : Metadata.getKeyspace(mySession, keyspaceName).get().getTables().values())
         {
