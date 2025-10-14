@@ -119,11 +119,13 @@ class CASLock implements DistributedLock, Runnable
 
             if (failedAttempts >= myCasLockStatement.getCasLockFactoryCacheContext().failedLockRetryAttempts())
             {
-                LOG.error("Unable to re-lock resource '{}' after {} failed attempts", myResource, failedAttempts);
+                LOG.error("Unable to re-lock resource '{}' after {} failed attempts - {}",
+                        myResource, failedAttempts, e.getMessage());
             }
             else
             {
-                LOG.warn("Unable to re-lock resource '{}', {} failed attempts", myResource, failedAttempts, e);
+                LOG.warn("Unable to re-lock resource '{}', {} failed attempts - {}",
+                        myResource, failedAttempts, e.getMessage());
             }
         }
     }

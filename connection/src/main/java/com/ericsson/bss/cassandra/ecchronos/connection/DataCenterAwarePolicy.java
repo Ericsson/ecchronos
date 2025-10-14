@@ -193,7 +193,8 @@ public class DataCenterAwarePolicy extends DefaultLoadBalancingPolicy
         while (remainingLocal > 0)
         {
             remainingLocal--;
-            int count = index++ % nodes.size();
+            int count = index % nodes.size();
+            index++;
             if (count < 0)
             {
                 count += nodes.size();

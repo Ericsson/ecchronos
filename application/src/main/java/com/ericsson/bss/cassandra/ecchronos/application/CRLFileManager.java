@@ -125,7 +125,9 @@ public final class CRLFileManager
 
     public int increaseAttempts()
     {
-        return myAttempt++;
+        int attempt = myAttempt;
+        myAttempt++;
+        return attempt;
     }
 
     public boolean hasMoreAttempts()
