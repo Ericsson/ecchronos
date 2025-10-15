@@ -77,10 +77,10 @@ public final class CustomCRLValidator
                 }
 
                 // Also, verify the CRL is actually current
-                Date next = x509Crl.getNextUpdate();
+                Date next = x509Crl.getNextUpdate(); // NOPMD Rule:ReplaceJavaUtilDate
                 if (next != null)
                 {
-                    if (next.before(new Date()))
+                    if (next.before(new Date())) // NOPMD Rule:ReplaceJavaUtilDate
                     {
                         LOG.debug("CRL for issuer {} is expired", ((X509CRL) crl).getIssuerX500Principal().getName());
                         return CRLState.INVALID;
