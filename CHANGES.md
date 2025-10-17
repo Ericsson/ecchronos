@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Resolve initial contact points at each connection attemt - Issue #1178
 * Remove DatacenterAwarePolicy - Issue #1128
 * Run Repair --all Fails With "Repair Request Failed" in DatacenterAware Mode - Issue #1158
 * Separate Lock Failure Cache by Node to Prevent Cross-Node Lock Blocking - Issue #1159
