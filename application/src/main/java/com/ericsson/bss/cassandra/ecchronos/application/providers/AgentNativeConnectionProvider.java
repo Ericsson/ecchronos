@@ -156,7 +156,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
         List<InetSocketAddress> resolvedContactPoints = new ArrayList<>();
         for (AgentConnectionConfig.Host host : contactPoints.values())
         {
-            InetSocketAddress tmpAddress = new InetSocketAddress(host.getHost(), host.getPort());
+            InetSocketAddress tmpAddress = InetSocketAddress.createUnresolved(host.getHost(), host.getPort());
             resolvedContactPoints.add(tmpAddress);
         }
         return resolvedContactPoints;

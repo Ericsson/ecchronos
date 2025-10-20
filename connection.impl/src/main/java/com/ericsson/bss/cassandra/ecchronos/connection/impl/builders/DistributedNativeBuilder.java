@@ -368,12 +368,29 @@ public class DistributedNativeBuilder
     private static CqlSessionBuilder fromBuilder(final DistributedNativeBuilder builder)
     {
         return CqlSession.builder()
-                .addContactPoints(builder.myInitialContactPoints)
+                .addContactPoints(resolveIfNeeded(builder.myInitialContactPoints))
                 .withLocalDatacenter(builder.myLocalDatacenter)
                 .withAuthProvider(builder.myAuthProvider)
                 .withSslEngineFactory(builder.mySslEngineFactory)
                 .withSchemaChangeListener(builder.mySchemaChangeListener)
                 .withNodeStateListener(builder.myNodeStateListener);
+    }
+
+    private static Collection<InetSocketAddress> resolveIfNeeded(final List<InetSocketAddress> initialContactPoints)
+    {
+        List<InetSocketAddress> resolvedContactPoints = new ArrayList<>();
+        for (InetSocketAddress address : initialContactPoints)
+        {
+            if (address.isUnresolved())
+            {
+                resolvedContactPoints.add(new InetSocketAddress(address.getHostString(), address.getPort()));
+            }
+            else
+            {
+                resolvedContactPoints.add(address);
+            }
+        }
+        return resolvedContactPoints;
     }
 
     /**
