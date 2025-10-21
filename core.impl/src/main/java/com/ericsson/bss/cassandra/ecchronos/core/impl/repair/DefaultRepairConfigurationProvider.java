@@ -363,7 +363,8 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     @Override
     public void onAdd(final Node node)
     {
-        if (myAgentNativeConnectionProvider == null  || myAgentNativeConnectionProvider.confirmNodeValid(node)) {
+        if (myAgentNativeConnectionProvider == null  || myAgentNativeConnectionProvider.confirmNodeValid(node))
+        {
             LOG.info("Node added {}", node.getHostId());
 
             NodeAddedAction callable = new NodeAddedAction(myEccNodesSync, myJmxConnectionProvider, myAgentNativeConnectionProvider, node);
@@ -381,7 +382,8 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     @Override
     public void onRemove(final Node node)
     {
-        if (myAgentNativeConnectionProvider == null  || myAgentNativeConnectionProvider.confirmNodeValid(node)) {
+        if (myAgentNativeConnectionProvider == null  || myAgentNativeConnectionProvider.confirmNodeValid(node))
+        {
             LOG.info("Node removed {}", node.getHostId());
             NodeRemovedAction callable = new NodeRemovedAction(myEccNodesSync, myJmxConnectionProvider, myAgentNativeConnectionProvider, node);
             myService.submit(callable);
