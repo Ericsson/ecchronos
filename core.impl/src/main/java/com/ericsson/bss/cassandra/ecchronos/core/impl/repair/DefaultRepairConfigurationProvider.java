@@ -369,7 +369,8 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
 
             NodeAddedAction callable = new NodeAddedAction(myEccNodesSync, myJmxConnectionProvider, myAgentNativeConnectionProvider, node);
             myService.submit(callable);
-            if (myWorkerManager != null) {
+            if (myWorkerManager != null)
+            {
                 myWorkerManager.addNode(node);
             }
         }
@@ -387,7 +388,8 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
             LOG.info("Node removed {}", node.getHostId());
             NodeRemovedAction callable = new NodeRemovedAction(myEccNodesSync, myJmxConnectionProvider, myAgentNativeConnectionProvider, node);
             myService.submit(callable);
-            if (myWorkerManager != null) {
+            if (myWorkerManager != null)
+            {
                 myWorkerManager.removeNode(node);
             }
         }
