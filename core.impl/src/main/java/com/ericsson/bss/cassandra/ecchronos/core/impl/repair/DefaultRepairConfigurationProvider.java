@@ -363,12 +363,16 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     @Override
     public void onAdd(final Node node)
     {
-        LOG.info("Node added {}", node.getHostId());
-        NodeAddedAction callable = new NodeAddedAction(myEccNodesSync, myJmxConnectionProvider, myAgentNativeConnectionProvider, node);
-        myService.submit(callable);
-        if (myWorkerManager != null)
+        if (myAgentNativeConnectionProvider == null  || myAgentNativeConnectionProvider.confirmNodeValid(node))
         {
-            myWorkerManager.addNode(node);
+            LOG.info("Node added {}", node.getHostId());
+
+            NodeAddedAction callable = new NodeAddedAction(myEccNodesSync, myJmxConnectionProvider, myAgentNativeConnectionProvider, node);
+            myService.submit(callable);
+            if (myWorkerManager != null)
+            {
+                myWorkerManager.addNode(node);
+            }
         }
     }
 
@@ -379,12 +383,15 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     @Override
     public void onRemove(final Node node)
     {
-        LOG.info("Node removed {}", node.getHostId());
-        NodeRemovedAction callable = new NodeRemovedAction(myEccNodesSync, myJmxConnectionProvider, myAgentNativeConnectionProvider, node);
-        myService.submit(callable);
-        if (myWorkerManager != null)
+        if (myAgentNativeConnectionProvider == null  || myAgentNativeConnectionProvider.confirmNodeValid(node))
         {
-            myWorkerManager.removeNode(node);
+            LOG.info("Node removed {}", node.getHostId());
+            NodeRemovedAction callable = new NodeRemovedAction(myEccNodesSync, myJmxConnectionProvider, myAgentNativeConnectionProvider, node);
+            myService.submit(callable);
+            if (myWorkerManager != null)
+            {
+                myWorkerManager.removeNode(node);
+            }
         }
     }
 
