@@ -125,7 +125,7 @@ openssl req -newkey rsa:2048 -nodes -subj "/C=TE/ST=TEST/L=TEST/O=TEST/OU=TEST/C
 # Sign server certificate
 openssl x509 -req -sha256 -days 1\
  -in "$SERVER_CSR" -out "$SERVER_CERT"\
- -extfile <(printf "subjectAltName=DNS:localhost")\
+ -extfile <(printf "subjectAltName=DNS:localhost\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth")\
  -CA "$SERVER_CA" -CAkey "$SERVER_CA_KEY" -CAcreateserial
 
 ## Convert server key/certificate to PKCS12 format
@@ -157,4 +157,5 @@ openssl req -newkey rsa:2048 -nodes -subj "/C=TE/ST=TEST/L=TEST/O=TEST/OU=TEST/C
 # Sign ecctool certificate
 openssl x509 -req -sha256 -days 1\
  -in "$ECCTOOL_CLIENT_CSR" -out "$ECCTOOL_CLIENT_CERT"\
+ -extfile <(printf "keyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage=clientAuth")\
  -CA "$ECCTOOL_CLIENT_CA" -CAkey "$ECCTOOL_CLIENT_CA_KEY" -CAcreateserial
