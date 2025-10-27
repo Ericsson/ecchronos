@@ -112,6 +112,7 @@ ECCTOOL_CLIENT_CSR="cert/client.csr"
 
 ## Generate self-signed CA (this is the CA that the client should trust ad that we should issue server certificates from)
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/C=TE/ST=TEST/L=TEST/O=TEST/OU=TEST/CN=RESTSERVERCA"\
+ -addext "keyUsage=critical,keyCertSign,cRLSign" -addext "basicConstraints=critical,CA:TRUE"\
  -keyout "$SERVER_CA_KEY" -out "$SERVER_CA"
 
 ###############################
@@ -139,6 +140,7 @@ openssl pkcs12 -export\
 
 ## Generate self-signed client CA (this is the CA that the server should trust and that we should issue client certificates from)
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/C=TE/ST=TEST/L=TEST/O=TEST/OU=TEST/CN=RESTCLIENTCA"\
+ -addext "keyUsage=critical,keyCertSign,cRLSign" -addext "basicConstraints=critical,CA:TRUE"\
  -keyout "$ECCTOOL_CLIENT_CA_KEY" -out "$ECCTOOL_CLIENT_CA"
 
 ## Import self-signed client CA certificate to server truststore
