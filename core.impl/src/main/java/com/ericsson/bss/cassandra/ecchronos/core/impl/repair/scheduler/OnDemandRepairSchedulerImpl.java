@@ -75,7 +75,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
     private final RepairConfiguration myRepairConfiguration;
     private final RepairHistory myRepairHistory;
     private final OnDemandStatus myOnDemandStatus;
-    private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
+    private final Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
 
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
             new ThreadFactoryBuilder().setNameFormat("OngoingJobsScheduler-%d").build());
