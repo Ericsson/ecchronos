@@ -276,7 +276,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 throw new ResponseStatusException(BAD_REQUEST,
                         "Table " + keyspace + "." + table + " uses TWCS");
             }
-            if ( !myOnDemandRepairScheduler.checkTableEnabled(tableReference,forceRepairDisabled))
+            if (!myOnDemandRepairScheduler.checkTableEnabled(tableReference, forceRepairDisabled))
             {
                 throw new ResponseStatusException(BAD_REQUEST,
                         "Table " + keyspace + "." + table + " is disabled");
@@ -326,7 +326,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
     {
         if (nodeID == null)
         {
-            return runForCluster(repairType, tables, forceRepairTWCS,forceRepairDisabled);
+            return runForCluster(repairType, tables, forceRepairTWCS, forceRepairDisabled);
         }
         List<OnDemandRepair> onDemandRepairs = new ArrayList<>();
         Node node = myDistributedNativeConnectionProvider.getNodes().get(nodeID);
@@ -334,7 +334,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         {
             if (!rejectForTWCS(tableReference, forceRepairTWCS) && myReplicatedTableProvider.accept(node, tableReference.getKeyspace()))
             {
-                if ( myOnDemandRepairScheduler.checkTableEnabled(tableReference,forceRepairDisabled)) {
+                if (myOnDemandRepairScheduler.checkTableEnabled(tableReference, forceRepairDisabled)) {
                     onDemandRepairs.add(new OnDemandRepair(
                             myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, nodeID)));
                 }
@@ -346,7 +346,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             final RepairType repairType,
             final Set<TableReference> tables,
             final boolean forceRepairTWCS,
-            final boolean forceRepairDisabled )
+            final boolean forceRepairDisabled)
             throws EcChronosException
     {
         List<OnDemandRepair> onDemandRepairs = new ArrayList<>();
@@ -357,7 +357,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             {
                 if (!rejectForTWCS(tableReference, forceRepairTWCS) && myReplicatedTableProvider.accept(eachNode, tableReference.getKeyspace()))
                 {
-                    if ( myOnDemandRepairScheduler.checkTableEnabled(tableReference,forceRepairDisabled))
+                    if (myOnDemandRepairScheduler.checkTableEnabled(tableReference, forceRepairDisabled))
                     {
                         onDemandRepairs.add(new OnDemandRepair(
                                 myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, eachNode.getHostId())));
