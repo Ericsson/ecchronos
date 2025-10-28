@@ -200,6 +200,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
             return job.getView();
         }
     }
+    @Override
     public boolean checkTableEnabled(final TableReference tableReference, final boolean forceRepairDisabled)
     {
         boolean enabled = true;
