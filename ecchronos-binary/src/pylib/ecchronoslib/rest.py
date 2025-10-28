@@ -227,8 +227,15 @@ class RepairSchedulerRequest(RestRequest):
         return result
 
     def post(
-        self, node_id=None, keyspace=None, table=None, repair_type="vnode", allnodes="false", force_repair_twcs="false",
-            force_repair_disabled="false"):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+        self,
+        node_id=None,
+        keyspace=None,
+        table=None,
+        repair_type="vnode",
+        allnodes="false",
+        force_repair_twcs="false",
+        force_repair_disabled="false",
+    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
         request_url = RepairSchedulerRequest.repair_run_url
         separator = "?"
         if node_id:

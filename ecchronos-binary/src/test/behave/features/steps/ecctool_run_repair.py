@@ -71,6 +71,7 @@ def step_run_twcs_repair(context, keyspace, table, repair_type):
     )
     handle_repair_output(context)
 
+
 @when("we run enabled repair for keyspace {keyspace} and table {table} with type {repair_type}")
 def step_run_enabled_repair(context, keyspace, table, repair_type):
     run_ecc_run_repair(
@@ -88,7 +89,6 @@ def step_run_enabled_repair(context, keyspace, table, repair_type):
         ],
     )
     handle_repair_output(context)
-
 
 
 @when("we run local repair for keyspace {keyspace}")
