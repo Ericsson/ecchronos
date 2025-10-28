@@ -510,7 +510,12 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
             this.repairHistory = theRepairHistory;
             return this;
         }
-
+        /**
+         * Build on demand repair scheduler with repair configuration function.
+         *
+         * @param defaultRepairConfiguration Repair configuration function.
+         * @return Builder
+         */
         public Builder withRepairConfigurationFunction(final Function<TableReference, Set<RepairConfiguration>>
                                                                          defaultRepairConfiguration)
         {
