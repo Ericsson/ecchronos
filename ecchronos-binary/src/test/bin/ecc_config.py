@@ -159,6 +159,10 @@ class EcchronosConfig:
                         "interval": {"time": 1, "unit": "days"},
                         "initial_delay": {"time": 1, "unit": "hours"},
                         "unwind_ratio": 0.1,
+                    },
+                    {
+                        "name": "table3",
+                        "enabled": False
                     }
                 ],
             },
