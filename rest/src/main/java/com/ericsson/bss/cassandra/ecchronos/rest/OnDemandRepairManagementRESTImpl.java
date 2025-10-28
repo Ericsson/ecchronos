@@ -341,10 +341,11 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         return onDemandRepairs;
     }
 
-    private boolean isRepairableTable(boolean forceRepairTWCS, boolean forceRepairDisabled, TableReference tableReference, Node node) {
-        return !rejectForTWCS(tableReference, forceRepairTWCS) &&
-                myReplicatedTableProvider.accept(node, tableReference.getKeyspace()) &&
-                myOnDemandRepairScheduler.checkTableEnabled(tableReference, forceRepairDisabled);
+    private boolean isRepairableTable(final boolean forceRepairTWCS, final boolean forceRepairDisabled, final TableReference tableReference, final Node node)
+    {
+        return !rejectForTWCS(tableReference, forceRepairTWCS)
+                && myReplicatedTableProvider.accept(node, tableReference.getKeyspace())
+                && myOnDemandRepairScheduler.checkTableEnabled(tableReference, forceRepairDisabled);
     }
 
     private List<OnDemandRepair> runForCluster(
