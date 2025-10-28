@@ -68,5 +68,5 @@ public interface OnDemandRepairScheduler
 
     RepairConfiguration getRepairConfiguration();
 
-    public boolean checkTableEnabled(final TableReference tableReference, final boolean forceRepairDisabled);
+    boolean checkTableEnabled(TableReference tableReference, boolean forceRepairDisabled);
 }
