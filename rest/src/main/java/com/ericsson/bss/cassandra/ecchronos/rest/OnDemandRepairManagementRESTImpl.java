@@ -67,6 +67,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
 
     private final ReplicatedTableProvider myReplicatedTableProvider;
 
+
     @Autowired
     private final DistributedNativeConnectionProvider myDistributedNativeConnectionProvider;
 
@@ -80,6 +81,9 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         myTableReferenceFactory = tableReferenceFactory;
         myReplicatedTableProvider = replicatedTableProvider;
         myDistributedNativeConnectionProvider = distributedNativeConnectionProvider;
+
+
+
     }
 
     @Override
@@ -140,11 +144,15 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             final boolean all,
             @RequestParam(required = false, defaultValue = "false")
             @Parameter(description = "Force repair of TWCS tables, which are normally ignored.")
-            final boolean forceRepairTWCS)
+            final boolean forceRepairTWCS,
+            @RequestParam(required = false, defaultValue = "false")
+            @Parameter(description = "Force repair of tables disabled in the schedule .")
+            final boolean forceRepairDisabled)
+
 
     {
         return ResponseEntity.ok(runOnDemandRepair(nodeID, keyspace, table, getRepairTypeOrDefault(repairType), all,
-                forceRepairTWCS));
+                forceRepairTWCS, forceRepairDisabled));
     }
 
     private RepairType getRepairTypeOrDefault(final RepairType repairType)
@@ -207,7 +215,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             final String keyspace, final String table,
             final RepairType repairType,
             final boolean all,
-            final boolean forceRepairTWCS)
+            final boolean forceRepairTWCS, final boolean forceRepairDisabled)
     {
         try
         {
@@ -219,11 +227,13 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
 
             if (keyspace != null)
             {
-                onDemandRepairs = getOnDemandRepairsForKeyspace(keyspace, table, repairType, nodeUUID, forceRepairTWCS);
+                onDemandRepairs = getOnDemandRepairsForKeyspace(keyspace, table, repairType,
+                        nodeUUID, forceRepairTWCS, forceRepairDisabled);
             }
             else
             {
-                onDemandRepairs = runLocalOrCluster(nodeUUID, repairType, myTableReferenceFactory.forCluster(), forceRepairTWCS);
+                onDemandRepairs = runLocalOrCluster(nodeUUID, repairType, myTableReferenceFactory.forCluster(),
+                        forceRepairTWCS, forceRepairDisabled);
             }
             return onDemandRepairs;
         }
@@ -249,7 +259,8 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                                                                final String table,
                                                                final RepairType repairType,
                                                                final UUID nodeUUID,
-                                                               final boolean forceRepairTWCS) throws EcChronosException
+                                                               final boolean forceRepairTWCS,
+                                                               final boolean forceRepairDisabled) throws EcChronosException
     {
         List<OnDemandRepair> onDemandRepairs;
         if (table != null)
@@ -265,13 +276,21 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 throw new ResponseStatusException(BAD_REQUEST,
                         "Table " + keyspace + "." + table + " uses TWCS");
             }
+            if ( !myOnDemandRepairScheduler.checkTableEnabled(tableReference,forceRepairDisabled))
+            {
+                throw new ResponseStatusException(BAD_REQUEST,
+                        "Table " + keyspace + "." + table + " is disabled");
+            }
+
+
             onDemandRepairs = runLocalOrCluster(nodeUUID, repairType,
-                    Collections.singleton(myTableReferenceFactory.forTable(keyspace, table)), forceRepairTWCS);
+                    Collections.singleton(myTableReferenceFactory.forTable(keyspace, table)),
+                    forceRepairTWCS, forceRepairDisabled);
         }
         else
         {
             onDemandRepairs = runLocalOrCluster(nodeUUID, repairType,
-                    myTableReferenceFactory.forKeyspace(keyspace), forceRepairTWCS);
+                    myTableReferenceFactory.forKeyspace(keyspace), forceRepairTWCS, forceRepairDisabled);
         }
         return onDemandRepairs;
     }
@@ -301,12 +320,13 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             final UUID nodeID,
             final RepairType repairType,
             final Set<TableReference> tables,
-            final boolean forceRepairTWCS)
+            final boolean forceRepairTWCS,
+            final boolean forceRepairDisabled)
             throws EcChronosException
     {
         if (nodeID == null)
         {
-            return runForCluster(repairType, tables, forceRepairTWCS);
+            return runForCluster(repairType, tables, forceRepairTWCS,forceRepairDisabled);
         }
         List<OnDemandRepair> onDemandRepairs = new ArrayList<>();
         Node node = myDistributedNativeConnectionProvider.getNodes().get(nodeID);
@@ -314,8 +334,10 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         {
             if (!rejectForTWCS(tableReference, forceRepairTWCS) && myReplicatedTableProvider.accept(node, tableReference.getKeyspace()))
             {
-                onDemandRepairs.add(new OnDemandRepair(
-                        myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, nodeID)));
+                if ( myOnDemandRepairScheduler.checkTableEnabled(tableReference,forceRepairDisabled)) {
+                    onDemandRepairs.add(new OnDemandRepair(
+                            myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, nodeID)));
+                }
             }
         }
         return onDemandRepairs;
@@ -323,7 +345,8 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
     private List<OnDemandRepair> runForCluster(
             final RepairType repairType,
             final Set<TableReference> tables,
-            final boolean forceRepairTWCS)
+            final boolean forceRepairTWCS,
+            final boolean forceRepairDisabled )
             throws EcChronosException
     {
         List<OnDemandRepair> onDemandRepairs = new ArrayList<>();
@@ -334,8 +357,11 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             {
                 if (!rejectForTWCS(tableReference, forceRepairTWCS) && myReplicatedTableProvider.accept(eachNode, tableReference.getKeyspace()))
                 {
-                    onDemandRepairs.add(new OnDemandRepair(
-                            myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, eachNode.getHostId())));
+                    if ( myOnDemandRepairScheduler.checkTableEnabled(tableReference,forceRepairDisabled))
+                    {
+                        onDemandRepairs.add(new OnDemandRepair(
+                                myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, eachNode.getHostId())));
+                    }
                 }
             }
         }

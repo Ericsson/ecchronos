@@ -93,3 +93,18 @@ Feature: ecctool run-repair
     When we run local repair for keyspace ecchronos and table repair_history with type VNODE
     Then the output should contain a repair request failed message
 
+  Scenario: Run local disabled repair for keyspace  test and table table3
+    Given we have access to ecctool
+    And we have a nodeid
+    When we run enabled repair for keyspace test and table table3 with type VNODE
+    Then the output should contain a valid repair header
+    And the output should contain a repair row for test.table3 with type VNODE
+    And the output should not contain more rows
+    And the output should contain a valid repair summary
+
+  Scenario: Run local invalid disabled repair for keyspace test and table table3
+    Given we have access to ecctool
+    And we have a nodeid
+    When we run local repair for keyspace test and table test3 with type VNODE
+    Then the output should contain a repair request failed message
+

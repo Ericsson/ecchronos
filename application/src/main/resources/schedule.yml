@@ -29,14 +29,19 @@
 ##
 
 keyspaces:
-#  - name: ks1
-#    tables:
-#    - name: tb1
+  - name: test
+    tables:
+    - name: table[0-9]
+      enabled: true
+    - name: table3
+      enabled: false
+
+
 ##
 ## If repair should be enabled for this table.
 ## This can be used to disable automatic repairs of certain tables.
 ##
-#      enabled: true
+
 ##
 ## How often repairs should be triggered for the table.
 ##

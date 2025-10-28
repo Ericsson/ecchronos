@@ -67,4 +67,6 @@ public interface OnDemandRepairScheduler
     List<OnDemandRepairJobView> getAllRepairJobs(UUID hostId);
 
     RepairConfiguration getRepairConfiguration();
+
+    public boolean checkTableEnabled(final TableReference tableReference, final boolean forceRepairDisabled);
 }
