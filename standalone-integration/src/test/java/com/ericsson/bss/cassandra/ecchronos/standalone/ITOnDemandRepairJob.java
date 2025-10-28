@@ -50,7 +50,6 @@ import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -141,7 +140,7 @@ public class ITOnDemandRepairJob extends TestBase
                 .withRepairLockType(RepairLockType.VNODE)
                 .withReplicationState(replicationState)
                 .withSession(getSession())
-                .withRepairConfiguration(RepairConfiguration.DEFAULT)
+                .withRepairConfigurationFunction(RepairConfiguration.DEFAULT)
                 .withRepairHistory(myEccRepairHistory)
                 .withOnDemandStatus(new OnDemandStatus(getNativeConnectionProvider()))
                 .build();

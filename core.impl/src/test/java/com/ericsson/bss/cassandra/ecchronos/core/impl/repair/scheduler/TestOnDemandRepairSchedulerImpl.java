@@ -38,7 +38,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
 import com.google.common.collect.ImmutableSet;
-import java.util.Arrays;
+
 import java.util.HashMap;
 import org.junit.Before;
 import org.junit.Test;
@@ -347,7 +347,7 @@ public class TestOnDemandRepairSchedulerImpl
                 .withReplicationState(replicationState)
                 .withSession(session)
                 .withRepairLockType(RepairLockType.VNODE)
-                .withRepairConfiguration(RepairConfiguration.DEFAULT)
+                .withRepairConfigurationFunction(RepairConfiguration.DEFAULT)
                 .withRepairHistory(repairHistory)
                 .withOnDemandStatus(myOnDemandStatus);
     }

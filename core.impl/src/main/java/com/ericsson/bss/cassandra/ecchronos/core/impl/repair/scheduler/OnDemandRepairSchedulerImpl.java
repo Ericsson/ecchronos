@@ -16,7 +16,6 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorkerManager;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.IncrementalOnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandStatus;
@@ -494,7 +493,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
          * @param theRepairConfiguration Repair configuration.
          * @return Builder
          */
-        public Builder withRepairConfiguration(final RepairConfiguration theRepairConfiguration)
+        public Builder withRepairConfigurationFunction(final RepairConfiguration theRepairConfiguration)
         {
             this.repairConfiguration = theRepairConfiguration;
             return this;
@@ -512,7 +511,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
             return this;
         }
 
-        public Builder withRepairConfiguration(final Function<TableReference, Set<RepairConfiguration>>
+        public Builder withRepairConfigurationFunction(final Function<TableReference, Set<RepairConfiguration>>
                                                                          defaultRepairConfiguration)
         {
             myRepairConfigurationFunction = defaultRepairConfiguration;
