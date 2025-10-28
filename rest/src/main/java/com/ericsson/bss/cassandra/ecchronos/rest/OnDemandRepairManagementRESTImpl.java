@@ -334,7 +334,8 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         {
             if (!rejectForTWCS(tableReference, forceRepairTWCS) && myReplicatedTableProvider.accept(node, tableReference.getKeyspace()))
             {
-                if (myOnDemandRepairScheduler.checkTableEnabled(tableReference, forceRepairDisabled)) {
+                if (myOnDemandRepairScheduler.checkTableEnabled(tableReference, forceRepairDisabled))
+                {
                     onDemandRepairs.add(new OnDemandRepair(
                             myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, nodeID)));
                 }
