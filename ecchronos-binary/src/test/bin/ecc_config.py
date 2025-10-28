@@ -160,10 +160,7 @@ class EcchronosConfig:
                         "initial_delay": {"time": 1, "unit": "hours"},
                         "unwind_ratio": 0.1,
                     },
-                    {
-                        "name": "table3",
-                        "enabled": False
-                    }
+                    {"name": "table3", "enabled": False},
                 ],
             },
             {
