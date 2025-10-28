@@ -332,17 +332,21 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         Node node = myDistributedNativeConnectionProvider.getNodes().get(nodeID);
         for (TableReference tableReference : tables)
         {
-            if (!rejectForTWCS(tableReference, forceRepairTWCS) && myReplicatedTableProvider.accept(node, tableReference.getKeyspace()))
+            if (isRepairableTable(forceRepairTWCS, forceRepairDisabled, tableReference, node))
             {
-                if (myOnDemandRepairScheduler.checkTableEnabled(tableReference, forceRepairDisabled))
-                {
-                    onDemandRepairs.add(new OnDemandRepair(
-                            myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, nodeID)));
-                }
+                onDemandRepairs.add(new OnDemandRepair(
+                        myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, nodeID)));
             }
         }
         return onDemandRepairs;
     }
+
+    private boolean isRepairableTable(boolean forceRepairTWCS, boolean forceRepairDisabled, TableReference tableReference, Node node) {
+        return !rejectForTWCS(tableReference, forceRepairTWCS) &&
+                myReplicatedTableProvider.accept(node, tableReference.getKeyspace()) &&
+                myOnDemandRepairScheduler.checkTableEnabled(tableReference, forceRepairDisabled);
+    }
+
     private List<OnDemandRepair> runForCluster(
             final RepairType repairType,
             final Set<TableReference> tables,
@@ -356,13 +360,10 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             Collection<Node> availableNodes = myDistributedNativeConnectionProvider.getNodes().values();
             for (Node eachNode : availableNodes)
             {
-                if (!rejectForTWCS(tableReference, forceRepairTWCS) && myReplicatedTableProvider.accept(eachNode, tableReference.getKeyspace()))
+                if (isRepairableTable(forceRepairTWCS, forceRepairDisabled, tableReference, eachNode))
                 {
-                    if (myOnDemandRepairScheduler.checkTableEnabled(tableReference, forceRepairDisabled))
-                    {
-                        onDemandRepairs.add(new OnDemandRepair(
-                                myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, eachNode.getHostId())));
-                    }
+                    onDemandRepairs.add(new OnDemandRepair(
+                            myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, eachNode.getHostId())));
                 }
             }
         }
