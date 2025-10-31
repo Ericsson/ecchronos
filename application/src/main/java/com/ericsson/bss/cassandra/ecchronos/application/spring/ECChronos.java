@@ -104,6 +104,8 @@ public class ECChronos implements Closeable
                 .withRepairLockType(configuration.getRepairConfig().getRepairLockType())
                 .build();
 
+        AbstractRepairConfigurationProvider repairConfigurationProvider = new FileBasedRepairConfiguration(applicationContext);
+
         myOnDemandRepairSchedulerImpl = OnDemandRepairSchedulerImpl.builder()
                 .withScheduleManager(myECChronosInternals.getScheduleManager())
                 .withTableRepairMetrics(myECChronosInternals.getTableRepairMetrics())
@@ -111,12 +113,11 @@ public class ECChronos implements Closeable
                 .withReplicationState(replicationState)
                 .withRepairLockType(configuration.getRepairConfig().getRepairLockType())
                 .withSession(session)
-                .withRepairConfiguration(configuration.getRepairConfig().asRepairConfiguration())
+                .withRepairConfigurationFunction(configuration.getRepairConfig().asRepairConfiguration())
                 .withRepairHistory(repairHistoryService)
+                .withRepairConfigurationFunction(repairConfigurationProvider::get)
                 .withOnDemandStatus(new OnDemandStatus(nativeConnectionProvider))
                 .build();
-
-        AbstractRepairConfigurationProvider repairConfigurationProvider = new FileBasedRepairConfiguration(applicationContext);
 
         ThreadPoolTaskConfig threadPoolTaskConfig = configuration.getConnectionConfig().getThreadPoolTaskConfig();
 

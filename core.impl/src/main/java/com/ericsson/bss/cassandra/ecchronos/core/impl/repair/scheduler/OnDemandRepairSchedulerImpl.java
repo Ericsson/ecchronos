@@ -45,6 +45,7 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -74,6 +75,8 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
     private final RepairConfiguration myRepairConfiguration;
     private final RepairHistory myRepairHistory;
     private final OnDemandStatus myOnDemandStatus;
+    private final Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
+
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
             new ThreadFactoryBuilder().setNameFormat("OngoingJobsScheduler-%d").build());
 
@@ -89,6 +92,8 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         myRepairHistory = builder.repairHistory;
         myOnDemandStatus = builder.onDemandStatus;
         myExecutor.scheduleAtFixedRate(() -> getOngoingStartedJobsForAllNodes(), 0, ONGOING_JOBS_PERIOD_SECONDS, TimeUnit.SECONDS);
+        myRepairConfigurationFunction = builder.myRepairConfigurationFunction;
+
     }
 
     private void getOngoingStartedJobsForAllNodes()
@@ -194,6 +199,23 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
             myScheduleManager.schedule(nodeId, job);
             return job.getView();
         }
+    }
+    @Override
+    public boolean checkTableEnabled(final TableReference tableReference, final boolean forceRepairDisabled)
+    {
+        boolean enabled = true;
+        if (!forceRepairDisabled)
+        {
+            Set<RepairConfiguration> repairConfigurations = myRepairConfigurationFunction.apply(tableReference);
+            for (RepairConfiguration repairConfiguration : repairConfigurations)
+            {
+                if (RepairConfiguration.DISABLED.equals(repairConfiguration))
+                {
+                    enabled = false;
+                }
+            }
+        }
+        return enabled;
     }
 
     private void validateTableReference(final TableReference tableReference) throws EcChronosException
@@ -390,6 +412,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         private RepairConfiguration repairConfiguration;
         private RepairHistory repairHistory;
         private OnDemandStatus onDemandStatus;
+        private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
 
         /**
          * Build on demand repair scheduler with JMX proxy factory.
@@ -469,7 +492,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
          * @param theRepairConfiguration Repair configuration.
          * @return Builder
          */
-        public Builder withRepairConfiguration(final RepairConfiguration theRepairConfiguration)
+        public Builder withRepairConfigurationFunction(final RepairConfiguration theRepairConfiguration)
         {
             this.repairConfiguration = theRepairConfiguration;
             return this;
@@ -484,6 +507,18 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         public Builder withRepairHistory(final RepairHistory theRepairHistory)
         {
             this.repairHistory = theRepairHistory;
+            return this;
+        }
+        /**
+         * Build on demand repair scheduler with repair configuration function.
+         *
+         * @param defaultRepairConfiguration Repair configuration function.
+         * @return Builder
+         */
+        public Builder withRepairConfigurationFunction(final Function<TableReference, Set<RepairConfiguration>>
+                                                                         defaultRepairConfiguration)
+        {
+            myRepairConfigurationFunction = defaultRepairConfiguration;
             return this;
         }
 

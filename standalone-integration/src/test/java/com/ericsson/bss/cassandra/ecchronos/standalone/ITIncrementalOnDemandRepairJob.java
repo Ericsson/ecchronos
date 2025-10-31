@@ -37,7 +37,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.repair.RepairType;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
-import java.util.ArrayList;
 import net.jcip.annotations.NotThreadSafe;
 import org.junit.After;
 import org.junit.Before;
@@ -119,7 +118,7 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
                 .withRepairLockType(RepairLockType.VNODE)
                 .withReplicationState(new ReplicationStateImpl(new NodeResolverImpl(getSession()), getSession()))
                 .withSession(getSession())
-                .withRepairConfiguration(RepairConfiguration.DEFAULT)
+                .withRepairConfigurationFunction(RepairConfiguration.DEFAULT)
                 .withOnDemandStatus(new OnDemandStatus(getNativeConnectionProvider()))
                 .build();
         myAdminSession = getAdminNativeConnectionProvider().getCqlSession();

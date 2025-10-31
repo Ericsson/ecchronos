@@ -159,7 +159,8 @@ class EcchronosConfig:
                         "interval": {"time": 1, "unit": "days"},
                         "initial_delay": {"time": 1, "unit": "hours"},
                         "unwind_ratio": 0.1,
-                    }
+                    },
+                    {"name": "table3", "enabled": False},
                 ],
             },
             {
@@ -186,7 +187,7 @@ class EcchronosConfig:
                     {"name": "lock_priority", "enabled": False},
                     {"name": "on_demand_repair_status", "enabled": False},
                     {"name": "reject_configuration", "enabled": False},
-                    {"name": "repair_history", "enabled": False},
+                    {"name": "repair_history", "enabled": True},
                 ],
             },
         ]

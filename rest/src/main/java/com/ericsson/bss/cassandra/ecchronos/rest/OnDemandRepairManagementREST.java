@@ -57,6 +57,6 @@ public interface OnDemandRepairManagementREST
      * @return A JSON representation of {@link OnDemandRepair}
      */
     ResponseEntity<List<OnDemandRepair>> runRepair(
-            String nodeID, String keyspace, String table, RepairType repairType, boolean all, boolean forceRepairTWCS);
+            String nodeID, String keyspace, String table, RepairType repairType, boolean all, boolean forceRepairTWCS, boolean forceRepairDisabled);
 }
 

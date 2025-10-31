@@ -154,6 +154,7 @@ Feature: ecctool repair-info
     Then the output should contain a valid repair-info header
     And the output should contain a repair-info row for test.table1
     And the output should contain a repair-info row for test.table2
+    And the output should contain a repair-info row for test.table3
     And the output should not contain more rows
 
   Scenario: Get repair-info for keyspace test with since and duration
@@ -163,6 +164,7 @@ Feature: ecctool repair-info
     Then the output should contain a valid repair-info header
     And the output should contain a repair-info row for test.table1
     And the output should contain a repair-info row for test.table2
+    And the output should contain a repair-info row for test.table3
     And the output should not contain more rows
 
   Scenario: Get repair-info for table test.table1 with duration

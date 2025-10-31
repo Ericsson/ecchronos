@@ -53,3 +53,15 @@ Feature: API for repairs
     And I use the url localhost:8080/repair-management/repairs?keyspace=ecchronos&table=repair_history&forceRepairTWCS=true&all=true
     When I send a POST request
     Then the response is successful
+
+  Scenario: Run repair for disabled table
+    Given I have a json schema repairs
+    And I use the url localhost:8080/repair-management/repairs?keyspace=test&table=table3&all=true
+    When I send a POST request
+    Then the repair request failed
+
+  Scenario: Run repair to force disabled table
+    Given I have a json schema repairs
+    And I use the url localhost:8080/repair-management/repairs?keyspace=test&table=table3&forceRepairDisabled=true&all=true
+    When I send a POST request
+    Then the response is successful
