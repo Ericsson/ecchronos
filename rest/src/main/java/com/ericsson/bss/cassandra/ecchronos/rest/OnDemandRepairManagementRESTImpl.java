@@ -67,7 +67,6 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
 
     private final ReplicatedTableProvider myReplicatedTableProvider;
 
-
     @Autowired
     private final DistributedNativeConnectionProvider myDistributedNativeConnectionProvider;
 
@@ -81,9 +80,6 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         myTableReferenceFactory = tableReferenceFactory;
         myReplicatedTableProvider = replicatedTableProvider;
         myDistributedNativeConnectionProvider = distributedNativeConnectionProvider;
-
-
-
     }
 
     @Override
@@ -148,8 +144,6 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             @RequestParam(required = false, defaultValue = "false")
             @Parameter(description = "Force repair of tables disabled in the schedule .")
             final boolean forceRepairDisabled)
-
-
     {
         return ResponseEntity.ok(runOnDemandRepair(nodeID, keyspace, table, getRepairTypeOrDefault(repairType), all,
                 forceRepairTWCS, forceRepairDisabled));
@@ -281,8 +275,6 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
                 throw new ResponseStatusException(BAD_REQUEST,
                         "Table " + keyspace + "." + table + " is disabled");
             }
-
-
             onDemandRepairs = runLocalOrCluster(nodeUUID, repairType,
                     Collections.singleton(myTableReferenceFactory.forTable(keyspace, table)),
                     forceRepairTWCS, forceRepairDisabled);
@@ -340,14 +332,12 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
         }
         return onDemandRepairs;
     }
-
     private boolean isRepairableTable(final boolean forceRepairTWCS, final boolean forceRepairDisabled, final TableReference tableReference, final Node node)
     {
         return !rejectForTWCS(tableReference, forceRepairTWCS)
                 && myReplicatedTableProvider.accept(node, tableReference.getKeyspace())
                 && myOnDemandRepairScheduler.checkTableEnabled(tableReference, forceRepairDisabled);
     }
-
     private List<OnDemandRepair> runForCluster(
             final RepairType repairType,
             final Set<TableReference> tables,

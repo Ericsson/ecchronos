@@ -412,9 +412,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         private RepairConfiguration repairConfiguration;
         private RepairHistory repairHistory;
         private OnDemandStatus onDemandStatus;
-
         private Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
-
 
         /**
          * Build on demand repair scheduler with JMX proxy factory.
@@ -545,7 +543,5 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
         {
             return new OnDemandRepairSchedulerImpl(this);
         }
-
-
     }
 }
