@@ -215,7 +215,7 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             checkValidClusterRun(nodeID, all, keyspace, table);
 
             UUID nodeUUID = nodeID == null  ? null : parseIdOrThrow(nodeID);
-            if (myDistributedNativeConnectionProvider.getNodes().get(nodeID)==null)
+            if (myDistributedNativeConnectionProvider.getNodes().get(nodeID) == null)
             {
                 throw new ResponseStatusException(BAD_REQUEST, "Node specified is not a valid node");
             }
