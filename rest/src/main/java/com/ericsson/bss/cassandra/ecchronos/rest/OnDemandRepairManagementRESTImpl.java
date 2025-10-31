@@ -44,7 +44,6 @@ import java.util.UUID;
 import java.util.Collections;
 import java.util.Set;
 
-
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -306,32 +305,20 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             final boolean forceRepairTWCS)
             throws EcChronosException
     {
+        Collection<Node> availableNodes;
         if (nodeID == null)
         {
-            return runForCluster(repairType, tables, forceRepairTWCS);
+            availableNodes = myDistributedNativeConnectionProvider.getNodes().values();
         }
-        List<OnDemandRepair> onDemandRepairs = new ArrayList<>();
-        Node node = myDistributedNativeConnectionProvider.getNodes().get(nodeID);
-        for (TableReference tableReference : tables)
+        else
         {
-            if (!rejectForTWCS(tableReference, forceRepairTWCS) && myReplicatedTableProvider.accept(node, tableReference.getKeyspace()))
-            {
-                onDemandRepairs.add(new OnDemandRepair(
-                        myOnDemandRepairScheduler.scheduleJob(tableReference, repairType, nodeID)));
-            }
+            availableNodes = new ArrayList<Node>();
+            availableNodes.add(myDistributedNativeConnectionProvider.getNodes().get(nodeID));
         }
-        return onDemandRepairs;
-    }
-    private List<OnDemandRepair> runForCluster(
-            final RepairType repairType,
-            final Set<TableReference> tables,
-            final boolean forceRepairTWCS)
-            throws EcChronosException
-    {
+
         List<OnDemandRepair> onDemandRepairs = new ArrayList<>();
         for (TableReference tableReference : tables)
         {
-            Collection<Node> availableNodes = myDistributedNativeConnectionProvider.getNodes().values();
             for (Node eachNode : availableNodes)
             {
                 if (!rejectForTWCS(tableReference, forceRepairTWCS) && myReplicatedTableProvider.accept(eachNode, tableReference.getKeyspace()))
