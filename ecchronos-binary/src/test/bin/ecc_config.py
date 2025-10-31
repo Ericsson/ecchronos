@@ -187,7 +187,7 @@ class EcchronosConfig:
                     {"name": "lock_priority", "enabled": False},
                     {"name": "on_demand_repair_status", "enabled": False},
                     {"name": "reject_configuration", "enabled": False},
-                    {"name": "repair_history", "enabled": False},
+                    {"name": "repair_history", "enabled": True},
                 ],
             },
         ]
