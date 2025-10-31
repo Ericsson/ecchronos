@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* An invalid node id produces strange exception - Issue #1199
 * Resolve initial contact points at each connection attemt - Issue #1178
 * Remove DatacenterAwarePolicy - Issue #1128
 * Run Repair --all Fails With "Repair Request Failed" in DatacenterAware Mode - Issue #1158
