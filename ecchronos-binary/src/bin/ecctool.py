@@ -53,6 +53,7 @@ def get_parser():
     add_stop_subcommand(sub_parsers)
     add_status_subcommand(sub_parsers)
     add_running_job_subcommand(sub_parsers)
+    add_state_subcommand(sub_parsers)
 
     return parser
 
@@ -291,6 +292,34 @@ def add_stop_subcommand(sub_parsers):
     )
 
 
+def add_state_subcommand(sub_parsers):
+    parser_state = sub_parsers.add_parser(
+        "state",
+        description="Get information of ecChronos instance internal state. This subcommand has no mandatory parameters.",
+    )
+    parser_state.add_argument(
+        "-u",
+        "--url",
+        type=str,
+        help="The ecChronos host to connect to, specified in the format " "http://<host>:<port>.",
+        default=None,
+    )
+
+    state_subparsers = parser_state.add_subparsers(dest="state_subcommand")
+    add_state_nodes_subcommand(state_subparsers)
+
+
+def add_state_nodes_subcommand(state_subparsers):
+    parser_nodes = state_subparsers.add_parser("nodes", help="Get nodes managed by local instance")
+    parser_nodes.add_argument(
+        "-u",
+        "--url",
+        type=str,
+        help="The ecChronos host to connect to, e.g. http://<host>:<port>.",
+        default=None,
+    )
+
+
 def add_status_subcommand(sub_parsers):
     parser_status = sub_parsers.add_parser(
         "status", description="View status of ecChronos instance. This subcommand has no " "mandatory parameters."
@@ -302,6 +331,23 @@ def add_status_subcommand(sub_parsers):
         help="The ecChronos host to connect to, specified in the format " "http://<host>:<port>.",
         default=None,
     )
+
+
+def state(arguments):
+    if arguments.state_subcommand == "nodes":
+        nodes(arguments)
+    else:
+        print("Please specify a valid subcommand for state: nodes")
+        sys.exit(1)
+
+
+def nodes(arguments):
+    request = rest.StateManagementRequest(base_url=arguments.url)
+    result = request.get_nodes()
+    if result.is_successful():
+        table_printer.print_nodes(result.data)
+    else:
+        print(result.format_exception())
 
 
 def schedules(arguments):
@@ -534,6 +580,9 @@ def run_subcommand(arguments):
         stop(arguments)
     elif arguments.subcommand == "status":
         status(arguments, print_running=True)
+    elif arguments.subcommand == "state":
+        status(arguments)
+        state(arguments)
 
 
 def main():

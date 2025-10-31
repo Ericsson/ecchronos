@@ -187,3 +187,25 @@ def _convert_repair_stat(repair_stat):
         repair_stat.get_repair_time_taken(),
     ]
     return entry
+
+
+def print_nodes(nodes):
+    node_table = [
+        ["EcchronosID", "Datacenter", "NodeID", "Last Connection", "Next Connection", "Endpoint", "Node Status"]
+    ]
+    for node in nodes:
+        node_table.append(_convert_node(node))
+    table_formatter.format_table(node_table)
+
+
+def _convert_node(node):
+    entry = [
+        node.ecchronos_id,
+        node.datacenter_name,
+        node.node_id,
+        node.last_connection,
+        node.next_connection,
+        node.node_endpoint,
+        node.node_status,
+    ]
+    return entry
