@@ -298,6 +298,7 @@
                                     <argument>-m</argument>
                                         <argument>pytest</argument>
                                         <argument>test_ecchronos.py</argument>
+                                        <argument>test_topology.py</argument>
                                         <argument>-s</argument>
                                         <argument>-v</argument>
                                         <argument>--tb=short</argument>
@@ -394,7 +395,7 @@
                                     <executable>bash</executable>
                                     <arguments>
                                         <argument>-c</argument>
-                                        <argument>if [ -f venv/bin/activate ]; then source venv/bin/activate; fi &amp;&amp; python -m pytest test_ecchronos.py -s -v --tb=short</argument>
+                                        <argument>if [ -f venv/bin/activate ]; then source venv/bin/activate; fi &amp;&amp; python -m pytest test_ecchronos.py test_topology.py -s -v --tb=short</argument>
                                     </arguments>
                                     <workingDirectory>${project.build.directory}/test</workingDirectory>
                                     <environmentVariables>

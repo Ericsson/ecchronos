@@ -92,11 +92,17 @@ public class TestNodeWorkerManager
 
     private final UUID node1UUID = UUID.randomUUID();
     private final UUID node2UUID = UUID.randomUUID();
+    private final UUID node3UUID = UUID.randomUUID();
+    private final UUID node4UUID = UUID.randomUUID();
     private NodeWorkerManager manager;
 
     @Before
     public void setup()
     {
+        when(node1.getHostId()).thenReturn(node1UUID);
+        when(node2.getHostId()).thenReturn(node2UUID);
+        when(node3.getHostId()).thenReturn(node3UUID);
+        when(node4.getHostId()).thenReturn(node4UUID);
         Map<UUID, Node> nodes = new HashMap<>();
         nodes.put(node1UUID, node1);
         nodes.put(node2UUID, node2);

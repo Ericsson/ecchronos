@@ -251,6 +251,15 @@ public class BeanConfigurator
     }
 
     @Bean
+    public ReloadSchedulerService reloadSchedulerService(
+        final Config config,
+        final DistributedNativeConnectionProvider nativeConnectionProvider,
+        final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
+    {
+        return new ReloadSchedulerService(config, nativeConnectionProvider, defaultRepairConfigurationProvider);
+    }
+
+    @Bean
     public NodeResolver nodeResolver(final DistributedNativeConnectionProvider distributedNativeConnectionProvider)
     {
         CqlSession session = distributedNativeConnectionProvider.getCqlSession();

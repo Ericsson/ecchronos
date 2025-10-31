@@ -37,10 +37,6 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -54,6 +50,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
     private static final Logger LOG = LoggerFactory.getLogger(AgentNativeConnectionProvider.class);
 
     private final DistributedNativeConnectionProviderImpl myDistributedNativeConnectionProviderImpl;
+    private final MountConnectionHelper myConnectionHelper = new MountConnectionHelper();
 
     /**
      * Constructs an {@code AgentNativeConnectionProvider} with the specified configuration, security supplier, and
@@ -93,7 +90,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
 
        DistributedNativeBuilder nativeConnectionBuilder =
                 DistributedNativeConnectionProviderImpl.builder()
-                        .withInitialContactPoints(resolveInitialContactPoints(agentConnectionConfig.getContactPoints()))
+                        .withInitialContactPoints(myConnectionHelper.resolveInitialContactPoints(agentConnectionConfig.getContactPoints()))
                         .withAgentType(agentConnectionConfig.getType())
                         .withLocalDatacenter(agentConnectionConfig.getLocalDatacenter())
                         .withAuthProvider(authProvider)
@@ -125,97 +122,22 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
             case datacenterAware ->
             {
                 LOG.info("Using DatacenterAware as Agent Config");
-                yield builder.withDatacenterAware(resolveDatacenterAware(
+                yield builder.withDatacenterAware(myConnectionHelper.resolveDatacenterAware(
                         agentConnectionConfig.getDatacenterAware()));
             }
             case rackAware ->
             {
                 LOG.info("Using RackAware as Agent Config");
-                yield builder.withRackAware(resolveRackAware(
+                yield builder.withRackAware(myConnectionHelper.resolveRackAware(
                         agentConnectionConfig.getRackAware()));
             }
             case hostAware ->
             {
                 LOG.info("Using HostAware as Agent Config");
-                yield builder.withHostAware(resolveHostAware(
+                yield builder.withHostAware(myConnectionHelper.resolveHostAware(
                         agentConnectionConfig.getHostAware()));
             }
         };
-    }
-
-    /**
-     * Resolves the initial contact points from the provided map of host configurations.
-     *
-     * @param contactPoints
-     *         a map containing the host configurations.
-     * @return a list of {@link InetSocketAddress} representing the resolved contact points.
-     */
-    public final List<InetSocketAddress> resolveInitialContactPoints(
-            final Map<String, AgentConnectionConfig.Host> contactPoints)
-    {
-        List<InetSocketAddress> resolvedContactPoints = new ArrayList<>();
-        for (AgentConnectionConfig.Host host : contactPoints.values())
-        {
-            InetSocketAddress tmpAddress = InetSocketAddress.createUnresolved(host.getHost(), host.getPort());
-            resolvedContactPoints.add(tmpAddress);
-        }
-        return resolvedContactPoints;
-    }
-
-    /**
-     * Resolves the datacenter-aware configuration from the specified {@link AgentConnectionConfig.DatacenterAware}
-     * object.
-     *
-     * @param datacenterAware
-     *         the datacenter-aware configuration object.
-     * @return a list of datacenter names.
-     */
-    public final List<String> resolveDatacenterAware(final AgentConnectionConfig.DatacenterAware datacenterAware)
-    {
-        List<String> datacenterNames = new ArrayList<>();
-        for (AgentConnectionConfig.DatacenterAware.Datacenter datacenter : datacenterAware.getDatacenters().values())
-        {
-            datacenterNames.add(datacenter.getName());
-        }
-        return datacenterNames;
-    }
-
-    /**
-     * Resolves the rack-aware configuration from the specified {@link AgentConnectionConfig.RackAware} object.
-     *
-     * @param rackAware
-     *         the rack-aware configuration object.
-     * @return a list of maps containing datacenter and rack information.
-     */
-    public final List<Map<String, String>> resolveRackAware(final AgentConnectionConfig.RackAware rackAware)
-    {
-        List<Map<String, String>> rackList = new ArrayList<>();
-        for (AgentConnectionConfig.RackAware.Rack rack : rackAware.getRacks().values())
-        {
-            Map<String, String> rackInfo = new HashMap<>();
-            rackInfo.put("datacenterName", rack.getDatacenterName());
-            rackInfo.put("rackName", rack.getRackName());
-            rackList.add(rackInfo);
-        }
-        return rackList;
-    }
-
-    /**
-     * Resolves the host-aware configuration from the specified {@link AgentConnectionConfig.HostAware} object.
-     *
-     * @param hostAware
-     *         the host-aware configuration object.
-     * @return a list of {@link InetSocketAddress} representing the resolved hosts.
-     */
-    public final List<InetSocketAddress> resolveHostAware(final AgentConnectionConfig.HostAware hostAware)
-    {
-        List<InetSocketAddress> resolvedHosts = new ArrayList<>();
-        for (AgentConnectionConfig.Host host : hostAware.getHosts().values())
-        {
-            InetSocketAddress tmpAddress = new InetSocketAddress(host.getHost(), host.getPort());
-            resolvedHosts.add(tmpAddress);
-        }
-        return resolvedHosts;
     }
 
     public final DistributedNativeConnectionProviderImpl establishConnection(

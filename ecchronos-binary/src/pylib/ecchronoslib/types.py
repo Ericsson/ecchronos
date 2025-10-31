@@ -161,3 +161,14 @@ class RepairStats(object):
         elif delta.microseconds > 0:
             human_readable_delta += "< 1 second"
         return human_readable_delta
+
+
+class NodeSyncState(object):
+    def __init__(self, data):
+        self.ecchronos_id = data["ecchronosId"] if "ecchronosId" in data else "<UNKNOWN>"
+        self.datacenter_name = data["datacenterName"] if "datacenterName" in data else "<UNKNOWN>"
+        self.node_id = data["nodeId"] if "nodeId" in data else "<UNKNOWN>"
+        self.last_connection = data["lastConnection"] if "lastConnection" in data else "<UNKNOWN>"
+        self.next_connection = data["nextConnection"] if "nextConnection" in data else "<UNKNOWN>"
+        self.node_endpoint = data["nodeEndpoint"] if "nodeEndpoint" in data else "<UNKNOWN>"
+        self.node_status = data["nodeStatus"] if "nodeStatus" in data else "<UNKNOWN>"

@@ -120,6 +120,8 @@ class TestFixture:
 
         if self.cassandra_cluster:
             try:
+                # Stop and remove extra node first
+                self.cassandra_cluster.stop_extra_node()
                 self.cassandra_cluster.stop_cluster()
             except Exception as e:
                 logger.error(f"Error stopping Cassandra cluster during cleanup: {e}")
@@ -172,3 +174,32 @@ def build_behave_command(cassandra_cluster: CassandraCluster) -> list[str]:
         base_command.extend(tls_options)
 
     return base_command
+
+
+def run_ecctool_state(params):
+    return run_ecctool(["state"] + params)
+
+
+def run_ecctool_state_nodes():
+    return run_ecctool_state(["nodes"])
+
+
+def run_ecctool(params):
+    cmd = [f"{global_vars.BASE_DIR}/bin/ecctool"] + params
+    env = {}
+    if global_vars.LOCAL != "true":
+        client_cert = f"{global_vars.CERTIFICATE_DIRECTORY}/clientcert.crt"
+        client_key = f"{global_vars.CERTIFICATE_DIRECTORY}/clientkey.pem"
+        client_ca = f"{global_vars.CERTIFICATE_DIRECTORY}/serverca.crt"
+        env = {"ECCTOOL_CERT_FILE": client_cert, "ECCTOOL_KEY_FILE": client_key, "ECCTOOL_CA_FILE": client_ca}
+    proc = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env
+    )  # pylint: disable=consider-using-with
+    out, err = proc.communicate()
+    return out, err
+
+
+def assert_nodes_size_is_equal(out, expected_nodes):
+    output_data = out.decode("ascii").lstrip().rstrip().split("\n")
+    rows = output_data[3:-1]
+    assert len(rows) == expected_nodes, f"Expected {expected_nodes} nodes, but found {len(rows)}"

@@ -341,6 +341,10 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     public void onUp(final Node node)
     {
         LOG.debug("{} switched state to UP.", node);
+        if (myAgentNativeConnectionProvider == null  || !myAgentNativeConnectionProvider.getNodes().containsKey(node.getHostId()))
+        {
+            onAdd(node);
+        }
         setupConfiguration();
     }
 

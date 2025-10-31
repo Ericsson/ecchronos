@@ -16,13 +16,17 @@
 #
 
 import global_variables as global_vars
-from testcontainers.compose import DockerCompose
+from testcontainers.compose import DockerCompose, ComposeContainer
+from testcontainers.core.container import DockerContainer
+from testcontainers.core.waiting_utils import wait_for_logs
+from typing import Optional
 import docker
 import os
 from datetime import datetime, timedelta
 from time import sleep
 import logging
 import subprocess
+import json
 
 DEFAULT_WAIT_TIME_IN_SECS = 60
 
@@ -32,10 +36,14 @@ ALTER_SYSTEM_AUTH_CQL = "ALTER KEYSPACE system_auth WITH REPLICATION = {'class':
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+client = docker.from_env()
 
 
 class CassandraCluster:
     def __init__(self, local):
+        self.cassandra_compose: Optional[DockerCompose] = None
+        self.node: Optional[ComposeContainer] = None
+        self._extra_node: str = None
         self.local = local
         os.environ["CERTIFICATE_DIRECTORY"] = global_vars.CERTIFICATE_DIRECTORY
         os.environ["CASSANDRA_VERSION"] = global_vars.CASSANDRA_VERSION
@@ -74,6 +82,83 @@ class CassandraCluster:
             self.stop_cluster()
             raise e
 
+    def add_node(self):
+        client.images.build(
+            path=global_vars.CASSANDRA_DOCKER_COMPOSE_FILE_PATH,
+            dockerfile=f"{global_vars.CASSANDRA_DOCKER_COMPOSE_FILE_PATH}/Dockerfile",
+            tag="cassandra-node3:latest",
+            buildargs={"CASSANDRA_VERSION": global_vars.CASSANDRA_VERSION},
+        )
+
+        container_name = "cassandra-node-dc1-rack1-node3"
+        rackdc_file = os.path.join(
+            global_vars.CASSANDRA_DOCKER_COMPOSE_FILE_PATH, "cassandra-rackdc-dc1-rack1.properties"
+        )
+        cert_dir = global_vars.CERTIFICATE_DIRECTORY
+
+        result = subprocess.run(
+            [
+                "docker",
+                "inspect",
+                "--format={{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}",
+                self.container_id,
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        network_name = result.stdout.strip()
+
+        cmd = [
+            "docker",
+            "run",
+            "-d",
+            "--name",
+            container_name,
+            "--network",
+            network_name,
+            "-e",
+            "CASSANDRA_CLUSTER_NAME=cassandra-cluster",
+            "-e",
+            "CASSANDRA_DC=datacenter1",
+            "-e",
+            "CASSANDRA_RACK=rack1",
+            "-e",
+            "CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch",
+            "-e",
+            "CASSANDRA_SEEDS=cassandra-seed-dc1-rack1-node1,cassandra-seed-dc2-rack1-node1,cassandra-node-dc1-rack1-node2,cassandra-node-dc2-rack1-node2",
+            "-e",
+            "CASSANDRA_PASSWORD_SEEDER=no",
+            "-e",
+            "CASSANDRA_PASSWORD=cassandra",
+            "-e",
+            "MAX_HEAP_SIZE=3G",
+            "-e",
+            "HEAP_NEWSIZE=400M",
+            "-e",
+            "LOCAL_JMX=no",
+            "-e",
+            f"JOLOKIA={global_vars.JOLOKIA_ENABLED}",
+            "-e",
+            "JVM_EXTRA_OPTS=-Dcom.sun.management.jmxremote.authenticate=false "
+            "-Dcassandra.superuser_setup_delay_ms=0 "
+            "-Dcassandra.skip_wait_for_gossip_to_settle=0 "
+            "-Dcassandra.ring_delay_ms=30000 "
+            "-Dcassandra.write_survey=false",
+            "-v",
+            "cassandra-node3-data:/var/lib/cassandra",
+            "-v",
+            f"{rackdc_file}:/etc/cassandra/cassandra-rackdc.properties",
+            "-v",
+            f"{cert_dir}:/etc/certificates",
+            "cassandra-node3:latest",
+        ]
+
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        new_container_id = result.stdout.strip()
+        self._extra_node = new_container_id
+
     @staticmethod
     def _create_cert_path():
         if not os.path.exists(global_vars.CASSANDRA_CERT_PATH):
@@ -106,6 +191,16 @@ class CassandraCluster:
         )
 
         return process.stdout.split("UN").__len__() - 1
+
+    def verify_node_count(self, expected_nodes):
+        try:
+            if self._get_node_count() == expected_nodes:
+                return True
+            else:
+                return False
+        except Exception as e:
+            print(f"Error verifying node count: {e}")
+            return False
 
     def _wait_for_nodes_to_be_up(self, expected_nodes, max_wait_time_in_millis):
         start_time = datetime.now()
@@ -202,3 +297,34 @@ class CassandraCluster:
                 "all",
             ]
         )
+
+    def stop_extra_node(self):
+        try:
+            if self._extra_node != None:
+                if global_vars.LOCAL != "true":
+                    command = [
+                        "docker",
+                        "exec",
+                        self._extra_node,
+                        "bash",
+                        "-c",
+                        "nodetool -u cassandra -pw cassandra --ssl decommission",
+                    ]
+                else:
+                    command = [
+                        "docker",
+                        "exec",
+                        self.container_id,
+                        "bash",
+                        "-c",
+                        "nodetool -u cassandra -pw cassandra decommission",
+                    ]
+                subprocess.run(command, capture_output=True, text=True, check=True)
+                subprocess.run(["docker", "stop", self._extra_node], capture_output=True, text=True, check=True)
+                subprocess.run(["docker", "rm", self._extra_node], capture_output=True, text=True, check=True)
+                subprocess.run(
+                    ["docker", "volume", "rm", "cassandra-node3-data"], capture_output=True, text=True, check=True
+                )
+                self._extra_node = None
+        except Exception as e:
+            print(f"Error removing extra node: {e}")

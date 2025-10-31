@@ -23,7 +23,7 @@ except ImportError:
 import json
 import os
 import ssl
-from ecchronoslib.types import FullSchedule, Repair, Schedule, RepairInfo
+from ecchronoslib.types import FullSchedule, Repair, Schedule, RepairInfo, NodeSyncState
 
 
 class RequestResult(object):
@@ -281,4 +281,18 @@ class RepairSchedulerRequest(RestRequest):
 
         result = self.basic_request(request_url)
 
+        return result
+
+
+class StateManagementRequest(RestRequest):
+    ROOT = "state/"
+    NODES = ROOT + "nodes"
+
+    def __init__(self, base_url=None):
+        RestRequest.__init__(self, base_url)
+
+    def get_nodes(self):
+        result = self.request(StateManagementRequest.NODES)
+        if result.is_successful():
+            result = result.transform_with_data(new_data=[NodeSyncState(x) for x in result.data])
         return result
