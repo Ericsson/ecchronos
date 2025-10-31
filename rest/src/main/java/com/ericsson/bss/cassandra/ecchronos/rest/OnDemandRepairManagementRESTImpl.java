@@ -214,9 +214,11 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             List<OnDemandRepair> onDemandRepairs;
             checkValidClusterRun(nodeID, all, keyspace, table);
 
-
             UUID nodeUUID = nodeID == null  ? null : parseIdOrThrow(nodeID);
-
+            if (myDistributedNativeConnectionProvider.getNodes().get(nodeID)==null)
+            {
+                throw new ResponseStatusException(BAD_REQUEST, "Node specified is not a valid node");
+            }
             if (keyspace != null)
             {
                 onDemandRepairs = getOnDemandRepairsForKeyspace(keyspace, table, repairType, nodeUUID, forceRepairTWCS);
