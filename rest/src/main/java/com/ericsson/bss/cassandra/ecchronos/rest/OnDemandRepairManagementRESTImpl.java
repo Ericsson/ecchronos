@@ -56,7 +56,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
  * REST Controller for managing on-demand repair operations in ecChronos,
  * allowing creation, retrieval, and filtering of repair jobs.
  */
-@SuppressWarnings("PMD.GodClass")
+@SuppressWarnings("PMD")
 @Tag(name = "Repair-Management", description = "Management of repairs")
 @RestController
 public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagementREST
