@@ -5,9 +5,7 @@ behave
 
 # Cassandra driver and database connectivity
 cassandra-driver>=3.28.0
-eventlet>=0.33.0
-futurist
-pyOpenSSL
+gevent
 
 # Docker and container management
 testcontainers
