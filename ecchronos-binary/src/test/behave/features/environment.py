@@ -81,6 +81,26 @@ def after_feature(context, feature):  # pylint: disable=unused-argument
     context.environment.session.execute("TRUNCATE TABLE ecchronos.repair_history")
 
 
+def after_all(context):
+    """Cleanup after all tests complete"""
+    if hasattr(context, "environment") and context.environment:
+        if context.environment.session:
+            context.environment.session.shutdown()
+        if context.environment.cluster:
+            context.environment.cluster.shutdown()
+
+    # Force cleanup of gevent threads if using gevent
+    if sys.version_info >= (3, 12) and "gevent" in sys.modules:
+        try:
+            # pylint: disable=import-outside-toplevel,redefined-outer-name
+            import gevent
+
+            # Kill all greenlets
+            gevent.killall(gevent.hub.get_hub().greenlets)
+        except (ImportError, AttributeError):
+            pass
+
+
 def wait_for_local_repairs_to_complete(context):
     timeout_seconds = 30
     count = 0

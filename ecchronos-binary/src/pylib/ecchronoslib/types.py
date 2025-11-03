@@ -164,6 +164,7 @@ class RepairStats(object):
 
 
 class NodeSyncState(object):
+    # pylint: disable=too-few-public-methods
     def __init__(self, data):
         self.ecchronos_id = data["ecchronosId"] if "ecchronosId" in data else "<UNKNOWN>"
         self.datacenter_name = data["datacenterName"] if "datacenterName" in data else "<UNKNOWN>"
