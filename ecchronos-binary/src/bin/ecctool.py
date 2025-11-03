@@ -295,7 +295,7 @@ def add_stop_subcommand(sub_parsers):
 def add_state_subcommand(sub_parsers):
     parser_state = sub_parsers.add_parser(
         "state",
-        description="Get information of ecChronos instance internal state. This subcommand has no mandatory parameters.",
+        description="Get information of ecChronos internal state. This subcommand has no mandatory parameters.",
     )
     parser_state.add_argument(
         "-u",
