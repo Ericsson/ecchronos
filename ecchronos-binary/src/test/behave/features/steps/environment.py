@@ -15,8 +15,22 @@
 
 from __future__ import print_function
 
+import os
 import ssl
+import sys
 import time
+
+# Force eventlet for Python 3.12+ compatibility
+if sys.version_info >= (3, 12):
+    os.environ["CASSANDRA_DRIVER_EVENT_LOOP_FACTORY"] = "eventlet"
+    # Import eventlet to ensure it's available
+    try:
+        import eventlet
+
+        eventlet.monkey_patch()
+    except ImportError:
+        pass
+
 from cassandra.cluster import Cluster  # pylint: disable=no-name-in-module
 from cassandra.auth import PlainTextAuthProvider
 
