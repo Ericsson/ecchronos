@@ -59,7 +59,14 @@ def before_all(context):
     if no_tls:
         cluster = Cluster([cassandra_address], auth_provider=auth_provider)
     else:
-        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        # Create SSLContext compatible with eventlet
+        if sys.version_info >= (3, 12) and 'eventlet' in sys.modules:
+            # For eventlet, use the ssl module after monkey patching
+            import eventlet.green.ssl as green_ssl
+            ssl_context = green_ssl.SSLContext(ssl.PROTOCOL_TLS)
+        else:
+            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+        
         ssl_context.load_verify_locations(context.config.userdata.get("cql_client_ca"))
         ssl_context.verify_mode = ssl.CERT_REQUIRED
         ssl_context.load_cert_chain(
