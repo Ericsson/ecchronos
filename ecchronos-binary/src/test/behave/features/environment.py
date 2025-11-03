@@ -22,7 +22,8 @@ import time
 # Configure Cassandra driver to use eventlet for Python 3.12+ compatibility
 if sys.version_info >= (3, 12):
     import os
-    os.environ['CASSANDRA_DRIVER_EVENT_LOOP_FACTORY'] = 'eventlet'
+
+    os.environ["CASSANDRA_DRIVER_EVENT_LOOP_FACTORY"] = "eventlet"
 
 from cassandra.cluster import Cluster  # pylint: disable=no-name-in-module
 from cassandra.auth import PlainTextAuthProvider
