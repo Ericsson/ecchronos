@@ -2,7 +2,6 @@
 
 ## Version 1.0.0 (Not yet Released)
 
-
 * An invalid node id produces strange exception - Issue #1199
 * Resolve initial contact points at each connection attemt - Issue #1178
 * Remove DatacenterAwarePolicy - Issue #1128
