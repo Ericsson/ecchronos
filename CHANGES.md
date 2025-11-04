@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* An invalid node id should throw a useful exception Issue #1199
 * Manual repair to obey disabled tables Issue #1109
 * Resolve initial contact points at each connection attemt - Issue #1178
 * Remove DatacenterAwarePolicy - Issue #1128
