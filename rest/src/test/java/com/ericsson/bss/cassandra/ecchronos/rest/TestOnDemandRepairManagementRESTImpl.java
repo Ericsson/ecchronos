@@ -240,7 +240,8 @@ public class TestOnDemandRepairManagementRESTImpl
 
         when(myOnDemandRepairScheduler.scheduleJob(tableReference, RepairType.VNODE, mockNodeId1)).thenReturn(localRepairJobView);
         when(myReplicatedTableProvider.accept(mockNode1, "ks")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", "tb", RepairType.VNODE, false, false);
+        when(myOnDemandRepairScheduler.checkTableEnabled(tableReference, false)).thenReturn(true);
+        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", "tb", RepairType.VNODE, false, false, false);
 
         assertThat(response.getBody()).isEqualTo(localExpectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -251,7 +252,7 @@ public class TestOnDemandRepairManagementRESTImpl
 
         when(myOnDemandRepairScheduler.scheduleClusterWideJob(tableReference, RepairType.VNODE)).thenReturn(
                 Collections.singletonList(repairJobView));
-        response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", "tb", RepairType.VNODE, false, false);
+        response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", "tb", RepairType.VNODE, false, false, false);
 
         assertThat(response.getBody()).isEqualTo(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -270,7 +271,8 @@ public class TestOnDemandRepairManagementRESTImpl
 
         when(myOnDemandRepairScheduler.scheduleJob(tableReference, RepairType.INCREMENTAL, mockNodeId1)).thenReturn(localRepairJobView);
         when(myReplicatedTableProvider.accept(mockNode1, "ks")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", "tb", RepairType.INCREMENTAL, false, false);
+        when(myOnDemandRepairScheduler.checkTableEnabled(tableReference, false)).thenReturn(true);
+        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", "tb", RepairType.INCREMENTAL, false, false, false);
 
         assertThat(response.getBody()).isEqualTo(localExpectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -281,7 +283,7 @@ public class TestOnDemandRepairManagementRESTImpl
 
         when(myOnDemandRepairScheduler.scheduleClusterWideJob(tableReference, RepairType.INCREMENTAL)).thenReturn(
                 Collections.singletonList(repairJobView));
-        response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", "tb", RepairType.INCREMENTAL, false, false);
+        response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", "tb", RepairType.INCREMENTAL, false, false, false);
 
         assertThat(response.getBody()).isEqualTo(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -317,7 +319,10 @@ public class TestOnDemandRepairManagementRESTImpl
         when(myOnDemandRepairScheduler.scheduleJob(tableReference2, RepairType.VNODE, mockNodeId1)).thenReturn(repairJobView2);
         when(myOnDemandRepairScheduler.scheduleJob(tableReference3, RepairType.VNODE, mockNodeId1)).thenReturn(repairJobView3);
         when(myReplicatedTableProvider.accept(mockNode1, "ks")).thenReturn(true);
-        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", null, null, false, false);
+        when(myOnDemandRepairScheduler.checkTableEnabled(tableReference1, false)).thenReturn(true);
+        when(myOnDemandRepairScheduler.checkTableEnabled(tableReference2, false)).thenReturn(true);
+        when(myOnDemandRepairScheduler.checkTableEnabled(tableReference3, false)).thenReturn(true);
+        ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", null, null, false, false, false);
 
         assertThat(response.getBody()).containsAll(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -352,9 +357,12 @@ public class TestOnDemandRepairManagementRESTImpl
         when(myOnDemandRepairScheduler.scheduleJob(tableReference1, RepairType.INCREMENTAL, mockNodeId1)).thenReturn(repairJobView1);
         when(myOnDemandRepairScheduler.scheduleJob(tableReference2, RepairType.INCREMENTAL, mockNodeId1)).thenReturn(repairJobView2);
         when(myOnDemandRepairScheduler.scheduleJob(tableReference3, RepairType.INCREMENTAL, mockNodeId1)).thenReturn(repairJobView3);
+        when(myOnDemandRepairScheduler.checkTableEnabled(tableReference1, false)).thenReturn(true);
+        when(myOnDemandRepairScheduler.checkTableEnabled(tableReference2, false)).thenReturn(true);
+        when(myOnDemandRepairScheduler.checkTableEnabled(tableReference3, false)).thenReturn(true);
         when(myReplicatedTableProvider.accept(mockNode1, "ks")).thenReturn(true);
         ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), "ks", null,
-                RepairType.INCREMENTAL, false, false);
+                RepairType.INCREMENTAL, false, false, false);
 
         assertThat(response.getBody()).containsAll(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -401,11 +409,16 @@ public class TestOnDemandRepairManagementRESTImpl
         when(myOnDemandRepairScheduler.scheduleJob(tableReference3, RepairType.VNODE, mockNodeId1)).thenReturn(repairJobView3);
         when(myOnDemandRepairScheduler.scheduleJob(tableReference4, RepairType.VNODE, mockNodeId1)).thenReturn(repairJobView4);
         when(myOnDemandRepairScheduler.scheduleJob(tableReference5, RepairType.VNODE, mockNodeId1)).thenReturn(repairJobView5);
+        when(myOnDemandRepairScheduler.checkTableEnabled(tableReference1, false)).thenReturn(true);
+        when(myOnDemandRepairScheduler.checkTableEnabled(tableReference2, false)).thenReturn(true);
+        when(myOnDemandRepairScheduler.checkTableEnabled(tableReference3, false)).thenReturn(true);
+        when(myOnDemandRepairScheduler.checkTableEnabled(tableReference4, false)).thenReturn(true);
+        when(myOnDemandRepairScheduler.checkTableEnabled(tableReference5, false)).thenReturn(true);
         when(myReplicatedTableProvider.accept(mockNode1, "keyspace1")).thenReturn(true);
         when(myReplicatedTableProvider.accept(mockNode1, "keyspace2")).thenReturn(true);
         when(myReplicatedTableProvider.accept(mockNode1, "keyspace3")).thenReturn(true);
         ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), null,
-                null, null, false, false);
+                null, null, false, false, false);
 
         assertThat(response.getBody()).containsAll(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -451,11 +464,16 @@ public class TestOnDemandRepairManagementRESTImpl
         when(myOnDemandRepairScheduler.scheduleJob(tableReference3, RepairType.INCREMENTAL, mockNodeId1)).thenReturn(repairJobView3);
         when(myOnDemandRepairScheduler.scheduleJob(tableReference4, RepairType.INCREMENTAL, mockNodeId1)).thenReturn(repairJobView4);
         when(myOnDemandRepairScheduler.scheduleJob(tableReference5, RepairType.INCREMENTAL, mockNodeId1)).thenReturn(repairJobView5);
+        when(myOnDemandRepairScheduler.checkTableEnabled(tableReference1, false)).thenReturn(true);
+        when(myOnDemandRepairScheduler.checkTableEnabled(tableReference2, false)).thenReturn(true);
+        when(myOnDemandRepairScheduler.checkTableEnabled(tableReference3, false)).thenReturn(true);
+        when(myOnDemandRepairScheduler.checkTableEnabled(tableReference4, false)).thenReturn(true);
+        when(myOnDemandRepairScheduler.checkTableEnabled(tableReference5, false)).thenReturn(true);
         when(myReplicatedTableProvider.accept(mockNode1, "keyspace1")).thenReturn(true);
         when(myReplicatedTableProvider.accept(mockNode1, "keyspace2")).thenReturn(true);
         when(myReplicatedTableProvider.accept(mockNode1, "keyspace3")).thenReturn(true);
         ResponseEntity<List<OnDemandRepair>> response = OnDemandRest.runRepair(mockNodeId1.toString(), null, null,
-                RepairType.INCREMENTAL, false, false);
+                RepairType.INCREMENTAL, false, false, false);
 
         assertThat(response.getBody()).containsAll(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -474,7 +492,7 @@ public class TestOnDemandRepairManagementRESTImpl
         ResponseEntity<List<OnDemandRepair>> response = null;
         try
         {
-            response = OnDemandRest.runRepair(mockNodeId1.toString(), null, "table1", RepairType.VNODE, false, false);
+            response = OnDemandRest.runRepair(mockNodeId1.toString(), null, "table1", RepairType.VNODE, false, false, false);
         }
         catch (ResponseStatusException e)
         {
