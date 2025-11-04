@@ -219,7 +219,8 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
             UUID nodeUUID = nodeID == null  ? null : parseIdOrThrow(nodeID);
             if (nodeUUID != null  && myDistributedNativeConnectionProvider.getNodes().get(nodeUUID) == null)
             {
-                throw new ResponseStatusException(BAD_REQUEST, "Node specified is not a valid node");
+                throw new ResponseStatusException(BAD_REQUEST,
+                        "Node specified is not a valid node or is not managed by the local instance");
             }
 
             if (keyspace != null)
