@@ -21,9 +21,9 @@ source variables.sh
 echo "Setting up Python environment and dependencies..."
 
 # Setup virtual environment for non-CI environments
-if [ -z "${CI}" ]; then
+if [ -z "${CI}" ] && [ -z "${VIRTUAL_ENV}" ]; then
   echo "Installing virtualenv"
-  pip install --user virtualenv
+  pip install virtualenv
   virtualenv "$VENV_DIR" --python=python3
   source "$VENV_DIR"/bin/activate
 fi

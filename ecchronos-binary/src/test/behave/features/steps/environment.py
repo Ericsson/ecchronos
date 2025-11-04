@@ -15,8 +15,24 @@
 
 from __future__ import print_function
 
+import os
 import ssl
+import sys
 import time
+
+# Force gevent for Python 3.12+ compatibility (better SSL support than eventlet)
+if sys.version_info >= (3, 12):
+    os.environ["CASSANDRA_DRIVER_EVENT_LOOP_FACTORY"] = "gevent"
+    # Import gevent to ensure it's available
+    try:
+        import gevent  # pylint: disable=unused-import
+        from gevent import monkey
+
+        monkey.patch_all()
+    except ImportError:
+        pass
+
+# pylint: disable=wrong-import-position
 from cassandra.cluster import Cluster  # pylint: disable=no-name-in-module
 from cassandra.auth import PlainTextAuthProvider
 
@@ -45,7 +61,7 @@ def before_all(context):
     if no_tls:
         cluster = Cluster([cassandra_address], auth_provider=auth_provider)
     else:
-        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
         ssl_context.load_verify_locations(context.config.userdata.get("cql_client_ca"))
         ssl_context.verify_mode = ssl.CERT_REQUIRED
         ssl_context.load_cert_chain(
@@ -65,6 +81,26 @@ def after_feature(context, feature):  # pylint: disable=unused-argument
     wait_for_local_repairs_to_complete(context)
     context.environment.session.execute("TRUNCATE TABLE ecchronos.on_demand_repair_status")
     context.environment.session.execute("TRUNCATE TABLE ecchronos.repair_history")
+
+
+def after_all(context):
+    """Cleanup after all tests complete"""
+    if hasattr(context, "environment") and context.environment:
+        if context.environment.session:
+            context.environment.session.shutdown()
+        if context.environment.cluster:
+            context.environment.cluster.shutdown()
+
+    # Force cleanup of gevent threads if using gevent
+    if sys.version_info >= (3, 12) and "gevent" in sys.modules:
+        try:
+            # pylint: disable=import-outside-toplevel,redefined-outer-name
+            import gevent
+
+            # Kill all greenlets
+            gevent.killall(gevent.hub.get_hub().greenlets)
+        except (ImportError, AttributeError):
+            pass
 
 
 def wait_for_local_repairs_to_complete(context):

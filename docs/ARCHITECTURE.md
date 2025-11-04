@@ -208,6 +208,35 @@ The repair scheduler then creates a [TableRepairJob](../core/src/main/java/com/e
 or [IncrementalRepairJob](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/IncrementalRepairJob.java)
 and schedules it using the [ScheduleManager](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/scheduling/ScheduleManagerImpl.java) [\[2\]](#references).
 
+### Topology Change Management
+
+To handle dynamic topology changes in Cassandra clusters, ecChronos implements a multi-layered approach for detecting and responding to node additions, removals, and status changes:
+
+#### Schema Change Detection
+
+The most effective way to manage schema changes is through the `DefaultRepairConfigurationProvider`, which extends `NodeStateListenerBase`. This component is registered with the CQL Session and receives topology change events:
+
+- **onAdd**: Triggered when new nodes join the cluster
+- **onUp**: Triggered when existing nodes come online
+- **onRemove**: Triggered when nodes are removed from the cluster
+- **onDown**: Triggered when nodes go offline
+
+These three layers provide comprehensive coverage for topology changes:
+
+1. **Primary Detection**: Direct event notifications from the Cassandra driver
+2. **Secondary Detection**: Periodic reload mechanism that rebuilds the topology map from scratch
+3. **Tertiary Detection**: Status change events (onUp/onDown) that catch nodes transitioning between states
+
+#### Reload Mechanism
+
+Due to a specific timing window where a node might still be initializing and the driver might not send an `onAdd` notification, an additional reload mechanism is implemented:
+
+- **ReloadSchedulerService**: A scheduled service that periodically triggers a complete topology reload
+- **Configurable Interval**: The reload frequency can be configured via `connection.cql.agent.reloadTopologyIntervalInSeconds`
+- **Full Rebuild**: During reload, the entire node topology map is reconstructed from the current cluster state
+
+This multi-layered approach ensures that topology changes are detected and handled reliably, even in edge cases where immediate event notifications might be missed.
+
 <div align="center">
 
   ```mermaid
@@ -314,3 +343,5 @@ The IncrementalRepairTask is the class that will perform the incremental repair 
  [2\]: [Incremental and Full Repairs](https://cassandra.apache.org/doc/latest/cassandra/operating/repair.html#incremental-and-full-repairs)
 
  [3\]: [Cassandra Metrics](https://cassandra.apache.org/doc/4.1/cassandra/operating/metrics.html#table-metrics)
+
+ [4\]: [Cassandra Driver Node State Events](https://docs.datastax.com/en/developer/java-driver/4.15/manual/core/metadata/#node-state-events)

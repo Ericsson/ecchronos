@@ -36,6 +36,7 @@ public final class AgentConnectionConfig
     private HostAware myHostAware = new HostAware();
     private String myInstanceName;
     private CQLRetryPolicyConfig myCqlRetryPolicy = new CQLRetryPolicyConfig();
+    private RetryPolicyConfig.RetrySchedule myRetrySchedule = new RetryPolicyConfig.RetrySchedule();
 
     /**
      * Default constructor for AgentConnectionConfig.
@@ -256,6 +257,18 @@ public final class AgentConnectionConfig
     public void setCqlRetryPolicy(final CQLRetryPolicyConfig cqlRetryPolicyConfig)
     {
         myCqlRetryPolicy = cqlRetryPolicyConfig;
+    }
+
+    @JsonProperty("reloadSchedule")
+    public void setReloadSchedule(final RetryPolicyConfig.RetrySchedule retrySchedule)
+    {
+        myRetrySchedule = retrySchedule;
+    }
+
+    @JsonProperty("reloadSchedule")
+    public RetryPolicyConfig.RetrySchedule getReloadSchedule()
+    {
+        return myRetrySchedule;
     }
 
     /**

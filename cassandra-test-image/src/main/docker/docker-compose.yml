@@ -9,6 +9,8 @@ services:
       - "9042"
       - "7199"
       - "8778"
+      - "7000"
+      - "7001"
     environment:
       - CASSANDRA_CLUSTER_NAME=cassandra-cluster
       - CASSANDRA_DC=datacenter1
@@ -36,6 +38,8 @@ services:
       - "9042"
       - "7199"
       - "8778"
+      - "7000"
+      - "7001"
     environment:
       - CASSANDRA_CLUSTER_NAME=cassandra-cluster
       - CASSANDRA_DC=datacenter2
@@ -63,6 +67,8 @@ services:
       - "9042"
       - "7199"
       - "8778"
+      - "7000"
+      - "7001"
     environment:
       - CASSANDRA_CLUSTER_NAME=cassandra-cluster
       - CASSANDRA_DC=datacenter1
@@ -90,6 +96,8 @@ services:
       - "9042"
       - "7199"
       - "8778"
+      - "7000"
+      - "7001"
     environment:
       - CASSANDRA_CLUSTER_NAME=cassandra-cluster
       - CASSANDRA_DC=datacenter2

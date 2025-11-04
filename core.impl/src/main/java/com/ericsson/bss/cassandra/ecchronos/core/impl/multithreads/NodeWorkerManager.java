@@ -29,12 +29,13 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 public class NodeWorkerManager
 {
-    private final Map<Node, NodeWorker> myWorkers = new ConcurrentHashMap<>();
+    private final Map<UUID, NodeWorker> myWorkers = new ConcurrentHashMap<>();
     private final ThreadPoolTaskExecutor myThreadPool;
 
     private final DistributedNativeConnectionProvider myNativeConnectionProvider;
@@ -42,6 +43,7 @@ public class NodeWorkerManager
     private final RepairScheduler myRepairScheduler;
     private final TableReferenceFactory myTableReferenceFactory;
     private final Function<TableReference, Set<RepairConfiguration>> myRepairConfigurationFunction;
+    private final Object myLock = new Object();
 
     protected NodeWorkerManager(final Builder builder)
     {
@@ -75,20 +77,32 @@ public class NodeWorkerManager
                         "Table reference factory must be set"),
                 myRepairConfigurationFunction,
                 myNativeConnectionProvider.getCqlSession());
-        myWorkers.put(node, worker);
+        myWorkers.put(node.getHostId(), worker);
         myThreadPool.submit(worker);
     }
 
     public final synchronized void addNode(final Node node)
     {
-        addNewNodeToThreadPool(node);
+        synchronized (myLock)
+        {
+            if (!myWorkers.containsKey(node.getHostId()))
+            {
+                addNewNodeToThreadPool(node);
+            }
+        }
     }
 
     public final synchronized void removeNode(final Node node)
     {
-        NodeWorker nodeWorker = myWorkers.get(node);
-        myWorkers.remove(node);
-        myThreadPool.stop(nodeWorker);
+        synchronized (myLock)
+        {
+            if (myWorkers.containsKey(node.getHostId()))
+            {
+                NodeWorker nodeWorker = myWorkers.get(node.getHostId());
+                myWorkers.remove(node.getHostId());
+                myThreadPool.stop(nodeWorker);
+            }
+        }
     }
 
     public final void broadcastEvent(final RepairEvent event)
@@ -117,7 +131,7 @@ public class NodeWorkerManager
         return new Builder();
     }
 
-    public final Map<Node, NodeWorker> getMyWorkers()
+    public final Map<UUID, NodeWorker> getMyWorkers()
     {
         return myWorkers;
     }
