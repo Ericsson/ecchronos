@@ -67,8 +67,12 @@ public class MetricsREST
             contentType = OpenMetricsTextFormatWriter.CONTENT_TYPE;
         }
 
+        String scrapeResult = (includedMetrics == null || includedMetrics.isEmpty())
+                ? myPrometheusMeterRegistry.scrape(contentType)
+                : myPrometheusMeterRegistry.scrape(contentType, includedMetrics);
+
         return ResponseEntity.ok()
                 .header(CONTENT_TYPE, contentType)
-                .body(myPrometheusMeterRegistry.scrape(contentType, includedMetrics));
+                .body(scrapeResult);
     }
 }
