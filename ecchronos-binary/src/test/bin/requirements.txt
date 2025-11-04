@@ -4,7 +4,8 @@ pytest-dependency
 behave
 
 # Cassandra driver and database connectivity
-cassandra-driver
+cassandra-driver>=3.28.0
+gevent
 
 # Docker and container management
 testcontainers
