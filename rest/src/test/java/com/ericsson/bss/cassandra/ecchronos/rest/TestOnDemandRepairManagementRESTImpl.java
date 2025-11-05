@@ -257,7 +257,12 @@ public class TestOnDemandRepairManagementRESTImpl
         assertThat(response.getBody()).isEqualTo(expectedResponse);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
-
+    @Test (expected = ResponseStatusException.class)
+    public void testRunRepairOnInvalidNode()
+    {
+        UUID hostId = UUID.randomUUID();
+        OnDemandRest.runRepair(hostId.toString(), "ks", "tb", RepairType.VNODE, false, false, false);
+    }
     @Test
     public void testRunRepairIncremental() throws EcChronosException
     {
