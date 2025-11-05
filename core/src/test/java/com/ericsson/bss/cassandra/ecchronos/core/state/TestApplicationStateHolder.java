@@ -148,11 +148,11 @@ public class TestApplicationStateHolder
         
         state.put("key1", "value1");
         state.put("key2", "value2");
-        assertThat(state.getAll()).hasSize(4); // "key1", "key2", "running" and "timestamp"
+        assertThat(state.getAll()).hasSize(3); // "key1", "key2" and "running"
         
         state.clear();
 
-        assertThat(state.getAll()).hasSize(2); // "running" and "timestamp"
+        assertThat(state.getAll()).hasSize(1); // "running"
         assertThat(state.getAll()).containsEntry("running", true);
     }
 

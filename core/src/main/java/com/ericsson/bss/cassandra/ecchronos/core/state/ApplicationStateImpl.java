@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class ApplicationStateImpl implements ApplicationState
 {
     private static final String KEY_RUNNING = "running";
-    private static final String KEY_TIMESTAMP = "timestamp";
 
     private final Map<String, Object> state = new ConcurrentHashMap<>();
 
@@ -77,8 +76,6 @@ public final class ApplicationStateImpl implements ApplicationState
             current = (Map<String, Object>) next;
         }
 
-        setTimeStamp();
-
         return Optional.ofNullable(current.get(parts[parts.length - 1]));
     }
 
@@ -91,8 +88,6 @@ public final class ApplicationStateImpl implements ApplicationState
         {
             return Optional.of((T) value.get());
         }
-
-        setTimeStamp();
 
         return Optional.empty();
     }
@@ -125,7 +120,6 @@ public final class ApplicationStateImpl implements ApplicationState
     @Override
     public Map<String, Object> getAll()
     {
-        setTimeStamp();
         return Map.copyOf(state);
     }
 
@@ -134,11 +128,6 @@ public final class ApplicationStateImpl implements ApplicationState
     {
         state.clear();
         state.put(KEY_RUNNING, true);
-    }
-
-    private void setTimeStamp()
-    {
-        this.put(KEY_TIMESTAMP, System.currentTimeMillis());
     }
 
 }

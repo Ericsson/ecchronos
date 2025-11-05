@@ -109,7 +109,7 @@ public class RejectConfigREST
 
             Map<String, Object> response  = createDefaultResponse(rs,
                     "Datacenter Exclusion added successfully.",
-                    "Failed to add Datacenter Exclusion");
+                    "Failed to add Datacenter Exclusion.");
 
             return ResponseEntity.ok(response);
 
@@ -140,7 +140,7 @@ public class RejectConfigREST
             }
             Map<String, Object> response  = createDefaultResponse(rs,
                     "Rejection deleted successfully.",
-                    "Failed to remove rejection");
+                    "Failed to remove rejection.");
 
             return ResponseEntity.ok(response);
 

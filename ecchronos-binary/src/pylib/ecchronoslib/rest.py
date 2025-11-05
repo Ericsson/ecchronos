@@ -273,11 +273,8 @@ class V2RepairSchedulerRequest(RestRequest):
         return result
 
     def running_job(self):
-        request_url = "{0}/{1}".format(self.base_url, V2RepairSchedulerRequest.running_job_url)
         request_url = V2RepairSchedulerRequest.running_job_url
-
         result = self.basic_request(request_url)
-
         return result
 
 
@@ -309,35 +306,20 @@ class RejectionsRequest(RestRequest):
         result = self.request(request_url, "POST", body=rejection_body, headers=headers)
 
         if result.is_successful():
-            print(result.data["message"])
-            result = result.transform_with_data(new_data=[Rejection(x) for x in result.data["data"]])
-            return result
-        print(result.format_exception())
-        return result
-
-    def update_rejection(self, rejection_body):
-        request_url = RejectionsRequest.ROOT
-        headers = {"Content-Type": "application/json"}
-        result = self.request(request_url, "PATCH", body=rejection_body, headers=headers)
-
-        if result.is_successful():
-            print(result.data["message"])
-            result = result.transform_with_data(new_data=[Rejection(x) for x in result.data["data"]])
-            return result
-        print(result.format_exception())
+            new_result = result.transform_with_data(new_data=[Rejection(x) for x in result.data["data"]])
+            new_result.message = result.data["message"]
+            result = new_result
         return result
 
     def delete_rejection(self, rejection_body):
         request_url = RejectionsRequest.ROOT
         headers = {"Content-Type": "application/json"}
-
         result = self.request(request_url, "DELETE", body=rejection_body, headers=headers)
 
         if result.is_successful():
-            print(result.data["message"])
-            result = result.transform_with_data(new_data=[Rejection(x) for x in result.data["data"]])
-            return result
-        print(result.format_exception())
+            new_result = result.transform_with_data(new_data=[Rejection(x) for x in result.data["data"]])
+            new_result.message = result.data["message"]
+            result = new_result
         return result
 
     def truncate_rejections(self):
@@ -345,10 +327,19 @@ class RejectionsRequest(RestRequest):
         result = self.request(request_url, "DELETE")
 
         if result.is_successful():
-            print(result.data["message"])
-            result = result.transform_with_data(new_data=[Rejection(x) for x in result.data["data"]])
-            return result
-        print(result.format_exception())
+            new_result = result.transform_with_data(new_data=[Rejection(x) for x in result.data["data"]])
+            new_result.message = result.data["message"]
+            result = new_result
+        return result
+
+    def update_rejection(self, rejection_body):
+        request_url = RejectionsRequest.ROOT
+        headers = {"Content-Type": "application/json"}
+        result = self.request(request_url, "PATCH", body=rejection_body, headers=headers)
+        if result.is_successful():
+            new_result = result.transform_with_data(new_data=[Rejection(x) for x in result.data["data"]])
+            new_result.message = result.data["message"]
+            result = new_result
         return result
 
 

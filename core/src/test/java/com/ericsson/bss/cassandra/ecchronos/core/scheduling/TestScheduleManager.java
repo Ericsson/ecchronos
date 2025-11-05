@@ -259,7 +259,7 @@ public class TestScheduleManager
         myScheduler.schedule(testJob);
         new Thread(() -> myScheduler.run()).start();
         Thread.sleep(50);
-        assertThat(myScheduler.getCurrentJobStatus()).isEqualTo("Job ID: " + jobId.toString() + ", Status: Running");
+        assertThat(myScheduler.getCurrentJobStatus()).isEqualTo(jobId.toString());
         latch.countDown();
     }
 
@@ -277,7 +277,7 @@ public class TestScheduleManager
                 latch);
         myScheduler.schedule(testJob);
         new Thread(() -> myScheduler.run()).start();
-        assertThat(myScheduler.getCurrentJobStatus()).isNotEqualTo("Job ID: " + jobId.toString() + ", Status: Running");
+        assertThat(myScheduler.getCurrentJobStatus()).isEqualTo("");
         latch.countDown();
     }
     private void waitForJobStarted(TestJob job) throws InterruptedException

@@ -38,8 +38,6 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
     static final long DEFAULT_RUN_DELAY_IN_MS = TimeUnit.SECONDS.toMillis(30);
 
-    private static final String NO_RUNNING_JOB = "No job is currently running";
-
     private final ScheduledJobQueue myQueue = new ScheduledJobQueue(new DefaultJobComparator());
     private final AtomicReference<ScheduledJob> currentExecutingJob = new AtomicReference<>();
     private final Set<RunPolicy> myRunPolicies = Sets.newConcurrentHashSet();
@@ -65,14 +63,14 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         ScheduledJob job = currentExecutingJob.get();
         if (job != null)
         {
-            String jobId = job.getId().toString();
-            return "Job ID: " + jobId + ", Status: Running";
+            return job.getId().toString();
         }
         else
         {
-            return ScheduleManagerImpl.NO_RUNNING_JOB;
+            return "";
         }
     }
+
     public boolean addRunPolicy(final RunPolicy runPolicy)
     {
         LOG.debug("Run policy {} added", runPolicy);
