@@ -228,9 +228,9 @@ def add_run_repair_subcommand(sub_parsers):
     add_common_arg(parser_run_repair, ARG_OUTPUT_JSON_TABLE)
     add_common_arg(parser_run_repair, ARG_REPAIR_TYPE)
     keyspace_arg = ARG_KEYSPACE.copy()
-    keyspace_arg[
-        "help"
-    ] = "keyspace (applies to all tables within the keyspace with a replication factor greater than 1)"
+    keyspace_arg["help"] = (
+        "keyspace (applies to all tables within the keyspace with a replication factor greater than 1)"
+    )
     keyspace_arg["required"] = False
     add_common_arg(parser_run_repair, keyspace_arg)
 
