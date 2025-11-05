@@ -75,7 +75,7 @@
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
         <jcip.version>1.0</jcip.version>
         <junit.junit.version>4.13.2</junit.junit.version>
-        <junit.junit-vintage-engine.version>6.0.0</junit.junit-vintage-engine.version>
+        <junit.junit-vintage-engine.version>6.0.1</junit.junit-vintage-engine.version>
         <logback.version>1.5.20</logback.version>
         <mockito.core.version>5.20.0</mockito.core.version>
         <org.apache.commons.io.version>2.20.0</org.apache.commons.io.version>
