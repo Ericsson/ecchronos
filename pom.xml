@@ -128,9 +128,9 @@
         <logback.version>1.5.20</logback.version>
 
         <!-- Jackson -->
-        <com.fasterxml.jackson.core.version>2.20.0</com.fasterxml.jackson.core.version>
+        <com.fasterxml.jackson.core.version>2.20.1</com.fasterxml.jackson.core.version>
         <com.fasterxml.jackson.annotations.version>2.20</com.fasterxml.jackson.annotations.version>
-        <com.fasterxml.jackson.dataformat.version>2.20.0</com.fasterxml.jackson.dataformat.version>
+        <com.fasterxml.jackson.dataformat.version>2.20.1</com.fasterxml.jackson.dataformat.version>
         <org.yaml.snakeyaml.version>2.5</org.yaml.snakeyaml.version>
 
         <!-- Other -->
@@ -142,8 +142,8 @@
         <mockito.core.version>5.20.0</mockito.core.version>
         <assertj.version>3.27.6</assertj.version>
         <junit.junit.version>4.13.2</junit.junit.version>
-        <junit.junit-vintage-engine.version>6.0.0</junit.junit-vintage-engine.version>
-        <junit.jupiter.junit-jupiter.version>6.0.0</junit.jupiter.junit-jupiter.version>
+        <junit.junit-vintage-engine.version>6.0.1</junit.junit-vintage-engine.version>
+        <junit.jupiter.junit-jupiter.version>6.0.1</junit.jupiter.junit-jupiter.version>
         <org.apache.commons.io.version>2.20.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
         <equalsverifier.version>4.2.1</equalsverifier.version>
