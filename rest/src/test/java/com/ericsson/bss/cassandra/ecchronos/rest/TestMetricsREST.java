@@ -17,91 +17,107 @@ package com.ericsson.bss.cassandra.ecchronos.rest;
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import io.prometheus.metrics.expositionformats.OpenMetricsTextFormatWriter;
 import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
-@RunWith(MockitoJUnitRunner.Silent.class)
 public class TestMetricsREST
 {
-    @Mock
-    private PrometheusMeterRegistry myPrometheusMeterRegistryMock;
-
-    private MetricsREST myMetricsREST;
-
-    @Before
-    public void init()
-    {
-        myMetricsREST = new MetricsREST(myPrometheusMeterRegistryMock);
-        when(myPrometheusMeterRegistryMock.scrape(any(String.class), any(Set.class))).thenReturn("fooMetrics");
-    }
+    private static final String TEST_COUNTER = "test_counter";
+    private static final String TEST_GAUGE = "test_gauge";
 
     @Test
     public void testGetMetricsMeterRegistryNull()
     {
         MetricsREST metricsREST = new MetricsREST(null);
-        ResponseEntity<String> response = null;
-        try
-        {
-            response = metricsREST.getMetrics("", Collections.emptySet());
-        }
-        catch (ResponseStatusException e)
-        {
-            assertThat(e.getStatusCode().value()).isEqualTo(NOT_FOUND.value());
-        }
-        assertThat(response).isNull();
-        verify(myPrometheusMeterRegistryMock, never()).scrape(any(String.class), any(Set.class));
+        
+        assertThatThrownBy(() -> metricsREST.getMetrics("", Collections.emptySet()))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("status", NOT_FOUND);
     }
 
     @Test
     public void testGetMetricsNoParams()
     {
-        ResponseEntity<String> response = myMetricsREST.getMetrics("", Collections.emptySet());
+        MetricsREST metricsREST = new MetricsREST(createRegistryWithMetrics());
+        
+        ResponseEntity<String> response = metricsREST.getMetrics("", Collections.emptySet());
         assertThat(response.getBody()).isNotEmpty();
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        assertThat(response.getBody()).contains(TEST_COUNTER);
+        assertThat(response.getBody()).contains(TEST_GAUGE);
         List<String> contentTypeHeaders = response.getHeaders().get(HttpHeaders.CONTENT_TYPE);
         assertThat(contentTypeHeaders).hasSize(1);
         assertThat(contentTypeHeaders.get(0)).isEqualTo(PrometheusTextFormatWriter.CONTENT_TYPE);
-        verify(myPrometheusMeterRegistryMock).scrape(PrometheusTextFormatWriter.CONTENT_TYPE, Collections.emptySet());
     }
 
     @Test
     public void testGetMetricsAcceptHeader()
     {
-        ResponseEntity<String> response = myMetricsREST.getMetrics("application/openmetrics-text", Collections.emptySet());
+        MetricsREST metricsREST = new MetricsREST(createRegistryWithMetrics());
+        
+        ResponseEntity<String> response = metricsREST.getMetrics("application/openmetrics-text", Collections.emptySet());
         assertThat(response.getBody()).isNotEmpty();
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        assertThat(response.getBody()).contains(TEST_COUNTER);
+        assertThat(response.getBody()).contains(TEST_GAUGE);
         List<String> contentTypeHeaders = response.getHeaders().get(HttpHeaders.CONTENT_TYPE);
         assertThat(contentTypeHeaders).hasSize(1);
         assertThat(contentTypeHeaders.get(0)).isEqualTo(OpenMetricsTextFormatWriter.CONTENT_TYPE);
-        verify(myPrometheusMeterRegistryMock).scrape(OpenMetricsTextFormatWriter.CONTENT_TYPE, Collections.emptySet());
     }
 
     @Test
     public void testGetMetricsIncludedNames()
     {
-        ResponseEntity<String> response = myMetricsREST.getMetrics("", Collections.singleton("fooMetrics"));
+        MetricsREST metricsREST = new MetricsREST(createRegistryWithMetrics());
+        
+        ResponseEntity<String> response = metricsREST.getMetrics("", Collections.singleton(TEST_COUNTER));
         assertThat(response.getBody()).isNotEmpty();
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        assertThat(response.getBody()).contains(TEST_COUNTER);
+        assertThat(response.getBody()).doesNotContain(TEST_GAUGE);
         List<String> contentTypeHeaders = response.getHeaders().get(HttpHeaders.CONTENT_TYPE);
         assertThat(contentTypeHeaders).hasSize(1);
         assertThat(contentTypeHeaders.get(0)).isEqualTo(PrometheusTextFormatWriter.CONTENT_TYPE);
-        verify(myPrometheusMeterRegistryMock).scrape(PrometheusTextFormatWriter.CONTENT_TYPE, Collections.singleton("fooMetrics"));
+    }
+
+    @Test
+    public void testGetMetricsWithNullIncludedMetricsRealRegistry()
+    {
+        MetricsREST metricsREST = new MetricsREST(createRegistryWithMetrics());
+        
+        ResponseEntity<String> response = metricsREST.getMetrics("", null);
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        assertThat(response.getBody()).isNotEmpty();
+        assertThat(response.getBody()).contains(TEST_COUNTER);
+        assertThat(response.getBody()).contains(TEST_GAUGE);
+    }
+
+    @Test
+    public void testGetMetricsWithEmptyIncludedMetricsRealRegistry()
+    {
+        MetricsREST metricsREST = new MetricsREST(createRegistryWithMetrics());
+        
+        ResponseEntity<String> response = metricsREST.getMetrics("", Collections.emptySet());
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        assertThat(response.getBody()).isNotEmpty();
+        assertThat(response.getBody()).contains(TEST_COUNTER);
+        assertThat(response.getBody()).contains(TEST_GAUGE);
+    }
+
+    private PrometheusMeterRegistry createRegistryWithMetrics()
+    {
+        PrometheusMeterRegistry registry = new PrometheusMeterRegistry(io.micrometer.prometheusmetrics.PrometheusConfig.DEFAULT);
+        registry.counter(TEST_COUNTER).increment();
+        registry.gauge(TEST_GAUGE, 42.0);
+        return registry;
     }
 }
