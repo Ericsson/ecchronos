@@ -26,6 +26,30 @@ Metrics reported using different formats may look differently,
 for reference please refer to ecChronos metrics section below.
 Metrics reported using `file` will be written in CSV format.
 
+## REST API
+
+When HTTP reporting is enabled, metrics are also available via the REST endpoint `/metrics`.
+
+### Retrieving all metrics
+
+To retrieve all available metrics, call the endpoint without parameters:
+```
+GET /metrics
+```
+
+### Filtering specific metrics
+
+To retrieve only specific metrics, use the `name[]` query parameter:
+```
+GET /metrics?name[]=repaired.ratio&name[]=node.repaired.ratio
+```
+
+### Content type
+
+The endpoint supports both Prometheus and OpenMetrics formats:
+- Default: `text/plain; version=0.0.4; charset=utf-8` (Prometheus format)
+- OpenMetrics: Set `Accept: application/openmetrics-text` header
+
 ## Metric exclusion
 Metrics can be excluded from being reported, this is controlled by `statistics.reporting.jmx.excludedMetrics`
 `statistics.reporting.file.excludedMetrics` `statistics.reporting.http.excludedMetrics` in `ecc.yml` file.

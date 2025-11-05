@@ -2,6 +2,8 @@
 
 ## Version 6.1.4
 
+* Fix metrics endpoint returning empty response - Issue #1219
+
 ## Version 6.1.3
 
 * Rework the status commands of the ecctool for more details - Issue #946
