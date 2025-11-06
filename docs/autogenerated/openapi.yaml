@@ -6,7 +6,7 @@ info:
     url: https://www.apache.org/licenses/LICENSE-2.0
   version: 1.0.0
 servers:
-- url: https://localhost:8080
+- url: http://localhost:8080
   description: Generated server url
 tags:
 - name: Reject-Configuration
@@ -17,11 +17,6 @@ tags:
   description: Retrieve metrics about ecChronos
 - name: State-Management
   description: Management of application state
-- name: Actuator
-  description: Monitor and interact
-  externalDocs:
-    description: Spring Boot Actuator Web API Documentation
-    url: https://docs.spring.io/spring-boot/docs/current/actuator-api/html/
 paths:
   /repair-management/v2/repairs:
     get:
@@ -430,56 +425,6 @@ paths:
             application/openmetrics-text; version=1.0.0; charset=utf-8:
               schema:
                 type: string
-  /actuator:
-    get:
-      tags:
-      - Actuator
-      summary: Actuator root web endpoint
-      operationId: links
-      responses:
-        "200":
-          description: OK
-          content:
-            application/vnd.spring-boot.actuator.v3+json:
-              schema:
-                type: object
-                additionalProperties:
-                  type: object
-                  additionalProperties:
-                    $ref: "#/components/schemas/Link"
-            application/vnd.spring-boot.actuator.v2+json:
-              schema:
-                type: object
-                additionalProperties:
-                  type: object
-                  additionalProperties:
-                    $ref: "#/components/schemas/Link"
-            application/json:
-              schema:
-                type: object
-                additionalProperties:
-                  type: object
-                  additionalProperties:
-                    $ref: "#/components/schemas/Link"
-  /actuator/health:
-    get:
-      tags:
-      - Actuator
-      summary: Actuator web endpoint 'health'
-      operationId: health
-      responses:
-        "200":
-          description: OK
-          content:
-            application/vnd.spring-boot.actuator.v3+json:
-              schema:
-                type: object
-            application/vnd.spring-boot.actuator.v2+json:
-              schema:
-                type: object
-            application/json:
-              schema:
-                type: object
   /rejections/all:
     delete:
       tags:
@@ -729,10 +674,3 @@ components:
           minimum: 0
           type: integer
           format: int64
-    Link:
-      type: object
-      properties:
-        href:
-          type: string
-        templated:
-          type: boolean

@@ -1,21 +1,181 @@
 # ecctool
 
-ecctool is a command line utility which can be used to perform actions towards a local ecChronos instance. The actions are implemented in form of subcommands with arguments. All visualization is displayed in form of human-readable tables.
+ecctool is a command line utility used to perform operations toward a local ecChronos instance. Run ‘ecctool &lt;subcommand&gt; –help’ to get more information about each subcommand.
 
 ```console
-usage: ecctool [-h] {repairs,schedules,run-repair,repair-info,start,stop,status,running-job} ...
+usage: ecctool [-h] {rejections,repair-info,repairs,run-repair,running-job,schedules,start,status,stop} ...
 ```
 
 
 ### -h, --help
 show this help message and exit
+
+## ecctool rejections
+
+Manage ecchronos rejections. Use ‘ecctool rejections &lt;action&gt; –help’ for action information.
+
+```console
+usage: ecctool rejections [-h] [-u URL] [-c COLUMNS] [-o OUTPUT] {create,delete,get,update} ...
+```
+
+
+### -h, --help
+show this help message and exit
+
+
+### -u &lt;url&gt;, --url &lt;url&gt;
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
+
+### -c &lt;columns&gt;, --columns &lt;columns&gt;
+table columns to display (format: 0,1,2,…,N)
+
+
+### -o &lt;output&gt;, --output &lt;output&gt;
+output formats: json, table (default)
+
+## ecctool rejections create
+
+```console
+usage: ecctool rejections create [-h] -k KEYSPACE -t TABLE -sh START_HOUR -sm START_MINUTE -eh END_HOUR -em END_MINUTE -dcs DC_EXCLUSIONS [DC_EXCLUSIONS ...] [-u URL]
+```
+
+
+### -h, --help
+show this help message and exit
+
+
+### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
+keyspace
+
+
+### -t &lt;table&gt;, --table &lt;table&gt;
+table
+
+
+### -sh &lt;start_hour&gt;, --start-hour &lt;start_hour&gt;
+start hour
+
+
+### -sm &lt;start_minute&gt;, --start-minute &lt;start_minute&gt;
+start minute
+
+
+### -eh &lt;end_hour&gt;, --end-hour &lt;end_hour&gt;
+end hour
+
+
+### -em &lt;end_minute&gt;, --end-minute &lt;end_minute&gt;
+end minute
+
+
+### -dcs &lt;dc_exclusions&gt;, --dc-exclusions &lt;dc_exclusions&gt;
+datacenters to exclude (format: &lt;dc1&gt; &lt;dc2&gt; … &lt;dcN&gt;)
+
+
+### -u &lt;url&gt;, --url &lt;url&gt;
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
+## ecctool rejections delete
+
+```console
+usage: ecctool rejections delete [-h] [-a ALL] [-k KEYSPACE] [-t TABLE] [-sh START_HOUR] [-sm START_MINUTE] [-dcs DC_EXCLUSIONS [DC_EXCLUSIONS ...]] [-u URL]
+```
+
+
+### -h, --help
+show this help message and exit
+
+
+### -a &lt;all&gt;, --all &lt;all&gt;
+delete all
+
+
+### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
+keyspace
+
+
+### -t &lt;table&gt;, --table &lt;table&gt;
+table
+
+
+### -sh &lt;start_hour&gt;, --start-hour &lt;start_hour&gt;
+start hour
+
+
+### -sm &lt;start_minute&gt;, --start-minute &lt;start_minute&gt;
+start minute
+
+
+### -dcs &lt;dc_exclusions&gt;, --dc-exclusions &lt;dc_exclusions&gt;
+datacenters to exclude (format: &lt;dc1&gt; &lt;dc2&gt; … &lt;dcN&gt;)
+
+
+### -u &lt;url&gt;, --url &lt;url&gt;
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
+## ecctool rejections get
+
+```console
+usage: ecctool rejections get [-h] [-k KEYSPACE] [-t TABLE] [-u URL]
+```
+
+
+### -h, --help
+show this help message and exit
+
+
+### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
+keyspace
+
+
+### -t &lt;table&gt;, --table &lt;table&gt;
+table
+
+
+### -u &lt;url&gt;, --url &lt;url&gt;
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
+## ecctool rejections update
+
+```console
+usage: ecctool rejections update [-h] -k KEYSPACE -t TABLE -sh START_HOUR -sm START_MINUTE [-dcs DC_EXCLUSIONS [DC_EXCLUSIONS ...]] [-u URL]
+```
+
+
+### -h, --help
+show this help message and exit
+
+
+### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
+keyspace
+
+
+### -t &lt;table&gt;, --table &lt;table&gt;
+table
+
+
+### -sh &lt;start_hour&gt;, --start-hour &lt;start_hour&gt;
+start hour
+
+
+### -sm &lt;start_minute&gt;, --start-minute &lt;start_minute&gt;
+start minute
+
+
+### -dcs &lt;dc_exclusions&gt;, --dc-exclusions &lt;dc_exclusions&gt;
+datacenters to exclude (format: &lt;dc1&gt; &lt;dc2&gt; … &lt;dcN&gt;)
+
+
+### -u &lt;url&gt;, --url &lt;url&gt;
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 
 ## ecctool repair-info
 
-Get information about repairs for tables. The repair information is based on repair history, meaning that both manual repairs and schedules will contribute to the repair information. This subcommand requires the user to provide either –since or –duration if –keyspace and –table is not provided. If repair info is fetched for a specific table using –keyspace and –table, the duration will default to the table’s GC_GRACE_SECONDS.
+Get information about repairs for tables. The repair information is based on repair history, meaning both manual and scheduled repairs will be a part of the repair information. This subcommand requires the user to provide either –since or –duration if –keyspace and –table is not provided. If repair info is fetched for a specific table using –keyspace and –table, the duration will default to the table’s GC_GRACE_SECONDS.
 
 ```console
-usage: ecctool repair-info [-h] [-c [COLUMN [COLUMN ...]]] [-k KEYSPACE] [-t TABLE] [-s SINCE] [-d DURATION] [--local] [-u URL] [-l LIMIT]
+usage: ecctool repair-info [-h] [-c COLUMNS] [-k KEYSPACE] [-t TABLE] [-s SINCE] [-d DURATION] [--local] [-u URL] [-l LIMIT] [-o OUTPUT]
 ```
 
 
@@ -23,43 +183,47 @@ usage: ecctool repair-info [-h] [-c [COLUMN [COLUMN ...]]] [-k KEYSPACE] [-t TAB
 show this help message and exit
 
 
-### -c &lt;column&gt;, --column &lt;column&gt;
-Output only stated columns (or all if none is given). First column is 0.
+### -c &lt;columns&gt;, --columns &lt;columns&gt;
+table columns to display (format: 0,1,2,…,N)
 
 
 ### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
-Show repair information for all tables in the specified keyspace.
+keyspace
 
 
 ### -t &lt;table&gt;, --table &lt;table&gt;
-Show repair information for the specified table. Keyspace argument -k or –keyspace becomes mandatory if using this argument.
+table
 
 
 ### -s &lt;since&gt;, --since &lt;since&gt;
-Show repair information since the specified date to now. Date must be specified in ISO8601 format. The time-window will be since to now. Mandatory if –duration or –keyspace and –table is not specified.
+repair information from specified date (ISO8601 format) to now (required unless using –duration or –keyspace/–table)
 
 
 ### -d &lt;duration&gt;, --duration &lt;duration&gt;
-Show repair information for the duration. Duration can be specified as ISO8601 format or as simple format in form: 5s, 5m, 5h, 5d. The time-window will be now-duration to now. Mandatory if –since or –keyspace and –table is not specified.
+repair information for specified duration (ISO8601 or simple format: 5s, 5m, 5h, 5d) from now-duration to now (required unless using –since or –keyspace/–table)
 
 
 ### --local
-Show repair information only for the local node.
+local node only
 
 
 ### -u &lt;url&gt;, --url &lt;url&gt;
-The ecChronos host to connect to, specified in the format [http:/](http:/)/&lt;host&gt;:&lt;port&gt;.
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 
 
 ### -l &lt;limit&gt;, --limit &lt;limit&gt;
-Limits the number of rows printed in the output. Specified as a number, -1 to disable limit.
+limit output rows (use -1 for no limit)
+
+
+### -o &lt;output&gt;, --output &lt;output&gt;
+output formats: json, table (default)
 
 ## ecctool repairs
 
-Show the status of all manual repairs. This subcommand has no mandatory parameters.
+Show the status of all manual repairs.
 
 ```console
-usage: ecctool repairs [-h] [-c [COLUMN [COLUMN ...]]] [-k KEYSPACE] [-t TABLE] [-u URL] [-i ID] [-l LIMIT] [--hostid HOSTID]
+usage: ecctool repairs [-h] [-c COLUMNS] [-k KEYSPACE] [-t TABLE] [-u URL] [-i ID] [-l LIMIT] [-o OUTPUT] [--hostid HOSTID]
 ```
 
 
@@ -67,39 +231,43 @@ usage: ecctool repairs [-h] [-c [COLUMN [COLUMN ...]]] [-k KEYSPACE] [-t TABLE] 
 show this help message and exit
 
 
-### -c &lt;column&gt;, --column &lt;column&gt;
-Output only stated columns (or all if none is given). First column is 0.
+### -c &lt;columns&gt;, --columns &lt;columns&gt;
+table columns to display (format: 0,1,2,…,N)
 
 
 ### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
-Show repairs for the specified keyspace. This argument is mutually exclusive with -i and –id.
+keyspace (mutually exclusive with -i/–id)
 
 
 ### -t &lt;table&gt;, --table &lt;table&gt;
-Show repairs for the specified table. Keyspace argument -k or –keyspace becomes mandatory if using this argument. This argument is mutually exclusive with -i and –id.
+table (requires -k/–keyspace and is mutually exclusive with -i/–id)
 
 
 ### -u &lt;url&gt;, --url &lt;url&gt;
-The ecChronos host to connect to, specified in the format [http:/](http:/)/&lt;host&gt;:&lt;port&gt;.
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 
 
 ### -i &lt;id&gt;, --id &lt;id&gt;
-Show repairs matching the specified ID. This argument is mutually exclusive with -k, –keyspace, -t and –table.
+only matching id (mutually exclusive with -k/–keyspace and -t/–table)
 
 
 ### -l &lt;limit&gt;, --limit &lt;limit&gt;
-Limits the number of rows printed in the output. Specified as a number, -1 to disable limit.
+limit output rows (use -1 for no limit)
+
+
+### -o &lt;output&gt;, --output &lt;output&gt;
+output formats: json, table (default)
 
 
 ### --hostid &lt;hostid&gt;
-Show repairs for the specified host id. The host id corresponds to the Cassandra instance ecChronos is connected to.
+show repairs for specified cassandra instance host id
 
 ## ecctool run-repair
 
-Run a manual repair. The manual repair will be triggered in ecChronos. EcChronos will perform repair through Cassandra JMX interface. This subcommand has no mandatory parameters.
+Triggers a manual repair in ecChronos. This will be done through the Cassandra JMX interface.
 
 ```console
-usage: ecctool run-repair [-h] [-u URL] [--local] [-r REPAIR_TYPE] [-k KEYSPACE] [-t TABLE]
+usage: ecctool run-repair [-h] [-c COLUMNS] [-u URL] [--local] [-o OUTPUT] [-r REPAIR_TYPE] [-k KEYSPACE] [-t TABLE]
 ```
 
 
@@ -107,31 +275,39 @@ usage: ecctool run-repair [-h] [-u URL] [--local] [-r REPAIR_TYPE] [-k KEYSPACE]
 show this help message and exit
 
 
+### -c &lt;columns&gt;, --columns &lt;columns&gt;
+table columns to display (format: 0,1,2,…,N)
+
+
 ### -u &lt;url&gt;, --url &lt;url&gt;
-The ecChronos host to connect to, specified in the format [http:/](http:/)/&lt;host&gt;:&lt;port&gt;.
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 
 
 ### --local
-Run repair for the local node only, i.e repair will only be performed for the ranges that the local node is a replica for.
+local node only
+
+
+### -o &lt;output&gt;, --output &lt;output&gt;
+output formats: json, table (default)
 
 
 ### -r &lt;repair_type&gt;, --repair_type &lt;repair_type&gt;
-The type of the repair, possible values are ‘vnode’, ‘parallel_vnode’, ‘incremental’
+type of repair (accepted values: vnode, parallel_vnode and incremental)
 
 
 ### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
-Run repair for the specified keyspace. Repair will be run for all tables within the keyspace with replication factor higher than 1.
+keyspace (applies to all tables within the keyspace with a replication factor greater than 1)
 
 
 ### -t &lt;table&gt;, --table &lt;table&gt;
-Run repair for the specified table. Keyspace argument -k or –keyspace becomes mandatory if using this argument.
+table (requires -k/–keyspace)
 
 ## ecctool running-job
 
-Show which (if any) job is currently running
+Show which (if any) job is currently running.
 
 ```console
-usage: ecctool running-job [-h] [-u URL]
+usage: ecctool running-job [-h] [-o OUTPUT] [-u URL]
 ```
 
 
@@ -139,15 +315,19 @@ usage: ecctool running-job [-h] [-u URL]
 show this help message and exit
 
 
+### -o &lt;output&gt;, --output &lt;output&gt;
+output formats: json (defaults to no format)
+
+
 ### -u &lt;url&gt;, --url &lt;url&gt;
-The ecChronos host to connect to, specified in the format [http:/](http:/)/&lt;host&gt;:&lt;port&gt;.
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 
 ## ecctool schedules
 
-Show the status of schedules. This subcommand has no mandatory parameters.
+Show the status of schedules.
 
 ```console
-usage: ecctool schedules [-h] [-c [COLUMN [COLUMN ...]]] [-k KEYSPACE] [-t TABLE] [-u URL] [-i ID] [-f] [-l LIMIT]
+usage: ecctool schedules [-h] [-c COLUMNS] [-f] [-i ID] [-k KEYSPACE] [-l LIMIT] [-o OUTPUT] [-t TABLE] [-u URL]
 ```
 
 
@@ -155,39 +335,43 @@ usage: ecctool schedules [-h] [-c [COLUMN [COLUMN ...]]] [-k KEYSPACE] [-t TABLE
 show this help message and exit
 
 
-### -c &lt;column&gt;, --column &lt;column&gt;
-Output only stated columns (or all if none is given). First column is 0.
-
-
-### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
-Show schedules for the specified keyspace. This argument is mutually exclusive with -i and –id.
-
-
-### -t &lt;table&gt;, --table &lt;table&gt;
-Show schedules for the specified table. Keyspace argument -k or –keyspace becomes mandatory if using this argument. This argument is mutually exclusive with -i and –id.
-
-
-### -u &lt;url&gt;, --url &lt;url&gt;
-The ecChronos host to connect to, specified in the format [http:/](http:/)/&lt;host&gt;:&lt;port&gt;.
-
-
-### -i &lt;id&gt;, --id &lt;id&gt;
-Show schedules matching the specified ID. This argument is mutually exclusive with -k, –keyspace, -t and –table.
+### -c &lt;columns&gt;, --columns &lt;columns&gt;
+table columns to display (format: 0,1,2,…,N)
 
 
 ### -f, --full
-Show full schedules, can only be used with -i or –id. Full schedules include schedule configuration and repair state per vnode.
+show full schedules with configuration and vnode state (requires -i/–id)
+
+
+### -i &lt;id&gt;, --id &lt;id&gt;
+only matching id (mutually exclusive with -k/–keyspace and -t/–table)
+
+
+### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
+keyspace (mutually exclusive with -i/–id)
 
 
 ### -l &lt;limit&gt;, --limit &lt;limit&gt;
-Limits the number of rows printed in the output. Specified as a number, -1 to disable limit.
+limit output rows (use -1 for no limit)
+
+
+### -o &lt;output&gt;, --output &lt;output&gt;
+output formats: json, table (default)
+
+
+### -t &lt;table&gt;, --table &lt;table&gt;
+table (requires -k/–keyspace and is mutually exclusive with -i/–id)
+
+
+### -u &lt;url&gt;, --url &lt;url&gt;
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 
 ## ecctool start
 
-Start the ecChronos service. This subcommand has no mandatory parameters.
+Start the ecChronos service.
 
 ```console
-usage: ecctool start [-h] [-f] [-p PIDFILE]
+usage: ecctool start [-h] [-f] [-o OUTPUT] [-p PIDFILE]
 ```
 
 
@@ -196,18 +380,22 @@ show this help message and exit
 
 
 ### -f, --foreground
-Start the ecChronos instance in foreground mode (exec in current terminal and log to stdout)
+run in foreground (executes in current terminal and logs to stdout)
+
+
+### -o &lt;output&gt;, --output &lt;output&gt;
+output formats: json (defaults to no format)
 
 
 ### -p &lt;pidfile&gt;, --pidfile &lt;pidfile&gt;
-Start the ecChronos instance and store the pid in the specified pid file.
+file for storing process id
 
 ## ecctool status
 
-View status of ecChronos instance. This subcommand has no mandatory parameters.
+View status of the ecChronos instance.
 
 ```console
-usage: ecctool status [-h] [-u URL]
+usage: ecctool status [-h] [-u URL] [-o OUTPUT]
 ```
 
 
@@ -216,14 +404,18 @@ show this help message and exit
 
 
 ### -u &lt;url&gt;, --url &lt;url&gt;
-The ecChronos host to connect to, specified in the format [http:/](http:/)/&lt;host&gt;:&lt;port&gt;.
+ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
+
+
+### -o &lt;output&gt;, --output &lt;output&gt;
+output formats: json (defaults to no format)
 
 ## ecctool stop
 
-Stop the ecChronos instance. Stopping of ecChronos is done by using kill with SIGTERM signal (same as kill in shell) for the pid. This subcommand has no mandatory parameters.
+Stop the ecChronos service (sends SIGTERM to the process).
 
 ```console
-usage: ecctool stop [-h] [-p PIDFILE]
+usage: ecctool stop [-h] [-o OUTPUT] [-p PIDFILE]
 ```
 
 
@@ -231,8 +423,12 @@ usage: ecctool stop [-h] [-p PIDFILE]
 show this help message and exit
 
 
+### -o &lt;output&gt;, --output &lt;output&gt;
+output formats: json (defaults to no format)
+
+
 ### -p &lt;pidfile&gt;, --pidfile &lt;pidfile&gt;
-Stops the ecChronos instance by pid fetched from the specified pid file.
+file containing process id
 
 # Examples
 

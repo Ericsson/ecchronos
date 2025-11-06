@@ -2,6 +2,7 @@
 
 ## Version 6.1.4
 
+* Add JSON output format to remaining subcommands - Issue #819
 * Fix metrics endpoint returning empty response - Issue #1219
 
 ## Version 6.1.3

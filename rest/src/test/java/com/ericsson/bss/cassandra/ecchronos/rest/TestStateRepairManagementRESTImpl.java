@@ -48,9 +48,8 @@ public class TestStateRepairManagementRESTImpl
         ResponseEntity<Map<String, Object>> response = stateREST.getAllState();
         
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).hasSize(2);
+        assertThat(response.getBody()).hasSize(1);
         assertThat(response.getBody()).containsEntry("running", true);
-        assertThat(response.getBody()).containsKey("timestamp");
     }
 
     @Test
@@ -62,11 +61,10 @@ public class TestStateRepairManagementRESTImpl
         ResponseEntity<Map<String, Object>> response = stateREST.getAllState();
         
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).hasSize(4); // ... plus "running" and "timestamp"
+        assertThat(response.getBody()).hasSize(3); // ... and "running"
         assertThat(response.getBody()).containsEntry("key1", "value1");
         assertThat(response.getBody()).containsEntry("key2", 42);
         assertThat(response.getBody()).containsEntry("running", true);
-        assertThat(response.getBody()).containsKey("timestamp");
     }
 
     @Test
