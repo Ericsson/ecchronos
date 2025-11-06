@@ -75,7 +75,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
                 .getAgentConnectionConfig();
         DistributedNativeConnection distributedNativeConfig = config.getConnectionConfig()
                 .getCqlConnection();
-        
+
         CQLRetryPolicyConfig retryPolicyConfig = distributedNativeConfig.getCqlRetryPolicy();
         Security.CqlSecurity cqlSecurity = cqlSecuritySupplier.get();
         boolean authEnabled = cqlSecurity.getCqlCredentials().isEnabled();
