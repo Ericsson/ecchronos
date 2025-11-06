@@ -334,7 +334,7 @@ public class TestConfig
     @Test
     public void testCqlRetryPoliceConfig()
     {
-        CQLRetryPolicyConfig cqlRetryPolicyConfig = config.getConnectionConfig().getCqlConnection().getAgentConnectionConfig().getCqlRetryPolicy();
+        CQLRetryPolicyConfig cqlRetryPolicyConfig = config.getConnectionConfig().getCqlConnection().getCqlRetryPolicy();
         assertNotNull(cqlRetryPolicyConfig);
         assertThat(cqlRetryPolicyConfig.getMaxAttempts()).isEqualTo(10);
         assertThat(cqlRetryPolicyConfig.getUnit()).isEqualTo(TimeUnit.MINUTES);
