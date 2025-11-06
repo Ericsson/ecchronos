@@ -92,18 +92,18 @@ connection:
       # Retry policy used during the creation of a CqlSession.
       # This policy defines how connection attempts should be retried in case
       # of temporary failures when establishing a session with Cassandra.
-      retryPolicy:
-        ## Max number of attempts ecChronos will try to connect with Cassandra.
-        maxAttempts: 5
-        ## Delay use to wait between an attempt and another, this value will be multiplied by the current attempt count powered by two.
-        ## If the current attempt is 4 and the default delay is 5 seconds, so ((4(attempt) x 2) x 5(default delay)) = 40 seconds.
-        ## If the calculated delay is greater than maxDelay, maxDelay will be used instead of the calculated delay.
-        delay: 5
-        ## Maximum delay before the next connection attempt is made.
-        ## Setting it as 0 will disable maxDelay and the delay interval will
-        ## be calculated based on the attempt count and the default delay.
-        maxDelay: 30
-        unit: seconds
+    retryPolicy:
+      ## Max number of attempts ecChronos will try to connect with Cassandra.
+      maxAttempts: 5
+      ## Delay use to wait between an attempt and another, this value will be multiplied by the current attempt count powered by two.
+      ## If the current attempt is 4 and the default delay is 5 seconds, so ((4(attempt) x 2) x 5(default delay)) = 40 seconds.
+      ## If the calculated delay is greater than maxDelay, maxDelay will be used instead of the calculated delay.
+      delay: 5
+      ## Maximum delay before the next connection attempt is made.
+      ## Setting it as 0 will disable maxDelay and the delay interval will
+      ## be calculated based on the attempt count and the default delay.
+      maxDelay: 30
+      unit: seconds
       # Schedule configuration for the ReloadSchedulerService, responsible for monitoring
       # Cassandra topology changes during execution. If a topology change is detected,
       # the internal topology state is automatically refreshed.
