@@ -31,14 +31,19 @@ import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.core.state.HostStates;
+import com.ericsson.bss.cassandra.ecchronos.core.metrics.MetricInspector;
 import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
+import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetricsImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableStorageStates;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import java.io.Closeable;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,13 +59,16 @@ public class ECChronosInternals implements Closeable
     private final CassandraMetrics myCassandraMetrics;
     private final HostStatesImpl myHostStatesImpl;
     private final TableStorageStatesImpl myTableStorageStatesImpl;
+    private final TableRepairMetricsImpl myTableRepairMetricsImpl;
     private final CASLockFactory myLockFactory;
+    private final MetricInspector myMetricInspector;
 
     public ECChronosInternals(
             final Config configuration,
             final DistributedNativeConnectionProvider nativeConnectionProvider,
             final DistributedJmxConnectionProvider jmxConnectionProvider,
-            final EccNodesSync eccNodesSync)
+            final EccNodesSync eccNodesSync,
+            final MeterRegistry meterRegistry)
     {
         myJmxProxyFactory = DistributedJmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(jmxConnectionProvider)
@@ -85,13 +93,34 @@ public class ECChronosInternals implements Closeable
                 myTableReferenceFactory,
                 nativeConnectionProvider);
 
-        myTableStorageStatesImpl = TableStorageStatesImpl.builder()
-                .withReplicatedTableProvider(myReplicatedTableProvider)
-                .withJmxProxyFactory(myJmxProxyFactory)
-                .withConnectionProvider(nativeConnectionProvider)
-                .build();
-
         myCassandraMetrics = new CassandraMetrics(myJmxProxyFactory);
+
+        if (configuration.getStatisticsConfig().isEnabled())
+        {
+            myTableStorageStatesImpl = TableStorageStatesImpl.builder()
+                    .withReplicatedTableProvider(myReplicatedTableProvider)
+                    .withJmxProxyFactory(myJmxProxyFactory)
+                    .withConnectionProvider(nativeConnectionProvider)
+                    .build();
+
+            myTableRepairMetricsImpl = TableRepairMetricsImpl.builder()
+                    .withMeterRegistry(meterRegistry)
+                    .build();
+
+            myMetricInspector = new MetricInspector(meterRegistry,
+                    configuration.getStatisticsConfig().getRepairFailuresCount(),
+                    configuration.getStatisticsConfig().getRepairFailuresTimeWindow()
+                            .getInterval(TimeUnit.MINUTES),
+                    configuration.getStatisticsConfig().getTriggerIntervalForMetricInspection()
+                            .getInterval(TimeUnit.MILLISECONDS));
+            myMetricInspector.startInspection();
+        }
+        else
+        {
+            myTableStorageStatesImpl = null;
+            myTableRepairMetricsImpl = null;
+            myMetricInspector = null;
+        }
 
         CasLockFactoryConfig casLockFactoryConfig = configuration.getLockFactory()
                 .getCasLockFactoryConfig();
@@ -140,7 +169,7 @@ public class ECChronosInternals implements Closeable
 
     public final TableRepairMetrics getTableRepairMetrics()
     {
-        return NO_OP_REPAIR_METRICS;
+        return Objects.requireNonNullElse(myTableRepairMetricsImpl, NO_OP_REPAIR_METRICS);
     }
 
     public final HostStates getHostStates()
@@ -169,6 +198,16 @@ public class ECChronosInternals implements Closeable
         myScheduleManagerImpl.close();
 
         myCassandraMetrics.close();
+
+        if (myTableRepairMetricsImpl != null)
+        {
+            myTableRepairMetricsImpl.close();
+        }
+
+        if (myTableStorageStatesImpl != null)
+        {
+            myTableStorageStatesImpl.close();
+        }
     }
 
     private static final class NoOpRepairMetrics implements TableRepairMetrics

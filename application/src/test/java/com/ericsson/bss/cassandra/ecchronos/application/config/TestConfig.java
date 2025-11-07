@@ -341,5 +341,38 @@ public class TestConfig
         assertThat(cqlRetryPolicyConfig.getDelay()).isEqualTo(600000);
         assertThat(cqlRetryPolicyConfig.getMaxDelay()).isEqualTo(2100000);
     }
+
+    @Test
+    public void testStatisticsConfig()
+    {
+        assertThat(config.getStatisticsConfig()).isNotNull();
+        assertThat(config.getStatisticsConfig().isEnabled()).isFalse();
+        assertThat(config.getStatisticsConfig().getOutputDirectory().getPath()).isEqualTo("./non-default-statistics");
+        assertThat(config.getStatisticsConfig().getMetricsPrefix()).isEqualTo("unittest");
+        assertThat(config.getStatisticsConfig().getRepairFailuresCount()).isEqualTo(5);
+    }
+
+    @Test
+    public void testStatisticsRepairFailuresTimeWindow()
+    {
+        assertThat(config.getStatisticsConfig().getRepairFailuresTimeWindow().getTime()).isEqualTo(5L);
+        assertThat(config.getStatisticsConfig().getRepairFailuresTimeWindow().getUnit()).isEqualTo(TimeUnit.MINUTES);
+    }
+
+    @Test
+    public void testStatisticsTriggerInterval()
+    {
+        assertThat(config.getStatisticsConfig().getTriggerIntervalForMetricInspection().getTime()).isEqualTo(30L);
+        assertThat(config.getStatisticsConfig().getTriggerIntervalForMetricInspection().getUnit()).isEqualTo(TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testStatisticsReportingConfigs()
+    {
+        assertThat(config.getStatisticsConfig().getReportingConfigs()).isNotNull();
+        assertThat(config.getStatisticsConfig().getReportingConfigs().getJmxReportingConfig().isEnabled()).isFalse();
+        assertThat(config.getStatisticsConfig().getReportingConfigs().getFileReportingConfig().isEnabled()).isTrue();
+        assertThat(config.getStatisticsConfig().getReportingConfigs().getHttpReportingConfig().isEnabled()).isTrue();
+    }
 }
 

@@ -297,6 +297,74 @@ repair:
   ##
   repair_type: vnode
 
+statistics:
+  enabled: true
+  ##
+  ## Decides how statistics should be exposed.
+  ## If all reporting is disabled, the statistics will be disabled as well.
+  ##
+  reporting:
+    jmx:
+      enabled: true
+      ##
+      ## The metrics can be excluded on name and on tag values using quoted regular expressions.
+      ## Exclusion on name should be done without the prefix.
+      ## If an exclusion is without tags, then metric matching the name will be excluded.
+      ## If both name and tags are specified, then the metric must match both to be excluded.
+      ## If multiple tags are specified, the metric must match all tags to be excluded.
+      ## By default, no metrics are excluded.
+      ## For list of available metrics and tags refer to the documentation.
+      ##
+      excludedMetrics: []
+    file:
+      enabled: true
+      ##
+      ## The metrics can be excluded on name and on tag values using quoted regular expressions.
+      ## Exclusion on name should be done without the prefix.
+      ## If an exclusion is without tags, then metric matching the name will be excluded.
+      ## If both name and tags are specified, then the metric must match both to be excluded.
+      ## If multiple tags are specified, the metric must match all tags to be excluded.
+      ## By default, no metrics are excluded.
+      ## For list of available metrics and tags refer to the documentation.
+      ##
+      excludedMetrics: []
+    http:
+      enabled: true
+      ##
+      ## The metrics can be excluded on name and on tag values using quoted regular expressions.
+      ## Exclusion on name should be done without the prefix.
+      ## If an exclusion is without tags, then metric matching the name will be excluded.
+      ## If both name and tags are specified, then the metric must match both to be excluded.
+      ## If multiple tags are specified, the metric must match all tags to be excluded.
+      ## By default, no metrics are excluded.
+      ## For list of available metrics and tags refer to the documentation.
+      ##
+      excludedMetrics: []
+  directory: ./statistics
+  ##
+  ## Prefix all metrics with below string
+  ## The prefix cannot start or end with a dot or any other path separator.
+  ##
+  prefix: ''
+  ##
+  ## Number of repair failures before status logger logs metrics in debug logs
+  ## The number is used to trigger a status once number of failures is breached in a time window mentioned below
+  ##
+  repair_failures_count: 5
+  ##
+  ## Time window over which to track repair failures in node for trigger status logger messages in debug log
+  ##
+  repair_failures_time_window:
+    time: 30
+    unit: minutes
+  ##
+  ## Trigger interval for metric inspection.
+  ## This time should always be lesser than repair_failures_time_window
+  ##
+  trigger_interval_for_metric_inspection:
+    time: 5
+    unit: seconds
+
 run_policy:
   time_based:
     ##

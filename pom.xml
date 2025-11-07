@@ -119,6 +119,13 @@
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
         <swagger-annotations.version>2.2.40</swagger-annotations.version>
 
+        <!-- Metrics -->
+        <io.micrometer.version>1.15.5</io.micrometer.version>
+        <io.prometheus.simpleclient.version>0.16.0</io.prometheus.simpleclient.version>
+        <io.prometheus.client-java.version>1.4.1</io.prometheus.client-java.version>
+        <io.prometheus.prometheus-metrics-core.version>1.4.1</io.prometheus.prometheus-metrics-core.version>
+        <io.prometheus.prometheus-metrics-tracer-common.version>1.4.1</io.prometheus.prometheus-metrics-tracer-common.version>
+
         <!-- Cassandra -->
         <cassandra.driver.core.version>4.19.1</cassandra.driver.core.version>
         <com.typesafe.config.version>1.4.5</com.typesafe.config.version>
@@ -150,6 +157,7 @@
         <jcip.version>1.0</jcip.version>
         <testcontainers.version>1.21.3</testcontainers.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.82</org.bouncycastle.bcpkix-jdk18on.version>
+        <org.apache.httpcomponents.client5.httpclient5.version>5.5.1</org.apache.httpcomponents.client5.httpclient5.version>
 
         <!-- Plugin versions -->
         <com.mycila.license-maven-plugin.version>5.0.0</com.mycila.license-maven-plugin.version>
@@ -244,6 +252,55 @@
                 <groupId>jakarta.servlet</groupId>
                 <artifactId>jakarta.servlet-api</artifactId>
                 <version>${jakarta.servlet-api.version}</version>
+            </dependency>
+
+            <!-- Metrics -->
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-core</artifactId>
+                <version>${io.micrometer.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-prometheus</artifactId>
+                <version>${io.micrometer.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-jmx</artifactId>
+                <version>${io.micrometer.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.prometheus</groupId>
+                <artifactId>prometheus-metrics-core</artifactId>
+                <version>${io.prometheus.prometheus-metrics-core.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.prometheus</groupId>
+                <artifactId>prometheus-metrics-exposition-formats</artifactId>
+                <version>${io.prometheus.prometheus-metrics-core.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.prometheus</groupId>
+                <artifactId>prometheus-metrics-tracer-common</artifactId>
+                <version>${io.prometheus.prometheus-metrics-tracer-common.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.prometheus</groupId>
+                <artifactId>simpleclient</artifactId>
+                <version>${io.prometheus.simpleclient.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.prometheus</groupId>
+                <artifactId>client_java</artifactId>
+                <version>${io.prometheus.client-java.version}</version>
             </dependency>
 
             <!-- Cassandra Driver -->
@@ -491,6 +548,13 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-test</artifactId>
                 <version>${org.springframework.spring-boot-test.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.httpcomponents.client5</groupId>
+                <artifactId>httpclient5</artifactId>
+                <version>${org.apache.httpcomponents.client5.httpclient5.version}</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>
