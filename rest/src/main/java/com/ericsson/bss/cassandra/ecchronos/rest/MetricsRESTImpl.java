@@ -47,6 +47,7 @@ public class MetricsRESTImpl implements MetricsREST
         myPrometheusMeterRegistry = prometheusMeterRegistry;
     }
 
+    @Override
     @GetMapping(value = "/metrics", produces = { PrometheusTextFormatWriter.CONTENT_TYPE,
             OpenMetricsTextFormatWriter.CONTENT_TYPE })
     @Operation(operationId = "metrics", description = "Get metrics in the specified format", summary = "Get metrics")

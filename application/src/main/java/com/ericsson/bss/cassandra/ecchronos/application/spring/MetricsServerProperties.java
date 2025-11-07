@@ -20,6 +20,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.boot.web.server.Ssl;
 
 @ConfigurationProperties (prefix = "metrics-server")
+@SuppressWarnings("PMD.DataClass")
 public class MetricsServerProperties
 {
     private static final int DEFAULT_PORT = 8081;
