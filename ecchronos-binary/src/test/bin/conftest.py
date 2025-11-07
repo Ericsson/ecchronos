@@ -68,7 +68,7 @@ class TestFixture:
         try:
             logger.info("Starting ecChronos")
             self.ecchronos_process = subprocess.Popen(
-                command, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
             )
             time.sleep(STARTUP_WAIT_TIME)
             logger.info(f"ecChronos started with PID file: {global_vars.PIDFILE}")
