@@ -136,13 +136,22 @@ jobs:
           path: ${{ matrix.artifacts_dir }}/cassandra*.log
           if-no-files-found: 'ignore'
 
-      - name: Upload yaml
+      - name: Upload echronos logs
         if: ${{ failure() && steps.tests.conclusion == 'failure' }}
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: ${{ matrix.name }}-ecc-logs
           path: ecchronos-binary/target/test/ecchronos-binary-agent-1.0.0-SNAPSHOT/ecc.log
           if-no-files-found: 'ignore'
+
+      - name: Upload yaml
+        if: ${{ failure() && steps.tests.conclusion == 'failure' }}
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: ${{ matrix.name }}-ecc-yaml
+          path: ecchronos-binary/target/test/ecchronos-binary-agent-1.0.0-SNAPSHOT/conf/ecc.yml
+          if-no-files-found: 'ignore'
+
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
