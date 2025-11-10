@@ -22,6 +22,7 @@ import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.AgentConnectionConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.CQLRetryPolicyConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.connection.DistributedNativeConnection;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.ReloadingAuthProvider;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
@@ -72,7 +73,10 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
         AgentConnectionConfig agentConnectionConfig = config.getConnectionConfig()
                 .getCqlConnection()
                 .getAgentConnectionConfig();
-        CQLRetryPolicyConfig retryPolicyConfig = agentConnectionConfig.getCqlRetryPolicy();
+        DistributedNativeConnection distributedNativeConfig = config.getConnectionConfig()
+                .getCqlConnection();
+
+        CQLRetryPolicyConfig retryPolicyConfig = distributedNativeConfig.getCqlRetryPolicy();
         Security.CqlSecurity cqlSecurity = cqlSecuritySupplier.get();
         boolean authEnabled = cqlSecurity.getCqlCredentials().isEnabled();
         boolean tlsEnabled = cqlSecurity.getCqlTlsConfig().isEnabled();

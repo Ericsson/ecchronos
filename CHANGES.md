@@ -2,9 +2,10 @@
 
 ## Version 1.0.0 (Not yet Released)
 
-* An invalid node id should throw a useful exception Issue #1199
-* Manual repair to obey disabled tables Issue #1109
-* Resolve initial contact points at each connection attemt - Issue #1178
+* Restore retryPolicy location in ecc.yml to maintain backward compatibility - Issue 1180
+* An invalid node id should throw a useful exception - Issue #1199
+* Manual repair to obey disabled tables - Issue #1109
+* Resolve initial contact points at each connection attempt - Issue #1178
 * Remove DatacenterAwarePolicy - Issue #1128
 * Run Repair --all Fails With "Repair Request Failed" in DatacenterAware Mode - Issue #1158
 * Separate Lock Failure Cache by Node to Prevent Cross-Node Lock Blocking - Issue #1159
