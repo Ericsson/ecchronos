@@ -28,6 +28,7 @@ public class DistributedNativeConnection extends Connection<DistributedNativeCon
 {
     private AgentConnectionConfig myAgentConnectionConfig = new AgentConnectionConfig();
     private Interval myConnectionDelay = new Interval();
+    private CQLRetryPolicyConfig myCqlRetryPolicy = new CQLRetryPolicyConfig();
 
     public DistributedNativeConnection()
     {
@@ -73,6 +74,28 @@ public class DistributedNativeConnection extends Connection<DistributedNativeCon
     public Interval getConnectionDelay()
     {
         return myConnectionDelay;
+    }
+    /**
+     * Gets the retry policy configuration.
+     *
+     * @return the retry policy configuration.
+     */
+    @JsonProperty("retryPolicy")
+    public CQLRetryPolicyConfig getCqlRetryPolicy()
+    {
+        return myCqlRetryPolicy;
+    }
+
+    /**
+     * Sets the retry policy configuration.
+     *
+     * @param cqlRetryPolicyConfig
+     *         the retry policy configuration to set.
+     */
+    @JsonProperty("retryPolicy")
+    public void setCqlRetryPolicy(final CQLRetryPolicyConfig cqlRetryPolicyConfig)
+    {
+        myCqlRetryPolicy = cqlRetryPolicyConfig;
     }
 
     /**
