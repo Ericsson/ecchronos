@@ -181,7 +181,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             long nextRun = runPolicy.validate(job);
             if (nextRun != -1L)
             {
-                LOG.debug("Job {} rejected for {} ms by {}", job, nextRun, runPolicy);
+                LOG.info("Job {} rejected for {} ms by {}", job, nextRun, runPolicy);
                 return nextRun;
             }
         }
@@ -264,7 +264,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             {
                 if (!validate(next))
                 {
-                    LOG.debug("Job {} was stopped, will continue later", next);
+                    LOG.info("Job {} was stopped, will continue later", next);
                     break;
                 }
                 hasRun |= tryRunTask(next, task);
@@ -277,11 +277,11 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 final ScheduledJob job,
                 final ScheduledTask task)
         {
-            LOG.debug("Trying to run task {} in node {}", task, nodeID);
+            LOG.info("Trying to run task {} in node {}", task, nodeID);
             LOG.debug("Trying to acquire lock for {}", task);
             try (LockFactory.DistributedLock lock = task.getLock(myLockFactory, nodeID))
             {
-                LOG.debug("Lock has been acquired on node with Id {} with lock {}", nodeID, lock);
+                LOG.info("Lock has been acquired on node with Id {} with lock {}", nodeID, lock);
                 boolean successful = runTask(task);
                 job.postExecute(successful, task);
                 return true;
