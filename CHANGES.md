@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Add statistics configuration and metrics implementation Issue #1191
 * Restore retryPolicy location in ecc.yml to maintain backward compatibility - Issue 1180
 * An invalid node id should throw a useful exception - Issue #1199
 * Manual repair to obey disabled tables - Issue #1109

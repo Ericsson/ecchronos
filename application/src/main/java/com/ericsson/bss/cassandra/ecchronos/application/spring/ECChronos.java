@@ -14,6 +14,18 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+import io.micrometer.core.instrument.MeterRegistry;
+
+import java.io.Closeable;
+import java.util.Collections;
+import java.util.concurrent.ThreadPoolExecutor;
+
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.ThreadPoolTaskConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.FileBasedRepairConfiguration;
@@ -28,8 +40,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.RepairSch
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.RepairStateFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairStateFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
-import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairStatsProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
@@ -38,16 +50,6 @@ import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryServ
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ConfigurationException;
-import java.io.Closeable;
-
-import com.datastax.oss.driver.api.core.CqlSession;
-import java.util.Collections;
-import java.util.concurrent.ThreadPoolExecutor;
-
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
 public class ECChronos implements Closeable
@@ -68,12 +70,13 @@ public class ECChronos implements Closeable
             final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
             final EccNodesSync eccNodesSync,
             final RepairHistoryService repairHistoryService,
-            final RepairFaultReporter repairFaultReporter
+            final RepairFaultReporter repairFaultReporter,
+            final MeterRegistry eccCompositeMeterRegistry
             )
             throws ConfigurationException
     {
         myECChronosInternals = new ECChronosInternals(
-                configuration, nativeConnectionProvider, jmxConnectionProvider, eccNodesSync);
+                configuration, nativeConnectionProvider, jmxConnectionProvider, eccNodesSync, eccCompositeMeterRegistry);
 
         CqlSession session = nativeConnectionProvider.getCqlSession();
 

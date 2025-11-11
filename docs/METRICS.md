@@ -26,6 +26,30 @@ Metrics reported using different formats may look differently,
 for reference please refer to ecChronos metrics section below.
 Metrics reported using `file` will be written in CSV format.
 
+## REST API
+
+When HTTP reporting is enabled, metrics are also available via the REST endpoint `/metrics`.
+
+### Retrieving all metrics
+
+To retrieve all available metrics, call the endpoint without parameters:
+```
+GET /metrics
+```
+
+### Filtering specific metrics
+
+To retrieve only specific metrics, use the `name[]` query parameter:
+```
+GET /metrics?name[]=repaired.ratio&name[]=node.repaired.ratio
+```
+
+### Content type
+
+The endpoint supports both Prometheus and OpenMetrics formats:
+- Default: `text/plain; version=0.0.4; charset=utf-8` (Prometheus format)
+- OpenMetrics: Set `Accept: application/openmetrics-text` header
+
 ## Metric exclusion
 Metrics can be excluded from being reported, this is controlled by `statistics.reporting.jmx.excludedMetrics`
 `statistics.reporting.file.excludedMetrics` `statistics.reporting.http.excludedMetrics` in `ecc.yml` file.
@@ -746,9 +770,9 @@ repair_sessions_seconds_max{keyspace="ks1",successful="false",table="tbl1",} 0.0
 
 ## Metric Status Logger
 Whenever metric is enabled, a logger is triggered which monitor metrics for
-repair failures within a defined time window. If number of repair failures 
+repair failures within a defined time window. If number of repair failures
 overshoot the number(`repair_failures_count`) configured in ecc.yml within the time
-window then ecchronos metrics are printed in debug logs. 
+window then ecchronos metrics are printed in debug logs.
 
 Repair failures threshold is handled by a property `statistics.repair_failures_count`. The
 time window can be configured via `statistics.repair_failures_time_window`. There is

@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.application.config;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.ConnectionConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.lockfactory.LockFactoryConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.metrics.StatisticsConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.GlobalRepairConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.rest.RestServerConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.runpolicy.RunPolicyConfig;
@@ -26,6 +27,7 @@ public class Config
 {
     private ConnectionConfig myConnectionConfig = new ConnectionConfig();
     private GlobalRepairConfig myRepairConfig = new GlobalRepairConfig();
+    private StatisticsConfig myStatisticsConfig = new StatisticsConfig();
     private RunPolicyConfig myRunPolicyConfig = new RunPolicyConfig();
     private SchedulerConfig mySchedulerConfig = new SchedulerConfig();
     private RestServerConfig myRestServerConfig = new RestServerConfig();
@@ -69,6 +71,22 @@ public class Config
         {
             myRepairConfig = repairConfig;
             myRepairConfig.validate("Global");
+        }
+    }
+
+    @JsonProperty("statistics")
+    public final StatisticsConfig getStatisticsConfig()
+    {
+        return myStatisticsConfig;
+    }
+
+    @JsonProperty("statistics")
+    public final void setStatisticsConfig(final StatisticsConfig statisticsConfig)
+    {
+        if (statisticsConfig != null)
+        {
+            myStatisticsConfig = statisticsConfig;
+            myStatisticsConfig.validate();
         }
     }
 
