@@ -98,6 +98,13 @@ public class DistributedNativeConnection extends Connection<DistributedNativeCon
         myCqlRetryPolicy = cqlRetryPolicyConfig;
     }
 
+    @Deprecated
+    @JsonProperty("remoteRouting")
+    public void setRemoteRouting(final boolean remoteRouting)
+    {
+        // noop
+    }
+
     /**
      * @return Class<?>[]
      */
