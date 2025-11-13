@@ -222,6 +222,34 @@ repair:
   ##
   lock_type: vnode
   ##
+  ## Alarms are triggered when tables have not been repaired for a long amount of time.
+  ## The warning alarm is meant to indicate early that repairs are falling behind.
+  ## The error alarm is meant to indicate that gc_grace has passed between repairs.
+  ##
+  ## With the defaults where repairs triggers once every 7 days for each table a warning alarm would be raised
+  ## if the table has not been properly repaired within one full day.
+  ##
+  alarm:
+    ##
+    ## The class used for fault reporting
+    ## The default LoggingFaultReporter will log when alarm is raised/ceased
+    ##
+    faultReporter: com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter
+    ##
+    ## If a table has not been repaired for the following duration an warning alarm will be raised.
+    ## The schedule will be marked as late if the table has not been repaired within this interval.
+    ##
+    warn:
+      time: 8
+      unit: days
+    ##
+    ## If a table has not been repaired for the following duration an error alarm will be raised.
+    ## The schedule will be marked as overdue if the table has not been repaired within this interval.
+    ##
+    error:
+      time: 10
+      unit: days
+  ##
   ## Specifies the unwind ratio to smooth out the load that repairs generate.
   ## This value is a ratio between 0 -> 100% of the execution time of a repair session.
   ##
