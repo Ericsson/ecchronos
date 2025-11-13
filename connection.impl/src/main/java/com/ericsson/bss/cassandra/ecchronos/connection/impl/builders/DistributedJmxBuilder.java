@@ -20,6 +20,7 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.QueryExecutionException;
+import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedJmxConnectionProviderImpl;
@@ -34,6 +35,7 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
+
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
@@ -56,6 +58,7 @@ public class DistributedJmxBuilder
     private final ConcurrentHashMap<UUID, JMXConnector> myJMXConnections = new ConcurrentHashMap<>();
     private Supplier<String[]> myCredentialsSupplier;
     private Supplier<Map<String, String>> myTLSSupplier;
+    private CertificateHandler myCertificateHandler;
     private boolean isJolokiaEnabled = false;
     private int myJolokiaPort = DEFAULT_JOLOKIA_PORT;
     private EccNodesSync myEccNodesSync;
@@ -109,6 +112,12 @@ public class DistributedJmxBuilder
     public final DistributedJmxBuilder withTLS(final Supplier<Map<String, String>> tlsSupplier)
     {
         myTLSSupplier = tlsSupplier;
+        return this;
+    }
+
+    public final DistributedJmxBuilder withCertificateHandler(final CertificateHandler certificateHandler)
+    {
+        myCertificateHandler = certificateHandler;
         return this;
     }
 
@@ -245,7 +254,11 @@ public class DistributedJmxBuilder
             env.put(JMXConnector.CREDENTIALS, credentials);
         }
 
-        if (!tls.isEmpty())
+        if (isJolokiaEnabled && myCertificateHandler != null)
+        {
+            myCertificateHandler.setDefaultSSLContext();
+        }
+        else if (!tls.isEmpty())
         {
             for (Map.Entry<String, String> configEntry : tls.entrySet())
             {

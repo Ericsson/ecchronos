@@ -7,6 +7,7 @@ RUN ln -s usr/local/bin/ecc-entrypoint.sh /ecc-entrypoint.sh
 COPY create_keyspaces.cql /etc/cassandra/
 COPY users.cql /etc/cassandra/
 COPY setup_db.sh /etc/cassandra/
+COPY nginx.conf /etc/nginx/nginx.conf
 
 ENTRYPOINT ["ecc-entrypoint.sh"]
 EXPOSE 7000 7001 7199 9042 8778

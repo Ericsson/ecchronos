@@ -48,6 +48,7 @@ class CassandraCluster:
         os.environ["CERTIFICATE_DIRECTORY"] = global_vars.CERTIFICATE_DIRECTORY
         os.environ["CASSANDRA_VERSION"] = global_vars.CASSANDRA_VERSION
         os.environ["JOLOKIA"] = global_vars.JOLOKIA_ENABLED
+        os.environ["PEM_ENABLED"] = global_vars.PEM_ENABLED
         os.environ["DOCKER_BUILDKIT"] = "1"
         self.cassandra_compose = DockerCompose(
             global_vars.CASSANDRA_DOCKER_COMPOSE_FILE_PATH,
@@ -140,6 +141,8 @@ class CassandraCluster:
             "LOCAL_JMX=no",
             "-e",
             f"JOLOKIA={global_vars.JOLOKIA_ENABLED}",
+            "-e",
+            f"PEM_ENABLED={global_vars.PEM_ENABLED}",
             "-e",
             "JVM_EXTRA_OPTS=-Dcom.sun.management.jmxremote.authenticate=false "
             "-Dcassandra.superuser_setup_delay_ms=0 "

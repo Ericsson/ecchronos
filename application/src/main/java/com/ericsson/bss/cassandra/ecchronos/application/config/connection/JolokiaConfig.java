@@ -25,6 +25,7 @@ public class JolokiaConfig
     private static final int DEFAULT_JOLOKIA_PORT = 8778;
     private boolean myEnabled = false;
     private int myPort = DEFAULT_JOLOKIA_PORT;
+    private boolean myUsePem = false;
 
     /**
      * Sets whether the Jolokia adapter is enabled.
@@ -68,5 +69,27 @@ public class JolokiaConfig
     public int getPort()
     {
         return myPort;
+    }
+
+    /**
+     * Sets whether the PEM certificate is enabled.
+     *
+     * @param enabled {@code true} to enable PEM certificate usage; {@code false} otherwise.
+     */
+    @JsonProperty("usePem")
+    public void setUsePem(final boolean usePem)
+    {
+        myUsePem = usePem;
+    }
+
+    /**
+     * Sets whether the Jolokia adapter is enabled.
+     *
+     * @param enabled {@code true} to enable the Jolokia adapter; {@code false} otherwise.
+     */
+    @JsonProperty("usePem")
+    public boolean usePem()
+    {
+        return myUsePem;
     }
 }

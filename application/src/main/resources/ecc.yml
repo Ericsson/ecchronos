@@ -147,6 +147,7 @@ connection:
       # Default: 8778 (this port will be used if no other port is configured).
       #
       port: 8778
+      usePem: false
     ##
     ## The class used to provide JMX connections to Apache Cassandra.
     ## The default provider will be used unless another is specified.
