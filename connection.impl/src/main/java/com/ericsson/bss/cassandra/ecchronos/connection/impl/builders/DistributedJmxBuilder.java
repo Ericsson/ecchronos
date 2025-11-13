@@ -265,7 +265,7 @@ public class DistributedJmxBuilder
                 String key = configEntry.getKey();
                 String value = configEntry.getValue();
 
-                if (!value.isEmpty())
+                if (value != null && !value.isEmpty())
                 {
                     System.setProperty(key, value);
                 }

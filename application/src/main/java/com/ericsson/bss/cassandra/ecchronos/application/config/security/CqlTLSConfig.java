@@ -75,6 +75,7 @@ public class CqlTLSConfig implements TLSConfig
                 && myTrustStorePassword != null && !myTrustStorePassword.isEmpty();
     }
 
+    @Override
     public final boolean isCertificateConfigured()
     {
         return getCertificatePath().isPresent() && getCertificatePrivateKeyPath().isPresent()
