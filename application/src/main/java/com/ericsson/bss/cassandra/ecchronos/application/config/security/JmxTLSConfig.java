@@ -41,6 +41,7 @@ public class JmxTLSConfig implements TLSConfig
     private CRLConfig myCRLConfig = new CRLConfig();
 
     @JsonCreator
+    @SuppressWarnings("CPD-START")
     public JmxTLSConfig(@JsonProperty("enabled") final boolean isEnabled,
                         @JsonProperty("keystore") final String keyStorePath,
                         @JsonProperty("keystore_password") final String keyStorePassword,
@@ -64,6 +65,7 @@ public class JmxTLSConfig implements TLSConfig
                     "Invalid TLS config, you must either configure KeyStore or PEM based certificates.");
         }
     }
+    @SuppressWarnings("CPD-END")
 
     public JmxTLSConfig(final boolean isEnabled,
                         final String keyStorePath,

@@ -43,6 +43,7 @@ public class CqlTLSConfig implements TLSConfig
 
 
     @JsonCreator
+    @SuppressWarnings("CPD-START")
     public CqlTLSConfig(@JsonProperty("enabled") final boolean isEnabled,
                         @JsonProperty("keystore") final String keyStorePath,
                         @JsonProperty("keystore_password") final String keyStorePassword,
@@ -66,6 +67,7 @@ public class CqlTLSConfig implements TLSConfig
                     "Invalid CQL TLS config, you must either configure KeyStore or PEM based certificates.");
         }
     }
+    @SuppressWarnings("CPD-END")
 
     private boolean isKeyStoreConfigured()
     {
