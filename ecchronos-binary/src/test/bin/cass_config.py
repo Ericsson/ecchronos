@@ -179,7 +179,7 @@ class CassandraCluster:
             return next(iter(networks.values()))["IPAddress"]
 
     def _get_node_count(self):
-        if global_vars.LOCAL != "true":
+        if global_vars.LOCAL != "true" and global_vars.PEM_ENABLED != "true":
             command = ["docker", "exec", self.container_id, "sh", "-c", "~/.cassandra/nodetool-status-ssl.sh"]
         else:
             command = ["docker", "exec", self.container_id, "bash", "-c", "nodetool -u cassandra -pw cassandra status"]
@@ -304,7 +304,7 @@ class CassandraCluster:
     def stop_extra_node(self):
         try:
             if self._extra_node != None:
-                if global_vars.LOCAL != "true":
+                if global_vars.LOCAL != "true" and global_vars.PEM_ENABLED != "true":
                     command = [
                         "docker",
                         "exec",

@@ -94,7 +94,7 @@ jobs:
             java_version: 21
             test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
-          - name: "Jolokia Python integration - Java 17 - PEM"
+          - name: "Jolokia Python integration - Java 21 - PEM"
             java_version: 21
             test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
