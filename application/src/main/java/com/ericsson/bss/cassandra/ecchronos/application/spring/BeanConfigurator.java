@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.ericsson.bss.cassandra.ecchronos.application.ReflectionUtils;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Interval;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.ReloadingCertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider;
@@ -27,7 +28,6 @@ import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryServ
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 
 import com.ericsson.bss.cassandra.ecchronos.fm.RepairFaultReporter;
-import com.ericsson.bss.cassandra.ecchronos.fm.impl.LoggingFaultReporter;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ConfigurationException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
 import java.net.InetAddress;
@@ -177,9 +177,9 @@ public class BeanConfigurator
     }
 
     @Bean
-    public RepairFaultReporter repairFaultReporter() throws ConfigurationException
+    public RepairFaultReporter repairFaultReporter(final Config config) throws ConfigurationException
     {
-        return new LoggingFaultReporter();
+        return ReflectionUtils.construct(config.getRepairConfig().getAlarm().getFaultReporterClass());
     }
 
     /**

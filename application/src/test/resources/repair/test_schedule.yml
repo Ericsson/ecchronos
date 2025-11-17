@@ -23,6 +23,13 @@ keyspaces:
         initial_delay:
           time: 1
           unit: hours
+        alarm:
+          warn:
+            time: 9
+            unit: days
+          error:
+            time: 11
+            unit: days
         unwind_ratio: 1.0
         size_target: 15m
       - name: tb2
@@ -41,6 +48,13 @@ keyspaces:
         initial_delay:
           time: 1
           unit: hours
+        alarm:
+          warn:
+            time: 5
+            unit: days
+          error:
+            time: 10
+            unit: days
         unwind_ratio: 0.5
         size_target: 100m
       - name: tb2

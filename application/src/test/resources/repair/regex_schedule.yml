@@ -20,6 +20,13 @@ keyspaces:
         interval:
           time: 8
           unit: days
+        alarm:
+          warn:
+            time: 9
+            unit: days
+          error:
+            time: 10
+            unit: days
       - name: tb2
         interval:
           time: 5

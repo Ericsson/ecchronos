@@ -57,6 +57,8 @@ public class TestRepairSchedule
 
         RepairConfiguration ks1tb1 = RepairConfiguration.newBuilder()
                 .withRepairInterval(8, TimeUnit.DAYS)
+                .withRepairWarningTime(9, TimeUnit.DAYS)
+                .withRepairErrorTime(11, TimeUnit.DAYS)
                 .withRepairUnwindRatio(1.0d)
                 .withTargetRepairSizeInBytes(UnitConverter.toBytes("15m"))
                 .withInitialDelay(1, TimeUnit.HOURS)
@@ -69,6 +71,8 @@ public class TestRepairSchedule
 
         RepairConfiguration ks2tb1 = RepairConfiguration.newBuilder()
                 .withRepairInterval(1, TimeUnit.DAYS)
+                .withRepairWarningTime(5, TimeUnit.DAYS)
+                .withRepairErrorTime(10, TimeUnit.DAYS)
                 .withRepairUnwindRatio(0.5d)
                 .withTargetRepairSizeInBytes(UnitConverter.toBytes("100m"))
                 .withInitialDelay(1, TimeUnit.HOURS)
@@ -92,6 +96,8 @@ public class TestRepairSchedule
 
         RepairConfiguration allKeyspacesPattern = RepairConfiguration.newBuilder()
                 .withRepairInterval(8, TimeUnit.DAYS)
+                .withRepairWarningTime(9, TimeUnit.DAYS)
+                .withRepairErrorTime(10, TimeUnit.DAYS)
                 .build();
 
         RepairConfiguration allKeyspacesTb2 = RepairConfiguration.newBuilder()
