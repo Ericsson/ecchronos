@@ -266,7 +266,7 @@ class CassandraCluster:
 
     def _run_full_repair(self):
         logger.info("Running Full Repair")
-        if global_vars.LOCAL != "true":
+        if global_vars.LOCAL != "true" and global_vars.PEM_ENABLED != "true":
             command = [
                 "docker",
                 "exec",
@@ -276,7 +276,7 @@ class CassandraCluster:
                 "nodetool -ssl -u cassandra -pw cassandra repair --full",
             ]
         else:
-            command = ["docker", "exec", self.container_id, "bash", "-c", "nodetool -u cassandra -pw cassandra status"]
+            command = ["docker", "exec", self.container_id, "bash", "-c", "nodetool -u cassandra -pw cassandra repair --full"]
 
         subprocess.run(
             command,

@@ -147,7 +147,24 @@ connection:
       # Default: 8778 (this port will be used if no other port is configured).
       #
       port: 8778
+      #
+      # PEM Certificate Support for TLS connections (Jolokia only)
+      # Default: false
+      # Enables TLS communication using PEM certificates when connecting to Jolokia.
+      # Only supported with Jolokia adapter in reverse proxy scenarios (e.g., NGINX).
+      # Certificate paths are configured in security.yml file.
+      # See docs/ARCHITECTURE.md for detailed setup and architecture information.
+      #
       usePem: false
+    #
+    # Reverse DNS Resolution
+    # Default: false
+    # Enables reverse DNS lookups to resolve IP addresses to hostnames for JMX connections.
+    # Useful in containerized environments where certificates use DNS names instead of IPs.
+    # Requires proper DNS configuration and may introduce connection delays.
+    # See docs/ARCHITECTURE.md for detailed behavior and configuration guidance.
+    #
+    reverseDNSResolution: false
     ##
     ## The class used to provide JMX connections to Apache Cassandra.
     ## The default provider will be used unless another is specified.

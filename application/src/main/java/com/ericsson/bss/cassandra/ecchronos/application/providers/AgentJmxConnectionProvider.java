@@ -79,6 +79,7 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
                 .withJolokiaEnabled(jolokiaConfig.isEnabled())
                 .withJolokiaPort(jolokiaConfig.getPort())
                 .withCertificateHandler(certificateHandler)
+                .withDNSResolution(config.getConnectionConfig().getJmxConnection().getReseverseDNSResolution())
                 .build();
     }
 

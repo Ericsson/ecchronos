@@ -29,6 +29,7 @@ public class DistributedJmxConnection extends Connection<DistributedJmxConnectio
 {
     private RetryPolicyConfig myRetryPolicyConfig = new RetryPolicyConfig();
     private JolokiaConfig myJolokiaConfig = new JolokiaConfig();
+    private boolean myReverseDNSResolution = false;
 
     public DistributedJmxConnection()
     {
@@ -64,6 +65,18 @@ public class DistributedJmxConnection extends Connection<DistributedJmxConnectio
     public final void setJolokiaConfig(final JolokiaConfig jolokiaConfig)
     {
         myJolokiaConfig = jolokiaConfig;
+    }
+
+    @JsonProperty("reverseDNSResolution")
+    public final void setReseverseDNSResolution(final boolean reverseDNSResolution)
+    {
+        myReverseDNSResolution = reverseDNSResolution;
+    }
+
+    @JsonProperty("reverseDNSResolution")
+    public final boolean getReseverseDNSResolution()
+    {
+        return myReverseDNSResolution;
     }
 
     /**
