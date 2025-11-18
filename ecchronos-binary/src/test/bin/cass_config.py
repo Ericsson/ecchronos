@@ -157,7 +157,8 @@ class CassandraCluster:
             f"{cert_dir}:/etc/certificates",
             "cassandra-node3:latest",
         ]
-
+        static_ip = "172.29.0.6"
+        cmd.extend(["--ip", static_ip])
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         new_container_id = result.stdout.strip()
         self._extra_node = new_container_id
