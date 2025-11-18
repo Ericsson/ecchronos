@@ -276,7 +276,14 @@ class CassandraCluster:
                 "nodetool -ssl -u cassandra -pw cassandra repair --full",
             ]
         else:
-            command = ["docker", "exec", self.container_id, "bash", "-c", "nodetool -u cassandra -pw cassandra repair --full"]
+            command = [
+                "docker",
+                "exec",
+                self.container_id,
+                "bash",
+                "-c",
+                "nodetool -u cassandra -pw cassandra repair --full",
+            ]
 
         subprocess.run(
             command,
