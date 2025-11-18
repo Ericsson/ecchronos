@@ -227,6 +227,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
         private void tryRunNext()
         {
+            LOG.debug("Looking for Job for Node {}", nodeID);
             for (ScheduledJob next : myQueue.get(nodeID))
             {
                 if (validate(next))
