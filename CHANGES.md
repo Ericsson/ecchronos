@@ -1,5 +1,7 @@
 # Changes
 
+## Version 6.1.5
+
 ## Version 6.1.4
 
 * Add JSON output format to remaining subcommands - Issue #819
