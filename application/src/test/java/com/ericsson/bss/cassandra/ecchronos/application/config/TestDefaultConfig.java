@@ -184,4 +184,16 @@ public class TestDefaultConfig
         assertThat(threadPoolTaskConfig.getQueueCapacity()).isEqualTo(20);
         assertThat(threadPoolTaskConfig.getKeepAliveSeconds()).isEqualTo(60);
     }
+
+    @Test
+    public void testPEMConfig()
+    {
+        assertThat(config.getConnectionConfig().getJmxConnection().getJolokiaConfig().usePem()).isFalse();
+    }
+
+    @Test
+    public void testReverseDNSConfig()
+    {
+        assertThat(config.getConnectionConfig().getJmxConnection().getReseverseDNSResolution()).isFalse();
+    }
 }

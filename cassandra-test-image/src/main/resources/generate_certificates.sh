@@ -44,6 +44,7 @@
 
 mkdir -p ca
 mkdir -p cert
+mkdir -p cert/pem
 
 CA_KEY="ca/key.pem"
 CA_CERT="cert/ca.crt"
@@ -106,6 +107,23 @@ ECCTOOL_CLIENT_CERT="cert/clientcert.crt"
 ECCTOOL_CLIENT_CERT_KEY="cert/clientkey.pem"
 ECCTOOL_CLIENT_CSR="cert/client.csr"
 
+cat > v3.ext <<-EOF
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = localhost
+IP.1 = 127.0.0.1
+IP.2 = 172.29.0.2
+IP.3 = 172.29.0.3
+IP.4 = 172.29.0.4
+IP.5 = 172.29.0.5
+IP.6 = 172.29.0.6
+EOF
+
 ######################
 # Generate Server CA #
 ######################
@@ -126,7 +144,7 @@ openssl req -newkey rsa:2048 -nodes -subj "/C=TE/ST=TEST/L=TEST/O=TEST/OU=TEST/C
 # Sign server certificate
 openssl x509 -req -sha256 -days 1\
  -in "$SERVER_CSR" -out "$SERVER_CERT"\
- -extfile <(printf "subjectAltName=DNS:localhost\nkeyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth")\
+ -extfile v3.ext \
  -CA "$SERVER_CA" -CAkey "$SERVER_CA_KEY" -CAcreateserial
 
 ## Convert server key/certificate to PKCS12 format
@@ -161,3 +179,27 @@ openssl x509 -req -sha256 -days 1\
  -in "$ECCTOOL_CLIENT_CSR" -out "$ECCTOOL_CLIENT_CERT"\
  -extfile <(printf "keyUsage=digitalSignature,keyEncipherment\nextendedKeyUsage=clientAuth")\
  -CA "$ECCTOOL_CLIENT_CA" -CAkey "$ECCTOOL_CLIENT_CA_KEY" -CAcreateserial
+
+# Generate Server CA (nginx will use this)
+openssl req -x509 -newkey rsa:2048 -nodes -days 365 -subj "/CN=ServerCA" \
+  -keyout cert/pem/servercakey.pem -out cert/pem/serverca.crt
+
+# Generate Server Certificate (nginx server cert)
+openssl req -newkey rsa:2048 -nodes -subj "/CN=localhost" \
+  -keyout cert/pem/serverkey.pem -out cert/pem/server.csr
+
+# Sign server certificate
+openssl x509 -req -in cert/pem/server.csr -CA cert/pem/serverca.crt -CAkey cert/pem/servercakey.pem \
+  -CAcreateserial -out cert/pem/servercert.crt -days 365 \
+  -extfile v3.ext
+
+# Generate Client CA (nginx will trust this)
+openssl req -x509 -newkey rsa:2048 -nodes -days 365 -subj "/CN=ClientCA" \
+  -keyout cert/pem/clientcakey.pem -out cert/pem/clientca.crt
+
+# Generate Client Certificate (ecChronos will use this)
+openssl req -newkey rsa:2048 -nodes -subj "/CN=ecchronos-client" \
+  -keyout cert/pem/clientkey.pem -out cert/pem/client.csr
+
+openssl x509 -req -in cert/pem/client.csr -CA cert/pem/clientca.crt -CAkey cert/pem/clientcakey.pem \
+  -CAcreateserial -out cert/pem/clientcert.crt -days 365

@@ -1,16 +1,21 @@
-version: '3.1'
+version: '3.9'
+
 services:
   cassandra-seed-dc1-rack1-node1:
     build:
       context: .
       args:
         CASSANDRA_VERSION: "${CASSANDRA_VERSION}"
+    networks:
+      cassandra-net:
+        ipv4_address: 172.29.0.2
     expose:
       - "9042"
       - "7199"
       - "8778"
       - "7000"
       - "7001"
+      - "8443"
     environment:
       - CASSANDRA_CLUSTER_NAME=cassandra-cluster
       - CASSANDRA_DC=datacenter1
@@ -22,7 +27,8 @@ services:
       - MAX_HEAP_SIZE=3G
       - HEAP_NEWSIZE=400M
       - LOCAL_JMX=no
-      - JOLOKIA= ${JOLOKIA}
+      - JOLOKIA=${JOLOKIA}
+      - PEM_ENABLED=${PEM_ENABLED}
       - JVM_EXTRA_OPTS=-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.ring_delay_ms=0
     volumes:
       - cassandra-seed-dc1-rack1-node1-data:/var/lib/cassandra
@@ -34,12 +40,16 @@ services:
       context: .
       args:
         CASSANDRA_VERSION: "${CASSANDRA_VERSION}"
+    networks:
+      cassandra-net:
+        ipv4_address: 172.29.0.3
     expose:
       - "9042"
       - "7199"
       - "8778"
       - "7000"
       - "7001"
+      - "8443"
     environment:
       - CASSANDRA_CLUSTER_NAME=cassandra-cluster
       - CASSANDRA_DC=datacenter2
@@ -51,7 +61,8 @@ services:
       - MAX_HEAP_SIZE=3G
       - HEAP_NEWSIZE=400M
       - LOCAL_JMX=no
-      - JOLOKIA= ${JOLOKIA}
+      - JOLOKIA=${JOLOKIA}
+      - PEM_ENABLED=${PEM_ENABLED}
       - JVM_EXTRA_OPTS=-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.ring_delay_ms=0
     volumes:
       - cassandra-seed-dc2-rack1-node1-data:/var/lib/cassandra
@@ -63,12 +74,16 @@ services:
       context: .
       args:
         CASSANDRA_VERSION: "${CASSANDRA_VERSION}"
+    networks:
+      cassandra-net:
+        ipv4_address: 172.29.0.4
     expose:
       - "9042"
       - "7199"
       - "8778"
       - "7000"
       - "7001"
+      - "8443"
     environment:
       - CASSANDRA_CLUSTER_NAME=cassandra-cluster
       - CASSANDRA_DC=datacenter1
@@ -80,7 +95,8 @@ services:
       - MAX_HEAP_SIZE=3G
       - HEAP_NEWSIZE=400M
       - LOCAL_JMX=no
-      - JOLOKIA= ${JOLOKIA}
+      - JOLOKIA=${JOLOKIA}
+      - PEM_ENABLED=${PEM_ENABLED}
       - JVM_EXTRA_OPTS=-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.ring_delay_ms=0
     volumes:
       - cassandra-node-dc1-rack1-node2-data:/var/lib/cassandra
@@ -92,12 +108,16 @@ services:
       context: .
       args:
         CASSANDRA_VERSION: "${CASSANDRA_VERSION}"
+    networks:
+      cassandra-net:
+        ipv4_address: 172.29.0.5
     expose:
       - "9042"
       - "7199"
       - "8778"
       - "7000"
       - "7001"
+      - "8443"
     environment:
       - CASSANDRA_CLUSTER_NAME=cassandra-cluster
       - CASSANDRA_DC=datacenter2
@@ -109,7 +129,8 @@ services:
       - MAX_HEAP_SIZE=3G
       - HEAP_NEWSIZE=400M
       - LOCAL_JMX=no
-      - JOLOKIA= ${JOLOKIA}
+      - JOLOKIA=${JOLOKIA}
+      - PEM_ENABLED=${PEM_ENABLED}
       - JVM_EXTRA_OPTS=-Dcom.sun.management.jmxremote.authenticate=false -Dcassandra.superuser_setup_delay_ms=0 -Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.ring_delay_ms=0
     volumes:
       - cassandra-node-dc2-rack1-node2-data:/var/lib/cassandra
@@ -121,3 +142,10 @@ volumes:
   cassandra-seed-dc2-rack1-node1-data:
   cassandra-node-dc1-rack1-node2-data:
   cassandra-node-dc2-rack1-node2-data:
+
+networks:
+  cassandra-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.29.0.0/16

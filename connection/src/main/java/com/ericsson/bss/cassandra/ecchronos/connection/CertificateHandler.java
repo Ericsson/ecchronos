@@ -29,4 +29,6 @@ public interface CertificateHandler extends SslEngineFactory
 
     @Override
     void close() throws Exception;
+
+    void setDefaultSSLContext();
 }

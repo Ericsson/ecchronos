@@ -283,6 +283,7 @@
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
+                                        <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
                                     </environmentVariables>
                                 </configuration>
                             </execution>
@@ -311,6 +312,7 @@
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
+                                        <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
                                     </environmentVariables>
                                     <redirectOutput>true</redirectOutput>
                                     <redirectErrorStream>true</redirectErrorStream>
@@ -382,6 +384,7 @@
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
+                                        <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
                                     </environmentVariables>
                                 </configuration>
                             </execution>
@@ -405,6 +408,7 @@
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
+                                        <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
                                     </environmentVariables>
                                     <redirectOutput>true</redirectOutput>
                                     <redirectErrorStream>true</redirectErrorStream>

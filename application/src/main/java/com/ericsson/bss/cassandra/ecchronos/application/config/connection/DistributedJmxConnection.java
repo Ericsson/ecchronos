@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.application.config.connection;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
@@ -28,6 +29,7 @@ public class DistributedJmxConnection extends Connection<DistributedJmxConnectio
 {
     private RetryPolicyConfig myRetryPolicyConfig = new RetryPolicyConfig();
     private JolokiaConfig myJolokiaConfig = new JolokiaConfig();
+    private boolean myReverseDNSResolution = false;
 
     public DistributedJmxConnection()
     {
@@ -65,6 +67,18 @@ public class DistributedJmxConnection extends Connection<DistributedJmxConnectio
         myJolokiaConfig = jolokiaConfig;
     }
 
+    @JsonProperty("reverseDNSResolution")
+    public final void setReseverseDNSResolution(final boolean reverseDNSResolution)
+    {
+        myReverseDNSResolution = reverseDNSResolution;
+    }
+
+    @JsonProperty("reverseDNSResolution")
+    public final boolean getReseverseDNSResolution()
+    {
+        return myReverseDNSResolution;
+    }
+
     /**
      * @return
      */
@@ -75,7 +89,8 @@ public class DistributedJmxConnection extends Connection<DistributedJmxConnectio
                                 Config.class,
                                 Supplier.class,
                                 DistributedNativeConnectionProvider.class,
-                                EccNodesSync.class
+                                EccNodesSync.class,
+                                CertificateHandler.class
         };
     }
 }
