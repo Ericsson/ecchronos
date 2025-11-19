@@ -19,9 +19,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.utils.DriverNode;
 import com.google.common.collect.ImmutableSet;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.math.BigInteger;
 
@@ -29,13 +26,9 @@ import static com.ericsson.bss.cassandra.ecchronos.core.repair.state.NormalizedR
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-@RunWith(MockitoJUnitRunner.class)
 public class TestNormalizedRange
 {
     private static final BigInteger START = BigInteger.ZERO;
-    
-    @Mock
-    DriverNode mockNode;
 
     @Test
     public void testMutateStart()
@@ -349,6 +342,6 @@ public class TestNormalizedRange
 
     private VnodeRepairState withVnode(long start, long end, long startedAt, long finishedAt)
     {
-        return new VnodeRepairState(new LongTokenRange(start, end), ImmutableSet.of(mockNode), startedAt, finishedAt);
+        return new VnodeRepairState(new LongTokenRange(start, end), ImmutableSet.of(), startedAt, finishedAt);
     }
 }
