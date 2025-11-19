@@ -83,9 +83,9 @@ public class JolokiaConfig
     }
 
     /**
-     * Sets whether the Jolokia adapter is enabled.
+     * Returns whether the PEM certificates usage is enabled.
      *
-     * @param enabled {@code true} to enable the Jolokia adapter; {@code false} otherwise.
+     * @return {@code true} if the PEM certificates is enabled; {@code false} otherwise.
      */
     @JsonProperty("usePem")
     public boolean usePem()
