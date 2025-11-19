@@ -78,6 +78,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                     TimeUnit.MILLISECONDS);
             myRunTasks.put(nodeID, myRunTask);
             myRunFuture.put(nodeID, scheduledFuture);
+            LOG.debug("JobRunTask created for node {}", nodeID);
         }
     }
 
@@ -209,6 +210,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         {
             try
             {
+                LOG.debug("In JobRunTask.run for Node {}", nodeID);
                 if (myQueue.get(nodeID) != null)
                 {
                     tryRunNext();

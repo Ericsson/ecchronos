@@ -140,6 +140,7 @@ public abstract class RepairTask implements NotificationListener
 
     private void repair(final DistributedJmxProxy proxy) throws ScheduledJobException
     {
+        LOG.debug("repair starting for table {} on node {}", myTableReference, nodeID);
         proxy.addStorageServiceListener(nodeID, this);
         myCommand = proxy.repairAsync(nodeID, myTableReference.getKeyspace(), getOptions());
         if (myCommand > 0)
@@ -147,8 +148,10 @@ public abstract class RepairTask implements NotificationListener
             try
             {
                 myLatch.await();
+                LOG.debug("finished waiting for latch for table {} on node {}", myTableReference, nodeID);
                 proxy.removeStorageServiceListener(nodeID, this);
                 verifyRepair(proxy);
+                LOG.debug("Repair verified for table {} on node {}", myTableReference, nodeID);
                 if (myLastError != null)
                 {
                     throw myLastError;
@@ -159,7 +162,7 @@ public abstract class RepairTask implements NotificationListener
                     LOG.warn(msg);
                     throw new ScheduledJobException(msg);
                 }
-                LOG.debug("{} completed successfully", this);
+                LOG.debug("{} completed successfully on node {}", this, nodeID);
             }
             catch (InterruptedException e)
             {

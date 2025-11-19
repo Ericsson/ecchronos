@@ -255,7 +255,7 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
             {
                 try
                 {
-                    return (int) nodeConnection
+                    int result =  (int) nodeConnection
                             .getMBeanServerConnection().invoke(myStorageServiceObject,
                                     REPAIR_ASYNC_METHOD,
                                     new Object[]
@@ -266,6 +266,9 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
                                             {
                                                     String.class.getName(), Map.class.getName()
                                             });
+                    LOG.debug("JMXRepair called for {} with options {}", keyspace, options);
+                    return result;
+
                 }
                 catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
                 {
