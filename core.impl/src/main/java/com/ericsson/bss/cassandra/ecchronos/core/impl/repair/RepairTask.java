@@ -51,7 +51,7 @@ public abstract class RepairTask implements NotificationListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairTask.class);
     private static final Pattern RANGE_PATTERN = Pattern.compile("\\((-?[0-9]+),(-?[0-9]+)\\]");
-    private static final int HEALTH_CHECK_INTERVAL_IN_MINUTES = 10;
+    private static final int HEALTH_CHECK_INTERVAL_IN_MINUTES = 3;
 
     private final UUID nodeID;
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
@@ -147,6 +147,7 @@ public abstract class RepairTask implements NotificationListener
         {
             try
             {
+                LOG.debug("waiting for latch for table {} on node {}", myTableReference, nodeID);
                 myLatch.await();
                 LOG.debug("finished waiting for latch for table {} on node {}", myTableReference, nodeID);
                 proxy.removeStorageServiceListener(nodeID, this);
@@ -305,6 +306,7 @@ public abstract class RepairTask implements NotificationListener
         {
             if (message.contains("finished") || message.contains("failed"))
             {
+                LOG.debug("Progress message received: {}", message);
                 RepairStatus repairStatus = RepairStatus.SUCCESS;
                 if (message.contains("failed"))
                 {
@@ -422,6 +424,7 @@ public abstract class RepairTask implements NotificationListener
                 else
                 {
                     // After 3 successful checks or 30 minutes if still task is running terminate all repair sessions
+                    LOG.warn("Repair session terminated after 30 minutes for node {}", nodeID);
                     proxy.forceTerminateAllRepairSessionsInSpecificNode(nodeID);
                     myLatch.countDown();
                 }
