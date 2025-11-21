@@ -20,32 +20,31 @@ connection:
     queueCapacity: 10
     keepAliveSeconds: 30
   cql:
-    agent:
-      instanceName: unique_identifier
-      type: datacenterAware
-      localDatacenter: datacenter1
-      contactPoints:
+    instanceName: unique_identifier
+    type: datacenterAware
+    localDatacenter: datacenter1
+    contactPoints:
+      - host: 127.0.0.1
+        port: 9042
+      - host: 127.0.0.2
+        port: 9042
+    datacenterAware:
+      datacenters:
+        - name: datacenter1
+    rackAware:
+      racks:
+        - datacenterName: datacenter1
+          rackName: rack1
+    hostAware:
+      hosts:
         - host: 127.0.0.1
           port: 9042
         - host: 127.0.0.2
           port: 9042
-      datacenterAware:
-        datacenters:
-          - name: datacenter1
-      rackAware:
-        racks:
-          - datacenterName: datacenter1
-            rackName: rack1
-      hostAware:
-        hosts:
-          - host: 127.0.0.1
-            port: 9042
-          - host: 127.0.0.2
-            port: 9042
-          - host: 127.0.0.3
-            port: 9042
-          - host: 127.0.0.4
-            port: 9042
+        - host: 127.0.0.3
+          port: 9042
+        - host: 127.0.0.4
+          port: 9042
     retryPolicy:
       maxAttempts: 10
       delay: 10

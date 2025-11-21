@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.ericsson.bss.cassandra.ecchronos.application.config.connection.AgentConnectionConfig;
+import com.ericsson.bss.cassandra.ecchronos.application.config.connection.DistributedNativeConnection;
 
 public class MountConnectionHelper
 {
@@ -32,10 +32,10 @@ public class MountConnectionHelper
      * @return a list of {@link InetSocketAddress} representing the resolved contact points.
      */
     public final List<InetSocketAddress> resolveInitialContactPoints(
-            final Map<String, AgentConnectionConfig.Host> contactPoints)
+            final Map<String, DistributedNativeConnection.Host> contactPoints)
     {
         List<InetSocketAddress> resolvedContactPoints = new ArrayList<>();
-        for (AgentConnectionConfig.Host host : contactPoints.values())
+        for (DistributedNativeConnection.Host host : contactPoints.values())
         {
             InetSocketAddress tmpAddress = InetSocketAddress.createUnresolved(host.getHost(), host.getPort());
             resolvedContactPoints.add(tmpAddress);
@@ -44,17 +44,17 @@ public class MountConnectionHelper
     }
 
     /**
-     * Resolves the datacenter-aware configuration from the specified {@link AgentConnectionConfig.DatacenterAware}
+     * Resolves the datacenter-aware configuration from the specified {@link DistributedNativeConnection.DatacenterAware}
      * object.
      *
      * @param datacenterAware
      *         the datacenter-aware configuration object.
      * @return a list of datacenter names.
      */
-    public final List<String> resolveDatacenterAware(final AgentConnectionConfig.DatacenterAware datacenterAware)
+    public final List<String> resolveDatacenterAware(final DistributedNativeConnection.DatacenterAware datacenterAware)
     {
         List<String> datacenterNames = new ArrayList<>();
-        for (AgentConnectionConfig.DatacenterAware.Datacenter datacenter : datacenterAware.getDatacenters().values())
+        for (DistributedNativeConnection.DatacenterAware.Datacenter datacenter : datacenterAware.getDatacenters().values())
         {
             datacenterNames.add(datacenter.getName());
         }
@@ -62,16 +62,16 @@ public class MountConnectionHelper
     }
 
     /**
-     * Resolves the rack-aware configuration from the specified {@link AgentConnectionConfig.RackAware} object.
+     * Resolves the rack-aware configuration from the specified {@link DistributedNativeConnection.RackAware} object.
      *
      * @param rackAware
      *         the rack-aware configuration object.
      * @return a list of maps containing datacenter and rack information.
      */
-    public final List<Map<String, String>> resolveRackAware(final AgentConnectionConfig.RackAware rackAware)
+    public final List<Map<String, String>> resolveRackAware(final DistributedNativeConnection.RackAware rackAware)
     {
         List<Map<String, String>> rackList = new ArrayList<>();
-        for (AgentConnectionConfig.RackAware.Rack rack : rackAware.getRacks().values())
+        for (DistributedNativeConnection.RackAware.Rack rack : rackAware.getRacks().values())
         {
             Map<String, String> rackInfo = new HashMap<>();
             rackInfo.put("datacenterName", rack.getDatacenterName());
@@ -82,16 +82,16 @@ public class MountConnectionHelper
     }
 
     /**
-     * Resolves the host-aware configuration from the specified {@link AgentConnectionConfig.HostAware} object.
+     * Resolves the host-aware configuration from the specified {@link DistributedNativeConnection.HostAware} object.
      *
      * @param hostAware
      *         the host-aware configuration object.
      * @return a list of {@link InetSocketAddress} representing the resolved hosts.
      */
-    public final List<InetSocketAddress> resolveHostAware(final AgentConnectionConfig.HostAware hostAware)
+    public final List<InetSocketAddress> resolveHostAware(final DistributedNativeConnection.HostAware hostAware)
     {
         List<InetSocketAddress> resolvedHosts = new ArrayList<>();
-        for (AgentConnectionConfig.Host host : hostAware.getHosts().values())
+        for (DistributedNativeConnection.Host host : hostAware.getHosts().values())
         {
             InetSocketAddress tmpAddress = new InetSocketAddress(host.getHost(), host.getPort());
             resolvedHosts.add(tmpAddress);

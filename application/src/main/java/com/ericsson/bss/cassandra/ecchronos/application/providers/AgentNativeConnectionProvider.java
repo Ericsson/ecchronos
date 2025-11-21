@@ -20,7 +20,6 @@ import com.datastax.oss.driver.api.core.auth.AuthProvider;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
-import com.ericsson.bss.cassandra.ecchronos.application.config.connection.AgentConnectionConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.CQLRetryPolicyConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.DistributedNativeConnection;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.ReloadingAuthProvider;
@@ -70,9 +69,6 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
          final CertificateHandler certificateHandler,
          final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
     {
-        AgentConnectionConfig agentConnectionConfig = config.getConnectionConfig()
-                .getCqlConnection()
-                .getAgentConnectionConfig();
         DistributedNativeConnection distributedNativeConfig = config.getConnectionConfig()
                 .getCqlConnection();
 
@@ -94,15 +90,15 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
 
        DistributedNativeBuilder nativeConnectionBuilder =
                 DistributedNativeConnectionProviderImpl.builder()
-                        .withInitialContactPoints(myConnectionHelper.resolveInitialContactPoints(agentConnectionConfig.getContactPoints()))
-                        .withAgentType(agentConnectionConfig.getType())
-                        .withLocalDatacenter(agentConnectionConfig.getLocalDatacenter())
+                        .withInitialContactPoints(myConnectionHelper.resolveInitialContactPoints(distributedNativeConfig.getContactPoints()))
+                        .withAgentType(distributedNativeConfig.getType())
+                        .withLocalDatacenter(distributedNativeConfig.getLocalDatacenter())
                         .withAuthProvider(authProvider)
                         .withSslEngineFactory(sslEngineFactory)
                         .withSchemaChangeListener(defaultRepairConfigurationProvider)
                         .withNodeStateListener(defaultRepairConfigurationProvider);
         LOG.info("Preparing Agent Connection Config");
-        nativeConnectionBuilder = resolveAgentProviderBuilder(nativeConnectionBuilder, agentConnectionConfig);
+        nativeConnectionBuilder = resolveAgentProviderBuilder(nativeConnectionBuilder, distributedNativeConfig);
         LOG.info("Establishing Connection With Nodes");
         myDistributedNativeConnectionProviderImpl = establishConnection(nativeConnectionBuilder, retryPolicyConfig);
     }
@@ -113,33 +109,33 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
      *
      * @param builder
      *         the {@link DistributedNativeBuilder} instance to configure.
-     * @param agentConnectionConfig
+     * @param distributedNativeConfig
      *         the connection configuration object.
      * @return the configured {@link DistributedNativeBuilder}.
      */
     public final DistributedNativeBuilder resolveAgentProviderBuilder(
           final DistributedNativeBuilder builder,
-          final AgentConnectionConfig agentConnectionConfig)
+          final DistributedNativeConnection distributedNativeConfig)
     {
-        return switch (agentConnectionConfig.getType())
+        return switch (distributedNativeConfig.getType())
         {
             case datacenterAware ->
             {
                 LOG.info("Using DatacenterAware as Agent Config");
                 yield builder.withDatacenterAware(myConnectionHelper.resolveDatacenterAware(
-                        agentConnectionConfig.getDatacenterAware()));
+                        distributedNativeConfig.getDatacenterAware()));
             }
             case rackAware ->
             {
                 LOG.info("Using RackAware as Agent Config");
                 yield builder.withRackAware(myConnectionHelper.resolveRackAware(
-                        agentConnectionConfig.getRackAware()));
+                        distributedNativeConfig.getRackAware()));
             }
             case hostAware ->
             {
                 LOG.info("Using HostAware as Agent Config");
                 yield builder.withHostAware(myConnectionHelper.resolveHostAware(
-                        agentConnectionConfig.getHostAware()));
+                        distributedNativeConfig.getHostAware()));
             }
         };
     }
