@@ -42,7 +42,11 @@ jobs:
             java_version: 17
             test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
-
+          - name: "Topology integration - Java 17"
+            java_version: 17
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -DskipUTs'
+            artifacts_dir: "ecchronos-binary/target"
+            
           # Java 21 tests
           - name: "Unit tests - Java 21"
             java_version: 21
@@ -62,6 +66,10 @@ jobs:
             java_version: 21
             test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
+          - name: "Topology integration - Java 21"
+            java_version: 17
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -DskipUTs'
+            artifacts_dir: "ecchronos-binary/target"
 
           # Java 17 Jolokia tests
           - name: "Jolokia Standalone integration 4.1 - Java 17"
@@ -80,6 +88,14 @@ jobs:
             java_version: 17
             test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
+          - name: "Jolokia Topology integration - Java 17"
+            java_version: 17
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
+            artifacts_dir: "ecchronos-binary/target"
+          - name: "Jolokia Topology integration - Java 17 - PEM"
+            java_version: 17
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
+            artifacts_dir: "ecchronos-binary/target"
 
           # Java 21 Jolokia tests
           - name: "Jolokia Standalone integration 4.1 - Java 21"
@@ -97,6 +113,14 @@ jobs:
           - name: "Jolokia Python integration - Java 21 - PEM"
             java_version: 21
             test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
+            artifacts_dir: "ecchronos-binary/target"
+          - name: "Jolokia Topology integration - Java 21"
+            java_version: 21
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs'
+            artifacts_dir: "ecchronos-binary/target"
+          - name: "Jolokia Topology integration - Java 21 - PEM"
+            java_version: 21
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
 
     steps:
