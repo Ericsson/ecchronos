@@ -35,7 +35,6 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
-import com.ericsson.bss.cassandra.ecchronos.application.config.connection.AgentConnectionConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.ConnectionConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.DistributedNativeConnection;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.RetryPolicyConfig;
@@ -61,9 +60,6 @@ public class TestReloadSchedulerService
     private DistributedNativeConnection mockCqlConnectionConfig;
 
     @Mock
-    private AgentConnectionConfig mockAgentConnectionConfig;
-
-    @Mock
     private RetryPolicyConfig.RetrySchedule mockReloadSchedule;
 
     @Mock
@@ -81,8 +77,7 @@ public class TestReloadSchedulerService
     {
         when(mockConfig.getConnectionConfig()).thenReturn(mockConnectionConfig);
         when(mockConnectionConfig.getCqlConnection()).thenReturn(mockCqlConnectionConfig);
-        when(mockCqlConnectionConfig.getAgentConnectionConfig()).thenReturn(mockAgentConnectionConfig);
-        when(mockAgentConnectionConfig.getReloadSchedule()).thenReturn(mockReloadSchedule);
+        when(mockCqlConnectionConfig.getReloadSchedule()).thenReturn(mockReloadSchedule);
 
         when(mockReloadSchedule.getInitialDelay()).thenReturn(2000L);
         when(mockReloadSchedule.getFixedDelay()).thenReturn(10000L);
@@ -97,8 +92,7 @@ public class TestReloadSchedulerService
         assertNotNull(reloadSchedulerService);
         verify(mockConfig).getConnectionConfig();
         verify(mockConnectionConfig).getCqlConnection();
-        verify(mockCqlConnectionConfig).getAgentConnectionConfig();
-        verify(mockAgentConnectionConfig).getReloadSchedule();
+        verify(mockCqlConnectionConfig).getReloadSchedule();
     }
 
     @Test

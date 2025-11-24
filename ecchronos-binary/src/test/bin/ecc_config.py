@@ -62,10 +62,10 @@ class EcchronosConfig:
     def _modify_connection_configuration(self):
         data = self._read_yaml_data(global_vars.ECC_YAML_FILE_PATH)
 
-        data["connection"]["cql"]["agent"]["contactPoints"] = [
+        data["connection"]["cql"]["contactPoints"] = [
             {"host": self.context.cassandra_ip, "port": self.context.cassandra_native_port}
         ]
-        data["connection"]["cql"]["agent"]["datacenterAware"]["datacenters"] = [{"name": DC1}, {"name": DC2}]
+        data["connection"]["cql"]["datacenterAware"]["datacenters"] = [{"name": DC1}, {"name": DC2}]
         self._modify_yaml_data(global_vars.ECC_YAML_FILE_PATH, data)
 
     def _modify_scheduler_configuration(self):
