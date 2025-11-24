@@ -44,10 +44,7 @@ public class TestSecurity
         cqlTLSConfig.setProtocol("TLSv1.2");
 
         JmxTLSConfig jmxTLSConfig = new JmxTLSConfig(false, "/path/to/keystore",
-                "ecchronos", "/path/to/truststore", "ecchronos",
-                "/path/to/clientcert.crt",
-                "/path/to/clientkey.pem",
-                "/path/to/serverca.crt");
+                "ecchronos", "/path/to/truststore", "ecchronos");
         jmxTLSConfig.setProtocol("TLSv1.2");
         jmxTLSConfig.setCipherSuites(null);
 
