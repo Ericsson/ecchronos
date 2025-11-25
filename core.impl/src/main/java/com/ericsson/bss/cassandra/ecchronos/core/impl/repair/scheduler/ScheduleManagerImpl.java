@@ -57,6 +57,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private final CASLockFactory myLockFactory;
 
     private final ScheduledThreadPoolExecutor myExecutor;
+    private final long myRunIntervalInMs;
 
     private ScheduleManagerImpl(final Builder builder)
     {
@@ -64,23 +65,44 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         myExecutor  = new ScheduledThreadPoolExecutor(
                 myNodeIDList.size(), new ThreadFactoryBuilder().setNameFormat("TaskExecutor-%d").build());
         myLockFactory = builder.myLockFactory;
-        createScheduleFutureForNodeIDList(builder);
+        myRunIntervalInMs = builder.myRunIntervalInMs;
+        createScheduleFutureForNodeIDList();
     }
 
-    private void createScheduleFutureForNodeIDList(final Builder builder)
+
+    private void createScheduleFutureForNodeIDList()
     {
         for (UUID nodeID : myNodeIDList)
         {
             JobRunTask myRunTask = new JobRunTask(nodeID);
             ScheduledFuture<?> scheduledFuture = myExecutor.scheduleWithFixedDelay(myRunTask,
-                    builder.myRunIntervalInMs,
-                    builder.myRunIntervalInMs,
+                    myRunIntervalInMs,
+                    myRunIntervalInMs,
                     TimeUnit.MILLISECONDS);
             myRunTasks.put(nodeID, myRunTask);
             myRunFuture.put(nodeID, scheduledFuture);
             LOG.debug("JobRunTask created for node {}", nodeID);
         }
     }
+    @Override
+    public void createScheduleFutureForNode(UUID nodeID)
+    {
+        if (myRunTasks.get(nodeID) == null) {
+            JobRunTask myRunTask = new JobRunTask(nodeID);
+            ScheduledFuture<?> scheduledFuture = myExecutor.scheduleWithFixedDelay(myRunTask,
+                    myRunIntervalInMs,
+                    myRunIntervalInMs,
+                    TimeUnit.MILLISECONDS);
+            myRunTasks.put(nodeID, myRunTask);
+            myRunFuture.put(nodeID, scheduledFuture);
+            LOG.debug("JobRunTask created for new node {}", nodeID);
+        }
+        else
+        {
+            LOG.debug("JobRunTask created for new node {}", nodeID);
+        }
+    }
+
 
     @Override
     public String getCurrentJobStatus()

@@ -43,4 +43,5 @@ public interface ScheduleManager
      * @return A {@code String} representing the current status of the job.
      */
     String getCurrentJobStatus();
+    void createScheduleFutureForNode(UUID nodeID);
 }
