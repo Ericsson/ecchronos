@@ -4,12 +4,18 @@
 
 - [Overview](#overview)
 - [Concepts](#concepts)
+  - [Connection](#connection)
+  - [Nodes Sync](#nodes-sync)
+  - [Repair History](#repair-history)
   - [Leases](#leases)
   - [Scheduling flow](#scheduling-flow)
   - [Scheduled jobs](#scheduled-jobs)
   - [Run policies](#run-policies)
   - [Repair scheduling](#repair-scheduling)
     - [Vnode repairs](#vnode-repairs)
+- [JMX Connection Management](#jmx-connection-management)
+  - [PEM Certificate Support](#pem-certificate-support)
+  - [Reverse DNS Resolution](#reverse-dns-resolution)
 - [Sub-range repairs](#sub-range-repairs)
   - [Example](#example)
     - [Repair history](#repair-history)
@@ -278,6 +284,125 @@ The calculation is performed by the [VnodeRepairGroupFactory](../core/src/main/j
 The TableRepairJob then generates [RepairGroups](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/RepairGroup.java) which are snapshots from how the state was when it was calculated.
 When the RepairGroup is executed it will generate one [VnodeRepairTask](../core/src/main/java/com/ericsson/bss/cassandra/ecchronos/core/repair/VnodeRepairTask.java) per token range to repair.
 The VnodeRepairTask is the class that will perform the repair.
+
+## JMX Connection Management
+
+ecChronos establishes JMX connections to Cassandra nodes for repair operations and monitoring. The connection management includes support for TLS with PEM certificates and reverse DNS resolution for containerized environments.
+
+### PEM Certificate Support
+
+PEM certificate support is available **only when using Jolokia** as the JMX transport mechanism. This feature enables secure TLS communication between ecChronos and Cassandra nodes in containerized environments.
+
+#### Architecture Overview
+
+The typical deployment scenario involves a reverse proxy setup where:
+
+<div align="center">
+
+```mermaid
+flowchart LR
+    subgraph EC_CONTAINER ["ecChronos Container"]
+        EC[ecChronos Agent]
+    end
+    
+    subgraph CASS_CONTAINER ["Cassandra Container"]
+        NGINX[NGINX Reverse Proxy]
+        JOLOKIA[Jolokia Agent]
+        CASS[Cassandra JVM]
+    end
+    
+    EC -->|HTTPS/TLS PEM Certs| NGINX
+    NGINX -->|HTTP No TLS| JOLOKIA
+    JOLOKIA -->|JMX Local| CASS
+```
+
+</div>
+
+<figcaption>Figure 5: PEM Certificate Architecture with Jolokia and Reverse Proxy.</figcaption>
+
+#### Configuration Requirements
+
+1. **Jolokia Agent**: Must be running as a Java agent within the Cassandra JVM
+2. **Reverse Proxy**: NGINX (or similar) configured with TLS termination
+3. **PEM Certificates**: Valid certificates with proper Subject Alternative Names (SANs)
+4. **Reverse DNS**: Recommended to resolve hostnames matching certificate SANs
+
+#### Security Benefits
+
+- **TLS Encryption**: Secure communication between ecChronos and the reverse proxy
+- **Certificate Validation**: Proper hostname verification against certificate SANs
+- **Network Isolation**: JMX communication remains local within the Cassandra container
+- **No JMX TLS Overhead**: Cassandra JMX doesn't require TLS configuration
+
+#### Limitations
+
+- **Jolokia Dependency**: PEM certificates are not supported with direct JMX connections
+- **Reverse Proxy Required**: Additional component needed for TLS termination
+- **Certificate Management**: Proper certificate lifecycle management required
+
+### Reverse DNS Resolution
+
+Reverse DNS resolution enables ecChronos to resolve IP addresses to hostnames when establishing JMX connections. This feature is particularly useful in containerized environments where certificates are issued with DNS names rather than IP addresses.
+
+#### Configuration
+
+```yaml
+connection:
+  jmx:
+    reverseDNSResolution: false  # Default: disabled
+```
+
+#### Java Implementation Details
+
+The reverse DNS resolution leverages Java's `InetAddress` methods with specific behavior patterns:
+
+**getCanonicalHostName():**
+
+- Performs a "best effort" reverse DNS lookup to obtain the Fully Qualified Domain Name (FQDN)
+- May return the original IP address if DNS resolution fails or is not configured
+- Requires proper network DNS configuration for reliable results
+- Subject to security manager restrictions (if present)
+- Can introduce network latency due to DNS queries
+
+**getHostName():**
+
+- Returns cached hostname if the `InetAddress` was created with a hostname
+- Falls back to reverse DNS lookup if no cached hostname exists
+- Generally faster than `getCanonicalHostName()` when hostname is cached
+- May still return IP address if no hostname resolution is possible
+
+#### Behavior and Edge Cases
+
+1. **DNS Configuration Dependency**: Requires proper reverse DNS records in the network infrastructure
+2. **Fallback Strategy**: If canonical hostname resolution fails, falls back to simple hostname resolution
+3. **IP Concatenation Handling**: In some containerized environments (like Kubernetes), reverse DNS may return concatenated formats like `<ip>.<hostname>`. ecChronos automatically detects and cleans these formats
+4. **Performance Impact**: DNS lookups introduce latency; disable if not needed
+5. **Security Considerations**: Subject to security manager policies that may restrict hostname resolution
+
+#### When to Enable
+
+**Enable reverse DNS resolution when:**
+
+- Using PEM certificates with hostname-based SANs
+- Operating in containerized environments with proper DNS setup
+- Certificate validation requires hostname matching
+- Network infrastructure supports reliable reverse DNS
+
+**Keep disabled when:**
+
+- Using IP-based connections without certificates
+- DNS infrastructure is unreliable or not configured
+- Performance is critical and hostname resolution is unnecessary
+- Operating in environments where DNS lookups may fail or timeout
+
+#### Kubernetes Considerations
+
+In Kubernetes environments, reverse DNS resolution may return various formats:
+
+- Standard FQDN: `pod-name.service.namespace.svc.cluster.local`
+- IP-concatenated: `10.244.1.5.pod-name.service.namespace.svc.cluster.local`
+
+ecChronos automatically handles these formats by detecting and removing IP prefixes when present, ensuring clean hostname resolution for certificate validation.
 
 ## Sub-range repairs
 

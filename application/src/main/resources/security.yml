@@ -84,3 +84,8 @@ jmx:
     truststore_password: ecchronos
     protocol: TLSv1.2
     cipher_suites:
+    # PEM certificate support is available only when Jolokia is used as a Java agent behind
+    # an HTTPS reverse proxy (e.g., Nginx) running alongside Cassandra.
+    certificate:
+    certificate_private_key:
+    trust_certificate:

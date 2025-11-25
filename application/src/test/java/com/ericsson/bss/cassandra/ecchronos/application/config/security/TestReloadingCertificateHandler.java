@@ -23,8 +23,6 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Date;
 
-import com.ericsson.bss.cassandra.ecchronos.application.config.security.CRLConfig;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestReloadingCertificateHandler

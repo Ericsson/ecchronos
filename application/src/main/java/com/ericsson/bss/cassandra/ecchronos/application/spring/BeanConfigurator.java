@@ -17,7 +17,6 @@ package com.ericsson.bss.cassandra.ecchronos.application.spring;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.ericsson.bss.cassandra.ecchronos.application.ReflectionUtils;
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Interval;
-import com.ericsson.bss.cassandra.ecchronos.application.config.security.CqlTLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.ReloadingCertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
@@ -43,6 +42,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.config.ConfigRefresher;
 import com.ericsson.bss.cassandra.ecchronos.application.config.ConfigurationHelper;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
+import com.ericsson.bss.cassandra.ecchronos.application.config.security.TLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
@@ -302,7 +302,7 @@ public class BeanConfigurator
             final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider
     )
     {
-        Supplier<CqlTLSConfig> tlsSupplier = () -> securitySupplier.get().getCqlTlsConfig();
+        Supplier<TLSConfig> tlsSupplier = () -> securitySupplier.get().getCqlTlsConfig();
         CertificateHandler certificateHandler = createCertificateHandler(tlsSupplier);
         return new AgentNativeConnectionProvider(
                 config,
@@ -318,8 +318,15 @@ public class BeanConfigurator
             final EccNodesSync eccNodesSync
     ) throws IOException
     {
+        Supplier<TLSConfig> jmxTlsSupplier = () -> securitySupplier.get().getJmxTlsConfig();
+        CertificateHandler certificateHandler = null;
+        if (jmxTlsSupplier.get().isEnabled() && jmxTlsSupplier.get().isCertificateConfigured())
+        {
+            LOG.info("Creating Certificate handler for JMX with PEM certificates");
+            certificateHandler = createCertificateHandler(jmxTlsSupplier);
+        }
         return new AgentJmxConnectionProvider(
-                config, securitySupplier, distributedNativeConnectionProvider, eccNodesSync);
+                config, securitySupplier, distributedNativeConnectionProvider, eccNodesSync, certificateHandler);
     }
 
     private void refreshSecurityConfig(
@@ -340,7 +347,7 @@ public class BeanConfigurator
     }
 
     private static CertificateHandler createCertificateHandler(
-            final Supplier<CqlTLSConfig> tlsSupplier
+            final Supplier<TLSConfig> tlsSupplier
     )
     {
         return new ReloadingCertificateHandler(tlsSupplier);
@@ -371,7 +378,7 @@ public class BeanConfigurator
     )
     {
         long interval = config.getRepairConfig().getRepairHistoryLookback().getInterval(TimeUnit.MILLISECONDS);
-        long repairHistoryLookBack = TimeUnit.MILLISECONDS.convert(interval, TimeUnit.MILLISECONDS);
+        long repairHistoryLookBack = TimeUnit.MILLISECONDS.convert(interval, config.getRepairConfig().getRepairHistoryLookback().getUnit());
         return new RepairHistoryService(
                 distributedNativeConnectionProvider.getCqlSession(),
                 replicationState,

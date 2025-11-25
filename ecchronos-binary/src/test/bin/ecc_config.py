@@ -93,11 +93,15 @@ class EcchronosConfig:
         data["jmx"]["credentials"]["username"] = "cassandra"
         data["jmx"]["credentials"]["password"] = "cassandra"
         data["jmx"]["tls"]["enabled"] = True
-        data["jmx"]["tls"]["keystore"] = f"{global_vars.CERTIFICATE_DIRECTORY}/.keystore"
-        data["jmx"]["tls"]["keystore_password"] = "ecctest"
-        data["jmx"]["tls"]["truststore"] = f"{global_vars.CERTIFICATE_DIRECTORY}/.truststore"
-        data["jmx"]["tls"]["truststore_password"] = "ecctest"
-
+        if global_vars.PEM_ENABLED != "true":
+            data["jmx"]["tls"]["keystore"] = f"{global_vars.CERTIFICATE_DIRECTORY}/.keystore"
+            data["jmx"]["tls"]["keystore_password"] = "ecctest"
+            data["jmx"]["tls"]["truststore"] = f"{global_vars.CERTIFICATE_DIRECTORY}/.truststore"
+            data["jmx"]["tls"]["truststore_password"] = "ecctest"
+        else:
+            data["jmx"]["tls"]["certificate"] = f"{global_vars.CERTIFICATE_DIRECTORY}/pem/clientcert.crt"
+            data["jmx"]["tls"]["certificate_private_key"] = f"{global_vars.CERTIFICATE_DIRECTORY}/pem/clientkey.pem"
+            data["jmx"]["tls"]["trust_certificate"] = f"{global_vars.CERTIFICATE_DIRECTORY}/pem/serverca.crt"
         self._modify_yaml_data(global_vars.SECURITY_YAML_FILE_PATH, data)
 
     def _modify_cql_configuration(self):
@@ -196,6 +200,9 @@ class EcchronosConfig:
     def _modify_jolokia_configuration(self):
         data = self._read_yaml_data(global_vars.ECC_YAML_FILE_PATH)
         data["connection"]["jmx"]["jolokia"]["enabled"] = True
+        if global_vars.PEM_ENABLED == "true":
+            data["connection"]["jmx"]["jolokia"]["port"] = 8443
+            data["connection"]["jmx"]["jolokia"]["usePem"] = True
         self._modify_yaml_data(global_vars.ECC_YAML_FILE_PATH, data)
 
     def _read_yaml_data(self, filename):

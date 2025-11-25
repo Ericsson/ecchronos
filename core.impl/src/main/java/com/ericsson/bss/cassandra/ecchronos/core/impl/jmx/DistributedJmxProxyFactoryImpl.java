@@ -65,6 +65,7 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
     private final EccNodesSync eccNodesSync;
     private final boolean isJolokiaEnabled;
     private final int jolokiaPort;
+    private final boolean jolokiaPEMEnabled;
 
         private DistributedJmxProxyFactoryImpl(final Builder builder)
         {
@@ -73,6 +74,7 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
             eccNodesSync = builder.myEccNodesSync;
             isJolokiaEnabled = builder.isJolokiaEnabled;
             jolokiaPort = builder.myJolokiaPort;
+            jolokiaPEMEnabled = builder.myJolokiaPEMEnabled;
         }
 
         @Override
@@ -85,7 +87,8 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
                         nodesMap,
                         eccNodesSync,
                         isJolokiaEnabled,
-                        jolokiaPort);
+                        jolokiaPort,
+                        jolokiaPEMEnabled);
             }
             catch (MalformedObjectNameException e)
             {
@@ -109,7 +112,8 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
                     final Map<UUID, Node> nodesMap,
                     final EccNodesSync eccNodesSync,
                     final boolean jolokiaEnabled,
-                    final int jolokiaPortValue
+                    final int jolokiaPortValue,
+                    final boolean jolokiaPEMEnabled
             ) throws MalformedObjectNameException
             {
                 myDistributedJmxConnectionProvider = distributedJmxConnectionProvider;
@@ -118,7 +122,7 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
                 myStorageServiceObject = new ObjectName(SS_OBJ_NAME);
                 myRepairServiceObject = new ObjectName(RS_OBJ_NAME);
                 isJolokiaEnabled = jolokiaEnabled;
-                myJolokiaNotificationController = new JolokiaNotificationController(myNodesMap, jolokiaPortValue);
+                myJolokiaNotificationController = new JolokiaNotificationController(myNodesMap, jolokiaPortValue, jolokiaPEMEnabled);
             }
 
         @Override
@@ -255,7 +259,7 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
             {
                 try
                 {
-                    return (int) nodeConnection
+                    Object result = nodeConnection
                             .getMBeanServerConnection().invoke(myStorageServiceObject,
                                     REPAIR_ASYNC_METHOD,
                                     new Object[]
@@ -266,6 +270,16 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
                                             {
                                                     String.class.getName(), Map.class.getName()
                                             });
+                    // Handle both Integer and Long return types from Jolokia
+                    if (result instanceof Number)
+                    {
+                        return ((Number) result).intValue();
+                    }
+                    else
+                    {
+                        LOG.warn("Unexpected return type from repairAsync: {}", result.getClass().getSimpleName());
+                        return 0;
+                    }
                 }
                 catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
                 {
@@ -672,6 +686,7 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
         private EccNodesSync myEccNodesSync;
         private boolean isJolokiaEnabled = false;
         private int myJolokiaPort = DEFAULT_JOLOKIA_PORT;
+        private boolean myJolokiaPEMEnabled = false;
 
         /**
          * Build with JMX connection provider.
@@ -730,6 +745,18 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
         public Builder withJolokiaPort(final int jolokiaPort)
         {
             myJolokiaPort = jolokiaPort;
+            return this;
+        }
+
+        /**
+         * Build with PEM option.
+         *
+         * @param jolokiaPEM Define if https should be used with jolokia-adapter.
+         * @return Builder
+         */
+        public Builder withJolokiaPEM(final boolean jolokiaPEM)
+        {
+            myJolokiaPEMEnabled = jolokiaPEM;
             return this;
         }
 

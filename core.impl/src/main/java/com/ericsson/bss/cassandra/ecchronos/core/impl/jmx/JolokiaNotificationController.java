@@ -21,9 +21,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.NotificationRegis
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.jolokia.client.J4pClient;
-import org.jolokia.client.request.J4pExecRequest;
-import org.jolokia.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,11 +69,18 @@ public class JolokiaNotificationController
 
     private final Map<UUID, Node> myNodesMap;
     private final int myJolokiaPort;
+    private final boolean myJolokiaPEM;
+    private final String myURLPrefix;
 
-    public JolokiaNotificationController(final Map<UUID, Node> nodesMap, final int jolokiaPort)
+    public JolokiaNotificationController(
+        final Map<UUID, Node> nodesMap,
+        final int jolokiaPort,
+        final boolean jolokiaPEM)
     {
         myNodesMap = nodesMap;
         myJolokiaPort = jolokiaPort;
+        myJolokiaPEM = jolokiaPEM;
+        myURLPrefix = myJolokiaPEM ? "https" : "http";
     }
 
     public final void addStorageServiceListener(final UUID nodeID, final NotificationListener listener) throws IOException, InterruptedException
@@ -140,8 +144,8 @@ public class JolokiaNotificationController
         {
             try
             {
-                JSONObject response = checkForNotifications(myNodeID, myNotificationID);
-                NotificationListenerResponse notificationListenerResponse = objectMapper.readValue(response.toJSONString(),
+                String response = checkForNotifications(myNodeID, myNotificationID);
+                NotificationListenerResponse notificationListenerResponse = objectMapper.readValue(response,
                         NotificationListenerResponse.class);
 
                 if (notificationListenerResponse.getValue() != null)
@@ -208,8 +212,10 @@ public class JolokiaNotificationController
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-            ClientRegisterResponse clientRegisterResponse = objectMapper.readValue(response.body(),
-                    ClientRegisterResponse.class);
+            LOG.debug("Raw response from {}: Status={}, Body={}", url, response.statusCode(), response.body());
+
+            ClientRegisterResponse clientRegisterResponse = objectMapper.readValue(
+                    decodeHtmlEntities(response.body()), ClientRegisterResponse.class);
 
             Map<String, String> properties = new HashMap<>();
             properties.put(CLIENT_ID_PROPERTY, clientRegisterResponse.getValue().getId());
@@ -234,8 +240,8 @@ public class JolokiaNotificationController
                 .build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-        NotificationRegisterResponse notificationRegisterResponse = objectMapper.readValue(response.body(),
-                NotificationRegisterResponse.class);
+        NotificationRegisterResponse notificationRegisterResponse = objectMapper.readValue(
+                decodeHtmlEntities(response.body()), NotificationRegisterResponse.class);
 
         return notificationRegisterResponse.getValue();
     }
@@ -307,20 +313,14 @@ public class JolokiaNotificationController
         return "";
     }
 
-    private J4pClient mountJolokiaClient(final UUID nodeID)
-    {
-        return new J4pClient(mountJolokiaBaseURL(nodeID));
-    }
-
     private String mountJolokiaBaseURL(final UUID nodeID)
     {
         String host = myNodesMap.get(nodeID).getBroadcastRpcAddress().get().getHostString();
-        return "http://" + host + ":" + myJolokiaPort + "/jolokia";
+        return myURLPrefix + "://" + host + ":" + myJolokiaPort + "/jolokia";
     }
 
-    private JSONObject checkForNotifications(final UUID nodeID, final String notificationID)
+    private String checkForNotifications(final UUID nodeID, final String notificationID)
     {
-        String operation = "pull";
         try
         {
             synchronized (myClientIdMap)
@@ -329,21 +329,36 @@ public class JolokiaNotificationController
                 if (clientInfo == null)
                 {
                     LOG.debug("No client info found for node {}, skipping notification check", nodeID);
-                    return new JSONObject();
+                    return "{}";
                 }
-                J4pExecRequest execRequest = new J4pExecRequest(
-                        clientInfo.get("store"),
-                        operation, clientInfo.get(CLIENT_ID_PROPERTY),
-                        notificationID);
 
-                return mountJolokiaClient(nodeID).execute(execRequest).asJSONObject();
+                String url = mountJolokiaBaseURL(nodeID) + "/exec/" + clientInfo.get("store") + "/pull/"
+                    + clientInfo.get(CLIENT_ID_PROPERTY) + "/" + notificationID;
+
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
+                        .GET()
+                        .build();
+
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                return decodeHtmlEntities(response.body());
             }
         }
         catch (Exception e)
         {
             LOG.warn("Error checking notifications for node {} and notificationID {}: {}", nodeID, notificationID, e.getMessage());
         }
-        return new JSONObject();
+        return "{}";
+    }
+
+    private String decodeHtmlEntities(final String input)
+    {
+        return input
+                .replace("&quot;", "\"")
+                .replace("&lt;", "<")
+                .replace("&gt;", ">")
+                .replace("&amp;", "&");
     }
 
     public final void close()

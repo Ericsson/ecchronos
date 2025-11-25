@@ -132,10 +132,10 @@ def test_environment():
     """Session-scoped fixture for test environment lifecycle"""
     fixture = TestFixture()
     try:
-        cassandra_cluster = fixture.setup()
+        fixture.setup()
         fixture.start_ecchronos()
         fixture.wait_for_ecchronos_ready()
-        yield cassandra_cluster
+        yield fixture.cassandra_cluster
     finally:
         fixture.cleanup()
 

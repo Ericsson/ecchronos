@@ -367,5 +367,17 @@ public class TestConfig
         assertThat(config.getStatisticsConfig().getReportingConfigs().getFileReportingConfig().isEnabled()).isTrue();
         assertThat(config.getStatisticsConfig().getReportingConfigs().getHttpReportingConfig().isEnabled()).isTrue();
     }
+
+    @Test
+    public void testPEMConfig()
+    {
+        assertThat(config.getConnectionConfig().getJmxConnection().getJolokiaConfig().usePem()).isFalse();
+    }
+
+    @Test
+    public void testReverseDNSConfig()
+    {
+        assertThat(config.getConnectionConfig().getJmxConnection().getReseverseDNSResolution()).isFalse();
+    }
 }
 
