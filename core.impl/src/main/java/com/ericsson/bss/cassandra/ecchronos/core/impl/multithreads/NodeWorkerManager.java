@@ -16,7 +16,6 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.RepairEvent;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairScheduler;

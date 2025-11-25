@@ -85,9 +85,10 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         }
     }
     @Override
-    public void createScheduleFutureForNode(UUID nodeID)
+    public void createScheduleFutureForNode(final UUID nodeID)
     {
-        if (myRunTasks.get(nodeID) == null) {
+        if (myRunTasks.get(nodeID) == null)
+        {
             JobRunTask myRunTask = new JobRunTask(nodeID);
             ScheduledFuture<?> scheduledFuture = myExecutor.scheduleWithFixedDelay(myRunTask,
                     myRunIntervalInMs,
