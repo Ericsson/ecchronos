@@ -62,7 +62,7 @@
         <com.fasterxml.jackson.annotations.version>2.20</com.fasterxml.jackson.annotations.version>
         <com.fasterxml.jackson.core.version>2.20.1</com.fasterxml.jackson.core.version>
         <com.typesafe.config.version>1.4.5</com.typesafe.config.version>
-        <equalsverifier.version>4.2.3</equalsverifier.version>
+        <equalsverifier.version>4.2.4</equalsverifier.version>
         <guava.version>33.5.0-jre</guava.version>
         <io.dropwizard.metrics.version>4.2.37</io.dropwizard.metrics.version>
         <io.micrometer.version>1.16.0</io.micrometer.version>
