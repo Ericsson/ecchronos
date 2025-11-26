@@ -21,6 +21,8 @@ import java.io.Closeable;
 import java.util.Collections;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -54,6 +56,7 @@ import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ConfigurationExcept
 @Configuration
 public class ECChronos implements Closeable
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ECChronos.class);
     private final ECChronosInternals myECChronosInternals;
     private final RepairSchedulerImpl myRepairSchedulerImpl;
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
@@ -124,6 +127,7 @@ public class ECChronos implements Closeable
 
         ThreadPoolTaskConfig threadPoolTaskConfig = configuration.getConnectionConfig().getThreadPoolTaskConfig();
 
+        LOG.debug("myNodeWorkerManager being created");
         myNodeWorkerManager = NodeWorkerManager.newBuilder()
                 .withRepairScheduler(myRepairSchedulerImpl)
                 .withRepairConfiguration(repairConfigurationProvider::get)
@@ -132,13 +136,15 @@ public class ECChronos implements Closeable
                 .withTableReferenceFactory(myECChronosInternals.getTableReferenceFactory())
                 .withThreadPool(setupThreadPool(threadPoolTaskConfig)).build();
 
+        LOG.debug("defaultRepairConfigurationProvider being created");
         defaultRepairConfigurationProvider.fromBuilder(DefaultRepairConfigurationProvider.newBuilder()
                 .withSession(session)
                 .withEccNodesSync(eccNodesSync)
                 .withJmxConnectionProvider(jmxConnectionProvider)
                 .withNodeWorkerManager(myNodeWorkerManager)
+                .withScheduleManager(myECChronosInternals.getScheduleManager())
                 .withDistributedNativeConnectionProvider(nativeConnectionProvider));
-
+        LOG.debug("myRepairStatsProvider being created");
         myRepairStatsProvider = new RepairStatsProviderImpl(
                 nativeConnectionProvider,
                 new VnodeRepairStateFactoryImpl(replicationState, repairHistoryService, true));
