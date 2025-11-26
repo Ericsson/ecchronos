@@ -103,6 +103,23 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             LOG.debug("JobRunTask created for new node {}", nodeID);
         }
     }
+    @Override
+    public void removeScheduleFutureForNode(final UUID nodeID)
+    {
+        ScheduledFuture<?> scheduledFuture = myRunFuture.get(nodeID);
+
+        if (scheduledFuture != null)
+        {
+            LOG.debug(" ScheduledFuture for decommissioned node {}", nodeID);
+            scheduledFuture.cancel(true);
+            myRunFuture.remove(nodeID);
+        }
+        else
+        {
+            LOG.debug(" ScheduledFuture missing for decommissioned node {}", nodeID);
+        }
+        myRunTasks.remove(nodeID);
+    }
 
 
     @Override

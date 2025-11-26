@@ -351,7 +351,14 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         }
         else
         {
-            myScheduleManager.createScheduleFutureForNode(node.getHostId());
+            if (myScheduleManager != null)
+            {
+                myScheduleManager.createScheduleFutureForNode(node.getHostId());
+            }
+            else
+            {
+                LOG.debug("myScheduleManager not ready when Node added {}", node.getHostId());
+            }
         }
 
         setupConfiguration();
@@ -390,6 +397,10 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
             {
                 myScheduleManager.createScheduleFutureForNode(node.getHostId());
             }
+            else
+            {
+                LOG.debug("myScheduleManager not ready when Node added {}", node.getHostId());
+            }
         }
     }
 
@@ -409,6 +420,11 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
             {
                 myWorkerManager.removeNode(node);
             }
+            if (myScheduleManager != null)
+            {
+                myScheduleManager.removeScheduleFutureForNode(node.getHostId());
+            }
+
         }
     }
 

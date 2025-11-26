@@ -44,4 +44,5 @@ public interface ScheduleManager
      */
     String getCurrentJobStatus();
     void createScheduleFutureForNode(UUID nodeID);
+    void removeScheduleFutureForNode(UUID nodeID);
 }
