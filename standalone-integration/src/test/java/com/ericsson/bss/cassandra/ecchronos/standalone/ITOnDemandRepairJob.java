@@ -35,6 +35,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.ScheduleM
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.HostStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableReferenceFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.utils.ConsistencyType;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
@@ -125,13 +126,15 @@ public class ITOnDemandRepairJob extends TestBase
                 .withConsistencySerial(ConsistencyType.SERIAL)
                 .build();
 
-        List<UUID> localNodeIdList = Collections.singletonList(myLocalHost.getHostId());
-
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withLockFactory(myLockFactory)
-                .withNodeIDList(localNodeIdList)
+                .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withRunInterval(100, TimeUnit.MILLISECONDS)
                 .build();
+
+        TimeBasedRunPolicy myTimeBasedRunPolicy = TimeBasedRunPolicy.builder()
+                        .withSession(getSession())
+                        .build();
 
         myRepairSchedulerImpl = OnDemandRepairSchedulerImpl.builder()
                 .withJmxProxyFactory(getJmxProxyFactory())
@@ -142,6 +145,7 @@ public class ITOnDemandRepairJob extends TestBase
                 .withSession(getSession())
                 .withRepairConfigurationFunction(RepairConfiguration.DEFAULT)
                 .withRepairHistory(myEccRepairHistory)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .withOnDemandStatus(new OnDemandStatus(getNativeConnectionProvider()))
                 .build();
     }

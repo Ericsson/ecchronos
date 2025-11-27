@@ -112,11 +112,9 @@ public class ITIncrementalSchedules extends TestBase
                 .withConsistencySerial(ConsistencyType.SERIAL)
                 .build();
 
-        List<UUID> localNodeIdList = Collections.singletonList(myLocalHost.getHostId());
-
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withLockFactory(myLockFactory)
-                .withNodeIDList(localNodeIdList)
+                .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withRunInterval(1, TimeUnit.SECONDS)
                 .build();
 

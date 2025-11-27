@@ -104,7 +104,7 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
         List<UUID> localNodeIdList = Collections.singletonList(myLocalHost.getHostId());
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withLockFactory(myLockFactory)
-                .withNodeIDList(localNodeIdList)
+                .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withRunInterval(1, TimeUnit.SECONDS)
                 .build();
 

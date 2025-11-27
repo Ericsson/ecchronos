@@ -105,6 +105,7 @@ public class ECChronos implements Closeable
                 .withFaultReporter(repairFaultReporter)
                 .withTableStorageStates(myECChronosInternals.getTableStorageStates())
                 .withRepairLockType(configuration.getRepairConfig().getRepairLockType())
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build();
 
         AbstractRepairConfigurationProvider repairConfigurationProvider = new FileBasedRepairConfiguration(applicationContext);
@@ -143,6 +144,12 @@ public class ECChronos implements Closeable
                 nativeConnectionProvider,
                 new VnodeRepairStateFactoryImpl(replicationState, repairHistoryService, true));
         myECChronosInternals.addRunPolicy(myTimeBasedRunPolicy);
+    }
+
+    @Bean
+    public TimeBasedRunPolicy timeBasedRunPolicy()
+    {
+        return myTimeBasedRunPolicy;
     }
 
     @Bean

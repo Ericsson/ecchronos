@@ -61,7 +61,7 @@ public class AbstractCassandraContainerTest
                 .withLocalDatacenter("DC1")
                 .build();
 
-        Map<UUID, Node> nodesList = mySession.getMetadata().getNodes();
+        Map<UUID, Node> nodes = mySession.getMetadata().getNodes();
         myNativeConnectionProvider = new DistributedNativeConnectionProvider()
         {
             @Override
@@ -73,7 +73,7 @@ public class AbstractCassandraContainerTest
             @Override
             public Map<UUID, Node>  getNodes()
             {
-                return nodesList;
+                return nodes;
             }
 
             @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Telefonaktiebolaget LM Ericsson
+ * Copyright 2025 Telefonaktiebolaget LM Ericsson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,20 +12,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.core.table;
+package com.ericsson.bss.cassandra.ecchronos.core.impl.table;
 
-import com.datastax.oss.driver.api.core.metadata.Node;
+import java.util.Set;
 
-/**
- * Interface for policies that can be used to control if repairs should run.
- */
-public interface TableRepairPolicy
+public record TimeBasedRunPolicyBucket(
+    String keyspaceName,
+    String tableName,
+    Integer startHour,
+    Integer startMinute,
+    Integer endHour,
+    Integer endMinute,
+    Set<String> dcExclusions
+)
 {
-    /**
-     * Check with the policy if a repair of the provided table should run now.
-     *
-     * @param tableReference The table to verify.
-     * @return True if the repair should continue.
-     */
-    boolean shouldRun(TableReference tableReference, Node node);
 }

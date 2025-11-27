@@ -37,6 +37,12 @@
 
         <dependency>
             <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
+            <artifactId>core.impl-agent</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
             <artifactId>connection-agent</artifactId>
             <version>${project.version}</version>
         </dependency>

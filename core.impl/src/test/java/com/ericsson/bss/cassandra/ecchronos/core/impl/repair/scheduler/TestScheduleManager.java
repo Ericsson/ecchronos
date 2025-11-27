@@ -25,6 +25,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactoryBuilder;
@@ -61,24 +62,34 @@ public class TestScheduleManager
     @Mock
     private RunPolicy myRunPolicy;
 
+    @Mock
+    private Node node1;
+
+    @Mock
+    private Node node2;
+
     private ScheduleManagerImpl myScheduler;
 
     private final UUID nodeID1 = UUID.randomUUID();
 
     private final UUID nodeID2 = UUID.randomUUID();
 
-    private final Collection<UUID> myNodes = Arrays.asList(nodeID1, nodeID2);
+
 
     @Before
     public void startup() throws LockException
     {
+        Map<UUID, Node> nodeMap = Map.of(nodeID1, node1, nodeID2, node2);
+        when(myNativeConnectionProvider.getNodes()).thenReturn(nodeMap);
+        when(node1.getHostId()).thenReturn(nodeID1);
+        when(node2.getHostId()).thenReturn(nodeID2);
         myScheduler = ScheduleManagerImpl.builder()
-                .withNodeIDList(myNodes)
+                .withNativeConnectionProvider(myNativeConnectionProvider)
                 .withLockFactory(myLockFactory)
                 .build();
-        myScheduler.addRunPolicy(job -> myRunPolicy.validate(job));
+        myScheduler.addRunPolicy((job, node) -> myRunPolicy.validate(job, node));
 
-        when(myRunPolicy.validate(any(ScheduledJob.class))).thenReturn(-1L);
+        when(myRunPolicy.validate(any(ScheduledJob.class), any(Node.class))).thenReturn(-1L);
         doReturn(myLockFactoryBuilder).when(myLockFactoryBuilder).withNativeConnectionProvider(myNativeConnectionProvider);
         doReturn(myLockFactoryBuilder).when(myLockFactoryBuilder).withHostStates(myHostStates);
         doReturn(myLockFactory).when(myLockFactoryBuilder).build();
@@ -116,7 +127,7 @@ public class TestScheduleManager
         DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW, nodeID1);
         myScheduler.schedule(nodeID1, job1);
 
-        when(myRunPolicy.validate(any(ScheduledJob.class))).thenReturn(1L);
+        when(myRunPolicy.validate(any(ScheduledJob.class), any(Node.class))).thenReturn(1L);
 
         myScheduler.run(nodeID1);
 
@@ -128,7 +139,7 @@ public class TestScheduleManager
     public void testRunningTwoTasksStoppedAfterFirstByPolicy() throws LockException
     {
         TestJob job1 = new TestJob(ScheduledJob.Priority.LOW, 2, () -> {
-            when(myRunPolicy.validate(any(ScheduledJob.class))).thenReturn(1L);
+            when(myRunPolicy.validate(any(ScheduledJob.class), any(Node.class))).thenReturn(1L);
         }, nodeID1);
         myScheduler.schedule(nodeID1, job1);
 
@@ -146,7 +157,7 @@ public class TestScheduleManager
         DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW, nodeID1);
         myScheduler.schedule(nodeID1, job1);
 
-        when(myRunPolicy.validate(any(ScheduledJob.class))).thenThrow(new IllegalStateException());
+        when(myRunPolicy.validate(any(ScheduledJob.class), any(Node.class))).thenThrow(new IllegalStateException());
 
         myScheduler.run(nodeID1);
 
@@ -162,14 +173,14 @@ public class TestScheduleManager
         myScheduler.schedule(nodeID1, job1);
         myScheduler.schedule(nodeID1, job2);
 
-        when(myRunPolicy.validate(any(ScheduledJob.class))).thenReturn(1L);
+        when(myRunPolicy.validate(any(ScheduledJob.class), any(Node.class))).thenReturn(1L);
 
         myScheduler.run(nodeID1);
 
         assertThat(job1.hasRun()).isFalse();
         assertThat(job2.hasRun()).isFalse();
         assertThat(myScheduler.getQueueSize(nodeID1)).isEqualTo(2);
-        verify(myRunPolicy, times(2)).validate(any(ScheduledJob.class));
+        verify(myRunPolicy, times(2)).validate(any(ScheduledJob.class), any(Node.class));
     }
 
     @Test (timeout = 2000L)

@@ -18,6 +18,39 @@ from datetime import datetime
 from ecchronoslib import table_formatter
 
 
+def print_rejections(rejections, columns=None, output="table"):
+    if output == "json":
+        _print_rejections_json_format(rejections)
+    else:
+        _print_rejections_table_format(rejections, columns)
+
+
+def _print_rejections_json_format(rejections):
+    rejections_dict = [s.to_dict() for s in rejections]
+    output_json({"rejections": rejections_dict})
+
+
+def _print_rejections_table_format(rejections, columns=None):
+    rejections_table = [
+        [
+            "Keyspace",
+            "Table",
+            "Start Hour",
+            "Start Minute",
+            "End Hour",
+            "End Minute",
+            "DC Exclusions",
+        ]
+    ]
+    _print_rejections_table(rejections_table, rejections, columns)
+
+
+def _print_rejections_table(rejections_table, rejections, columns):
+    for rejection in rejections:
+        rejections_table.append(_convert_rejection(rejection))
+    table_formatter.format_table(rejections_table, columns)
+
+
 def print_schedule(schedule, max_lines, full=False):
     if not schedule.is_valid():
         print("Schedule not found")
@@ -124,6 +157,19 @@ def print_repair_table(repair_table, repairs, max_lines):
     for repair in sorted_repairs:
         repair_table.append(_convert_repair(repair))
     table_formatter.format_table(repair_table)
+
+
+def _convert_rejection(rejection):
+    entry = [
+        rejection.keyspace,
+        rejection.table,
+        rejection.start_hour,
+        rejection.start_minute,
+        rejection.end_hour,
+        rejection.end_minute,
+        rejection.dc_exclusions,
+    ]
+    return entry
 
 
 def print_repair(repair):

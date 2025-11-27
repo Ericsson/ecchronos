@@ -33,6 +33,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.HostStatesImp
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.RepairStateFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableReferenceFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.utils.ConsistencyType;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.NodeResolver;
@@ -159,11 +160,10 @@ public class ITSchedules extends TestBase
                 .withConsistencySerial(ConsistencyType.SERIAL)
                 .build();
         // Only run ScheduleManager for the local node to avoid concurrency issues
-        List<UUID> localNodeIdList = Collections.singletonList(myLocalHost.getHostId());
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withLockFactory(myLockFactory)
                 .withRunInterval(1, TimeUnit.SECONDS)
-                .withNodeIDList(localNodeIdList)
+                .withNativeConnectionProvider(getNativeConnectionProvider())
                 .build();
 
         RepairStateFactoryImpl repairStateFactory = RepairStateFactoryImpl.builder()
@@ -173,6 +173,10 @@ public class ITSchedules extends TestBase
                         .build())
                 .withRepairHistoryProvider(myRepairHistoryService)
                 .withTableRepairMetrics(mockTableRepairMetrics)
+                .build();
+
+        TimeBasedRunPolicy myTimeBasedRunPolicy = TimeBasedRunPolicy.builder()
+                .withSession(getSession())
                 .build();
 
         myRepairSchedulerImpl = RepairSchedulerImpl.builder()
@@ -185,6 +189,7 @@ public class ITSchedules extends TestBase
                 .withTableStorageStates(mockTableStorageStates)
                 .withReplicationState(replicationState)
                 .withRepairHistory(myRepairHistoryService)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build();
 
         myRepairConfiguration = RepairConfiguration.newBuilder()
