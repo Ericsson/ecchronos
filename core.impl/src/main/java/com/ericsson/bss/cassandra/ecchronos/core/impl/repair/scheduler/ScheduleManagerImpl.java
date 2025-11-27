@@ -66,22 +66,25 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 myNodeIDList.size(), new ThreadFactoryBuilder().setNameFormat("TaskExecutor-%d").build());
         myLockFactory = builder.myLockFactory;
         myRunIntervalInMs = builder.myRunIntervalInMs;
-        createScheduleFutureForNodeIDList();
+//        createScheduleFutureForNodeIDList();
     }
 
 
-    private void createScheduleFutureForNodeIDList()
+    public void createScheduleFutureForNodeIDList()
     {
         for (UUID nodeID : myNodeIDList)
         {
-            JobRunTask myRunTask = new JobRunTask(nodeID);
-            ScheduledFuture<?> scheduledFuture = myExecutor.scheduleWithFixedDelay(myRunTask,
-                    myRunIntervalInMs,
-                    myRunIntervalInMs,
-                    TimeUnit.MILLISECONDS);
-            myRunTasks.put(nodeID, myRunTask);
-            myRunFuture.put(nodeID, scheduledFuture);
-            LOG.debug("JobRunTask created for node {}", nodeID);
+            if (myRunTasks.get(nodeID) == null)
+            {
+                JobRunTask myRunTask = new JobRunTask(nodeID);
+                ScheduledFuture<?> scheduledFuture = myExecutor.scheduleWithFixedDelay(myRunTask,
+                        myRunIntervalInMs,
+                        myRunIntervalInMs,
+                        TimeUnit.MILLISECONDS);
+                myRunTasks.put(nodeID, myRunTask);
+                myRunFuture.put(nodeID, scheduledFuture);
+                LOG.debug("JobRunTask created for node {}", nodeID);
+            }
         }
     }
     @Override
@@ -100,7 +103,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         }
         else
         {
-            LOG.debug("JobRunTask created for new node {}", nodeID);
+            LOG.debug("JobRunTask already exists for new node {}", nodeID);
         }
     }
     @Override

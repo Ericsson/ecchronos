@@ -259,6 +259,8 @@ public abstract class RepairTask implements NotificationListener
                 String message = notification.getMessage();
                 ProgressEventType type = ProgressEventType.values()[progress.get("type")];
 
+                LOG.debug("Notification Type {}", type.toString());
+
                 this.progress(type, message);
             }
             break;
@@ -329,7 +331,10 @@ public abstract class RepairTask implements NotificationListener
         }
         if (type == ProgressEventType.COMPLETE)
         {
+            LOG.debug("Progress message set to complete latch counted down: {}", message);
             myLatch.countDown();
+            LOG.debug("Latch count now set to: {}", myLatch.getCount());
+            myLatch.getCount();
         }
     }
 
