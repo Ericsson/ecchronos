@@ -77,6 +77,7 @@ public class TestScheduleManager
                 .withLockFactory(myLockFactory)
                 .build();
         myScheduler.addRunPolicy(job -> myRunPolicy.validate(job));
+        myScheduler.createScheduleFutureForNodeIDList();
 
         when(myRunPolicy.validate(any(ScheduledJob.class))).thenReturn(-1L);
         doReturn(myLockFactoryBuilder).when(myLockFactoryBuilder).withNativeConnectionProvider(myNativeConnectionProvider);
