@@ -73,6 +73,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     public void createScheduleFutureForNodeIDList(final Collection<UUID> nodeIDList)
     {
         myExecutor.setCorePoolSize(nodeIDList.size());
+        LOG.debug("Total nodes found: {}", nodeIDList.size());
         for (UUID nodeID : nodeIDList)
         {
             if (myRunTasks.get(nodeID) == null)

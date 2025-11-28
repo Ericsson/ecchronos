@@ -304,11 +304,16 @@ public class DistributedNativeBuilder
         List<Node> nodesList = new ArrayList<>();
         Collection<Node> nodes = session.getMetadata().getNodes().values();
 
+        LOG.debug("Total nodes found for DatacenterAware: {}", nodes.size());
+
+
         for (Node node : nodes)
         {
+            LOG.debug("Processing Node {}", node.getHostId());
             if (datacenterNameSet.contains(node.getDatacenter()))
             {
                 nodesList.add(node);
+                LOG.debug("Processing Node added to nodesList {}", node.getHostId());
             }
         }
         return nodesList;
@@ -319,15 +324,18 @@ public class DistributedNativeBuilder
         Set<Map<String, String>> racksInfoSet = new HashSet<>(rackInfo);
         List<Node> nodesList = new ArrayList<>();
         Collection<Node> nodes = session.getMetadata().getNodes().values();
+        LOG.debug("Total nodes found for RackAware: {}", nodes.size());
 
         for (Node node : nodes)
         {
+            LOG.debug("Processing Node {}", node.getHostId());
             Map<String, String> tmpRackInfo = new HashMap<>();
             tmpRackInfo.put("datacenterName", node.getDatacenter());
             tmpRackInfo.put("rackName", node.getRack());
             if (racksInfoSet.contains(tmpRackInfo))
             {
                 nodesList.add(node);
+                LOG.debug("Processing Node added to nodesList {}", node.getHostId());
             }
         }
         return nodesList;
@@ -338,12 +346,15 @@ public class DistributedNativeBuilder
         Set<InetSocketAddress> hostsInfoSet = new HashSet<>(hostsInfo);
         List<Node> nodesList = new ArrayList<>();
         Collection<Node> nodes = session.getMetadata().getNodes().values();
+        LOG.debug("Total nodes found for HostAware: {}", nodes.size());
         for (Node node : nodes)
         {
+            LOG.debug("Processing Node {}", node.getHostId());
             InetSocketAddress tmpAddress = (InetSocketAddress) node.getEndPoint().resolve();
             if (hostsInfoSet.contains(tmpAddress))
             {
                 nodesList.add(node);
+                LOG.debug("Processing Node added to nodesList {}", node.getHostId());
             }
         }
         return nodesList;

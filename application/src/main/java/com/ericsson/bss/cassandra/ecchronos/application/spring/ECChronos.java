@@ -153,6 +153,7 @@ public class ECChronos implements Closeable
         myECChronosInternals.addRunPolicy(myTimeBasedRunPolicy);
 
         Collection<UUID> nodeIDList = nativeConnectionProvider.getNodes().keySet();
+        LOG.debug("Total nodes found: {}", nodeIDList.size());
         myECChronosInternals.getScheduleManager().createScheduleFutureForNodeIDList(nodeIDList);
     }
 
