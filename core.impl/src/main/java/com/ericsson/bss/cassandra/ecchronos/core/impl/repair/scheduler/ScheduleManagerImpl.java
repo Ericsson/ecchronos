@@ -349,10 +349,10 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         }
 
         /**
-         * Build SchedulerManager with run interval.
+         * Build SchedulerManager with native connection provider.
          *
-         * @param nodeIDList the interval to run a repair task
-         * @return Builder with nodes list
+         * @param nativeConnectionProvider the native connection provider
+         * @return Builder with native connection provider
          */
         public Builder withNativeConnectionProvider(final DistributedNativeConnectionProvider nativeConnectionProvider)
         {
