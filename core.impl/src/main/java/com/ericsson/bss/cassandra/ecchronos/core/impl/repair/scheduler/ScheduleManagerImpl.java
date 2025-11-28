@@ -70,9 +70,10 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     }
 
 
-    public void createScheduleFutureForNodeIDList()
+    public void createScheduleFutureForNodeIDList(final Collection<UUID> nodeIDList)
     {
-        for (UUID nodeID : myNodeIDList)
+        myExecutor.setCorePoolSize(nodeIDList.size());
+        for (UUID nodeID : nodeIDList)
         {
             if (myRunTasks.get(nodeID) == null)
             {
@@ -93,12 +94,15 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         if (myRunTasks.get(nodeID) == null)
         {
             JobRunTask myRunTask = new JobRunTask(nodeID);
+            myExecutor.setCorePoolSize(myRunTasks.size());
+
             ScheduledFuture<?> scheduledFuture = myExecutor.scheduleWithFixedDelay(myRunTask,
                     myRunIntervalInMs,
                     myRunIntervalInMs,
                     TimeUnit.MILLISECONDS);
             myRunTasks.put(nodeID, myRunTask);
             myRunFuture.put(nodeID, scheduledFuture);
+            myExecutor.setCorePoolSize(myRunTasks.size());
             LOG.debug("JobRunTask created for new node {}", nodeID);
         }
         else

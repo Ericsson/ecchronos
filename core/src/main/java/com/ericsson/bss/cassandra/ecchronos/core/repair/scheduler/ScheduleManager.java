@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler;
 
+import java.util.Collection;
 import java.util.UUID;
 
 public interface ScheduleManager
@@ -45,5 +46,5 @@ public interface ScheduleManager
     String getCurrentJobStatus();
     void createScheduleFutureForNode(UUID nodeID);
     void removeScheduleFutureForNode(UUID nodeID);
-    void createScheduleFutureForNodeIDList();
+    void createScheduleFutureForNodeIDList(Collection<UUID> nodeIDList);
 }
