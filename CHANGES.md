@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Add Resolve Reverse DNS Logic to Jolokia Notification Controller - Issue #1262
 * Add PEM Certificate Support for Jolokia TLS Configuration - Issue #1153
 * Enable alarms in ecchronos agent - Issue #1108
 * Add statistics configuration and metrics implementation - Issue #1191

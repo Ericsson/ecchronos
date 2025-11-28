@@ -12,19 +12,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ericsson.bss.cassandra.ecchronos.connection.impl.builders;
-
-import org.junit.Test;
+package com.ericsson.bss.cassandra.ecchronos.utils.dns;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import java.lang.reflect.Method;
 
-public class HostnameResolutionTest
-{
-    private final DistributedJmxBuilder builder = new DistributedJmxBuilder();
+import org.junit.Test;
 
+public class TestReverseDNS
+{
     @Test
     public void testCleanHostnameWithIPPrefix()
     {
@@ -99,15 +97,18 @@ public class HostnameResolutionTest
         {
             // Extract IP from the test input for the new method signature
             String ip = null;
-            if (hostname != null && hostname.startsWith("10.244.1.5.")) {
+            if (hostname != null && hostname.startsWith("10.244.1.5."))
+            {
                 ip = "10.244.1.5";
-            } else if (hostname != null && hostname.startsWith("2001:db8::1.")) {
+            }
+            else if (hostname != null && hostname.startsWith("2001:db8::1."))
+            {
                 ip = "2001:db8::1";
             }
-            
-            Method method = DistributedJmxBuilder.class.getDeclaredMethod("cleanHostname", String.class, String.class);
+
+            Method method = ReverseDNS.class.getDeclaredMethod("cleanHostname", String.class, String.class);
             method.setAccessible(true);
-            return (String) method.invoke(builder, hostname, ip);
+            return (String) method.invoke(null, hostname, ip);
         }
         catch (Exception e)
         {
