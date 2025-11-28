@@ -18,7 +18,9 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import io.micrometer.core.instrument.MeterRegistry;
 
 import java.io.Closeable;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.UUID;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import org.slf4j.Logger;
@@ -149,6 +151,9 @@ public class ECChronos implements Closeable
                 nativeConnectionProvider,
                 new VnodeRepairStateFactoryImpl(replicationState, repairHistoryService, true));
         myECChronosInternals.addRunPolicy(myTimeBasedRunPolicy);
+
+        Collection<UUID> nodeIDList = nativeConnectionProvider.getNodes().keySet();
+        myECChronosInternals.getScheduleManager().createScheduleFutureForNodeIDList(nodeIDList);
     }
 
     @Bean
