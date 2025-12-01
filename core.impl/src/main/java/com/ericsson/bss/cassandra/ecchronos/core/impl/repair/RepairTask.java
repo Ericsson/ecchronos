@@ -332,7 +332,6 @@ public abstract class RepairTask implements NotificationListener
             LOG.debug("Progress message set to complete latch counted down: {}", message);
             myLatch.countDown();
             LOG.debug("Latch count now set to: {}", myLatch.getCount());
-            myLatch.getCount();
         }
     }
 
