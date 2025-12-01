@@ -17,9 +17,11 @@ package com.ericsson.bss.cassandra.ecchronos.application.config.security;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
-public class JmxTLSConfig
+public class JmxTLSConfig implements TLSConfig
 {
     private final boolean myIsEnabled;
     private final String myKeyStorePath;
@@ -28,13 +30,49 @@ public class JmxTLSConfig
     private final String myTrustStorePassword;
     private String myProtocol;
     private String myCipherSuites;
+    private String[] myCipherSuitesAsList;
+    private String myCertificatePath;
+    private String myCertificatePrivateKeyPath;
+    private String myTrustCertificatePath;
+    private boolean myRequireEndpointVerification;
+    private String myStoreType;
+    private String myAlgorithm;
+    // Since CRL is optional, make sure there always is a disabled default CRL config available.
+    private CRLConfig myCRLConfig = new CRLConfig();
 
     @JsonCreator
+    @SuppressWarnings("CPD-START")
     public JmxTLSConfig(@JsonProperty("enabled") final boolean isEnabled,
                         @JsonProperty("keystore") final String keyStorePath,
                         @JsonProperty("keystore_password") final String keyStorePassword,
                         @JsonProperty("truststore") final String trustStorePath,
-                        @JsonProperty("truststore_password") final String trustStorePassword)
+                        @JsonProperty("truststore_password") final String trustStorePassword,
+                        @JsonProperty("certificate") final String certificatePath,
+                        @JsonProperty("certificate_private_key") final String certificatePrivateKeyPath,
+                        @JsonProperty("trust_certificate") final String trustCertificatePath)
+    {
+        myIsEnabled = isEnabled;
+        myKeyStorePath = keyStorePath;
+        myKeyStorePassword = keyStorePassword;
+        myTrustStorePath = trustStorePath;
+        myTrustStorePassword = trustStorePassword;
+        myCertificatePath = certificatePath;
+        myCertificatePrivateKeyPath = certificatePrivateKeyPath;
+        myTrustCertificatePath = trustCertificatePath;
+        if (myIsEnabled && !isKeyStoreConfigured() && !isCertificateConfigured())
+        {
+            throw new IllegalArgumentException(
+                    "Invalid TLS config, you must either configure KeyStore or PEM based certificates.");
+        }
+    }
+    @SuppressWarnings("CPD-END")
+
+    public JmxTLSConfig(final boolean isEnabled,
+                        final String keyStorePath,
+                        final String keyStorePassword,
+                        final String trustStorePath,
+                        final String trustStorePassword
+    )
     {
         myIsEnabled = isEnabled;
         myKeyStorePath = keyStorePath;
@@ -47,7 +85,6 @@ public class JmxTLSConfig
                     + " certificates.");
         }
     }
-
     private boolean isKeyStoreConfigured()
     {
         return myKeyStorePath != null && !myKeyStorePath.isEmpty()
@@ -56,29 +93,52 @@ public class JmxTLSConfig
                 && myTrustStorePassword != null && !myTrustStorePassword.isEmpty();
     }
 
+    @Override
     public final boolean isEnabled()
     {
         return myIsEnabled;
     }
 
+    @Override
     public final String getKeyStorePath()
     {
         return myKeyStorePath;
     }
 
+    @Override
     public final String getKeyStorePassword()
     {
         return myKeyStorePassword;
     }
 
+    @Override
     public final String getTrustStorePath()
     {
         return myTrustStorePath;
     }
 
+    @Override
     public final String getTrustStorePassword()
     {
         return myTrustStorePassword;
+    }
+
+    @Override
+    public final Optional<String> getCertificatePath()
+    {
+        return Optional.ofNullable(myCertificatePath);
+    }
+
+    @Override
+    public final Optional<String> getCertificatePrivateKeyPath()
+    {
+        return Optional.ofNullable(myCertificatePrivateKeyPath);
+    }
+
+    @Override
+    public final Optional<String> getTrustCertificatePath()
+    {
+        return Optional.ofNullable(myTrustCertificatePath);
     }
 
     public final String getProtocol()
@@ -92,15 +152,73 @@ public class JmxTLSConfig
         myProtocol = protocol;
     }
 
-    public final String getCipherSuites()
+    @Override
+    public final Optional<String[]> getCipherSuites()
+    {
+        if (myCipherSuitesAsList == null)
+        {
+            return Optional.empty();
+        }
+
+        return Optional.of(Arrays.copyOf(myCipherSuitesAsList, myCipherSuitesAsList.length));
+    }
+
+    public final String getCipherSuitesAsString()
     {
         return myCipherSuites;
+    }
+
+    @Override
+    public final String[] getProtocols()
+    {
+        if (myProtocol == null)
+        {
+            return null;
+        }
+        return myProtocol.split(",");
+    }
+
+    @JsonProperty("crl")
+    @Override
+    public final CRLConfig getCRLConfig()
+    {
+        return myCRLConfig;
     }
 
     @JsonProperty("cipher_suites")
     public final void setCipherSuites(final String cipherSuites)
     {
         myCipherSuites = cipherSuites;
+        myCipherSuitesAsList = transformCiphers(cipherSuites);
+    }
+
+    private static String[] transformCiphers(final String cipherSuites)
+    {
+        return cipherSuites == null ? null : cipherSuites.split(",");
+    }
+
+    @JsonProperty("require_endpoint_verification")
+    public final void setRequireEndpointVerification(final boolean requireEndpointVerification)
+    {
+        myRequireEndpointVerification = requireEndpointVerification;
+    }
+
+    @JsonProperty("store_type")
+    public final void setStoreType(final String storeType)
+    {
+        myStoreType = storeType;
+    }
+
+    @JsonProperty("algorithm")
+    public final void setAlgorithm(final String algorithm)
+    {
+        myAlgorithm = algorithm;
+    }
+
+    @JsonProperty("crl")
+    public final void setCRLConfig(final CRLConfig crlConfig)
+    {
+        myCRLConfig = crlConfig;
     }
 
     @Override
@@ -120,6 +238,12 @@ public class JmxTLSConfig
                 && Objects.equals(myKeyStorePassword, that.myKeyStorePassword)
                 && Objects.equals(myTrustStorePath, that.myTrustStorePath)
                 && Objects.equals(myTrustStorePassword, that.myTrustStorePassword)
+                && myRequireEndpointVerification == that.myRequireEndpointVerification
+                && Objects.equals(myStoreType, that.myStoreType)
+                && Objects.equals(myAlgorithm, that.myAlgorithm)
+                && Objects.equals(myCertificatePath, that.myCertificatePath)
+                && Objects.equals(myCertificatePrivateKeyPath, that.myCertificatePrivateKeyPath)
+                && Objects.equals(myTrustCertificatePath, that.myTrustCertificatePath)
                 && Objects.equals(myProtocol, that.myProtocol) && Objects.equals(myCipherSuites, that.myCipherSuites);
     }
 
@@ -127,6 +251,33 @@ public class JmxTLSConfig
     public final int hashCode()
     {
         return Objects.hash(myIsEnabled, myKeyStorePath, myKeyStorePassword, myTrustStorePath,
+                myStoreType, myAlgorithm, myCertificatePath, myCertificatePrivateKeyPath,
+                myTrustCertificatePath, myRequireEndpointVerification,
                 myTrustStorePassword, myProtocol, myCipherSuites);
+    }
+
+    @Override
+    public final boolean isCertificateConfigured()
+    {
+        return getCertificatePath().isPresent() && getCertificatePrivateKeyPath().isPresent()
+                && getTrustCertificatePath().isPresent();
+    }
+
+    @Override
+    public final boolean requiresEndpointVerification()
+    {
+        return myRequireEndpointVerification;
+    }
+
+    @Override
+    public final Optional<String> getStoreType()
+    {
+        return Optional.ofNullable(myStoreType);
+    }
+
+    @Override
+    public final Optional<String> getAlgorithm()
+    {
+        return Optional.ofNullable(myAlgorithm);
     }
 }

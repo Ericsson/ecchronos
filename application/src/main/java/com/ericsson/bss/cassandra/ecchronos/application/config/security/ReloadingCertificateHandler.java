@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -68,13 +69,13 @@ public class ReloadingCertificateHandler implements CertificateHandler
     private static final Logger LOG = LoggerFactory.getLogger(ReloadingCertificateHandler.class);
 
     private final AtomicReference<Context> currentContext = new AtomicReference<>();
-    private final Supplier<CqlTLSConfig> myCqlTLSConfigSupplier;
+    private final Supplier<TLSConfig> myTLSConfigSupplier;
 
     private static final String DEFAULT_STORE_TYPE_JKS = "JKS";
 
-    public ReloadingCertificateHandler(final Supplier<CqlTLSConfig> cqlTLSConfigSupplier)
+    public ReloadingCertificateHandler(final Supplier<TLSConfig> tlsConfigSupplier)
     {
-        this.myCqlTLSConfigSupplier = cqlTLSConfigSupplier;
+        this.myTLSConfigSupplier = tlsConfigSupplier;
     }
 
     /**
@@ -88,7 +89,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
     public SSLEngine newSslEngine(final EndPoint remoteEndpoint)
     {
         Context context = getContext();
-        CqlTLSConfig tlsConfig = context.getTlsConfig();
+        TLSConfig tlsConfig = context.getTlsConfig();
         SslContext sslContext = context.getSSLContext();
 
         SSLEngine sslEngine;
@@ -110,7 +111,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
 
     protected final Context getContext()
     {
-        CqlTLSConfig tlsConfig = myCqlTLSConfigSupplier.get();
+        TLSConfig tlsConfig = myTLSConfigSupplier.get();
         Context context = currentContext.get();
 
         try
@@ -126,7 +127,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
                 {
                     context = currentContext.get();
                 }
-                tlsConfig = myCqlTLSConfigSupplier.get();
+                tlsConfig = myTLSConfigSupplier.get();
             }
         }
         catch (NoSuchAlgorithmException | IOException | UnrecoverableKeyException | CertificateException
@@ -146,35 +147,47 @@ public class ReloadingCertificateHandler implements CertificateHandler
 
     protected static final class Context
     {
-        private final CqlTLSConfig myTlsConfig;
+        private final TLSConfig myTlsConfig;
         private final SslContext mySslContext;
         private final Map<String, String> myChecksums = new HashMap<>();
+        private KeyManagerFactory myKeyManagerFactory;
+        private TrustManagerFactory myTrustManagerFactory;
 
-        Context(final CqlTLSConfig tlsConfig)
+        Context(final TLSConfig tlsConfig)
                 throws NoSuchAlgorithmException, IOException, UnrecoverableKeyException, CertificateException,
                 KeyStoreException, KeyManagementException, InvalidAlgorithmParameterException, CRLException
         {
             myTlsConfig = tlsConfig;
-            mySslContext = createSSLContext(myTlsConfig);
+            mySslContext = createSSLContext(myTlsConfig, this);
             myChecksums.putAll(calculateChecksums(myTlsConfig));
         }
 
-        CqlTLSConfig getTlsConfig()
+        KeyManagerFactory getKeyManagerFactory()
+        {
+            return myKeyManagerFactory;
+        }
+
+        TrustManagerFactory getTrustManagerFactory()
+        {
+            return myTrustManagerFactory;
+        }
+
+        TLSConfig getTlsConfig()
         {
             return myTlsConfig;
         }
 
-        boolean sameConfig(final CqlTLSConfig newTLSConfig) throws IOException, NoSuchAlgorithmException
+        boolean sameConfig(final TLSConfig newTLSConfig) throws IOException, NoSuchAlgorithmException
         {
             return myTlsConfig.equals(newTLSConfig) && checksumSame(newTLSConfig);
         }
 
-        private boolean checksumSame(final CqlTLSConfig newTLSConfig) throws IOException, NoSuchAlgorithmException
+        private boolean checksumSame(final TLSConfig newTLSConfig) throws IOException, NoSuchAlgorithmException
         {
             return myChecksums.equals(calculateChecksums(newTLSConfig));
         }
 
-        private Map<String, String> calculateChecksums(final CqlTLSConfig tlsConfig)
+        private Map<String, String> calculateChecksums(final TLSConfig tlsConfig)
                 throws IOException, NoSuchAlgorithmException
         {
             Map<String, String> checksums = new HashMap<>();
@@ -210,7 +223,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
         }
     }
 
-    protected static SslContext createSSLContext(final CqlTLSConfig tlsConfig) throws IOException,
+    protected static SslContext createSSLContext(final TLSConfig tlsConfig, final Context context) throws IOException,
             NoSuchAlgorithmException,
             KeyStoreException,
             CertificateException,
@@ -222,7 +235,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
 
         if (tlsConfig.isCertificateConfigured())
         {
-             LOG.info("Will use PEM certificates for CQL connections, using internal store type {}", storeType);
+             LOG.info("Will use PEM certificates for connections, using internal store type {}", storeType);
 
             // Get certificate and key files from config
             File certificateFile = new File(tlsConfig.getCertificatePath().get());
@@ -289,13 +302,15 @@ public class ReloadingCertificateHandler implements CertificateHandler
                 }
             }
 
+            context.myKeyManagerFactory = kmf;
+            context.myTrustManagerFactory = tmf;
             // Finally, set the managers in the builder
             builder.keyManager(kmf);
             setTrustManagers(builder, tlsConfig, tmf);
         }
         else
         {
-            LOG.info("Will use keystore/truststore for CQL connections, expecting store type {}", storeType);
+            LOG.info("Will use keystore/truststore for connections, expecting store type {}", storeType);
 
             KeyManagerFactory keyManagerFactory = getKeyManagerFactory(tlsConfig);
             builder.keyManager(keyManagerFactory);
@@ -318,7 +333,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
         return builder.protocols(tlsConfig.getProtocols()).build();
     }
     protected static void setTrustManagers(final SslContextBuilder builder,
-                                           final CqlTLSConfig config,
+                                           final TLSConfig config,
                                            final TrustManagerFactory tmf)
     {
         if (config.getCRLConfig().getEnabled())
@@ -401,7 +416,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
 
     }
 
-    protected static KeyManagerFactory getKeyManagerFactory(final CqlTLSConfig tlsConfig) throws IOException,
+    protected static KeyManagerFactory getKeyManagerFactory(final TLSConfig tlsConfig) throws IOException,
             NoSuchAlgorithmException, KeyStoreException, CertificateException, UnrecoverableKeyException
     {
         String algorithm = tlsConfig.getAlgorithm().orElse(KeyManagerFactory.getDefaultAlgorithm());
@@ -417,7 +432,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
         }
     }
 
-    protected static TrustManagerFactory getTrustManagerFactory(final CqlTLSConfig tlsConfig)
+    protected static TrustManagerFactory getTrustManagerFactory(final TLSConfig tlsConfig)
             throws IOException, NoSuchAlgorithmException, KeyStoreException, CertificateException
     {
         String algorithm = tlsConfig.getAlgorithm().orElse(TrustManagerFactory.getDefaultAlgorithm());
@@ -430,6 +445,30 @@ public class ReloadingCertificateHandler implements CertificateHandler
             keyStore.load(truststoreFile, truststorePassword);
             trustManagerFactory.init(keyStore);
             return trustManagerFactory;
+        }
+    }
+
+    @Override
+    public final void setDefaultSSLContext()
+    {
+        Context context = getContext();
+        if (context != null && context.getTlsConfig().isCertificateConfigured())
+        {
+            try
+            {
+                SSLContext sslContext = SSLContext.getInstance("TLS");
+                sslContext.init(
+                    context.getKeyManagerFactory() != null ? context.getKeyManagerFactory().getKeyManagers() : null,
+                    context.getTrustManagerFactory() != null ? context.getTrustManagerFactory().getTrustManagers() : null,
+                    null
+                );
+                SSLContext.setDefault(sslContext);
+                LOG.info("Default SSLContext set for JVM");
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Failed to set default SSLContext", e);
+            }
         }
     }
 }

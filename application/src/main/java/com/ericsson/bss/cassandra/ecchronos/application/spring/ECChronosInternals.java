@@ -78,6 +78,10 @@ public class ECChronosInternals implements Closeable
                         .getConnectionConfig().getJmxConnection().getJolokiaConfig().isEnabled())
                 .withJolokiaPort(configuration
                         .getConnectionConfig().getJmxConnection().getJolokiaConfig().getPort())
+                .withJolokiaPEM(configuration
+                        .getConnectionConfig().getJmxConnection().getJolokiaConfig().usePem())
+                .withReverseDNSResolution(configuration
+                    .getConnectionConfig().getJmxConnection().getReseverseDNSResolution())
                 .build();
 
         CqlSession session = nativeConnectionProvider.getCqlSession();
@@ -131,7 +135,7 @@ public class ECChronosInternals implements Closeable
                 .withKeyspaceName(casLockFactoryConfig.getKeyspaceName())
                 .withCacheExpiryInSeconds(casLockFactoryConfig.getFailureCacheExpiryTimeInSeconds())
                 .withConsistencySerial(casLockFactoryConfig.getConsistencySerial())
-                .withLocalDatacenter(configuration.getConnectionConfig().getCqlConnection().getAgentConnectionConfig().getLocalDatacenter())
+                .withLocalDatacenter(configuration.getConnectionConfig().getCqlConnection().getLocalDatacenter())
                 .build();
 
         myScheduleManagerImpl = ScheduleManagerImpl.builder()

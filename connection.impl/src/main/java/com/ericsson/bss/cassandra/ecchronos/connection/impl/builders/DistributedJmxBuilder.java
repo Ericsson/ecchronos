@@ -20,10 +20,12 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.QueryExecutionException;
+import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedJmxConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
+import com.ericsson.bss.cassandra.ecchronos.utils.dns.ReverseDNS;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
 import org.jolokia.client.jmxadapter.JolokiaJmxConnectionProvider;
@@ -34,6 +36,7 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
+
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
@@ -56,9 +59,11 @@ public class DistributedJmxBuilder
     private final ConcurrentHashMap<UUID, JMXConnector> myJMXConnections = new ConcurrentHashMap<>();
     private Supplier<String[]> myCredentialsSupplier;
     private Supplier<Map<String, String>> myTLSSupplier;
+    private CertificateHandler myCertificateHandler;
     private boolean isJolokiaEnabled = false;
     private int myJolokiaPort = DEFAULT_JOLOKIA_PORT;
     private EccNodesSync myEccNodesSync;
+    private boolean myReverseDNSResolution = false;
 
     /**
      * Set the CQL session to be used by the DistributedJmxBuilder.
@@ -112,6 +117,12 @@ public class DistributedJmxBuilder
         return this;
     }
 
+    public final DistributedJmxBuilder withCertificateHandler(final CertificateHandler certificateHandler)
+    {
+        myCertificateHandler = certificateHandler;
+        return this;
+    }
+
     /**
      * Set the EccNodesSync instance to be used by the DistributedJmxBuilder.
      *
@@ -134,6 +145,12 @@ public class DistributedJmxBuilder
     public final DistributedJmxBuilder withJolokiaPort(final int jolokiaPort)
     {
         myJolokiaPort = jolokiaPort;
+        return this;
+    }
+
+    public final DistributedJmxBuilder withDNSResolution(final boolean reverseDNSResolution)
+    {
+        myReverseDNSResolution = reverseDNSResolution;
         return this;
     }
 
@@ -177,8 +194,7 @@ public class DistributedJmxBuilder
     {
         try
         {
-            String host = node.getBroadcastRpcAddress().get().getHostString();
-//            String host = "127.0.0.1";
+            String host = node.getBroadcastRpcAddress().get().getAddress().getHostAddress();
             if (NO_BROADCAST_ADDRESS.equals(host))
             {
                 host = node.getListenAddress().get().getHostString();
@@ -187,7 +203,11 @@ public class DistributedJmxBuilder
             Integer port;
             JMXConnector jmxConnector;
 
-            if (host.contains(":"))
+            if (myReverseDNSResolution)
+            {
+                host = ReverseDNS.fromHostString(host);
+            }
+            else if (host.contains(":"))
             {
                 // Use square brackets to surround IPv6 addresses
                 host = "[" + host + "]";
@@ -236,6 +256,7 @@ public class DistributedJmxBuilder
         }
     }
 
+
     private Map<String, Object> createJMXEnv()
     {
         Map<String, Object> env = new HashMap<>();
@@ -246,14 +267,19 @@ public class DistributedJmxBuilder
             env.put(JMXConnector.CREDENTIALS, credentials);
         }
 
-        if (!tls.isEmpty())
+        if (isJolokiaEnabled && myCertificateHandler != null)
+        {
+            env.put("jmx.remote.x.check.stub", "true");
+            myCertificateHandler.setDefaultSSLContext();
+        }
+        else if (!tls.isEmpty())
         {
             for (Map.Entry<String, String> configEntry : tls.entrySet())
             {
                 String key = configEntry.getKey();
                 String value = configEntry.getValue();
 
-                if (!value.isEmpty())
+                if (value != null && !value.isEmpty())
                 {
                     System.setProperty(key, value);
                 }
@@ -294,6 +320,7 @@ public class DistributedJmxBuilder
     {
         return !getTLSConfig().isEmpty();
     }
+
 
     private Integer getJMXPort(final Node node)
     {

@@ -48,6 +48,7 @@ class CassandraCluster:
         os.environ["CERTIFICATE_DIRECTORY"] = global_vars.CERTIFICATE_DIRECTORY
         os.environ["CASSANDRA_VERSION"] = global_vars.CASSANDRA_VERSION
         os.environ["JOLOKIA"] = global_vars.JOLOKIA_ENABLED
+        os.environ["PEM_ENABLED"] = global_vars.PEM_ENABLED
         os.environ["DOCKER_BUILDKIT"] = "1"
         self.cassandra_compose = DockerCompose(
             global_vars.CASSANDRA_DOCKER_COMPOSE_FILE_PATH,
@@ -141,6 +142,8 @@ class CassandraCluster:
             "-e",
             f"JOLOKIA={global_vars.JOLOKIA_ENABLED}",
             "-e",
+            f"PEM_ENABLED={global_vars.PEM_ENABLED}",
+            "-e",
             "JVM_EXTRA_OPTS=-Dcom.sun.management.jmxremote.authenticate=false "
             "-Dcassandra.superuser_setup_delay_ms=0 "
             "-Dcassandra.skip_wait_for_gossip_to_settle=0 "
@@ -154,7 +157,8 @@ class CassandraCluster:
             f"{cert_dir}:/etc/certificates",
             "cassandra-node3:latest",
         ]
-
+        static_ip = "172.29.0.6"
+        cmd.extend(["--ip", static_ip])
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         new_container_id = result.stdout.strip()
         self._extra_node = new_container_id
@@ -176,7 +180,7 @@ class CassandraCluster:
             return next(iter(networks.values()))["IPAddress"]
 
     def _get_node_count(self):
-        if global_vars.LOCAL != "true":
+        if global_vars.LOCAL != "true" and global_vars.PEM_ENABLED != "true":
             command = ["docker", "exec", self.container_id, "sh", "-c", "~/.cassandra/nodetool-status-ssl.sh"]
         else:
             command = ["docker", "exec", self.container_id, "bash", "-c", "nodetool -u cassandra -pw cassandra status"]
@@ -263,7 +267,7 @@ class CassandraCluster:
 
     def _run_full_repair(self):
         logger.info("Running Full Repair")
-        if global_vars.LOCAL != "true":
+        if global_vars.LOCAL != "true" and global_vars.PEM_ENABLED != "true":
             command = [
                 "docker",
                 "exec",
@@ -273,7 +277,14 @@ class CassandraCluster:
                 "nodetool -ssl -u cassandra -pw cassandra repair --full",
             ]
         else:
-            command = ["docker", "exec", self.container_id, "bash", "-c", "nodetool -u cassandra -pw cassandra status"]
+            command = [
+                "docker",
+                "exec",
+                self.container_id,
+                "bash",
+                "-c",
+                "nodetool -u cassandra -pw cassandra repair --full",
+            ]
 
         subprocess.run(
             command,
@@ -301,7 +312,7 @@ class CassandraCluster:
     def stop_extra_node(self):
         try:
             if self._extra_node != None:
-                if global_vars.LOCAL != "true":
+                if global_vars.LOCAL != "true" and global_vars.PEM_ENABLED != "true":
                     command = [
                         "docker",
                         "exec",
@@ -314,7 +325,7 @@ class CassandraCluster:
                     command = [
                         "docker",
                         "exec",
-                        self.container_id,
+                        self._extra_node,
                         "bash",
                         "-c",
                         "nodetool -u cassandra -pw cassandra decommission",
