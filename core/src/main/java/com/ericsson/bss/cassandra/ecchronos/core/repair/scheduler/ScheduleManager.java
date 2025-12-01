@@ -44,7 +44,15 @@ public interface ScheduleManager
      * @return A {@code String} representing the current status of the job.
      */
     String getCurrentJobStatus();
+
+    /**
+     * Create a ScheduledFuture for  the nodeID
+     * @param nodeID
+     */
     void createScheduleFutureForNode(UUID nodeID);
-    void removeScheduleFutureForNode(UUID nodeID);
+    /**
+     * Create a ScheduledFuture for each of the nodes in the nodeIDList
+     * @param nodeIDList
+     */
     void createScheduleFutureForNodeIDList(Collection<UUID> nodeIDList);
 }

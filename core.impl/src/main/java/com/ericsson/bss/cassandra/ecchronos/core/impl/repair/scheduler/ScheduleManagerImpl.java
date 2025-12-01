@@ -66,10 +66,13 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 myNodeIDList.size(), new ThreadFactoryBuilder().setNameFormat("TaskExecutor-%d").build());
         myLockFactory = builder.myLockFactory;
         myRunIntervalInMs = builder.myRunIntervalInMs;
-//        createScheduleFutureForNodeIDList();
     }
 
-
+    /**
+     * Create a ScheduledFuture for each of the nodes in the nodeIDList
+     * @param nodeIDList
+     */
+    @Override
     public void createScheduleFutureForNodeIDList(final Collection<UUID> nodeIDList)
     {
         myExecutor.setCorePoolSize(nodeIDList.size());
@@ -89,6 +92,11 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             }
         }
     }
+
+    /**
+     * Create a ScheduledFuture for  the nodeID
+     * @param nodeID
+     */
     @Override
     public void createScheduleFutureForNode(final UUID nodeID)
     {
@@ -111,25 +119,6 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             LOG.debug("JobRunTask already exists for new node {}", nodeID);
         }
     }
-    @Override
-    public void removeScheduleFutureForNode(final UUID nodeID)
-    {
-        ScheduledFuture<?> scheduledFuture = myRunFuture.get(nodeID);
-
-        if (scheduledFuture != null)
-        {
-            LOG.debug(" ScheduledFuture for decommissioned node {}", nodeID);
-            scheduledFuture.cancel(true);
-            myRunFuture.remove(nodeID);
-        }
-        else
-        {
-            LOG.debug(" ScheduledFuture missing for decommissioned node {}", nodeID);
-        }
-        myRunTasks.remove(nodeID);
-    }
-
-
     @Override
     public String getCurrentJobStatus()
     {

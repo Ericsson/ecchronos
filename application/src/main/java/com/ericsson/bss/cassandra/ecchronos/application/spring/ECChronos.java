@@ -138,7 +138,6 @@ public class ECChronos implements Closeable
                 .withTableReferenceFactory(myECChronosInternals.getTableReferenceFactory())
                 .withThreadPool(setupThreadPool(threadPoolTaskConfig)).build();
 
-        LOG.debug("defaultRepairConfigurationProvider being created");
         defaultRepairConfigurationProvider.fromBuilder(DefaultRepairConfigurationProvider.newBuilder()
                 .withSession(session)
                 .withEccNodesSync(eccNodesSync)
@@ -146,7 +145,6 @@ public class ECChronos implements Closeable
                 .withNodeWorkerManager(myNodeWorkerManager)
                 .withScheduleManager(myECChronosInternals.getScheduleManager())
                 .withDistributedNativeConnectionProvider(nativeConnectionProvider));
-        LOG.debug("myRepairStatsProvider being created");
         myRepairStatsProvider = new RepairStatsProviderImpl(
                 nativeConnectionProvider,
                 new VnodeRepairStateFactoryImpl(replicationState, repairHistoryService, true));

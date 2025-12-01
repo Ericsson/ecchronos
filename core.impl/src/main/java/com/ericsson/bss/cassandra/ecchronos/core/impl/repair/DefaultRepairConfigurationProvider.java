@@ -420,11 +420,6 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
             {
                 myWorkerManager.removeNode(node);
             }
-/*            if (myScheduleManager != null)
-            {
-                myScheduleManager.removeScheduleFutureForNode(node.getHostId());
-            }
-*/
         }
     }
 

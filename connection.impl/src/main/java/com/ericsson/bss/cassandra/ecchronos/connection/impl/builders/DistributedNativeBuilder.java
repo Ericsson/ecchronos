@@ -303,17 +303,18 @@ public class DistributedNativeBuilder
         Set<String> datacenterNameSet = new HashSet<>(datacenterNames);
         List<Node> nodesList = new ArrayList<>();
         Collection<Node> nodes = session.getMetadata().getNodes().values();
-
         LOG.debug("Total nodes found for DatacenterAware: {}", nodes.size());
-
 
         for (Node node : nodes)
         {
-            LOG.debug("Processing Node {}", node.getHostId());
             if (datacenterNameSet.contains(node.getDatacenter()))
             {
                 nodesList.add(node);
                 LOG.debug("Processing Node added to nodesList {}", node.getHostId());
+            }
+            else
+            {
+                LOG.debug("Skipping Node {}", node.getHostId());
             }
         }
         return nodesList;
@@ -328,7 +329,6 @@ public class DistributedNativeBuilder
 
         for (Node node : nodes)
         {
-            LOG.debug("Processing Node {}", node.getHostId());
             Map<String, String> tmpRackInfo = new HashMap<>();
             tmpRackInfo.put("datacenterName", node.getDatacenter());
             tmpRackInfo.put("rackName", node.getRack());
@@ -337,6 +337,11 @@ public class DistributedNativeBuilder
                 nodesList.add(node);
                 LOG.debug("Processing Node added to nodesList {}", node.getHostId());
             }
+            else
+            {
+                LOG.debug("Skipping Node {}", node.getHostId());
+            }
+
         }
         return nodesList;
     }
@@ -349,13 +354,17 @@ public class DistributedNativeBuilder
         LOG.debug("Total nodes found for HostAware: {}", nodes.size());
         for (Node node : nodes)
         {
-            LOG.debug("Processing Node {}", node.getHostId());
             InetSocketAddress tmpAddress = (InetSocketAddress) node.getEndPoint().resolve();
             if (hostsInfoSet.contains(tmpAddress))
             {
                 nodesList.add(node);
                 LOG.debug("Processing Node added to nodesList {}", node.getHostId());
             }
+            else
+            {
+                LOG.debug("Skipping Node {}", node.getHostId());
+            }
+
         }
         return nodesList;
     }

@@ -51,7 +51,7 @@ public abstract class RepairTask implements NotificationListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairTask.class);
     private static final Pattern RANGE_PATTERN = Pattern.compile("\\((-?[0-9]+),(-?[0-9]+)\\]");
-    private static final int HEALTH_CHECK_INTERVAL_IN_MINUTES = 3;
+    private static final int HEALTH_CHECK_INTERVAL_IN_MINUTES = 10;
 
     private final UUID nodeID;
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
@@ -152,7 +152,6 @@ public abstract class RepairTask implements NotificationListener
                 LOG.debug("finished waiting for latch for table {} on node {}", myTableReference, nodeID);
                 proxy.removeStorageServiceListener(nodeID, this);
                 verifyRepair(proxy);
-                LOG.debug("Repair verified for table {} on node {}", myTableReference, nodeID);
                 if (myLastError != null)
                 {
                     throw myLastError;
@@ -258,7 +257,6 @@ public abstract class RepairTask implements NotificationListener
 
                 String message = notification.getMessage();
                 ProgressEventType type = ProgressEventType.values()[progress.get("type")];
-
                 LOG.debug("Notification Type {}", type.toString());
 
                 this.progress(type, message);

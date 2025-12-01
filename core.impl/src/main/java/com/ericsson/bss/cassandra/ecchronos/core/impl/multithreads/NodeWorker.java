@@ -79,7 +79,6 @@ public class NodeWorker implements Runnable
     @Override
     public final void run()
     {
-        LOG.debug("In Nodeworker.run");
         while (!Thread.currentThread().isInterrupted())
         {
             try
