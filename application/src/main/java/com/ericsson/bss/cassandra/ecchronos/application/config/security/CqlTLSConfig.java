@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
-public class CqlTLSConfig
+public class CqlTLSConfig implements TLSConfig
 {
     private static final int HASH_SEED = 31;
 
@@ -43,6 +43,7 @@ public class CqlTLSConfig
 
 
     @JsonCreator
+    @SuppressWarnings("CPD-START")
     public CqlTLSConfig(@JsonProperty("enabled") final boolean isEnabled,
                         @JsonProperty("keystore") final String keyStorePath,
                         @JsonProperty("keystore_password") final String keyStorePassword,
@@ -66,6 +67,7 @@ public class CqlTLSConfig
                     "Invalid CQL TLS config, you must either configure KeyStore or PEM based certificates.");
         }
     }
+    @SuppressWarnings("CPD-END")
 
     private boolean isKeyStoreConfigured()
     {
@@ -75,6 +77,7 @@ public class CqlTLSConfig
                 && myTrustStorePassword != null && !myTrustStorePassword.isEmpty();
     }
 
+    @Override
     public final boolean isCertificateConfigured()
     {
         return getCertificatePath().isPresent() && getCertificatePrivateKeyPath().isPresent()
@@ -100,31 +103,37 @@ public class CqlTLSConfig
         myTrustCertificatePath = trustCertificatePath;
     }
 
+    @Override
     public final boolean isEnabled()
     {
         return myIsEnabled;
     }
 
+    @Override
     public final String getKeyStorePath()
     {
         return myKeyStorePath;
     }
 
+    @Override
     public final String getKeyStorePassword()
     {
         return myKeyStorePassword;
     }
 
+    @Override
     public final String getTrustStorePath()
     {
         return myTrustStorePath;
     }
 
+    @Override
     public final String getTrustStorePassword()
     {
         return myTrustStorePassword;
     }
 
+    @Override
     public final Optional<String> getStoreType()
     {
         return Optional.ofNullable(myStoreType);
@@ -136,6 +145,7 @@ public class CqlTLSConfig
         myStoreType = storeType;
     }
 
+    @Override
     public final Optional<String> getAlgorithm()
     {
         return Optional.ofNullable(myAlgorithm);
@@ -147,16 +157,19 @@ public class CqlTLSConfig
         myAlgorithm = algorithm;
     }
 
+    @Override
     public final Optional<String> getCertificatePath()
     {
         return Optional.ofNullable(myCertificatePath);
     }
 
+    @Override
     public final Optional<String> getCertificatePrivateKeyPath()
     {
         return Optional.ofNullable(myCertificatePrivateKeyPath);
     }
 
+    @Override
     public final Optional<String> getTrustCertificatePath()
     {
         return Optional.ofNullable(myTrustCertificatePath);
@@ -168,6 +181,7 @@ public class CqlTLSConfig
         myProtocol = protocol;
     }
 
+    @Override
     public final Optional<String[]> getCipherSuites()
     {
         if (myCipherSuites == null)
@@ -189,6 +203,7 @@ public class CqlTLSConfig
         return cipherSuites == null ? null : cipherSuites.split(",");
     }
 
+    @Override
     public final String[] getProtocols()
     {
         if (myProtocol == null)
@@ -198,6 +213,7 @@ public class CqlTLSConfig
         return myProtocol.split(",");
     }
 
+    @Override
     public final boolean requiresEndpointVerification()
     {
         return myRequireEndpointVerification;
@@ -209,6 +225,7 @@ public class CqlTLSConfig
         myRequireEndpointVerification = requireEndpointVerification;
     }
     @JsonProperty("crl")
+    @Override
     public final CRLConfig getCRLConfig()
     {
         return myCRLConfig;

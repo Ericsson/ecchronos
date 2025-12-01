@@ -20,6 +20,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.ericsson.bss.cassandra.ecchronos.application.config.connection.DistributedNativeConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -27,7 +28,6 @@ import org.springframework.stereotype.Service;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
-import com.ericsson.bss.cassandra.ecchronos.application.config.connection.AgentConnectionConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.connection.RetryPolicyConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.MountConnectionHelper;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
@@ -56,7 +56,7 @@ public class ReloadSchedulerService implements DisposableBean
         this.myDefaultRepairConfigurationProvider = defaultRepairConfigurationProvider;
         this.myConfig = config;
         this.myDistributedNativeConnectionProvider = distributedNativeConnectionProvider;
-        this.myScheduleConfig = config.getConnectionConfig().getCqlConnection().getAgentConnectionConfig().getReloadSchedule();
+        this.myScheduleConfig = config.getConnectionConfig().getCqlConnection().getReloadSchedule();
     }
 
     private void reloadNodesMap()
@@ -64,15 +64,13 @@ public class ReloadSchedulerService implements DisposableBean
         try
         {
             LOG.info("Attempting to verify nodes map disagreements.");
-            AgentConnectionConfig agentConnectionConfig = myConfig.getConnectionConfig()
-                    .getCqlConnection()
-                    .getAgentConnectionConfig();
+            DistributedNativeConnection nativeConnectionConfig = myConfig.getConnectionConfig().getCqlConnection();
 
             DistributedNativeBuilder nativeBuilder = new DistributedNativeBuilder()
-                    .withAgentType(agentConnectionConfig.getType());
+                    .withAgentType(nativeConnectionConfig.getType());
 
             // Use helper method to resolve agent provider configuration
-            nativeBuilder = resolveAgentProviderBuilder(nativeBuilder, agentConnectionConfig);
+            nativeBuilder = resolveAgentProviderBuilder(nativeBuilder, nativeConnectionConfig);
 
             Map<UUID, Node> nodes = nativeBuilder.createNodesMap(myDistributedNativeConnectionProvider.getCqlSession());
             compareNodesMap(nodes);
@@ -86,27 +84,27 @@ public class ReloadSchedulerService implements DisposableBean
     @SuppressWarnings("CPD-START")
     public final DistributedNativeBuilder resolveAgentProviderBuilder(
           final DistributedNativeBuilder builder,
-          final AgentConnectionConfig agentConnectionConfig)
+          final DistributedNativeConnection nativeConnectionConfig)
     {
-        return switch (agentConnectionConfig.getType())
+        return switch (nativeConnectionConfig.getType())
         {
             case datacenterAware ->
             {
                 LOG.info("Using DatacenterAware as Agent Config");
                 yield builder.withDatacenterAware(myConnectionHelper.resolveDatacenterAware(
-                        agentConnectionConfig.getDatacenterAware()));
+                        nativeConnectionConfig.getDatacenterAware()));
             }
             case rackAware ->
             {
                 LOG.info("Using RackAware as Agent Config");
                 yield builder.withRackAware(myConnectionHelper.resolveRackAware(
-                        agentConnectionConfig.getRackAware()));
+                        nativeConnectionConfig.getRackAware()));
             }
             case hostAware ->
             {
                 LOG.info("Using HostAware as Agent Config");
                 yield builder.withHostAware(myConnectionHelper.resolveHostAware(
-                        agentConnectionConfig.getHostAware()));
+                        nativeConnectionConfig.getHostAware()));
             }
         };
     }

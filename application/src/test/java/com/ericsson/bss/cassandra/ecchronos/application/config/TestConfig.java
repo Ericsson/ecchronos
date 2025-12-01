@@ -70,30 +70,28 @@ public class TestConfig
     @Test
     public void testDefaultAgentType()
     {
-        assertThat(nativeConnection.getAgentConnectionConfig().getType()).isEqualTo(ConnectionType.datacenterAware);
+        assertThat(nativeConnection.getType()).isEqualTo(ConnectionType.datacenterAware);
     }
 
     @Test
     public void testLocalDatacenter()
     {
-        assertThat(nativeConnection.getAgentConnectionConfig().getLocalDatacenter()).isEqualTo("datacenter1");
+        assertThat(nativeConnection.getLocalDatacenter()).isEqualTo("datacenter1");
     }
 
     @Test
     public void testDefaultContactPoints()
     {
-        assertThat(nativeConnection.getAgentConnectionConfig()).isNotNull();
-        assertThat(nativeConnection.getAgentConnectionConfig().getContactPoints().get("127.0.0.1").getPort()).isEqualTo(9042);
-        assertThat(nativeConnection.getAgentConnectionConfig().getContactPoints().get("127.0.0.2").getPort()).isEqualTo(9042);
-        assertThat(nativeConnection.getAgentConnectionConfig().getContactPoints().size()).isEqualTo(2);
+        assertThat(nativeConnection.getContactPoints().get("127.0.0.1").getPort()).isEqualTo(9042);
+        assertThat(nativeConnection.getContactPoints().get("127.0.0.2").getPort()).isEqualTo(9042);
+        assertThat(nativeConnection.getContactPoints().size()).isEqualTo(2);
     }
 
     @Test
     public void testDefaultDatacenterAware()
     {
-        assertThat(nativeConnection.getAgentConnectionConfig().getDatacenterAware()).isNotNull();
+        assertThat(nativeConnection.getDatacenterAware()).isNotNull();
         assertThat(nativeConnection
-                .getAgentConnectionConfig()
                 .getDatacenterAware()
                 .getDatacenters()
                 .get("datacenter1")
@@ -103,9 +101,8 @@ public class TestConfig
     @Test
     public void testDefaultRackAware()
     {
-        assertThat(nativeConnection.getAgentConnectionConfig().getRackAware()).isNotNull();
+        assertThat(nativeConnection.getRackAware()).isNotNull();
         assertThat(nativeConnection
-                .getAgentConnectionConfig()
                 .getRackAware()
                 .getRacks()
                 .get("rack1")
@@ -115,9 +112,8 @@ public class TestConfig
     @Test
     public void testDefaultHostAware()
     {
-        assertThat(nativeConnection.getAgentConnectionConfig().getHostAware()).isNotNull();
+        assertThat(nativeConnection.getHostAware()).isNotNull();
         assertThat(nativeConnection
-                .getAgentConnectionConfig()
                 .getHostAware()
                 .getHosts()
                 .get("127.0.0.1")
@@ -125,7 +121,6 @@ public class TestConfig
                 .isEqualTo(9042);
 
         assertThat(nativeConnection
-                .getAgentConnectionConfig()
                 .getHostAware()
                 .getHosts()
                 .get("127.0.0.2")
@@ -133,7 +128,6 @@ public class TestConfig
                 .isEqualTo(9042);
 
         assertThat(nativeConnection
-                .getAgentConnectionConfig()
                 .getHostAware()
                 .getHosts()
                 .get("127.0.0.3")
@@ -141,7 +135,6 @@ public class TestConfig
                 .isEqualTo(9042);
 
         assertThat(nativeConnection
-                .getAgentConnectionConfig()
                 .getHostAware()
                 .getHosts()
                 .get("127.0.0.4")
@@ -161,7 +154,7 @@ public class TestConfig
     {
         assertThrows(ConfigurationException.class, () ->
         {
-            nativeConnection.getAgentConnectionConfig().setType("wrongType");
+            nativeConnection.setType("wrongType");
         });
     }
 
@@ -308,7 +301,7 @@ public class TestConfig
     @Test
     public void testInstanceName()
     {
-        assertThat(nativeConnection.getAgentConnectionConfig().getInstanceName()).isEqualTo("unique_identifier");
+        assertThat(nativeConnection.getInstanceName()).isEqualTo("unique_identifier");
     }
 
     @Test
@@ -373,6 +366,18 @@ public class TestConfig
         assertThat(config.getStatisticsConfig().getReportingConfigs().getJmxReportingConfig().isEnabled()).isFalse();
         assertThat(config.getStatisticsConfig().getReportingConfigs().getFileReportingConfig().isEnabled()).isTrue();
         assertThat(config.getStatisticsConfig().getReportingConfigs().getHttpReportingConfig().isEnabled()).isTrue();
+    }
+
+    @Test
+    public void testPEMConfig()
+    {
+        assertThat(config.getConnectionConfig().getJmxConnection().getJolokiaConfig().usePem()).isFalse();
+    }
+
+    @Test
+    public void testReverseDNSConfig()
+    {
+        assertThat(config.getConnectionConfig().getJmxConnection().getReseverseDNSResolution()).isFalse();
     }
 }
 

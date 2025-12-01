@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.connection.Joloki
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Credentials;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.JmxTLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
+import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedJmxConnectionProviderImpl;
@@ -59,7 +60,8 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
             final Config config,
             final Supplier<Security.JmxSecurity> jmxSecurity,
             final DistributedNativeConnectionProvider distributedNativeConnectionProvider,
-            final EccNodesSync eccNodesSync
+            final EccNodesSync eccNodesSync,
+            final CertificateHandler certificateHandler
     ) throws IOException
     {
         JolokiaConfig jolokiaConfig = config.getConnectionConfig().getJmxConnection().getJolokiaConfig();
@@ -76,6 +78,8 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
                 .withTLS(tls)
                 .withJolokiaEnabled(jolokiaConfig.isEnabled())
                 .withJolokiaPort(jolokiaConfig.getPort())
+                .withCertificateHandler(certificateHandler)
+                .withDNSResolution(config.getConnectionConfig().getJmxConnection().getReseverseDNSResolution())
                 .build();
     }
 
@@ -94,7 +98,7 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
         }
         if (tlsConfig.getCipherSuites() != null)
         {
-            config.put("com.sun.management.jmxremote.ssl.enabled.cipher.suites", tlsConfig.getCipherSuites());
+            config.put("com.sun.management.jmxremote.ssl.enabled.cipher.suites", tlsConfig.getCipherSuitesAsString());
         }
         config.put("javax.net.ssl.keyStore", tlsConfig.getKeyStorePath());
         config.put("javax.net.ssl.keyStorePassword", tlsConfig.getKeyStorePassword());

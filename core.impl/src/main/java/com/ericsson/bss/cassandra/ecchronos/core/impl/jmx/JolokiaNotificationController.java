@@ -18,12 +18,10 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.ClientRegisterResponse;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.NotificationListenerResponse;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.NotificationRegisterResponse;
+import com.ericsson.bss.cassandra.ecchronos.utils.dns.ReverseDNS;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.jolokia.client.J4pClient;
-import org.jolokia.client.request.J4pExecRequest;
-import org.jolokia.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +29,7 @@ import javax.management.Notification;
 import javax.management.NotificationListener;
 import java.io.IOException;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -55,6 +54,8 @@ public class JolokiaNotificationController
     private static final int HTTP_REQUEST_TIMEOUT_SECONDS = 10;
     private static final String CLIENT_ID_PROPERTY = "clientID";
     private static final String SS_OBJ_NAME = "org.apache.cassandra.db:type=StorageService";
+    public static final String NO_BROADCAST_ADDRESS = "0.0.0.0"; //NOPMD AvoidUsingHardCodedIP
+    private final boolean myReverseDNSResolution;
 
     private final Map<NotificationListener, String> myJolokiaRelationshipListeners = new HashMap<>();
 
@@ -72,11 +73,20 @@ public class JolokiaNotificationController
 
     private final Map<UUID, Node> myNodesMap;
     private final int myJolokiaPort;
+    private final boolean myJolokiaPEM;
+    private final String myURLPrefix;
 
-    public JolokiaNotificationController(final Map<UUID, Node> nodesMap, final int jolokiaPort)
+    public JolokiaNotificationController(
+        final Map<UUID, Node> nodesMap,
+        final int jolokiaPort,
+        final boolean jolokiaPEM,
+        final boolean reverseDNSResolution)
     {
         myNodesMap = nodesMap;
         myJolokiaPort = jolokiaPort;
+        myJolokiaPEM = jolokiaPEM;
+        myURLPrefix = myJolokiaPEM ? "https" : "http";
+        myReverseDNSResolution = reverseDNSResolution;
     }
 
     public final void addStorageServiceListener(final UUID nodeID, final NotificationListener listener) throws IOException, InterruptedException
@@ -97,7 +107,7 @@ public class JolokiaNotificationController
 
     public final void removeStorageServiceListener(
             final UUID nodeID,
-            final NotificationListener listener)
+            final NotificationListener listener) throws UnknownHostException
     {
         String jolokiaNotificationID = myJolokiaRelationshipListeners.get(listener);
         removeJolokiaNotification(nodeID, jolokiaNotificationID);
@@ -140,8 +150,8 @@ public class JolokiaNotificationController
         {
             try
             {
-                JSONObject response = checkForNotifications(myNodeID, myNotificationID);
-                NotificationListenerResponse notificationListenerResponse = objectMapper.readValue(response.toJSONString(),
+                String response = checkForNotifications(myNodeID, myNotificationID);
+                NotificationListenerResponse notificationListenerResponse = objectMapper.readValue(response,
                         NotificationListenerResponse.class);
 
                 if (notificationListenerResponse.getValue() != null)
@@ -208,8 +218,10 @@ public class JolokiaNotificationController
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-            ClientRegisterResponse clientRegisterResponse = objectMapper.readValue(response.body(),
-                    ClientRegisterResponse.class);
+            LOG.debug("Raw response from {}: Status={}, Body={}", url, response.statusCode(), response.body());
+
+            ClientRegisterResponse clientRegisterResponse = objectMapper.readValue(
+                    decodeHtmlEntities(response.body()), ClientRegisterResponse.class);
 
             Map<String, String> properties = new HashMap<>();
             properties.put(CLIENT_ID_PROPERTY, clientRegisterResponse.getValue().getId());
@@ -234,13 +246,13 @@ public class JolokiaNotificationController
                 .build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-        NotificationRegisterResponse notificationRegisterResponse = objectMapper.readValue(response.body(),
-                NotificationRegisterResponse.class);
+        NotificationRegisterResponse notificationRegisterResponse = objectMapper.readValue(
+                decodeHtmlEntities(response.body()), NotificationRegisterResponse.class);
 
         return notificationRegisterResponse.getValue();
     }
 
-    private void removeJolokiaNotification(final UUID nodeID, final String notificationID)
+    private void removeJolokiaNotification(final UUID nodeID, final String notificationID) throws UnknownHostException
     {
         String url = mountJolokiaBaseURL(nodeID) + "/notification";
         HttpRequest request = HttpRequest.newBuilder()
@@ -307,20 +319,22 @@ public class JolokiaNotificationController
         return "";
     }
 
-    private J4pClient mountJolokiaClient(final UUID nodeID)
+    private String mountJolokiaBaseURL(final UUID nodeID) throws UnknownHostException
     {
-        return new J4pClient(mountJolokiaBaseURL(nodeID));
+        String host = myNodesMap.get(nodeID).getBroadcastRpcAddress().get().getAddress().getHostAddress();
+        if (NO_BROADCAST_ADDRESS.equals(host))
+        {
+            host = myNodesMap.get(nodeID).getListenAddress().get().getHostString();
+        }
+        if (myReverseDNSResolution)
+        {
+            host = ReverseDNS.fromHostString(host);
+        }
+        return myURLPrefix + "://" + host + ":" + myJolokiaPort + "/jolokia";
     }
 
-    private String mountJolokiaBaseURL(final UUID nodeID)
+    private String checkForNotifications(final UUID nodeID, final String notificationID)
     {
-        String host = myNodesMap.get(nodeID).getBroadcastRpcAddress().get().getHostString();
-        return "http://" + host + ":" + myJolokiaPort + "/jolokia";
-    }
-
-    private JSONObject checkForNotifications(final UUID nodeID, final String notificationID)
-    {
-        String operation = "pull";
         try
         {
             synchronized (myClientIdMap)
@@ -329,21 +343,36 @@ public class JolokiaNotificationController
                 if (clientInfo == null)
                 {
                     LOG.debug("No client info found for node {}, skipping notification check", nodeID);
-                    return new JSONObject();
+                    return "{}";
                 }
-                J4pExecRequest execRequest = new J4pExecRequest(
-                        clientInfo.get("store"),
-                        operation, clientInfo.get(CLIENT_ID_PROPERTY),
-                        notificationID);
 
-                return mountJolokiaClient(nodeID).execute(execRequest).asJSONObject();
+                String url = mountJolokiaBaseURL(nodeID) + "/exec/" + clientInfo.get("store") + "/pull/"
+                    + clientInfo.get(CLIENT_ID_PROPERTY) + "/" + notificationID;
+
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
+                        .GET()
+                        .build();
+
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                return decodeHtmlEntities(response.body());
             }
         }
         catch (Exception e)
         {
             LOG.warn("Error checking notifications for node {} and notificationID {}: {}", nodeID, notificationID, e.getMessage());
         }
-        return new JSONObject();
+        return "{}";
+    }
+
+    private String decodeHtmlEntities(final String input)
+    {
+        return input
+                .replace("&quot;", "\"")
+                .replace("&lt;", "<")
+                .replace("&gt;", ">")
+                .replace("&amp;", "&");
     }
 
     public final void close()

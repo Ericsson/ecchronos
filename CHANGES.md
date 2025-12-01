@@ -2,8 +2,10 @@
 
 ## Version 1.0.0 (Not yet Released)
 
-* Enable alarms in ecchronos agent #1108
-* Add statistics configuration and metrics implementation Issue #1191
+* Add Resolve Reverse DNS Logic to Jolokia Notification Controller - Issue #1262
+* Add PEM Certificate Support for Jolokia TLS Configuration - Issue #1153
+* Enable alarms in ecchronos agent - Issue #1108
+* Add statistics configuration and metrics implementation - Issue #1191
 * Restore retryPolicy location in ecc.yml to maintain backward compatibility - Issue 1180
 * An invalid node id should throw a useful exception - Issue #1199
 * Manual repair to obey disabled tables - Issue #1109

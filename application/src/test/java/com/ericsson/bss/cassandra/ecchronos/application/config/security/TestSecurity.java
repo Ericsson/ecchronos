@@ -20,7 +20,6 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -107,17 +106,6 @@ public class TestSecurity
 
         assertThat(config.getCqlSecurity().getCqlCredentials()).isEqualTo(expectedCqlCredentials);
         assertThat(config.getCqlSecurity().getCqlTlsConfig()).isEqualTo(cqlTLSConfig);
-    }
-
-    @Test
-    public void testJmxEnabledWithCertificate()
-    {
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        File file = new File(classLoader.getResource("security/enabled_pem_jmx.yml").getFile());
-
-        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-
-        assertThatExceptionOfType(IOException.class).isThrownBy(() -> objectMapper.readValue(file, Security.class));
     }
 
     @Test
