@@ -25,6 +25,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionP
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedJmxConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
+import com.ericsson.bss.cassandra.ecchronos.utils.dns.ReverseDNS;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
 import org.jolokia.client.jmxadapter.JolokiaJmxConnectionProvider;
@@ -37,8 +38,6 @@ import javax.management.remote.JMXServiceURL;
 import javax.rmi.ssl.SslRMIClientSocketFactory;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -46,7 +45,6 @@ import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-@SuppressWarnings("PMD.GodClass")
 public class DistributedJmxBuilder
 {
     private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxBuilder.class);
@@ -207,7 +205,7 @@ public class DistributedJmxBuilder
 
             if (myReverseDNSResolution)
             {
-                host = resolveReverseDNS(host);
+                host = ReverseDNS.fromHostString(host);
             }
             else if (host.contains(":"))
             {
@@ -258,26 +256,6 @@ public class DistributedJmxBuilder
         }
     }
 
-    private String resolveReverseDNS(final String host) throws UnknownHostException
-    {
-        String resolvedHost = host;
-        InetAddress addr = InetAddress.getByName(resolvedHost);
-        String originalIP = addr.getHostAddress();
-
-        // Try canonical hostname first (with DNS lookup)
-        String canonicalHost = addr.getCanonicalHostName();
-        if (!canonicalHost.equals(originalIP))
-        {
-            resolvedHost = cleanHostname(canonicalHost, originalIP);
-        }
-        else
-        {
-            // Fallback to simple hostname (no DNS lookup)
-            String simpleHost = addr.getHostName();
-            resolvedHost = !simpleHost.equals(originalIP) ? simpleHost : host;
-        }
-        return resolvedHost;
-    }
 
     private Map<String, Object> createJMXEnv()
     {
@@ -343,26 +321,6 @@ public class DistributedJmxBuilder
         return !getTLSConfig().isEmpty();
     }
 
-    /**
-     * Removes IP prefix from hostname if present.
-     * Handles: "10.244.1.5.pod-name.svc.cluster.local" -> "pod-name.svc.cluster.local"
-     */
-    private String cleanHostname(final String hostname, final String originalIP)
-    {
-        if (hostname == null || hostname.isEmpty() || originalIP == null)
-        {
-            return hostname;
-        }
-
-        // If hostname starts with the IP followed by a dot, remove it
-        String ipPrefix = originalIP + ".";
-        if (hostname.startsWith(ipPrefix))
-        {
-            return hostname.substring(ipPrefix.length());
-        }
-
-        return hostname;
-    }
 
     private Integer getJMXPort(final Node node)
     {

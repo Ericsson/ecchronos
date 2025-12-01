@@ -21,6 +21,8 @@ from conftest import run_ecctool_state_nodes, assert_nodes_size_is_equal
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_WAIT_TIME_IN_SECS = 120
+
 
 @pytest.mark.dependency(name="test_verify_install")
 def test_verify_install(test_environment):
@@ -32,7 +34,7 @@ def test_verify_install(test_environment):
 @pytest.mark.dependency(name="test_add_node", depends=["test_verify_install"])
 def test_add_node(test_environment):
     test_environment.add_node()
-    sleep(60)
+    test_environment._wait_for_nodes_to_be_up(5, DEFAULT_WAIT_TIME_IN_SECS * 1000)
     assert test_environment.verify_node_count(5)
     out, err = run_ecctool_state_nodes()
     assert_nodes_size_is_equal(out, 5)
@@ -41,7 +43,7 @@ def test_add_node(test_environment):
 @pytest.mark.dependency(name="test_remove_node", depends=["test_add_node"])
 def test_remove_node(test_environment):
     test_environment.stop_extra_node()
-    sleep(60)
+    test_environment._wait_for_nodes_to_be_up(4, DEFAULT_WAIT_TIME_IN_SECS * 1000)
     assert test_environment.verify_node_count(4)
     out, err = run_ecctool_state_nodes()
     assert_nodes_size_is_equal(out, 4)
