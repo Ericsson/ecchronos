@@ -268,7 +268,6 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
                                             });
                     LOG.debug("JMXRepair called for {} with options {}", keyspace, options);
                     return result;
-
                 }
                 catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
                 {

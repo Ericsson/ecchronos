@@ -178,6 +178,7 @@ public class DistributedJmxBuilder
         try
         {
             String host = node.getBroadcastRpcAddress().get().getHostString();
+//            String host = "127.0.0.1";
             if (NO_BROADCAST_ADDRESS.equals(host))
             {
                 host = node.getListenAddress().get().getHostString();
@@ -340,7 +341,6 @@ public class DistributedJmxBuilder
 
         return true;
     }
-
     public final DistributedNativeConnectionProvider getNativeConnectionProvider()
     {
         return myNativeConnectionProvider;

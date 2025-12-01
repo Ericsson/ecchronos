@@ -360,7 +360,6 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
                 LOG.debug("myScheduleManager not ready when Node added {}", node.getHostId());
             }
         }
-
         setupConfiguration();
     }
 

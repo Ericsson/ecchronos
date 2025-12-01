@@ -145,6 +145,7 @@ public class ECChronos implements Closeable
                 .withNodeWorkerManager(myNodeWorkerManager)
                 .withScheduleManager(myECChronosInternals.getScheduleManager())
                 .withDistributedNativeConnectionProvider(nativeConnectionProvider));
+
         myRepairStatsProvider = new RepairStatsProviderImpl(
                 nativeConnectionProvider,
                 new VnodeRepairStateFactoryImpl(replicationState, repairHistoryService, true));
