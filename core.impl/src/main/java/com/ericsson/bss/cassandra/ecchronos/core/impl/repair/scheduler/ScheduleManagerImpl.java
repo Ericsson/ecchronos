@@ -69,7 +69,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     }
 
     /**
-     * Create a ScheduledFuture for each of the nodes in the nodeIDList
+     * Create a ScheduledFuture for each of the nodes in the nodeIDList.
      * @param nodeIDList
      */
     @Override
@@ -94,7 +94,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     }
 
     /**
-     * Create a ScheduledFuture for  the nodeID
+     * Create a ScheduledFuture for  the nodeID.
      * @param nodeID
      */
     @Override
