@@ -144,6 +144,8 @@ public class ITOnDemandRepairJob extends TestBase
                 .withRepairHistory(myEccRepairHistory)
                 .withOnDemandStatus(new OnDemandStatus(getNativeConnectionProvider()))
                 .build();
+        myScheduleManagerImpl.createScheduleFutureForNodeIDList(getNativeConnectionProvider().getNodes().keySet());
+
     }
 
     @After

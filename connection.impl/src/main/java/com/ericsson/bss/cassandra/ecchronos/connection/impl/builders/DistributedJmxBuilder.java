@@ -368,7 +368,6 @@ public class DistributedJmxBuilder
 
         return true;
     }
-
     public final DistributedNativeConnectionProvider getNativeConnectionProvider()
     {
         return myNativeConnectionProvider;

@@ -191,6 +191,8 @@ public class ITSchedules extends TestBase
                 .withRepairInterval(60, TimeUnit.MINUTES)
                 .withTargetRepairSizeInBytes(UnitConverter.toBytes("100m")) // 100MiB
                 .build();
+        myScheduleManagerImpl.createScheduleFutureForNodeIDList(getNativeConnectionProvider().getNodes().keySet());
+
     }
 
     @After

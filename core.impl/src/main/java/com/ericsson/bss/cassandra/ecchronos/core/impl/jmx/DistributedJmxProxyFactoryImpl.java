@@ -276,6 +276,7 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
                                             {
                                                     String.class.getName(), Map.class.getName()
                                             });
+                    LOG.debug("JMXRepair called for {} with options {}", keyspace, options);
                     // Handle both Integer and Long return types from Jolokia
                     if (result instanceof Number)
                     {
