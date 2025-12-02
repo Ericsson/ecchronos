@@ -105,7 +105,6 @@ connection:
     # Retry policy used during the creation of a CqlSession.
     # This policy defines how connection attempts should be retried in case
     # of temporary failures when establishing a session with Cassandra.
-
     retryPolicy:
       ## Max number of attempts ecChronos will try to connect with Cassandra.
       maxAttempts: 5
