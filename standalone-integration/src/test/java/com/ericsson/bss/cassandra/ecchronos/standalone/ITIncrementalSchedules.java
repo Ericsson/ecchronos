@@ -142,6 +142,8 @@ public class ITIncrementalSchedules extends TestBase
                 .withRepairInterval(5, TimeUnit.SECONDS)
                 .withRepairType(RepairType.INCREMENTAL)
                 .build();
+        myScheduleManagerImpl.createScheduleFutureForNodeIDList(getNativeConnectionProvider().getNodes().keySet());
+
     }
 
     @After
