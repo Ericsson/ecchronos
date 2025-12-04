@@ -16,6 +16,10 @@ package com.ericsson.bss.cassandra.ecchronos.utils.dns;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.regex.Pattern;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utility class for reverse DNS resolution operations.
@@ -23,6 +27,10 @@ import java.net.UnknownHostException;
  */
 public final class ReverseDNS
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ReverseDNS.class);
+    private static final Pattern IPV4_PREFIX = Pattern.compile("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.){4}");
+    private static final Pattern IPV6_PREFIX = Pattern.compile("^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\\.");
+
     private ReverseDNS()
     {
         // Utility class
@@ -47,13 +55,15 @@ public final class ReverseDNS
         String canonicalHost = addr.getCanonicalHostName();
         if (!canonicalHost.equals(originalIP))
         {
-            resolvedHost = cleanHostname(canonicalHost, originalIP);
+            resolvedHost = cleanHostname(canonicalHost);
+            LOG.debug("Resolved {} to {} using CanonicalHostName {}", host, resolvedHost, canonicalHost);
         }
         else
         {
             // Fallback to simple hostname (no DNS lookup)
             String simpleHost = addr.getHostName();
-            resolvedHost = !simpleHost.equals(originalIP) ? simpleHost : host;
+            resolvedHost = !simpleHost.equals(originalIP) ? cleanHostname(simpleHost) : host;
+            LOG.debug("Resolved {} to {} using HostName {}", host, resolvedHost, simpleHost);
         }
         return resolvedHost;
     }
@@ -62,20 +72,21 @@ public final class ReverseDNS
      * Removes IP prefix from hostname if present.
      * Handles: "10.244.1.5.pod-name.svc.cluster.local" -> "pod-name.svc.cluster.local"
      */
-    private static String cleanHostname(final String hostname, final String originalIP)
+    private static String cleanHostname(final String hostname)
     {
-        if (hostname == null || hostname.isEmpty() || originalIP == null)
+        if (hostname == null || hostname.isEmpty())
         {
             return hostname;
         }
 
-        // If hostname starts with the IP followed by a dot, remove it
-        String ipPrefix = originalIP + ".";
-        if (hostname.startsWith(ipPrefix))
+        // Remove IPv4 prefix
+        String result = IPV4_PREFIX.matcher(hostname).replaceFirst("");
+        if (!result.equals(hostname))
         {
-            return hostname.substring(ipPrefix.length());
+            return result;
         }
 
-        return hostname;
+        // Remove IPv6 prefix
+        return IPV6_PREFIX.matcher(hostname).replaceFirst("");
     }
 }

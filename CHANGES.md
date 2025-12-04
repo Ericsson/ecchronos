@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* JMX Connection Using PEM Certificates Not Always Successful - Issue #1277
 * Add Resolve Reverse DNS Logic to Jolokia Notification Controller - Issue #1262
 * Add PEM Certificate Support for Jolokia TLS Configuration - Issue #1153
 * Enable alarms in ecchronos agent - Issue #1108
