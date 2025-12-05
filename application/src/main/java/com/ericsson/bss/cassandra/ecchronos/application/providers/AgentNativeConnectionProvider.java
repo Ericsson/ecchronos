@@ -73,6 +73,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
                 .getCqlConnection();
 
         CQLRetryPolicyConfig retryPolicyConfig = distributedNativeConfig.getCqlRetryPolicy();
+        long timeout = distributedNativeConfig.getTimeout().getConnectionTimeout(TimeUnit.MILLISECONDS);
         Security.CqlSecurity cqlSecurity = cqlSecuritySupplier.get();
         boolean authEnabled = cqlSecurity.getCqlCredentials().isEnabled();
         boolean tlsEnabled = cqlSecurity.getCqlTlsConfig().isEnabled();
@@ -100,7 +101,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
         LOG.info("Preparing Agent Connection Config");
         nativeConnectionBuilder = resolveAgentProviderBuilder(nativeConnectionBuilder, distributedNativeConfig);
         LOG.info("Establishing Connection With Nodes");
-        myDistributedNativeConnectionProviderImpl = establishConnection(nativeConnectionBuilder, retryPolicyConfig);
+        myDistributedNativeConnectionProviderImpl = establishConnection(nativeConnectionBuilder, retryPolicyConfig, timeout);
     }
 
     /**
@@ -142,7 +143,8 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
 
     public final DistributedNativeConnectionProviderImpl establishConnection(
         final DistributedNativeBuilder builder,
-        final CQLRetryPolicyConfig retryPolicy)
+        final CQLRetryPolicyConfig retryPolicy,
+        final long timeout)
     {
         for (int attempt = 1; attempt <= retryPolicy.getMaxAttempts(); attempt++)
         {
@@ -152,7 +154,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
             }
             catch (AllNodesFailedException | IllegalStateException e)
             {
-                handleRetry(attempt, retryPolicy);
+                handleRetry(attempt, retryPolicy, timeout);
             }
         }
         throw new RetryPolicyException("Failed to establish connection after all retry attempts.");
@@ -161,10 +163,17 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
 
     private static void handleRetry(
         final int attempt,
-        final CQLRetryPolicyConfig retryPolicy)
+        final CQLRetryPolicyConfig retryPolicy,
+        final long timeout)
     {
         LOG.warn("Unable to create CQLSession.");
         long delay = retryPolicy.currentDelay(attempt);
+        long currentTime = System.currentTimeMillis();
+        long endTime = currentTime + timeout;
+        if (currentTime + delay > endTime)
+        {
+            delay = timeout;
+        }
 
         if (attempt == retryPolicy.getMaxAttempts())
         {
