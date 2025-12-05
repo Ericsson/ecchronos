@@ -325,7 +325,7 @@ class CassandraCluster:
                     command = [
                         "docker",
                         "exec",
-                        self._extra_node,
+                        self.container_id,
                         "bash",
                         "-c",
                         "nodetool -u cassandra -pw cassandra decommission",

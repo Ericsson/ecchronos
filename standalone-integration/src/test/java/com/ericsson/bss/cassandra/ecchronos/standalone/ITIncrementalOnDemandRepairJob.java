@@ -122,7 +122,6 @@ public class ITIncrementalOnDemandRepairJob extends TestBase
                 .withOnDemandStatus(new OnDemandStatus(getNativeConnectionProvider()))
                 .build();
         myAdminSession = getAdminNativeConnectionProvider().getCqlSession();
-        myScheduleManagerImpl.createScheduleFutureForNodeIDList(getNativeConnectionProvider().getNodes().keySet());
     }
 
     @After

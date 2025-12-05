@@ -58,7 +58,6 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private final DistributedNativeConnectionProvider myNativeConnectionProvider;
 
     private final ScheduledThreadPoolExecutor myExecutor;
-    private final long myRunIntervalInMs;
 
     private ScheduleManagerImpl(final Builder builder)
     {
@@ -66,60 +65,23 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         myExecutor  = new ScheduledThreadPoolExecutor(
             myNativeConnectionProvider.getNodes().values().size(), new ThreadFactoryBuilder().setNameFormat("TaskExecutor-%d").build());
         myLockFactory = builder.myLockFactory;
-        myRunIntervalInMs = builder.myRunIntervalInMs;
+        createScheduleFutureForNodeIDList(builder);
     }
 
-    /**
-     * Create a ScheduledFuture for each of the nodes in the nodeIDList.
-     * @param nodeIDList
-     */
-    @Override
-    public void createScheduleFutureForNodeIDList(final Collection<UUID> nodeIDList)
+    private void createScheduleFutureForNodeIDList(final Builder builder)
     {
-        myExecutor.setCorePoolSize(nodeIDList.size());
-        LOG.debug("Total nodes found: {}", nodeIDList.size());
-        for (UUID nodeID : nodeIDList)
-        {
-            if (myRunTasks.get(nodeID) == null)
-            {
-                JobRunTask myRunTask = new JobRunTask(nodeID);
-                ScheduledFuture<?> scheduledFuture = myExecutor.scheduleWithFixedDelay(myRunTask,
-                        myRunIntervalInMs,
-                        myRunIntervalInMs,
-                        TimeUnit.MILLISECONDS);
-                myRunTasks.put(nodeID, myRunTask);
-                myRunFuture.put(nodeID, scheduledFuture);
-                LOG.debug("JobRunTask created for node {}", nodeID);
-            }
-        }
-    }
-
-    /**
-     * Create a ScheduledFuture for  the nodeID.
-     * @param nodeID
-     */
-    @Override
-    public void createScheduleFutureForNode(final UUID nodeID)
-    {
-        if (myRunTasks.get(nodeID) == null)
+        for (UUID nodeID : myNativeConnectionProvider.getNodes().keySet())
         {
             JobRunTask myRunTask = new JobRunTask(nodeID);
-            myExecutor.setCorePoolSize(myRunTasks.size());
-
             ScheduledFuture<?> scheduledFuture = myExecutor.scheduleWithFixedDelay(myRunTask,
-                    myRunIntervalInMs,
-                    myRunIntervalInMs,
+                    builder.myRunIntervalInMs,
+                    builder.myRunIntervalInMs,
                     TimeUnit.MILLISECONDS);
             myRunTasks.put(nodeID, myRunTask);
             myRunFuture.put(nodeID, scheduledFuture);
-            myExecutor.setCorePoolSize(myRunTasks.size());
-            LOG.debug("JobRunTask created for new node {}", nodeID);
-        }
-        else
-        {
-            LOG.debug("JobRunTask already exists for new node {}", nodeID);
         }
     }
+
     @Override
     public String getCurrentJobStatus()
     {
@@ -250,7 +212,6 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         {
             try
             {
-                LOG.debug("In JobRunTask.run for Node {}", nodeID);
                 if (myQueue.get(nodeID) != null)
                 {
                     tryRunNext();
@@ -269,7 +230,6 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
         private void tryRunNext()
         {
-            LOG.debug("Looking for Job for Node {}", nodeID);
             for (ScheduledJob next : myQueue.get(nodeID))
             {
                 if (validate(next))

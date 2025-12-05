@@ -140,16 +140,13 @@ public abstract class RepairTask implements NotificationListener
 
     private void repair(final DistributedJmxProxy proxy) throws ScheduledJobException
     {
-        LOG.debug("repair starting for table {} on node {}", myTableReference, nodeID);
         proxy.addStorageServiceListener(nodeID, this);
         myCommand = proxy.repairAsync(nodeID, myTableReference.getKeyspace(), getOptions());
         if (myCommand > 0)
         {
             try
             {
-                LOG.debug("waiting for latch for table {} on node {}", myTableReference, nodeID);
                 myLatch.await();
-                LOG.debug("finished waiting for latch for table {} on node {}", myTableReference, nodeID);
                 proxy.removeStorageServiceListener(nodeID, this);
                 verifyRepair(proxy);
                 if (myLastError != null)
@@ -162,7 +159,7 @@ public abstract class RepairTask implements NotificationListener
                     LOG.warn(msg);
                     throw new ScheduledJobException(msg);
                 }
-                LOG.debug("{} completed successfully on node {}", this, nodeID);
+                LOG.debug("{} completed successfully", this);
             }
             catch (InterruptedException e)
             {
@@ -257,7 +254,6 @@ public abstract class RepairTask implements NotificationListener
 
                 String message = notification.getMessage();
                 ProgressEventType type = ProgressEventType.values()[progress.get("type")];
-                LOG.debug("Notification Type {}", type.toString());
 
                 this.progress(type, message);
             }
@@ -306,7 +302,6 @@ public abstract class RepairTask implements NotificationListener
         {
             if (message.contains("finished") || message.contains("failed"))
             {
-                LOG.debug("Progress message received: {}", message);
                 RepairStatus repairStatus = RepairStatus.SUCCESS;
                 if (message.contains("failed"))
                 {
@@ -329,9 +324,7 @@ public abstract class RepairTask implements NotificationListener
         }
         if (type == ProgressEventType.COMPLETE)
         {
-            LOG.debug("Progress message set to complete latch counted down: {}", message);
             myLatch.countDown();
-            LOG.debug("Latch count now set to: {}", myLatch.getCount());
         }
     }
 
@@ -426,7 +419,6 @@ public abstract class RepairTask implements NotificationListener
                 else
                 {
                     // After 3 successful checks or 30 minutes if still task is running terminate all repair sessions
-                    LOG.warn("Repair session terminated after 30 minutes for node {}", nodeID);
                     proxy.forceTerminateAllRepairSessionsInSpecificNode(nodeID);
                     myLatch.countDown();
                 }

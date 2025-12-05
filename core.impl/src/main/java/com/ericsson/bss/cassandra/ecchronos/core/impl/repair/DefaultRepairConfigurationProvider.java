@@ -38,7 +38,6 @@ import com.datastax.oss.driver.api.core.metadata.schema.ViewMetadata;
 import com.datastax.oss.driver.api.core.session.Session;
 import com.datastax.oss.driver.api.core.type.UserDefinedType;
 
-import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.ScheduleManager;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +57,6 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     private EccNodesSync myEccNodesSync;
     private DistributedJmxConnectionProvider myJmxConnectionProvider;
     private DistributedNativeConnectionProvider myAgentNativeConnectionProvider;
-    private ScheduleManager myScheduleManager;
 
     /**
      * Default constructor.
@@ -76,7 +74,6 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         myAgentNativeConnectionProvider = builder.myAgentNativeConnectionProvider;
         setupConfiguration();
         myService = Executors.newFixedThreadPool(NO_OF_THREADS);
-        myScheduleManager = builder.myScheduleManager;
 
     }
 
@@ -92,7 +89,6 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         myJmxConnectionProvider = builder.myJmxConnectionProvider;
         myAgentNativeConnectionProvider = builder.myAgentNativeConnectionProvider;
         myWorkerManager = builder.myNodeWorkerManager;
-        myScheduleManager = builder.myScheduleManager;
         setupConfiguration();
     }
 
@@ -349,17 +345,6 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         {
             onAdd(node);
         }
-        else
-        {
-            if (myScheduleManager != null)
-            {
-                myScheduleManager.createScheduleFutureForNode(node.getHostId());
-            }
-            else
-            {
-                LOG.debug("myScheduleManager not ready when Node added {}", node.getHostId());
-            }
-        }
         setupConfiguration();
     }
 
@@ -391,14 +376,6 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
             if (myWorkerManager != null)
             {
                 myWorkerManager.addNode(node);
-            }
-            if (myScheduleManager != null)
-            {
-                myScheduleManager.createScheduleFutureForNode(node.getHostId());
-            }
-            else
-            {
-                LOG.debug("myScheduleManager not ready when Node added {}", node.getHostId());
             }
         }
     }
@@ -451,7 +428,6 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         private DistributedJmxConnectionProvider myJmxConnectionProvider;
         private DistributedNativeConnectionProvider myAgentNativeConnectionProvider;
         private NodeWorkerManager myNodeWorkerManager;
-        private ScheduleManager myScheduleManager;
 
 
         /**
@@ -507,16 +483,6 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         public Builder withNodeWorkerManager(final NodeWorkerManager nodeWorkerManager)
         {
             myNodeWorkerManager = nodeWorkerManager;
-            return this;
-        }
-        /**
-         * Build with scheduleManager.
-         * @param scheduleManager the schedule Manager
-         * @return Builder with EccNodesSync
-         */
-        public Builder withScheduleManager(final ScheduleManager scheduleManager)
-        {
-            myScheduleManager = scheduleManager;
             return this;
         }
 

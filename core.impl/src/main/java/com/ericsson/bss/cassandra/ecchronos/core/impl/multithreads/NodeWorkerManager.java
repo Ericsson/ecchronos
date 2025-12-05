@@ -24,8 +24,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.Collection;
@@ -37,7 +35,6 @@ import java.util.function.Function;
 
 public class NodeWorkerManager
 {
-    private static final Logger LOG = LoggerFactory.getLogger(NodeWorkerManager.class);
     private final Map<UUID, NodeWorker> myWorkers = new ConcurrentHashMap<>();
     private final ThreadPoolTaskExecutor myThreadPool;
 
@@ -80,24 +77,17 @@ public class NodeWorkerManager
                         "Table reference factory must be set"),
                 myRepairConfigurationFunction,
                 myNativeConnectionProvider.getCqlSession());
-        LOG.debug("New worker created for Node {}", node.getHostId());
         myWorkers.put(node.getHostId(), worker);
         myThreadPool.submit(worker);
     }
 
     public final synchronized void addNode(final Node node)
     {
-        LOG.debug("addNode Node {}", node.getHostId());
         synchronized (myLock)
         {
             if (!myWorkers.containsKey(node.getHostId()))
             {
-                LOG.debug("Node {} being added to the threadpool", node.getHostId());
                 addNewNodeToThreadPool(node);
-            }
-            else
-            {
-                LOG.debug("Node {} is already in the workers", node.getHostId());
             }
         }
     }

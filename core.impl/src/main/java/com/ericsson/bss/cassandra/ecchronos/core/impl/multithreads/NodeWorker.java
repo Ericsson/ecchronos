@@ -31,8 +31,6 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import com.google.common.annotations.VisibleForTesting;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 import java.util.HashSet;
@@ -45,7 +43,6 @@ import java.util.function.Function;
 
 public class NodeWorker implements Runnable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(NodeWorker.class);
     private final Node myNode;
     private final BlockingQueue<RepairEvent> myEventQueue = new LinkedBlockingQueue<>();
     private final ReplicatedTableProvider myReplicatedTableProvider;
@@ -84,7 +81,6 @@ public class NodeWorker implements Runnable
             try
             {
                 RepairEvent event = myEventQueue.take();
-                LOG.debug("Handling event {}", event.toString());
                 handleEvent(event);
             }
             catch (InterruptedException e)
