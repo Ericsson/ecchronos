@@ -66,64 +66,70 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
     private final boolean isJolokiaEnabled;
     private final int jolokiaPort;
     private final boolean jolokiaPEMEnabled;
+    private final boolean myReverseDNSResolution;
 
-        private DistributedJmxProxyFactoryImpl(final Builder builder)
+    private DistributedJmxProxyFactoryImpl(final Builder builder)
+    {
+        myDistributedJmxConnectionProvider = builder.myDistributedJmxConnectionProvider;
+        nodesMap = builder.myNodesMap;
+        eccNodesSync = builder.myEccNodesSync;
+        isJolokiaEnabled = builder.isJolokiaEnabled;
+        jolokiaPort = builder.myJolokiaPort;
+        jolokiaPEMEnabled = builder.myJolokiaPEMEnabled;
+        myReverseDNSResolution = builder.myReverseDNSResolution;
+    }
+
+    @Override
+    public DistributedJmxProxy connect() throws IOException
+    {
+        try
         {
-            myDistributedJmxConnectionProvider = builder.myDistributedJmxConnectionProvider;
-            nodesMap = builder.myNodesMap;
-            eccNodesSync = builder.myEccNodesSync;
-            isJolokiaEnabled = builder.isJolokiaEnabled;
-            jolokiaPort = builder.myJolokiaPort;
-            jolokiaPEMEnabled = builder.myJolokiaPEMEnabled;
+            return new InternalDistributedJmxProxy(
+                    myDistributedJmxConnectionProvider,
+                    nodesMap,
+                    eccNodesSync,
+                    isJolokiaEnabled,
+                    jolokiaPort,
+                    jolokiaPEMEnabled,
+                    myReverseDNSResolution);
         }
-
-        @Override
-        public DistributedJmxProxy connect() throws IOException
+        catch (MalformedObjectNameException e)
         {
-            try
-            {
-                return new InternalDistributedJmxProxy(
-                        myDistributedJmxConnectionProvider,
-                        nodesMap,
-                        eccNodesSync,
-                        isJolokiaEnabled,
-                        jolokiaPort,
-                        jolokiaPEMEnabled);
-            }
-            catch (MalformedObjectNameException e)
-            {
-                throw new IOException("Unable to get StorageService object", e);
-            }
+            throw new IOException("Unable to get StorageService object", e);
         }
+    }
 
-        private static final class InternalDistributedJmxProxy implements DistributedJmxProxy
+    private static final class InternalDistributedJmxProxy implements DistributedJmxProxy
+    {
+        private final DistributedJmxConnectionProvider myDistributedJmxConnectionProvider;
+        private final Map<UUID, Node> myNodesMap;
+
+        private final boolean isJolokiaEnabled;
+        private final EccNodesSync myEccNodesSync;
+        private final ObjectName myStorageServiceObject;
+        private final ObjectName myRepairServiceObject;
+        private final JolokiaNotificationController myJolokiaNotificationController;
+        private final boolean myReverseDNSResolution;
+
+        private InternalDistributedJmxProxy(
+                final DistributedJmxConnectionProvider distributedJmxConnectionProvider,
+                final Map<UUID, Node> nodesMap,
+                final EccNodesSync eccNodesSync,
+                final boolean jolokiaEnabled,
+                final int jolokiaPortValue,
+                final boolean jolokiaPEMEnabled,
+                final boolean reverseDNSResolution
+        ) throws MalformedObjectNameException
         {
-            private final DistributedJmxConnectionProvider myDistributedJmxConnectionProvider;
-            private final Map<UUID, Node> myNodesMap;
-
-            private final boolean isJolokiaEnabled;
-            private final EccNodesSync myEccNodesSync;
-            private final ObjectName myStorageServiceObject;
-            private final ObjectName myRepairServiceObject;
-            private final JolokiaNotificationController myJolokiaNotificationController;
-
-            private InternalDistributedJmxProxy(
-                    final DistributedJmxConnectionProvider distributedJmxConnectionProvider,
-                    final Map<UUID, Node> nodesMap,
-                    final EccNodesSync eccNodesSync,
-                    final boolean jolokiaEnabled,
-                    final int jolokiaPortValue,
-                    final boolean jolokiaPEMEnabled
-            ) throws MalformedObjectNameException
-            {
-                myDistributedJmxConnectionProvider = distributedJmxConnectionProvider;
-                myNodesMap = nodesMap;
-                myEccNodesSync = eccNodesSync;
-                myStorageServiceObject = new ObjectName(SS_OBJ_NAME);
-                myRepairServiceObject = new ObjectName(RS_OBJ_NAME);
-                isJolokiaEnabled = jolokiaEnabled;
-                myJolokiaNotificationController = new JolokiaNotificationController(myNodesMap, jolokiaPortValue, jolokiaPEMEnabled);
-            }
+            myDistributedJmxConnectionProvider = distributedJmxConnectionProvider;
+            myNodesMap = nodesMap;
+            myEccNodesSync = eccNodesSync;
+            myStorageServiceObject = new ObjectName(SS_OBJ_NAME);
+            myRepairServiceObject = new ObjectName(RS_OBJ_NAME);
+            isJolokiaEnabled = jolokiaEnabled;
+            myReverseDNSResolution = reverseDNSResolution;
+            myJolokiaNotificationController = new JolokiaNotificationController(myNodesMap, jolokiaPortValue, jolokiaPEMEnabled, myReverseDNSResolution);
+        }
 
         @Override
         public void close()
@@ -270,6 +276,7 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
                                             {
                                                     String.class.getName(), Map.class.getName()
                                             });
+                    LOG.debug("JMXRepair called for {} with options {}", keyspace, options);
                     // Handle both Integer and Long return types from Jolokia
                     if (result instanceof Number)
                     {
@@ -687,6 +694,7 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
         private boolean isJolokiaEnabled = false;
         private int myJolokiaPort = DEFAULT_JOLOKIA_PORT;
         private boolean myJolokiaPEMEnabled = false;
+        private boolean myReverseDNSResolution = false;
 
         /**
          * Build with JMX connection provider.
@@ -757,6 +765,18 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
         public Builder withJolokiaPEM(final boolean jolokiaPEM)
         {
             myJolokiaPEMEnabled = jolokiaPEM;
+            return this;
+        }
+
+        /**
+         * Build with Reverse DNS option.
+         *
+         * @param reverseDNS Define if Reverse DNS should be used to build connection.
+         * @return Builder
+         */
+        public Builder withReverseDNSResolution(final boolean reverseDNS)
+        {
+            myReverseDNSResolution = reverseDNS;
             return this;
         }
 

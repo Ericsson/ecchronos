@@ -148,6 +148,8 @@ public class ITOnDemandRepairJob extends TestBase
                 .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .withOnDemandStatus(new OnDemandStatus(getNativeConnectionProvider()))
                 .build();
+        myScheduleManagerImpl.createScheduleFutureForNodeIDList(getNativeConnectionProvider().getNodes().keySet());
+
     }
 
     @After

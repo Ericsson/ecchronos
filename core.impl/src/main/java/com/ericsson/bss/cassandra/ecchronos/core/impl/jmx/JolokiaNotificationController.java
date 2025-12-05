@@ -18,6 +18,7 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.ClientRegisterResponse;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.NotificationListenerResponse;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.NotificationRegisterResponse;
+import com.ericsson.bss.cassandra.ecchronos.utils.dns.ReverseDNS;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -28,6 +29,7 @@ import javax.management.Notification;
 import javax.management.NotificationListener;
 import java.io.IOException;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -52,6 +54,8 @@ public class JolokiaNotificationController
     private static final int HTTP_REQUEST_TIMEOUT_SECONDS = 10;
     private static final String CLIENT_ID_PROPERTY = "clientID";
     private static final String SS_OBJ_NAME = "org.apache.cassandra.db:type=StorageService";
+    public static final String NO_BROADCAST_ADDRESS = "0.0.0.0"; //NOPMD AvoidUsingHardCodedIP
+    private final boolean myReverseDNSResolution;
 
     private final Map<NotificationListener, String> myJolokiaRelationshipListeners = new HashMap<>();
 
@@ -75,12 +79,14 @@ public class JolokiaNotificationController
     public JolokiaNotificationController(
         final Map<UUID, Node> nodesMap,
         final int jolokiaPort,
-        final boolean jolokiaPEM)
+        final boolean jolokiaPEM,
+        final boolean reverseDNSResolution)
     {
         myNodesMap = nodesMap;
         myJolokiaPort = jolokiaPort;
         myJolokiaPEM = jolokiaPEM;
         myURLPrefix = myJolokiaPEM ? "https" : "http";
+        myReverseDNSResolution = reverseDNSResolution;
     }
 
     public final void addStorageServiceListener(final UUID nodeID, final NotificationListener listener) throws IOException, InterruptedException
@@ -101,7 +107,7 @@ public class JolokiaNotificationController
 
     public final void removeStorageServiceListener(
             final UUID nodeID,
-            final NotificationListener listener)
+            final NotificationListener listener) throws UnknownHostException
     {
         String jolokiaNotificationID = myJolokiaRelationshipListeners.get(listener);
         removeJolokiaNotification(nodeID, jolokiaNotificationID);
@@ -246,7 +252,7 @@ public class JolokiaNotificationController
         return notificationRegisterResponse.getValue();
     }
 
-    private void removeJolokiaNotification(final UUID nodeID, final String notificationID)
+    private void removeJolokiaNotification(final UUID nodeID, final String notificationID) throws UnknownHostException
     {
         String url = mountJolokiaBaseURL(nodeID) + "/notification";
         HttpRequest request = HttpRequest.newBuilder()
@@ -313,9 +319,17 @@ public class JolokiaNotificationController
         return "";
     }
 
-    private String mountJolokiaBaseURL(final UUID nodeID)
+    private String mountJolokiaBaseURL(final UUID nodeID) throws UnknownHostException
     {
-        String host = myNodesMap.get(nodeID).getBroadcastRpcAddress().get().getHostString();
+        String host = myNodesMap.get(nodeID).getBroadcastRpcAddress().get().getAddress().getHostAddress();
+        if (NO_BROADCAST_ADDRESS.equals(host))
+        {
+            host = myNodesMap.get(nodeID).getListenAddress().get().getHostString();
+        }
+        if (myReverseDNSResolution)
+        {
+            host = ReverseDNS.fromHostString(host);
+        }
         return myURLPrefix + "://" + host + ":" + myJolokiaPort + "/jolokia";
     }
 

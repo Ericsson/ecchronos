@@ -18,9 +18,13 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import io.micrometer.core.instrument.MeterRegistry;
 
 import java.io.Closeable;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.UUID;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -54,6 +58,7 @@ import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ConfigurationExcept
 @Configuration
 public class ECChronos implements Closeable
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ECChronos.class);
     private final ECChronosInternals myECChronosInternals;
     private final RepairSchedulerImpl myRepairSchedulerImpl;
     private final TimeBasedRunPolicy myTimeBasedRunPolicy;
@@ -126,6 +131,7 @@ public class ECChronos implements Closeable
 
         ThreadPoolTaskConfig threadPoolTaskConfig = configuration.getConnectionConfig().getThreadPoolTaskConfig();
 
+        LOG.debug("myNodeWorkerManager being created");
         myNodeWorkerManager = NodeWorkerManager.newBuilder()
                 .withRepairScheduler(myRepairSchedulerImpl)
                 .withRepairConfiguration(repairConfigurationProvider::get)
@@ -139,12 +145,17 @@ public class ECChronos implements Closeable
                 .withEccNodesSync(eccNodesSync)
                 .withJmxConnectionProvider(jmxConnectionProvider)
                 .withNodeWorkerManager(myNodeWorkerManager)
+                .withScheduleManager(myECChronosInternals.getScheduleManager())
                 .withDistributedNativeConnectionProvider(nativeConnectionProvider));
 
         myRepairStatsProvider = new RepairStatsProviderImpl(
                 nativeConnectionProvider,
                 new VnodeRepairStateFactoryImpl(replicationState, repairHistoryService, true));
         myECChronosInternals.addRunPolicy(myTimeBasedRunPolicy);
+
+        Collection<UUID> nodeIDList = nativeConnectionProvider.getNodes().keySet();
+        LOG.debug("Total nodes found: {}", nodeIDList.size());
+        myECChronosInternals.getScheduleManager().createScheduleFutureForNodeIDList(nodeIDList);
     }
 
     @Bean

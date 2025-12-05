@@ -99,8 +99,10 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
 
     private void addJobInternal(final ScheduledJob job)
     {
-        LOG.debug("Adding job: {}, Priority: {}", job, job.getPriority());
-        myJobQueues.get(job.getPriority()).add(job);
+        LOG.debug("Adding job: {}, Priority: {}, Node: {}", job, job.getPriority(), job.getNodeId());
+        PriorityQueue<ScheduledJob> queue = myJobQueues.get(job.getPriority());
+        queue.add(job);
+        LOG.debug("Size of {} Queue for Node: {} is {}", job.getPriority(), job.getNodeId(), queue.size());
     }
 
     @VisibleForTesting
@@ -150,11 +152,12 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
                 }
                 else if (state != ScheduledJob.State.PARKED)
                 {
-                    LOG.debug("Retrieving job: {}, Priority: {}", job, job.getPriority());
+                    LOG.debug("Retrieving job: {}, Priority: {} for node {}", job, job.getPriority(), job.getNodeId());
                     return job;
                 }
+                LOG.debug(" Rejected job: {}, Priority: {}", job, job.getPriority());
             }
-
+            LOG.debug("No jobs available");
             return endOfData();
         }
     }
