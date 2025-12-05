@@ -106,9 +106,9 @@ public class TestReverseDNS
                 ip = "2001:db8::1";
             }
 
-            Method method = ReverseDNS.class.getDeclaredMethod("cleanHostname", String.class, String.class);
+            Method method = ReverseDNS.class.getDeclaredMethod("cleanHostname", String.class);
             method.setAccessible(true);
-            return (String) method.invoke(null, hostname, ip);
+            return (String) method.invoke(null, hostname);
         }
         catch (Exception e)
         {
