@@ -110,6 +110,7 @@ public class ECChronos implements Closeable
                 .withFaultReporter(repairFaultReporter)
                 .withTableStorageStates(myECChronosInternals.getTableStorageStates())
                 .withRepairLockType(configuration.getRepairConfig().getRepairLockType())
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build();
 
         AbstractRepairConfigurationProvider repairConfigurationProvider = new FileBasedRepairConfiguration(applicationContext);
@@ -125,6 +126,7 @@ public class ECChronos implements Closeable
                 .withRepairHistory(repairHistoryService)
                 .withRepairConfigurationFunction(repairConfigurationProvider::get)
                 .withOnDemandStatus(new OnDemandStatus(nativeConnectionProvider))
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build();
 
         ThreadPoolTaskConfig threadPoolTaskConfig = configuration.getConnectionConfig().getThreadPoolTaskConfig();
@@ -154,6 +156,12 @@ public class ECChronos implements Closeable
         Collection<UUID> nodeIDList = nativeConnectionProvider.getNodes().keySet();
         LOG.debug("Total nodes found: {}", nodeIDList.size());
         myECChronosInternals.getScheduleManager().createScheduleFutureForNodeIDList(nodeIDList);
+    }
+
+    @Bean
+    public TimeBasedRunPolicy timeBasedRunPolicy()
+    {
+        return myTimeBasedRunPolicy;
     }
 
     @Bean

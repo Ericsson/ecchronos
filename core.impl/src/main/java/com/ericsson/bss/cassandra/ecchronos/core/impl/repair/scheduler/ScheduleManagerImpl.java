@@ -14,6 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler;
 
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RunPolicy;
@@ -55,6 +57,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private final Map<UUID, ScheduledFuture<?>> myRunFuture = new ConcurrentHashMap<>();
     private final Map<UUID, JobRunTask> myRunTasks = new ConcurrentHashMap<>();
     private final CASLockFactory myLockFactory;
+    private final DistributedNativeConnectionProvider myNativeConnectionProvider;
 
     private final ScheduledThreadPoolExecutor myExecutor;
     private final long myRunIntervalInMs;
@@ -62,6 +65,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private ScheduleManagerImpl(final Builder builder)
     {
         myNodeIDList = builder.myNodeIDList;
+        myNativeConnectionProvider = builder.myNativeConnectionProvider;
         myExecutor  = new ScheduledThreadPoolExecutor(
                 myNodeIDList.size(), new ThreadFactoryBuilder().setNameFormat("TaskExecutor-%d").build());
         myLockFactory = builder.myLockFactory;
@@ -212,11 +216,11 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         return myQueue.get(nodeID).size();
     }
 
-    private Long validateJob(final ScheduledJob job)
+    private Long validateJob(final ScheduledJob job, final Node node)
     {
         for (RunPolicy runPolicy : myRunPolicies)
         {
-            long nextRun = runPolicy.validate(job);
+            long nextRun = runPolicy.validate(job, node);
             if (nextRun != -1L)
             {
                 LOG.debug("Job {} rejected for {} ms by {}", job, nextRun, runPolicy);
@@ -236,10 +240,12 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private final class JobRunTask implements Runnable
     {
         private final UUID nodeID;
+        private final Node myNode;
 
         private JobRunTask(final UUID currentNodeID)
         {
             nodeID = currentNodeID;
+            myNode = myNativeConnectionProvider.getNodes().get(nodeID);
         }
 
         @Override
@@ -284,7 +290,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         private boolean validate(final ScheduledJob job)
         {
             LOG.trace("Validating job {}", job);
-            long nextRun = validateJob(job);
+            long nextRun = validateJob(job, myNode);
 
             if (nextRun != -1L)
             {
@@ -371,6 +377,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         private Collection<UUID> myNodeIDList;
         private CASLockFactory myLockFactory;
         private long myRunIntervalInMs = DEFAULT_RUN_DELAY_IN_MS;
+        private DistributedNativeConnectionProvider myNativeConnectionProvider;
 
         /**
          * Build SchedulerManager with run interval.
@@ -407,6 +414,18 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         public final Builder withLockFactory(final CASLockFactory lockFactory)
         {
             myLockFactory = lockFactory;
+            return this;
+        }
+
+        /**
+         * Build SchedulerManager with native connection provider.
+         *
+         * @param nativeConnectionProvider the native connection provider
+         * @return Builder with native connection provider
+         */
+        public Builder withNativeConnectionProvider(final DistributedNativeConnectionProvider nativeConnectionProvider)
+        {
+            myNativeConnectionProvider = nativeConnectionProvider;
             return this;
         }
 

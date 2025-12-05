@@ -14,6 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler;
 
+import com.datastax.oss.driver.api.core.metadata.Node;
+
 public interface RunPolicy
 {
     /**
@@ -21,7 +23,9 @@ public interface RunPolicy
      *
      * @param job
      *            The job that wants to execute.
+     * @param node
+     *            The node where the job wants to execute.
      * @return The time until the job should be tried again in milliseconds or -1 if the job can run now.
      */
-    long validate(ScheduledJob job);
+    long validate(ScheduledJob job, Node node);
 }
