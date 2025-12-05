@@ -325,6 +325,14 @@ public class TestConfig
     }
 
     @Test
+    public void testTimeoutConfig()
+    {
+        DistributedNativeConnection.Timeout timeoutConfig = config.getConnectionConfig().getCqlConnection().getTimeout();
+        assertNotNull(timeoutConfig);
+        assertThat(timeoutConfig.getConnectionTimeout(TimeUnit.SECONDS)).isEqualTo(5);
+    }
+
+    @Test
     public void testCqlRetryPoliceConfig()
     {
         CQLRetryPolicyConfig cqlRetryPolicyConfig = config.getConnectionConfig().getCqlConnection().getCqlRetryPolicy();

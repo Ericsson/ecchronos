@@ -102,6 +102,14 @@ connection:
       fixedDelay: 1
       ## unit can be milliseconds, seconds, minutes, hours, days.
       unit: days
+    ##
+    ## Connection Timeout for a CQL attempt.
+    ## Specify a time to wait for cassandra to come up.
+    ## Connection is tried based on retry policy delay calculations. Each connection attempt will use the timeout to calculate CQL connection process delay.
+    ##
+    timeout:
+      time: 60
+      unit: seconds
     # Retry policy used during the creation of a CqlSession.
     # This policy defines how connection attempts should be retried in case
     # of temporary failures when establishing a session with Cassandra.
