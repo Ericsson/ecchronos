@@ -18,6 +18,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairGroupFactory;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
@@ -57,6 +58,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
     private final RepairHistory myRepairHistory;
     private final Map<ScheduledTask, Set<LongTokenRange>> myTasks;
     private final int myTotalTokens;
+    private final TimeBasedRunPolicy myTimeBasedRunPolicy;
 
     private VnodeOnDemandRepairJob(final Builder builder)
     {
@@ -65,6 +67,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         myRepairHistory = Preconditions.checkNotNull(builder.repairHistory,
                 "Repair history must be set");
         myTotalTokens = getOngoingJob().getTokens().size();
+        myTimeBasedRunPolicy = builder.myTimeBasedRunPolicy;
         myTasks = createRepairTasks(getOngoingJob().getTokens(), getOngoingJob().getRepairedTokens(), builder.currentNode);
     }
 
@@ -135,6 +138,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
                 .withRepairHistory(myRepairHistory)
                 .withJobId(getJobId())
                 .withNode(currentNode)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build(ScheduledJob.Priority.HIGHEST.getValue());
     }
 
@@ -246,6 +250,7 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         private RepairHistory repairHistory;
         private OngoingJob ongoingJob;
         private Node currentNode;
+        private TimeBasedRunPolicy myTimeBasedRunPolicy;
 
         public final Builder withNode(final Node node)
         {
@@ -292,6 +297,18 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
         public final Builder withOngoingJob(final OngoingJob anOngoingJob)
         {
             this.ongoingJob = anOngoingJob;
+            return this;
+        }
+
+        /**
+         * Build with TimeBasedRunPolicy.
+         *
+         * @param timeBasedRunPolicy TimeBasedRunPolicy.
+         * @return Builder
+         */
+        public Builder withTimeBasedRunPolicy(final TimeBasedRunPolicy timeBasedRunPolicy)
+        {
+            myTimeBasedRunPolicy = timeBasedRunPolicy;
             return this;
         }
 

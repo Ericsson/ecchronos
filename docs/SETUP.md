@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS ecchronos.reject_configuration (
     start_minute int,
     end_hour int,
     end_minute int,
+    dc_exclusion set<text>,
     PRIMARY KEY(keyspace_name, table_name, start_hour, start_minute));
 
 CREATE TYPE IF NOT EXISTS ecchronos.token_range (

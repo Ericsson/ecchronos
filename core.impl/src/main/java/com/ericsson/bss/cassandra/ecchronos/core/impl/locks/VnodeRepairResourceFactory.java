@@ -29,7 +29,7 @@ public class VnodeRepairResourceFactory implements RepairResourceFactory
     @Override
     public final Set<RepairResource> getRepairResources(final ReplicaRepairGroup replicaRepairGroup)
     {
-        return replicaRepairGroup.getReplicas().stream()
+        return replicaRepairGroup.replicas().stream()
                 .map(this::replicaToRepairResource)
                 .collect(Collectors.toSet());
     }

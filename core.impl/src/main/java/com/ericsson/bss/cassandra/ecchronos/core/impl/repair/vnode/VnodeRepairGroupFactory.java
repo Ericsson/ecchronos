@@ -21,14 +21,12 @@ import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicaRepairGroup;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicaRepairGroupFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.state.VnodeRepairState;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * A factory for {@link ReplicaRepairGroup} that creates repair groups for all vnodes with common replicas.
@@ -50,23 +48,23 @@ public final class VnodeRepairGroupFactory implements ReplicaRepairGroupFactory
     {
         List<VnodeRepairState> sortedVnodeRepairStates = availableVnodeRepairStates.stream()
                 .sorted(Comparator.comparingLong(VnodeRepairState::lastRepairedAt))
-                .collect(Collectors.toList());
+                .toList();
 
         List<ReplicaRepairGroup> sortedRepairGroups = new ArrayList<>();
         Set<Set<DriverNode>> countedReplicaGroups = new HashSet<>();
 
         for (VnodeRepairState vnodeRepairState : sortedVnodeRepairStates)
         {
-            ImmutableSet<DriverNode> replicas = vnodeRepairState.getReplicas();
+            Set<DriverNode> replicas = vnodeRepairState.getReplicas();
 
             if (countedReplicaGroups.add(replicas))
             {
                 List<VnodeRepairState> vnodesForReplicas = availableVnodeRepairStates.stream()
-                        .filter(v -> v.getReplicas().equals(replicas)).collect(Collectors.toList());
+                        .filter(v -> v.getReplicas().equals(replicas)).toList();
                 RepairedAt repairedAt = RepairedAt.generate(vnodesForReplicas);
                 List<LongTokenRange> commonVnodes = vnodesForReplicas.stream()
                         .map(VnodeRepairState::getTokenRange)
-                        .collect(Collectors.toList());
+                        .toList();
 
                 sortedRepairGroups.add(new ReplicaRepairGroup(replicas, ImmutableList.copyOf(commonVnodes),
                         repairedAt.getMinRepairedAt()));

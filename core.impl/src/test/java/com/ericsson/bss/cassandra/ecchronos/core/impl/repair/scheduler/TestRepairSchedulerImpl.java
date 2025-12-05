@@ -21,6 +21,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.TestUtils;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.vnode.VnodeRepairStatesImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairScheduler;
@@ -91,6 +92,9 @@ public class TestRepairSchedulerImpl
 
     @Mock
     private RepairHistoryService myRepairHistory;
+
+    @Mock
+    private TimeBasedRunPolicy myTimeBasedRunPolicy;
 
     private final UUID mockNodeID = UUID.randomUUID();
 
@@ -340,6 +344,7 @@ public class TestRepairSchedulerImpl
                 .withTableStorageStates(myTableStorageStates)
                 .withCassandraMetrics(myCassandraMetrics)
                 .withRepairHistory(myRepairHistory)
-                .withRepairLockType(RepairLockType.VNODE);
+                .withRepairLockType(RepairLockType.VNODE)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy);
     }
 }

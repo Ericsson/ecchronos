@@ -117,6 +117,7 @@ public class ITIncrementalSchedules extends TestBase
         myScheduleManagerImpl = ScheduleManagerImpl.builder()
                 .withLockFactory(myLockFactory)
                 .withNodeIDList(localNodeIdList)
+                .withNativeConnectionProvider(getNativeConnectionProvider())
                 .withRunInterval(1, TimeUnit.SECONDS)
                 .build();
 

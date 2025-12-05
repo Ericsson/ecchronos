@@ -61,6 +61,7 @@ public class TableRepairJob extends ScheduledRepairJob
     private final RepairState myRepairState;
     private final TableStorageStates myTableStorageStates;
     private final RepairHistoryService myRepairHistory;
+    private final TimeBasedRunPolicy myTimeBasedRunPolicy;
 
     TableRepairJob(final Builder builder)
     {
@@ -75,6 +76,8 @@ public class TableRepairJob extends ScheduledRepairJob
         myTableStorageStates = builder.tableStorageStates;
         myRepairHistory = Preconditions.checkNotNull(builder.repairHistory,
                 "Repair history must be set");
+        myTimeBasedRunPolicy = Preconditions.checkNotNull(builder.myTimeBasedRunPolicy,
+            "TimeBasedRunPolicy must be set");
     }
 
     /**
@@ -169,9 +172,10 @@ public class TableRepairJob extends ScheduledRepairJob
                         .withRepairResourceFactory(getRepairLockType().getLockFactory())
                         .withRepairLockFactory(REPAIR_LOCK_FACTORY)
                         .withJobId(getJobId())
-                        .withNode(myNode);
+                        .withNode(myNode)
+                        .withTimeBasedRunPolicy(myTimeBasedRunPolicy);
 
-                taskList.add(builder.build(getRealPriority(replicaRepairGroup.getLastCompletedAt())));
+                taskList.add(builder.build(getRealPriority(replicaRepairGroup.lastCompletedAt())));
             }
 
             return taskList.iterator();
@@ -266,7 +270,7 @@ public class TableRepairJob extends ScheduledRepairJob
             long minRepairedAt = System.currentTimeMillis();
             for (ReplicaRepairGroup replicaRepairGroup : repairStateSnapshot.getRepairGroups())
             {
-                long replicaGroupCompletedAt = replicaRepairGroup.getLastCompletedAt();
+                long replicaGroupCompletedAt = replicaRepairGroup.lastCompletedAt();
                 if (replicaGroupCompletedAt < minRepairedAt)
                 {
                     minRepairedAt = replicaGroupCompletedAt;
@@ -334,13 +338,15 @@ public class TableRepairJob extends ScheduledRepairJob
         }
         TableRepairJob that = (TableRepairJob) o;
         return Objects.equals(myRepairState, that.myRepairState) && Objects.equals(myTableStorageStates,
-                that.myTableStorageStates) && Objects.equals(myRepairHistory, that.myRepairHistory);
+                that.myTableStorageStates) && Objects.equals(myRepairHistory, that.myRepairHistory)
+                && Objects.equals(myTimeBasedRunPolicy, that.myTimeBasedRunPolicy);
     }
 
     @Override
     public final int hashCode()
     {
-        return Objects.hash(super.hashCode(), myRepairState, myTableStorageStates, myRepairHistory);
+        return Objects.hash(super.hashCode(), myRepairState, myTableStorageStates, myRepairHistory,
+            myTimeBasedRunPolicy);
     }
 
     @SuppressWarnings("VisibilityModifier")
@@ -360,6 +366,7 @@ public class TableRepairJob extends ScheduledRepairJob
         private final List<TableRepairPolicy> repairPolicies = new ArrayList<>();
         private RepairHistoryService repairHistory;
         private RepairLockType repairLockType;
+        private TimeBasedRunPolicy myTimeBasedRunPolicy;
 
         /**
          * Build table repair job with repair lock type.
@@ -501,6 +508,18 @@ public class TableRepairJob extends ScheduledRepairJob
         public Builder withRepairHistory(final RepairHistoryService aRepairHistory)
         {
             this.repairHistory = aRepairHistory;
+            return this;
+        }
+
+        /**
+         * Build with TimeBasedRunPolicy.
+         *
+         * @param timeBasedRunPolicy TimeBasedRunPolicy.
+         * @return Builder
+         */
+        public Builder withTimeBasedRunPolicy(final TimeBasedRunPolicy timeBasedRunPolicy)
+        {
+            myTimeBasedRunPolicy = timeBasedRunPolicy;
             return this;
         }
 

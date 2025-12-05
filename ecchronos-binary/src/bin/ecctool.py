@@ -22,7 +22,7 @@ import signal
 import sys
 import glob
 import subprocess
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentTypeError
 from io import open
 
 try:
@@ -37,6 +37,61 @@ DEFAULT_PID_FILE = "ecc.pid"
 SPRINGBOOT_MAIN_CLASS = "com.ericsson.bss.cassandra.ecchronos.application.SpringBooter"
 
 
+def comma_separated_ints(value):
+    """Parse comma-separated integers for columns specification."""
+    try:
+        return [int(x.strip()) for x in value.split(",")]
+    except ValueError as exc:
+        raise ArgumentTypeError(f"'{value}' is not a valid comma-separated list of integers") from exc
+
+
+# Argument configurations
+ARG_COLUMNS = {
+    "flags": ["-c", "--columns"],
+    "type": comma_separated_ints,
+    "help": "table columns to display (format: 0,1,2,...,N)",
+    "default": None,
+}
+ARG_DC_EXCLUSIONS = {
+    "flags": ["-dcs", "--dc-exclusions"],
+    "nargs": "+",
+    "help": "datacenters to exclude (format: <dc1> <dc2> ... <dcN>)",
+}
+ARG_DELETE_ALL = {"flags": ["-a", "--all"], "type": bool, "help": "delete all"}
+ARG_DURATION = {
+    "flags": ["-d", "--duration"],
+    "type": str,
+    "help": "repair information for specified duration (ISO8601 or simple format: 5s, 5m, 5h, 5d) from now-duration "
+    "to now (required unless using --since or --keyspace/--table)",
+    "default": None,
+}
+ARG_START_HOUR = {"flags": ["-sh", "--start-hour"], "type": int, "help": "start hour"}
+ARG_START_MINUTE = {"flags": ["-sm", "--start-minute"], "type": int, "help": "start minute"}
+ARG_END_HOUR = {"flags": ["-eh", "--end-hour"], "type": int, "help": "end hour"}
+ARG_END_MINUTE = {"flags": ["-em", "--end-minute"], "type": int, "help": "end minute"}
+ARG_KEYSPACE = {"flags": ["-k", "--keyspace"], "type": str, "help": "keyspace"}
+ARG_OUTPUT_JSON = {
+    "flags": ["-o", "--output"],
+    "type": str,
+    "help": "output formats: json (defaults to no format)",
+    "default": "",
+}
+ARG_OUTPUT_JSON_TABLE = {
+    "flags": ["-o", "--output"],
+    "type": str,
+    "help": "output formats: json, table (default)",
+    "default": "table",
+}
+
+ARG_TABLE = {"flags": ["-t", "--table"], "type": str, "help": "table"}
+ARG_URL = {
+    "flags": ["-u", "--url"],
+    "type": str,
+    "help": "ecchronos host URL (format: http://<host>:<port>)",
+    "default": None,
+}
+
+
 def get_parser():
     parser = ArgumentParser(
         description="ecctool is a command line utility which can be used to perform actions "
@@ -45,6 +100,8 @@ def get_parser():
         "human-readable tables."
     )
     sub_parsers = parser.add_subparsers(dest="subcommand")
+
+    add_rejections_subcommand(sub_parsers)
     add_repairs_subcommand(sub_parsers)
     add_schedules_subcommand(sub_parsers)
     add_run_repair_subcommand(sub_parsers)
@@ -336,6 +393,182 @@ def add_status_subcommand(sub_parsers):
     )
 
 
+def add_common_arg(parser, arg_config, required=None):
+    """Helper function to add common arguments to parsers."""
+    kwargs = {k: v for k, v in arg_config.items() if k != "flags"}
+    if required is not None:
+        kwargs["required"] = required
+    parser.add_argument(*arg_config["flags"], **kwargs)
+
+
+def add_rejections_subcommand(sub_parsers):
+    parser_rejections = sub_parsers.add_parser(
+        "rejections",
+        description="Manage ecchronos rejections. Use 'ecctool rejections <action> --help' for action information.",
+    )
+    add_common_arg(parser_rejections, ARG_URL)
+    add_common_arg(parser_rejections, ARG_COLUMNS)
+    add_common_arg(parser_rejections, ARG_OUTPUT_JSON_TABLE)
+
+    rejections_subparsers = parser_rejections.add_subparsers(dest="rejections_action")
+
+    add_rejections_create_action(rejections_subparsers)
+    add_rejections_delete_action(rejections_subparsers)
+    add_rejections_get_action(rejections_subparsers)
+    add_rejections_update_action(rejections_subparsers)
+
+
+def add_rejections_create_action(rejections_subparsers):
+    parser_post = rejections_subparsers.add_parser("create", help="create a new rejection entry")
+    add_common_arg(parser_post, ARG_KEYSPACE, required=True)
+    add_common_arg(parser_post, ARG_TABLE, required=True)
+    add_common_arg(parser_post, ARG_START_HOUR, required=True)
+    add_common_arg(parser_post, ARG_START_MINUTE, required=True)
+    add_common_arg(parser_post, ARG_END_HOUR, required=True)
+    add_common_arg(parser_post, ARG_END_MINUTE, required=True)
+    add_common_arg(parser_post, ARG_DC_EXCLUSIONS, required=True)
+    add_common_arg(parser_post, ARG_URL)
+
+
+def add_rejections_delete_action(rejections_subparsers):
+    parser_delete = rejections_subparsers.add_parser("delete", help="delete a rejection entry")
+    add_common_arg(parser_delete, ARG_DELETE_ALL, required=False)
+    add_common_arg(parser_delete, ARG_KEYSPACE, required=False)
+    add_common_arg(parser_delete, ARG_TABLE, required=False)
+    add_common_arg(parser_delete, ARG_START_HOUR, required=False)
+    add_common_arg(parser_delete, ARG_START_MINUTE, required=False)
+    add_common_arg(parser_delete, ARG_DC_EXCLUSIONS, required=False)
+    add_common_arg(parser_delete, ARG_URL)
+
+
+def add_rejections_get_action(rejections_subparsers):
+    parser_get = rejections_subparsers.add_parser("get", help="get current rejections")
+    add_common_arg(parser_get, ARG_KEYSPACE)
+    add_common_arg(parser_get, ARG_TABLE)
+    add_common_arg(parser_get, ARG_URL)
+
+
+def add_rejections_update_action(rejections_subparsers):
+    parser_update = rejections_subparsers.add_parser("update", help="update a rejection entry")
+    add_common_arg(parser_update, ARG_KEYSPACE, required=True)
+    add_common_arg(parser_update, ARG_TABLE, required=True)
+    add_common_arg(parser_update, ARG_START_HOUR, required=True)
+    add_common_arg(parser_update, ARG_START_MINUTE, required=True)
+    add_common_arg(parser_update, ARG_DC_EXCLUSIONS, required=False)
+    add_common_arg(parser_update, ARG_URL)
+
+
+def _create_rejections(arguments):
+    request = rest.RejectionsRequest(base_url=arguments.url)
+    rejection_body = {
+        "keyspaceName": arguments.keyspace,
+        "tableName": arguments.table,
+        "startHour": arguments.start_hour,
+        "startMinute": arguments.start_minute,
+        "endHour": arguments.end_hour,
+        "endMinute": arguments.end_minute,
+        "dcExclusions": arguments.dc_exclusions,
+    }
+
+    result = request.create_rejection(rejection_body)
+
+    if result.is_successful():
+        if arguments.output != "json":
+            print(result.message)
+        table_printer.print_rejections(result.data, columns=arguments.columns, output=arguments.output)
+    else:
+        print(result.format_exception())
+
+
+def _delete_rejections(arguments):
+    request = rest.RejectionsRequest(base_url=arguments.url)
+    result = None
+
+    if arguments.all:
+        result = request.truncate_rejections()
+    elif not None in [arguments.keyspace, arguments.table, arguments.start_hour, arguments.start_minute]:
+        dc_exclusions = arguments.dc_exclusions
+
+        if dc_exclusions is None:
+            dc_exclusions = []
+
+        rejection_body = {
+            "keyspaceName": arguments.keyspace,
+            "tableName": arguments.table,
+            "startHour": arguments.start_hour,
+            "startMinute": arguments.start_minute,
+            "endHour": None,
+            "endMinute": None,
+            "dcExclusions": dc_exclusions,
+        }
+
+        result = request.delete_rejection(rejection_body)
+    else:
+        print("--keyspace, --table, --start-hour and --start-minute are mandatory arguments.")
+        sys.exit(1)
+
+    if result.is_successful():
+        if arguments.output != "json":
+            print(result.message)
+        table_printer.print_rejections(result.data, columns=arguments.columns, output=arguments.output)
+    else:
+        print(result.format_exception())
+
+
+def _get_rejections(arguments):
+    request = rest.RejectionsRequest(base_url=arguments.url)
+    if arguments.table:
+        if not arguments.keyspace:
+            print("--keyspace is required.")
+            sys.exit(1)
+        result = request.list_rejections(keyspace=arguments.keyspace, table=arguments.table)
+        if result.is_successful():
+            table_printer.print_rejections(result.data, columns=arguments.columns, output=arguments.output)
+        else:
+            print(result.format_exception())
+    else:
+        result = request.list_rejections(keyspace=arguments.keyspace)
+        if result.is_successful():
+            table_printer.print_rejections(result.data, columns=arguments.columns, output=arguments.output)
+        else:
+            print(result.format_exception())
+
+
+def _update_rejections(arguments):
+    request = rest.RejectionsRequest(base_url=arguments.url)
+    rejection_body = {
+        "keyspaceName": arguments.keyspace,
+        "tableName": arguments.table,
+        "startHour": arguments.start_hour,
+        "startMinute": arguments.start_minute,
+        "endHour": None,
+        "endMinute": None,
+        "dcExclusions": arguments.dc_exclusions,
+    }
+    result = request.update_rejection(rejection_body)
+
+    if result.is_successful():
+        if arguments.output != "json":
+            print(result.message)
+        table_printer.print_rejections(result.data, columns=arguments.columns, output=arguments.output)
+    else:
+        print(result.format_exception())
+
+
+def rejections(arguments):
+    if arguments.rejections_action == "create":
+        _create_rejections(arguments)
+    elif arguments.rejections_action == "delete":
+        _delete_rejections(arguments)
+    elif arguments.rejections_action == "get":
+        _get_rejections(arguments)
+    elif arguments.rejections_action == "update":
+        _update_rejections(arguments)
+    else:
+        print("Specify a valid action (create, delete, get or update) for subcommand 'rejections'.")
+        sys.exit(1)
+
+
 def state(arguments):
     if arguments.state_subcommand == "nodes":
         nodes(arguments)
@@ -563,6 +796,9 @@ def running_job(arguments):
 
 
 def run_subcommand(arguments):
+    if arguments.subcommand == "rejections":
+        status(arguments)
+        rejections(arguments)
     if arguments.subcommand == "repairs":
         status(arguments)
         repairs(arguments)
