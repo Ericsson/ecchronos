@@ -15,88 +15,48 @@
 package com.ericsson.bss.cassandra.ecchronos.core.state;
 
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.DriverNode;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * A group of replicas and ranges that should be repaired together.
  */
-public class ReplicaRepairGroup implements Iterable<LongTokenRange>
+public record ReplicaRepairGroup(Set<DriverNode> replicas, List<LongTokenRange> vnodes,
+    long lastCompletedAt) implements Iterable<LongTokenRange>
 {
-    private final ImmutableSet<DriverNode> myReplicas;
-    private final ImmutableList<LongTokenRange> myVnodes;
-    private final long myLastCompletedAt;
-
     /**
-     * Constructor.
-     *
-     * @param replicas The nodes.
-     * @param vnodes The token ranges.
-     * @param lastCompletedAt last repair completed
-     */
-    public ReplicaRepairGroup(final ImmutableSet<DriverNode> replicas, final ImmutableList<LongTokenRange> vnodes,
-            final long lastCompletedAt)
-    {
-        myReplicas = replicas;
-        myVnodes = vnodes;
-        myLastCompletedAt = lastCompletedAt;
-    }
-
-    /**
-     * Get replicas.
-     *
-     * @return Replicas
-     */
-    public Set<DriverNode> getReplicas()
-    {
-        return myReplicas;
-    }
-
-    /**
-     * Get datacenters.
-     *
-     * @return Datacenters
-     */
+    * Get datacenters.
+    *
+    * @return Datacenters
+    */
     public Set<String> getDataCenters()
     {
-        return myReplicas.stream().map(DriverNode::getDatacenter).collect(Collectors.toSet());
+    return replicas.stream().map(DriverNode::getDatacenter).collect(Collectors.toSet());
     }
 
     /**
-     * Get last completed at.
-     *
-     * @return Last completed at for this repair group.
-     */
-    public long getLastCompletedAt()
-    {
-        return myLastCompletedAt;
-    }
-
-    /**
-     * Iterate.
-     *
-     * @return Token range iterator
-     */
+    * Iterate.
+    *
+    * @return Token range iterator
+    */
     @Override
     public Iterator<LongTokenRange> iterator()
     {
-        return myVnodes.iterator();
+    return vnodes.iterator();
     }
 
     /**
-     * String representation.
-     *
-     * @return String
-     */
+    * String representation.
+    *
+    * @return String
+    */
     @Override
     public String toString()
     {
-        return String.format("(replicas=%s,vnodes=%s)", myReplicas, myVnodes);
-    }
+    return String.format("(replicas=%s,vnodes=%s)", replicas, vnodes);
+}
 }
 
 
