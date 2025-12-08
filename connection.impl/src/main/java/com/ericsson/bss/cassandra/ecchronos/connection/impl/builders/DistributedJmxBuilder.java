@@ -45,7 +45,7 @@ import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-public class DistributedJmxBuilder
+public class DistributedJmxBuilder //NOPMD Possible God Class
 {
     private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxBuilder.class);
     private static final String JMX_FORMAT_URL = "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi";
@@ -190,7 +190,7 @@ public class DistributedJmxBuilder
      * Creates a JMX connection to the host.
      * @param node the node to connect with.
      */
-    public void reconnect(final Node node) throws EcChronosException
+    public void reconnect(final Node node) throws EcChronosException //NOPMD CyclomaticComplexity
     {
         try
         {
@@ -207,7 +207,7 @@ public class DistributedJmxBuilder
             {
                 host = ReverseDNS.fromHostString(host);
             }
-            else if (host.contains(":"))
+            if (host.contains(":") && !host.startsWith("[") && !host.endsWith("]"))
             {
                 // Use square brackets to surround IPv6 addresses
                 host = "[" + host + "]";
