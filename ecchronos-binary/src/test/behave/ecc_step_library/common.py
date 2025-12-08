@@ -94,6 +94,14 @@ def get_job_id(context):
     return job_id
 
 
+def check_row_not_exists(rows, expected_row):
+    for row in rows:
+        row_clean = strip_and_collapse(row)
+        if re.search(expected_row, row_clean):
+            return False
+    return True
+
+
 @given("we have access to ecctool")
 def step_init(context):
     assert context.config.userdata.get("ecctool") is not False

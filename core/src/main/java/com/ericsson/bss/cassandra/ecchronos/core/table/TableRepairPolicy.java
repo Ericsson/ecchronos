@@ -14,6 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.table;
 
+import com.datastax.oss.driver.api.core.metadata.Node;
+
 /**
  * Interface for policies that can be used to control if repairs should run.
  */
@@ -23,7 +25,8 @@ public interface TableRepairPolicy
      * Check with the policy if a repair of the provided table should run now.
      *
      * @param tableReference The table to verify.
+     * @param node The node where the repair should run.
      * @return True if the repair should continue.
      */
-    boolean shouldRun(TableReference tableReference);
+    boolean shouldRun(TableReference tableReference, Node node);
 }

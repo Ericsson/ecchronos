@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.incremental.IncrementalRepairJob;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.AlarmPostUpdateHook;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TableRepairJob;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairScheduler;
@@ -83,6 +84,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     private final List<TableRepairPolicy> myRepairPolicies;
     private final TableStorageStates myTableStorageStates;
     private final RepairLockType myRepairLockType;
+    private final TimeBasedRunPolicy myTimeBasedRunPolicy;
 
     private Set<ScheduledRepairJob> validateScheduleMap(final UUID nodeID, final TableReference tableReference)
     {
@@ -93,7 +95,12 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
             myScheduledJobs.put(nodeID, scheduledJobs);
             return myScheduledJobs.get(nodeID).get(tableReference);
         }
-        return myScheduledJobs.get(nodeID).get(tableReference);
+        Map<TableReference, Set<ScheduledRepairJob>> nodeJobs = myScheduledJobs.get(nodeID);
+        if (!nodeJobs.containsKey(tableReference))
+        {
+            nodeJobs.put(tableReference, new HashSet<>());
+        }
+        return nodeJobs.get(tableReference);
     }
 
     private RepairSchedulerImpl(final Builder builder)
@@ -111,6 +118,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         myRepairHistoryService = builder.myRepairHistoryService;
         myTableStorageStates = builder.myTableStorageStates;
         myRepairLockType = builder.myRepairLockType;
+        myTimeBasedRunPolicy = builder.myTimeBasedRunPolicy;
     }
 
     @Override
@@ -359,6 +367,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
                     .withRepairHistory(myRepairHistoryService)
                     .withRepairLockType(myRepairLockType)
                     .withNode(node)
+                    .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                     .build();
         }
         job.refreshState();
@@ -391,6 +400,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         private RepairHistoryService myRepairHistoryService;
         private TableStorageStates myTableStorageStates;
         private RepairLockType myRepairLockType;
+        private TimeBasedRunPolicy myTimeBasedRunPolicy;
 
         /**
          * RepairSchedulerImpl build with repair lock type.
@@ -521,6 +531,18 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         public Builder withTableRepairMetrics(final TableRepairMetrics tableRepairMetrics)
         {
             myTableRepairMetrics = tableRepairMetrics;
+            return this;
+        }
+
+        /**
+         * Build with TimeBasedRunPolicy.
+         *
+         * @param timeBasedRunPolicy TimeBasedRunPolicy.
+         * @return Builder
+         */
+        public Builder withTimeBasedRunPolicy(final TimeBasedRunPolicy timeBasedRunPolicy)
+        {
+            myTimeBasedRunPolicy = timeBasedRunPolicy;
             return this;
         }
 

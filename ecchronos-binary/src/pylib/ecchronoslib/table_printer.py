@@ -14,8 +14,42 @@
 #
 
 from __future__ import print_function
+import json
 from datetime import datetime
 from ecchronoslib import table_formatter
+
+
+def print_rejections(rejections, columns=None, output="table"):
+    if output == "json":
+        _print_rejections_json_format(rejections)
+    else:
+        _print_rejections_table_format(rejections, columns)
+
+
+def _print_rejections_json_format(rejections):
+    rejections_dict = [s.to_dict() for s in rejections]
+    output_json({"rejections": rejections_dict})
+
+
+def _print_rejections_table_format(rejections, columns=None):
+    rejections_table = [
+        [
+            "Keyspace",
+            "Table",
+            "Start Hour",
+            "Start Minute",
+            "End Hour",
+            "End Minute",
+            "DC Exclusions",
+        ]
+    ]
+    _print_rejections_table(rejections_table, rejections, columns)
+
+
+def _print_rejections_table(rejections_table, rejections, columns):
+    for rejection in rejections:
+        rejections_table.append(_convert_rejection(rejection))
+    table_formatter.format_table(rejections_table, columns)
 
 
 def print_schedule(schedule, max_lines, full=False):
@@ -48,7 +82,7 @@ def print_schedule(schedule, max_lines, full=False):
         for vnode_state in sorted_vnode_states:
             _add_vnode_state_to_table(vnode_state, vnode_state_table)
 
-        table_formatter.format_table(vnode_state_table)
+        table_formatter.format_table(vnode_state_table, None)
 
 
 def _add_vnode_state_to_table(vnode_state, table):
@@ -113,7 +147,7 @@ def print_schedule_table(schedule_table, schedules, max_lines):
 
     for schedule in sorted_schedules:
         schedule_table.append(_convert_schedule(schedule))
-    table_formatter.format_table(schedule_table)
+    table_formatter.format_table(schedule_table, None)
 
 
 def print_repair_table(repair_table, repairs, max_lines):
@@ -123,7 +157,20 @@ def print_repair_table(repair_table, repairs, max_lines):
 
     for repair in sorted_repairs:
         repair_table.append(_convert_repair(repair))
-    table_formatter.format_table(repair_table)
+    table_formatter.format_table(repair_table, None)
+
+
+def _convert_rejection(rejection):
+    entry = [
+        rejection.keyspace,
+        rejection.table,
+        rejection.start_hour,
+        rejection.start_minute,
+        rejection.end_hour,
+        rejection.end_minute,
+        rejection.dc_exclusions,
+    ]
+    return entry
 
 
 def print_repair(repair):
@@ -131,7 +178,7 @@ def print_repair(repair):
         ["Id", "Host Id", "Keyspace", "Table", "Status", "Repaired(%)", "Completed at", "Repair type"],
         _convert_repair(repair),
     ]
-    table_formatter.format_table(repair_table)
+    table_formatter.format_table(repair_table, None)
 
 
 def _convert_repair(repair):
@@ -176,7 +223,7 @@ def print_repair_stats(repair_stats, max_lines=-1):
 
     for repair_stat in sorted_repair_stats:
         repair_stats_table.append(_convert_repair_stat(repair_stat))
-    table_formatter.format_table(repair_stats_table)
+    table_formatter.format_table(repair_stats_table, None)
 
 
 def _convert_repair_stat(repair_stat):
@@ -195,7 +242,7 @@ def print_nodes(nodes):
     ]
     for node in nodes:
         node_table.append(_convert_node(node))
-    table_formatter.format_table(node_table)
+    table_formatter.format_table(node_table, None)
 
 
 def _convert_node(node):
@@ -209,3 +256,8 @@ def _convert_node(node):
         node.node_status,
     ]
     return entry
+
+
+def output_json(data):
+    time = {"timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+    print(json.dumps(({**time, **data}), indent=4))
