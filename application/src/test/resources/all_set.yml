@@ -45,6 +45,9 @@ connection:
           port: 9042
         - host: 127.0.0.4
           port: 9042
+    timeout:
+      time: 5
+      unit: seconds
     retryPolicy:
       maxAttempts: 10
       delay: 10

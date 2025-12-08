@@ -26,13 +26,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class DistributedNativeConnection extends Connection<DistributedNativeConnectionProvider>
 {
     private Interval myConnectionDelay = new Interval();
+    private Timeout myTimeout = new Timeout();
     private CQLRetryPolicyConfig myCqlRetryPolicy = new CQLRetryPolicyConfig();
     private ConnectionType myType = ConnectionType.datacenterAware;
     private String myLocalDatacenter = "datacenter1";
@@ -76,6 +79,19 @@ public class DistributedNativeConnection extends Connection<DistributedNativeCon
     {
         return myConnectionDelay;
     }
+
+    @JsonProperty("timeout")
+    public final Timeout getTimeout()
+    {
+        return myTimeout;
+    }
+
+    @JsonProperty("timeout")
+    public final void setTimeout(final Timeout timeout)
+    {
+        myTimeout = timeout;
+    }
+
     /**
      * Gets the retry policy configuration.
      *
@@ -640,6 +656,29 @@ public class DistributedNativeConnection extends Connection<DistributedNativeCon
         public void setPort(final int port)
         {
             myPort = port;
+        }
+    }
+
+    public static class Timeout
+    {
+        private long myTime = 0;
+        private TimeUnit myTimeUnit = TimeUnit.MILLISECONDS;
+
+        public final long getConnectionTimeout(final TimeUnit timeUnit)
+        {
+            return timeUnit.convert(myTime, myTimeUnit);
+        }
+
+        @JsonProperty("time")
+        public final void setTime(final long time)
+        {
+            myTime = time;
+        }
+
+        @JsonProperty("unit")
+        public final void setTimeUnit(final String timeUnit)
+        {
+            myTimeUnit = TimeUnit.valueOf(timeUnit.toUpperCase(Locale.US));
         }
     }
 
