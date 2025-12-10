@@ -28,8 +28,11 @@ import org.slf4j.LoggerFactory;
 public final class ReverseDNS
 {
     private static final Logger LOG = LoggerFactory.getLogger(ReverseDNS.class);
-    private static final Pattern IPV4_PREFIX = Pattern.compile("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.){4}");
-    private static final Pattern IPV6_PREFIX = Pattern.compile("^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\\.");
+    private static final Pattern IPV4_PREFIX_DEFAULT = Pattern.compile("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.){4}");
+    private static final Pattern IPV6_PREFIX_DEFAULT = Pattern.compile("^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\\.");
+
+    private static final Pattern IPV4_PREFIX_K8S = Pattern.compile("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\-){3}((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d))\\.");
+    private static final Pattern IPV6_PREFIX_K8S = Pattern.compile("^([0-9a-fA-F]{1,4}\\-){2,}([0-9a-fA-F]{0,4}\\-)*[0-9a-fA-F]{0,4}\\.");
 
     private ReverseDNS()
     {
@@ -80,13 +83,23 @@ public final class ReverseDNS
         }
 
         // Remove IPv4 prefix
-        String result = IPV4_PREFIX.matcher(hostname).replaceFirst("");
-        if (!result.equals(hostname))
+        if (IPV4_PREFIX_DEFAULT.matcher(hostname).find())
         {
-            return result;
+            return IPV4_PREFIX_DEFAULT.matcher(hostname).replaceFirst("");
+        }
+        else if (IPV4_PREFIX_K8S.matcher(hostname).find())
+        {
+            return IPV4_PREFIX_K8S.matcher(hostname).replaceFirst("");
+        }
+        else if (IPV6_PREFIX_DEFAULT.matcher(hostname).find())
+        {
+            return IPV6_PREFIX_DEFAULT.matcher(hostname).replaceFirst("");
+        }
+        else if (IPV6_PREFIX_K8S.matcher(hostname).find())
+        {
+            return IPV6_PREFIX_K8S.matcher(hostname).replaceFirst("");
         }
 
-        // Remove IPv6 prefix
-        return IPV6_PREFIX.matcher(hostname).replaceFirst("");
+        return hostname;
     }
 }
