@@ -90,6 +90,45 @@ public class TestReverseDNS
         assertEquals(onlyIPv4, invokeCleanHostname(onlyIPv4));
     }
 
+    @Test
+    public void testCleanHostnameWithIPPrefixK8S()
+    {
+        // K8s scenario: IP concatenated with pod DNS
+        String input = "10-244-1-5.cassandra-0.cassandra.default.svc.cluster.local";
+        String expected = "cassandra-0.cassandra.default.svc.cluster.local";
+        
+        String result = invokeCleanHostname(input);
+        assertEquals(expected, result);
+    }
+
+
+    @Test
+    public void testCleanHostnameIPv6K8S()
+    {
+        // Real IPv6 scenario - test with actual IPv6 format
+        String ipv6Input = "2001-db8--1.cassandra-0.cassandra.default.svc.cluster.local";
+        String expected = "cassandra-0.cassandra.default.svc.cluster.local";
+
+        String result = invokeCleanHostname(ipv6Input);
+        assertEquals(expected, result);
+    }
+
+    @Test
+    public void testCleanHostnameEdgeCasesK8S()
+    {
+        // Malformed IP prefix (incomplete IPv4)
+        String malformed = "10-244.cassandra-0.default.svc.cluster.local";
+        assertEquals(malformed, invokeCleanHostname(malformed)); // Should not match
+
+        // IPv6 real format - should be cleaned
+        String ipv6Raw = "2001-db8--1.pod-name.namespace.svc.cluster.local";
+        assertEquals("pod-name.namespace.svc.cluster.local", invokeCleanHostname(ipv6Raw));
+
+        // Edge case: only IP without DNS
+        String onlyIPv4 = "192-168-1-100";
+        assertEquals(onlyIPv4, invokeCleanHostname(onlyIPv4));
+    }
+
     // Helper method to access private cleanHostname method via reflection
     private String invokeCleanHostname(String hostname)
     {
