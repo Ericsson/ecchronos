@@ -152,7 +152,7 @@
         <junit.jupiter.junit-jupiter.version>6.0.1</junit.jupiter.junit-jupiter.version>
         <org.apache.commons.io.version>2.21.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
-        <equalsverifier.version>4.2.4</equalsverifier.version>
+        <equalsverifier.version>4.2.5</equalsverifier.version>
         <jcip.version>1.0</jcip.version>
         <testcontainers.version>1.21.3</testcontainers.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.83</org.bouncycastle.bcpkix-jdk18on.version>
@@ -172,7 +172,7 @@
         <org.apache.maven.plugins-maven-jar-plugin.version>3.5.0</org.apache.maven.plugins-maven-jar-plugin.version>
         <org.apache.maven.plugins.maven-javadoc-plugin.version>3.12.0</org.apache.maven.plugins.maven-javadoc-plugin.version>
         <org.apache.maven.plugins-maven-pmd-plugin.version>3.28.0</org.apache.maven.plugins-maven-pmd-plugin.version>
-        <org.apache.maven.plugins.maven-release-plugin.version>3.2.0</org.apache.maven.plugins.maven-release-plugin.version>
+        <org.apache.maven.plugins.maven-release-plugin.version>3.3.0</org.apache.maven.plugins.maven-release-plugin.version>
         <org.apache.maven.plugins-maven-resources-plugin.version>3.4.0</org.apache.maven.plugins-maven-resources-plugin.version>
         <org.apache.maven.plugins-maven-shade-plugin.version>3.6.1</org.apache.maven.plugins-maven-shade-plugin.version>
         <org.apache.maven.plugins.maven-source-plugin.version>3.4.0</org.apache.maven.plugins.maven-source-plugin.version>
