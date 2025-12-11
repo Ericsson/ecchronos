@@ -238,7 +238,7 @@ These three layers provide comprehensive coverage for topology changes:
 Due to a specific timing window where a node might still be initializing and the driver might not send an `onAdd` notification, an additional reload mechanism is implemented:
 
 - **ReloadSchedulerService**: A scheduled service that periodically triggers a complete topology reload
-- **Configurable Interval**: The reload frequency can be configured via `connection.cql.agent.reloadTopologyIntervalInSeconds`
+- **Configurable Interval**: The reload frequency can be configured via `connection.cql.reloadSchedule`
 - **Full Rebuild**: During reload, the entire node topology map is reconstructed from the current cluster state
 
 This multi-layered approach ensures that topology changes are detected and handled reliably, even in edge cases where immediate event notifications might be missed.

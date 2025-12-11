@@ -332,6 +332,11 @@ public class JolokiaNotificationController
         {
             host = ReverseDNS.fromHostString(host);
         }
+        if (host.contains(":") && !host.startsWith("[") && !host.endsWith("]"))
+        {
+            // Use square brackets to surround IPv6 addresses
+            host = "[" + host + "]";
+        }
         return myURLPrefix + "://" + host + ":" + myJolokiaPort + "/jolokia";
     }
 
