@@ -18,6 +18,7 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.ClientRegisterResponse;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.NotificationListenerResponse;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.NotificationRegisterResponse;
+import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.utils.dns.ReverseDNS;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -75,13 +76,15 @@ public class JolokiaNotificationController
     private final boolean myJolokiaPEM;
     private final String myURLPrefix;
     private final long myRunDelay;
+    private final IpTranslator myIpTranslator;
 
     public JolokiaNotificationController(
-        final Map<UUID, Node> nodesMap,
-        final int jolokiaPort,
-        final boolean jolokiaPEM,
-        final boolean reverseDNSResolution,
-        final Integer runDelay)
+            final Map<UUID, Node> nodesMap,
+            final int jolokiaPort,
+            final boolean jolokiaPEM,
+            final boolean reverseDNSResolution,
+            final Integer runDelay,
+            final IpTranslator ipTranslator)
     {
         myNodesMap = nodesMap;
         myJolokiaPort = jolokiaPort;
@@ -89,6 +92,7 @@ public class JolokiaNotificationController
         myURLPrefix = myJolokiaPEM ? "https" : "http";
         myReverseDNSResolution = reverseDNSResolution;
         myRunDelay = runDelay;
+        myIpTranslator = ipTranslator;
     }
 
     public final void addStorageServiceListener(final UUID nodeID, final NotificationListener listener) throws IOException, InterruptedException
@@ -327,6 +331,10 @@ public class JolokiaNotificationController
         if (NO_BROADCAST_ADDRESS.equals(host))
         {
             host = myNodesMap.get(nodeID).getListenAddress().get().getHostString();
+        }
+        if (myIpTranslator.isActive())
+        {
+            host = myIpTranslator.getInternalIp(host);
         }
         if (myReverseDNSResolution)
         {

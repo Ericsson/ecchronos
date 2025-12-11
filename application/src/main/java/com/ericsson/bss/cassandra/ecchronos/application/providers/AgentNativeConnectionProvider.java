@@ -29,6 +29,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnecti
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.DistributedNativeBuilder;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedNativeConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
+import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.RetryPolicyException;
 
@@ -56,18 +57,17 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
      * Constructs an {@code AgentNativeConnectionProvider} with the specified configuration, security supplier, and
      * certificate handler.
      *
-     * @param config
-     *         the configuration object containing the connection settings.
-     * @param cqlSecuritySupplier
-     *         a {@link Supplier} providing the CQL security settings.
-     * @param certificateHandler
-     *         the handler for managing SSL/TLS certificates.
+     * @param config              the configuration object containing the connection settings.
+     * @param cqlSecuritySupplier a {@link Supplier} providing the CQL security settings.
+     * @param certificateHandler  the handler for managing SSL/TLS certificates.
+     * @param ipTranslator
      */
     public AgentNativeConnectionProvider(
-         final Config config,
-         final Supplier<Security.CqlSecurity> cqlSecuritySupplier,
-         final CertificateHandler certificateHandler,
-         final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider)
+            final Config config,
+            final Supplier<Security.CqlSecurity> cqlSecuritySupplier,
+            final CertificateHandler certificateHandler,
+            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
+            final IpTranslator ipTranslator)
     {
         DistributedNativeConnection distributedNativeConfig = config.getConnectionConfig()
                 .getCqlConnection();
@@ -98,7 +98,8 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
                         .withAuthProvider(authProvider)
                         .withSslEngineFactory(sslEngineFactory)
                         .withSchemaChangeListener(defaultRepairConfigurationProvider)
-                        .withNodeStateListener(defaultRepairConfigurationProvider);
+                        .withNodeStateListener(defaultRepairConfigurationProvider)
+                        .withNodeStateListener(ipTranslator);
         LOG.info("Preparing Agent Connection Config");
         nativeConnectionBuilder = resolveAgentProviderBuilder(nativeConnectionBuilder, distributedNativeConfig);
         LOG.info("Establishing Connection With Nodes");
