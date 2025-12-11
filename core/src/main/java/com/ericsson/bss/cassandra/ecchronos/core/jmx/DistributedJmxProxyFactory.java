@@ -27,5 +27,6 @@ public interface DistributedJmxProxyFactory
      * @throws IOException Thrown when unable to connect.
      */
     DistributedJmxProxy connect() throws IOException;
+    Integer getMyHeathCheckInterval();
 }
 

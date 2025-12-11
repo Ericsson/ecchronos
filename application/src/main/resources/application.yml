@@ -24,6 +24,12 @@ springdoc:
     version: OPENAPI_3_0
     enabled: false
 
+logging:
+  level:
+    com.ericsson.bss.cassandra.ecchronos.core: DEBUG
+    com.ericsson.bss.cassandra.ecchronos.connection.impl.builders: DEBUG
+
+
 # Security Config
 #server:
 #  ssl:
