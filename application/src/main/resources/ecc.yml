@@ -52,6 +52,8 @@ connection:
     contactPoints:
       - host: 127.0.0.1
         port: 9042
+      - host: 127.0.0.2
+        port: 9042
 
     ## Configuration to define datacenters for ecChronos
     ## to connect to, datacenterAware enable means that

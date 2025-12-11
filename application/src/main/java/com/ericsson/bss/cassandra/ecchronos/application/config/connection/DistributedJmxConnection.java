@@ -46,27 +46,6 @@ public class DistributedJmxConnection extends Connection<DistributedJmxConnectio
             // Do something useful ...
         }
     }
-    @JsonProperty("runDelay")
-    public final Integer getRunDelay()
-    {
-        return myRunDelay;
-    }
-
-    @JsonProperty("runDelay")
-    public final void setrunDelay(final Integer runDelay)
-    {
-        myRunDelay = runDelay;
-    }
-    @JsonProperty("heathCheckInterval")
-    public final Integer getHeathCheckInterval()
-    {
-        return myHeathCheckInterval;
-    }
-    @JsonProperty("heathCheckInterval")
-    public final void setHeathCheckInterval(final Integer heathCheckInterval)
-    {
-        myHeathCheckInterval = heathCheckInterval;
-    }
 
     @JsonProperty("runDelay")
     public final Integer getRunDelay()
