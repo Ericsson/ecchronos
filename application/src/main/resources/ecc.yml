@@ -203,11 +203,11 @@ connection:
         fixedDelay: 1
         ## unit can be milliseconds, seconds, minutes, hours, days.
         unit: days
-    # runDelay (optional) is the delay between polls, in milliseconds, to the node to check the status of the repair, if the node is very busy with repairs
+    # runDelay (optional, default 500) is the delay between polls, in milliseconds, to the node to check the status of the repair, if the node is very busy with repairs
     # it is possible for messages to be missed from the node with this default value, this will show as repairs being stuck for a long time
     # if this is the case it is possible to reduce this value, but bear in mind this will increase the load on the node
     runDelay: 500
-    # heathCheckInterval (optional) is the number of minutes between health checks of a repair, if a repair has not completed after 3 healthchecks the repair is killed
+    # heathCheckInterval (optional, default 10) is the number of minutes between health checks of a repair, if a repair has not completed after 3 healthchecks the repair is killed
     # on the ecchronos side, although the repair would continue on the node, this means the repair will be rescheduled
     # within ecchronos.
     # If this is for a small cluster where repairs are always completed well within the time, then this value can be reduced
