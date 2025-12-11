@@ -60,7 +60,7 @@ public class VnodeRepairTask extends RepairTask
             final RepairHistory repairHistory, final Set<LongTokenRange> tokenRanges, final Set<DriverNode> replicas,
             final UUID jobId)
     {
-        super(currentNode.getHostId(), jmxProxyFactory, tableReference, repairConfiguration, tableRepairMetrics);
+        super(currentNode.getHostId(), jmxProxyFactory, tableReference, repairConfiguration, tableRepairMetrics, jmxProxyFactory.getMyHeathCheckInterval());
         myTokenRanges = Preconditions.checkNotNull(tokenRanges, "Token ranges must be set");
         myReplicas = Preconditions.checkNotNull(replicas, "Replicas must be set");
         for (LongTokenRange range : myTokenRanges)

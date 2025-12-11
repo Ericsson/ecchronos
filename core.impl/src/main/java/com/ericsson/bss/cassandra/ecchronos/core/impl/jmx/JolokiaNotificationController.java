@@ -48,7 +48,6 @@ import java.util.concurrent.TimeUnit;
 public class JolokiaNotificationController
 {
     private static final Logger LOG = LoggerFactory.getLogger(JolokiaNotificationController.class);
-    private static final long DEFAULT_RUN_DELAY_IN_MS = 500; // Increased from 100ms to reduce load
     private static final int SHUTDOWN_TIMEOUT_SECONDS = 1;
     private static final int HTTP_TIMEOUT_SECONDS = 5;
     private static final int HTTP_REQUEST_TIMEOUT_SECONDS = 10;
@@ -75,18 +74,21 @@ public class JolokiaNotificationController
     private final int myJolokiaPort;
     private final boolean myJolokiaPEM;
     private final String myURLPrefix;
+    private final long myRunDelay;
 
     public JolokiaNotificationController(
         final Map<UUID, Node> nodesMap,
         final int jolokiaPort,
         final boolean jolokiaPEM,
-        final boolean reverseDNSResolution)
+        final boolean reverseDNSResolution,
+        final Integer runDelay)
     {
         myNodesMap = nodesMap;
         myJolokiaPort = jolokiaPort;
         myJolokiaPEM = jolokiaPEM;
         myURLPrefix = myJolokiaPEM ? "https" : "http";
         myReverseDNSResolution = reverseDNSResolution;
+        myRunDelay = runDelay;
     }
 
     public final void addStorageServiceListener(final UUID nodeID, final NotificationListener listener) throws IOException, InterruptedException
@@ -123,7 +125,7 @@ public class JolokiaNotificationController
     private void startNotificationMonitor(final UUID nodeID, final String notificationID)
     {
         ScheduledFuture<?> future = myNotificationExecutor.scheduleWithFixedDelay(
-                new NotificationRunTask(nodeID, notificationID), 0, DEFAULT_RUN_DELAY_IN_MS, TimeUnit.MILLISECONDS);
+                new NotificationRunTask(nodeID, notificationID), 0, myRunDelay, TimeUnit.MILLISECONDS);
 
         synchronized (myNotificationMonitors)
         {

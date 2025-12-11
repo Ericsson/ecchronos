@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Add runDelay and healthCheckInterval parameters to tune the repair connection durinbg repairs - Issue #1281
 * Fix MalformedURLException for IPv6 addresses - Issue #1264
 * Add timeout config option - Issue #1279
 * Add Rejections sub-command - Issue #1015

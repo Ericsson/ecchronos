@@ -51,7 +51,7 @@ public abstract class RepairTask implements NotificationListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairTask.class);
     private static final Pattern RANGE_PATTERN = Pattern.compile("\\((-?[0-9]+),(-?[0-9]+)\\]");
-    private static final int HEALTH_CHECK_INTERVAL_IN_MINUTES = 10;
+    private final int healthCheckIntervalInMinutes;
 
     private final UUID nodeID;
     private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(
@@ -82,7 +82,8 @@ public abstract class RepairTask implements NotificationListener
             final DistributedJmxProxyFactory jmxProxyFactory,
             final TableReference tableReference,
             final RepairConfiguration repairConfiguration,
-            final TableRepairMetrics tableRepairMetrics
+            final TableRepairMetrics tableRepairMetrics,
+            final Integer healthCheckInterval
     )
     {
         nodeID = currentNodeID;
@@ -90,6 +91,7 @@ public abstract class RepairTask implements NotificationListener
         myTableReference = Preconditions.checkNotNull(tableReference, "Table reference must be set");
         myRepairConfiguration = Preconditions.checkNotNull(repairConfiguration, "Repair configuration must be set");
         myTableRepairMetrics = tableRepairMetrics;
+        healthCheckIntervalInMinutes = healthCheckInterval;
     }
 
     /**
@@ -287,7 +289,7 @@ public abstract class RepairTask implements NotificationListener
             myHangPreventFuture.cancel(false);
         }
         // Schedule the first check to happen after 10 minutes
-        myHangPreventFuture = myExecutor.schedule(new HangPreventingTask(), HEALTH_CHECK_INTERVAL_IN_MINUTES,
+        myHangPreventFuture = myExecutor.schedule(new HangPreventingTask(), healthCheckIntervalInMinutes,
                 TimeUnit.MINUTES);
     }
 
@@ -420,7 +422,7 @@ public abstract class RepairTask implements NotificationListener
                     else
                     {
                         checkCount++;
-                        myHangPreventFuture = myExecutor.schedule(this, HEALTH_CHECK_INTERVAL_IN_MINUTES, TimeUnit.MINUTES);
+                        myHangPreventFuture = myExecutor.schedule(this, healthCheckIntervalInMinutes, TimeUnit.MINUTES);
                     }
                 }
                 else

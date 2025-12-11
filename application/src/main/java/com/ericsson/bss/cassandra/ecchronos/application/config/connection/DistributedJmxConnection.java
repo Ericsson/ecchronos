@@ -27,9 +27,13 @@ import java.util.function.Supplier;
 
 public class DistributedJmxConnection extends Connection<DistributedJmxConnectionProvider>
 {
+    public static final int DEFAULT_RUN_DELAY = 500;
+    public static final int DEFAULT_HEALTH_CHECK_INTERVAL = 10;
     private RetryPolicyConfig myRetryPolicyConfig = new RetryPolicyConfig();
     private JolokiaConfig myJolokiaConfig = new JolokiaConfig();
     private boolean myReverseDNSResolution = false;
+    private Integer myRunDelay = DEFAULT_RUN_DELAY;
+    private Integer myHeathCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
 
     public DistributedJmxConnection()
     {
@@ -43,11 +47,33 @@ public class DistributedJmxConnection extends Connection<DistributedJmxConnectio
         }
     }
 
-    @JsonProperty("retryPolicy")
-    public final RetryPolicyConfig getRetryPolicyConfig()
+    @JsonProperty("runDelay")
+    public final Integer getRunDelay()
     {
-        return myRetryPolicyConfig;
+        return myRunDelay;
     }
+
+    @JsonProperty("runDelay")
+    public final void setrunDelay(final Integer runDelay)
+    {
+        myRunDelay = runDelay;
+    }
+    @JsonProperty("heathCheckInterval")
+    public final Integer getHeathCheckInterval()
+    {
+        return myHeathCheckInterval;
+    }
+
+    @JsonProperty("heathCheckInterval")
+    public final void setHeathCheckInterval(final Integer heathCheckInterval)
+    {
+        myHeathCheckInterval = heathCheckInterval;
+    }
+    @JsonProperty("retryPolicy")
+public final RetryPolicyConfig getRetryPolicyConfig()
+{
+    return myRetryPolicyConfig;
+}
 
     @JsonProperty("retryPolicy")
     public final void setRetryPolicyConfig(final RetryPolicyConfig retryPolicyConfig)

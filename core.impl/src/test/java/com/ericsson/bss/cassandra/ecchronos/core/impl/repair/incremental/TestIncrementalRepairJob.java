@@ -40,7 +40,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -53,6 +53,7 @@ import static org.mockito.Mockito.ignoreStubs;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class TestIncrementalRepairJob
@@ -278,6 +279,7 @@ public class TestIncrementalRepairJob
         ImmutableSet<DriverNode> replicas = ImmutableSet.of(node1, node2);
         doReturn(replicas).when(myReplicationState).getReplicas(myTableReference, mockNode);
         IncrementalRepairJob job = getIncrementalRepairJob();
+        when(myJmxProxyFactory.getMyHeathCheckInterval()).thenReturn(10);
 
         assertThat(job).isNotNull();
         Iterator<ScheduledTask> iterator = job.iterator();

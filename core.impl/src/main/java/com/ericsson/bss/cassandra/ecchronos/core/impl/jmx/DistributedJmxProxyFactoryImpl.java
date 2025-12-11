@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A factory creating JMX proxies to Cassandra.
  */
-public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactory
+public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactory
 {
     private static final int DEFAULT_JOLOKIA_PORT = 8778;
     private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxProxyFactoryImpl.class);
@@ -67,6 +67,8 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
     private final int jolokiaPort;
     private final boolean jolokiaPEMEnabled;
     private final boolean myReverseDNSResolution;
+    private final Integer myRunDelay;
+    private final Integer myHeathCheckInterval;
 
     private DistributedJmxProxyFactoryImpl(final Builder builder)
     {
@@ -77,6 +79,8 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
         jolokiaPort = builder.myJolokiaPort;
         jolokiaPEMEnabled = builder.myJolokiaPEMEnabled;
         myReverseDNSResolution = builder.myReverseDNSResolution;
+        myRunDelay = builder.myRunDelay;
+        myHeathCheckInterval = builder.myHeathCheckInterval;
     }
 
     @Override
@@ -91,12 +95,18 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
                     isJolokiaEnabled,
                     jolokiaPort,
                     jolokiaPEMEnabled,
-                    myReverseDNSResolution);
+                    myReverseDNSResolution,
+                    myRunDelay);
         }
         catch (MalformedObjectNameException e)
         {
             throw new IOException("Unable to get StorageService object", e);
         }
+    }
+    @Override
+    public Integer getMyHeathCheckInterval()
+    {
+        return myHeathCheckInterval;
     }
 
     private static final class InternalDistributedJmxProxy implements DistributedJmxProxy
@@ -118,7 +128,8 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
                 final boolean jolokiaEnabled,
                 final int jolokiaPortValue,
                 final boolean jolokiaPEMEnabled,
-                final boolean reverseDNSResolution
+                final boolean reverseDNSResolution,
+                final Integer runDelay
         ) throws MalformedObjectNameException
         {
             myDistributedJmxConnectionProvider = distributedJmxConnectionProvider;
@@ -128,7 +139,7 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
             myRepairServiceObject = new ObjectName(RS_OBJ_NAME);
             isJolokiaEnabled = jolokiaEnabled;
             myReverseDNSResolution = reverseDNSResolution;
-            myJolokiaNotificationController = new JolokiaNotificationController(myNodesMap, jolokiaPortValue, jolokiaPEMEnabled, myReverseDNSResolution);
+            myJolokiaNotificationController = new JolokiaNotificationController(myNodesMap, jolokiaPortValue, jolokiaPEMEnabled, myReverseDNSResolution, runDelay);
         }
 
         @Override
@@ -688,6 +699,8 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
 
     public static class Builder
     {
+        public static final int DEFAULT_RUN_DELAY = 500;
+        public static final int DEFAULT_HEALTH_CHECK_INTERVAL = 10;
         private DistributedJmxConnectionProvider myDistributedJmxConnectionProvider;
         private Map<UUID, Node> myNodesMap;
         private EccNodesSync myEccNodesSync;
@@ -695,6 +708,8 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
         private int myJolokiaPort = DEFAULT_JOLOKIA_PORT;
         private boolean myJolokiaPEMEnabled = false;
         private boolean myReverseDNSResolution = false;
+        private Integer myRunDelay = DEFAULT_RUN_DELAY;
+        private Integer myHeathCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
 
         /**
          * Build with JMX connection provider.
@@ -777,6 +792,28 @@ public final class DistributedJmxProxyFactoryImpl implements DistributedJmxProxy
         public Builder withReverseDNSResolution(final boolean reverseDNS)
         {
             myReverseDNSResolution = reverseDNS;
+            return this;
+        }
+        /**
+         * Build with runDelay.
+         *
+         * @param runDelay Integer
+         * @return Builder
+         */
+        public Builder withRunDelay(final Integer runDelay)
+        {
+            myRunDelay = runDelay;
+            return this;
+        }
+        /**
+         * Build with heathCheckInterval.
+         *
+         * @param heathCheckInterval Integer
+         * @return Builder
+         */
+        public Builder withHeathCheckInterval(final Integer heathCheckInterval)
+        {
+            myHeathCheckInterval = heathCheckInterval;
             return this;
         }
 

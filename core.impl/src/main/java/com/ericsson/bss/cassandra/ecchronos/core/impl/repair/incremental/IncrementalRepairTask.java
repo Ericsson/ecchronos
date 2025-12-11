@@ -52,7 +52,7 @@ public class IncrementalRepairTask extends RepairTask
             final RepairConfiguration repairConfiguration,
             final TableRepairMetrics tableRepairMetrics)
     {
-        super(currentNode, jmxProxyFactory, tableReference, repairConfiguration, tableRepairMetrics);
+        super(currentNode, jmxProxyFactory, tableReference, repairConfiguration, tableRepairMetrics, jmxProxyFactory.getMyHeathCheckInterval());
     }
 
     @Override

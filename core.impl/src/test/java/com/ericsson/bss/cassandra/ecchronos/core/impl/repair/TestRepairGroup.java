@@ -138,6 +138,7 @@ public class TestRepairGroup
                 .withRepairWarningTime(RUN_INTERVAL_IN_DAYS * 2, TimeUnit.DAYS)
                 .withRepairErrorTime(GC_GRACE_DAYS_IN_DAYS, TimeUnit.DAYS)
                 .build();
+        when(myJmxProxyFactory.getMyHeathCheckInterval()).thenReturn(10);
     }
 
     @After
@@ -201,8 +202,7 @@ public class TestRepairGroup
                 .withRepairType(RepairType.INCREMENTAL)
                 .build();
 
-        RepairGroup repairGroup = builderFor(replicaRepairGroup).withRepairConfiguration(repairConfiguration).build(
-                PRIORITY);
+        RepairGroup repairGroup = builderFor(replicaRepairGroup).withRepairConfiguration(repairConfiguration).build(PRIORITY);
 
         Collection<RepairTask> repairTasks = repairGroup.getRepairTasks(myNodeID);
 
