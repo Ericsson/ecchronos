@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairJobView;
@@ -43,6 +44,7 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
     private final ReplicationState myReplicationState;
     private final List<ScheduledTask> myTasks;
     private final int myTotalTasks;
+    private final TimeBasedRunPolicy myTimeBasedRunPolicy;
 
     public IncrementalOnDemandRepairJob(final Builder builder)
     {
@@ -51,12 +53,20 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
                 builder.myCurrentNode);
         myReplicationState = Preconditions.checkNotNull(builder.myReplicationState,
                 "Replication state must be set");
+        myTimeBasedRunPolicy = builder.myTimeBasedRunPolicy;
         myTasks = initializeTasks();
         myTotalTasks = myTasks.size();
     }
 
     private List<ScheduledTask> initializeTasks()
     {
+        // Check if repair is blocked by time-based run policy
+        if (myTimeBasedRunPolicy != null && !myTimeBasedRunPolicy.shouldRun(getTableReference(), getCurrentNode()))
+        {
+            LOG.debug("Incremental repair tasks creation skipped for {} - blocked by time-based run policy", getTableReference());
+            return new ArrayList<>();
+        }
+
         ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(
                 myReplicationState.getReplicas(getTableReference(), getCurrentNode()),
                 ImmutableList.of(), -1L);
@@ -89,11 +99,18 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
     @Override
     public OnDemandRepairJobView getView()
     {
+        OnDemandRepairJobView.Status status = getStatus();
+        // Check if repair is blocked by time-based run policy first
+        if (myTimeBasedRunPolicy != null && !myTimeBasedRunPolicy.shouldRun(getTableReference(), getCurrentNode()))
+        {
+            status = OnDemandRepairJobView.Status.BLOCKED;
+        }
+
         return new OnDemandRepairJobView(
                 getJobId(),
                 getOngoingJob().getHostId(),
                 getOngoingJob().getTableReference(),
-                getStatus(),
+                status,
                 getProgress(),
                 getOngoingJob().getCompletedTime(), getOngoingJob().getRepairType());
     }
@@ -146,6 +163,12 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
         {
             return State.FAILED;
         }
+        // Check if repair is blocked by time-based run policy
+        if (myTimeBasedRunPolicy != null && !myTimeBasedRunPolicy.shouldRun(getTableReference(), getCurrentNode()))
+        {
+            LOG.debug("Incremental repair job with id {} is blocked by time-based run policy", getJobId());
+            return State.BLOCKED;
+        }
         return myTasks.isEmpty() ? State.FINISHED : State.RUNNABLE;
     }
 
@@ -171,6 +194,7 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
         private Node myCurrentNode;
         private OngoingJob myOngoingJob;
         private ReplicationState myReplicationState;
+        private TimeBasedRunPolicy myTimeBasedRunPolicy;
 
         public final Builder withNode(final Node node)
         {
@@ -217,6 +241,18 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
         public final Builder withReplicationState(final ReplicationState replicationState)
         {
             this.myReplicationState = replicationState;
+            return this;
+        }
+
+        /**
+         * Build with TimeBasedRunPolicy.
+         *
+         * @param timeBasedRunPolicy TimeBasedRunPolicy.
+         * @return Builder
+         */
+        public Builder withTimeBasedRunPolicy(final TimeBasedRunPolicy timeBasedRunPolicy)
+        {
+            myTimeBasedRunPolicy = timeBasedRunPolicy;
             return this;
         }
 
