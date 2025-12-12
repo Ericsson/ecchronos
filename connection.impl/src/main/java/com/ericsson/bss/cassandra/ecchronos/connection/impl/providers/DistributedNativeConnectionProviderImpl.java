@@ -20,12 +20,16 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnecti
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.DistributedNativeBuilder;
 
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 
 public class DistributedNativeConnectionProviderImpl implements DistributedNativeConnectionProvider
 {
+    private static final Logger LOG = LoggerFactory.getLogger(DistributedNativeConnectionProviderImpl.class);
     private final CqlSession mySession;
     private final Map<UUID, Node> myNodes;
     private final DistributedNativeBuilder myDistributedNativeBuilder;
@@ -139,5 +143,33 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
     public ConnectionType getConnectionType()
     {
         return myConnectionType;
+    }
+    /**
+     *  Checks that there are ennough nodes in the local datacenter to support LOCAL_QUORUM.
+     *  @param replication A map of the replication factors for datacenters
+     *  @param localDatacenter The datacenter to check
+     */
+    public void isKeyspaceReplicationFactorOK(final Map<String, String> replication, final String localDatacenter)
+    {
+        if (localDatacenter == null)
+        {
+            throw new IllegalStateException("Local data center is not defined");
+        }
+        if (!replication.containsKey(localDatacenter))
+        {
+            throw new IllegalStateException("ecchronos Keyspace not replicated by local datacenter");
+        }
+        Integer replicationFactor = Integer.parseInt(replication.get(localDatacenter));
+
+        Long localNodeCount = myNodes.entrySet().stream()
+                .filter(node -> node.getValue().getDatacenter().equals(localDatacenter)).count();
+
+        int quorumValue = (replicationFactor / 2) + 1;
+
+        if (quorumValue > localNodeCount)
+        {
+            LOG.error("Not enough Nodes in local DC {} available but {} required", localNodeCount, replicationFactor);
+            throw new IllegalStateException("Not enough Nodes in local DC");
+        }
     }
 }
