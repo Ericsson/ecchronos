@@ -245,7 +245,6 @@ public class DistributedNativeBuilder
 
         DistributedNativeConnectionProviderImpl connectionProvider = new DistributedNativeConnectionProviderImpl(session, nodesList, this, myType);
         connectionProvider.isKeyspaceReplicationFactorOK(replication, myLocalDatacenter);
-          
         return connectionProvider;
 
 
