@@ -94,6 +94,7 @@ public class AgentNativeConnectionProvider implements DistributedNativeConnectio
                         .withInitialContactPoints(myConnectionHelper.resolveInitialContactPoints(distributedNativeConfig.getContactPoints()))
                         .withAgentType(distributedNativeConfig.getType())
                         .withLocalDatacenter(distributedNativeConfig.getLocalDatacenter())
+                        .withEcchronosKeyspaceName(config.getLockFactory().getCasLockFactoryConfig().getKeyspaceName())
                         .withAuthProvider(authProvider)
                         .withSslEngineFactory(sslEngineFactory)
                         .withSchemaChangeListener(defaultRepairConfigurationProvider)
