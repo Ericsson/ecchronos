@@ -380,6 +380,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
                 .withReplicationState(myReplicationState)
                 .withOngoingJob(ongoingJob)
                 .withNode(node)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
                 .build();
     }
 
