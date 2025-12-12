@@ -22,6 +22,7 @@ import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.config.ProgrammaticDriverConfigLoaderBuilder;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.NodeStateListener;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.SchemaChangeListener;
 import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
@@ -39,8 +40,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import java.util.UUID;
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +62,7 @@ public class DistributedNativeBuilder
     private ConnectionType myType = ConnectionType.datacenterAware;
     private List<InetSocketAddress> myInitialContactPoints = new ArrayList<>();
     private String myLocalDatacenter = "datacenter1";
+    private String ecchronosKeyspaceName = "ecchronos";
 
     private List<String> myDatacenterAware = new ArrayList<>();
     private List<Map<String, String>> myRackAware = new ArrayList<>();
@@ -107,6 +110,11 @@ public class DistributedNativeBuilder
     public final DistributedNativeBuilder withLocalDatacenter(final String localDatacenter)
     {
         myLocalDatacenter = localDatacenter;
+        return this;
+    }
+    public final DistributedNativeBuilder withEcchronosKeyspaceName(final String keySpace)
+    {
+        ecchronosKeyspaceName = keySpace;
         return this;
     }
 
@@ -226,9 +234,22 @@ public class DistributedNativeBuilder
         LOG.info("Requesting Nodes List");
         Map<UUID, Node> nodesList = createNodesMap(session);
         LOG.info("Nodes list was created with success");
-        return new DistributedNativeConnectionProviderImpl(session, nodesList, this, myType);
-    }
+        Optional<KeyspaceMetadata> keyspaceMetadata = session
+                .getMetadata()
+                .getKeyspace(ecchronosKeyspaceName);
+        if (keyspaceMetadata == null)
+        {
+            throw new IllegalStateException("ecchronos Keyspace is not setup yet");
+        }
+        Map<String, String> replication = keyspaceMetadata.get().getReplication();
 
+        DistributedNativeConnectionProviderImpl connectionProvider = new DistributedNativeConnectionProviderImpl(session, nodesList, this, myType);
+        connectionProvider.isKeyspaceReplicationFactorOK(replication, myLocalDatacenter);
+          
+        return connectionProvider;
+
+
+    }
     /**
      * Creates a map of nodes based on the connection type, reads the node list from the database.
      * @param session the connection information to the database
