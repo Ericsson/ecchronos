@@ -50,7 +50,7 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
     {
         super(builder.myConfiguration, builder.myJmxProxyFactory, builder.myRepairConfiguration,
                 builder.myRepairLockType, builder.myOnFinishedHook, builder.myTableRepairMetrics, builder.myOngoingJob,
-                builder.myCurrentNode);
+                builder.myCurrentNode, builder.myTimeBasedRunPolicy);
         myReplicationState = Preconditions.checkNotNull(builder.myReplicationState,
                 "Replication state must be set");
         myTimeBasedRunPolicy = builder.myTimeBasedRunPolicy;
@@ -99,18 +99,11 @@ public final class IncrementalOnDemandRepairJob extends OnDemandRepairJob
     @Override
     public OnDemandRepairJobView getView()
     {
-        OnDemandRepairJobView.Status status = getStatus();
-        // Check if repair is blocked by time-based run policy first
-        if (myTimeBasedRunPolicy != null && !myTimeBasedRunPolicy.shouldRun(getTableReference(), getCurrentNode()))
-        {
-            status = OnDemandRepairJobView.Status.BLOCKED;
-        }
-
         return new OnDemandRepairJobView(
                 getJobId(),
                 getOngoingJob().getHostId(),
                 getOngoingJob().getTableReference(),
-                status,
+                getStatus(),
                 getProgress(),
                 getOngoingJob().getCompletedTime(), getOngoingJob().getRepairType());
     }

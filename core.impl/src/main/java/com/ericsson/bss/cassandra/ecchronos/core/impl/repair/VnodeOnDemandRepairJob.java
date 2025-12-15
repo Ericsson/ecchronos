@@ -63,7 +63,8 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
     private VnodeOnDemandRepairJob(final Builder builder)
     {
         super(builder.configuration, builder.jmxProxyFactory, builder.repairConfiguration,
-                builder.repairLockType, builder.onFinishedHook, builder.tableRepairMetrics, builder.ongoingJob, builder.currentNode);
+                builder.repairLockType, builder.onFinishedHook, builder.tableRepairMetrics, builder.ongoingJob,
+                builder.currentNode, builder.myTimeBasedRunPolicy);
         myRepairHistory = Preconditions.checkNotNull(builder.repairHistory,
                 "Repair history must be set");
         myTotalTokens = getOngoingJob().getTokens().size();
@@ -151,18 +152,11 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
     @Override
     public OnDemandRepairJobView getView()
     {
-        OnDemandRepairJobView.Status status = getStatus();
-        // Check if repair is blocked by time-based run policy first
-        if (myTimeBasedRunPolicy != null && !myTimeBasedRunPolicy.shouldRun(getTableReference(), getCurrentNode()))
-        {
-            status = OnDemandRepairJobView.Status.BLOCKED;
-        }
-
         return new OnDemandRepairJobView(
                 getJobId(),
                 getOngoingJob().getHostId(),
                 getTableReference(),
-                status,
+                getStatus(),
                 getProgress(),
                 getOngoingJob().getCompletedTime(), getOngoingJob().getRepairType());
     }
