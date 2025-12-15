@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.connection.impl.providers;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metadata.NodeState;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.DistributedNativeBuilder;
 
@@ -162,6 +163,7 @@ public class DistributedNativeConnectionProviderImpl implements DistributedNativ
         Integer replicationFactor = Integer.parseInt(replication.get(localDatacenter));
 
         Long localNodeCount = myNodes.entrySet().stream()
+                .filter(node -> node.getValue().getState().equals(NodeState.UP))
                 .filter(node -> node.getValue().getDatacenter().equals(localDatacenter)).count();
 
         int quorumValue = (replicationFactor / 2) + 1;

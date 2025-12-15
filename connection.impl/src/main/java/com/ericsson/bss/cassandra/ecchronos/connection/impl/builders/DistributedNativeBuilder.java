@@ -237,7 +237,7 @@ public class DistributedNativeBuilder
         Optional<KeyspaceMetadata> keyspaceMetadata = session
                 .getMetadata()
                 .getKeyspace(ecchronosKeyspaceName);
-        if (keyspaceMetadata == null)
+        if (keyspaceMetadata.isEmpty())
         {
             throw new IllegalStateException("ecchronos Keyspace is not setup yet");
         }
