@@ -63,7 +63,8 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
     private VnodeOnDemandRepairJob(final Builder builder)
     {
         super(builder.configuration, builder.jmxProxyFactory, builder.repairConfiguration,
-                builder.repairLockType, builder.onFinishedHook, builder.tableRepairMetrics, builder.ongoingJob, builder.currentNode);
+                builder.repairLockType, builder.onFinishedHook, builder.tableRepairMetrics, builder.ongoingJob,
+                builder.currentNode, builder.myTimeBasedRunPolicy);
         myRepairHistory = Preconditions.checkNotNull(builder.repairHistory,
                 "Repair history must be set");
         myTotalTokens = getOngoingJob().getTokens().size();
@@ -75,6 +76,12 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
                                                                       final Set<LongTokenRange> repairedTokens,
                                                                       final Node currentNode)
     {
+        // Check if repair is blocked by time-based run policy
+        if (myTimeBasedRunPolicy != null && !myTimeBasedRunPolicy.shouldRun(getTableReference(), currentNode))
+        {
+            LOG.debug("Repair tasks creation skipped for {} - blocked by time-based run policy", getTableReference());
+            return new ConcurrentHashMap<>();
+        }
 
         Map<LongTokenRange, ImmutableSet<DriverNode>> remainingTokenRanges = filterRemainingTokenRanges(tokenRanges, repairedTokens);
         List<VnodeRepairState> vnodeRepairStates = createVnodeRepairStates(remainingTokenRanges);
@@ -210,6 +217,12 @@ public final class VnodeOnDemandRepairJob extends OnDemandRepairJob
                     getJobId());
             setFailed(true);
             return ScheduledJob.State.FAILED;
+        }
+        // Check if repair is blocked by time-based run policy
+        if (myTimeBasedRunPolicy != null && !myTimeBasedRunPolicy.shouldRun(getTableReference(), getCurrentNode()))
+        {
+            LOG.debug("Repair job with id {} is blocked by time-based run policy", getJobId());
+            return ScheduledJob.State.BLOCKED;
         }
         return myTasks.isEmpty() ? ScheduledJob.State.FINISHED : ScheduledJob.State.RUNNABLE;
     }

@@ -308,7 +308,12 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         /**
          * The Job has failed and can be discarded.
          */
-        FAILED
+        FAILED,
+
+        /**
+         * The Job is blocked by policies and cannot be run.
+         */
+        BLOCKED
     }
 
     /**

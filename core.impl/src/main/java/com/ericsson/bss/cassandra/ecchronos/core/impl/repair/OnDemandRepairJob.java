@@ -16,6 +16,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.impl.repair;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.RepairLockType;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.table.TimeBasedRunPolicy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
@@ -37,6 +38,7 @@ public abstract class OnDemandRepairJob extends ScheduledJob
     private final TableRepairMetrics myTableRepairMetrics;
     private final OngoingJob myOngoingJob;
     private final Node myCurrentNode;
+    private final TimeBasedRunPolicy myTimeBasedRunPolicy;
 
     private boolean hasFailed;
 
@@ -44,10 +46,11 @@ public abstract class OnDemandRepairJob extends ScheduledJob
                              final RepairConfiguration repairConfiguration, final RepairLockType repairLockType,
                              final Consumer<UUID> onFinishedHook, final TableRepairMetrics tableRepairMetrics,
                              final OngoingJob ongoingJob,
-                             final Node currentNode)
+                             final Node currentNode,
+                             final TimeBasedRunPolicy timeBasedRunPolicy)
     {
         super(configuration, ongoingJob.getJobId(), ongoingJob.getHostId());
-
+        myTimeBasedRunPolicy = timeBasedRunPolicy;
         myOngoingJob = Preconditions.checkNotNull(ongoingJob,
                 "Ongoing job must be set");
         myJmxProxyFactory = Preconditions.checkNotNull(jmxProxyFactory,
@@ -131,6 +134,10 @@ public abstract class OnDemandRepairJob extends ScheduledJob
         else if (getOngoingJob().getStatus() == OngoingJob.Status.finished)
         {
             return OnDemandRepairJobView.Status.COMPLETED;
+        }
+        else if (myTimeBasedRunPolicy != null && !myTimeBasedRunPolicy.shouldRun(getTableReference(), getCurrentNode()))
+        {
+            return OnDemandRepairJobView.Status.BLOCKED;
         }
         return OnDemandRepairJobView.Status.IN_QUEUE;
     }
