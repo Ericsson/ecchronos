@@ -26,6 +26,8 @@
     </parent>
 
     <artifactId>utils-agent</artifactId>
+    <description>Utils implementation classes</description>
+    <name>EcChronos Utils</name>
     <dependencies>
         <dependency>
             <groupId>com.google.guava</groupId>

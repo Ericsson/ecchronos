@@ -26,6 +26,8 @@
     </parent>
 
     <artifactId>core-agent</artifactId>
+    <description>Core package for scheduling and repairs</description>
+    <name>EcChronos Core</name>
 
     <dependencies>
         <!-- Internal -->

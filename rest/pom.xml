@@ -26,6 +26,8 @@
     </parent>
 
     <artifactId>rest-agent</artifactId>
+    <description>REST interface base classes</description>
+    <name>EcChronos REST</name>
 
     <dependencies>
         <!-- Internal -->

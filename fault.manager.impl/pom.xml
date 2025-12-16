@@ -26,6 +26,8 @@
     </parent>
 
     <artifactId>fault.manager.impl-agent</artifactId>
+    <description>A reference implementation of the fault reporter using logging to report faults</description>
+    <name>EcChronos Fault Management Implementation</name>
 
     <dependencies>
         <!-- Internal -->
