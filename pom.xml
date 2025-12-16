@@ -27,6 +27,7 @@
 
     <name>Ericsson Cassandra Chronos Agent</name>
     <description>A distributed agent repair scheduler for Apache Cassandra.</description>
+    <url>https://github.com/ericsson/ecchronos</url>
 
     <licenses>
         <license>

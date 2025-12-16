@@ -26,6 +26,8 @@
     </parent>
 
     <artifactId>fault.manager-agent</artifactId>
+    <description>Interfaces that ecChronos rely on for fault reporting</description>
+    <name>EcChronos Fault Management</name>
     <build>
         <plugins>
             <plugin>

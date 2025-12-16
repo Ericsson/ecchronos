@@ -26,6 +26,8 @@
     </parent>
 
     <artifactId>connection.impl-agent</artifactId>
+    <description>A configurable reference implementation of connections</description>
+    <name>EcChronos Connection Implementation</name>
 
     <dependencies>
         <!-- Internal -->

@@ -26,6 +26,8 @@
     </parent>
 
     <artifactId>data-agent</artifactId>
+    <description>Data package for scheduling and repairs</description>
+    <name>EcChronos Data</name>
 
     <dependencies>
         <!-- Internal -->
