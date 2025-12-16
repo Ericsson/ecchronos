@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
  * A repair configuration provider that adds configuration to {@link NodeWorkerManager} based on whether the table
  * is replicated locally using the default repair configuration provided during construction of this object.
  */
+@SuppressWarnings("PMD.GodClass")
 public class DefaultRepairConfigurationProvider extends NodeStateListenerBase implements SchemaChangeListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultRepairConfigurationProvider.class);
@@ -74,6 +75,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         myEccNodesSync = builder.myEccNodesSync;
         myJmxConnectionProvider = builder.myJmxConnectionProvider;
         myAgentNativeConnectionProvider = builder.myAgentNativeConnectionProvider;
+        myWorkerManager = builder.myNodeWorkerManager;
         setupConfiguration();
         myService = Executors.newFixedThreadPool(NO_OF_THREADS);
         myScheduleManager = builder.myScheduleManager;
@@ -104,7 +106,10 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     @Override
     public void onKeyspaceCreated(final KeyspaceMetadata keyspace)
     {
-        myWorkerManager.broadcastEvent(new KeyspaceCreatedEvent(keyspace));
+        if (myWorkerManager != null)
+        {
+            myWorkerManager.broadcastEvent(new KeyspaceCreatedEvent(keyspace));
+        }
     }
 
     /**
@@ -139,7 +144,10 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     @Override
     public void onTableCreated(final TableMetadata table)
     {
-        myWorkerManager.broadcastEvent(new TableCreatedEvent(table));
+        if (myWorkerManager != null)
+        {
+            myWorkerManager.broadcastEvent(new TableCreatedEvent(table));
+        }
     }
 
     /**
@@ -150,7 +158,10 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     @Override
     public void onTableDropped(final TableMetadata table)
     {
-        myWorkerManager.broadcastEvent(new TableDroppedEvent(table));
+        if (myWorkerManager != null)
+        {
+            myWorkerManager.broadcastEvent(new TableDroppedEvent(table));
+        }
     }
 
     /**
@@ -171,7 +182,7 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     @Override
     public void close()
     {
-        if (mySession != null)
+        if (mySession != null && myWorkerManager != null)
         {
             for (KeyspaceMetadata keyspaceMetadata : mySession.getMetadata().getKeyspaces().values())
             {
@@ -431,6 +442,12 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         if (mySession == null)
         {
             LOG.debug("Session during setupConfiguration call was null.");
+            return;
+        }
+
+        if (myWorkerManager == null)
+        {
+            LOG.debug("WorkerManager during setupConfiguration call was null.");
             return;
         }
 
