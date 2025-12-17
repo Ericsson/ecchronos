@@ -88,9 +88,13 @@ public class NodeWorker implements Runnable
                 handleEvent(event);
             }
             catch (InterruptedException e)
-
             {
+                LOG.debug("Nodeworker Thread interrupted ");
                 Thread.currentThread().interrupt();
+            }
+            catch ( Exception e)
+            {
+                LOG.error("Exception caught {}", e.getMessage());
             }
         }
     }

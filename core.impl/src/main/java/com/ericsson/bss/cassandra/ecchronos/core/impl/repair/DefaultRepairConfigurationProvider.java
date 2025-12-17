@@ -108,7 +108,12 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     {
         if (myWorkerManager != null)
         {
+            LOG.debug("Keyspace creation being processed {}", keyspace.describe(true));
             myWorkerManager.broadcastEvent(new KeyspaceCreatedEvent(keyspace));
+        }
+        else
+        {
+            LOG.debug("Keyspace creation could not be processed {}", keyspace.describe(false));
         }
     }
 
@@ -146,7 +151,12 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
     {
         if (myWorkerManager != null)
         {
+            LOG.debug("Table creation being processed {}", table.describe(false));
             myWorkerManager.broadcastEvent(new TableCreatedEvent(table));
+        }
+        else
+        {
+            LOG.debug("Table could not be processed {}", table.describe(false));
         }
     }
 
