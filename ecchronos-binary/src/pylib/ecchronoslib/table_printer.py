@@ -52,14 +52,34 @@ def _print_rejections_table(rejections_table, rejections, columns):
     table_formatter.format_table(rejections_table, columns)
 
 
-def print_schedule(schedule, max_lines, full=False):
+def print_schedule(schedule, max_lines, full=False, columns=None, output="table"):
     if not schedule.is_valid():
-        print("Schedule not found")
+        print("Schedule not found.")
         return
 
+    if output == "json":
+        _print_schedule_json_format(schedule=schedule, max_lines=max_lines, full=full)
+    else:
+        _print_schedule_table_format(schedule=schedule, max_lines=max_lines, full=full, columns=columns)
+
+
+def _print_schedule_json_format(schedule, max_lines=-1, full=False):
+    if full:
+        sorted_vnode_states = sorted(
+            schedule.vnode_states,
+            key=lambda vnode: vnode.last_repaired_at_in_ms,
+            reverse=True,
+        )
+        if max_lines > -1:
+            sorted_vnode_states = sorted_vnode_states[:max_lines]
+            schedule.vnode_states = sorted_vnode_states
+    output_json(schedule.to_dict())
+
+
+def _print_schedule_table_format(schedule, max_lines, full=False, columns=None):
     verbose_print_format = "{0:15s}: {1}"
 
-    print(verbose_print_format.format("Id", schedule.job_id))
+    print(verbose_print_format.format("JobID", schedule.job_id))
     print(verbose_print_format.format("Keyspace", schedule.keyspace))
     print(verbose_print_format.format("Table", schedule.table))
     print(verbose_print_format.format("Status", schedule.status))
@@ -82,36 +102,10 @@ def print_schedule(schedule, max_lines, full=False):
         for vnode_state in sorted_vnode_states:
             _add_vnode_state_to_table(vnode_state, vnode_state_table)
 
-        table_formatter.format_table(vnode_state_table, None)
+        table_formatter.format_table(vnode_state_table, columns)
 
 
-def _add_vnode_state_to_table(vnode_state, table):
-    entry = [
-        vnode_state.start_token,
-        vnode_state.end_token,
-        ", ".join(vnode_state.replicas),
-        vnode_state.get_last_repaired_at(),
-        vnode_state.repaired,
-    ]
-
-    table.append(entry)
-
-
-def print_summary(schedules):
-    status_list = [schedule.status for schedule in schedules]
-    summary_format = "Summary: {0} completed, {1} on time, {2} blocked, {3} late, {4} overdue"
-    print(
-        summary_format.format(
-            status_list.count("COMPLETED"),
-            status_list.count("ON_TIME"),
-            status_list.count("BLOCKED"),
-            status_list.count("LATE"),
-            status_list.count("OVERDUE"),
-        )
-    )
-
-
-def print_repair_summary(repairs):
+def _print_repairs_summary(repairs):
     status_list = [repair.status for repair in repairs]
     summary_format = "Summary: {0} completed, {1} in queue, {2} blocked, {3} warning, {4} error"
     print(
@@ -125,39 +119,117 @@ def print_repair_summary(repairs):
     )
 
 
-def print_schedules(schedules, max_lines):
+def print_schedules(schedules, max_lines, columns=None, output="table"):
+    if output == "json":
+        _print_schedules_json_format(schedules, max_lines)
+    else:
+        print("Snapshot as of " + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ".")
+        _print_schedules_table_format(schedules, max_lines, columns)
+        _print_schedules_summary(schedules)
+
+
+def _print_schedules_json_format(schedules, max_lines):
+    sorted_schedules = sorted(
+        schedules,
+        key=lambda x: (x.last_repaired_at_in_ms, x.repaired_ratio),
+        reverse=False,
+    )
+    if max_lines > -1:
+        sorted_schedules = sorted_schedules[:max_lines]
+    schedules_dict = [s.to_dict() for s in sorted_schedules]
+    data = {"schedules": schedules_dict}
+    output_json(data)
+
+
+def _print_schedules_table_format(schedules, max_lines, columns=None):
     schedule_table = [
-        ["NodeID", "JobID", "Keyspace", "Table", "Status", "Repaired(%)", "Completed at", "Next repair", "Repair type"]
+        [
+            "NodeID",
+            "JobID",
+            "Keyspace",
+            "Table",
+            "Status",
+            "Repaired(%)",
+            "Completed at",
+            "Next repair",
+            "Repair type",
+        ]
     ]
-    print("Snapshot as of", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    print_schedule_table(schedule_table, schedules, max_lines)
-    print_summary(schedules)
+    _print_schedules_table(schedule_table, schedules, max_lines, columns)
 
 
-def print_repairs(repairs, max_lines=-1):
-    repair_table = [["NodeID", "JobID", "Keyspace", "Table", "Status", "Repaired(%)", "Completed at", "Repair type"]]
-    print_repair_table(repair_table, repairs, max_lines)
-    print_repair_summary(repairs)
+def _print_schedules_summary(schedules):
+    status_list = [schedule.status for schedule in schedules]
+    summary_format = "Summary: {0} completed, {1} on time, {2} blocked, {3} late, {4} overdue"
+    print(
+        summary_format.format(
+            status_list.count("COMPLETED"),
+            status_list.count("ON_TIME"),
+            status_list.count("BLOCKED"),
+            status_list.count("LATE"),
+            status_list.count("OVERDUE"),
+        )
+    )
 
 
-def print_schedule_table(schedule_table, schedules, max_lines):
+def _print_schedules_table(schedule_table, schedules, max_lines, columns=None):
     sorted_schedules = sorted(schedules, key=lambda x: (x.last_repaired_at_in_ms, x.repaired_ratio), reverse=False)
     if max_lines > -1:
         sorted_schedules = sorted_schedules[:max_lines]
 
     for schedule in sorted_schedules:
         schedule_table.append(_convert_schedule(schedule))
-    table_formatter.format_table(schedule_table, None)
+    table_formatter.format_table(schedule_table, columns)
 
 
-def print_repair_table(repair_table, repairs, max_lines):
+def print_repairs(repairs, max_lines=-1, columns=None, output="table"):
+    if output == "json":
+        _print_repairs_json_format(repairs, max_lines)
+    else:
+        _print_repairs_table_format(repairs, max_lines, columns)
+        _print_repairs_summary(repairs)
+
+
+def _print_repairs_json_format(repairs, max_lines=-1):
+    sorted_repairs = sorted(repairs, key=lambda x: (x.completed_at, x.repaired_ratio), reverse=False)
+    if max_lines > -1:
+        sorted_repairs = sorted_repairs[:max_lines]
+
+    repairs_dict = [r.to_dict() for r in sorted_repairs]
+    output_json({"repairs": repairs_dict})
+
+
+def _print_repairs_table_format(repairs, max_lines, columns):
+    repair_table = [
+        [
+            "NodeID",
+            "JobID",
+            "Keyspace",
+            "Table",
+            "Status",
+            "Repaired(%)",
+            "Completed at",
+            "Repair type",
+        ]
+    ]
     sorted_repairs = sorted(repairs, key=lambda x: (x.completed_at, x.repaired_ratio), reverse=False)
     if max_lines > -1:
         sorted_repairs = sorted_repairs[:max_lines]
 
     for repair in sorted_repairs:
         repair_table.append(_convert_repair(repair))
-    table_formatter.format_table(repair_table, None)
+    table_formatter.format_table(repair_table, columns)
+
+
+def _add_vnode_state_to_table(vnode_state, table):
+    entry = [
+        vnode_state.start_token,
+        vnode_state.end_token,
+        ", ".join(vnode_state.replicas),
+        vnode_state.get_last_repaired_at(),
+        vnode_state.repaired,
+    ]
+    table.append(entry)
 
 
 def _convert_rejection(rejection):
@@ -195,6 +267,16 @@ def _convert_repair(repair):
     return entry
 
 
+def _convert_repair_stat(repair_stat):
+    entry = [
+        repair_stat.keyspace,
+        repair_stat.table,
+        repair_stat.get_repaired_percentage(),
+        repair_stat.get_repair_time_taken(),
+    ]
+    return entry
+
+
 def _convert_schedule(schedule):
     entry = [
         schedule.node_id,
@@ -210,12 +292,30 @@ def _convert_schedule(schedule):
     return entry
 
 
-def print_repair_info(repair_info, max_lines=-1):
-    print("Time window between '{0}' and '{1}'".format(repair_info.get_since(), repair_info.get_to()))
-    print_repair_stats(repair_info.repair_stats, max_lines)
+def print_repair_info(repair_info, max_lines=-1, columns=None, output="table"):
+    info_from = repair_info.get_since()
+    info_to = repair_info.get_to()
+    if output == "json":
+        _print_repair_info_json_format(info_from, info_to, repair_info.repair_stats, max_lines)
+    else:
+        print("Time window between '{0}' and '{1}'.".format(info_from, info_to))
+        print_repair_stats(repair_info.repair_stats, max_lines, columns)
 
 
-def print_repair_stats(repair_stats, max_lines=-1):
+def _print_repair_info_json_format(info_from, info_to, repair_stats, max_lines=-1):
+    sorted_repair_stats = sorted(
+        repair_stats,
+        key=lambda x: (x.repaired_ratio, x.keyspace, x.table),
+        reverse=False,
+    )
+    if max_lines > -1:
+        sorted_repair_stats = sorted_repair_stats[:max_lines]
+    repair_stats_dict = [rs.to_dict() for rs in sorted_repair_stats]
+    data = {"time_window_from": info_from, "time_window_to": info_to, "repair_info": repair_stats_dict}
+    output_json(data)
+
+
+def print_repair_stats(repair_stats, max_lines=-1, columns=None):
     repair_stats_table = [["Keyspace", "Table", "Repaired (%)", "Repair time taken"]]
     sorted_repair_stats = sorted(repair_stats, key=lambda x: (x.repaired_ratio, x.keyspace, x.table), reverse=False)
     if max_lines > -1:
@@ -223,26 +323,16 @@ def print_repair_stats(repair_stats, max_lines=-1):
 
     for repair_stat in sorted_repair_stats:
         repair_stats_table.append(_convert_repair_stat(repair_stat))
-    table_formatter.format_table(repair_stats_table, None)
+    table_formatter.format_table(repair_stats_table, columns)
 
 
-def _convert_repair_stat(repair_stat):
-    entry = [
-        repair_stat.keyspace,
-        repair_stat.table,
-        repair_stat.get_repaired_percentage(),
-        repair_stat.get_repair_time_taken(),
-    ]
-    return entry
-
-
-def print_nodes(nodes):
+def print_nodes(nodes, columns=None):
     node_table = [
         ["EcchronosID", "Datacenter", "NodeID", "Last Connection", "Next Connection", "Endpoint", "Node Status"]
     ]
     for node in nodes:
         node_table.append(_convert_node(node))
-    table_formatter.format_table(node_table, None)
+    table_formatter.format_table(node_table, columns)
 
 
 def _convert_node(node):

@@ -48,7 +48,6 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     private static final Logger LOG = LoggerFactory.getLogger(ScheduleManagerImpl.class);
 
     static final long DEFAULT_RUN_DELAY_IN_MS = TimeUnit.SECONDS.toMillis(30);
-    private static final String NO_RUNNING_JOB = "No job is currently running";
 
     private final Map<UUID, ScheduledJobQueue> myQueue = new ConcurrentHashMap<>();
     private final Collection<UUID> myNodeIDList;
@@ -129,12 +128,11 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         ScheduledJob job = currentExecutingJob.get();
         if (job != null)
         {
-            String jobId = job.getJobId().toString();
-            return "Job ID: " + jobId + ", Status: Running";
+            return job.getJobId().toString();
         }
         else
         {
-            return ScheduleManagerImpl.NO_RUNNING_JOB;
+            return "";
         }
     }
 
