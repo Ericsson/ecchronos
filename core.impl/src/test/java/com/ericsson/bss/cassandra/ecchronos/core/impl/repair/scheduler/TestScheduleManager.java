@@ -217,7 +217,7 @@ public class TestScheduleManager
         myScheduler.schedule(nodeID1, job1);
         new Thread(() -> myScheduler.run(nodeID1)).start();
         Thread.sleep(50);
-        assertThat(myScheduler.getCurrentJobStatus()).isEqualTo("Job ID: " + jobId.toString() + ", Status: Running");
+        assertThat(myScheduler.getCurrentJobStatus()).isEqualTo(jobId.toString());
         latch.countDown();
     }
 
@@ -236,7 +236,7 @@ public class TestScheduleManager
                 latch);
         myScheduler.schedule(nodeID1, job1);
         new Thread(() -> myScheduler.run(nodeID1)).start();
-        assertThat(myScheduler.getCurrentJobStatus()).isNotEqualTo("Job ID: " + jobId.toString() + ", Status: Running");
+        assertThat(myScheduler.getCurrentJobStatus()).isEqualTo("");
         latch.countDown();
     }
 

@@ -287,11 +287,8 @@ class RepairSchedulerRequest(RestRequest):
         return result
 
     def running_job(self):
-        request_url = "{0}/{1}".format(self.base_url, RepairSchedulerRequest.running_job_url)
         request_url = RepairSchedulerRequest.running_job_url
-
         result = self.basic_request(request_url)
-
         return result
 
 
@@ -304,8 +301,6 @@ class StateManagementRequest(RestRequest):
 
     def get_nodes(self):
         result = self.request(StateManagementRequest.NODES)
-        if result.is_successful():
-            result = result.transform_with_data(new_data=[NodeSyncState(x) for x in result.data])
         return result
 
 

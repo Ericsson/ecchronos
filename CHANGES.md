@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Add JSON output and columns filtering - Issues #819, #1225
 * ecChronos remains in not running status - Issue #1301
 * On-demand repair fails with ERROR status instead of being blocked when repairs are disabled - Issue #1289
 

@@ -14,6 +14,7 @@
 #
 
 import re
+import json
 from behave import when, then  # pylint: disable=no-name-in-module
 from ecc_step_library.common import (
     get_job_id,
@@ -39,17 +40,33 @@ def run_ecc_schedule_status(context, params):
 
 
 def handle_schedule_output(context):
-    output_data = context.out.decode("ascii").lstrip().rstrip().split("\n")
+    output = context.out.decode("ascii")
+    output_data = output.lstrip().rstrip().split("\n")
     context.snapshot = output_data[0:1]
     context.header = output_data[1:4]
     context.rows = output_data[4:-1]
     context.summary = output_data[-1:]
+    context.all = output
 
 
 @when("we list all schedules")
 def step_list_schedules(context):
     run_ecc_schedule_status(context, [])
     handle_schedule_output(context)
+
+
+
+@when("we list all schedules with columns {columns}")  # pylint: disable=not-callable
+def step_list_schedules_with_columns(context, columns):
+    run_ecc_schedule_status(context, ["--columns", columns])
+    handle_schedule_output(context)
+
+
+@when("we list all schedules with json output option")  # pylint: disable=not-callable
+def step_list_schedules_with_json(context):
+    run_ecc_schedule_status(context, ["--output", "json"])
+    handle_schedule_output(context)
+
 
 
 @when("we list all schedules with a limit of {limit}")
@@ -125,6 +142,26 @@ def step_validate_list_snapshot_header(context):
 @then("the output should contain a valid schedule header")
 def step_validate_list_schedule_header(context):
     validate_header(context.header, SCHEDULE_HEADER)
+
+
+@then("the output should only contain column headers {columns}")  # pylint: disable=not-callable
+def step_validate_list_schedule_columns_header(context, columns):
+    indices = [int(x.strip()) + 1 for x in columns.split(",")]
+    header_parts = SCHEDULE_HEADER.split("|")
+    filtered_parts = [header_parts[i] for i in indices if i < len(header_parts)]
+    filtered_header = "|" + "|".join(filtered_parts) + "|"
+    assert len(filtered_parts) == len(indices), "Expecting {0} columns".format(len(indices))
+    validate_header(context.header, filtered_header)
+
+
+@then("the output should contain all default column headers")  # pylint: disable=not-callable
+def step_validate_list_schedule_all_default_column_headers(context):
+    validate_header(context.header, SCHEDULE_HEADER)
+
+
+@then("the output should contain valid json data")  # pylint: disable=not-callable
+def step_validate_list_schedule_valid_json(context):
+    json.loads(context.all)
 
 
 @then("the output should contain {limit:d} row")
