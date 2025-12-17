@@ -43,7 +43,7 @@ connection:
     ## - datacenterAware;
     ## - rackAware; and
     ## - hostAware.
-    type: hostAware
+    type: datacenterAware
     ## Specifies the datacenter that is considered "local" by the load balancing policy,
     ## The specified datacenter should match with the contact point datacenter
     localDatacenter: datacenter1
@@ -51,6 +51,8 @@ connection:
     ## to establish first connection with Cassandra.
     contactPoints:
       - host: 127.0.0.1
+        port: 9042
+      - host: 127.0.0.2
         port: 9042
 
     ## Configuration to define datacenters for ecChronos
@@ -60,6 +62,7 @@ connection:
     datacenterAware:
       datacenters:
         - name: datacenter1
+        - name: datacenter2
     ## Configuration to define racks for ecChronos
     ## to connect to, rackAware enable means that
     ## ecChronos will be responsible for all nodes in the
@@ -69,6 +72,8 @@ connection:
       racks:
         - datacenterName: datacenter1
           rackName: rack1
+        - datacenterName: datacenter1
+          rackName: rack2
     ## Configuration to define hosts for ecChronos
     ## to connect to, hostAware enable means that
     ## ecChronos will be responsible just for the
@@ -76,6 +81,12 @@ connection:
     hostAware:
       hosts:
         - host: 127.0.0.1
+          port: 9042
+        - host: 127.0.0.2
+          port: 9042
+        - host: 127.0.0.3
+          port: 9042
+        - host: 127.0.0.4
           port: 9042
     # Schedule configuration for the ReloadSchedulerService, responsible for monitoring
     # Cassandra topology changes during execution. If a topology change is detected,
@@ -215,14 +226,14 @@ repair:
   ##
   interval:
     time: 7
-    unit: minutes
+    unit: days
   ##
   ## Initial delay for new tables. New tables are always assumed to have been repaired in the past by the interval.
   ## However, a delay can be set for the first repair. This will not affect subsequent repairs and defaults to one day.
   ##
   initial_delay:
     time: 1
-    unit: minutes
+    unit: days
   ##
   ## The unit of time granularity for priority calculation, can be HOURS, MINUTES, or SECONDS.
   ## This unit is used in the calculation of priority.
@@ -263,14 +274,14 @@ repair:
     ##
     warn:
       time: 8
-      unit: minutes
+      unit: days
     ##
     ## If a table has not been repaired for the following duration an error alarm will be raised.
     ## The schedule will be marked as overdue if the table has not been repaired within this interval.
     ##
     error:
       time: 10
-      unit: minutes
+      unit: days
   ##
   ## Specifies the unwind ratio to smooth out the load that repairs generate.
   ## This value is a ratio between 0 -> 100% of the execution time of a repair session.
