@@ -138,7 +138,7 @@ ARG_SINCE = {
     "flags": ["-s", "--since"],
     "type": str,
     "help": "repair information from specified date (ISO8601 format) to now (required unless "
-            "using --duration or --keyspace/--table)",
+    "using --duration or --keyspace/--table)",
     "default": None,
 }
 ARG_START_HOUR = {"flags": ["-sh", "--start-hour"], "type": int, "help": "start hour"}
@@ -155,9 +155,9 @@ ARG_URL = {
 def get_parser():
     parser = ArgumentParser(
         description="ecctool is a command line utility used to perform operations toward an ecChronos instance. "
-                    "Run 'ecctool <subcommand> --help' to get more information about each subcommand."
+        "Run 'ecctool <subcommand> --help' to get more information about each subcommand."
     )
-    sub_parsers = parser.add_subparsers(dest="subcommand" , help="")
+    sub_parsers = parser.add_subparsers(dest="subcommand", help="")
 
     add_rejections_subcommand(sub_parsers)
     add_repair_info_subcommand(sub_parsers)
@@ -236,9 +236,9 @@ def add_run_repair_subcommand(sub_parsers):
     add_common_arg(parser_run_repair, ARG_RUN_ALL)
 
     keyspace_arg = ARG_KEYSPACE.copy()
-    keyspace_arg["help"] = (
-        "keyspace (applies to all tables within the keyspace with a replication factor greater than 1)"
-    )
+    keyspace_arg[
+        "help"
+    ] = "keyspace (applies to all tables within the keyspace with a replication factor greater than 1)"
     keyspace_arg["required"] = False
     add_common_arg(parser_run_repair, keyspace_arg)
 
@@ -252,10 +252,10 @@ def add_repair_info_subcommand(sub_parsers):
     parser_repair_info = sub_parsers.add_parser(
         "repair-info",
         description="Get information about repairs for tables. The repair information is based on repair history, "
-                    "meaning both manual and scheduled repairs will be a part of the repair information. This "
-                    "subcommand requires the user to provide either --since or --duration if --keyspace and --table "
-                    "is not provided. If repair info is fetched for a specific table using --keyspace and --table, "
-                    "the duration will default to the table's GC_GRACE_SECONDS.",
+        "meaning both manual and scheduled repairs will be a part of the repair information. This "
+        "subcommand requires the user to provide either --since or --duration if --keyspace and --table "
+        "is not provided. If repair info is fetched for a specific table using --keyspace and --table, "
+        "the duration will default to the table's GC_GRACE_SECONDS.",
     )
     add_common_arg(parser_repair_info, ARG_COLUMNS)
     add_common_arg(parser_repair_info, ARG_NODE_ID)
@@ -539,9 +539,13 @@ def schedules(arguments):
 
     if result.is_successful():
         if isinstance(result.data, list):
-            table_printer.print_schedules(result.data, arguments.limit, columns=arguments.columns, output=arguments.output)
+            table_printer.print_schedules(
+                result.data, arguments.limit, columns=arguments.columns, output=arguments.output
+            )
         else:
-            table_printer.print_schedule(result.data, arguments.limit, full, columns=arguments.columns, output=arguments.output)
+            table_printer.print_schedule(
+                result.data, arguments.limit, full, columns=arguments.columns, output=arguments.output
+            )
     else:
         print(result.format_exception())
 

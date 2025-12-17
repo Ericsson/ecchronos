@@ -55,7 +55,6 @@ def step_list_schedules(context):
     handle_schedule_output(context)
 
 
-
 @when("we list all schedules with columns {columns}")  # pylint: disable=not-callable
 def step_list_schedules_with_columns(context, columns):
     run_ecc_schedule_status(context, ["--columns", columns])
@@ -66,7 +65,6 @@ def step_list_schedules_with_columns(context, columns):
 def step_list_schedules_with_json(context):
     run_ecc_schedule_status(context, ["--output", "json"])
     handle_schedule_output(context)
-
 
 
 @when("we list all schedules with a limit of {limit}")
