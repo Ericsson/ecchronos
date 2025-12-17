@@ -4,6 +4,9 @@
 
 * ecChronos remains in not running status - Issue #1301
 * On-demand repair fails with ERROR status instead of being blocked when repairs are disabled - Issue #1289
+
+## Version 1.0.0-beta1
+
 * Add runDelay and healthCheckInterval parameters to tune the repair connection durinbg repairs - Issue #1281
 * Fix MalformedURLException for IPv6 addresses - Issue #1264
 * Add timeout config option - Issue #1279
