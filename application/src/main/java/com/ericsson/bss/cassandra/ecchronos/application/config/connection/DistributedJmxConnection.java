@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -34,6 +35,7 @@ public class DistributedJmxConnection extends Connection<DistributedJmxConnectio
     private boolean myReverseDNSResolution = false;
     private Integer myRunDelay = DEFAULT_RUN_DELAY;
     private Integer myHeathCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
+    private boolean myUseBroadcastRPCAddress = true;
 
     public DistributedJmxConnection()
     {
@@ -70,10 +72,10 @@ public class DistributedJmxConnection extends Connection<DistributedJmxConnectio
         myHeathCheckInterval = heathCheckInterval;
     }
     @JsonProperty("retryPolicy")
-public final RetryPolicyConfig getRetryPolicyConfig()
-{
-    return myRetryPolicyConfig;
-}
+    public final RetryPolicyConfig getRetryPolicyConfig()
+    {
+        return myRetryPolicyConfig;
+    }
 
     @JsonProperty("retryPolicy")
     public final void setRetryPolicyConfig(final RetryPolicyConfig retryPolicyConfig)
@@ -91,6 +93,18 @@ public final RetryPolicyConfig getRetryPolicyConfig()
     public final void setJolokiaConfig(final JolokiaConfig jolokiaConfig)
     {
         myJolokiaConfig = jolokiaConfig;
+    }
+
+    @JsonProperty("useBroadcastRPCAddress")
+    public final void setUseBroadcastRPCAddress(final boolean useBroadcastRPCAddress)
+    {
+        myUseBroadcastRPCAddress = useBroadcastRPCAddress;
+    }
+
+    @JsonProperty("useBroadcastRPCAddress")
+    public final boolean getUseBroadcastRPCAddress()
+    {
+        return myUseBroadcastRPCAddress;
     }
 
     @JsonProperty("reverseDNSResolution")
@@ -116,7 +130,8 @@ public final RetryPolicyConfig getRetryPolicyConfig()
                                 Supplier.class,
                                 DistributedNativeConnectionProvider.class,
                                 EccNodesSync.class,
-                                CertificateHandler.class
+                                CertificateHandler.class,
+                                IpTranslator.class
         };
     }
 }

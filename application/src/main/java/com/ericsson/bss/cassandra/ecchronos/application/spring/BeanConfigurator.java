@@ -24,6 +24,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.impl.metadata.NodeResolverImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.NodeResolver;
 import com.ericsson.bss.cassandra.ecchronos.core.state.ReplicationState;
+import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.data.repairhistory.RepairHistoryService;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 
@@ -159,6 +160,17 @@ public class BeanConfigurator
     }
 
     /**
+     * Provides a {@link IpTranslator} bean.
+     *
+     * @return a {@link IpTranslator} object.
+     */
+    @Bean
+    public IpTranslator ipTranslator()
+    {
+        return new IpTranslator();
+    }
+
+    /**
      * Configures the embedded web server factory with the host and port specified in the application configuration.
      *
      * @param config
@@ -192,10 +204,11 @@ public class BeanConfigurator
     @Bean
     public DistributedNativeConnectionProvider distributedNativeConnectionProvider(
             final Config config,
-            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider
+            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
+            final IpTranslator ipTranslator
     )
     {
-        return getDistributedNativeConnection(config, cqlSecurity::get, defaultRepairConfigurationProvider);
+        return getDistributedNativeConnection(config, cqlSecurity::get, defaultRepairConfigurationProvider, ipTranslator);
     }
 
     /**
@@ -234,11 +247,12 @@ public class BeanConfigurator
     public DistributedJmxConnectionProvider distributedJmxConnectionProvider(
             final Config config,
             final DistributedNativeConnectionProvider distributedNativeConnectionProvider,
-            final EccNodesSync eccNodesSync
+            final EccNodesSync eccNodesSync,
+            final IpTranslator ipTranslator
     ) throws IOException
     {
         return getDistributedJmxConnection(
-                config, jmxSecurity::get, distributedNativeConnectionProvider, eccNodesSync);
+                config, jmxSecurity::get, distributedNativeConnectionProvider, eccNodesSync, ipTranslator);
     }
 
     @Bean
@@ -299,8 +313,8 @@ public class BeanConfigurator
     private DistributedNativeConnectionProvider getDistributedNativeConnection(
             final Config config,
             final Supplier<Security.CqlSecurity> securitySupplier,
-            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider
-    )
+            final DefaultRepairConfigurationProvider defaultRepairConfigurationProvider,
+            final IpTranslator ipTranslator)
     {
         Supplier<TLSConfig> tlsSupplier = () -> securitySupplier.get().getCqlTlsConfig();
         CertificateHandler certificateHandler = createCertificateHandler(tlsSupplier);
@@ -308,15 +322,16 @@ public class BeanConfigurator
                 config,
                 securitySupplier,
                 certificateHandler,
-                defaultRepairConfigurationProvider);
+                defaultRepairConfigurationProvider,
+                ipTranslator);
     }
 
     private DistributedJmxConnectionProvider getDistributedJmxConnection(
             final Config config,
             final Supplier<Security.JmxSecurity> securitySupplier,
             final DistributedNativeConnectionProvider distributedNativeConnectionProvider,
-            final EccNodesSync eccNodesSync
-    ) throws IOException
+            final EccNodesSync eccNodesSync,
+            final IpTranslator ipTranslator) throws IOException
     {
         Supplier<TLSConfig> jmxTlsSupplier = () -> securitySupplier.get().getJmxTlsConfig();
         CertificateHandler certificateHandler = null;
@@ -326,7 +341,7 @@ public class BeanConfigurator
             certificateHandler = createCertificateHandler(jmxTlsSupplier);
         }
         return new AgentJmxConnectionProvider(
-                config, securitySupplier, distributedNativeConnectionProvider, eccNodesSync, certificateHandler);
+                config, securitySupplier, distributedNativeConnectionProvider, eccNodesSync, certificateHandler, ipTranslator);
     }
 
     private void refreshSecurityConfig(

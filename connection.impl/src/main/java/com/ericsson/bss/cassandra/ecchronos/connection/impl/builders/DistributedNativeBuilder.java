@@ -72,7 +72,7 @@ public class DistributedNativeBuilder// NOPMD Possible God Class
     private AuthProvider myAuthProvider = null;
     private SslEngineFactory mySslEngineFactory = null;
     private SchemaChangeListener mySchemaChangeListener = null;
-    private NodeStateListener myNodeStateListener = null;
+    private final Set<NodeStateListener> myNodeStateListeners = new HashSet<>();
 
     /**
      * Sets the initial contact points for the distributed native connection.
@@ -205,7 +205,7 @@ public class DistributedNativeBuilder// NOPMD Possible God Class
      */
     public final DistributedNativeBuilder withNodeStateListener(final NodeStateListener nodeStateListener)
     {
-        myNodeStateListener = nodeStateListener;
+        myNodeStateListeners.add(nodeStateListener);
         return this;
     }
 
@@ -418,13 +418,17 @@ public class DistributedNativeBuilder// NOPMD Possible God Class
 
     private static CqlSessionBuilder fromBuilder(final DistributedNativeBuilder builder)
     {
-        return CqlSession.builder()
+        CqlSessionBuilder sessionBuilder = CqlSession.builder()
                 .addContactPoints(resolveIfNeeded(builder.myInitialContactPoints))
                 .withLocalDatacenter(builder.myLocalDatacenter)
                 .withAuthProvider(builder.myAuthProvider)
                 .withSslEngineFactory(builder.mySslEngineFactory)
-                .withSchemaChangeListener(builder.mySchemaChangeListener)
-                .withNodeStateListener(builder.myNodeStateListener);
+                .withSchemaChangeListener(builder.mySchemaChangeListener);
+        for (NodeStateListener listener: builder.myNodeStateListeners)
+        {
+            sessionBuilder = sessionBuilder.addNodeStateListener(listener);
+        }
+        return sessionBuilder;
     }
 
     private static Collection<InetSocketAddress> resolveIfNeeded(final List<InetSocketAddress> initialContactPoints)

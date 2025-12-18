@@ -62,6 +62,8 @@ connection:
       enabled: true
       port: 7887
     provider: com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider
+    reverseDNSResolution: true
+    useBroadcastRPCAddress: false
     retryPolicy:
       maxAttempts: 5
       delay:

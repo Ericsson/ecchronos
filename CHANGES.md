@@ -3,6 +3,7 @@
 ## Version 1.0.0 (Not yet Released)
 
 * Make sure to close CqlSessions if can't get a fully working connection to the cluster
+* Add option to translate broadcastRPCAddress to RPCAddress for jmx connections - Issue #1283
 * ecChronos remains in not running status - Issue #1301
 * On-demand repair fails with ERROR status instead of being blocked when repairs are disabled - Issue #1289
 

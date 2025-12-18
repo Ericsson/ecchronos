@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentNativeCon
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
+import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.ConfigurationException;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -694,6 +695,7 @@ public class DistributedNativeConnection extends Connection<DistributedNativeCon
                         Supplier.class,
                         CertificateHandler.class,
                         DefaultRepairConfigurationProvider.class,
+                        IpTranslator.class,
                 };
     }
 }
