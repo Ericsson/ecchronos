@@ -215,4 +215,10 @@ public class TestDefaultConfig
     {
         assertThat(config.getConnectionConfig().getJmxConnection().getReseverseDNSResolution()).isFalse();
     }
+
+    @Test
+    public void testUseBroadcastRPCAddress()
+    {
+        assertThat(config.getConnectionConfig().getJmxConnection().getUseBroadcastRPCAddress()).isTrue();
+    }
 }

@@ -172,6 +172,14 @@ connection:
     # See docs/ARCHITECTURE.md for detailed behavior and configuration guidance.
     #
     reverseDNSResolution: false
+    #
+    # Use broadcast RPC address for jmx.
+    # Default: true
+    # When true the java-drivers broadcast RPC address will be used for jmx access, if set to false
+    # an attempt to translate this to the Cassandra clusters listen address will be made, depending
+    # on the Cassandra clusters configuration the translation can fail and the broadcast RPC address
+    # will be used.
+    useBroadcastRPCAddress: true
     ##
     ## The class used to provide JMX connections to Apache Cassandra.
     ## The default provider will be used unless another is specified.
