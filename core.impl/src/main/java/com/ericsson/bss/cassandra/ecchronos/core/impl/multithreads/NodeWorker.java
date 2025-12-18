@@ -94,7 +94,7 @@ public class NodeWorker implements Runnable
             }
             catch ( Exception e)
             {
-                LOG.error("Exception caught {}", e.getMessage());
+                LOG.error("Exception caught in main run look of NodeWorker {}", e);
             }
         }
     }
