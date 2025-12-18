@@ -71,11 +71,6 @@ public final class IpTranslator extends NodeStateListenerBase
 
     public String getInternalIp(final String externalIp)
     {
-        if (myIpMap.isEmpty())
-        {
-            return externalIp;
-        }
-
         String internalIp = myIpMap.get(externalIp);
         if (internalIp  == null)
         {
