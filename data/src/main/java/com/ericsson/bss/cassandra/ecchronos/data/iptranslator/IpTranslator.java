@@ -82,7 +82,7 @@ public final class IpTranslator extends NodeStateListenerBase
 
     private void refreshIpMap()
     {
-        if (mySession != null || mySelectStatement != null)
+        if (mySession == null || mySelectStatement == null)
         {
             return;
         }
