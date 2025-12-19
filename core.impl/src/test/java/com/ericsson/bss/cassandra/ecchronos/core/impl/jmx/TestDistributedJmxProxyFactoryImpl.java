@@ -24,6 +24,7 @@ import javax.management.*;
 import javax.management.openmbean.CompositeData;
 import javax.management.remote.JMXConnector;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import org.junit.Before;
@@ -64,6 +65,7 @@ public class TestDistributedJmxProxyFactoryImpl
         distributedJmxProxy = DistributedJmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(mockConnectionProvider)
                 .withNodesMap(mockNodesMap)
+                .withIpTranslator(new IpTranslator())
                 .withEccNodesSync(mockEccNodesSync).build().connect();
 
         when(distributedJmxProxy.validateJmxConnection(mockConnector)).thenReturn(true);

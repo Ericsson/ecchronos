@@ -86,6 +86,7 @@ public class ECChronosInternals implements Closeable
                     .getConnectionConfig().getJmxConnection().getReseverseDNSResolution())
                 .withRunDelay(configuration.getConnectionConfig().getJmxConnection().getRunDelay())
                 .withHeathCheckInterval(configuration.getConnectionConfig().getJmxConnection().getHeathCheckInterval())
+                .withIpTranslator(ipTranslator)
                 .build();
 
         CqlSession session = nativeConnectionProvider.getCqlSession();

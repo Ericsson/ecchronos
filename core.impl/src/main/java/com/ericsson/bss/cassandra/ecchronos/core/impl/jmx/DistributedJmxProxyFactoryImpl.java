@@ -845,6 +845,10 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
             {
                 throw new IllegalArgumentException("JMX Connection provider cannot be null");
             }
+            if (myIpTranslator == null)
+            {
+                throw new IllegalArgumentException("IpTranslator cannot be null");
+            }
             return new DistributedJmxProxyFactoryImpl(this);
         }
     }
