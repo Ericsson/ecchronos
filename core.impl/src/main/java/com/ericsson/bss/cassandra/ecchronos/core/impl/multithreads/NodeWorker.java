@@ -92,7 +92,7 @@ public class NodeWorker implements Runnable
                 LOG.debug("Nodeworker Thread interrupted ");
                 Thread.currentThread().interrupt();
             }
-            catch ( Exception e)
+            catch (Exception e)
             {
                 LOG.error("Exception caught in main run look of NodeWorker {}", e);
             }
