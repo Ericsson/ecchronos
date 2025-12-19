@@ -385,7 +385,13 @@ public class TestConfig
     @Test
     public void testReverseDNSConfig()
     {
-        assertThat(config.getConnectionConfig().getJmxConnection().getReseverseDNSResolution()).isFalse();
+        assertThat(config.getConnectionConfig().getJmxConnection().getReseverseDNSResolution()).isTrue();
+    }
+
+    @Test
+    public void testUseBroadcastRPCAddress()
+    {
+        assertThat(config.getConnectionConfig().getJmxConnection().getUseBroadcastRPCAddress()).isFalse();
     }
 }
 

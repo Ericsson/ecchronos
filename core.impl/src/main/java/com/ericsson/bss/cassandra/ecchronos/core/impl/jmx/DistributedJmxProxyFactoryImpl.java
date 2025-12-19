@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 
+import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
 
@@ -69,6 +70,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
     private final boolean myReverseDNSResolution;
     private final Integer myRunDelay;
     private final Integer myHeathCheckInterval;
+    private final IpTranslator myIpTranslator;
 
     private DistributedJmxProxyFactoryImpl(final Builder builder)
     {
@@ -81,6 +83,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         myReverseDNSResolution = builder.myReverseDNSResolution;
         myRunDelay = builder.myRunDelay;
         myHeathCheckInterval = builder.myHeathCheckInterval;
+        myIpTranslator = builder.myIpTranslator;
     }
 
     @Override
@@ -96,7 +99,8 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                     jolokiaPort,
                     jolokiaPEMEnabled,
                     myReverseDNSResolution,
-                    myRunDelay);
+                    myRunDelay,
+                    myIpTranslator);
         }
         catch (MalformedObjectNameException e)
         {
@@ -129,8 +133,8 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                 final int jolokiaPortValue,
                 final boolean jolokiaPEMEnabled,
                 final boolean reverseDNSResolution,
-                final Integer runDelay
-        ) throws MalformedObjectNameException
+                final Integer runDelay,
+                final IpTranslator ipTranslator) throws MalformedObjectNameException
         {
             myDistributedJmxConnectionProvider = distributedJmxConnectionProvider;
             myNodesMap = nodesMap;
@@ -139,7 +143,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
             myRepairServiceObject = new ObjectName(RS_OBJ_NAME);
             isJolokiaEnabled = jolokiaEnabled;
             myReverseDNSResolution = reverseDNSResolution;
-            myJolokiaNotificationController = new JolokiaNotificationController(myNodesMap, jolokiaPortValue, jolokiaPEMEnabled, myReverseDNSResolution, runDelay);
+            myJolokiaNotificationController = new JolokiaNotificationController(myNodesMap, jolokiaPortValue, jolokiaPEMEnabled, myReverseDNSResolution, runDelay, ipTranslator);
         }
 
         @Override
@@ -710,6 +714,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         private boolean myReverseDNSResolution = false;
         private Integer myRunDelay = DEFAULT_RUN_DELAY;
         private Integer myHeathCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
+        private IpTranslator myIpTranslator;
 
         /**
          * Build with JMX connection provider.
@@ -818,6 +823,18 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         }
 
         /**
+         * Build with IpTranslator.
+         *
+         * @param ipTranslator
+         * @return Builder
+         */
+        public Builder withIpTranslator(final IpTranslator ipTranslator)
+        {
+            myIpTranslator = ipTranslator;
+            return this;
+        }
+
+        /**
          * Build.
          *
          * @return DistributedJmxProxyFactoryImpl
@@ -827,6 +844,10 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
             if (myDistributedJmxConnectionProvider == null)
             {
                 throw new IllegalArgumentException("JMX Connection provider cannot be null");
+            }
+            if (myIpTranslator == null)
+            {
+                throw new IllegalArgumentException("IpTranslator cannot be null");
             }
             return new DistributedJmxProxyFactoryImpl(this);
         }

@@ -24,6 +24,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedJmxConnectionProviderImpl;
+import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.ericsson.bss.cassandra.ecchronos.utils.dns.ReverseDNS;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
@@ -64,6 +65,7 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
     private int myJolokiaPort = DEFAULT_JOLOKIA_PORT;
     private EccNodesSync myEccNodesSync;
     private boolean myReverseDNSResolution = false;
+    private IpTranslator myIpTranslator;
 
     /**
      * Set the CQL session to be used by the DistributedJmxBuilder.
@@ -154,6 +156,12 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
         return this;
     }
 
+    public final DistributedJmxBuilder withIpTranslator(final IpTranslator ipTranslator)
+    {
+        myIpTranslator = ipTranslator;
+        return this;
+    }
+
     /**
      * Build the DistributedJmxConnectionProviderImpl instance.
      *
@@ -198,6 +206,10 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
             if (NO_BROADCAST_ADDRESS.equals(host))
             {
                 host = node.getListenAddress().get().getHostString();
+            }
+            if (myIpTranslator.isActive())
+            {
+                host = myIpTranslator.getInternalIp(host);
             }
             JMXServiceURL jmxUrl;
             Integer port;
