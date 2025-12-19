@@ -2,6 +2,8 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+## Version 1.0.0-beta2
+
 * Fix nullpointer issues in IpTranslator
 * Make sure to close CqlSessions if can't get a fully working connection to the cluster
 * Add option to translate broadcastRPCAddress to RPCAddress for jmx connections - Issue #1283
