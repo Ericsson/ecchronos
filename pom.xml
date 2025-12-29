@@ -84,7 +84,7 @@
         <org.bouncycastle.bcpkix-jdk18on.version>1.83</org.bouncycastle.bcpkix-jdk18on.version>
         <org.springdoc.openapi-starter-webmvc-ui.version>2.8.14</org.springdoc.openapi-starter-webmvc-ui.version>
         <org.springframework.boot.spring-boot-starter-actuator.version>3.5.8</org.springframework.boot.spring-boot-starter-actuator.version>
-        <org.springframework.boot.spring-boot-starter-thymeleaf.version>3.5.8</org.springframework.boot.spring-boot-starter-thymeleaf.version>
+        <org.springframework.boot.spring-boot-starter-thymeleaf.version>3.5.9</org.springframework.boot.spring-boot-starter-thymeleaf.version>
         <org.springframework.boot.spring-boot-starter-web.version>3.5.8</org.springframework.boot.spring-boot-starter-web.version>
         <org.springframework.spring-boot-test.version>3.5.9</org.springframework.spring-boot-test.version>
         <org.springframework.spring-test.version>6.2.15</org.springframework.spring-test.version>
