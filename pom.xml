@@ -84,14 +84,14 @@
         <org.bouncycastle.bcpkix-jdk18on.version>1.83</org.bouncycastle.bcpkix-jdk18on.version>
         <org.springdoc.openapi-starter-webmvc-ui.version>2.8.14</org.springdoc.openapi-starter-webmvc-ui.version>
         <org.springframework.boot.spring-boot-starter-actuator.version>3.5.8</org.springframework.boot.spring-boot-starter-actuator.version>
-        <org.springframework.boot.spring-boot-starter-thymeleaf.version>3.5.8</org.springframework.boot.spring-boot-starter-thymeleaf.version>
+        <org.springframework.boot.spring-boot-starter-thymeleaf.version>3.5.9</org.springframework.boot.spring-boot-starter-thymeleaf.version>
         <org.springframework.boot.spring-boot-starter-web.version>3.5.8</org.springframework.boot.spring-boot-starter-web.version>
-        <org.springframework.spring-boot-test.version>3.5.8</org.springframework.spring-boot-test.version>
+        <org.springframework.spring-boot-test.version>3.5.9</org.springframework.spring-boot-test.version>
         <org.springframework.spring-test.version>6.2.15</org.springframework.spring-test.version>
         <org.yaml.snakeyaml.version>2.5</org.yaml.snakeyaml.version>
         <slf4j.version>2.0.17</slf4j.version>
         <swagger-annotations.version>2.2.41</swagger-annotations.version>
-        <testcontainers.version>1.21.3</testcontainers.version>
+        <testcontainers.version>1.21.4</testcontainers.version>
 
         <!-- Plugin versions -->
         <com.mycila.license-maven-plugin.version>5.0.0</com.mycila.license-maven-plugin.version>
