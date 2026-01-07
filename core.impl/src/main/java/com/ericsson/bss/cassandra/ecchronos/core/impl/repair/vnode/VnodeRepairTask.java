@@ -117,6 +117,7 @@ public class VnodeRepairTask extends RepairTask
         options.put(RepairOptions.PRIMARY_RANGE_KEY, Boolean.toString(false));
         options.put(RepairOptions.COLUMNFAMILIES_KEY, getTableReference().getTable());
         options.put(RepairOptions.INCREMENTAL_KEY, Boolean.toString(false));
+        options.put(RepairOptions.UNREPLICATED_KEY, Boolean.toString(true));
 
         StringBuilder rangesStringBuilder = new StringBuilder();
         for (LongTokenRange range : myTokenRanges)
