@@ -30,6 +30,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509ExtendedTrustManager;
 import javax.net.ssl.X509TrustManager;
 import java.io.File;
 import java.io.FileInputStream;
@@ -449,6 +450,7 @@ public class ReloadingCertificateHandler implements CertificateHandler
     }
 
     @Override
+    @SuppressWarnings("PMD.CognitiveComplexity")
     public final void setDefaultSSLContext()
     {
         Context context = getContext();
@@ -457,13 +459,31 @@ public class ReloadingCertificateHandler implements CertificateHandler
             try
             {
                 SSLContext sslContext = SSLContext.getInstance("TLS");
+                TrustManager[] trustManagers = null;
+                if (context.getTrustManagerFactory() != null)
+                {
+                    TrustManager[] originalTrustManagers = context.getTrustManagerFactory().getTrustManagers();
+                    trustManagers = new TrustManager[originalTrustManagers.length];
+                    for (int i = 0; i < originalTrustManagers.length; i++)
+                    {
+                        if (originalTrustManagers[i] instanceof X509ExtendedTrustManager)
+                        {
+                            trustManagers[i] = new NoEndpointValidationTrustManager(
+                                (X509ExtendedTrustManager) originalTrustManagers[i]);
+                        }
+                        else
+                        {
+                            trustManagers[i] = originalTrustManagers[i];
+                        }
+                    }
+                }
                 sslContext.init(
                     context.getKeyManagerFactory() != null ? context.getKeyManagerFactory().getKeyManagers() : null,
-                    context.getTrustManagerFactory() != null ? context.getTrustManagerFactory().getTrustManagers() : null,
+                    trustManagers,
                     null
                 );
                 SSLContext.setDefault(sslContext);
-                LOG.info("Default SSLContext set for JVM");
+                LOG.info("Default SSLContext set for JVM with endpoint validation disabled");
             }
             catch (Exception e)
             {
