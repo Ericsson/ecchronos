@@ -450,7 +450,6 @@ public class ReloadingCertificateHandler implements CertificateHandler
     }
 
     @Override
-    @SuppressWarnings("PMD.CognitiveComplexity")
     public final void setDefaultSSLContext()
     {
         Context context = getContext();
@@ -459,36 +458,65 @@ public class ReloadingCertificateHandler implements CertificateHandler
             try
             {
                 SSLContext sslContext = SSLContext.getInstance("TLS");
-                TrustManager[] trustManagers = null;
-                if (context.getTrustManagerFactory() != null)
+                if (context.getTlsConfig().requiresEndpointVerification())
                 {
-                    TrustManager[] originalTrustManagers = context.getTrustManagerFactory().getTrustManagers();
-                    trustManagers = new TrustManager[originalTrustManagers.length];
-                    for (int i = 0; i < originalTrustManagers.length; i++)
-                    {
-                        if (originalTrustManagers[i] instanceof X509ExtendedTrustManager)
-                        {
-                            trustManagers[i] = new NoEndpointValidationTrustManager(
-                                (X509ExtendedTrustManager) originalTrustManagers[i]);
-                        }
-                        else
-                        {
-                            trustManagers[i] = originalTrustManagers[i];
-                        }
-                    }
+                    setSSLContextWithEndpointValidation(context, sslContext);
                 }
-                sslContext.init(
-                    context.getKeyManagerFactory() != null ? context.getKeyManagerFactory().getKeyManagers() : null,
-                    trustManagers,
-                    null
-                );
-                SSLContext.setDefault(sslContext);
-                LOG.info("Default SSLContext set for JVM with endpoint validation disabled");
+                else
+                {
+                    setSSLContextWithNoEndpointValidation(context, sslContext);
+                }
             }
             catch (Exception e)
             {
                 LOG.warn("Failed to set default SSLContext", e);
             }
         }
+    }
+
+    private void setSSLContextWithNoEndpointValidation(final Context context, final SSLContext sslContext) throws KeyManagementException
+    {
+        TrustManager[] trustManagers = null;
+        if (context.getTrustManagerFactory() != null)
+        {
+            trustManagers = setTrustManagersWithNoEndpointValidation(context);
+        }
+        sslContext.init(
+            context.getKeyManagerFactory() != null ? context.getKeyManagerFactory().getKeyManagers() : null,
+            trustManagers,
+            null
+        );
+        SSLContext.setDefault(sslContext);
+        LOG.info("Default SSLContext set for JVM with endpoint validation disabled");
+    }
+
+    private TrustManager[] setTrustManagersWithNoEndpointValidation(final Context context)
+    {
+        TrustManager[] originalTrustManagers = context.getTrustManagerFactory().getTrustManagers();
+        TrustManager[] trustManagers = new TrustManager[originalTrustManagers.length];
+        for (int i = 0; i < originalTrustManagers.length; i++)
+        {
+            if (originalTrustManagers[i] instanceof X509ExtendedTrustManager)
+            {
+                trustManagers[i] = new NoEndpointValidationTrustManager(
+                    (X509ExtendedTrustManager) originalTrustManagers[i]);
+            }
+            else
+            {
+                trustManagers[i] = originalTrustManagers[i];
+            }
+        }
+        return trustManagers;
+    }
+
+    private void setSSLContextWithEndpointValidation(final Context context, final SSLContext sslContext) throws KeyManagementException
+    {
+        sslContext.init(
+            context.getKeyManagerFactory() != null ? context.getKeyManagerFactory().getKeyManagers() : null,
+            context.getTrustManagerFactory() != null ? context.getTrustManagerFactory().getTrustManagers() : null,
+            null
+        );
+        SSLContext.setDefault(sslContext);
+        LOG.info("Default SSLContext set for JVM with endpoint validation enabled");
     }
 }

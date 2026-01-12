@@ -89,3 +89,4 @@ jmx:
     certificate:
     certificate_private_key:
     trust_certificate:
+    require_endpoint_verification: false
