@@ -4,6 +4,7 @@
 
 ## Version 1.0.0-beta2
 
+* Add Configurable Option to Disable TLS Hostname Verification in JMX/Jolokia Connections - Issue #1333
 * Add ignore-unreplicated-keyspaces to avoid nothing to repair error message - Issue #1323
 * Fix nullpointer issues in IpTranslator
 * Make sure to close CqlSessions if can't get a fully working connection to the cluster
