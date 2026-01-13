@@ -249,12 +249,13 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
                     }
                     catch (IOException e)
                     {
-                        throw new RuntimeException(e);
+                        LOG.warn("Jolokia connection failed due to {}", e);
                     }
                 });
                 try
                 {
-                    future.get(JMX_JOLOKIA_CONNECTION_TIMEOUT, TimeUnit.SECONDS);
+                    if (future != null)
+                        future.get(JMX_JOLOKIA_CONNECTION_TIMEOUT, TimeUnit.SECONDS);
                 }
                 catch (TimeoutException | InterruptedException | ExecutionException e)
                 {
