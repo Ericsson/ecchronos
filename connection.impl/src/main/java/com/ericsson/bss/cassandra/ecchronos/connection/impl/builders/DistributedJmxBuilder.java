@@ -254,7 +254,8 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
                 });
                 try
                 {
-                    if (future != null) {
+                    if (future != null)
+                    {
                         future.get(JMX_JOLOKIA_CONNECTION_TIMEOUT, TimeUnit.SECONDS);
                     }
                 }
