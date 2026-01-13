@@ -57,6 +57,7 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
     private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxBuilder.class);
     private static final String JMX_FORMAT_URL = "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi";
     private static final String JMX_JOLOKIA_FORMAT_URL = "service:jmx:jolokia://%s:%d/jolokia/";
+    private static final Integer JMX_JOLOKIA_CONNECTION_TIMEOUT = 20;
     private static final int DEFAULT_JOLOKIA_PORT = 8778;
     private static final int DEFAULT_PORT = 7199;
     public static final String NO_BROADCAST_ADDRESS = "0.0.0.0"; //NOPMD AvoidUsingHardCodedIP
@@ -251,10 +252,11 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
                         throw new RuntimeException(e);
                     }
                 });
-                try {
-                    future.get(20, TimeUnit.SECONDS);
+                try
+                {
+                    future.get(JMX_JOLOKIA_CONNECTION_TIMEOUT, TimeUnit.SECONDS);
                 }
-                catch ( TimeoutException | InterruptedException | ExecutionException e)
+                catch (TimeoutException | InterruptedException | ExecutionException e)
                 {
                     future.cancel(true);
                     throw new IOException("Jolokia connection failed due to {}", e);
