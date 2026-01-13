@@ -44,6 +44,12 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
 public class DistributedJmxBuilder //NOPMD Possible God Class
@@ -232,8 +238,28 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
                 JolokiaJmxConnectionProvider jolokiaJmxConnectionProvider = new JolokiaJmxConnectionProvider();
                 LOG.info("Creating Jolokia JMXConnection with host: {} and port: {}", host, port);
                 jmxConnector = jolokiaJmxConnectionProvider.newJMXConnector(jmxUrl, createJMXEnv());
-                jmxConnector.connect();
-                // Verify MBeanServerConnection is available
+
+                ExecutorService exec = Executors.newSingleThreadExecutor();
+                Future future = exec.submit(() ->
+                {
+                    try
+                    {
+                        jmxConnector.connect();
+                    }
+                    catch (IOException e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                });
+                try {
+                    future.get(20, TimeUnit.SECONDS);
+                }
+                catch ( TimeoutException | InterruptedException | ExecutionException e)
+                {
+                    future.cancel(true);
+                    throw new IOException("Jolokia connection failed due to {}", e);
+                }
+               // Verify MBeanServerConnection is available
                 if (jmxConnector.getMBeanServerConnection() == null)
                 {
                     throw new IOException("MBeanServerConnection is null after Jolokia connection");
