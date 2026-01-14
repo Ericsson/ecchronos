@@ -4,6 +4,7 @@
 
 ## Version 1.0.0-beta2
 
+* Ensure Jolokia connection does not hang forever during connection - Issue #1337
 * Add Configurable Option to Disable TLS Hostname Verification in JMX/Jolokia Connections - Issue #1333
 * Add ignore-unreplicated-keyspaces to avoid nothing to repair error message - Issue #1323
 * Fix nullpointer issues in IpTranslator
