@@ -18,6 +18,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.utils.CertUtils;
 import com.ericsson.bss.cassandra.ecchronos.connection.JmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.NativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.TimeBasedRunPolicy;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.OnDemandRepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.state.ReplicationState;
 import com.ericsson.bss.cassandra.ecchronos.core.utils.NodeResolver;
@@ -38,11 +39,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
@@ -120,43 +121,46 @@ public abstract class TestTomcatWebServerCustomizer
     @Autowired
     private Environment environment;
 
-    @MockBean
+    @MockitoBean
     private ECChronos ecChronos;
 
-    @MockBean
+    @MockitoBean
     private TableReferenceFactory tableReferenceFactory;
 
-    @MockBean
+    @MockitoBean
     private ReplicatedTableProvider replicatedTableProvider;
 
-    @MockBean
+    @MockitoBean
     private RepairStatsProvider repairStatsProvider;
 
-    @MockBean
+    @MockitoBean
     private RepairScheduler repairScheduler;
 
-    @MockBean
+    @MockitoBean
+    private OnDemandRepairScheduler onDemandRepairScheduler;
+
+    @MockitoBean
     private NativeConnectionProvider nativeConnectionProvider;
 
-    @MockBean
+    @MockitoBean
     private JmxConnectionProvider jmxConnectionProvider;
 
-    @MockBean
+    @MockitoBean
     private ReplicationState replicationState;
 
-    @MockBean
+    @MockitoBean
     private NodeResolver nodeResolver;
 
-    @MockBean
+    @MockitoBean
     private RepairHistoryBean repairHistoryBean;
 
-    @MockBean
+    @MockitoBean
     private CassandraHealthIndicator cassandraHealthIndicator;
 
-    @MockBean
+    @MockitoBean
     private TimeBasedRunPolicy timeBasedRunPolicy;
 
-    @SpyBean
+    @MockitoSpyBean
     protected TomcatWebServerCustomizer tomcatWebServerCustomizer;
 
     @BeforeClass
