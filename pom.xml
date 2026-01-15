@@ -108,12 +108,12 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Spring boot -->
-        <org.springframework.boot.spring-boot-starter-thymeleaf.version>3.5.9</org.springframework.boot.spring-boot-starter-thymeleaf.version>
-        <org.springframework.boot.spring-boot-starter-web.version>3.5.9</org.springframework.boot.spring-boot-starter-web.version>
-        <org.springframework.spring-context.version>6.2.15</org.springframework.spring-context.version>
-        <org.springframework.spring-boot-test.version>3.5.9</org.springframework.spring-boot-test.version>
-        <org.springframework.spring-test.version>6.2.15</org.springframework.spring-test.version>
-        <org.springdoc.openapi-starter-webmvc-ui.version>2.8.15</org.springdoc.openapi-starter-webmvc-ui.version>
+        <org.springframework.boot.spring-boot-starter-thymeleaf.version>4.0.1</org.springframework.boot.spring-boot-starter-thymeleaf.version>
+        <org.springframework.boot.spring-boot-starter-web.version>4.0.1</org.springframework.boot.spring-boot-starter-web.version>
+        <org.springframework.spring-context.version>7.0.2</org.springframework.spring-context.version>
+        <org.springframework.spring-boot-test.version>4.0.1</org.springframework.spring-boot-test.version>
+        <org.springframework.spring-test.version>7.0.2</org.springframework.spring-test.version>
+        <org.springdoc.openapi-starter-webmvc-ui.version>3.0.1</org.springdoc.openapi-starter-webmvc-ui.version>
         <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
         <swagger-annotations.version>2.2.41</swagger-annotations.version>

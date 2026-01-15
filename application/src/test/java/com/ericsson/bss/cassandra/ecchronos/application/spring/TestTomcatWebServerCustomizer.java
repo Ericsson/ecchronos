@@ -30,6 +30,7 @@ import java.time.Instant;
 import java.util.Date;
 import javax.net.ssl.SSLContext;
 
+import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.OnDemandRepairScheduler;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -121,6 +122,9 @@ public abstract class TestTomcatWebServerCustomizer
 
     @MockitoBean
     private RepairScheduler repairScheduler;
+
+    @MockitoBean
+    private OnDemandRepairScheduler onDemandRepairScheduler;
 
     @MockitoBean
     private DistributedNativeConnectionProvider nativeConnectionProvider;

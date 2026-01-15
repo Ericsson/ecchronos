@@ -34,6 +34,7 @@ import java.io.IOException;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -120,6 +121,7 @@ public class MetricBeans
     }
 
     @Bean
+    @Primary
     public CompositeMeterRegistry eccCompositeMeterRegistry()
     {
         return myCompositeMeterRegistry;
