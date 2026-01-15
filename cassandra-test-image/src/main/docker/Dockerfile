@@ -3,7 +3,7 @@ FROM cassandra:${CASSANDRA_VERSION}
 
 RUN apt-get update \
 && apt-get install -y curl \
-&& rm -rf /var/lib/apt/lists/* \
+&& rm -rf /var/lib/apt/lists/*
 
 COPY ecc-entrypoint.sh /usr/local/bin/
 RUN ln -s usr/local/bin/ecc-entrypoint.sh /ecc-entrypoint.sh
