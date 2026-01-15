@@ -102,6 +102,20 @@ abstract public class TestBase
             int port = node.getBroadcastRpcAddress().get().getPort();
             contactPoints.add(new InetSocketAddress(hostname, port));
         }
+        int count = 0;
+        while(initialSession.getMetadata().getKeyspace(ECCHRONOS_KEYSPACE).isEmpty() && count < 60)
+        {
+            count++;
+            LOG.warn("Ecchronos keyspace not found, retrying");
+            try
+            {
+                Thread.sleep(1000);
+            }
+            catch (InterruptedException e)
+            {
+                // Ignore
+            }
+        }
         initialSession.close();
 
         AuthProvider authProvider = new ProgrammaticPlainTextAuthProvider("eccuser", "eccpassword");
