@@ -154,8 +154,9 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         }
 
         @Override
-        public void addStorageServiceListener(final UUID nodeID, final NotificationListener listener)
+        public boolean addStorageServiceListener(final UUID nodeID, final NotificationListener listener)
         {
+            boolean ret = true;
             JMXConnector nodeConnection = myDistributedJmxConnectionProvider.getJmxConnector(nodeID);
             boolean isConnectionAvailable = validateJmxConnection(nodeConnection);
             if (isConnectionAvailable)
@@ -175,12 +176,15 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                 catch (InstanceNotFoundException | IOException | InterruptedException e)
                 {
                     LOG.error("Unable to add StorageService listener in node {} with because of {}", nodeID, e.getMessage());
+                    ret = false;
                 }
             }
             else
             {
                 markNodeAsUnavailable(nodeID);
+                ret = false;
             }
+            return ret;
         }
 
         @SuppressWarnings("unchecked")
