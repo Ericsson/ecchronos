@@ -239,7 +239,6 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
                 JolokiaJmxConnectionProvider jolokiaJmxConnectionProvider = new JolokiaJmxConnectionProvider();
                 LOG.info("Creating Jolokia JMXConnection with host: {} and port: {}", host, port);
                 jmxConnector = jolokiaJmxConnectionProvider.newJMXConnector(jmxUrl, createJMXEnv());
-//                jmxConnector.connect();
 
                 ExecutorService exec = Executors.newSingleThreadExecutor();
                 Future future = exec.submit(() ->
@@ -265,8 +264,6 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
                     future.cancel(true);
                     throw new IOException("Jolokia connection failed due to {}", e);
                 }
-
-
                // Verify MBeanServerConnection is available
                 if (jmxConnector.getMBeanServerConnection() == null)
                 {
