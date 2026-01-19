@@ -42,6 +42,8 @@ import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
 import javax.management.remote.JMXConnector;
 
+import org.jolokia.client.exception.JolokiaRemoteException;
+import org.jolokia.client.exception.UncheckedJmxAdapterException;
 import org.jolokia.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -217,7 +219,8 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                        | MBeanException
                        | ReflectionException
                        | IOException
-                       | AttributeNotFoundException e)
+                       | AttributeNotFoundException
+                       | UncheckedJmxAdapterException e)
                 {
                     LOG.error("Unable to get live nodes for node {} because of {}", nodeID, e.getMessage());
                 }
@@ -260,7 +263,8 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                        | MBeanException
                        | ReflectionException
                        | IOException
-                       | AttributeNotFoundException e)
+                       | AttributeNotFoundException
+                       | UncheckedJmxAdapterException e)
                 {
                     LOG.error("Unable to get unreachable nodes for node {} because of {}", nodeID, e.getMessage());
                 }
@@ -307,7 +311,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                         return 0;
                     }
                 }
-                catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
+                catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException | UncheckedJmxAdapterException e)
                 {
                     LOG.error("Unable to repair node {} because of {}", nodeID, e.getMessage());
                 }
@@ -348,7 +352,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                                     FORCE_TERMINATE_ALL_REPAIR_SESSIONS_METHOD,
                                     null, null);
                 }
-                catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
+                catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException | UncheckedJmxAdapterException e)
                 {
                     LOG.error("Unable to terminate repair sessions for node {} because of {}", nodeID, e.getMessage());
                 }
@@ -390,7 +394,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                     }
 
                 }
-                catch (InstanceNotFoundException | ListenerNotFoundException | IOException e)
+                catch (InstanceNotFoundException | ListenerNotFoundException | IOException | UncheckedJmxAdapterException e)
                 {
                     LOG.error("Unable to remove StorageService listener for node {} because of {}", nodeID, e.getMessage());
                 }
@@ -445,7 +449,8 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                        | MBeanException
                        | ReflectionException
                        | IOException
-                       | MalformedObjectNameException e)
+                       | MalformedObjectNameException
+                       | UncheckedJmxAdapterException e)
                 {
                     LOG.error("Unable to retrieve disk space usage for table {} in node {} because of {}", tableReference,
                             nodeID,
@@ -489,7 +494,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                 Object result = invokeRepairStats(nodeConnection, tableReference);
                 return extractMaxRepairedValue(result);
             }
-            catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
+            catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException | UncheckedJmxAdapterException e)
             {
                 LOG.error("Unable to get maxRepaired for table {} in node {} because of {}", tableReference, nodeID, e.getMessage());
             }
@@ -615,7 +620,8 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                        | MBeanException
                        | ReflectionException
                        | IOException
-                       | MalformedObjectNameException e)
+                       | MalformedObjectNameException
+                       | UncheckedJmxAdapterException e)
                 {
                     LOG.error("Unable to retrieve percent repaired for {} in node {}, because of {}",
                             tableReference, nodeID, e.getMessage());
@@ -649,7 +655,8 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                        | AttributeNotFoundException
                        | MBeanException
                        | ReflectionException
-                       | IOException e)
+                       | IOException
+                       | UncheckedJmxAdapterException e)
                 {
                     LOG.error("Unable to retrieve node status for {} because of {}", nodeID, e.getMessage());
                 }
