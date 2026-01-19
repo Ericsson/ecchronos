@@ -42,7 +42,6 @@ import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
 import javax.management.remote.JMXConnector;
 
-import org.jolokia.client.exception.JolokiaRemoteException;
 import org.jolokia.client.exception.UncheckedJmxAdapterException;
 import org.jolokia.json.JSONObject;
 import org.slf4j.Logger;
