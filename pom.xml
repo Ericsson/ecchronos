@@ -60,7 +60,7 @@
         <caffeine.version>3.2.3</caffeine.version>
         <cassandra.driver.core.version>4.19.2</cassandra.driver.core.version>
         <com.fasterxml.jackson.annotations.version>2.21</com.fasterxml.jackson.annotations.version>
-        <com.fasterxml.jackson.core.version>2.20.1</com.fasterxml.jackson.core.version>
+        <com.fasterxml.jackson.core.version>2.21.0</com.fasterxml.jackson.core.version>
         <com.typesafe.config.version>1.4.5</com.typesafe.config.version>
         <equalsverifier.version>4.3</equalsverifier.version>
         <guava.version>33.5.0-jre</guava.version>
