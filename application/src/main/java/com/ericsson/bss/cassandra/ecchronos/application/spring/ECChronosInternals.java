@@ -38,6 +38,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableRepairMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.metrics.TableRepairMetricsImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableStorageStates;
+import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import java.io.Closeable;
 import java.util.Objects;
@@ -68,7 +69,8 @@ public class ECChronosInternals implements Closeable
             final DistributedNativeConnectionProvider nativeConnectionProvider,
             final DistributedJmxConnectionProvider jmxConnectionProvider,
             final EccNodesSync eccNodesSync,
-            final MeterRegistry meterRegistry)
+            final MeterRegistry meterRegistry,
+            final IpTranslator ipTranslator)
     {
         myJmxProxyFactory = DistributedJmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(jmxConnectionProvider)
@@ -84,11 +86,17 @@ public class ECChronosInternals implements Closeable
                     .getConnectionConfig().getJmxConnection().getReseverseDNSResolution())
                 .withRunDelay(configuration.getConnectionConfig().getJmxConnection().getRunDelay())
                 .withHeathCheckInterval(configuration.getConnectionConfig().getJmxConnection().getHeathCheckInterval())
+                .withIpTranslator(ipTranslator)
                 .build();
 
         CqlSession session = nativeConnectionProvider.getCqlSession();
 
         myTableReferenceFactory = new TableReferenceFactoryImpl(session);
+
+        if (!configuration.getConnectionConfig().getJmxConnection().getUseBroadcastRPCAddress())
+        {
+            ipTranslator.init(session);
+        }
 
         myHostStatesImpl = HostStatesImpl.builder()
                 .withJmxProxyFactory(myJmxProxyFactory)

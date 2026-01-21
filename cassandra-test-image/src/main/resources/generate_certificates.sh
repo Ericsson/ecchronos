@@ -117,11 +117,7 @@ subjectAltName = @alt_names
 [alt_names]
 DNS.1 = localhost
 IP.1 = 127.0.0.1
-IP.2 = 172.29.0.2
-IP.3 = 172.29.0.3
-IP.4 = 172.29.0.4
-IP.5 = 172.29.0.5
-IP.6 = 172.29.0.6
+
 EOF
 
 ######################

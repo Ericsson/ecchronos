@@ -46,7 +46,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DistributedNativeBuilder
+public class DistributedNativeBuilder// NOPMD Possible God Class
 {
     private static final Logger LOG = LoggerFactory.getLogger(DistributedNativeBuilder.class);
 
@@ -72,7 +72,7 @@ public class DistributedNativeBuilder
     private AuthProvider myAuthProvider = null;
     private SslEngineFactory mySslEngineFactory = null;
     private SchemaChangeListener mySchemaChangeListener = null;
-    private NodeStateListener myNodeStateListener = null;
+    private final Set<NodeStateListener> myNodeStateListeners = new HashSet<>();
 
     /**
      * Sets the initial contact points for the distributed native connection.
@@ -205,7 +205,7 @@ public class DistributedNativeBuilder
      */
     public final DistributedNativeBuilder withNodeStateListener(final NodeStateListener nodeStateListener)
     {
-        myNodeStateListener = nodeStateListener;
+        myNodeStateListeners.add(nodeStateListener);
         return this;
     }
 
@@ -229,22 +229,35 @@ public class DistributedNativeBuilder
      */
     public final DistributedNativeConnectionProviderImpl build()
     {
-        LOG.info("Creating Session With Initial Contact Points");
-        CqlSession session = createSession(this);
-        LOG.info("Requesting Nodes List");
-        Map<UUID, Node> nodesList = createNodesMap(session);
-        LOG.info("Nodes list was created with success");
-        Optional<KeyspaceMetadata> keyspaceMetadata = session
-                .getMetadata()
-                .getKeyspace(ecchronosKeyspaceName);
-        if (keyspaceMetadata.isEmpty())
+        DistributedNativeConnectionProviderImpl connectionProvider;
+        CqlSession session = null;
+        try
         {
-            throw new IllegalStateException("ecchronos Keyspace is not setup yet");
-        }
-        Map<String, String> replication = keyspaceMetadata.get().getReplication();
+            LOG.info("Creating Session With Initial Contact Points");
+            session = createSession(this);
+            LOG.info("Requesting Nodes List");
+            Map<UUID, Node> nodesList = createNodesMap(session);
+            LOG.info("Nodes list was created with success");
+            Optional<KeyspaceMetadata> keyspaceMetadata = session
+                    .getMetadata()
+                    .getKeyspace(ecchronosKeyspaceName);
+            if (keyspaceMetadata.isEmpty())
+            {
+                throw new IllegalStateException("ecchronos Keyspace is not setup yet");
+            }
+            Map<String, String> replication = keyspaceMetadata.get().getReplication();
 
-        DistributedNativeConnectionProviderImpl connectionProvider = new DistributedNativeConnectionProviderImpl(session, nodesList, this, myType);
-        connectionProvider.isKeyspaceReplicationFactorOK(replication, myLocalDatacenter);
+            connectionProvider = new DistributedNativeConnectionProviderImpl(session, nodesList, this, myType);
+            connectionProvider.isKeyspaceReplicationFactorOK(replication, myLocalDatacenter);
+        }
+        catch (RuntimeException e)
+        {
+            if (session != null)
+            {
+                session.close();
+            }
+            throw e;
+        }
         return connectionProvider;
     }
     /**
@@ -405,13 +418,17 @@ public class DistributedNativeBuilder
 
     private static CqlSessionBuilder fromBuilder(final DistributedNativeBuilder builder)
     {
-        return CqlSession.builder()
+        CqlSessionBuilder sessionBuilder = CqlSession.builder()
                 .addContactPoints(resolveIfNeeded(builder.myInitialContactPoints))
                 .withLocalDatacenter(builder.myLocalDatacenter)
                 .withAuthProvider(builder.myAuthProvider)
                 .withSslEngineFactory(builder.mySslEngineFactory)
-                .withSchemaChangeListener(builder.mySchemaChangeListener)
-                .withNodeStateListener(builder.myNodeStateListener);
+                .withSchemaChangeListener(builder.mySchemaChangeListener);
+        for (NodeStateListener listener: builder.myNodeStateListeners)
+        {
+            sessionBuilder = sessionBuilder.addNodeStateListener(listener);
+        }
+        return sessionBuilder;
     }
 
     private static Collection<InetSocketAddress> resolveIfNeeded(final List<InetSocketAddress> initialContactPoints)

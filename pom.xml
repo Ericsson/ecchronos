@@ -108,18 +108,18 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Spring boot -->
-        <org.springframework.boot.spring-boot-starter-thymeleaf.version>3.5.8</org.springframework.boot.spring-boot-starter-thymeleaf.version>
-        <org.springframework.boot.spring-boot-starter-web.version>3.5.8</org.springframework.boot.spring-boot-starter-web.version>
+        <org.springframework.boot.spring-boot-starter-thymeleaf.version>3.5.9</org.springframework.boot.spring-boot-starter-thymeleaf.version>
+        <org.springframework.boot.spring-boot-starter-web.version>3.5.9</org.springframework.boot.spring-boot-starter-web.version>
         <org.springframework.spring-context.version>6.2.15</org.springframework.spring-context.version>
-        <org.springframework.spring-boot-test.version>3.5.8</org.springframework.spring-boot-test.version>
+        <org.springframework.spring-boot-test.version>3.5.9</org.springframework.spring-boot-test.version>
         <org.springframework.spring-test.version>6.2.15</org.springframework.spring-test.version>
-        <org.springdoc.openapi-starter-webmvc-ui.version>2.8.14</org.springdoc.openapi-starter-webmvc-ui.version>
+        <org.springdoc.openapi-starter-webmvc-ui.version>2.8.15</org.springdoc.openapi-starter-webmvc-ui.version>
         <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
-        <swagger-annotations.version>2.2.41</swagger-annotations.version>
+        <swagger-annotations.version>2.2.42</swagger-annotations.version>
 
         <!-- Metrics -->
-        <io.micrometer.version>1.16.1</io.micrometer.version>
+        <io.micrometer.version>1.16.2</io.micrometer.version>
         <io.prometheus.simpleclient.version>0.16.0</io.prometheus.simpleclient.version>
         <io.prometheus.client-java.version>1.4.3</io.prometheus.client-java.version>
         <io.prometheus.prometheus-metrics-core.version>1.4.3</io.prometheus.prometheus-metrics-core.version>
@@ -131,12 +131,12 @@
         <guava.version>33.5.0-jre</guava.version>
         <caffeine.version>3.2.3</caffeine.version>
         <slf4j.version>2.0.17</slf4j.version>
-        <logback.version>1.5.22</logback.version>
+        <logback.version>1.5.25</logback.version>
 
         <!-- Jackson -->
-        <com.fasterxml.jackson.core.version>2.20.1</com.fasterxml.jackson.core.version>
-        <com.fasterxml.jackson.annotations.version>2.20</com.fasterxml.jackson.annotations.version>
-        <com.fasterxml.jackson.dataformat.version>2.20.1</com.fasterxml.jackson.dataformat.version>
+        <com.fasterxml.jackson.core.version>2.21.0</com.fasterxml.jackson.core.version>
+        <com.fasterxml.jackson.annotations.version>2.21</com.fasterxml.jackson.annotations.version>
+        <com.fasterxml.jackson.dataformat.version>2.21.0</com.fasterxml.jackson.dataformat.version>
         <org.yaml.snakeyaml.version>2.5</org.yaml.snakeyaml.version>
 
         <!-- Other -->
@@ -147,15 +147,15 @@
         <mockito.core.version>5.21.0</mockito.core.version>
         <assertj.version>3.27.6</assertj.version>
         <junit.junit.version>4.13.2</junit.junit.version>
-        <junit.junit-vintage-engine.version>6.0.1</junit.junit-vintage-engine.version>
-        <junit.jupiter.junit-jupiter.version>6.0.1</junit.jupiter.junit-jupiter.version>
+        <junit.junit-vintage-engine.version>6.0.2</junit.junit-vintage-engine.version>
+        <junit.jupiter.junit-jupiter.version>6.0.2</junit.jupiter.junit-jupiter.version>
         <org.apache.commons.io.version>2.21.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
-        <equalsverifier.version>4.2.5</equalsverifier.version>
+        <equalsverifier.version>4.3</equalsverifier.version>
         <jcip.version>1.0</jcip.version>
-        <testcontainers.version>1.21.3</testcontainers.version>
+        <testcontainers.version>1.21.4</testcontainers.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.83</org.bouncycastle.bcpkix-jdk18on.version>
-        <org.apache.httpcomponents.client5.httpclient5.version>5.5.1</org.apache.httpcomponents.client5.httpclient5.version>
+        <org.apache.httpcomponents.client5.httpclient5.version>5.6</org.apache.httpcomponents.client5.httpclient5.version>
 
         <!-- Plugin versions -->
         <com.mycila.license-maven-plugin.version>5.0.0</com.mycila.license-maven-plugin.version>
@@ -177,10 +177,10 @@
         <org.apache.maven.plugins.maven-source-plugin.version>3.4.0</org.apache.maven.plugins.maven-source-plugin.version>
         <org.apache.maven.plugins.maven-surefire-plugin.version>3.5.4</org.apache.maven.plugins.maven-surefire-plugin.version>
         <org.apache.servicemix.tooling.depends-maven-plugin.version>1.5.0</org.apache.servicemix.tooling.depends-maven-plugin.version>
-        <org.codehaus.mojo.exec-maven-plugin.version>3.6.2</org.codehaus.mojo.exec-maven-plugin.version>
-        <org.codehaus.mojo.license-maven-plugin.version>2.7.0</org.codehaus.mojo.license-maven-plugin.version>
+        <org.codehaus.mojo.exec-maven-plugin.version>3.6.3</org.codehaus.mojo.exec-maven-plugin.version>
+        <org.codehaus.mojo.license-maven-plugin.version>2.7.1</org.codehaus.mojo.license-maven-plugin.version>
         <org.jacoco.jacoco-maven-plugin.version>0.8.14</org.jacoco.jacoco-maven-plugin.version>
-        <org.sonatype.central-central-publishing-maven-plugin>0.9.0</org.sonatype.central-central-publishing-maven-plugin>
+        <org.sonatype.central-central-publishing-maven-plugin>0.10.0</org.sonatype.central-central-publishing-maven-plugin>
 
         <jolokia.adapter.version>2.4.1</jolokia.adapter.version>
 

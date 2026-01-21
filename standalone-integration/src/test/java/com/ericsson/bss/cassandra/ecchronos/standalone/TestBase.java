@@ -27,6 +27,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.Distribute
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedNativeConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.DistributedJmxProxyFactoryImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
+import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.connection.ConnectionType;
 import java.net.InetSocketAddress;
@@ -131,6 +132,7 @@ abstract public class TestBase
                 .withNativeConnection(myNativeConnectionProvider)
                 .withJolokiaEnabled(myJolokiaEnabled)
                 .withEccNodesSync(myEccNodesSync)
+                .withIpTranslator(new IpTranslator())
                 .build();
 
         Map<UUID, Node> nodesMap = myNativeConnectionProvider.getCqlSession().getMetadata().getNodes();
@@ -139,6 +141,7 @@ abstract public class TestBase
                 .withEccNodesSync(myEccNodesSync)
                 .withNodesMap(nodesMap)
                 .withJolokiaEnabled(myJolokiaEnabled)
+                .withIpTranslator(new IpTranslator())
                 .build();
         MyLocalNode = getNativeConnectionProvider()
             .getNodes()

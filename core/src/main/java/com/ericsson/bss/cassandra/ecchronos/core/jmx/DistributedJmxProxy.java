@@ -30,13 +30,12 @@ public interface DistributedJmxProxy extends Closeable
     /**
      * Add a listener to the storage service interface.
      *
-     * @param nodeID
-     *            The nodeID to get the JMXConnector
-     * @param listener
-     *            The listener to add.
+     * @param nodeID   The nodeID to get the JMXConnector
+     * @param listener The listener to add.
+     * @return
      * @see #removeStorageServiceListener(UUID, NotificationListener)
      */
-    void addStorageServiceListener(UUID nodeID, NotificationListener listener);
+    boolean addStorageServiceListener(UUID nodeID, NotificationListener listener);
 
     /**
      * Get a list of textual representations of IP addresses of the current live nodes.

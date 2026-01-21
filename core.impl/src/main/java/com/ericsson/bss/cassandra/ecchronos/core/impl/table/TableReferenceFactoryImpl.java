@@ -23,6 +23,8 @@ import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReferenceFactory;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.EcChronosException;
 import com.google.common.base.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -37,6 +39,7 @@ import java.util.Objects;
  */
 public class TableReferenceFactoryImpl implements TableReferenceFactory
 {
+    private static final Logger LOG = LoggerFactory.getLogger(TableReferenceFactoryImpl.class);
     private final CqlSession session;
     private static final String TIME_WINDOW_COMPACTION_STRATEGY =  "org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy";
 
@@ -51,9 +54,14 @@ public class TableReferenceFactoryImpl implements TableReferenceFactory
         Optional<KeyspaceMetadata> keyspaceMetadata = Metadata.getKeyspace(session, keyspace);
         if (keyspaceMetadata.isEmpty())
         {
+            LOG.debug("Keyspace {} meta data is missing ", keyspace);
             return null;
         }
         Optional<TableMetadata> tableMetadata = Metadata.getTable(keyspaceMetadata.get(), table);
+        if (tableMetadata.isEmpty())
+        {
+            LOG.debug("table {} meta data is missing ", table);
+        }
         return tableMetadata.map(UuidTableReference::new).orElse(null);
 
     }

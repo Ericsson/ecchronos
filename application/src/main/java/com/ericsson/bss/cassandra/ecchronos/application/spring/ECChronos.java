@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.application.spring;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import io.micrometer.core.instrument.MeterRegistry;
 
 import java.io.Closeable;
@@ -66,7 +67,7 @@ public class ECChronos implements Closeable
     private final RepairStatsProvider myRepairStatsProvider;
     private final NodeWorkerManager myNodeWorkerManager;
 
-    public ECChronos(
+    public ECChronos(//NOPMD long parameter list
             final Config configuration,
             final ApplicationContext applicationContext,
             final DistributedNativeConnectionProvider nativeConnectionProvider,
@@ -76,12 +77,16 @@ public class ECChronos implements Closeable
             final EccNodesSync eccNodesSync,
             final RepairHistoryService repairHistoryService,
             final RepairFaultReporter repairFaultReporter,
-            final MeterRegistry eccCompositeMeterRegistry
-            )
-            throws ConfigurationException
+            final MeterRegistry eccCompositeMeterRegistry,
+            final IpTranslator ipTranslator) throws ConfigurationException
     {
         myECChronosInternals = new ECChronosInternals(
-                configuration, nativeConnectionProvider, jmxConnectionProvider, eccNodesSync, eccCompositeMeterRegistry);
+                configuration,
+                nativeConnectionProvider,
+                jmxConnectionProvider,
+                eccNodesSync,
+                eccCompositeMeterRegistry,
+                ipTranslator);
 
         CqlSession session = nativeConnectionProvider.getCqlSession();
 

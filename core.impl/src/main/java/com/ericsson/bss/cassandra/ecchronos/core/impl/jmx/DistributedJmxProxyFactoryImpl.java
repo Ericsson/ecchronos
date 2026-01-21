@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxy;
 import com.ericsson.bss.cassandra.ecchronos.core.jmx.DistributedJmxProxyFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 
+import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
 
@@ -41,6 +42,7 @@ import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
 import javax.management.remote.JMXConnector;
 
+import org.jolokia.client.exception.UncheckedJmxAdapterException;
 import org.jolokia.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +71,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
     private final boolean myReverseDNSResolution;
     private final Integer myRunDelay;
     private final Integer myHeathCheckInterval;
+    private final IpTranslator myIpTranslator;
 
     private DistributedJmxProxyFactoryImpl(final Builder builder)
     {
@@ -81,6 +84,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         myReverseDNSResolution = builder.myReverseDNSResolution;
         myRunDelay = builder.myRunDelay;
         myHeathCheckInterval = builder.myHeathCheckInterval;
+        myIpTranslator = builder.myIpTranslator;
     }
 
     @Override
@@ -96,7 +100,8 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                     jolokiaPort,
                     jolokiaPEMEnabled,
                     myReverseDNSResolution,
-                    myRunDelay);
+                    myRunDelay,
+                    myIpTranslator);
         }
         catch (MalformedObjectNameException e)
         {
@@ -129,8 +134,8 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                 final int jolokiaPortValue,
                 final boolean jolokiaPEMEnabled,
                 final boolean reverseDNSResolution,
-                final Integer runDelay
-        ) throws MalformedObjectNameException
+                final Integer runDelay,
+                final IpTranslator ipTranslator) throws MalformedObjectNameException
         {
             myDistributedJmxConnectionProvider = distributedJmxConnectionProvider;
             myNodesMap = nodesMap;
@@ -139,7 +144,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
             myRepairServiceObject = new ObjectName(RS_OBJ_NAME);
             isJolokiaEnabled = jolokiaEnabled;
             myReverseDNSResolution = reverseDNSResolution;
-            myJolokiaNotificationController = new JolokiaNotificationController(myNodesMap, jolokiaPortValue, jolokiaPEMEnabled, myReverseDNSResolution, runDelay);
+            myJolokiaNotificationController = new JolokiaNotificationController(myNodesMap, jolokiaPortValue, jolokiaPEMEnabled, myReverseDNSResolution, runDelay, ipTranslator);
         }
 
         @Override
@@ -150,8 +155,9 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         }
 
         @Override
-        public void addStorageServiceListener(final UUID nodeID, final NotificationListener listener)
+        public boolean addStorageServiceListener(final UUID nodeID, final NotificationListener listener)
         {
+            boolean ret = true;
             JMXConnector nodeConnection = myDistributedJmxConnectionProvider.getJmxConnector(nodeID);
             boolean isConnectionAvailable = validateJmxConnection(nodeConnection);
             if (isConnectionAvailable)
@@ -171,12 +177,15 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                 catch (InstanceNotFoundException | IOException | InterruptedException e)
                 {
                     LOG.error("Unable to add StorageService listener in node {} with because of {}", nodeID, e.getMessage());
+                    ret = false;
                 }
             }
             else
             {
                 markNodeAsUnavailable(nodeID);
+                ret = false;
             }
+            return ret;
         }
 
         @SuppressWarnings("unchecked")
@@ -209,7 +218,8 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                        | MBeanException
                        | ReflectionException
                        | IOException
-                       | AttributeNotFoundException e)
+                       | AttributeNotFoundException
+                       | UncheckedJmxAdapterException e)
                 {
                     LOG.error("Unable to get live nodes for node {} because of {}", nodeID, e.getMessage());
                 }
@@ -252,7 +262,8 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                        | MBeanException
                        | ReflectionException
                        | IOException
-                       | AttributeNotFoundException e)
+                       | AttributeNotFoundException
+                       | UncheckedJmxAdapterException e)
                 {
                     LOG.error("Unable to get unreachable nodes for node {} because of {}", nodeID, e.getMessage());
                 }
@@ -299,7 +310,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                         return 0;
                     }
                 }
-                catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
+                catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException | UncheckedJmxAdapterException e)
                 {
                     LOG.error("Unable to repair node {} because of {}", nodeID, e.getMessage());
                 }
@@ -340,7 +351,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                                     FORCE_TERMINATE_ALL_REPAIR_SESSIONS_METHOD,
                                     null, null);
                 }
-                catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
+                catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException | UncheckedJmxAdapterException e)
                 {
                     LOG.error("Unable to terminate repair sessions for node {} because of {}", nodeID, e.getMessage());
                 }
@@ -382,7 +393,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                     }
 
                 }
-                catch (InstanceNotFoundException | ListenerNotFoundException | IOException e)
+                catch (InstanceNotFoundException | ListenerNotFoundException | IOException | UncheckedJmxAdapterException e)
                 {
                     LOG.error("Unable to remove StorageService listener for node {} because of {}", nodeID, e.getMessage());
                 }
@@ -437,7 +448,8 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                        | MBeanException
                        | ReflectionException
                        | IOException
-                       | MalformedObjectNameException e)
+                       | MalformedObjectNameException
+                       | UncheckedJmxAdapterException e)
                 {
                     LOG.error("Unable to retrieve disk space usage for table {} in node {} because of {}", tableReference,
                             nodeID,
@@ -481,7 +493,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                 Object result = invokeRepairStats(nodeConnection, tableReference);
                 return extractMaxRepairedValue(result);
             }
-            catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException e)
+            catch (InstanceNotFoundException | MBeanException | ReflectionException | IOException | UncheckedJmxAdapterException e)
             {
                 LOG.error("Unable to get maxRepaired for table {} in node {} because of {}", tableReference, nodeID, e.getMessage());
             }
@@ -607,7 +619,8 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                        | MBeanException
                        | ReflectionException
                        | IOException
-                       | MalformedObjectNameException e)
+                       | MalformedObjectNameException
+                       | UncheckedJmxAdapterException e)
                 {
                     LOG.error("Unable to retrieve percent repaired for {} in node {}, because of {}",
                             tableReference, nodeID, e.getMessage());
@@ -641,7 +654,8 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                        | AttributeNotFoundException
                        | MBeanException
                        | ReflectionException
-                       | IOException e)
+                       | IOException
+                       | UncheckedJmxAdapterException e)
                 {
                     LOG.error("Unable to retrieve node status for {} because of {}", nodeID, e.getMessage());
                 }
@@ -710,6 +724,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         private boolean myReverseDNSResolution = false;
         private Integer myRunDelay = DEFAULT_RUN_DELAY;
         private Integer myHeathCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
+        private IpTranslator myIpTranslator;
 
         /**
          * Build with JMX connection provider.
@@ -818,6 +833,18 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         }
 
         /**
+         * Build with IpTranslator.
+         *
+         * @param ipTranslator
+         * @return Builder
+         */
+        public Builder withIpTranslator(final IpTranslator ipTranslator)
+        {
+            myIpTranslator = ipTranslator;
+            return this;
+        }
+
+        /**
          * Build.
          *
          * @return DistributedJmxProxyFactoryImpl
@@ -827,6 +854,10 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
             if (myDistributedJmxConnectionProvider == null)
             {
                 throw new IllegalArgumentException("JMX Connection provider cannot be null");
+            }
+            if (myIpTranslator == null)
+            {
+                throw new IllegalArgumentException("IpTranslator cannot be null");
             }
             return new DistributedJmxProxyFactoryImpl(this);
         }

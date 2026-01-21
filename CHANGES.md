@@ -2,7 +2,16 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+## Version 1.0.0-beta2
+
 * Add JSON output and columns filtering - Issue #1225
+* Add extra exceptions to be caught for Jolokia jmx extensions - Issue #1324
+* Ensure Jolokia connection does not hang forever during connection - Issue #1337
+* Add Configurable Option to Disable TLS Hostname Verification in JMX/Jolokia Connections - Issue #1333
+* Add ignore-unreplicated-keyspaces to avoid nothing to repair error message - Issue #1323
+* Fix nullpointer issues in IpTranslator
+* Make sure to close CqlSessions if can't get a fully working connection to the cluster
+* Add option to translate broadcastRPCAddress to RPCAddress for jmx connections - Issue #1283
 * ecChronos remains in not running status - Issue #1301
 * On-demand repair fails with ERROR status instead of being blocked when repairs are disabled - Issue #1289
 

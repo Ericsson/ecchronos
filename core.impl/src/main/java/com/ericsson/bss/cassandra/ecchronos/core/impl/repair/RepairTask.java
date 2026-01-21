@@ -47,7 +47,7 @@ import java.util.regex.Pattern;
 /**
  * Abstract Class used to represent repair tasks.
  */
-public abstract class RepairTask implements NotificationListener
+public abstract class RepairTask implements NotificationListener // NOPMD Possible God Class
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairTask.class);
     private static final Pattern RANGE_PATTERN = Pattern.compile("\\((-?[0-9]+),(-?[0-9]+)\\]");
@@ -139,40 +139,48 @@ public abstract class RepairTask implements NotificationListener
     {
         // NOOP
     }
-
+    @SuppressWarnings("PMD.CyclomaticComplexity")
     private void repair(final DistributedJmxProxy proxy) throws ScheduledJobException
     {
         LOG.debug("repair starting for table {} on node {}", myTableReference, nodeID);
-        proxy.addStorageServiceListener(nodeID, this);
-        myCommand = proxy.repairAsync(nodeID, myTableReference.getKeyspace(), getOptions());
-        if (myCommand > 0)
+        if (proxy.addStorageServiceListener(nodeID, this))
         {
-            try
+            myCommand = proxy.repairAsync(nodeID, myTableReference.getKeyspace(), getOptions());
+            if (myCommand > 0)
             {
-                LOG.debug("waiting for latch for table {} on node {}", myTableReference, nodeID);
-                myLatch.await();
-                LOG.debug("finished waiting for latch for table {} on node {}", myTableReference, nodeID);
-                proxy.removeStorageServiceListener(nodeID, this);
-                verifyRepair(proxy);
-                if (myLastError != null)
+                try
                 {
-                    throw myLastError;
+                    LOG.debug("waiting for latch for table {} on node {}", myTableReference, nodeID);
+                    myLatch.await();
+                    LOG.debug("finished waiting for latch for table {} on node {}", myTableReference, nodeID);
+                    proxy.removeStorageServiceListener(nodeID, this);
+                    verifyRepair(proxy);
+                    if (myLastError != null)
+                    {
+                        throw myLastError;
+                    }
+                    if (hasLostNotification)
+                    {
+                        String msg = String.format("Repair-%d of %s had lost notifications", myCommand, myTableReference);
+                        LOG.warn(msg);
+                        throw new ScheduledJobException(msg);
+                    }
+                    LOG.debug("{} completed successfully on node {}", this, nodeID);
                 }
-                if (hasLostNotification)
+                catch (InterruptedException e)
                 {
-                    String msg = String.format("Repair-%d of %s had lost notifications", myCommand, myTableReference);
-                    LOG.warn(msg);
-                    throw new ScheduledJobException(msg);
+                    String msg = this + " was interrupted";
+                    LOG.warn(msg, e);
+                    Thread.currentThread().interrupt();
+                    throw new ScheduledJobException(msg, e);
                 }
-                LOG.debug("{} completed successfully on node {}", this, nodeID);
             }
-            catch (InterruptedException e)
-            {
-                String msg = this + " was interrupted";
-                LOG.warn(msg, e);
-                Thread.currentThread().interrupt();
-                throw new ScheduledJobException(msg, e);
-            }
+        }
+        else
+        {
+            String msg = String.format("Repair of %s has no jmx connection", myCommand, myTableReference);
+            LOG.warn(msg);
+            throw new ScheduledJobException(msg);
         }
     }
 

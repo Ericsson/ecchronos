@@ -24,6 +24,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedJmxConnectionProviderImpl;
+import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
 import com.ericsson.bss.cassandra.ecchronos.utils.dns.ReverseDNS;
 import com.ericsson.bss.cassandra.ecchronos.utils.enums.sync.NodeStatus;
@@ -43,6 +44,12 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
 public class DistributedJmxBuilder //NOPMD Possible God Class
@@ -50,6 +57,7 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
     private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxBuilder.class);
     private static final String JMX_FORMAT_URL = "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi";
     private static final String JMX_JOLOKIA_FORMAT_URL = "service:jmx:jolokia://%s:%d/jolokia/";
+    private static final Integer JMX_JOLOKIA_CONNECTION_TIMEOUT = 20;
     private static final int DEFAULT_JOLOKIA_PORT = 8778;
     private static final int DEFAULT_PORT = 7199;
     public static final String NO_BROADCAST_ADDRESS = "0.0.0.0"; //NOPMD AvoidUsingHardCodedIP
@@ -64,6 +72,7 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
     private int myJolokiaPort = DEFAULT_JOLOKIA_PORT;
     private EccNodesSync myEccNodesSync;
     private boolean myReverseDNSResolution = false;
+    private IpTranslator myIpTranslator;
 
     /**
      * Set the CQL session to be used by the DistributedJmxBuilder.
@@ -154,6 +163,12 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
         return this;
     }
 
+    public final DistributedJmxBuilder withIpTranslator(final IpTranslator ipTranslator)
+    {
+        myIpTranslator = ipTranslator;
+        return this;
+    }
+
     /**
      * Build the DistributedJmxConnectionProviderImpl instance.
      *
@@ -199,6 +214,10 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
             {
                 host = node.getListenAddress().get().getHostString();
             }
+            if (myIpTranslator.isActive())
+            {
+                host = myIpTranslator.getInternalIp(host);
+            }
             JMXServiceURL jmxUrl;
             Integer port;
             JMXConnector jmxConnector;
@@ -220,8 +239,32 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
                 JolokiaJmxConnectionProvider jolokiaJmxConnectionProvider = new JolokiaJmxConnectionProvider();
                 LOG.info("Creating Jolokia JMXConnection with host: {} and port: {}", host, port);
                 jmxConnector = jolokiaJmxConnectionProvider.newJMXConnector(jmxUrl, createJMXEnv());
-                jmxConnector.connect();
-                // Verify MBeanServerConnection is available
+
+                ExecutorService exec = Executors.newSingleThreadExecutor();
+                Future future = exec.submit(() ->
+                {
+                    try
+                    {
+                        jmxConnector.connect();
+                    }
+                    catch (IOException e)
+                    {
+                        LOG.warn("Jolokia connection failed due to {}", e);
+                    }
+                });
+                try
+                {
+                    if (future != null)
+                    {
+                        future.get(JMX_JOLOKIA_CONNECTION_TIMEOUT, TimeUnit.SECONDS);
+                    }
+                }
+                catch (TimeoutException | InterruptedException | ExecutionException e)
+                {
+                    future.cancel(true);
+                    throw new IOException("Jolokia connection failed due to {}", e);
+                }
+               // Verify MBeanServerConnection is available
                 if (jmxConnector.getMBeanServerConnection() == null)
                 {
                     throw new IOException("MBeanServerConnection is null after Jolokia connection");
