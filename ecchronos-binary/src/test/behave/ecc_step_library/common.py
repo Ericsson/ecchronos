@@ -105,7 +105,6 @@ def check_row_not_exists(rows, expected_row):
 @given("we have access to ecctool")
 def step_init(context):
     assert context.config.userdata.get("ecctool") is not False
-    assert os.path.isfile(context.config.userdata.get("ecctool"))
 
 
 @given("we have a nodeid")
@@ -268,12 +267,29 @@ def step_extract_job_id(context, keyspace):
 
 
 def run_ecctool(context, params):
-    cmd = [context.config.userdata.get("ecctool")] + params
-    client_cert = context.config.userdata.get("ecc_client_cert")
-    client_key = context.config.userdata.get("ecc_client_key")
-    client_ca = context.config.userdata.get("ecc_client_ca")
-    env = {}
-    if client_cert and client_key and client_ca:
-        env = {"ECCTOOL_CERT_FILE": client_cert, "ECCTOOL_KEY_FILE": client_key, "ECCTOOL_CA_FILE": client_ca}
-    context.proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)  # pylint: disable=consider-using-with
+    ecctool_cmd = context.config.userdata.get("ecctool")
+
+    if ecctool_cmd.startswith("docker exec"):
+        cmd = ecctool_cmd.split() + params
+        client_cert = context.config.userdata.get("ecc_client_cert")
+        client_key = context.config.userdata.get("ecc_client_key")
+        client_ca = context.config.userdata.get("ecc_client_ca")
+        if client_cert and client_key and client_ca:
+            cmd.insert(2, "-e")
+            cmd.insert(3, f"ECCTOOL_CERT_FILE={client_cert}")
+            cmd.insert(4, "-e")
+            cmd.insert(5, f"ECCTOOL_KEY_FILE={client_key}")
+            cmd.insert(6, "-e")
+            cmd.insert(7, f"ECCTOOL_CA_FILE={client_ca}")
+        context.proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+    else:
+        cmd = ecctool_cmd.split() + params
+        client_cert = context.config.userdata.get("ecc_client_cert")
+        client_key = context.config.userdata.get("ecc_client_key")
+        client_ca = context.config.userdata.get("ecc_client_ca")
+        env = {}
+        if client_cert and client_key and client_ca:
+            env = {"ECCTOOL_CERT_FILE": client_cert, "ECCTOOL_KEY_FILE": client_key, "ECCTOOL_CA_FILE": client_ca}
+        context.proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)
+
     (context.out, context.err) = context.proc.communicate()

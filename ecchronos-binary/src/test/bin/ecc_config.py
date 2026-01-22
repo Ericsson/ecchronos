@@ -52,7 +52,7 @@ class EcchronosConfig:
         data = self._modify_scheduler_configuration(data)
         data = self._modify_twcs_configuration(data)
         if global_vars.JOLOKIA_ENABLED == "true":
-            data = self._modify_jolokia_configuration()
+            data = self._modify_jolokia_configuration(data)
         self.container_mounts["ecc"] = {"host": self.write_tmp(data), "container": global_vars.CONTAINER_ECC_YAML_PATH}
 
     def _modify_connection_configuration(self, data):

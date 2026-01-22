@@ -94,6 +94,7 @@ class TestFixture:
                 ports={"8080/tcp": 8080},
                 stdout=True,
                 stderr=True,
+                environment={"SERVER_ADDRESS": "0.0.0.0"},
             )
 
             network = client.networks.get(self.cassandra_cluster.network)
@@ -109,7 +110,7 @@ class TestFixture:
     def wait_for_ecchronos_ready(self) -> None:
         """Wait for ecChronos to be ready to accept requests"""
         url = global_vars.BASE_URL_TLS if global_vars.LOCAL != "true" else global_vars.BASE_URL
-        curl_cmd = ["curl", "--silent", "--fail", "--head", "--output", "/dev/null", url]
+        curl_cmd = ["curl", "--silent", "--fail", "--head", "--output", "/dev/null", "--insecure", url]
 
         if global_vars.LOCAL != "true":
             curl_cmd += [
@@ -119,11 +120,13 @@ class TestFixture:
                 f"{global_vars.CERTIFICATE_DIRECTORY}/clientkey.pem",
                 "--cacert",
                 f"{global_vars.CERTIFICATE_DIRECTORY}/serverca.crt",
+                "--resolve",
+                "localhost:8080:127.0.0.1",
             ]
 
         for attempt in range(MAX_CHECK + 1):
             try:
-                result = subprocess.run(curl_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                result = subprocess.run(curl_cmd, capture_output=True, text=True)
                 if result.returncode == 0:
                     logger.info("ecChronos is ready")
                     return
@@ -182,7 +185,7 @@ def test_environment():
         fixture.cleanup()
 
 
-def build_behave_command(cassandra_cluster: CassandraCluster, ecchronos_container: Container) -> list[str]:
+def build_behave_command(cassandra_cluster: CassandraCluster) -> list[str]:
     """Build behave command based on configuration"""
     base_command = [
         "behave",
@@ -201,11 +204,11 @@ def build_behave_command(cassandra_cluster: CassandraCluster, ecchronos_containe
     else:
         tls_options = [
             "--define",
-            f"ecc_client_cert={global_vars.CERTIFICATE_DIRECTORY}/clientcert.crt",
+            f"ecc_client_cert={global_vars.CONTAINER_CERTIFICATE_PATH}/clientcert.crt",
             "--define",
-            f"ecc_client_key={global_vars.CERTIFICATE_DIRECTORY}/clientkey.pem",
+            f"ecc_client_key={global_vars.CONTAINER_CERTIFICATE_PATH}/clientkey.pem",
             "--define",
-            f"ecc_client_ca={global_vars.CERTIFICATE_DIRECTORY}/serverca.crt",
+            f"ecc_client_ca={global_vars.CONTAINER_CERTIFICATE_PATH}/serverca.crt",
             "--define",
             f"cql_client_cert={global_vars.CERTIFICATE_DIRECTORY}/cert.crt",
             "--define",
