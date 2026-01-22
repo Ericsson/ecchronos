@@ -165,7 +165,7 @@ jobs:
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: ${{ matrix.name }}-ecchronos-logs
-          path: ./ecchronos-binary/target/test/ecchronos-binary-agent-1.0.0-SNAPSHOT/ecc.log
+          path: ./ecchronos-binary/target/test/ecchronos-binary-agent-1.0.0-SNAPSHOT/logs/ecchronos.log
           if-no-files-found: 'ignore'
 
       - name: Upload coverage to Codecov
