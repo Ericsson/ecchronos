@@ -95,12 +95,9 @@ class TestFixture:
                 stdout=True,
                 stderr=True,
             )
-            
+
             network = client.networks.get(self.cassandra_cluster.network)
-            network.connect(
-                container,
-                ipv4_address=global_vars.ECC_CONTAINER_IP
-            )
+            network.connect(container, ipv4_address=global_vars.ECC_CONTAINER_IP)
             self.ecchronos = container
 
             time.sleep(STARTUP_WAIT_TIME)
