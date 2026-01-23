@@ -67,6 +67,12 @@ class TestFixture:
         for item in self.ecc_config.container_mounts.values():
             self.volumes[item["host"]] = {"bind": item["container"], "mode": "rw"}
 
+        # Mount behave test files
+        self.volumes[f"{global_vars.PROJECT_BUILD_DIRECTORY}/../src/test/behave"] = {
+            "bind": f"{global_vars.CONTAINER_BASE_DIR}/behave",
+            "mode": "ro",
+        }
+
     def _build_ecchronos_image(self):
         logger.info("Building ecChronos image")
         client.images.build(
@@ -186,11 +192,11 @@ def test_environment():
 
 
 def build_behave_command(cassandra_cluster: CassandraCluster) -> list[str]:
-    """Build behave command based on configuration"""
+    """Build behave command for execution inside container"""
     base_command = [
         "behave",
         "--define",
-        f"ecctool=docker exec ecchronos-agent {global_vars.CONTAINER_BASE_DIR}/bin/ecctool",
+        f"ecctool={global_vars.CONTAINER_BASE_DIR}/bin/ecctool",
         "--define",
         f"cassandra_address={cassandra_cluster.cassandra_ip}",
         "--define",
@@ -210,11 +216,11 @@ def build_behave_command(cassandra_cluster: CassandraCluster) -> list[str]:
             "--define",
             f"ecc_client_ca={global_vars.CONTAINER_CERTIFICATE_PATH}/serverca.crt",
             "--define",
-            f"cql_client_cert={global_vars.CERTIFICATE_DIRECTORY}/cert.crt",
+            f"cql_client_cert={global_vars.CONTAINER_CERTIFICATE_PATH}/cert.crt",
             "--define",
-            f"cql_client_key={global_vars.CERTIFICATE_DIRECTORY}/key.pem",
+            f"cql_client_key={global_vars.CONTAINER_CERTIFICATE_PATH}/key.pem",
             "--define",
-            f"cql_client_ca={global_vars.CERTIFICATE_DIRECTORY}/ca.crt",
+            f"cql_client_ca={global_vars.CONTAINER_CERTIFICATE_PATH}/ca.crt",
         ]
         base_command.extend(tls_options)
 
