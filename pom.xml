@@ -705,6 +705,7 @@ limitations under the License.
                             <exclude>.github/workflows/actions.yml</exclude>
                             <exclude>.github/workflows/scorecard.yml</exclude>
                             <exclude>**/docker/*</exclude>
+                            <exclude>**/Dockerfile</exclude>
                             <exclude>**/*.cql</exclude>
                             <exclude>**/*.txt</exclude>
                             <exclude>**/*.p12</exclude>
