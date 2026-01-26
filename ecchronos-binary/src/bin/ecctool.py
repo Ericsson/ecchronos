@@ -491,10 +491,13 @@ def _state_nodes(arguments):
     request = rest.StateManagementRequest(base_url=arguments.url)
     result = request.get_nodes(arguments.output)
 
-    if arguments.output == "json":
-        table_printer.output_json({"nodes": result.data})
+    if result.is_successful():
+        if arguments.output == "json":
+            table_printer.output_json({"nodes": result.data})
+        else:
+            table_printer.print_nodes(result.data, columns=arguments.columns)
     else:
-        table_printer.print_nodes(result, columns=arguments.columns)
+        print(result.format_exception())
 
 
 def schedules(arguments):
