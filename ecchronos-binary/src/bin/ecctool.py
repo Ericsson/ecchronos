@@ -489,16 +489,12 @@ def state(arguments):
 
 def _state_nodes(arguments):
     request = rest.StateManagementRequest(base_url=arguments.url)
-    result = request.get_nodes()
+    result = request.get_nodes(arguments.output)
 
-    if result.is_successful():
-        if arguments.output == "json":
-            table_printer.output_json({"nodes": result.data})
-        else:
-            nodes = [rest.NodeSyncState(x) for x in result.data]
-            table_printer.print_nodes(nodes, columns=arguments.columns)
+    if arguments.output == "json":
+        table_printer.output_json({"nodes": result.data})
     else:
-        print(result.format_exception())
+        table_printer.print_nodes(result, columns=arguments.columns)
 
 
 def schedules(arguments):
@@ -601,7 +597,8 @@ def run_repair(arguments):
     if result.is_successful():
         table_printer.print_repairs(result.data, columns=arguments.columns, output=arguments.output)
     else:
-        print(result.format_exception())
+        print("Repair Request Failed")
+        sys.exit(1)
 
 
 def repair_info(arguments):
