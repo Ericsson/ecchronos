@@ -4,6 +4,7 @@
 
 ## Version 1.0.0-beta2
 
+* Add JSON output and columns filtering - Issue #1225
 * Add extra exceptions to be caught for Jolokia jmx extensions - Issue #1324
 * Ensure Jolokia connection does not hang forever during connection - Issue #1337
 * Add Configurable Option to Disable TLS Hostname Verification in JMX/Jolokia Connections - Issue #1333

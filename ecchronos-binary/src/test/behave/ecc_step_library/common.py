@@ -27,7 +27,7 @@ ID_PATTERN = r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a
 REPAIR_SUMMARY_PATTERN = r"Summary: \d+ completed, \d+ in queue, \d+ blocked, \d+ warning, \d+ error"
 REPAIR_HEADER = r"| NodeID | JobID | Keyspace | Table | Status | Repaired(%) | Completed at | Repair type |"
 REPAIR_ROW_FORMAT_PATTERN = r"\| .* \| .* \| {0} \| {1} \| (COMPLETED|IN_QUEUE|WARNING|ERROR) \| \d+[.]\d+ \| .* \| {2} \|"  # pylint: disable=line-too-long
-REPAIR_NODEID_ERROR = "--all must be specified if nodeid is not included"
+REPAIR_NODEID_ERROR = "--id or --all must be specified, but not both."
 REPAIR_REQUEST_FAILED = "Repair Request Failed"
 
 
