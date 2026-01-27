@@ -45,6 +45,7 @@ class CassandraCluster:
         self.node: Optional[ComposeContainer] = None
         self._extra_node: str = None
         self.local = local
+        self.network: str = ""
         os.environ["CERTIFICATE_DIRECTORY"] = global_vars.CERTIFICATE_DIRECTORY
         os.environ["CASSANDRA_VERSION"] = global_vars.CASSANDRA_VERSION
         os.environ["JOLOKIA"] = global_vars.JOLOKIA_ENABLED
@@ -69,6 +70,7 @@ class CassandraCluster:
         self._modify_system_auth_keyspace()
         self._run_full_repair()
         self._setup_db()
+        self._set_network()
 
     def _set_env(self):
         try:
@@ -82,6 +84,21 @@ class CassandraCluster:
             print(f"Error setting env: {e}")
             self.stop_cluster()
             raise e
+
+    def _set_network(self):
+        result = subprocess.run(
+            [
+                "docker",
+                "inspect",
+                "--format={{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}",
+                self.container_id,
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        self.network = result.stdout.strip()
 
     def add_node(self):
         client.images.build(
@@ -97,20 +114,6 @@ class CassandraCluster:
         )
         cert_dir = global_vars.CERTIFICATE_DIRECTORY
 
-        result = subprocess.run(
-            [
-                "docker",
-                "inspect",
-                "--format={{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}",
-                self.container_id,
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-
-        network_name = result.stdout.strip()
-
         cmd = [
             "docker",
             "run",
@@ -118,7 +121,7 @@ class CassandraCluster:
             "--name",
             container_name,
             "--network",
-            network_name,
+            self.network,
             "-e",
             "CASSANDRA_CLUSTER_NAME=cassandra-cluster",
             "-e",

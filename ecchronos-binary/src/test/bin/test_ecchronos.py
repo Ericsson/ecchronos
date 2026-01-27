@@ -28,24 +28,34 @@ logger = logging.getLogger(__name__)
 @pytest.mark.dependency(name="test_behave_tests")
 def test_behave_tests(test_environment):
     """Test that runs behave tests"""
+    from conftest import client
+
     cassandra_cluster = test_environment
-    command = build_behave_command(cassandra_cluster)
-    logger.info("Running behave tests")
+
+    behave_cmd = build_behave_command(cassandra_cluster)
+
+    logger.info("Running behave tests inside container")
 
     try:
-        result = subprocess.run(command, stdout=sys.stdout, stderr=sys.stderr, timeout=1800)
-        logger.info(f"Behave tests completed with exit code: {result.returncode}")
+        container = client.containers.get("ecchronos-agent")
+        exec_result = container.exec_run(behave_cmd, workdir=f"{global_vars.CONTAINER_BASE_DIR}/behave", stream=False)
 
-        if result.returncode != 0:
+        exit_code = exec_result.exit_code
+        output = exec_result.output.decode("utf-8")
+
+        # Print output
+        sys.stdout.write(output)
+        sys.stdout.flush()
+
+        logger.info(f"Behave tests completed with exit code: {exit_code}")
+
+        if exit_code != 0:
             logger.error("Behave tests failed")
             pytest.fail("Behave tests failed")
         else:
             logger.info("Behave tests passed successfully")
 
-    except subprocess.TimeoutExpired:
-        logger.error("Behave tests timed out after 30 minutes")
-        pytest.fail("Behave tests timed out")
-    except subprocess.SubprocessError as e:
+    except Exception as e:
         logger.error(f"Failed to run behave tests: {e}")
         pytest.fail(f"Failed to run behave tests: {e}")
 

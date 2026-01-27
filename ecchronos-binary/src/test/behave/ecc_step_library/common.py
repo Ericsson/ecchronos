@@ -105,7 +105,6 @@ def check_row_not_exists(rows, expected_row):
 @given("we have access to ecctool")
 def step_init(context):
     assert context.config.userdata.get("ecctool") is not False
-    assert os.path.isfile(context.config.userdata.get("ecctool"))
 
 
 @given("we have a nodeid")

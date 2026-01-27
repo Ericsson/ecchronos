@@ -19,13 +19,16 @@ import global_variables as global_vars
 import subprocess
 from cass_config import CassandraCluster
 from ecc_config import EcchronosConfig
-import os
 import time
 import logging
+import docker
+
 from typing import Optional
+from docker.models.containers import Container
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+client = docker.from_env()
 
 MAX_CHECK = 10
 STARTUP_WAIT_TIME = 10
@@ -36,8 +39,10 @@ class TestFixture:
 
     def __init__(self):
         self.cassandra_cluster: Optional[CassandraCluster] = None
-        self.ecchronos_process: Optional[subprocess.Popen] = None
+        self.ecchronos: Optional[Container] = None
         self.is_setup = False
+        self.ecc_config = None
+        self.volumes = {}
 
     def setup(self) -> CassandraCluster:
         """Setup test environment with Cassandra cluster and ecChronos configuration"""
@@ -47,8 +52,8 @@ class TestFixture:
             self.cassandra_cluster.create_cluster()
 
             logger.info("Configuring ecChronos")
-            ecc_config = EcchronosConfig(context=self.cassandra_cluster)
-            ecc_config.modify_configuration()
+            self.ecc_config = EcchronosConfig(context=self.cassandra_cluster)
+            self.ecc_config.modify_configuration()
 
             self.is_setup = True
             return self.cassandra_cluster
@@ -58,20 +63,51 @@ class TestFixture:
             self.cleanup()
             raise
 
+    def _define_volumes(self):
+        for item in self.ecc_config.container_mounts.values():
+            self.volumes[item["host"]] = {"bind": item["container"], "mode": "rw"}
+
+        # Mount behave test files
+        self.volumes[f"{global_vars.PROJECT_BUILD_DIRECTORY}/../src/test/behave"] = {
+            "bind": f"{global_vars.CONTAINER_BASE_DIR}/behave",
+            "mode": "ro",
+        }
+
+    def _build_ecchronos_image(self):
+        logger.info("Building ecChronos image")
+        client.images.build(
+            path=global_vars.ROOT_DIR,
+            dockerfile="ecchronos-binary/src/test/bin/Dockerfile",
+            tag="ecchronos:latest",
+            buildargs={"JAVA_VERSION": global_vars.JAVA_VERSION, "PROJECT_VERSION": global_vars.PROJECT_VERSION},
+        )
+
     def start_ecchronos(self) -> None:
         """Start ecChronos service"""
         if not self.is_setup:
             raise RuntimeError("Test fixture not setup. Call setup() first.")
 
-        command = [f"{global_vars.BASE_DIR}/bin/ecctool", "start", "-p", global_vars.PIDFILE]
-
         try:
+            self._define_volumes()
+            self._build_ecchronos_image()
             logger.info("Starting ecChronos")
-            self.ecchronos_process = subprocess.Popen(
-                command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            container = client.containers.run(
+                image="ecchronos:latest",
+                detach=True,
+                volumes=self.volumes,
+                name="ecchronos-agent",
+                remove=False,
+                ports={"8080/tcp": 8080},
+                stdout=True,
+                stderr=True,
+                environment={"SERVER_ADDRESS": "0.0.0.0"},
             )
+
+            network = client.networks.get(self.cassandra_cluster.network)
+            network.connect(container, ipv4_address=global_vars.ECC_CONTAINER_IP)
+            self.ecchronos = container
+
             time.sleep(STARTUP_WAIT_TIME)
-            logger.info(f"ecChronos started with PID file: {global_vars.PIDFILE}")
 
         except Exception as e:
             logger.error(f"Failed to start ecChronos: {e}")
@@ -80,7 +116,7 @@ class TestFixture:
     def wait_for_ecchronos_ready(self) -> None:
         """Wait for ecChronos to be ready to accept requests"""
         url = global_vars.BASE_URL_TLS if global_vars.LOCAL != "true" else global_vars.BASE_URL
-        curl_cmd = ["curl", "--silent", "--fail", "--head", "--output", "/dev/null", url]
+        curl_cmd = ["curl", "--silent", "--fail", "--head", "--output", "/dev/null", "--insecure", url]
 
         if global_vars.LOCAL != "true":
             curl_cmd += [
@@ -90,11 +126,13 @@ class TestFixture:
                 f"{global_vars.CERTIFICATE_DIRECTORY}/clientkey.pem",
                 "--cacert",
                 f"{global_vars.CERTIFICATE_DIRECTORY}/serverca.crt",
+                "--resolve",
+                "localhost:8080:127.0.0.1",
             ]
 
         for attempt in range(MAX_CHECK + 1):
             try:
-                result = subprocess.run(curl_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                result = subprocess.run(curl_cmd, capture_output=True, text=True)
                 if result.returncode == 0:
                     logger.info("ecChronos is ready")
                     return
@@ -110,11 +148,24 @@ class TestFixture:
     def cleanup(self) -> None:
         """Cleanup all resources"""
         try:
-            if os.path.exists(global_vars.PIDFILE):
-                command = [f"{global_vars.BASE_DIR}/bin/ecctool", "stop", "-p", global_vars.PIDFILE]
-                subprocess.run(command, capture_output=True, text=True, timeout=30)
-                if os.path.exists(global_vars.PIDFILE):
-                    os.remove(global_vars.PIDFILE)
+            if self.ecchronos is not None:
+                self.ecchronos.stop()
+                inspect_cmd = [
+                    "docker",
+                    "inspect",
+                    self.ecchronos.id,
+                    "--format",
+                    '{{ range .Mounts }}{{ if eq .Type "volume" }}{{ .Name }}{{ println }}{{ end }}{{ end }}',
+                ]
+
+                result = subprocess.run(inspect_cmd, capture_output=True, text=True, check=True)
+
+                volumes = [v for v in result.stdout.splitlines() if v.strip()]
+
+                if volumes:
+                    rm_cmd = ["docker", "volume", "rm", *volumes]
+                    subprocess.run(rm_cmd, check=True)
+                subprocess.run(["docker", "rm", self.ecchronos.id], capture_output=True, text=True, check=True)
         except Exception as e:
             logger.error(f"Error stopping ecChronos during cleanup: {e}")
 
@@ -141,11 +192,11 @@ def test_environment():
 
 
 def build_behave_command(cassandra_cluster: CassandraCluster) -> list[str]:
-    """Build behave command based on configuration"""
+    """Build behave command for execution inside container"""
     base_command = [
         "behave",
         "--define",
-        f"ecctool={global_vars.BASE_DIR}/bin/ecctool",
+        f"ecctool={global_vars.CONTAINER_BASE_DIR}/bin/ecctool",
         "--define",
         f"cassandra_address={cassandra_cluster.cassandra_ip}",
         "--define",
@@ -159,17 +210,17 @@ def build_behave_command(cassandra_cluster: CassandraCluster) -> list[str]:
     else:
         tls_options = [
             "--define",
-            f"ecc_client_cert={global_vars.CERTIFICATE_DIRECTORY}/clientcert.crt",
+            f"ecc_client_cert={global_vars.CONTAINER_CERTIFICATE_PATH}/clientcert.crt",
             "--define",
-            f"ecc_client_key={global_vars.CERTIFICATE_DIRECTORY}/clientkey.pem",
+            f"ecc_client_key={global_vars.CONTAINER_CERTIFICATE_PATH}/clientkey.pem",
             "--define",
-            f"ecc_client_ca={global_vars.CERTIFICATE_DIRECTORY}/serverca.crt",
+            f"ecc_client_ca={global_vars.CONTAINER_CERTIFICATE_PATH}/serverca.crt",
             "--define",
-            f"cql_client_cert={global_vars.CERTIFICATE_DIRECTORY}/cert.crt",
+            f"cql_client_cert={global_vars.CONTAINER_CERTIFICATE_PATH}/cert.crt",
             "--define",
-            f"cql_client_key={global_vars.CERTIFICATE_DIRECTORY}/key.pem",
+            f"cql_client_key={global_vars.CONTAINER_CERTIFICATE_PATH}/key.pem",
             "--define",
-            f"cql_client_ca={global_vars.CERTIFICATE_DIRECTORY}/ca.crt",
+            f"cql_client_ca={global_vars.CONTAINER_CERTIFICATE_PATH}/ca.crt",
         ]
         base_command.extend(tls_options)
 

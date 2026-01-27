@@ -282,6 +282,7 @@
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
+                                        <JAVA_VERSION>${java.version}</JAVA_VERSION>
                                     </environmentVariables>
                                 </configuration>
                             </execution>
@@ -310,6 +311,7 @@
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
+                                        <JAVA_VERSION>${java.version}</JAVA_VERSION>
                                     </environmentVariables>
                                     <redirectOutput>true</redirectOutput>
                                     <redirectErrorStream>true</redirectErrorStream>
@@ -382,6 +384,7 @@
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
+                                        <JAVA_VERSION>${java.version}</JAVA_VERSION>
                                     </environmentVariables>
                                 </configuration>
                             </execution>
@@ -406,6 +409,7 @@
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
+                                        <JAVA_VERSION>${java.version}</JAVA_VERSION>
                                     </environmentVariables>
                                     <redirectOutput>true</redirectOutput>
                                     <redirectErrorStream>true</redirectErrorStream>
@@ -472,6 +476,7 @@
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
+                                        <JAVA_VERSION>${java.version}</JAVA_VERSION>
                                     </environmentVariables>
                                 </configuration>
                             </execution>
@@ -496,6 +501,7 @@
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
+                                        <JAVA_VERSION>${java.version}</JAVA_VERSION>
                                     </environmentVariables>
                                     <redirectOutput>true</redirectOutput>
                                     <redirectErrorStream>true</redirectErrorStream>
@@ -594,6 +600,7 @@
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
+                                        <JAVA_VERSION>${java.version}</JAVA_VERSION>
                                     </environmentVariables>
                                 </configuration>
                             </execution>
@@ -622,6 +629,7 @@
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                         <JOLOKIA_ENABLED>${it.jolokia.enabled}</JOLOKIA_ENABLED>
                                         <PEM_ENABLED>${it.jmx.pem.enabled}</PEM_ENABLED>
+                                        <JAVA_VERSION>${java.version}</JAVA_VERSION>
                                     </environmentVariables>
                                     <redirectOutput>true</redirectOutput>
                                     <redirectErrorStream>true</redirectErrorStream>
