@@ -21,7 +21,7 @@
     <parent>
         <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
         <artifactId>parent</artifactId>
-        <version>6.1.5</version>
+        <version>6.1.6-SNAPSHOT</version>
     </parent>
     <artifactId>rest</artifactId>
     <description>REST interface base classes</description>
