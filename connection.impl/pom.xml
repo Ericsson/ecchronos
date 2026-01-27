@@ -20,7 +20,7 @@
     <parent>
         <groupId>com.ericsson.bss.cassandra.ecchronos</groupId>
         <artifactId>parent</artifactId>
-        <version>6.1.5-SNAPSHOT</version>
+        <version>6.1.5</version>
     </parent>
     <artifactId>connection.impl</artifactId>
     <description>A configurable reference implementation of connections</description>
