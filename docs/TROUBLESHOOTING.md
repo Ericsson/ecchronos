@@ -31,6 +31,15 @@ Change the level to the following (and then restart ecChronos):
     <appender-ref ref="FILE_DEBUG" />
 </root>
 ```
+### Jolokia connectivity and node address resolution
+
+ecChronos derives node addresses directly from Cassandra topology via the Java driver.
+As a result, Jolokia must be exposed on the same network address as Cassandra’s native CQL port.
+
+ecChronos does not perform independent hostname or reverse DNS resolution for Jolokia.
+If reverse DNS lookup resolves to an unexpected address (for example in Kubernetes
+deployments using external load balancers), this should be handled at the JVM or DNS
+configuration level.
 
 ## Metrics
 
