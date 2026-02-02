@@ -48,6 +48,7 @@ public class RepairStateImpl implements RepairState
 
     private static final DateTimeFormatter MY_DATE_FORMAT = DateTimeFormatter.ofPattern(
             "yyyy-MM-dd HH:mm:ss", Locale.US);
+    public static final int MILLISECONDS = 1000;
 
     private final AtomicReference<RepairStateSnapshot> myRepairStateSnapshot = new AtomicReference<>();
 
@@ -273,8 +274,8 @@ public class RepairStateImpl implements RepairState
             {
                 message = "{} is not ready for Repair. Time since Last Repaired {} estimated repair time {} Repair Interval {}";
             }
-            LOG.debug(message, myTableReference.getTable(), (now - lastRepairedAt) / 1000, estimatedRepairTime / 1000,
-                    myRepairConfiguration.getRepairIntervalInMs() / 1000);
+            LOG.debug(message, myTableReference.getTable(), (now - lastRepairedAt) / MILLISECONDS, estimatedRepairTime / MILLISECONDS,
+                    myRepairConfiguration.getRepairIntervalInMs() / MILLISECONDS);
         }
         return isRepairNeeded;
     }
