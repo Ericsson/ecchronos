@@ -261,7 +261,22 @@ public class RepairStateImpl implements RepairState
     @VisibleForTesting
     boolean isRepairNeeded(final long lastRepairedAt, final long estimatedRepairTime, final long now)
     {
-        return lastRepairedAt + (myRepairConfiguration.getRepairIntervalInMs() - estimatedRepairTime) <= now;
+        boolean isRepairNeeded = lastRepairedAt + (myRepairConfiguration.getRepairIntervalInMs() - estimatedRepairTime) <= now;
+        if (LOG.isDebugEnabled())
+        {
+            String message;
+            if (isRepairNeeded)
+            {
+                message = "{} is ready for Repair. Time since Last Repaired {} estimated repair time {} Repair Interval {}";
+            }
+            else
+            {
+                message = "{} is not ready for Repair. Time since Last Repaired {} estimated repair time {} Repair Interval {}";
+            }
+            LOG.debug(message, myTableReference.getTable(), (now - lastRepairedAt) / 1000, estimatedRepairTime / 1000,
+                    myRepairConfiguration.getRepairIntervalInMs() / 1000);
+        }
+        return isRepairNeeded;
     }
 
     private boolean vnodeIsRepairable(final VnodeRepairState vnodeRepairState,
