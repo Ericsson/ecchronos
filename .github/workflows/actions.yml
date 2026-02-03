@@ -18,7 +18,8 @@ permissions: read-all
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04 
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -67,7 +68,7 @@ jobs:
             test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Topology integration - Java 21"
-            java_version: 17
+            java_version: 21
             test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
 
@@ -154,6 +155,12 @@ jobs:
 
       - name: install dependencies
         run: mvn install -Pbuild-cassandra-test-jar -DskipTests=true
+
+      - name: Set Cassandra memory limits for topology tests
+        if: contains(matrix.name, 'Topology')
+        run: |
+          echo "MAX_HEAP_SIZE=1536M" >> $GITHUB_ENV
+          echo "HEAP_NEWSIZE=200M" >> $GITHUB_ENV
 
       - run: mvn $TEST_SUITE -B
         id: tests
