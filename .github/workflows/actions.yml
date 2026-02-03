@@ -12,13 +12,13 @@ on:
       - '**.md'
 
 env:
-  MAVEN_OPTS: -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3 -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 -Xmx2g -XX:+UseG1GC
+  MAVEN_OPTS: -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3 -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120
 
 permissions: read-all
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04 
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -45,7 +45,7 @@ jobs:
             artifacts_dir: "ecchronos-binary/target"
           - name: "Topology integration - Java 17"
             java_version: 17
-            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -DskipUTs -Dfailsafe.rerunFailingTestsCount=0'
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
             
           # Java 21 tests
@@ -69,7 +69,7 @@ jobs:
             artifacts_dir: "ecchronos-binary/target"
           - name: "Topology integration - Java 21"
             java_version: 21
-            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -DskipUTs -Dfailsafe.rerunFailingTestsCount=0'
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
 
           # Java 17 Jolokia tests
@@ -91,11 +91,11 @@ jobs:
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia Topology integration - Java 17"
             java_version: 17
-            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs -Dfailsafe.rerunFailingTestsCount=0'
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia Topology integration - Java 17 - PEM"
             java_version: 17
-            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs -Dfailsafe.rerunFailingTestsCount=0'
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
 
           # Java 21 Jolokia tests
@@ -117,11 +117,11 @@ jobs:
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia Topology integration - Java 21"
             java_version: 21
-            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs -Dfailsafe.rerunFailingTestsCount=0'
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia Topology integration - Java 21 - PEM"
             java_version: 21
-            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs -Dfailsafe.rerunFailingTestsCount=0'
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
 
     steps:
@@ -155,6 +155,12 @@ jobs:
 
       - name: install dependencies
         run: mvn install -Pbuild-cassandra-test-jar -DskipTests=true
+
+      - name: Set Cassandra memory limits for topology tests
+        if: contains(matrix.name, 'Topology')
+        run: |
+          echo "MAX_HEAP_SIZE=1536M" >> $GITHUB_ENV
+          echo "HEAP_NEWSIZE=200M" >> $GITHUB_ENV
 
       - run: mvn $TEST_SUITE -B
         id: tests
