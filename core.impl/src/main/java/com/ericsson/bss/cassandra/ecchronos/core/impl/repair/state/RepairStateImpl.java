@@ -48,6 +48,7 @@ public class RepairStateImpl implements RepairState
 
     private static final DateTimeFormatter MY_DATE_FORMAT = DateTimeFormatter.ofPattern(
             "yyyy-MM-dd HH:mm:ss", Locale.US);
+    public static final int MILLISECONDS = 1000;
 
     private final AtomicReference<RepairStateSnapshot> myRepairStateSnapshot = new AtomicReference<>();
 
@@ -261,7 +262,22 @@ public class RepairStateImpl implements RepairState
     @VisibleForTesting
     boolean isRepairNeeded(final long lastRepairedAt, final long estimatedRepairTime, final long now)
     {
-        return lastRepairedAt + (myRepairConfiguration.getRepairIntervalInMs() - estimatedRepairTime) <= now;
+        boolean isRepairNeeded = lastRepairedAt + (myRepairConfiguration.getRepairIntervalInMs() - estimatedRepairTime) <= now;
+        if (LOG.isDebugEnabled())
+        {
+            String message;
+            if (isRepairNeeded)
+            {
+                message = "{} is ready for Repair. Time since Last Repaired {} estimated repair time {} Repair Interval {}";
+            }
+            else
+            {
+                message = "{} is not ready for Repair. Time since Last Repaired {} estimated repair time {} Repair Interval {}";
+            }
+            LOG.debug(message, myTableReference.getTable(), (now - lastRepairedAt) / MILLISECONDS, estimatedRepairTime / MILLISECONDS,
+                    myRepairConfiguration.getRepairIntervalInMs() / MILLISECONDS);
+        }
+        return isRepairNeeded;
     }
 
     private boolean vnodeIsRepairable(final VnodeRepairState vnodeRepairState,
