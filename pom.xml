@@ -76,7 +76,7 @@
         <jcip.version>1.0</jcip.version>
         <junit.junit.version>4.13.2</junit.junit.version>
         <junit.junit-vintage-engine.version>6.0.2</junit.junit-vintage-engine.version>
-        <logback.version>1.5.26</logback.version>
+        <logback.version>1.5.27</logback.version>
         <mockito.core.version>5.21.0</mockito.core.version>
         <org.apache.commons.io.version>2.21.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
