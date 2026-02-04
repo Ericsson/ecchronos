@@ -34,3 +34,11 @@
 
 # Size of the heap for young generation.
 #-Xmn100M
+
+################
+# JMX SETTINGS #
+################
+
+#Disable TLS endpoint identification if TLS is used.
+#Change to true to enable.
+-Djdk.rmi.ssl.client.enableEndpointIdentification=false
