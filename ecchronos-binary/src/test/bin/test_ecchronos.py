@@ -20,24 +20,35 @@ import subprocess
 import os
 import logging
 import sys
-from conftest import build_behave_command
+from conftest import build_behave_command, run_ecctool_state_nodes, assert_nodes_size_is_equal
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.dependency(name="test_behave_tests")
-def test_behave_tests(test_environment):
+@pytest.mark.dependency(name="test_install_cassandra_cluster")
+def test_install_cassandra_cluster(install_cassandra_cluster):
+    assert install_cassandra_cluster.verify_node_count(4)
+
+
+@pytest.mark.dependency(name="test_install_ecchronos", depends=["test_install_cassandra_cluster"])
+def test_install_ecchronos(install_cassandra_cluster, test_environment):
+    test_environment.start_ecchronos(cassandra_network=install_cassandra_cluster.network)
+    test_environment.wait_for_ecchronos_ready()
+    out, _ = run_ecctool_state_nodes()
+    assert_nodes_size_is_equal(out, 4)
+
+
+@pytest.mark.dependency(name="test_behave_tests", depends=["test_install_ecchronos"])
+def test_behave_tests(install_cassandra_cluster, test_environment):
     """Test that runs behave tests"""
     from conftest import client
 
-    cassandra_cluster = test_environment
-
-    behave_cmd = build_behave_command(cassandra_cluster)
+    behave_cmd = build_behave_command()
 
     logger.info("Running behave tests inside container")
 
     try:
-        container = client.containers.get("ecchronos-agent")
+        container = client.containers.get("ecchronos-agent-cluster-wide")
         exec_result = container.exec_run(behave_cmd, workdir=f"{global_vars.CONTAINER_BASE_DIR}/behave", stream=False)
 
         exit_code = exec_result.exit_code
