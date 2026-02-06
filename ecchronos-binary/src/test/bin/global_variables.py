@@ -29,7 +29,7 @@ def get():
         PEM_ENABLED, CONTAINER_BASE_DIR , CONTAINER_CONF_PATH, CONTAINER_ECC_YAML_PATH, \
         CONTAINER_APPLICATION_YAML_PATH, CONTAINER_SECURITY_YAML_PATH, CONTAINER_SCHEDULE_YAML_PATH, \
         CONTAINER_LOGBACK_FILE_PATH, CONTAINER_JVM_OPTION_PATH, CONTAINER_CERTIFICATE_PATH, CONTAINER_LOGS_PATH, \
-        HOST_LOGS_PATH, JAVA_VERSION, ECC_CONTAINER_IP
+        HOST_LOGS_PATH, JAVA_VERSION, ECC_CONTAINER_IP, DEFAULT_INITIAL_CONTACT_POINT
     # fmt:on
 
     TEST_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -56,8 +56,8 @@ def get():
     LOCAL = os.environ.get("LOCAL")
     PEM_ENABLED = os.environ.get("PEM_ENABLED")
     ECC_CONTAINER_IP = "172.29.0.7"
-    BASE_URL = f"http://{ECC_CONTAINER_IP}:8080/repair-management/schedules"
-    BASE_URL_TLS = f"https://{ECC_CONTAINER_IP}:8080/repair-management/schedules"
+    BASE_URL = "http://{ip}:8080/repair-management/schedules"
+    BASE_URL_TLS = "https://{ip}:8080/repair-management/schedules"
 
     CONTAINER_BASE_DIR = f"/opt/ecchronos/ecchronos-binary-agent-{PROJECT_VERSION}"
     CONTAINER_CONF_PATH = f"{CONTAINER_BASE_DIR}/conf"
@@ -70,6 +70,7 @@ def get():
     CONTAINER_CERTIFICATE_PATH = "/etc/certificates"
     CONTAINER_LOGS_PATH = "/var/log/ecchronos"
     HOST_LOGS_PATH = f"{BASE_DIR}/logs"
+    DEFAULT_INITIAL_CONTACT_POINT = "172.29.0.2"
 
 
 get()

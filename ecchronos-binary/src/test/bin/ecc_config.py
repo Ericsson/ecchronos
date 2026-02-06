@@ -22,12 +22,22 @@ import global_variables as global_vars
 
 DC1 = "datacenter1"
 DC2 = "datacenter2"
+DEFAULT_AGENT_TYPE = "datacenterAware"
 
 
 class EcchronosConfig:
-    def __init__(self, context):
-        self.context = context
+    def __init__(
+        self,
+        datacenter_aware=None,
+        local_dc=DC1,
+        agent_type=DEFAULT_AGENT_TYPE,
+        initial_contact_point=global_vars.DEFAULT_INITIAL_CONTACT_POINT,
+    ):
         self.container_mounts = {}
+        self.datacenter_aware = [{"name": DC1}, {"name": DC2}] if datacenter_aware is None else datacenter_aware
+        self.local_dc = local_dc
+        self.agent_type = agent_type
+        self.initial_contact_point = initial_contact_point
 
     def modify_configuration(self):
         self._modify_ecc_yaml_file()
@@ -56,10 +66,8 @@ class EcchronosConfig:
         self.container_mounts["ecc"] = {"host": self.write_tmp(data), "container": global_vars.CONTAINER_ECC_YAML_PATH}
 
     def _modify_connection_configuration(self, data):
-        data["connection"]["cql"]["contactPoints"] = [
-            {"host": self.context.cassandra_ip, "port": self.context.cassandra_native_port}
-        ]
-        data["connection"]["cql"]["datacenterAware"]["datacenters"] = [{"name": DC1}, {"name": DC2}]
+        data["connection"]["cql"]["contactPoints"] = [{"host": self.initial_contact_point, "port": 9042}]
+        data["connection"]["cql"]["datacenterAware"]["datacenters"] = self.datacenter_aware
         return data
 
     def _modify_scheduler_configuration(self, data):
@@ -80,7 +88,7 @@ class EcchronosConfig:
     # Modify security.yaml file
     def _modify_security_yaml_file(self):
         data = self._read_yaml_data(global_vars.SECURITY_YAML_FILE_PATH)
-        if self.context.local != "true":
+        if global_vars.LOCAL != "true":
             data = self._modify_security_configuration(data)
         else:
             data = self._modify_cql_configuration(data)
@@ -125,7 +133,7 @@ class EcchronosConfig:
     # Modify application.yaml file
     def _modify_application_yaml_file(self):
         data = self._read_yaml_data(global_vars.APPLICATION_YAML_FILE_PATH)
-        if self.context.local != "true":
+        if global_vars.LOCAL != "true":
             data = self._modify_application_configuration(data)
         data = self._modify_spring_doc_configuration(data)
         self.container_mounts["application"] = {

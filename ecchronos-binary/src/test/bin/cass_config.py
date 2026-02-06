@@ -162,9 +162,16 @@ class CassandraCluster:
         ]
         static_ip = "172.29.0.6"
         cmd.extend(["--ip", static_ip])
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        new_container_id = result.stdout.strip()
-        self._extra_node = new_container_id
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            new_container_id = result.stdout.strip()
+            self._extra_node = new_container_id
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Docker run failed with exit code {e.returncode}")
+            logger.error(f"Command: {' '.join(cmd)}")
+            logger.error(f"Stdout: {e.stdout}")
+            logger.error(f"Stderr: {e.stderr}")
+            raise
 
     @staticmethod
     def _create_cert_path():
