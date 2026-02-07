@@ -14,6 +14,7 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.application.config.security;
 
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -21,7 +22,10 @@ import org.junit.rules.TemporaryFolder;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Date;
+import javax.net.ssl.SSLEngine;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -180,5 +184,48 @@ public class TestReloadingCertificateHandler
         cqlTLSConfig.setProtocol(protocolVersion);
         return cqlTLSConfig;
     }
+
+    @Test
+    public void testNewSslEnginePropagatesConfiguredCipherSuites_TLSv12()
+    {
+        CqlTLSConfig cfg = getTLSConfigWithKeyStore();
+        cfg.setProtocol("TLSv1.2"); // align with security.yml default
+
+        List<String> configured = List.of(
+            "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+            "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+        );
+        cfg.setCipherSuites(String.join(",", configured));
+
+        ReloadingCertificateHandler handler = new ReloadingCertificateHandler(() -> cfg);
+
+        SSLEngine engine = handler.newSslEngine(null);
+        assertThat(engine).isNotNull();
+
+        // Skip (not fail) on JDK/provider combos that don't support these suites.
+        List<String> supported = Arrays.asList(engine.getSupportedCipherSuites());
+        Assume.assumeTrue(
+            "Configured cipher suites not supported by this JDK/provider",
+            supported.containsAll(configured)
+        );
+
+        List<String> enabled = Arrays.asList(engine.getEnabledCipherSuites());
+        assertThat(enabled).containsAll(configured);
+    }
+
+    @Test
+    public void testCipherSuitesReturnedAsDefensiveCopy()
+    {
+        CqlTLSConfig cqlTLSConfig = getTLSConfigWithKeyStore();
+        cqlTLSConfig.setCipherSuites("A,B");
+
+        String[] first = cqlTLSConfig.getCipherSuites().orElseThrow();
+        first[0] = "MUTATED";
+
+        String[] second = cqlTLSConfig.getCipherSuites().orElseThrow();
+
+        assertThat(second[0]).isEqualTo("A");
+    }
+    
 }
 
