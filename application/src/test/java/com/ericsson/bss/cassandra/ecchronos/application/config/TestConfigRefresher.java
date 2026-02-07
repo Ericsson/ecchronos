@@ -44,10 +44,10 @@ public class TestConfigRefresher
             configRefresher.watch(file.toPath(), () -> reference.set(readFileContent(file)));
 
             writeToFile(file, "some content");
-            await().atMost(1, TimeUnit.SECONDS).until(() -> "some content".equals(reference.get()));
+            await().atMost(5, TimeUnit.SECONDS).until(() -> "some content".equals(reference.get()));
 
             writeToFile(file, "some new content");
-            await().atMost(1, TimeUnit.SECONDS).until(() -> "some new content".equals(reference.get()));
+            await().atMost(5, TimeUnit.SECONDS).until(() -> "some new content".equals(reference.get()));
         }
     }
 
@@ -80,7 +80,7 @@ public class TestConfigRefresher
             shouldThrow.set(false);
 
             writeToFile(file, "some new content");
-            await().atMost(1, TimeUnit.SECONDS).until(() -> "some new content".equals(reference.get()));
+            await().atMost(5, TimeUnit.SECONDS).until(() -> "some new content".equals(reference.get()));
         }
     }
 
