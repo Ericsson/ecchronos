@@ -44,7 +44,6 @@ public class TestBase
 {
     private static final int CASSANDRA_NATIVE_PORT = 9042;
     private static final int CASSANDRA_JMX_PORT = 7199;
-    private static final String IS_LOCAL = System.getProperty("it-local-cassandra");
     private static final int DEFAULT_INSERT_DATA_COUNT = 1000;
 
     private static LocalNativeConnectionProvider myNativeConnectionProvider;
@@ -68,11 +67,6 @@ public class TestBase
         String containerIP = SharedCassandraCluster.getContainerIP();
         AuthProvider authProvider = new ProgrammaticPlainTextAuthProvider("eccuser", "eccpassword");
         AuthProvider adminAuthProvider = new ProgrammaticPlainTextAuthProvider("cassandra", "cassandra");
-        if (IS_LOCAL != null)
-        {
-            authProvider = null;
-            adminAuthProvider = null;
-        }
         myNativeConnectionProvider = LocalNativeConnectionProvider.builder()
                 .withPort(CASSANDRA_NATIVE_PORT)
                 .withLocalhost(containerIP)
