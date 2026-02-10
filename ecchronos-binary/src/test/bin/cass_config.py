@@ -203,6 +203,7 @@ class CassandraCluster:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
+        logger.info("Nodetool status output: %s", process.stdout)
 
         return process.stdout.split("UN").__len__() - 1
 
@@ -233,7 +234,7 @@ class CassandraCluster:
     def _setup_db(self):
         command = ["docker", "exec", self.container_id, "bash", "/etc/cassandra/setup_db.sh"]
 
-        subprocess.run(
+        result = subprocess.run(
             command,
             timeout=DEFAULT_WAIT_TIME_IN_SECS * 3,
             encoding="utf-8",
@@ -241,6 +242,7 @@ class CassandraCluster:
             stderr=subprocess.PIPE,
         )
 
+        logger.info("Setup script output: %s", result.stdout)
         # Verify ecchronos keyspace exists before proceeding
         self._verify_keyspace_exists("ecchronos")
         logger.info("Database setup completed and verified")
@@ -254,6 +256,7 @@ class CassandraCluster:
                 result = subprocess.run(
                     command, timeout=10, encoding="utf-8", stdout=subprocess.PIPE, stderr=subprocess.PIPE
                 )
+                logger.info("Verify keyspace output: %s", result.stdout)
                 if result.returncode == 0 and keyspace_name in result.stdout:
                     logger.info(f"Keyspace {keyspace_name} verified on attempt {attempt + 1}")
                     return
