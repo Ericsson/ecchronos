@@ -16,7 +16,6 @@
 
 import pytest
 import logging
-from time import sleep
 from conftest import run_ecctool_state_nodes, assert_nodes_size_is_equal
 
 logger = logging.getLogger(__name__)
@@ -24,26 +23,32 @@ logger = logging.getLogger(__name__)
 DEFAULT_WAIT_TIME_IN_SECS = 120
 
 
-@pytest.mark.dependency(name="test_verify_install")
-def test_verify_install(test_environment):
-    assert test_environment.verify_node_count(4)
-    out, err = run_ecctool_state_nodes()
+@pytest.mark.dependency(name="test_install_cassandra_cluster")
+def test_install_cassandra_cluster(install_cassandra_cluster):
+    assert install_cassandra_cluster.verify_node_count(4)
+
+
+@pytest.mark.dependency(name="test_install_ecchronos", depends=["test_install_cassandra_cluster"])
+def test_install_ecchronos(install_cassandra_cluster, test_environment):
+    test_environment.start_ecchronos(cassandra_network=install_cassandra_cluster.network)
+    test_environment.wait_for_ecchronos_ready()
+    out, _ = run_ecctool_state_nodes()
     assert_nodes_size_is_equal(out, 4)
 
 
-@pytest.mark.dependency(name="test_add_node", depends=["test_verify_install"])
-def test_add_node(test_environment):
-    test_environment.add_node()
-    test_environment._wait_for_nodes_to_be_up(5, DEFAULT_WAIT_TIME_IN_SECS * 1000)
-    assert test_environment.verify_node_count(5)
-    out, err = run_ecctool_state_nodes()
+@pytest.mark.dependency(name="test_add_node", depends=["test_install_ecchronos"])
+def test_add_node(install_cassandra_cluster, test_environment):
+    install_cassandra_cluster.add_node()
+    install_cassandra_cluster._wait_for_nodes_to_be_up(5, DEFAULT_WAIT_TIME_IN_SECS * 1000)
+    assert install_cassandra_cluster.verify_node_count(5)
+    out, _ = run_ecctool_state_nodes()
     assert_nodes_size_is_equal(out, 5)
 
 
 @pytest.mark.dependency(name="test_remove_node", depends=["test_add_node"])
-def test_remove_node(test_environment):
-    test_environment.stop_extra_node()
-    test_environment._wait_for_nodes_to_be_up(4, DEFAULT_WAIT_TIME_IN_SECS * 1000)
-    assert test_environment.verify_node_count(4)
-    out, err = run_ecctool_state_nodes()
+def test_remove_node(install_cassandra_cluster, test_environment):
+    install_cassandra_cluster.stop_extra_node()
+    install_cassandra_cluster._wait_for_nodes_to_be_up(4, DEFAULT_WAIT_TIME_IN_SECS * 1000)
+    assert install_cassandra_cluster.verify_node_count(4)
+    out, _ = run_ecctool_state_nodes()
     assert_nodes_size_is_equal(out, 4)
