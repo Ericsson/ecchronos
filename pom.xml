@@ -65,8 +65,8 @@
         <equalsverifier.version>4.3.1</equalsverifier.version>
         <guava.version>33.5.0-jre</guava.version>
         <io.dropwizard.metrics.version>4.2.38</io.dropwizard.metrics.version>
-        <io.micrometer.version>1.16.2</io.micrometer.version>
-        <io.netty.version>4.1.130.Final</io.netty.version>
+        <io.micrometer.version>1.16.3</io.micrometer.version>
+        <io.netty.version>4.1.131.Final</io.netty.version>
         <io.prometheus.simpleclient.version>0.16.0</io.prometheus.simpleclient.version>
         <io.prometheus.client-java.version>1.4.3</io.prometheus.client-java.version>
         <io.prometheus.prometheus-metrics-core.version>1.4.3</io.prometheus.prometheus-metrics-core.version>
@@ -76,7 +76,7 @@
         <jcip.version>1.0</jcip.version>
         <junit.junit.version>4.13.2</junit.junit.version>
         <junit.junit-vintage-engine.version>6.0.2</junit.junit-vintage-engine.version>
-        <logback.version>1.5.27</logback.version>
+        <logback.version>1.5.29</logback.version>
         <mockito.core.version>5.21.0</mockito.core.version>
         <org.apache.commons.io.version>2.21.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
@@ -95,7 +95,7 @@
 
         <!-- Plugin versions -->
         <com.mycila.license-maven-plugin.version>5.0.0</com.mycila.license-maven-plugin.version>
-        <io.fabric8.docker-maven-plugin.version>0.48.0</io.fabric8.docker-maven-plugin.version>
+        <io.fabric8.docker-maven-plugin.version>0.48.1</io.fabric8.docker-maven-plugin.version>
         <org.apache.maven.plugin.maven-jxr-plugin.version>3.6.0</org.apache.maven.plugin.maven-jxr-plugin.version>
         <org.apache.maven.plugins.maven-assembly-plugin.version>3.8.0</org.apache.maven.plugins.maven-assembly-plugin.version>
         <org.apache.maven.plugins-maven-checkstyle-plugin.version>3.6.0</org.apache.maven.plugins-maven-checkstyle-plugin.version>
