@@ -287,11 +287,8 @@ class RepairSchedulerRequest(RestRequest):
         return result
 
     def running_job(self):
-        request_url = "{0}/{1}".format(self.base_url, RepairSchedulerRequest.running_job_url)
         request_url = RepairSchedulerRequest.running_job_url
-
         result = self.basic_request(request_url)
-
         return result
 
 
@@ -302,9 +299,11 @@ class StateManagementRequest(RestRequest):
     def __init__(self, base_url=None):
         RestRequest.__init__(self, base_url)
 
-    def get_nodes(self):
+    def get_nodes(self, output=None):
         result = self.request(StateManagementRequest.NODES)
         if result.is_successful():
+            if output == "json":
+                return result
             result = result.transform_with_data(new_data=[NodeSyncState(x) for x in result.data])
         return result
 

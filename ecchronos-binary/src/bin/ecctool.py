@@ -65,11 +65,49 @@ ARG_DURATION = {
     "to now (required unless using --since or --keyspace/--table)",
     "default": None,
 }
-ARG_START_HOUR = {"flags": ["-sh", "--start-hour"], "type": int, "help": "start hour"}
-ARG_START_MINUTE = {"flags": ["-sm", "--start-minute"], "type": int, "help": "start minute"}
 ARG_END_HOUR = {"flags": ["-eh", "--end-hour"], "type": int, "help": "end hour"}
 ARG_END_MINUTE = {"flags": ["-em", "--end-minute"], "type": int, "help": "end minute"}
+ARG_FORCE_DISABLED = {
+    "flags": ["-e", "--forceRepairDisabled"],
+    "help": "force repair of disabled tables",
+    "required": False,
+    "action": "store_true",
+}
+ARG_FORCE_TWCS = {
+    "flags": ["-f", "--forceRepairTWCS"],
+    "action": "store_true",
+    "help": "force repair of TWCS tables",
+    "required": False,
+}
+ARG_FOREGROUND = {
+    "flags": ["-f", "--foreground"],
+    "action": "store_true",
+    "help": "run in foreground (executes in current terminal and logs to stdout)",
+    "default": False,
+}
+ARG_FULL = {
+    "flags": ["-f", "--full"],
+    "action": "store_true",
+    "help": "show full schedules with configuration and vnode state (requires -i/--id)",
+    "default": False,
+}
+ARG_ID = {
+    "flags": ["-i", "--id"],
+    "type": str,
+    "help": "only matching id (mutually exclusive with -k/--keyspace and -t/--table)",
+}
+ARG_JOB_ID = {
+    "flags": ["-j", "--job"],
+    "type": str,
+    "help": "only matching job id (mutually exclusive with -k/--keyspace and -t/--table)",
+}
 ARG_KEYSPACE = {"flags": ["-k", "--keyspace"], "type": str, "help": "keyspace"}
+ARG_LIMIT = {"flags": ["-l", "--limit"], "type": int, "help": "limit output rows (use -1 for no limit)", "default": -1}
+ARG_NODE_ID = {
+    "flags": ["-i", "--id"],
+    "type": str,
+    "help": "only matching node id",
+}
 ARG_OUTPUT_JSON = {
     "flags": ["-o", "--output"],
     "type": str,
@@ -82,7 +120,29 @@ ARG_OUTPUT_JSON_TABLE = {
     "help": "output formats: json, table (default)",
     "default": "table",
 }
-
+ARG_PIDFILE_READ = {"flags": ["-p", "--pidfile"], "type": str, "help": "file containing process id"}
+ARG_PIDFILE_WRITE = {"flags": ["-p", "--pidfile"], "type": str, "help": "file for storing process id"}
+ARG_REPAIR_TYPE = {
+    "flags": ["-r", "--repair_type"],
+    "type": str,
+    "help": "type of repair (accepted values: vnode, parallel_vnode and incremental)",
+    "required": False,
+}
+ARG_RUN_ALL = {
+    "flags": ["-a", "--all"],
+    "action": "store_true",
+    "help": "run repair for all nodes",
+    "required": False,
+}
+ARG_SINCE = {
+    "flags": ["-s", "--since"],
+    "type": str,
+    "help": "repair information from specified date (ISO8601 format) to now (required unless "
+    "using --duration or --keyspace/--table)",
+    "default": None,
+}
+ARG_START_HOUR = {"flags": ["-sh", "--start-hour"], "type": int, "help": "start hour"}
+ARG_START_MINUTE = {"flags": ["-sm", "--start-minute"], "type": int, "help": "start minute"}
 ARG_TABLE = {"flags": ["-t", "--table"], "type": str, "help": "table"}
 ARG_URL = {
     "flags": ["-u", "--url"],
@@ -94,303 +154,153 @@ ARG_URL = {
 
 def get_parser():
     parser = ArgumentParser(
-        description="ecctool is a command line utility which can be used to perform actions "
-        "towards a local ecChronos instance. The actions are implemented in form of "
-        "subcommands with arguments. All visualization is displayed in form of "
-        "human-readable tables."
+        description="ecctool is a command line utility used to perform operations toward an ecChronos instance. "
+        "Run 'ecctool <subcommand> --help' to get more information about each subcommand."
     )
-    sub_parsers = parser.add_subparsers(dest="subcommand")
+    sub_parsers = parser.add_subparsers(dest="subcommand", help="")
 
     add_rejections_subcommand(sub_parsers)
-    add_repairs_subcommand(sub_parsers)
-    add_schedules_subcommand(sub_parsers)
-    add_run_repair_subcommand(sub_parsers)
     add_repair_info_subcommand(sub_parsers)
-    add_start_subcommand(sub_parsers)
-    add_stop_subcommand(sub_parsers)
-    add_status_subcommand(sub_parsers)
+    add_repairs_subcommand(sub_parsers)
+    add_run_repair_subcommand(sub_parsers)
     add_running_job_subcommand(sub_parsers)
+    add_schedules_subcommand(sub_parsers)
+    add_start_subcommand(sub_parsers)
     add_state_subcommand(sub_parsers)
+    add_status_subcommand(sub_parsers)
+    add_stop_subcommand(sub_parsers)
 
     return parser
 
 
 def add_running_job_subcommand(sub_parsers):
-    parser_repairs = sub_parsers.add_parser("running-job", description="Show which (if any) job is currently running ")
-
-    parser_repairs.add_argument(
-        "-u",
-        "--url",
-        type=str,
-        help="The ecChronos host to connect to, specified in the format http://<host>:<port>.",
-        default=None,
-    )
+    parser_repairs = sub_parsers.add_parser("running-job", description="Show which (if any) job is currently running.")
+    add_common_arg(parser_repairs, ARG_OUTPUT_JSON)
+    add_common_arg(parser_repairs, ARG_URL)
 
 
 def add_repairs_subcommand(sub_parsers):
-    parser_repairs = sub_parsers.add_parser(
-        "repairs", description="Show the status of all manual repairs. This subcommand has " "no mandatory parameters."
-    )
-    parser_repairs.add_argument(
-        "-k",
-        "--keyspace",
-        type=str,
-        help="Show repairs for the specified keyspace. This argument is mutually exclusive " "with -i and --id.",
-    )
-    parser_repairs.add_argument(
-        "-t",
-        "--table",
-        type=str,
-        help="Show repairs for the specified table. Keyspace argument -k or --keyspace "
-        "becomes mandatory if using this argument. This argument is mutually exclusive "
-        "with -i and --id.",
-    )
-    parser_repairs.add_argument(
-        "-u",
-        "--url",
-        type=str,
-        help="The ecChronos host to connect to, specified in the format http://<host>:<port>.",
-        default=None,
-    )
-    parser_repairs.add_argument(
-        "-i",
-        "--id",
-        type=str,
-        help="Show repairs for the specified host id. The host id corresponds to the "
-        "Cassandra instance ecChronos is connected to.",
-    )
-    parser_repairs.add_argument(
-        "-l",
-        "--limit",
-        type=int,
-        help="Limits the number of rows printed in the output. Specified as a number, " "-1 to disable limit.",
-        default=-1,
-    )
-    parser_repairs.add_argument("-j", "--job", type=str, help="Show schedules matching the specified jobID.")
+    parser_repairs = sub_parsers.add_parser("repairs", description="Show the status of all manual repairs.")
+    add_common_arg(parser_repairs, ARG_COLUMNS)
+
+    keyspace_arg = ARG_KEYSPACE.copy()
+    keyspace_arg["help"] = "keyspace (mutually exclusive with -i/--id)"
+    add_common_arg(parser_repairs, keyspace_arg)
+
+    table_arg = ARG_TABLE.copy()
+    table_arg["help"] = "table (requires -k/--keyspace and is mutually exclusive with -i/--id)"
+    add_common_arg(parser_repairs, table_arg)
+
+    add_common_arg(parser_repairs, ARG_URL)
+
+    add_common_arg(parser_repairs, ARG_ID)
+    add_common_arg(parser_repairs, ARG_JOB_ID)
+
+    add_common_arg(parser_repairs, ARG_LIMIT)
+    add_common_arg(parser_repairs, ARG_OUTPUT_JSON_TABLE)
 
 
 def add_schedules_subcommand(sub_parsers):
-    parser_schedules = sub_parsers.add_parser(
-        "schedules", description="Show the status of schedules. This subcommand has no " "mandatory parameters."
-    )
-    parser_schedules.add_argument(
-        "-k",
-        "--keyspace",
-        type=str,
-        help="Show schedules for the specified keyspace. This argument is mutually " "exclusive with -i and --id.",
-    )
-    parser_schedules.add_argument(
-        "-t",
-        "--table",
-        type=str,
-        help="Show schedules for the specified table. Keyspace argument -k or --keyspace "
-        "becomes mandatory if using this argument. This argument is mutually exclusive "
-        "with -i and --id.",
-    )
-    parser_schedules.add_argument(
-        "-u",
-        "--url",
-        type=str,
-        help="The ecChronos host to connect to, specified in the format " "http://<host>:<port>.",
-        default=None,
-    )
-    parser_schedules.add_argument("-i", "--id", type=str, help="Show schedules matching the specified NodeID.")
-    parser_schedules.add_argument("-j", "--job", type=str, help="Show schedules matching the specified jobID.")
-    parser_schedules.add_argument(
-        "-f",
-        "--full",
-        action="store_true",
-        help="Show full schedules, can only be used with -i or --id. Full schedules include "
-        "schedule configuration and repair state per vnode.",
-        default=False,
-    )
-    parser_schedules.add_argument(
-        "-l",
-        "--limit",
-        type=int,
-        help="Limits the number of rows printed in the output. Specified as a number, " "-1 to disable limit.",
-        default=-1,
-    )
+    parser_schedules = sub_parsers.add_parser("schedules", description="Show the status of schedules.")
+    add_common_arg(parser_schedules, ARG_COLUMNS)
+    add_common_arg(parser_schedules, ARG_FULL)
+    add_common_arg(parser_schedules, ARG_ID)
+    add_common_arg(parser_schedules, ARG_JOB_ID)
+
+    keyspace_arg = ARG_KEYSPACE.copy()
+    keyspace_arg["help"] = "keyspace (mutually exclusive with -i/--id)"
+    add_common_arg(parser_schedules, keyspace_arg)
+
+    add_common_arg(parser_schedules, ARG_LIMIT)
+    add_common_arg(parser_schedules, ARG_OUTPUT_JSON_TABLE)
+
+    table_arg = ARG_TABLE.copy()
+    table_arg["help"] = "table (requires -k/--keyspace and is mutually exclusive with -i/--id)"
+    add_common_arg(parser_schedules, table_arg)
+
+    add_common_arg(parser_schedules, ARG_URL)
 
 
 def add_run_repair_subcommand(sub_parsers):
     parser_run_repair = sub_parsers.add_parser(
         "run-repair",
-        description="Run a manual repair. The manual repair will be triggered "
-        "in ecChronos. EcChronos will perform repair through "
-        "Cassandra JMX interface. This subcommand has no "
-        "mandatory parameters.",
+        description="Triggers a manual repair in ecChronos. This will be done through the Cassandra JMX interface.",
     )
-    parser_run_repair.add_argument(
-        "-u",
-        "--url",
-        type=str,
-        help="The ecChronos host to connect to, specified in the format " "http://<host>:<port>.",
-        default=None,
+    add_common_arg(parser_run_repair, ARG_COLUMNS)
+    add_common_arg(parser_run_repair, ARG_ID)
+    add_common_arg(parser_run_repair, ARG_URL)
+    add_common_arg(parser_run_repair, ARG_OUTPUT_JSON_TABLE)
+    add_common_arg(parser_run_repair, ARG_REPAIR_TYPE)
+    add_common_arg(parser_run_repair, ARG_FORCE_TWCS)
+    add_common_arg(parser_run_repair, ARG_FORCE_DISABLED)
+    add_common_arg(parser_run_repair, ARG_RUN_ALL)
+
+    keyspace_arg = ARG_KEYSPACE.copy()
+    keyspace_arg["help"] = (
+        "keyspace (applies to all tables within the keyspace with a replication factor greater than 1)"
     )
-    parser_run_repair.add_argument("-i", "--id", type=str, help="The Cassandra node to run the repair.", default=None)
-    parser_run_repair.add_argument(
-        "-r",
-        "--repair_type",
-        type=str,
-        help="The type of the repair, possible values are 'vnode', 'parallel_vnode', " "'incremental'",
-        required=False,
-    )
-    parser_run_repair.add_argument(
-        "-k",
-        "--keyspace",
-        type=str,
-        help="Run repair for the specified keyspace. Repair will be run for all tables "
-        "within the keyspace with replication factor higher than 1.",
-        required=False,
-    )
-    parser_run_repair.add_argument(
-        "-t",
-        "--table",
-        type=str,
-        help="Run repair for the specified table. Keyspace argument -k or --keyspace "
-        "becomes mandatory if using this argument.",
-        required=False,
-    )
-    parser_run_repair.add_argument("-a", "--all", help="Run repair for all nodes ", required=False, action="store_true")
-    parser_run_repair.add_argument(
-        "-f", "--forceRepairTWCS", help="Force repair of TWCS tables", required=False, action="store_true"
-    )
-    parser_run_repair.add_argument(
-        "-e", "--forceRepairDisabled", help="Force repair of disabled tables", required=False, action="store_true"
-    )
+    keyspace_arg["required"] = False
+    add_common_arg(parser_run_repair, keyspace_arg)
+
+    table_arg = ARG_TABLE.copy()
+    table_arg["help"] = "table (requires -k/--keyspace)"
+    table_arg["required"] = False
+    add_common_arg(parser_run_repair, table_arg)
 
 
 def add_repair_info_subcommand(sub_parsers):
     parser_repair_info = sub_parsers.add_parser(
         "repair-info",
-        description="Get information about repairs for tables. The repair "
-        "information is based on repair history, meaning that "
-        "both manual repairs and schedules will contribute to "
-        "the repair information. This subcommand requires the "
-        "user to provide either --since or --duration if"
-        "--keyspace and --table is not provided. "
-        "If repair info is fetched for a "
-        "specific table using --keyspace and --table, "
-        "the duration will default to the table's "
-        "GC_GRACE_SECONDS.",
+        description="Get information about repairs for tables. The repair information is based on repair history, "
+        "meaning both manual and scheduled repairs will be a part of the repair information. This "
+        "subcommand requires the user to provide either --since or --duration if --keyspace and --table "
+        "is not provided. If repair info is fetched for a specific table using --keyspace and --table, "
+        "the duration will default to the table's GC_GRACE_SECONDS.",
     )
-    parser_repair_info.add_argument(
-        "-i", "--id", type=str, help="Show repair information matching the specified NodeID."
-    )
-    parser_repair_info.add_argument(
-        "-k", "--keyspace", type=str, help="Show repair information for all tables in the specified keyspace."
-    )
-    parser_repair_info.add_argument(
-        "-t",
-        "--table",
-        type=str,
-        help="Show repair information for the specified table. Keyspace argument -k or "
-        "--keyspace becomes mandatory if using this argument.",
-    )
-    parser_repair_info.add_argument(
-        "-s",
-        "--since",
-        type=str,
-        help="Show repair information since the specified date to now. Date must be "
-        "specified in ISO8601 format. The time-window will be since to now. "
-        "Mandatory if --duration or --keyspace and --table is not specified.",
-        default=None,
-    )
-    parser_repair_info.add_argument(
-        "-d",
-        "--duration",
-        type=str,
-        help="Show repair information for the duration. Duration can be specified as "
-        "ISO8601 format or as simple format in form: 5s, 5m, 5h, 5d. The time-window "
-        "will be now-duration to now. Mandatory if --since or --keyspace and --table "
-        "is not specified.",
-        default=None,
-    )
-
-    parser_repair_info.add_argument(
-        "-u",
-        "--url",
-        type=str,
-        help="The ecChronos host to connect to, specified in the format " "http://<host>:<port>.",
-        default=None,
-    )
-    parser_repair_info.add_argument(
-        "-l",
-        "--limit",
-        type=int,
-        help="Limits the number of rows printed in the output. Specified as a number, " "-1 to disable limit.",
-        default=-1,
-    )
+    add_common_arg(parser_repair_info, ARG_COLUMNS)
+    add_common_arg(parser_repair_info, ARG_NODE_ID)
+    add_common_arg(parser_repair_info, ARG_KEYSPACE)
+    add_common_arg(parser_repair_info, ARG_TABLE)
+    add_common_arg(parser_repair_info, ARG_SINCE)
+    add_common_arg(parser_repair_info, ARG_DURATION)
+    add_common_arg(parser_repair_info, ARG_URL)
+    add_common_arg(parser_repair_info, ARG_LIMIT)
+    add_common_arg(parser_repair_info, ARG_OUTPUT_JSON_TABLE)
 
 
 def add_start_subcommand(sub_parsers):
-    parser_config = sub_parsers.add_parser(
-        "start", description="Start the ecChronos service. This subcommand has no mandatory " "parameters."
-    )
-    parser_config.add_argument(
-        "-f",
-        "--foreground",
-        action="store_true",
-        help="Start the ecChronos instance in foreground mode (exec in current terminal and " "log to stdout)",
-        default=False,
-    )
-    parser_config.add_argument(
-        "-p", "--pidfile", type=str, help="Start the ecChronos instance and store the pid in the specified pid file."
-    )
+    parser_start = sub_parsers.add_parser("start", description="Start the ecChronos service.")
+    add_common_arg(parser_start, ARG_FOREGROUND)
+    add_common_arg(parser_start, ARG_OUTPUT_JSON)
+    add_common_arg(parser_start, ARG_PIDFILE_WRITE)
 
 
 def add_stop_subcommand(sub_parsers):
     parser_stop = sub_parsers.add_parser(
         "stop",
-        description="Stop the ecChronos instance. Stopping of ecChronos is done by "
-        "using kill with SIGTERM signal (same as kill in shell) for the "
-        "pid. This subcommand has no mandatory parameters.",
+        description="Stop the ecChronos service (sends SIGTERM to the process).",
     )
-    parser_stop.add_argument(
-        "-p", "--pidfile", type=str, help="Stops the ecChronos instance by pid fetched from the specified pid file."
-    )
+    add_common_arg(parser_stop, ARG_OUTPUT_JSON)
+    add_common_arg(parser_stop, ARG_PIDFILE_READ)
 
 
 def add_state_subcommand(sub_parsers):
     parser_state = sub_parsers.add_parser(
         "state",
-        description="Get information of ecChronos internal state. This subcommand has no mandatory parameters.",
-    )
-    parser_state.add_argument(
-        "-u",
-        "--url",
-        type=str,
-        help="The ecChronos host to connect to, specified in the format " "http://<host>:<port>.",
-        default=None,
+        description="Get information of ecChronos internal state.",
     )
 
     state_subparsers = parser_state.add_subparsers(dest="state_subcommand")
     add_state_nodes_subcommand(state_subparsers)
 
+    add_common_arg(parser_state, ARG_COLUMNS)
+    add_common_arg(parser_state, ARG_OUTPUT_JSON)
+    add_common_arg(parser_state, ARG_URL)
+
 
 def add_state_nodes_subcommand(state_subparsers):
-    parser_nodes = state_subparsers.add_parser("nodes", help="Get nodes managed by local instance")
-    parser_nodes.add_argument(
-        "-u",
-        "--url",
-        type=str,
-        help="The ecChronos host to connect to, e.g. http://<host>:<port>.",
-        default=None,
-    )
-
-
-def add_status_subcommand(sub_parsers):
-    parser_status = sub_parsers.add_parser(
-        "status", description="View status of ecChronos instance. This subcommand has no " "mandatory parameters."
-    )
-    parser_status.add_argument(
-        "-u",
-        "--url",
-        type=str,
-        help="The ecChronos host to connect to, specified in the format " "http://<host>:<port>.",
-        default=None,
-    )
+    parser_nodes = state_subparsers.add_parser("nodes", help="Get nodes managed by local instance.")
+    add_common_arg(parser_nodes, ARG_URL)
 
 
 def add_common_arg(parser, arg_config, required=None):
@@ -456,6 +366,12 @@ def add_rejections_update_action(rejections_subparsers):
     add_common_arg(parser_update, ARG_START_MINUTE, required=True)
     add_common_arg(parser_update, ARG_DC_EXCLUSIONS, required=False)
     add_common_arg(parser_update, ARG_URL)
+
+
+def add_status_subcommand(sub_parsers):
+    parser_status = sub_parsers.add_parser("status", description="View status of the ecChronos instance.")
+    add_common_arg(parser_status, ARG_URL)
+    add_common_arg(parser_status, ARG_OUTPUT_JSON)
 
 
 def _create_rejections(arguments):
@@ -564,24 +480,22 @@ def rejections(arguments):
         _get_rejections(arguments)
     elif arguments.rejections_action == "update":
         _update_rejections(arguments)
-    else:
-        print("Specify a valid action (create, delete, get or update) for subcommand 'rejections'.")
-        sys.exit(1)
 
 
 def state(arguments):
     if arguments.state_subcommand == "nodes":
-        nodes(arguments)
-    else:
-        print("Please specify a valid subcommand for state: nodes")
-        sys.exit(1)
+        _state_nodes(arguments)
 
 
-def nodes(arguments):
+def _state_nodes(arguments):
     request = rest.StateManagementRequest(base_url=arguments.url)
-    result = request.get_nodes()
+    result = request.get_nodes(arguments.output)
+
     if result.is_successful():
-        table_printer.print_nodes(result.data)
+        if arguments.output == "json":
+            table_printer.output_json({"nodes": result.data})
+        else:
+            table_printer.print_nodes(result.data, columns=arguments.columns)
     else:
         print(result.format_exception())
 
@@ -612,11 +526,11 @@ def schedules(arguments):
         else:
             result = request.get_schedule(node_id=arguments.id, keyspace=arguments.keyspace, table=arguments.table)
     elif arguments.full:
-        print("Must specify NodeID and JobID with full")
+        print("Must specify --id and --job with --full.")
         sys.exit(1)
     elif arguments.table:
         if not arguments.keyspace:
-            print("Must specify keyspace")
+            print("Must specify --keyspace if --table is specified.")
             sys.exit(1)
         result = request.list_schedules(keyspace=arguments.keyspace, table=arguments.table)
     else:
@@ -624,9 +538,13 @@ def schedules(arguments):
 
     if result.is_successful():
         if isinstance(result.data, list):
-            table_printer.print_schedules(result.data, arguments.limit)
+            table_printer.print_schedules(
+                result.data, arguments.limit, columns=arguments.columns, output=arguments.output
+            )
         else:
-            table_printer.print_schedule(result.data, arguments.limit, full)
+            table_printer.print_schedule(
+                result.data, arguments.limit, full, columns=arguments.columns, output=arguments.output
+            )
     else:
         print(result.format_exception())
 
@@ -636,22 +554,28 @@ def repairs(arguments):
     if arguments.id:
         result = request.get_repair(node_id=arguments.id, job_id=arguments.job)
         if result.is_successful():
-            table_printer.print_repairs(result.data, arguments.limit)
+            table_printer.print_repairs(
+                result.data, arguments.limit, columns=arguments.columns, output=arguments.output
+            )
         else:
             print(result.format_exception())
     elif arguments.table:
         if not arguments.keyspace:
-            print("Must specify keyspace")
+            print("--keyspace is required.")
             sys.exit(1)
         result = request.list_repairs(keyspace=arguments.keyspace, table=arguments.table, host_id=arguments.id)
         if result.is_successful():
-            table_printer.print_repairs(result.data, arguments.limit)
+            table_printer.print_repairs(
+                result.data, arguments.limit, columns=arguments.columns, output=arguments.output
+            )
         else:
             print(result.format_exception())
     else:
         result = request.list_repairs(keyspace=arguments.keyspace, host_id=arguments.id)
         if result.is_successful():
-            table_printer.print_repairs(result.data, arguments.limit)
+            table_printer.print_repairs(
+                result.data, arguments.limit, columns=arguments.columns, output=arguments.output
+            )
         else:
             print(result.format_exception())
 
@@ -659,13 +583,10 @@ def repairs(arguments):
 def run_repair(arguments):
     request = rest.RepairSchedulerRequest(base_url=arguments.url)
     if not arguments.keyspace and arguments.table:
-        print("--keyspace must be specified if table is specified")
+        print("--keyspace must be specified if --table is specified.")
         sys.exit(1)
-    if not arguments.id and not arguments.all:
-        print("--all must be specified if nodeid is not included")
-        sys.exit(1)
-    if arguments.id and arguments.all:
-        print("--all must not be specified if nodeid is included")
+    if not (arguments.id or arguments.all) or (arguments.id and arguments.all):
+        print("--id or --all must be specified, but not both.")
         sys.exit(1)
     result = request.post(
         node_id=arguments.id,
@@ -677,7 +598,7 @@ def run_repair(arguments):
         force_repair_disabled=arguments.forceRepairDisabled,
     )
     if result.is_successful():
-        table_printer.print_repairs(result.data)
+        table_printer.print_repairs(result.data, columns=arguments.columns, output=arguments.output)
     else:
         print("Repair Request Failed")
         sys.exit(1)
@@ -686,18 +607,18 @@ def run_repair(arguments):
 def repair_info(arguments):
     request = rest.RepairSchedulerRequest(base_url=arguments.url)
     if not arguments.id:
-        print("--id must be specified")
+        print("--id must be specified.")
         sys.exit(1)
     if not arguments.keyspace and arguments.table:
-        print("--keyspace must be specified if table is specified")
+        print("--keyspace must be specified if --table is specified.")
         sys.exit(1)
     if not arguments.duration and not arguments.since and not arguments.table:
-        print("Either --duration or --since or both must be provided if called without --keyspace and --table")
+        print("Either --duration or --since or both must be provided if called without --keyspace and --table.")
         sys.exit(1)
     duration = None
     if arguments.duration:
         if arguments.duration[0] == "+" or arguments.duration[0] == "-":
-            print("'+' and '-' is not allowed in duration, check help for more information")
+            print("'+' and '-' is not allowed in duration, check help for more information.")
             sys.exit(1)
         duration = arguments.duration.upper()
     result = request.get_repair_info(
@@ -708,7 +629,9 @@ def repair_info(arguments):
         duration=duration,
     )
     if result.is_successful():
-        table_printer.print_repair_info(result.data, arguments.limit)
+        table_printer.print_repair_info(
+            result.data, arguments.limit, columns=arguments.columns, output=arguments.output
+        )
     else:
         print(result.format_exception())
 
@@ -750,7 +673,12 @@ def run_ecc(cwd, command, arguments):
         cwd=cwd,
     )
     pid = proc.pid
-    print("ecc started with pid {0}".format(pid))
+
+    if arguments.output == "json":
+        table_printer.output_json({"process_id": pid, "state": "started"})
+    else:
+        print("ecc started with pid {0}.".format(pid))
+
     pid_file = os.path.join(cwd, DEFAULT_PID_FILE)
     if arguments.pidfile:
         pid_file = arguments.pidfile
@@ -773,9 +701,19 @@ def stop(arguments):
         pid_file = arguments.pidfile
     with open(pid_file, "r", encoding="utf-8") as p_file:
         pid = int(p_file.readline())
-        print("Killing ecc with pid {0}".format(pid))
-        os.kill(pid, signal.SIGTERM)
-    os.remove(pid_file)
+        try:
+            os.kill(pid, signal.SIGTERM)
+            if arguments.output == "json":
+                table_printer.output_json({"process_id": pid, "state": "terminated"})
+            else:
+                print("Terminated ecc with pid {0}.".format(pid))
+            os.remove(pid_file)
+        except OSError:
+            if arguments.output == "json":
+                table_printer.output_json({"process_id": pid, "state": "unknown process id"})
+            else:
+                print("Process {0} is not running.".format(pid))
+            sys.exit(1)
 
 
 def status(arguments, print_running=False):
@@ -783,51 +721,70 @@ def status(arguments, print_running=False):
     result = request.list_schedules()
     if result.is_successful():
         if print_running:
-            print("ecChronos is running")
+            if arguments.output == "json":
+                table_printer.output_json({"running": True})
+            elif print_running:
+                print("ecChronos is running.")
     else:
-        print("ecChronos is not running")
+        if arguments.output == "json":
+            table_printer.output_json({"running": False})
+        else:
+            print("ecChronos is not running.")
         sys.exit(1)
 
 
 def running_job(arguments):
     request = rest.RepairSchedulerRequest(base_url=arguments.url)
     result = request.running_job()
-    print(result)
+
+    if arguments.output == "json":
+        table_printer.output_json({"running-job": result})
+    else:
+        if result == "":
+            print("No repair job running.")
+        else:
+            print("Repair job with id " + result + " is running.")
 
 
 def run_subcommand(arguments):
     if arguments.subcommand == "rejections":
         status(arguments)
         rejections(arguments)
-    if arguments.subcommand == "repairs":
-        status(arguments)
-        repairs(arguments)
-    elif arguments.subcommand == "schedules":
-        status(arguments)
-        schedules(arguments)
-    elif arguments.subcommand == "running-job":
-        status(arguments)
-        running_job(arguments)
-    elif arguments.subcommand == "run-repair":
-        status(arguments)
-        run_repair(arguments)
     elif arguments.subcommand == "repair-info":
         status(arguments)
         repair_info(arguments)
+    elif arguments.subcommand == "repairs":
+        status(arguments)
+        repairs(arguments)
+    elif arguments.subcommand == "run-repair":
+        status(arguments)
+        run_repair(arguments)
+    elif arguments.subcommand == "running-job":
+        status(arguments)
+        running_job(arguments)
+    elif arguments.subcommand == "schedules":
+        status(arguments)
+        schedules(arguments)
     elif arguments.subcommand == "start":
         start(arguments)
-    elif arguments.subcommand == "stop":
-        stop(arguments)
-    elif arguments.subcommand == "status":
-        status(arguments, print_running=True)
     elif arguments.subcommand == "state":
         status(arguments)
         state(arguments)
+    elif arguments.subcommand == "status":
+        status(arguments, print_running=True)
+    elif arguments.subcommand == "stop":
+        stop(arguments)
 
 
 def main():
     parser = get_parser()
-    run_subcommand(parser.parse_args())
+    args = parser.parse_args()
+
+    if args.subcommand is None:
+        parser.print_help()
+        sys.exit(1)
+
+    run_subcommand(args)
 
 
 if __name__ == "__main__":

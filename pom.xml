@@ -108,15 +108,15 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Spring boot -->
-        <org.springframework.boot.spring-boot-starter-thymeleaf.version>3.5.9</org.springframework.boot.spring-boot-starter-thymeleaf.version>
-        <org.springframework.boot.spring-boot-starter-web.version>3.5.9</org.springframework.boot.spring-boot-starter-web.version>
+        <org.springframework.boot.spring-boot-starter-thymeleaf.version>3.5.10</org.springframework.boot.spring-boot-starter-thymeleaf.version>
+        <org.springframework.boot.spring-boot-starter-web.version>3.5.10</org.springframework.boot.spring-boot-starter-web.version>
         <org.springframework.spring-context.version>6.2.15</org.springframework.spring-context.version>
-        <org.springframework.spring-boot-test.version>3.5.9</org.springframework.spring-boot-test.version>
+        <org.springframework.spring-boot-test.version>3.5.10</org.springframework.spring-boot-test.version>
         <org.springframework.spring-test.version>6.2.15</org.springframework.spring-test.version>
         <org.springdoc.openapi-starter-webmvc-ui.version>2.8.15</org.springdoc.openapi-starter-webmvc-ui.version>
         <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
-        <swagger-annotations.version>2.2.41</swagger-annotations.version>
+        <swagger-annotations.version>2.2.42</swagger-annotations.version>
 
         <!-- Metrics -->
         <io.micrometer.version>1.16.2</io.micrometer.version>
@@ -131,12 +131,12 @@
         <guava.version>33.5.0-jre</guava.version>
         <caffeine.version>3.2.3</caffeine.version>
         <slf4j.version>2.0.17</slf4j.version>
-        <logback.version>1.5.24</logback.version>
+        <logback.version>1.5.27</logback.version>
 
         <!-- Jackson -->
-        <com.fasterxml.jackson.core.version>2.20.1</com.fasterxml.jackson.core.version>
-        <com.fasterxml.jackson.annotations.version>2.20</com.fasterxml.jackson.annotations.version>
-        <com.fasterxml.jackson.dataformat.version>2.20.1</com.fasterxml.jackson.dataformat.version>
+        <com.fasterxml.jackson.core.version>2.21.0</com.fasterxml.jackson.core.version>
+        <com.fasterxml.jackson.annotations.version>2.21</com.fasterxml.jackson.annotations.version>
+        <com.fasterxml.jackson.dataformat.version>2.21.0</com.fasterxml.jackson.dataformat.version>
         <org.yaml.snakeyaml.version>2.5</org.yaml.snakeyaml.version>
 
         <!-- Other -->
@@ -145,13 +145,13 @@
         <!-- Tests -->
         <awaitility.version>4.3.0</awaitility.version>
         <mockito.core.version>5.21.0</mockito.core.version>
-        <assertj.version>3.27.6</assertj.version>
+        <assertj.version>3.27.7</assertj.version>
         <junit.junit.version>4.13.2</junit.junit.version>
         <junit.junit-vintage-engine.version>6.0.2</junit.junit-vintage-engine.version>
         <junit.jupiter.junit-jupiter.version>6.0.2</junit.jupiter.junit-jupiter.version>
         <org.apache.commons.io.version>2.21.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
-        <equalsverifier.version>4.3</equalsverifier.version>
+        <equalsverifier.version>4.3.1</equalsverifier.version>
         <jcip.version>1.0</jcip.version>
         <testcontainers.version>1.21.4</testcontainers.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.83</org.bouncycastle.bcpkix-jdk18on.version>
@@ -162,7 +162,7 @@
         <org.apache.maven.plugin.maven-jxr-plugin.version>3.6.0</org.apache.maven.plugin.maven-jxr-plugin.version>
         <org.apache.maven.plugins.maven-assembly-plugin.version>3.8.0</org.apache.maven.plugins.maven-assembly-plugin.version>
         <org.apache.maven.plugins-maven-checkstyle-plugin.version>3.6.0</org.apache.maven.plugins-maven-checkstyle-plugin.version>
-        <org.apache.maven.plugins.maven-compiler-plugin.version>3.14.1</org.apache.maven.plugins.maven-compiler-plugin.version>
+        <org.apache.maven.plugins.maven-compiler-plugin.version>3.15.0</org.apache.maven.plugins.maven-compiler-plugin.version>
         <org.apache.maven.plugins-maven-dependency-plugin.version>3.9.0</org.apache.maven.plugins-maven-dependency-plugin.version>
         <org.apache.maven.plugins.maven-deploy-plugin.version>3.1.4</org.apache.maven.plugins.maven-deploy-plugin.version>
         <org.apache.maven.plugins.maven-failsafe-plugin.version>3.5.4</org.apache.maven.plugins.maven-failsafe-plugin.version>
@@ -705,6 +705,7 @@ limitations under the License.
                             <exclude>.github/workflows/actions.yml</exclude>
                             <exclude>.github/workflows/scorecard.yml</exclude>
                             <exclude>**/docker/*</exclude>
+                            <exclude>**/Dockerfile</exclude>
                             <exclude>**/*.cql</exclude>
                             <exclude>**/*.txt</exclude>
                             <exclude>**/*.p12</exclude>

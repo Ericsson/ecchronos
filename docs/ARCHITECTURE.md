@@ -292,6 +292,7 @@ ecChronos establishes JMX connections to Cassandra nodes for repair operations a
 ### PEM Certificate Support
 
 PEM certificate support is available **only when using Jolokia** as the JMX transport mechanism. This feature enables secure TLS communication between ecChronos and Cassandra nodes in containerized environments.
+When using Jolokia as the JMX transport, ecChronos connects to the Jolokia HTTP endpoint exposed by each Cassandra node (typically via the reverse proxy in this deployment). In containerized or NAT'd environments, ensure that the address ecChronos uses for a node resolves to a reachable Jolokia endpoint; node address translation (for example, mapping broadcast addresses to routable addresses) affects which endpoint ecChronos will target for JMX connectivity.
 
 #### Architecture Overview
 

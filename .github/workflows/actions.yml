@@ -18,7 +18,8 @@ permissions: read-all
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04 
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -36,15 +37,15 @@ jobs:
             artifacts_dir: "standalone-integration/target"
           - name: "Standalone integration 5.0 - Java 17"
             java_version: 17
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -DskipUTs'
+            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -DskipUTs'
             artifacts_dir: "standalone-integration/target"
           - name: "Python integration - Java 17"
             java_version: 17
-            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -DskipUTs'
+            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Topology integration - Java 17"
             java_version: 17
-            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -DskipUTs'
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
             
           # Java 21 tests
@@ -60,15 +61,15 @@ jobs:
             artifacts_dir: "standalone-integration/target"
           - name: "Standalone integration 5.0 - Java 21"
             java_version: 21
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -DskipUTs'
+            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -DskipUTs'
             artifacts_dir: "standalone-integration/target"
           - name: "Python integration - Java 21"
             java_version: 21
-            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -DskipUTs'
+            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Topology integration - Java 21"
-            java_version: 17
-            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -DskipUTs'
+            java_version: 21
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
 
           # Java 17 Jolokia tests
@@ -78,23 +79,23 @@ jobs:
             artifacts_dir: "standalone-integration/target"
           - name: "Jolokia Standalone integration 5.0 - Java 17"
             java_version: 17
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
+            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "standalone-integration/target"
           - name: "Jolokia Python integration - Java 17"
             java_version: 17
-            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
+            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia Python integration - Java 17 - PEM"
             java_version: 17
-            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
+            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia Topology integration - Java 17"
             java_version: 17
-            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia Topology integration - Java 17 - PEM"
             java_version: 17
-            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=17 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
 
           # Java 21 Jolokia tests
@@ -104,29 +105,29 @@ jobs:
             artifacts_dir: "standalone-integration/target"
           - name: "Jolokia Standalone integration 5.0 - Java 21"
             java_version: 21
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs'
+            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "standalone-integration/target"
           - name: "Jolokia Python integration - Java 21"
             java_version: 21
-            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs'
+            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia Python integration - Java 21 - PEM"
             java_version: 21
-            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
+            test_suite: 'verify -P python-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia Topology integration - Java 21"
             java_version: 21
-            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs'
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
           - name: "Jolokia Topology integration - Java 21 - PEM"
             java_version: 21
-            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0 -Djava.version=21 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
+            test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Cache local Maven repository
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         with:
           path: ~/.m2/repository
           key: build-${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -134,17 +135,17 @@ jobs:
             build-${{ runner.os }}-maven-
 
       - name: Set up JDK ${{ matrix.java_version }}
-        uses: actions/setup-java@f2beeb24e141e01a676f977032f5a29d81c9e27e # v5.1.0
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           java-version: ${{ matrix.java_version }}
           distribution: 'temurin'
 
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Set up Python 3
-        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
-          python-version: 3
+          python-version: 3.13
 
       - name: Install black
         run: python -m pip install black==24.10.0
@@ -154,6 +155,12 @@ jobs:
 
       - name: install dependencies
         run: mvn install -Pbuild-cassandra-test-jar -DskipTests=true
+
+      - name: Set Cassandra memory limits for topology tests
+        if: contains(matrix.name, 'Topology')
+        run: |
+          echo "MAX_HEAP_SIZE=1536M" >> $GITHUB_ENV
+          echo "HEAP_NEWSIZE=200M" >> $GITHUB_ENV
 
       - run: mvn $TEST_SUITE -B
         id: tests
@@ -165,7 +172,7 @@ jobs:
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: ${{ matrix.name }}-ecchronos-logs
-          path: ./ecchronos-binary/target/test/ecchronos-binary-agent-1.0.0-SNAPSHOT/ecc.log
+          path: ./ecchronos-binary/target/test/ecchronos-binary-agent-1.0.0-SNAPSHOT/logs/ecchronos.log
           if-no-files-found: 'ignore'
 
       - name: Upload coverage to Codecov
