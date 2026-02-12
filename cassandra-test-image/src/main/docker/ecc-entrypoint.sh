@@ -124,7 +124,7 @@ JOLOKIA_JAR="/opt/jolokia-jvm-agent.jar"
 
 if [ "$(echo -n "$JOLOKIA" | xargs)" = "true" ]; then
     echo "Attempting to download Jolokia jar..."
-    curl -L -o "$JOLOKIA_JAR" "https://search.maven.org/remotecontent?filepath=org/jolokia/jolokia-agent-jvm/2.1.1/jolokia-agent-jvm-2.1.1-javaagent.jar"
+    curl -L -o "$JOLOKIA_JAR" "https://search.maven.org/remotecontent?filepath=org/jolokia/jolokia-agent-jvm/2.5.0/jolokia-agent-jvm-2.5.0-javaagent.jar"
 
     JOLOKIA_OPTS="--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED -javaagent:$JOLOKIA_JAR=port=8778,host=*,useSsl=false"
 
