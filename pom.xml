@@ -182,7 +182,7 @@
         <org.jacoco.jacoco-maven-plugin.version>0.8.14</org.jacoco.jacoco-maven-plugin.version>
         <org.sonatype.central-central-publishing-maven-plugin>0.10.0</org.sonatype.central-central-publishing-maven-plugin>
 
-        <jolokia.adapter.version>2.5.0</jolokia.adapter.version>
+        <jolokia.adapter.version>2.5.1</jolokia.adapter.version>
 
         <!-- Test defaults -->
         <skipTests>false</skipTests>
