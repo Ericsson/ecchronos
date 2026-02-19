@@ -103,6 +103,11 @@ jobs:
       - name: install dependencies
         run: mvn install -Pbuild-cassandra-test-jar -DskipTests=true
 
+      - name: Set up Docker Compose
+        uses: KengoTODA/actions-setup-docker-compose@v1
+        with:
+          version: '2.23.0'
+
       - run: mvn $TEST_SUITE -B
         id: tests
         env:
