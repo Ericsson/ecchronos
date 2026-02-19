@@ -44,7 +44,8 @@ CREATE TABLE IF NOT EXISTS ecchronos.on_demand_repair_status (
     completed_time timestamp,
     repair_type text,
     PRIMARY KEY(host_id, job_id))
-    WITH default_time_to_live = 2592000
+    WITH compaction = {'class': 'TimeWindowCompactionStrategy', 'compaction_window_size': 1, 'compaction_window_unit': 'DAYS'}
+    AND default_time_to_live = 2592000
     AND gc_grace_seconds = 0;
 
 CREATE TABLE IF NOT EXISTS ecchronos.repair_history(
