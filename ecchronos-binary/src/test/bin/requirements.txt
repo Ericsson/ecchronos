@@ -2,6 +2,7 @@
 pytest
 pytest-dependency
 behave
+tenacity
 
 # Cassandra driver and database connectivity
 cassandra-driver>=3.28.0

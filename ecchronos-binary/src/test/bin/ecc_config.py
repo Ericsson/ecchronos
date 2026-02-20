@@ -20,24 +20,24 @@ import re
 import tempfile
 import global_variables as global_vars
 
-DC1 = "datacenter1"
-DC2 = "datacenter2"
-DEFAULT_AGENT_TYPE = "datacenterAware"
-
 
 class EcchronosConfig:
     def __init__(
         self,
         datacenter_aware=None,
-        local_dc=DC1,
-        agent_type=DEFAULT_AGENT_TYPE,
+        local_dc=global_vars.DC1,
+        agent_type=global_vars.DEFAULT_AGENT_TYPE,
         initial_contact_point=global_vars.DEFAULT_INITIAL_CONTACT_POINT,
+        instance_name=global_vars.DEFAULT_INSTANCE_NAME,
     ):
         self.container_mounts = {}
-        self.datacenter_aware = [{"name": DC1}, {"name": DC2}] if datacenter_aware is None else datacenter_aware
+        self.datacenter_aware = (
+            [{"name": global_vars.DC1}, {"name": global_vars.DC2}] if datacenter_aware is None else datacenter_aware
+        )
         self.local_dc = local_dc
         self.agent_type = agent_type
         self.initial_contact_point = initial_contact_point
+        self.instance_name = instance_name
 
     def modify_configuration(self):
         self._modify_ecc_yaml_file()
@@ -51,7 +51,7 @@ class EcchronosConfig:
             "container": global_vars.CONTAINER_CERTIFICATE_PATH,
         }
         self.container_mounts["logs"] = {
-            "host": global_vars.HOST_LOGS_PATH,
+            "host": f"{global_vars.HOST_LOGS_PATH}/{self.instance_name}",
             "container": global_vars.CONTAINER_LOGS_PATH,
         }
 
@@ -68,6 +68,8 @@ class EcchronosConfig:
     def _modify_connection_configuration(self, data):
         data["connection"]["cql"]["contactPoints"] = [{"host": self.initial_contact_point, "port": 9042}]
         data["connection"]["cql"]["datacenterAware"]["datacenters"] = self.datacenter_aware
+        data["connection"]["cql"]["instanceName"] = self.instance_name
+        data["connection"]["cql"]["localDatacenter"] = self.local_dc
         return data
 
     def _modify_scheduler_configuration(self, data):

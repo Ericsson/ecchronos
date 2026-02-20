@@ -4,6 +4,7 @@
 
 ## Version 1.0.0-beta2
 
+* Create DatacenterAware Integration tests with Multi Agent setup - Issue #1382
 * Reftresh translation map in IpTranslator if maping is missing - Issue #1393
 * Refactor Test Infrastructure to Support Multiple ecChronos Agent Instances - Issue #1371
 * Migrate old test strategy to use containers instead of in host process - Issue #1349
