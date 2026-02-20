@@ -74,6 +74,12 @@ public final class IpTranslator extends NodeStateListenerBase
         String internalIp = myIpMap.get(externalIp);
         if (internalIp  == null)
         {
+            refreshIpMap();
+            internalIp = myIpMap.get(externalIp);
+            if(internalIp != null)
+            {
+                return internalIp;
+            }
             LOG.warn("No internal IP found for external IP: {}", externalIp);
             return externalIp;
         }
@@ -92,7 +98,10 @@ public final class IpTranslator extends NodeStateListenerBase
         {
             String externalIP = row.getInetAddress(COLUMN_EXTERNAL_ADDRESS).getHostAddress();
             String internalIP = row.getString(COLUMN_INTERNAL_ADDRESS);
-            myIpMap.put(externalIP, internalIP);
+            if(internalIP != null)
+            {
+                myIpMap.put(externalIP, internalIP);
+            }
         });
     }
 
