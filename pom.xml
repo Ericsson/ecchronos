@@ -135,7 +135,7 @@
 
             <!-- Temporary override versions of indirect dependencies (not yet stepped by the direct dependency) -->
 
-            <!-- Used by testcontainers, steped due to CVE-2024-25710 -->
+            <!-- Used by testcontainers-cassandra, steped due to CVE-2024-25710 -->
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-compress</artifactId>
@@ -143,7 +143,7 @@
                 <scope>test</scope>
             </dependency>
 
-            <!-- Used by testcontainers -->
+            <!-- Used by testcontainers-cassandra, steped due to docker issue in github actions -->
             <dependency>
                 <groupId>org.testcontainers</groupId>
                 <artifactId>testcontainers</artifactId>
