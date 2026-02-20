@@ -73,10 +73,6 @@ jobs:
             artifacts_dir: "ecchronos-binary/target"
 
           # Java 17 Jolokia tests
-          - name: "Jolokia Standalone integration 4.1 - Java 17"
-            java_version: 17
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=4.1 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
-            artifacts_dir: "standalone-integration/target"
           - name: "Jolokia Standalone integration 5.0 - Java 17"
             java_version: 17
             test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
@@ -99,10 +95,6 @@ jobs:
             artifacts_dir: "ecchronos-binary/target"
 
           # Java 21 Jolokia tests
-          - name: "Jolokia Standalone integration 4.1 - Java 21"
-            java_version: 21
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=4.1 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs'
-            artifacts_dir: "standalone-integration/target"
           - name: "Jolokia Standalone integration 5.0 - Java 21"
             java_version: 21
             test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs'
