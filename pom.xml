@@ -153,7 +153,8 @@
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
         <equalsverifier.version>4.3.1</equalsverifier.version>
         <jcip.version>1.0</jcip.version>
-        <testcontainers.version>1.21.4</testcontainers.version>
+        <testcontainers.version>2.0.3</testcontainers.version>
+        <testcontainers-cassandra.version>1.21.4</testcontainers-cassandra.version>
         <org.bouncycastle.bcpkix-jdk18on.version>1.83</org.bouncycastle.bcpkix-jdk18on.version>
         <org.apache.httpcomponents.client5.httpclient5.version>5.6</org.apache.httpcomponents.client5.httpclient5.version>
 
@@ -199,11 +200,19 @@
 
             <!-- Temporary override versions of indirect dependencies (not yet stepped by the direct dependency) -->
 
-            <!-- Used by testcontainers, steped due to CVE-2024-25710 -->
+            <!-- Used by testcontainers-cassandra, steped due to CVE-2024-25710 -->
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-compress</artifactId>
                 <version>${org.apache.commons.commons-compress.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- Used by testcontainers-cassandra, steped due to docker issue in github actions -->
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers</artifactId>
+                <version>${testcontainers.version}</version>
                 <scope>test</scope>
             </dependency>
 
@@ -518,7 +527,7 @@
             <dependency>
                 <groupId>org.testcontainers</groupId>
                 <artifactId>cassandra</artifactId>
-                <version>${testcontainers.version}</version>
+                <version>${testcontainers-cassandra.version}</version>
                 <scope>test</scope>
             </dependency>
 
