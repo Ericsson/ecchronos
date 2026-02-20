@@ -91,7 +91,9 @@
         <org.yaml.snakeyaml.version>2.5</org.yaml.snakeyaml.version>
         <slf4j.version>2.0.17</slf4j.version>
         <swagger-annotations.version>2.2.42</swagger-annotations.version>
-        <testcontainers.version>1.21.4</testcontainers.version>
+        <testcontainers.version>2.0.3</testcontainers.version>
+        <testcontainers-cassandra.version>1.21.4</testcontainers-cassandra.version>
+
 
         <!-- Plugin versions -->
         <com.mycila.license-maven-plugin.version>5.0.0</com.mycila.license-maven-plugin.version>
@@ -147,7 +149,7 @@
             <dependency>
                 <groupId>org.testcontainers</groupId>
                 <artifactId>testcontainers</artifactId>
-                <version>2.0.3</version>
+                <version>${testcontainers.version}</version>
                 <scope>test</scope>
             </dependency>
 
@@ -414,7 +416,7 @@
             <dependency>
                 <groupId>org.testcontainers</groupId>
                 <artifactId>cassandra</artifactId>
-                <version>${testcontainers.version}</version>
+                <version>${testcontainers-cassandra.version}</version>
                 <scope>test</scope>
             </dependency>
 
