@@ -137,47 +137,54 @@ class EcchronosConfig:
 
     def _modify_schedule_configuration(self):
         data = self._read_yaml_data(global_vars.SCHEDULE_YAML_FILE_PATH)
-        data["keyspaces"] = [
-            {
-                "name": "test",
-                "tables": [
-                    {
-                        "name": "table1",
-                        "interval": {"time": 1, "unit": "days"},
-                        "initial_delay": {"time": 1, "unit": "hours"},
-                        "unwind_ratio": 0.1,
-                        "alarm": {"warn": {"time": 4, "unit": "days"}, "error": {"time": 8, "unit": "days"}},
-                    }
-                ],
-            },
-            {
-                "name": "test2",
-                "tables": [
-                    {"name": "table1", "repair_type": "incremental"},
-                    {"name": "table2", "repair_type": "parallel_vnode"},
-                ],
-            },
-            {
-                "name": "system_auth",
-                "tables": [
-                    {"name": "network_permissions", "enabled": False},
-                    {"name": "resource_role_permissons_index", "enabled": False},
-                    {"name": "role_members", "enabled": False},
-                    {"name": "role_permissions", "enabled": False},
-                    {"name": "roles", "enabled": False},
-                ],
-            },
-            {
-                "name": "ecchronos",
-                "tables": [
-                    {"name": "lock", "enabled": False},
-                    {"name": "lock_priority", "enabled": False},
-                    {"name": "on_demand_repair_status", "enabled": False},
-                    {"name": "reject_configuration", "enabled": False},
-                    {"name": "repair_history", "enabled": False},
-                ],
-            },
-        ]
+
+        # Fix: preserve upstream/default schedule.yaml unless an explicit override is requested.
+        if getattr(self.context, "schedule_override", False):
+            data["keyspaces"] = [
+                {
+                    "name": "test",
+                    "tables": [
+                        {
+                            "name": "table1",
+                            "interval": {"time": 1, "unit": "days"},
+                            "initial_delay": {"time": 1, "unit": "hours"},
+                            "unwind_ratio": 0.1,
+                            "alarm": {
+                                "warn": {"time": 4, "unit": "days"},
+                                "error": {"time": 8, "unit": "days"},
+                            },
+                        }
+                    ],
+                },
+                {
+                    "name": "test2",
+                    "tables": [
+                        {"name": "table1", "repair_type": "incremental"},
+                        {"name": "table2", "repair_type": "parallel_vnode"},
+                    ],
+                },
+                {
+                    "name": "system_auth",
+                    "tables": [
+                        {"name": "network_permissions", "enabled": False},
+                        {"name": "resource_role_permissons_index", "enabled": False},
+                        {"name": "role_members", "enabled": False},
+                        {"name": "role_permissions", "enabled": False},
+                        {"name": "roles", "enabled": False},
+                    ],
+                },
+                {
+                    "name": "ecchronos",
+                    "tables": [
+                        {"name": "lock", "enabled": False},
+                        {"name": "lock_priority", "enabled": False},
+                        {"name": "on_demand_repair_status", "enabled": False},
+                        {"name": "reject_configuration", "enabled": False},
+                        {"name": "repair_history", "enabled": False},
+                    ],
+                },
+            ]
+
         self._modify_yaml_data(global_vars.SCHEDULE_YAML_FILE_PATH, data)
 
     def _read_yaml_data(self, filename):
