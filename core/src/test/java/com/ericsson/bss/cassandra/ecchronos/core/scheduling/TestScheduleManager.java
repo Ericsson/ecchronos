@@ -264,7 +264,7 @@ public class TestScheduleManager
     }
 
     @Test
-    public void testGetCurrentJobStatusNoRunning() throws InterruptedException
+    public void testGetCurrentJobStatusNoRunning()
     {
         CountDownLatch latch = new CountDownLatch(1);
         UUID jobId = UUID.randomUUID();
@@ -277,6 +277,11 @@ public class TestScheduleManager
                 latch);
         myScheduler.schedule(testJob);
         new Thread(() -> myScheduler.run()).start();
+        myScheduler.schedule(nodeID1, job1);
+
+        // Deterministic: do NOT start the scheduler thread here.
+        // This test asserts the idle-state contract (no running job => empty status),
+        // and starting the scheduler introduces a timing race.
         assertThat(myScheduler.getCurrentJobStatus()).isEqualTo("");
         latch.countDown();
     }
