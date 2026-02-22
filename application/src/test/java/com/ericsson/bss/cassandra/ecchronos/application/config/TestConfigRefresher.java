@@ -48,6 +48,16 @@ public class TestConfigRefresher
 
             writeToFile(file, "some new content");
             await().atMost(5, TimeUnit.SECONDS).until(() -> "some new content".equals(reference.get()));
+            await()
+                .pollInterval(50, TimeUnit.MILLISECONDS)
+                .atMost(5, TimeUnit.SECONDS)
+                .until(() -> "some content".equals(reference.get()));
+
+            writeToFile(file, "some new content");
+            await()
+                .pollInterval(50, TimeUnit.MILLISECONDS)
+                .atMost(5, TimeUnit.SECONDS)
+                .until(() -> "some new content".equals(reference.get()));
         }
     }
 
@@ -80,7 +90,14 @@ public class TestConfigRefresher
             shouldThrow.set(false);
 
             writeToFile(file, "some new content");
+<<<<<<< HEAD
             await().atMost(5, TimeUnit.SECONDS).until(() -> "some new content".equals(reference.get()));
+=======
+            await()
+                .pollInterval(50, TimeUnit.MILLISECONDS)
+                .atMost(5, TimeUnit.SECONDS)
+                .until(() -> "some new content".equals(reference.get()));
+>>>>>>> 6e57bcad (test: harden ConfigRefresher Awaitility timeouts)
         }
     }
 
