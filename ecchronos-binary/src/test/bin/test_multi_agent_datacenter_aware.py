@@ -87,17 +87,24 @@ def test_lock_concurrency(install_cassandra_cluster, test_environment):
     try:
 
         with ThreadPoolExecutor(max_workers=2) as executor:
-            future_ecc_dc1 = executor.submit(run_repair, ECC_INSTANCE_NAME_DC1, ["--all"])
-            future_ecc_dc2 = executor.submit(run_repair, ECC_INSTANCE_NAME_DC2, ["--all"])
+            future_ecc1_dc1 = executor.submit(run_repair, ECC_INSTANCE_NAME_DC1, ["-k", "test", "--all"])
+            future_ecc1_dc2 = executor.submit(run_repair, ECC_INSTANCE_NAME_DC2, ["-k", "test", "--all"])
+            future_ecc2_dc1 = executor.submit(run_repair, ECC_INSTANCE_NAME_DC1, ["-k", "test2", "--all"])
+            future_ecc2_dc2 = executor.submit(run_repair, ECC_INSTANCE_NAME_DC2, ["-k", "test2", "--all"])
 
-            _, exit_code_ecc_dc1 = future_ecc_dc1.result()
-            _, exit_code_ecc_dc2 = future_ecc_dc2.result()
+            _, exit_code_ecc1_dc1 = future_ecc1_dc1.result()
+            _, exit_code_ecc1_dc2 = future_ecc1_dc2.result()
+            _, exit_code_ecc2_dc1 = future_ecc2_dc1.result()
+            _, exit_code_ecc2_dc2 = future_ecc2_dc2.result()
 
             logger.info(
-                f"On Demand Jobs created with exit code: ecchronos-agent-dc1: {exit_code_ecc_dc1}, ecchronos-agent-dc2: {exit_code_ecc_dc2}"
+                f"On Demand Jobs created with exit code: ecchronos-agent-dc1: {exit_code_ecc1_dc1, exit_code_ecc2_dc1}, ecchronos-agent-dc2: {exit_code_ecc1_dc2, exit_code_ecc2_dc2}"
             )
 
-            if exit_code_ecc_dc1 != 0 and exit_code_ecc_dc2 != 0:
+            if any(
+                exit_code != 0
+                for exit_code in [exit_code_ecc1_dc1, exit_code_ecc1_dc2, exit_code_ecc2_dc1, exit_code_ecc2_dc2]
+            ):
                 logger.error("Fail to create on demand jobs")
                 pytest.fail("Fail to create on demand jobs")
 
