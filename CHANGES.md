@@ -4,6 +4,7 @@
 
 ## Version 1.0.0-beta2
 
+* Strip port number from internal ip address in IpTranslator
 * Fix stale JMX connections when a node restarts with a new IP address - Issue #1400
 * Reftresh translation map in IpTranslator if maping is missing - Issue #1393
 * Refactor Test Infrastructure to Support Multiple ecChronos Agent Instances - Issue #1371
