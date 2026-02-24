@@ -105,7 +105,7 @@ public final class IpTranslator extends NodeStateListenerBase
         });
     }
 
-    private static String stripLastColonAndAfter(String input)
+    private static String stripLastColonAndAfter(final String input)
     {
         int lastColon = input.lastIndexOf(':');
         return lastColon != -1 ? input.substring(0, lastColon) : input;
