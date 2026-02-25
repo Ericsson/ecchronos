@@ -56,12 +56,36 @@ USER_CSR="cert/cert.csr"
 USER_PKCS12="cert/cert.pkcs12"
 KEYSTORE="cert/.keystore"
 
+cat > v3.ext <<-EOF
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth, clientAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = localhost
+DNS.2 = cassandra-seed-dc1-rack1-node1
+DNS.3 = cassandra-seed-dc2-rack1-node1
+DNS.4 = cassandra-node-dc1-rack1-node2
+DNS.5 = cassandra-node-dc2-rack1-node2
+IP.1 = 127.0.0.1
+IP.2 = 172.29.0.2
+IP.3 = 172.29.0.3
+IP.4 = 172.29.0.4
+IP.5 = 172.29.0.5
+IP.6 = 172.29.0.6
+IP.7 = 172.29.0.7
+IP.8 = 172.29.0.8
+
+EOF
+
 ###############
 # Generate CA #
 ###############
 
 ## Generate self-signed CA
-openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/C=TE/ST=TEST/L=TEST/O=TEST/OU=TEST/CN=CA"\
+openssl req -x509 -newkey rsa:2048 -nodes -days 365 -subj "/C=TE/ST=TEST/L=TEST/O=TEST/OU=TEST/CN=CA"\
  -keyout "$CA_KEY" -out "$CA_CERT"
 
 ## Import self-signed CA certificate to truststore
@@ -79,8 +103,9 @@ openssl req -newkey rsa:2048 -nodes -subj "/C=TE/ST=TEST/L=TEST/O=TEST/OU=TEST/C
  -keyout "$USER_KEY" -out "$USER_CSR"
 
 # Sign user certificate
-openssl x509 -req -sha256 -days 1\
+openssl x509 -req -sha256 -days 365\
  -in "$USER_CSR" -out "$USER_CERT"\
+ -extfile v3.ext\
  -CA "$CA_CERT" -CAkey "$CA_KEY" -CAcreateserial
 
 ## Convert key/certificate to PKCS12 format
@@ -106,19 +131,6 @@ ECCTOOL_CLIENT_CA_KEY="cert/clientcakey.pem"
 ECCTOOL_CLIENT_CERT="cert/clientcert.crt"
 ECCTOOL_CLIENT_CERT_KEY="cert/clientkey.pem"
 ECCTOOL_CLIENT_CSR="cert/client.csr"
-
-cat > v3.ext <<-EOF
-authorityKeyIdentifier=keyid,issuer
-basicConstraints=CA:FALSE
-keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
-extendedKeyUsage = serverAuth
-subjectAltName = @alt_names
-
-[alt_names]
-DNS.1 = localhost
-IP.1 = 127.0.0.1
-
-EOF
 
 ######################
 # Generate Server CA #
