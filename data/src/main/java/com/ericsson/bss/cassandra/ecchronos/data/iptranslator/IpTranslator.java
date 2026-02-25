@@ -100,9 +100,15 @@ public final class IpTranslator extends NodeStateListenerBase
             String internalIP = row.getString(COLUMN_INTERNAL_ADDRESS);
             if (internalIP != null)
             {
-                myIpMap.put(externalIP, internalIP);
+                myIpMap.put(externalIP, stripLastColonAndAfter(internalIP));
             }
         });
+    }
+
+    private static String stripLastColonAndAfter(final String input)
+    {
+        int lastColon = input.lastIndexOf(':');
+        return lastColon != -1 ? input.substring(0, lastColon) : input;
     }
 
     @Override
