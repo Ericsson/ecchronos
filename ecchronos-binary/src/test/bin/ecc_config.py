@@ -33,7 +33,6 @@ class EcchronosConfig:
         schedule_interval_unit=None,
         schedule_initial_delay_time=None,
         schedule_initial_delay_unit=None,
- 
     ):
         self.container_mounts = {}
         self.datacenter_aware = (
@@ -49,7 +48,6 @@ class EcchronosConfig:
         self.schedule_interval_unit = schedule_interval_unit
         self.schedule_initial_delay_time = schedule_initial_delay_time
         self.schedule_initial_delay_unit = schedule_initial_delay_unit
-
 
     def modify_configuration(self):
         self._modify_ecc_yaml_file()
