@@ -26,6 +26,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
 
@@ -41,6 +43,7 @@ public final class IpTranslator extends NodeStateListenerBase
     private CqlSession mySession;
     private BoundStatement mySelectStatement;
     private final Map<String, String> myIpMap = new ConcurrentHashMap<>();
+    private final ExecutorService myExecutor = Executors.newSingleThreadExecutor();
 
     public IpTranslator()
     {
@@ -114,12 +117,18 @@ public final class IpTranslator extends NodeStateListenerBase
     @Override
     public void onAdd(final Node node)
     {
-        refreshIpMap();
+        myExecutor.submit(this::refreshIpMap);
     }
 
     @Override
     public void onUp(final Node node)
     {
-        refreshIpMap();
+        myExecutor.submit(this::refreshIpMap);
+    }
+
+    @Override
+    public void close()
+    {
+        myExecutor.shutdown();
     }
 }
