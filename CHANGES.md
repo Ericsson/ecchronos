@@ -4,6 +4,7 @@
 
 ## Version 1.0.0-beta2
 
+* Improve concurrency in IpTranslator
 * Create DatacenterAware Integration tests with Multi Agent setup - Issue #1382
 * Strip port number from internal ip address in IpTranslator
 * Fix stale JMX connections when a node restarts with a new IP address - Issue #1400
