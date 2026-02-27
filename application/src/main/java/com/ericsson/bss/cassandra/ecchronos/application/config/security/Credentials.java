@@ -60,7 +60,7 @@ public class Credentials
         myUsername = username;
     }
 
-    @JsonProperty("password")
+    @JsonProperty(value = "password", access = JsonProperty.Access.WRITE_ONLY)
     public final String getPassword()
     {
         return myPassword;

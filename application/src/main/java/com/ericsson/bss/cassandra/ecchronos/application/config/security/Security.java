@@ -15,6 +15,10 @@
 package com.ericsson.bss.cassandra.ecchronos.application.config.security;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 
 public final class Security
 {
@@ -43,6 +47,27 @@ public final class Security
     public void setJmxSecurity(final JmxSecurity jmxSecurity)
     {
         myJmxSecurity = jmxSecurity;
+    }
+
+    /**
+     * Returns a YAML representation of the security configuration.
+     *
+     * @return YAML string representation of the security configuration.
+     */
+    @Override
+    public String toString()
+    {
+        try
+        {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule(new Jdk8Module());
+            mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+            return mapper.writeValueAsString(this);
+        }
+        catch (JsonProcessingException e)
+        {
+            return "Security{error=" + e.getMessage() + "}";
+        }
     }
 
     public static final class CqlSecurity
