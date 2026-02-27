@@ -153,6 +153,8 @@ public class ReloadingCertificateHandler implements CertificateHandler
         private final Map<String, String> myChecksums = new HashMap<>();
         private KeyManagerFactory myKeyManagerFactory;
         private TrustManagerFactory myTrustManagerFactory;
+        private KeyStore myKeyStore;
+        private KeyStore myTrustStore;
 
         Context(final TLSConfig tlsConfig)
                 throws NoSuchAlgorithmException, IOException, UnrecoverableKeyException, CertificateException,
@@ -171,6 +173,16 @@ public class ReloadingCertificateHandler implements CertificateHandler
         TrustManagerFactory getTrustManagerFactory()
         {
             return myTrustManagerFactory;
+        }
+
+        KeyStore getKeyStore()
+        {
+            return myKeyStore;
+        }
+
+        KeyStore getTrustStore()
+        {
+            return myTrustStore;
         }
 
         TLSConfig getTlsConfig()
@@ -305,6 +317,8 @@ public class ReloadingCertificateHandler implements CertificateHandler
 
             context.myKeyManagerFactory = kmf;
             context.myTrustManagerFactory = tmf;
+            context.myKeyStore = keyStore;
+            context.myTrustStore = trustStore;
             // Finally, set the managers in the builder
             builder.keyManager(kmf);
             setTrustManagers(builder, tlsConfig, tmf);
@@ -449,8 +463,30 @@ public class ReloadingCertificateHandler implements CertificateHandler
         }
     }
 
+    public static final class SSLStores
+    {
+        private final KeyStore keyStore;
+        private final KeyStore trustStore;
+
+        public SSLStores(final KeyStore aKeyStore, final KeyStore aTrustStore)
+        {
+            this.keyStore = aKeyStore;
+            this.trustStore = aTrustStore;
+        }
+
+        public KeyStore getKeyStore()
+        {
+            return keyStore;
+        }
+
+        public KeyStore getTrustStore()
+        {
+            return trustStore;
+        }
+    }
+
     @Override
-    public final void setDefaultSSLContext()
+    public final CertificateHandler.SSLStores setDefaultSSLContext()
     {
         Context context = getContext();
         if (context != null && context.getTlsConfig().isCertificateConfigured())
@@ -466,12 +502,14 @@ public class ReloadingCertificateHandler implements CertificateHandler
                 {
                     setSSLContextWithNoEndpointValidation(context, sslContext);
                 }
+                return new CertificateHandler.SSLStores(context.getKeyStore(), context.getTrustStore());
             }
             catch (Exception e)
             {
                 LOG.warn("Failed to set default SSLContext", e);
             }
         }
+        return null;
     }
 
     private void setSSLContextWithNoEndpointValidation(final Context context, final SSLContext sslContext) throws KeyManagementException

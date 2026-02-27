@@ -312,8 +312,10 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
 
         if (isJolokiaEnabled && myCertificateHandler != null)
         {
-            env.put("jmx.remote.x.check.stub", "true");
-            myCertificateHandler.setDefaultSSLContext();
+            // env.put("jmx.remote.x.check.stub", "true");
+            CertificateHandler.SSLStores sslstores = myCertificateHandler.setDefaultSSLContext();
+            env.put("truststore", sslstores.getTrustStore());
+            env.put("keystore", sslstores.getKeyStore());
         }
         else if (!tls.isEmpty())
         {

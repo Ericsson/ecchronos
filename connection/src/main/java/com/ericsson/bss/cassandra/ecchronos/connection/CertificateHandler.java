@@ -18,17 +18,40 @@ import com.datastax.oss.driver.api.core.metadata.EndPoint;
 import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 
 import javax.net.ssl.SSLEngine;
+import java.security.KeyStore;
 
 /**
  * SSL Context provider.
  */
 public interface CertificateHandler extends SslEngineFactory
 {
+    final class SSLStores
+    {
+        private final KeyStore keyStore;
+        private final KeyStore trustStore;
+
+        public SSLStores(final KeyStore aKeyStore, final KeyStore aTrustStore)
+        {
+            this.keyStore = aKeyStore;
+            this.trustStore = aTrustStore;
+        }
+
+        public KeyStore getKeyStore()
+        {
+            return keyStore;
+        }
+
+        public KeyStore getTrustStore()
+        {
+            return trustStore;
+        }
+    }
+
     @Override
     SSLEngine newSslEngine(EndPoint remoteEndpoint);
 
     @Override
     void close() throws Exception;
 
-    void setDefaultSSLContext();
+    SSLStores setDefaultSSLContext();
 }
