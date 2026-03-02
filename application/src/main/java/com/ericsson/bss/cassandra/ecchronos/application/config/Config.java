@@ -22,6 +22,10 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.rest.RestServerCo
 import com.ericsson.bss.cassandra.ecchronos.application.config.runpolicy.RunPolicyConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.scheduler.SchedulerConfig;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 
 public class Config
 {
@@ -152,6 +156,27 @@ public class Config
         if (lockFactoryConfig != null)
         {
             myLockFactoryConfig = lockFactoryConfig;
+        }
+    }
+
+    /**
+     * Returns a YAML representation of the configuration.
+     *
+     * @return YAML string representation of the configuration.
+     */
+    @Override
+    public String toString()
+    {
+        try
+        {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule(new Jdk8Module());
+            mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+            return mapper.writeValueAsString(this);
+        }
+        catch (JsonProcessingException e)
+        {
+            return "Config{error=" + e.getMessage() + "}";
         }
     }
 }
