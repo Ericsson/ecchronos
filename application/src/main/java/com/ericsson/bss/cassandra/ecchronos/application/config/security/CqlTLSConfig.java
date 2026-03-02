@@ -116,6 +116,7 @@ public class CqlTLSConfig implements TLSConfig
     }
 
     @Override
+    @JsonProperty(value = "keystore_password", access = JsonProperty.Access.WRITE_ONLY)
     public final String getKeyStorePassword()
     {
         return myKeyStorePassword;
@@ -128,6 +129,7 @@ public class CqlTLSConfig implements TLSConfig
     }
 
     @Override
+    @JsonProperty(value = "truststore_password", access = JsonProperty.Access.WRITE_ONLY)
     public final String getTrustStorePassword()
     {
         return myTrustStorePassword;

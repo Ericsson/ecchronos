@@ -90,6 +90,8 @@ public class BeanConfigurator
      */
     public BeanConfigurator() throws ConfigurationException, UnknownHostException
     {
+        Security security = getSecurityConfig();
+        LOG.info("Security configuration loaded:\n{}", security);
         if (ConfigurationHelper.DEFAULT_INSTANCE.usePath())
         {
             configRefresher = new ConfigRefresher(ConfigurationHelper.DEFAULT_INSTANCE.getConfigPath());
@@ -100,7 +102,6 @@ public class BeanConfigurator
         {
             configRefresher = null;
         }
-        Security security = getSecurityConfig();
         cqlSecurity.set(security.getCqlSecurity());
         jmxSecurity.set(security.getJmxSecurity());
         ecChronosID = getConfiguration().getConnectionConfig().getCqlConnection().getInstanceName();
@@ -127,7 +128,9 @@ public class BeanConfigurator
     @Bean
     public Config config() throws ConfigurationException
     {
-        return getConfiguration();
+        Config config = getConfiguration();
+        LOG.info("Application configuration loaded:\n{}", config);
+        return config;
     }
 
     /**
