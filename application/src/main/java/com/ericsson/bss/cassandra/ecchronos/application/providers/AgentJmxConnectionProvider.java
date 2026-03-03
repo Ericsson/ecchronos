@@ -91,6 +91,7 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
         Map<String, String> config = new HashMap<>();
         if (!tlsConfig.isCertificateConfigured())
         {
+            config.put(DistributedJmxBuilder.ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY, String.valueOf(false));
             if (tlsConfig.getProtocol() != null)
                 {
                     config.put("com.sun.management.jmxremote.ssl.enabled.protocols", tlsConfig.getProtocol());

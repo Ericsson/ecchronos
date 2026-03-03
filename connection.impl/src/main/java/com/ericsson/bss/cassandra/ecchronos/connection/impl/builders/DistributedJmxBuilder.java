@@ -233,7 +233,7 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
             if (isJolokiaEnabled)
             {
                 port = myJolokiaPort;
-                String protocol = getTLSConfig().get(ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY).equals(String.valueOf(true)) ? "jolokia+https" : "jolokia";
+                String protocol = String.valueOf(true).equals(getTLSConfig().get(ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY)) ? "jolokia+https" : "jolokia";
                 jmxUrl = new JMXServiceURL(String.format(JMX_JOLOKIA_FORMAT_URL, protocol, host, port));
                 JolokiaJmxConnectionProvider jolokiaJmxConnectionProvider = new JolokiaJmxConnectionProvider();
                 LOG.info("Creating Jolokia JMXConnection with host: {} and port: {}", host, port);
@@ -248,7 +248,7 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
                     }
                     catch (IOException e)
                     {
-                        LOG.warn("Jolokia connection failed due to {}", e);
+                        LOG.warn("Jolokia connection failed due to {}", e.getMessage(), e);
                     }
                 });
                 try
@@ -261,7 +261,7 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
                 catch (TimeoutException | InterruptedException | ExecutionException e)
                 {
                     future.cancel(true);
-                    throw new IOException("Jolokia connection failed due to {}", e);
+                    throw new IOException("Jolokia connection failed", e);
                 }
                // Verify MBeanServerConnection is available
                 if (jmxConnector.getMBeanServerConnection() == null)
@@ -308,7 +308,7 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
         {
             env.put(JMXConnector.CREDENTIALS, credentials);
         }
-        if (isJolokiaEnabled && tls.get(ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY).equals(String.valueOf(true)))
+        if (isJolokiaEnabled && String.valueOf(true).equals(tls.get(ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY)))
         {
             LOG.info("Setting Jolokia client with PEM certificates");
             String caCert = tls.get(JOLOKIA_CA_CERTIFICATE_PROPERTY);
@@ -317,11 +317,11 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
             String keyAlgorithm = tls.get(JOLOKIA_CLIENT_KEY_ALGORITHM_CERTIFICATE_PROPERTY);
             String disableHostnameVerification = tls.get(JDK_DISABLE_HOSTNAME_VERIFICATION_PROPERTY);
 
-            setSystemPropertyItNotNull(JOLOKIA_CA_CERTIFICATE_PROPERTY, caCert);
-            setSystemPropertyItNotNull(JOLOKIA_CLIENT_CERTIFICATE_PROPERTY, clientCert);
-            setSystemPropertyItNotNull(JOLOKIA_CLIENT_KEY_CERTIFICATE_PROPERTY, clientKey);
-            setSystemPropertyItNotNull(JOLOKIA_CLIENT_KEY_ALGORITHM_CERTIFICATE_PROPERTY, keyAlgorithm);
-            setSystemPropertyItNotNull(JDK_DISABLE_HOSTNAME_VERIFICATION_PROPERTY, disableHostnameVerification);
+            setSystemPropertyIfNotNull(JOLOKIA_CA_CERTIFICATE_PROPERTY, caCert);
+            setSystemPropertyIfNotNull(JOLOKIA_CLIENT_CERTIFICATE_PROPERTY, clientCert);
+            setSystemPropertyIfNotNull(JOLOKIA_CLIENT_KEY_CERTIFICATE_PROPERTY, clientKey);
+            setSystemPropertyIfNotNull(JOLOKIA_CLIENT_KEY_ALGORITHM_CERTIFICATE_PROPERTY, keyAlgorithm);
+            setSystemPropertyIfNotNull(JDK_DISABLE_HOSTNAME_VERIFICATION_PROPERTY, disableHostnameVerification);
         }
         else if (!tls.isEmpty())
         {
@@ -344,7 +344,7 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
         return env;
     }
 
-    private void setSystemPropertyItNotNull(final String key, final String value)
+    private void setSystemPropertyIfNotNull(final String key, final String value)
     {
         if (value != null)
         {
