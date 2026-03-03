@@ -317,26 +317,11 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
             String keyAlgorithm = tls.get(JOLOKIA_CLIENT_KEY_ALGORITHM_CERTIFICATE_PROPERTY);
             String disableHostnameVerification = tls.get(JDK_DISABLE_HOSTNAME_VERIFICATION_PROPERTY);
 
-            if (caCert != null)
-            {
-                System.setProperty(JOLOKIA_CA_CERTIFICATE_PROPERTY, caCert);
-            }
-            if (clientCert != null)
-            {
-                System.setProperty(JOLOKIA_CLIENT_CERTIFICATE_PROPERTY, clientCert);
-            }
-            if (clientKey != null)
-            {
-                System.setProperty(JOLOKIA_CLIENT_KEY_CERTIFICATE_PROPERTY, clientKey);
-            }
-            if (keyAlgorithm != null)
-            {
-                System.setProperty(JOLOKIA_CLIENT_KEY_ALGORITHM_CERTIFICATE_PROPERTY, keyAlgorithm);
-            }
-            if (disableHostnameVerification != null)
-            {
-                System.setProperty(JDK_DISABLE_HOSTNAME_VERIFICATION_PROPERTY, disableHostnameVerification);
-            }
+            setSystemPropertyItNotNull(JOLOKIA_CA_CERTIFICATE_PROPERTY, caCert);
+            setSystemPropertyItNotNull(JOLOKIA_CLIENT_CERTIFICATE_PROPERTY, clientCert);
+            setSystemPropertyItNotNull(JOLOKIA_CLIENT_KEY_CERTIFICATE_PROPERTY, clientKey);
+            setSystemPropertyItNotNull(JOLOKIA_CLIENT_KEY_ALGORITHM_CERTIFICATE_PROPERTY, keyAlgorithm);
+            setSystemPropertyItNotNull(JDK_DISABLE_HOSTNAME_VERIFICATION_PROPERTY, disableHostnameVerification);
         }
         else if (!tls.isEmpty())
         {
@@ -357,6 +342,14 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
             env.put("com.sun.jndi.rmi.factory.socket", new SslRMIClientSocketFactory());
         }
         return env;
+    }
+
+    private void setSystemPropertyItNotNull(final String key, final String value)
+    {
+        if (value != null)
+        {
+            System.setProperty(key, value);
+        }
     }
 
     private String[] getCredentialsConfig()

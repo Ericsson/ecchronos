@@ -47,6 +47,7 @@ public class TestSecurity
                 "ecchronos", "/path/to/truststore", "ecchronos");
         jmxTLSConfig.setProtocol("TLSv1.2");
         jmxTLSConfig.setCipherSuites(null);
+        jmxTLSConfig.setAlgorithm("EC");
 
         assertThat(config.getCqlSecurity().getCqlCredentials()).isEqualTo(expectedCredentials);
         assertThat(config.getJmxSecurity().getJmxCredentials()).isEqualTo(expectedCredentials);
