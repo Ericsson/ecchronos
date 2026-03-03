@@ -248,7 +248,8 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
                     }
                     catch (IOException e)
                     {
-                        LOG.warn("Jolokia connection failed due to {}", e.getMessage(), e);
+                        LOG.error("Jolokia connection IOException during connect()", e);
+                        throw new RuntimeException(e);
                     }
                 });
                 try
@@ -261,6 +262,7 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
                 catch (TimeoutException | InterruptedException | ExecutionException e)
                 {
                     future.cancel(true);
+                    LOG.error("Jolokia connection failed with timeout or execution error", e);
                     throw new IOException("Jolokia connection failed", e);
                 }
                // Verify MBeanServerConnection is available
