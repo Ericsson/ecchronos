@@ -336,15 +336,8 @@ public class BeanConfigurator
             final EccNodesSync eccNodesSync,
             final IpTranslator ipTranslator) throws IOException
     {
-        Supplier<TLSConfig> jmxTlsSupplier = () -> securitySupplier.get().getJmxTlsConfig();
-        CertificateHandler certificateHandler = null;
-        if (jmxTlsSupplier.get().isEnabled() && jmxTlsSupplier.get().isCertificateConfigured())
-        {
-            LOG.info("Creating Certificate handler for JMX with PEM certificates");
-            certificateHandler = createCertificateHandler(jmxTlsSupplier);
-        }
         return new AgentJmxConnectionProvider(
-                config, securitySupplier, distributedNativeConnectionProvider, eccNodesSync, certificateHandler, ipTranslator);
+                config, securitySupplier, distributedNativeConnectionProvider, eccNodesSync, ipTranslator);
     }
 
     private void refreshSecurityConfig(

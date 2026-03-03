@@ -49,7 +49,8 @@ public class JmxTLSConfig implements TLSConfig
                         @JsonProperty("truststore_password") final String trustStorePassword,
                         @JsonProperty("certificate") final String certificatePath,
                         @JsonProperty("certificate_private_key") final String certificatePrivateKeyPath,
-                        @JsonProperty("trust_certificate") final String trustCertificatePath)
+                        @JsonProperty("trust_certificate") final String trustCertificatePath,
+                        @JsonProperty("algorithm") final String algorithm)
     {
         myIsEnabled = isEnabled;
         myKeyStorePath = keyStorePath;
@@ -59,6 +60,7 @@ public class JmxTLSConfig implements TLSConfig
         myCertificatePath = certificatePath;
         myCertificatePrivateKeyPath = certificatePrivateKeyPath;
         myTrustCertificatePath = trustCertificatePath;
+        myAlgorithm = algorithm;
         if (myIsEnabled && !isKeyStoreConfigured() && !isCertificateConfigured())
         {
             throw new IllegalArgumentException(

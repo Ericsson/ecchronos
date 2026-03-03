@@ -26,11 +26,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509ExtendedTrustManager;
 import javax.net.ssl.X509TrustManager;
 import java.io.File;
 import java.io.FileInputStream;
@@ -153,8 +151,6 @@ public class ReloadingCertificateHandler implements CertificateHandler
         private final Map<String, String> myChecksums = new HashMap<>();
         private KeyManagerFactory myKeyManagerFactory;
         private TrustManagerFactory myTrustManagerFactory;
-        private KeyStore myKeyStore;
-        private KeyStore myTrustStore;
 
         Context(final TLSConfig tlsConfig)
                 throws NoSuchAlgorithmException, IOException, UnrecoverableKeyException, CertificateException,
@@ -173,16 +169,6 @@ public class ReloadingCertificateHandler implements CertificateHandler
         TrustManagerFactory getTrustManagerFactory()
         {
             return myTrustManagerFactory;
-        }
-
-        KeyStore getKeyStore()
-        {
-            return myKeyStore;
-        }
-
-        KeyStore getTrustStore()
-        {
-            return myTrustStore;
         }
 
         TLSConfig getTlsConfig()
@@ -317,8 +303,6 @@ public class ReloadingCertificateHandler implements CertificateHandler
 
             context.myKeyManagerFactory = kmf;
             context.myTrustManagerFactory = tmf;
-            context.myKeyStore = keyStore;
-            context.myTrustStore = trustStore;
             // Finally, set the managers in the builder
             builder.keyManager(kmf);
             setTrustManagers(builder, tlsConfig, tmf);
@@ -461,100 +445,5 @@ public class ReloadingCertificateHandler implements CertificateHandler
             trustManagerFactory.init(keyStore);
             return trustManagerFactory;
         }
-    }
-
-    public static final class SSLStores
-    {
-        private final KeyStore keyStore;
-        private final KeyStore trustStore;
-
-        public SSLStores(final KeyStore aKeyStore, final KeyStore aTrustStore)
-        {
-            this.keyStore = aKeyStore;
-            this.trustStore = aTrustStore;
-        }
-
-        public KeyStore getKeyStore()
-        {
-            return keyStore;
-        }
-
-        public KeyStore getTrustStore()
-        {
-            return trustStore;
-        }
-    }
-
-    @Override
-    public final CertificateHandler.SSLStores setDefaultSSLContext()
-    {
-        Context context = getContext();
-        if (context != null && context.getTlsConfig().isCertificateConfigured())
-        {
-            try
-            {
-                SSLContext sslContext = SSLContext.getInstance("TLS");
-                if (context.getTlsConfig().requiresEndpointVerification())
-                {
-                    setSSLContextWithEndpointValidation(context, sslContext);
-                }
-                else
-                {
-                    setSSLContextWithNoEndpointValidation(context, sslContext);
-                }
-                return new CertificateHandler.SSLStores(context.getKeyStore(), context.getTrustStore());
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Failed to set default SSLContext", e);
-            }
-        }
-        return null;
-    }
-
-    private void setSSLContextWithNoEndpointValidation(final Context context, final SSLContext sslContext) throws KeyManagementException
-    {
-        TrustManager[] trustManagers = null;
-        if (context.getTrustManagerFactory() != null)
-        {
-            trustManagers = setTrustManagersWithNoEndpointValidation(context);
-        }
-        sslContext.init(
-            context.getKeyManagerFactory() != null ? context.getKeyManagerFactory().getKeyManagers() : null,
-            trustManagers,
-            null
-        );
-        SSLContext.setDefault(sslContext);
-        LOG.info("Default SSLContext set for JVM with endpoint validation disabled");
-    }
-
-    private TrustManager[] setTrustManagersWithNoEndpointValidation(final Context context)
-    {
-        TrustManager[] originalTrustManagers = context.getTrustManagerFactory().getTrustManagers();
-        TrustManager[] trustManagers = new TrustManager[originalTrustManagers.length];
-        for (int i = 0; i < originalTrustManagers.length; i++)
-        {
-            if (originalTrustManagers[i] instanceof X509ExtendedTrustManager)
-            {
-                trustManagers[i] = new NoEndpointValidationTrustManager(
-                    (X509ExtendedTrustManager) originalTrustManagers[i]);
-            }
-            else
-            {
-                trustManagers[i] = originalTrustManagers[i];
-            }
-        }
-        return trustManagers;
-    }
-
-    private void setSSLContextWithEndpointValidation(final Context context, final SSLContext sslContext) throws KeyManagementException
-    {
-        sslContext.init(
-            context.getKeyManagerFactory() != null ? context.getKeyManagerFactory().getKeyManagers() : null,
-            context.getTrustManagerFactory() != null ? context.getTrustManagerFactory().getTrustManagers() : null,
-            null
-        );
-        SSLContext.setDefault(sslContext);
-        LOG.info("Default SSLContext set for JVM with endpoint validation enabled");
     }
 }
