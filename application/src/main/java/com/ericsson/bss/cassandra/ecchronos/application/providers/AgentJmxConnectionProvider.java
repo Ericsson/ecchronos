@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.connection.Joloki
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Credentials;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.JmxTLSConfig;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security;
+import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.DistributedJmxBuilder;
@@ -59,6 +60,7 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
             final Supplier<Security.JmxSecurity> jmxSecurity,
             final DistributedNativeConnectionProvider distributedNativeConnectionProvider,
             final EccNodesSync eccNodesSync,
+            final CertificateHandler certificateHandler,
             final IpTranslator ipTranslator) throws IOException
     {
         JolokiaConfig jolokiaConfig = config.getConnectionConfig().getJmxConnection().getJolokiaConfig();
@@ -75,6 +77,7 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
                 .withTLS(tls)
                 .withJolokiaEnabled(jolokiaConfig.isEnabled())
                 .withJolokiaPort(jolokiaConfig.getPort())
+                .withCertificateHandler(certificateHandler)
                 .withDNSResolution(config.getConnectionConfig().getJmxConnection().getReseverseDNSResolution())
                 .withIpTranslator(ipTranslator)
                 .build();
