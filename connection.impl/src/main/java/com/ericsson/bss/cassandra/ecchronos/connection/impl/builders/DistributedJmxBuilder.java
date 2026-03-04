@@ -257,7 +257,7 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
                     catch (IOException e)
                     {
                         LOG.error("Jolokia connection IOException during connect()", e);
-                        throw new RuntimeException(e);
+                        throw new IllegalStateException("Failed to connect to Jolokia", e);
                     }
                 });
                 try

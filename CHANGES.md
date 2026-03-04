@@ -4,6 +4,7 @@
 
 ## Version 1.0.0-beta2
 
+* Jolokia connection fails when TLS is enabled - Issue #1415
 * Log yaml config at startup
 * Improve concurrency in IpTranslator
 * Create DatacenterAware Integration tests with Multi Agent setup - Issue #1382
