@@ -56,11 +56,17 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
 {
     private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxBuilder.class);
     private static final String JMX_FORMAT_URL = "service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi";
-    private static final String JMX_JOLOKIA_FORMAT_URL = "service:jmx:jolokia://%s:%d/jolokia/";
+    private static final String JMX_JOLOKIA_FORMAT_URL = "service:jmx:%s://%s:%d/jolokia/";
     private static final Integer JMX_JOLOKIA_CONNECTION_TIMEOUT = 20;
     private static final int DEFAULT_JOLOKIA_PORT = 8778;
     private static final int DEFAULT_PORT = 7199;
     public static final String NO_BROADCAST_ADDRESS = "0.0.0.0"; //NOPMD AvoidUsingHardCodedIP
+    public static final String JOLOKIA_CA_CERTIFICATE_PROPERTY = "jolokia.caCertificate";
+    public static final String JOLOKIA_CLIENT_CERTIFICATE_PROPERTY = "jolokia.clientCertificate";
+    public static final String JOLOKIA_CLIENT_KEY_CERTIFICATE_PROPERTY = "jolokia.clientKey";
+    public static final String JOLOKIA_CLIENT_KEY_ALGORITHM_CERTIFICATE_PROPERTY = "jolokia.clientKeyAlgorithm";
+    public static final String JDK_DISABLE_HOSTNAME_VERIFICATION_PROPERTY = "jdk.internal.httpclient.disableHostnameVerification";
+    public static final String ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY = "ecchronos.jolokia.ssl.enabled";
 
     private CqlSession mySession;
     private DistributedNativeConnectionProvider myNativeConnectionProvider;
@@ -235,7 +241,8 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
             if (isJolokiaEnabled)
             {
                 port = myJolokiaPort;
-                jmxUrl = new JMXServiceURL(String.format(JMX_JOLOKIA_FORMAT_URL, host, port));
+                String protocol = String.valueOf(true).equals(getTLSConfig().get(ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY)) ? "jolokia+https" : "jolokia";
+                jmxUrl = new JMXServiceURL(String.format(JMX_JOLOKIA_FORMAT_URL, protocol, host, port));
                 JolokiaJmxConnectionProvider jolokiaJmxConnectionProvider = new JolokiaJmxConnectionProvider();
                 LOG.info("Creating Jolokia JMXConnection with host: {} and port: {}", host, port);
                 jmxConnector = jolokiaJmxConnectionProvider.newJMXConnector(jmxUrl, createJMXEnv());
@@ -249,7 +256,8 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
                     }
                     catch (IOException e)
                     {
-                        LOG.warn("Jolokia connection failed due to {}", e);
+                        LOG.error("Jolokia connection IOException during connect()", e);
+                        throw new IllegalStateException("Failed to connect to Jolokia", e);
                     }
                 });
                 try
@@ -262,7 +270,8 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
                 catch (TimeoutException | InterruptedException | ExecutionException e)
                 {
                     future.cancel(true);
-                    throw new IOException("Jolokia connection failed due to {}", e);
+                    LOG.error("Jolokia connection failed with timeout or execution error", e);
+                    throw new IOException("Jolokia connection failed", e);
                 }
                // Verify MBeanServerConnection is available
                 if (jmxConnector.getMBeanServerConnection() == null)
@@ -309,11 +318,24 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
         {
             env.put(JMXConnector.CREDENTIALS, credentials);
         }
-
-        if (isJolokiaEnabled && myCertificateHandler != null)
+        if (isJolokiaEnabled && String.valueOf(true).equals(tls.get(ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY)))
         {
-            env.put("jmx.remote.x.check.stub", "true");
-            myCertificateHandler.setDefaultSSLContext();
+            if (myCertificateHandler != null)
+            {
+                myCertificateHandler.setDefaultSSLContext();
+            }
+            LOG.info("Setting Jolokia client with PEM certificates");
+            String caCert = tls.get(JOLOKIA_CA_CERTIFICATE_PROPERTY);
+            String clientCert = tls.get(JOLOKIA_CLIENT_CERTIFICATE_PROPERTY);
+            String clientKey = tls.get(JOLOKIA_CLIENT_KEY_CERTIFICATE_PROPERTY);
+            String keyAlgorithm = tls.get(JOLOKIA_CLIENT_KEY_ALGORITHM_CERTIFICATE_PROPERTY);
+            String disableHostnameVerification = tls.get(JDK_DISABLE_HOSTNAME_VERIFICATION_PROPERTY);
+
+            setSystemPropertyIfNotNull(JOLOKIA_CA_CERTIFICATE_PROPERTY, caCert);
+            setSystemPropertyIfNotNull(JOLOKIA_CLIENT_CERTIFICATE_PROPERTY, clientCert);
+            setSystemPropertyIfNotNull(JOLOKIA_CLIENT_KEY_CERTIFICATE_PROPERTY, clientKey);
+            setSystemPropertyIfNotNull(JOLOKIA_CLIENT_KEY_ALGORITHM_CERTIFICATE_PROPERTY, keyAlgorithm);
+            setSystemPropertyIfNotNull(JDK_DISABLE_HOSTNAME_VERIFICATION_PROPERTY, disableHostnameVerification);
         }
         else if (!tls.isEmpty())
         {
@@ -334,6 +356,14 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
             env.put("com.sun.jndi.rmi.factory.socket", new SslRMIClientSocketFactory());
         }
         return env;
+    }
+
+    private void setSystemPropertyIfNotNull(final String key, final String value)
+    {
+        if (value != null)
+        {
+            System.setProperty(key, value);
+        }
     }
 
     private String[] getCredentialsConfig()

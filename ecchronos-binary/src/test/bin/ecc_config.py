@@ -124,6 +124,7 @@ class EcchronosConfig:
                 "certificate_private_key"
             ] = f"{global_vars.CONTAINER_CERTIFICATE_PATH}/pem/clientkey.pem"
             data["jmx"]["tls"]["trust_certificate"] = f"{global_vars.CONTAINER_CERTIFICATE_PATH}/pem/serverca.crt"
+            data["jmx"]["tls"]["algorithm"] = "RSA"
         return data
 
     def _modify_cql_configuration(self, data):
