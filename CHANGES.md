@@ -2,6 +2,8 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Add missing error messages in ecctool - Issue #1431
+
 ## Version 1.0.0-beta3
 
 * Jolokia connection fails when TLS is enabled - Issue #1415
