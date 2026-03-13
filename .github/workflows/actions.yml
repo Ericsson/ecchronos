@@ -206,5 +206,8 @@ jobs:
             ./rest/target/site/jacoco/jacoco.xml,
             ./application/target/site/jacoco/jacoco.xml,
             ./core/target/site/jacoco/jacoco.xml,
-            ./fm.impl/target/site/jacoco/jacoco.xml,
-            ./connection/target/site/jacoco/jacoco.xml
+            ./fault.manager.impl/target/site/jacoco/jacoco.xml,
+            ./connection.impl/target/site/jacoco/jacoco.xml,
+            ./core.impl/target/site/jacoco/jacoco.xml,
+            ./data/target/site/jacoco/jacoco.xml,
+            ./utils/target/site/jacoco/jacoco.xml
