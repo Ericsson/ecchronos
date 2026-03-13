@@ -480,11 +480,17 @@ def rejections(arguments):
         _get_rejections(arguments)
     elif arguments.rejections_action == "update":
         _update_rejections(arguments)
+    else:
+        print("Specify a valid action (create, delete, get or update) for subcommand 'rejections'.")
+        sys.exit(1)
 
 
 def state(arguments):
     if arguments.state_subcommand == "nodes":
         _state_nodes(arguments)
+    else:
+        print("Specify a valid action (nodes) for subcommand 'state'.")
+        sys.exit(1)
 
 
 def _state_nodes(arguments):
