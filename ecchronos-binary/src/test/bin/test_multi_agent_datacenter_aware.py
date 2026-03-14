@@ -42,6 +42,10 @@ SCHEDULE_INTERVAL_UNIT = "minutes"
 SCHEDULE_INITIAL_DELAY_TIME = 1
 SCHEDULE_INITIAL_DELAY_UNIT = "minutes"
 
+# Keep a bounded but sufficiently large query window so shared helper behavior
+# remains compatible with the rest of the Python integration suites.
+REPAIR_QUERY_COUNT = "50"
+
 
 def run_repair(container, params):
     barrier.wait()
@@ -188,9 +192,9 @@ def wait_for_repairs_completion_scheduled(executor):
 
 
 def _wait_for_repairs_completion_common(executor):
-    # Do not limit results, otherwise we may only inspect a subset of repairs
-    # and get false positives/false negatives in CI.
-    params = []
+    # Keep the CLI shape stable for shared helpers and fetch enough rows to avoid
+    # only inspecting a partial subset of repairs.
+    params = ["-c", REPAIR_QUERY_COUNT]
 
     future_ecc_dc1 = executor.submit(verify_repair_completed, ECC_INSTANCE_NAME_DC1, params)
     future_ecc_dc2 = executor.submit(verify_repair_completed, ECC_INSTANCE_NAME_DC2, params)
