@@ -14,9 +14,11 @@
 # limitations under the License.
 #
 
-import yaml
 import re
 import tempfile
+
+import yaml
+
 import global_variables as global_vars
 
 
@@ -87,7 +89,6 @@ class EcchronosConfig:
 
     def _modify_connection_configuration(self, data):
         data["connection"]["cql"]["contactPoints"] = [{"host": self.initial_contact_point, "port": 9042}]
-
         data["connection"]["cql"]["datacenterAware"]["datacenters"] = self.datacenter_aware
         data["connection"]["cql"]["instanceName"] = self.instance_name
         data["connection"]["cql"]["localDatacenter"] = self.local_dc
@@ -200,7 +201,7 @@ class EcchronosConfig:
         with open(global_vars.JVM_OPTIONS_FILE_PATH, "r", encoding="utf-8") as file:
             lines = file.readlines()
 
-        result = [pattern.match(l).group(1) + "\n" if pattern.match(l) else l for l in lines]
+        result = [pattern.match(line).group(1) + "\n" if pattern.match(line) else line for line in lines]
 
         self.container_mounts["jvm"] = {
             "host": self.write_tmp(result, ".options"),
@@ -208,7 +209,7 @@ class EcchronosConfig:
         }
 
     def _modify_logback_configuration(self):
-        with open(global_vars.LOGBACK_FILE_PATH, "r") as file:
+        with open(global_vars.LOGBACK_FILE_PATH, "r", encoding="utf-8") as file:
             lines = file.readlines()
 
         pattern = re.compile(r'^(\s*)(<appender-ref ref="STDOUT" />)\s*$')
@@ -229,34 +230,54 @@ class EcchronosConfig:
     # --------------------------------------------------
     # SAFE SCHEDULE PATCH (non-global)
     # --------------------------------------------------
-    def _modify_schedule_configuration(self):
-        data = self._read_yaml_data(global_vars.SCHEDULE_YAML_FILE_PATH)
-
-        # Only modify when explicitly requested
-        if any(
-            [
+    def _has_schedule_overrides(self):
+        return any(
+            value is not None
+            for value in (
                 self.schedule_interval_time,
                 self.schedule_interval_unit,
                 self.schedule_initial_delay_time,
                 self.schedule_initial_delay_unit,
-            ]
-        ):
-            for ks in data.get("keyspaces", []):
-                if ks.get("name") != "test":
+            )
+        )
+
+    def _modify_schedule_configuration(self):
+        # Leave the upstream schedule.yaml untouched unless this instance
+        # explicitly requests schedule overrides.
+        if not self._has_schedule_overrides():
+            return
+
+        data = self._read_yaml_data(global_vars.SCHEDULE_YAML_FILE_PATH)
+
+        # safe_load may return None for an empty file
+        if data is None:
+            data = {}
+
+        if isinstance(data, dict):
+            for keyspace in data.get("keyspaces") or []:
+                if not isinstance(keyspace, dict):
                     continue
-                for tbl in ks.get("tables", []):
-                    if tbl.get("name") != "table1":
+                if keyspace.get("name") != "test":
+                    continue
+
+                for table in keyspace.get("tables") or []:
+                    if not isinstance(table, dict):
+                        continue
+                    if table.get("name") != "table1":
                         continue
 
+                    # Only patch timing-related schedule fields.
+                    # Do not touch repair type or unrelated schedule entries.
                     if self.schedule_interval_time is not None:
-                        tbl.setdefault("interval", {})["time"] = self.schedule_interval_time
+                        table.setdefault("interval", {})["time"] = self.schedule_interval_time
                     if self.schedule_interval_unit is not None:
-                        tbl.setdefault("interval", {})["unit"] = self.schedule_interval_unit
+                        table.setdefault("interval", {})["unit"] = self.schedule_interval_unit
 
                     if self.schedule_initial_delay_time is not None:
-                        tbl.setdefault("initial_delay", {})["time"] = self.schedule_initial_delay_time
+                        table.setdefault("initial_delay", {})["time"] = self.schedule_initial_delay_time
                     if self.schedule_initial_delay_unit is not None:
-                        tbl.setdefault("initial_delay", {})["unit"] = self.schedule_initial_delay_unit
+                        table.setdefault("initial_delay", {})["unit"] = self.schedule_initial_delay_unit
+
                     break
 
         self.container_mounts["schedule"] = {
@@ -266,11 +287,11 @@ class EcchronosConfig:
 
     # --------------------------------------------------
     def _read_yaml_data(self, filename):
-        with open(filename, "r") as f:
-            return yaml.safe_load(f)
+        with open(filename, "r", encoding="utf-8") as file:
+            return yaml.safe_load(file)
 
     def write_tmp(self, data, suffix=".yaml") -> str:
-        tmp = tempfile.NamedTemporaryFile(mode="w", suffix=suffix, delete=False)
+        tmp = tempfile.NamedTemporaryFile(mode="w", suffix=suffix, delete=False, encoding="utf-8")
         if suffix == ".yaml":
             yaml.safe_dump(data, tmp)
         else:
