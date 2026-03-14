@@ -47,6 +47,11 @@ SCHEDULE_INITIAL_DELAY_UNIT = "minutes"
 # remains compatible with the rest of the Python integration suites.
 REPAIR_QUERY_COUNT = "50"
 
+# CI can be slower for parallel datacenter-aware on-demand repairs.
+ON_DEMAND_TIMEOUT_SECONDS = 600
+SCHEDULED_TIMEOUT_SECONDS = 600
+REPAIR_POLL_INTERVAL_SECONDS = 10
+
 
 def run_repair(container, params):
     barrier.wait()
@@ -143,7 +148,7 @@ def test_lock_concurrency(install_cassandra_cluster, test_environment):
             try:
                 wait_for_repairs_completion_on_demand(executor, install_cassandra_cluster)
             except Exception as e:
-                pytest.fail(f"Repairs did not complete within 5 minutes: {e}")
+                pytest.fail(f"Repairs did not complete within {ON_DEMAND_TIMEOUT_SECONDS // 60} minutes: {e}")
 
     except Exception as e:
         logger.error(f"Failed to run behave tests: {e}")
@@ -162,7 +167,7 @@ def test_lock_concurrency_scheduled(install_cassandra_cluster, test_environment)
             try:
                 wait_for_repairs_completion_scheduled(executor, install_cassandra_cluster)
             except Exception as e:
-                pytest.fail(f"Scheduled repairs did not complete within 10 minutes: {e}")
+                pytest.fail(f"Scheduled repairs did not complete within {SCHEDULED_TIMEOUT_SECONDS // 60} minutes: {e}")
 
     except Exception as e:
         logger.error(f"Failed to run scheduled repair tests: {e}")
@@ -180,15 +185,23 @@ def all_repairs_completed(statuses):
     return all(status == "COMPLETED" for status in statuses)
 
 
-@retry(stop=stop_after_delay(300), wait=wait_fixed(10), retry=retry_if_result(lambda x: not x))
+@retry(
+    stop=stop_after_delay(ON_DEMAND_TIMEOUT_SECONDS),
+    wait=wait_fixed(REPAIR_POLL_INTERVAL_SECONDS),
+    retry=retry_if_result(lambda x: not x),
+)
 def wait_for_repairs_completion_on_demand(executor, cassandra_cluster):
-    """Wait for all repairs to complete in both datacenters (on-demand timeout ~5min)."""
+    """Wait for all repairs to complete in both datacenters for on-demand execution."""
     return _wait_for_repairs_completion_common(executor, cassandra_cluster)
 
 
-@retry(stop=stop_after_delay(600), wait=wait_fixed(10), retry=retry_if_result(lambda x: not x))
+@retry(
+    stop=stop_after_delay(SCHEDULED_TIMEOUT_SECONDS),
+    wait=wait_fixed(REPAIR_POLL_INTERVAL_SECONDS),
+    retry=retry_if_result(lambda x: not x),
+)
 def wait_for_repairs_completion_scheduled(executor, cassandra_cluster):
-    """Wait for all repairs to complete in both datacenters (scheduled timeout ~10min)."""
+    """Wait for all repairs to complete in both datacenters for scheduled execution."""
     return _wait_for_repairs_completion_common(executor, cassandra_cluster)
 
 
