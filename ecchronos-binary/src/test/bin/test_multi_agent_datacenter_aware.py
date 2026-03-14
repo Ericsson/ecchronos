@@ -14,20 +14,42 @@
 # limitations under the License.
 #
 
-import pytest
-import global_variables as global_vars
 import logging
-from conftest import run_ecctool_state_nodes, assert_nodes_size_is_equal, run_ecctool_run_repair, run_ecctool_repairs
-from ecc_config import EcchronosConfig
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
-from tenacity import retry, stop_after_delay, wait_fixed, retry_if_result
+
+import global_variables as global_vars
+import pytest
+from ecc_config import EcchronosConfig
+from tenacity import retry, retry_if_result, stop_after_delay, wait_fixed
+
+from conftest import (
+    assert_nodes_size_is_equal,
+    run_ecctool_repairs,
+    run_ecctool_run_repair,
+    run_ecctool_state_nodes,
+)
 
 logger = logging.getLogger(__name__)
 barrier = Barrier(2)
 
 ECC_INSTANCE_NAME_DC1 = "ecchronos-agent-dc1"
 ECC_INSTANCE_NAME_DC2 = "ecchronos-agent-dc2"
+
+# Keep schedule values aligned across DCs so contention is deterministic in CI.
+SCHEDULE_INTERVAL_TIME = 1
+SCHEDULE_INTERVAL_UNIT = "minutes"
+SCHEDULE_INITIAL_DELAY_TIME = 1
+SCHEDULE_INITIAL_DELAY_UNIT = "minutes"
+
+# Keep a bounded but sufficiently large query window so shared helper behavior
+# remains compatible with the rest of the Python integration suites.
+REPAIR_QUERY_COUNT = "50"
+
+# CI can be slower for parallel datacenter-aware on-demand repairs.
+ON_DEMAND_TIMEOUT_SECONDS = 600
+SCHEDULED_TIMEOUT_SECONDS = 600
+REPAIR_POLL_INTERVAL_SECONDS = 10
 
 
 def run_repair(container, params):
@@ -47,9 +69,18 @@ def test_install_cassandra_cluster(install_cassandra_cluster):
 @pytest.mark.dependency(name="test_install_ecchronos_dc1", depends=["test_install_cassandra_cluster"])
 def test_install_ecchronos_dc1(install_cassandra_cluster, test_environment):
     dcs = [{"name": global_vars.DC1}]
-    ecchronos_config = EcchronosConfig(datacenter_aware=dcs, instance_name=ECC_INSTANCE_NAME_DC1)
+    ecchronos_config = EcchronosConfig(
+        datacenter_aware=dcs,
+        instance_name=ECC_INSTANCE_NAME_DC1,
+        schedule_interval_time=SCHEDULE_INTERVAL_TIME,
+        schedule_interval_unit=SCHEDULE_INTERVAL_UNIT,
+        schedule_initial_delay_time=SCHEDULE_INITIAL_DELAY_TIME,
+        schedule_initial_delay_unit=SCHEDULE_INITIAL_DELAY_UNIT,
+    )
     test_environment.start_ecchronos(
-        suffix="dc1", cassandra_network=install_cassandra_cluster.network, ecchronos_config=ecchronos_config
+        suffix="dc1",
+        cassandra_network=install_cassandra_cluster.network,
+        ecchronos_config=ecchronos_config,
     )
     test_environment.wait_for_ecchronos_ready()
     out, _ = run_ecctool_state_nodes(ECC_INSTANCE_NAME_DC1)
@@ -64,6 +95,10 @@ def test_install_ecchronos_dc2(install_cassandra_cluster, test_environment):
         instance_name=ECC_INSTANCE_NAME_DC2,
         local_dc=global_vars.DC2,
         initial_contact_point=global_vars.DEFAULT_SEED_IP_DC2,
+        schedule_interval_time=SCHEDULE_INTERVAL_TIME,
+        schedule_interval_unit=SCHEDULE_INTERVAL_UNIT,
+        schedule_initial_delay_time=SCHEDULE_INITIAL_DELAY_TIME,
+        schedule_initial_delay_unit=SCHEDULE_INITIAL_DELAY_UNIT,
     )
     test_environment.start_ecchronos(
         suffix="dc2",
@@ -85,7 +120,6 @@ def test_lock_concurrency(install_cassandra_cluster, test_environment):
     logger.info("Running parallel on demand jobs inside instances")
 
     try:
-
         with ThreadPoolExecutor(max_workers=2) as executor:
             future_ecc1_dc1 = executor.submit(run_repair, ECC_INSTANCE_NAME_DC1, ["-k", "test", "--all"])
             future_ecc1_dc2 = executor.submit(run_repair, ECC_INSTANCE_NAME_DC2, ["-k", "test", "--all"])
@@ -98,7 +132,9 @@ def test_lock_concurrency(install_cassandra_cluster, test_environment):
             _, exit_code_ecc2_dc2 = future_ecc2_dc2.result()
 
             logger.info(
-                f"On Demand Jobs created with exit code: ecchronos-agent-dc1: {exit_code_ecc1_dc1, exit_code_ecc2_dc1}, ecchronos-agent-dc2: {exit_code_ecc1_dc2, exit_code_ecc2_dc2}"
+                "On Demand Jobs created with exit code: "
+                f"{ECC_INSTANCE_NAME_DC1}: {(exit_code_ecc1_dc1, exit_code_ecc2_dc1)}, "
+                f"{ECC_INSTANCE_NAME_DC2}: {(exit_code_ecc1_dc2, exit_code_ecc2_dc2)}"
             )
 
             if any(
@@ -108,41 +144,97 @@ def test_lock_concurrency(install_cassandra_cluster, test_environment):
                 logger.error("Fail to create on demand jobs")
                 pytest.fail("Fail to create on demand jobs")
 
-            # Wait for jobs to be finished in both instances within a time limit
             try:
-                wait_for_repairs_completion(executor)
+                wait_for_repairs_completion_on_demand(executor)
             except Exception as e:
-                logger.error(f"Timeout: Repairs did not complete within 5 minutes")
-                pytest.fail(f"Repairs did not complete within 5 minutes: {e}")
+                pytest.fail(f"Repairs did not complete within {ON_DEMAND_TIMEOUT_SECONDS // 60} minutes: {e}")
 
     except Exception as e:
         logger.error(f"Failed to run behave tests: {e}")
         pytest.fail(f"Failed to run behave tests: {e}")
 
 
+@pytest.mark.dependency(
+    name="test_lock_concurrency_scheduled",
+    depends=["test_install_cassandra_cluster", "test_install_ecchronos_dc1", "test_install_ecchronos_dc2"],
+)
+def test_lock_concurrency_scheduled(install_cassandra_cluster, test_environment):
+    logger.info("Waiting for scheduled repair jobs to run in both instances")
+
+    try:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            try:
+                wait_for_repairs_completion_scheduled(executor)
+            except Exception as e:
+                pytest.fail(f"Scheduled repairs did not complete within {SCHEDULED_TIMEOUT_SECONDS // 60} minutes: {e}")
+
+    except Exception as e:
+        logger.error(f"Failed to run scheduled repair tests: {e}")
+        pytest.fail(f"Failed to run scheduled repair tests: {e}")
+
+
 def handle_repair_output(output_data):
-    output_data = output_data.decode("ascii").lstrip().rstrip().split("\n")
-    rows = output_data[3:-2]
-    # Clean each row: remove pipes and strip whitespace
-    return [row.strip().strip("|").strip() for row in rows]
+    lines = output_data.decode("ascii").strip().split("\n")
+    rows = lines[3:-2]
+    parsed_rows = [row.strip().strip("|").strip() for row in rows if row.strip()]
+    return [row for row in parsed_rows if row]
+
+
+def extract_terminal_statuses(rows):
+    terminal_statuses = {"COMPLETED", "RUNNING", "FAILED", "STARTED"}
+    statuses = []
+
+    for row in rows:
+        columns = [column.strip() for column in row.split("|") if column.strip()]
+        if not columns:
+            continue
+
+        for column in reversed(columns):
+            if column in terminal_statuses:
+                statuses.append(column)
+                break
+
+    return statuses
 
 
 def all_repairs_completed(statuses):
-    """Check if all repair statuses are COMPLETED"""
-    return all(status == "COMPLETED" for status in statuses)
+    """Check if all visible repair statuses are COMPLETED."""
+    return bool(statuses) and all(status == "COMPLETED" for status in statuses)
 
 
-@retry(stop=stop_after_delay(600), wait=wait_fixed(10), retry=retry_if_result(lambda x: not x))
-def wait_for_repairs_completion(executor):
-    """Wait for all repairs to complete in both datacenters"""
-    params = ["-c", "4"]
+@retry(
+    stop=stop_after_delay(ON_DEMAND_TIMEOUT_SECONDS),
+    wait=wait_fixed(REPAIR_POLL_INTERVAL_SECONDS),
+    retry=retry_if_result(lambda x: not x),
+)
+def wait_for_repairs_completion_on_demand(executor):
+    """Wait for all repairs to complete in both datacenters for on-demand execution."""
+    return _wait_for_repairs_completion_common(executor)
+
+
+@retry(
+    stop=stop_after_delay(SCHEDULED_TIMEOUT_SECONDS),
+    wait=wait_fixed(REPAIR_POLL_INTERVAL_SECONDS),
+    retry=retry_if_result(lambda x: not x),
+)
+def wait_for_repairs_completion_scheduled(executor):
+    """Wait for all repairs to complete in both datacenters for scheduled execution."""
+    return _wait_for_repairs_completion_common(executor)
+
+
+def _wait_for_repairs_completion_common(executor):
+    params = ["-c", REPAIR_QUERY_COUNT]
+
     future_ecc_dc1 = executor.submit(verify_repair_completed, ECC_INSTANCE_NAME_DC1, params)
     future_ecc_dc2 = executor.submit(verify_repair_completed, ECC_INSTANCE_NAME_DC2, params)
     output_ecc_dc1, _ = future_ecc_dc1.result()
     output_ecc_dc2, _ = future_ecc_dc2.result()
 
-    ecc_dc1_statuses = handle_repair_output(output_ecc_dc1)
-    ecc_dc2_statuses = handle_repair_output(output_ecc_dc2)
+    ecc_dc1_rows = handle_repair_output(output_ecc_dc1)
+    ecc_dc2_rows = handle_repair_output(output_ecc_dc2)
+
+    ecc_dc1_statuses = extract_terminal_statuses(ecc_dc1_rows)
+    ecc_dc2_statuses = extract_terminal_statuses(ecc_dc2_rows)
 
     dc1_completed = all_repairs_completed(ecc_dc1_statuses)
     dc2_completed = all_repairs_completed(ecc_dc2_statuses)
@@ -152,6 +244,8 @@ def wait_for_repairs_completion(executor):
         return True
 
     logger.info(
-        f"Waiting for repairs... DC1: {sum(1 for s in ecc_dc1_statuses if s == 'COMPLETED')}/{len(ecc_dc1_statuses)}, DC2: {sum(1 for s in ecc_dc2_statuses if s == 'COMPLETED')}/{len(ecc_dc2_statuses)}"
+        "Waiting for repairs... "
+        f"DC1: {sum(1 for s in ecc_dc1_statuses if s == 'COMPLETED')}/{len(ecc_dc1_statuses)}, "
+        f"DC2: {sum(1 for s in ecc_dc2_statuses if s == 'COMPLETED')}/{len(ecc_dc2_statuses)}"
     )
     return False
