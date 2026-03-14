@@ -174,14 +174,32 @@ def test_lock_concurrency_scheduled(install_cassandra_cluster, test_environment)
 
 
 def handle_repair_output(output_data):
-    output_data = output_data.decode("ascii").lstrip().rstrip().split("\n")
-    rows = output_data[3:-2]
-    return [row.strip().strip("|").strip() for row in rows]
+    lines = output_data.decode("ascii").strip().split("\n")
+    rows = lines[3:-2]
+    parsed_rows = [row.strip().strip("|").strip() for row in rows if row.strip()]
+    return [row for row in parsed_rows if row]
+
+
+def extract_terminal_statuses(rows):
+    terminal_statuses = {"COMPLETED", "RUNNING", "FAILED", "STARTED"}
+    statuses = []
+
+    for row in rows:
+        columns = [column.strip() for column in row.split("|") if column.strip()]
+        if not columns:
+            continue
+
+        for column in reversed(columns):
+            if column in terminal_statuses:
+                statuses.append(column)
+                break
+
+    return statuses
 
 
 def all_repairs_completed(statuses):
-    """Check if all repair statuses are COMPLETED"""
-    return all(status == "COMPLETED" for status in statuses)
+    """Check if all visible repair statuses are COMPLETED."""
+    return bool(statuses) and all(status == "COMPLETED" for status in statuses)
 
 
 @retry(
@@ -205,8 +223,6 @@ def wait_for_repairs_completion_scheduled(executor):
 
 
 def _wait_for_repairs_completion_common(executor):
-    # Keep the CLI shape stable for shared helpers and fetch enough rows to avoid
-    # only inspecting a partial subset of repairs.
     params = ["-c", REPAIR_QUERY_COUNT]
 
     future_ecc_dc1 = executor.submit(verify_repair_completed, ECC_INSTANCE_NAME_DC1, params)
@@ -214,8 +230,11 @@ def _wait_for_repairs_completion_common(executor):
     output_ecc_dc1, _ = future_ecc_dc1.result()
     output_ecc_dc2, _ = future_ecc_dc2.result()
 
-    ecc_dc1_statuses = handle_repair_output(output_ecc_dc1)
-    ecc_dc2_statuses = handle_repair_output(output_ecc_dc2)
+    ecc_dc1_rows = handle_repair_output(output_ecc_dc1)
+    ecc_dc2_rows = handle_repair_output(output_ecc_dc2)
+
+    ecc_dc1_statuses = extract_terminal_statuses(ecc_dc1_rows)
+    ecc_dc2_statuses = extract_terminal_statuses(ecc_dc2_rows)
 
     dc1_completed = all_repairs_completed(ecc_dc1_statuses)
     dc2_completed = all_repairs_completed(ecc_dc2_statuses)
