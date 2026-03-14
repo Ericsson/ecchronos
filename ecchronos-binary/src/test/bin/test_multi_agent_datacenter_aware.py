@@ -188,7 +188,10 @@ def wait_for_repairs_completion_scheduled(executor):
 
 
 def _wait_for_repairs_completion_common(executor):
-    params = ["-c", "4"]
+    # Do not limit results, otherwise we may only inspect a subset of repairs
+    # and get false positives/false negatives in CI.
+    params = []
+
     future_ecc_dc1 = executor.submit(verify_repair_completed, ECC_INSTANCE_NAME_DC1, params)
     future_ecc_dc2 = executor.submit(verify_repair_completed, ECC_INSTANCE_NAME_DC2, params)
     output_ecc_dc1, _ = future_ecc_dc1.result()
