@@ -84,57 +84,57 @@ def step_fetch_local_repair_between_epochs_with_id(context):
 
 @when("we get repair-info with since {since} and duration {duration}")
 def step_get_repair_info_with_since_and_duration(context, since, duration):
-    run_ecc_repair_info(context, ["--since", since, "--duration", duration, "-i", context.nodeid])
+    run_ecc_repair_info(context, ["--since", since, "--duration", duration, "-n", context.nodeid])
     handle_repair_info_output(context)
 
 
 @when("we get repair-info with duration {duration} and limit {limit}")
 def step_get_repair_info_with_duration_and_limit(context, duration, limit):
-    run_ecc_repair_info(context, ["--duration", duration, "--limit", limit, "-i", context.nodeid])
+    run_ecc_repair_info(context, ["--duration", duration, "--limit", limit, "-n", context.nodeid])
     handle_repair_info_output(context)
 
 
 @when("we get repair-info with duration {duration}")
 def step_get_repair_info_with_duration(context, duration):
-    run_ecc_repair_info(context, ["--duration", duration, "-i", context.nodeid])
+    run_ecc_repair_info(context, ["--duration", duration, "-n", context.nodeid])
     handle_repair_info_output(context)
 
 
 @when("we get repair-info with since {since} and limit {limit}")
 def step_get_repair_info_with_since_and_limit(context, since, limit):
-    run_ecc_repair_info(context, ["--since", since, "--limit", limit, "-i", context.nodeid])
+    run_ecc_repair_info(context, ["--since", since, "--limit", limit, "-n", context.nodeid])
     handle_repair_info_output(context)
 
 
 @when("we get repair-info with since {since}")
 def step_get_repair_info_with_since(context, since):
-    run_ecc_repair_info(context, ["--since", since, "-i", context.nodeid])
+    run_ecc_repair_info(context, ["--since", since, "-n", context.nodeid])
     handle_repair_info_output(context)
 
 
 @when("we get local repair-info with since {since}")
 def step_get_local_repair_info_with_since(context, since):
-    run_ecc_repair_info(context, ["--since", since, "-i", context.nodeid])
+    run_ecc_repair_info(context, ["--since", since, "-n", context.nodeid])
     handle_repair_info_output(context)
 
 
 @when("we get repair-info for keyspace {keyspace} with since {since} and duration {duration}")
 def step_get_repair_info_for_keyspace_with_since_and_duration(context, keyspace, since, duration):
     run_ecc_repair_info(
-        context, ["--keyspace", keyspace, "--since", since, "--duration", duration, "-i", context.nodeid]
+        context, ["--keyspace", keyspace, "--since", since, "--duration", duration, "-n", context.nodeid]
     )
     handle_repair_info_output(context)
 
 
 @when("we get repair-info for keyspace {keyspace} with duration {duration}")
 def step_get_repair_info_for_keyspace_with_duration(context, keyspace, duration):
-    run_ecc_repair_info(context, ["--keyspace", keyspace, "--duration", duration, "-i", context.nodeid])
+    run_ecc_repair_info(context, ["--keyspace", keyspace, "--duration", duration, "-n", context.nodeid])
     handle_repair_info_output(context)
 
 
 @when("we get repair-info for keyspace {keyspace} with since {since}")
 def step_get_repair_info_for_keyspace_with_since(context, keyspace, since):
-    run_ecc_repair_info(context, ["--keyspace", keyspace, "--since", since, "-i", context.nodeid])
+    run_ecc_repair_info(context, ["--keyspace", keyspace, "--since", since, "-n", context.nodeid])
     handle_repair_info_output(context)
 
 
@@ -142,7 +142,7 @@ def step_get_repair_info_for_keyspace_with_since(context, keyspace, since):
 def step_get_repair_info_for_table_with_since_and_duration(context, keyspace, table, since, duration):
     run_ecc_repair_info(
         context,
-        ["--keyspace", keyspace, "--table", table, "--since", since, "--duration", duration, "-i", context.nodeid],
+        ["--keyspace", keyspace, "--table", table, "--since", since, "--duration", duration, "-n", context.nodeid],
     )
     handle_repair_info_output(context)
 
@@ -150,20 +150,20 @@ def step_get_repair_info_for_table_with_since_and_duration(context, keyspace, ta
 @when("we get repair-info for table {keyspace}.{table} with duration {duration}")
 def step_get_repair_info_for_table_with_duration(context, keyspace, table, duration):
     run_ecc_repair_info(
-        context, ["--keyspace", keyspace, "--table", table, "--duration", duration, "-i", context.nodeid]
+        context, ["--keyspace", keyspace, "--table", table, "--duration", duration, "-n", context.nodeid]
     )
     handle_repair_info_output(context)
 
 
 @when("we get repair-info for table {keyspace}.{table} with since {since}")
 def step_get_repair_info_for_table_with_since(context, keyspace, table, since):
-    run_ecc_repair_info(context, ["--keyspace", keyspace, "--table", table, "--since", since, "-i", context.nodeid])
+    run_ecc_repair_info(context, ["--keyspace", keyspace, "--table", table, "--since", since, "-n", context.nodeid])
     handle_repair_info_output(context)
 
 
 @when("we get repair-info for table {keyspace}.{table}")
 def step_get_repair_info_for_table(context, keyspace, table):
-    run_ecc_repair_info(context, ["--keyspace", keyspace, "--table", table, "-i", context.nodeid])
+    run_ecc_repair_info(context, ["--keyspace", keyspace, "--table", table, "-n", context.nodeid])
     handle_repair_info_output(context)
 
 

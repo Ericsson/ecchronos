@@ -3,9 +3,7 @@
 ecctool is a command line utility used to perform operations toward an ecChronos instance. Run ‘ecctool &lt;subcommand&gt; –help’ to get more information about each subcommand.
 
 ```console
-usage: ecctool [-h]
-               {rejections,repair-info,repairs,run-repair,running-job,schedules,start,state,status,stop}
-               ...
+usage: ecctool [-h] {rejections,repair-info,repairs,run-repair,running-job,schedules,start,state,status,stop} ...
 ```
 
 
@@ -17,8 +15,7 @@ show this help message and exit
 Manage ecchronos rejections. Use ‘ecctool rejections &lt;action&gt; –help’ for action information.
 
 ```console
-usage: ecctool rejections [-h] [-u URL] [-c COLUMNS] [-o OUTPUT]
-                          {create,delete,get,update} ...
+usage: ecctool rejections [-h] [-u URL] [-c COLUMNS] [-o OUTPUT] {create,delete,get,update} ...
 ```
 
 
@@ -40,9 +37,7 @@ output formats: json, table (default)
 ## ecctool rejections create
 
 ```console
-usage: ecctool rejections create [-h] -k KEYSPACE -t TABLE -sh START_HOUR -sm
-                                 START_MINUTE -eh END_HOUR -em END_MINUTE -dcs
-                                 DC_EXCLUSIONS [DC_EXCLUSIONS ...] [-u URL]
+usage: ecctool rejections create [-h] -k KEYSPACE -t TABLE -sh START_HOUR -sm START_MINUTE -eh END_HOUR -em END_MINUTE -dcs DC_EXCLUSIONS [DC_EXCLUSIONS ...] [-u URL]
 ```
 
 
@@ -84,10 +79,7 @@ ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 ## ecctool rejections delete
 
 ```console
-usage: ecctool rejections delete [-h] [-a ALL] [-k KEYSPACE] [-t TABLE]
-                                 [-sh START_HOUR] [-sm START_MINUTE]
-                                 [-dcs DC_EXCLUSIONS [DC_EXCLUSIONS ...]]
-                                 [-u URL]
+usage: ecctool rejections delete [-h] [-a ALL] [-k KEYSPACE] [-t TABLE] [-sh START_HOUR] [-sm START_MINUTE] [-dcs DC_EXCLUSIONS [DC_EXCLUSIONS ...]] [-u URL]
 ```
 
 
@@ -147,10 +139,7 @@ ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 ## ecctool rejections update
 
 ```console
-usage: ecctool rejections update [-h] -k KEYSPACE -t TABLE -sh START_HOUR -sm
-                                 START_MINUTE
-                                 [-dcs DC_EXCLUSIONS [DC_EXCLUSIONS ...]]
-                                 [-u URL]
+usage: ecctool rejections update [-h] -k KEYSPACE -t TABLE -sh START_HOUR -sm START_MINUTE [-dcs DC_EXCLUSIONS [DC_EXCLUSIONS ...]] [-u URL]
 ```
 
 
@@ -186,9 +175,7 @@ ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 Get information about repairs for tables. The repair information is based on repair history, meaning both manual and scheduled repairs will be a part of the repair information. This subcommand requires the user to provide either –since or –duration if –keyspace and –table is not provided. If repair info is fetched for a specific table using –keyspace and –table, the duration will default to the table’s GC_GRACE_SECONDS.
 
 ```console
-usage: ecctool repair-info [-h] [-c COLUMNS] [-i ID] [-k KEYSPACE] [-t TABLE]
-                           [-s SINCE] [-d DURATION] [-u URL] [-l LIMIT]
-                           [-o OUTPUT]
+usage: ecctool repair-info [-h] [-c COLUMNS] [-n NODE] [-k KEYSPACE] [-t TABLE] [-s SINCE] [-d DURATION] [-u URL] [-l LIMIT] [-o OUTPUT]
 ```
 
 
@@ -200,7 +187,7 @@ show this help message and exit
 table columns to display (format: 0,1,2,…,N)
 
 
-### -i &lt;id&gt;, --id &lt;id&gt;
+### -n &lt;node&gt;, --node &lt;node&gt;
 only matching node id
 
 
@@ -236,8 +223,7 @@ output formats: json, table (default)
 Show the status of all manual repairs.
 
 ```console
-usage: ecctool repairs [-h] [-c COLUMNS] [-k KEYSPACE] [-t TABLE] [-u URL]
-                       [-i ID] [-j JOB] [-l LIMIT] [-o OUTPUT]
+usage: ecctool repairs [-h] [-c COLUMNS] [-k KEYSPACE] [-t TABLE] [-u URL] [-n NODE] [-i ID] [-l LIMIT] [-o OUTPUT]
 ```
 
 
@@ -250,22 +236,22 @@ table columns to display (format: 0,1,2,…,N)
 
 
 ### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
-keyspace (mutually exclusive with -i/–id)
+keyspace (mutually exclusive with -n/–node)
 
 
 ### -t &lt;table&gt;, --table &lt;table&gt;
-table (requires -k/–keyspace and is mutually exclusive with -i/–id)
+table (requires -k/–keyspace and is mutually exclusive with -n/–node)
 
 
 ### -u &lt;url&gt;, --url &lt;url&gt;
 ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 
 
+### -n &lt;node&gt;, --node &lt;node&gt;
+only matching node id (mutually exclusive with -k/–keyspace and -t/–table)
+
+
 ### -i &lt;id&gt;, --id &lt;id&gt;
-only matching id (mutually exclusive with -k/–keyspace and -t/–table)
-
-
-### -j &lt;job&gt;, --job &lt;job&gt;
 only matching job id (mutually exclusive with -k/–keyspace and -t/–table)
 
 
@@ -281,9 +267,7 @@ output formats: json, table (default)
 Triggers a manual repair in ecChronos. This will be done through the Cassandra JMX interface.
 
 ```console
-usage: ecctool run-repair [-h] [-c COLUMNS] [-i ID] [-u URL] [-o OUTPUT]
-                          [-r REPAIR_TYPE] [-f] [-e] [-a] [-k KEYSPACE]
-                          [-t TABLE]
+usage: ecctool run-repair [-h] [-c COLUMNS] [-n NODE] [-u URL] [-o OUTPUT] [-r REPAIR_TYPE] [-f] [-e] [-a] [-k KEYSPACE] [-t TABLE]
 ```
 
 
@@ -295,8 +279,8 @@ show this help message and exit
 table columns to display (format: 0,1,2,…,N)
 
 
-### -i &lt;id&gt;, --id &lt;id&gt;
-only matching id (mutually exclusive with -k/–keyspace and -t/–table)
+### -n &lt;node&gt;, --node &lt;node&gt;
+only matching node id (mutually exclusive with -k/–keyspace and -t/–table)
 
 
 ### -u &lt;url&gt;, --url &lt;url&gt;
@@ -355,8 +339,7 @@ ecchronos host URL (format: [http:/](http:/)/&lt;host&gt;:&lt;port&gt;)
 Show the status of schedules.
 
 ```console
-usage: ecctool schedules [-h] [-c COLUMNS] [-f] [-i ID] [-j JOB] [-k KEYSPACE]
-                         [-l LIMIT] [-o OUTPUT] [-t TABLE] [-u URL]
+usage: ecctool schedules [-h] [-c COLUMNS] [-f] [-n NODE] [-i ID] [-k KEYSPACE] [-l LIMIT] [-o OUTPUT] [-t TABLE] [-u URL]
 ```
 
 
@@ -369,19 +352,19 @@ table columns to display (format: 0,1,2,…,N)
 
 
 ### -f, --full
-show full schedules with configuration and vnode state (requires -i/–id)
+show full schedules with configuration and vnode state (requires -n/–node)
+
+
+### -n &lt;node&gt;, --node &lt;node&gt;
+only matching node id (mutually exclusive with -k/–keyspace and -t/–table)
 
 
 ### -i &lt;id&gt;, --id &lt;id&gt;
-only matching id (mutually exclusive with -k/–keyspace and -t/–table)
-
-
-### -j &lt;job&gt;, --job &lt;job&gt;
 only matching job id (mutually exclusive with -k/–keyspace and -t/–table)
 
 
 ### -k &lt;keyspace&gt;, --keyspace &lt;keyspace&gt;
-keyspace (mutually exclusive with -i/–id)
+keyspace (mutually exclusive with -n/–node)
 
 
 ### -l &lt;limit&gt;, --limit &lt;limit&gt;
@@ -393,7 +376,7 @@ output formats: json, table (default)
 
 
 ### -t &lt;table&gt;, --table &lt;table&gt;
-table (requires -k/–keyspace and is mutually exclusive with -i/–id)
+table (requires -k/–keyspace and is mutually exclusive with -n/–node)
 
 
 ### -u &lt;url&gt;, --url &lt;url&gt;

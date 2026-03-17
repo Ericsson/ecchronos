@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Rework the i, n, and j flags to keep backward compatibility - Issue #1430
 * Add missing error messages in ecctool - Issue #1431
 
 ## Version 1.0.0-beta3
