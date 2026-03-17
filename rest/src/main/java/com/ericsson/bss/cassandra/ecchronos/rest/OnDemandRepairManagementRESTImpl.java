@@ -59,7 +59,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
  */
 @Tag(name = "Repair-Management", description = "Management of repairs")
 @RestController
-public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagementREST
+public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagementREST //NOPMD Possible God Class
 {
     private final OnDemandRepairScheduler myOnDemandRepairScheduler;
 
