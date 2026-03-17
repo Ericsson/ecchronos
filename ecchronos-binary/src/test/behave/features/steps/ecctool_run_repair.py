@@ -48,7 +48,7 @@ def step_run_repair_cluster(context):
 @when("we run local repair for keyspace {keyspace} and table {table} with type {repair_type}")
 def step_run_local_repair(context, keyspace, table, repair_type):
     run_ecc_run_repair(
-        context, ["-i", context.nodeid, "--keyspace", keyspace, "--table", table, "--repair_type", repair_type]
+        context, ["-n", context.nodeid, "--keyspace", keyspace, "--table", table, "--repair_type", repair_type]
     )
     handle_repair_output(context)
 
@@ -58,7 +58,7 @@ def step_run_twcs_repair(context, keyspace, table, repair_type):
     run_ecc_run_repair(
         context,
         [
-            "-i",
+            "-n",
             context.nodeid,
             "--keyspace",
             keyspace,
@@ -77,7 +77,7 @@ def step_run_enabled_repair(context, keyspace, table, repair_type):
     run_ecc_run_repair(
         context,
         [
-            "-i",
+            "-n",
             context.nodeid,
             "--keyspace",
             keyspace,
@@ -93,12 +93,12 @@ def step_run_enabled_repair(context, keyspace, table, repair_type):
 
 @when("we run local repair for keyspace {keyspace}")
 def step_run_local_repair_for_keyspace(context, keyspace):
-    run_ecc_run_repair(context, ["-i", context.nodeid, "--keyspace", keyspace])
+    run_ecc_run_repair(context, ["-n", context.nodeid, "--keyspace", keyspace])
     handle_repair_output(context)
 
 
 @when("we run local repair")
 def step_run_local_repair_cluster(context):
     #    run_ecc_run_repair(context, ["--local"])
-    run_ecc_run_repair(context, ["-i", context.nodeid])
+    run_ecc_run_repair(context, ["-n", context.nodeid])
     handle_repair_output(context)
