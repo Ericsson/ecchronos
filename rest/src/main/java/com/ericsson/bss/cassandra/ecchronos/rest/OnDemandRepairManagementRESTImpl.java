@@ -187,20 +187,27 @@ public class OnDemandRepairManagementRESTImpl implements OnDemandRepairManagemen
 
     private List<OnDemandRepair> getListOfOnDemandRepairs(final String nodeID, final String jobID)
     {
-
-        UUID myNodeID = parseIdOrThrow(nodeID);
+        boolean allNodes = "all".equalsIgnoreCase(nodeID);
         List<OnDemandRepair> repairJobs;
-        if (jobID != null)
+        if (allNodes)
         {
-            UUID myJobID = parseIdOrThrow(jobID);
-            repairJobs = getOnDemandJobs(myNodeID).stream().filter(job -> myJobID.equals(job.jobID)).toList();
-            if (repairJobs.isEmpty())
-            {
-                throw new ResponseStatusException(NOT_FOUND);
-            }
-            return repairJobs;
+            Predicate<OnDemandRepairJobView> filter = jobID != null
+                    ? job -> parseIdOrThrow(jobID).equals(job.getJobId())
+                    : x -> true;
+            repairJobs = getClusterWideOnDemandJobs(filter);
         }
-        repairJobs = getOnDemandJobs(myNodeID);
+        else
+        {
+            UUID myNodeID = parseIdOrThrow(nodeID);
+            repairJobs = jobID != null
+                    ? getOnDemandJobs(myNodeID).stream()
+                        .filter(job -> parseIdOrThrow(jobID).equals(job.jobID)).toList()
+                    : getOnDemandJobs(myNodeID);
+        }
+        if (jobID != null && repairJobs.isEmpty())
+        {
+            throw new ResponseStatusException(NOT_FOUND);
+        }
         return repairJobs;
     }
 

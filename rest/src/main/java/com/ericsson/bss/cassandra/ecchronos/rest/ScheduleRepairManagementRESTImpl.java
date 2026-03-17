@@ -123,9 +123,11 @@ public class ScheduleRepairManagementRESTImpl implements ScheduleRepairManagemen
 
     private Schedule getScheduleViewByJob(final String nodeID, final String jobID, final boolean full)
     {
-        UUID nodeUUID = parseIdOrThrow(nodeID);
         UUID jobUUID = parseIdOrThrow(jobID);
-        Optional<ScheduledRepairJobView> view = myRepairScheduler.getCurrentRepairJobsByNode(nodeUUID).stream()
+        List<ScheduledRepairJobView> jobs = "all".equalsIgnoreCase(nodeID)
+                ? myRepairScheduler.getCurrentRepairJobs()
+                : myRepairScheduler.getCurrentRepairJobsByNode(parseIdOrThrow(nodeID));
+        Optional<ScheduledRepairJobView> view = jobs.stream()
                 .filter(job -> job.getJobId().equals(jobUUID)).findFirst();
         if (!view.isPresent())
         {
