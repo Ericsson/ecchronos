@@ -227,10 +227,9 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
                     LOG.info("No configuration changes for table {} in node {}", tableReference, node.getHostId());
                 }
             }
-            catch (Exception e)
+            catch (RuntimeMBeanException e)
             {
-                if (e instanceof RuntimeMBeanException
-                        && e.getCause() != null
+                if (e.getCause() != null
                         && e.getCause() instanceof IllegalStateException
                         && e.getCause().getMessage() != null
                         && e.getCause().getMessage().contains("More than one key found"))
@@ -243,6 +242,10 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
                 {
                     LOG.error("Unexpected error during schedule change of {}:", tableReference, e);
                 }
+            }
+            catch (Exception e)
+            {
+                LOG.error("Unexpected error during schedule change of {}:", tableReference, e);
             }
         }
     }

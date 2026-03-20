@@ -332,12 +332,11 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 job.postExecute(successful, task);
                 return true;
             }
-            catch (Exception e)
+            catch (RuntimeMBeanException e)
             {
                 if (e.getCause() != null)
                 {
-                    if (e instanceof RuntimeMBeanException
-                            && e.getCause() != null
+                    if (e.getCause() != null
                             && e.getCause() instanceof IllegalStateException
                             && e.getCause().getMessage() != null
                             && e.getCause().getMessage().contains("More than one key found"))
@@ -349,6 +348,14 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                     {
                         LOG.warn("Unable to get schedule lock on task {} in node {}", task, nodeID, e);
                     }
+                }
+                return false;
+            }
+            catch (Exception e)
+            {
+                if (e.getCause() != null)
+                {
+                    LOG.warn("Unable to get schedule lock on task {} in node {}", task, nodeID, e);
                 }
                 return false;
             }
