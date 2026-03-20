@@ -458,14 +458,9 @@ public class ReloadingCertificateHandler implements CertificateHandler
             try
             {
                 SSLContext sslContext = SSLContext.getInstance("TLS");
-                if (context.getTlsConfig().requiresEndpointVerification())
-                {
-                    setSSLContextWithEndpointValidation(context, sslContext);
-                }
-                else
-                {
-                    setSSLContextWithNoEndpointValidation(context, sslContext);
-                }
+                initSSLContext(context, sslContext);
+                SSLContext.setDefault(sslContext);
+                LOG.info("Default SSLContext set for JVM");
             }
             catch (Exception e)
             {
@@ -474,23 +469,42 @@ public class ReloadingCertificateHandler implements CertificateHandler
         }
     }
 
-    private void setSSLContextWithNoEndpointValidation(final Context context, final SSLContext sslContext) throws KeyManagementException
+    @Override
+    public final SSLContext getSSLContext()
     {
-        TrustManager[] trustManagers = null;
-        if (context.getTrustManagerFactory() != null)
+        Context context = getContext();
+        if (context == null || !context.getTlsConfig().isCertificateConfigured())
         {
-            trustManagers = setTrustManagersWithNoEndpointValidation(context);
+            return null;
         }
+        try
+        {
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            initSSLContext(context, sslContext);
+            return sslContext;
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Failed to create SSLContext", e);
+            return null;
+        }
+    }
+
+    private void initSSLContext(final Context context, final SSLContext sslContext) throws KeyManagementException
+    {
+        TrustManager[] trustManagers = context.getTrustManagerFactory() != null
+                ? context.getTlsConfig().requiresEndpointVerification()
+                    ? context.getTrustManagerFactory().getTrustManagers()
+                    : buildNoEndpointValidationTrustManagers(context)
+                : null;
         sslContext.init(
             context.getKeyManagerFactory() != null ? context.getKeyManagerFactory().getKeyManagers() : null,
             trustManagers,
             null
         );
-        SSLContext.setDefault(sslContext);
-        LOG.info("Default SSLContext set for JVM with endpoint validation disabled");
     }
 
-    private TrustManager[] setTrustManagersWithNoEndpointValidation(final Context context)
+    private TrustManager[] buildNoEndpointValidationTrustManagers(final Context context)
     {
         TrustManager[] originalTrustManagers = context.getTrustManagerFactory().getTrustManagers();
         TrustManager[] trustManagers = new TrustManager[originalTrustManagers.length];
@@ -507,16 +521,5 @@ public class ReloadingCertificateHandler implements CertificateHandler
             }
         }
         return trustManagers;
-    }
-
-    private void setSSLContextWithEndpointValidation(final Context context, final SSLContext sslContext) throws KeyManagementException
-    {
-        sslContext.init(
-            context.getKeyManagerFactory() != null ? context.getKeyManagerFactory().getKeyManagers() : null,
-            context.getTrustManagerFactory() != null ? context.getTrustManagerFactory().getTrustManagers() : null,
-            null
-        );
-        SSLContext.setDefault(sslContext);
-        LOG.info("Default SSLContext set for JVM with endpoint validation enabled");
     }
 }

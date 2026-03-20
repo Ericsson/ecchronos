@@ -14,10 +14,11 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.impl.jmx;
 
-import com.datastax.oss.driver.api.core.metadata.Node;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.ClientRegisterResponse;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.NotificationListenerResponse;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.http.NotificationRegisterResponse;
+import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
+import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.utils.dns.ReverseDNS;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -28,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.management.Notification;
 import javax.management.NotificationListener;
+import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -55,7 +57,6 @@ public class JolokiaNotificationController
     private static final String CLIENT_ID_PROPERTY = "clientID";
     private static final String SS_OBJ_NAME = "org.apache.cassandra.db:type=StorageService";
     public static final String NO_BROADCAST_ADDRESS = "0.0.0.0"; //NOPMD AvoidUsingHardCodedIP
-    private final boolean myReverseDNSResolution;
 
     private final Map<NotificationListener, String> myJolokiaRelationshipListeners = new HashMap<>();
 
@@ -67,32 +68,41 @@ public class JolokiaNotificationController
     private final Map<UUID, Map<String, ScheduledFuture<?>>> myNotificationMonitors = new ConcurrentHashMap<>();
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final HttpClient client = HttpClient.newBuilder()
-            .connectTimeout(java.time.Duration.ofSeconds(HTTP_TIMEOUT_SECONDS))
-            .build();
+    private final CertificateHandler myCertificateHandler;
 
-    private final Map<UUID, Node> myNodesMap;
+    private final DistributedNativeConnectionProvider myNativeConnectionProvider;
     private final int myJolokiaPort;
     private final boolean myJolokiaPEM;
+    private final boolean myReverseDNSResolution;
     private final String myURLPrefix;
     private final long myRunDelay;
     private final IpTranslator myIpTranslator;
 
-    public JolokiaNotificationController(
-            final Map<UUID, Node> nodesMap,
-            final int jolokiaPort,
-            final boolean jolokiaPEM,
-            final boolean reverseDNSResolution,
-            final Integer runDelay,
-            final IpTranslator ipTranslator)
+    public JolokiaNotificationController(final Builder builder)
     {
-        myNodesMap = nodesMap;
-        myJolokiaPort = jolokiaPort;
-        myJolokiaPEM = jolokiaPEM;
+        myNativeConnectionProvider = builder.myNativeConnection;
+        myJolokiaPort = builder.myJolokiaPort;
+        myJolokiaPEM = builder.myJolokiaPEM;
         myURLPrefix = myJolokiaPEM ? "https" : "http";
-        myReverseDNSResolution = reverseDNSResolution;
-        myRunDelay = runDelay;
-        myIpTranslator = ipTranslator;
+        myReverseDNSResolution = builder.myReverseDNSResolution;
+        myRunDelay = builder.myRunDelay;
+        myIpTranslator = builder.myIpTranslator;
+        myCertificateHandler = builder.myCertificateHandler;
+    }
+
+    private HttpClient buildHttpClient()
+    {
+        HttpClient.Builder builder = HttpClient.newBuilder()
+                .connectTimeout(java.time.Duration.ofSeconds(HTTP_TIMEOUT_SECONDS));
+        if (myCertificateHandler != null)
+        {
+            SSLContext sslContext = myCertificateHandler.getSSLContext();
+            if (sslContext != null)
+            {
+                builder.sslContext(sslContext);
+            }
+        }
+        return builder.build();
     }
 
     public final void addStorageServiceListener(final UUID nodeID, final NotificationListener listener) throws IOException, InterruptedException
@@ -222,7 +232,7 @@ public class JolokiaNotificationController
                     .GET()
                     .build();
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = buildHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
             LOG.debug("Raw response from {}: Status={}, Body={}", url, response.statusCode(), response.body());
 
@@ -250,7 +260,7 @@ public class JolokiaNotificationController
                 .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
                 .POST(HttpRequest.BodyPublishers.ofString(jolokiaCreateNotificationOptions(nodeID)))
                 .build();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = buildHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
         NotificationRegisterResponse notificationRegisterResponse = objectMapper.readValue(
                 decodeHtmlEntities(response.body()), NotificationRegisterResponse.class);
@@ -269,7 +279,7 @@ public class JolokiaNotificationController
                 .build();
         try
         {
-            client.send(request, HttpResponse.BodyHandlers.ofString());
+            buildHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
         }
         catch (IOException | InterruptedException e)
         {
@@ -327,10 +337,10 @@ public class JolokiaNotificationController
 
     private String mountJolokiaBaseURL(final UUID nodeID) throws UnknownHostException
     {
-        String host = myNodesMap.get(nodeID).getBroadcastRpcAddress().get().getAddress().getHostAddress();
+        String host = myNativeConnectionProvider.getNodes().get(nodeID).getBroadcastRpcAddress().get().getAddress().getHostAddress();
         if (NO_BROADCAST_ADDRESS.equals(host))
         {
-            host = myNodesMap.get(nodeID).getListenAddress().get().getHostString();
+            host = myNativeConnectionProvider.getNodes().get(nodeID).getListenAddress().get().getHostString();
         }
         if (myIpTranslator.isActive())
         {
@@ -370,7 +380,7 @@ public class JolokiaNotificationController
                         .GET()
                         .build();
 
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> response = buildHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
                 return decodeHtmlEntities(response.body());
             }
         }
@@ -417,6 +427,126 @@ public class JolokiaNotificationController
         catch (InterruptedException e)
         {
             myNotificationExecutor.shutdownNow();
+        }
+    }
+
+    public static Builder newBuilder()
+    {
+        return new Builder();
+    }
+
+    public static class Builder
+    {
+        public static final int DEFAULT_RUN_DELAY = 500;
+        private static final int DEFAULT_JOLOKIA_PORT = 8778;
+
+        private DistributedNativeConnectionProvider myNativeConnection;
+        private int myJolokiaPort = DEFAULT_JOLOKIA_PORT;
+        private boolean myJolokiaPEM = false;
+        private boolean myReverseDNSResolution = false;
+        private long myRunDelay = DEFAULT_RUN_DELAY;
+        private IpTranslator myIpTranslator;
+        private CertificateHandler myCertificateHandler;
+
+        /**
+         * Sets the native connection provider used by the controller.
+         *
+         * @param nativeConnectionProvider
+         *         provider responsible for native connections
+         * @return Builder
+         */
+        public Builder withNativeConnection(final DistributedNativeConnectionProvider nativeConnectionProvider)
+        {
+            myNativeConnection = nativeConnectionProvider;
+            return this;
+        }
+
+        /**
+         * Sets the Jolokia port used for connections.
+         *
+         * @param jolokiaPort
+         *         port number for Jolokia endpoint
+         * @return Builder
+         */
+        public Builder withJolokiaPort(final int jolokiaPort)
+        {
+            myJolokiaPort = jolokiaPort;
+            return this;
+        }
+
+        /**
+         * Enables or disables the use of Jolokia PEM configuration.
+         *
+         * @param jolokiaPEM
+         *         true to enable PEM, false otherwise
+         * @return Builder
+         */
+        public Builder withJolokiaPEM(final boolean jolokiaPEM)
+        {
+            myJolokiaPEM = jolokiaPEM;
+            return this;
+        }
+
+        /**
+         * Enables or disables reverse DNS resolution.
+         *
+         * @param reverseDNSResolution
+         *         true to enable reverse DNS resolution, false otherwise
+         * @return Builder
+         */
+        public Builder withReverseDNSResolution(final boolean reverseDNSResolution)
+        {
+            myReverseDNSResolution = reverseDNSResolution;
+            return this;
+        }
+
+        /**
+         * Sets the delay between controller runs.
+         *
+         * @param runDelay
+         *         delay in milliseconds
+         * @return Builder
+         */
+        public Builder withRunDelay(final long runDelay)
+        {
+            myRunDelay = runDelay;
+            return this;
+        }
+
+        /**
+         * Sets the IP translator used to resolve node addresses.
+         *
+         * @param ipTranslator
+         *         translator implementation
+         * @return Builder
+         */
+        public Builder withIpTranslator(final IpTranslator ipTranslator)
+        {
+            myIpTranslator = ipTranslator;
+            return this;
+        }
+
+        /**
+         * Sets the certificate handler used for secure connections.
+         *
+         * @param certificateHandler
+         *         handler responsible for certificate management
+         * @return Builder
+         */
+        public Builder withCertificateHandler(final CertificateHandler certificateHandler)
+        {
+            myCertificateHandler = certificateHandler;
+            return this;
+        }
+
+        /**
+         * Builds a {@link JolokiaNotificationController} instance using the configured parameters.
+         *
+         * @return JolokiaNotificationController
+         */
+        public JolokiaNotificationController build()
+        {
+            return new JolokiaNotificationController(this);
         }
     }
 }

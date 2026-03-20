@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.repair.Interval;
 import com.ericsson.bss.cassandra.ecchronos.application.config.security.ReloadingCertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.JolokiaNotificationController;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metadata.NodeResolverImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.state.ReplicationStateImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.metadata.NodeResolver;
@@ -54,6 +55,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -259,6 +261,43 @@ public class BeanConfigurator
     }
 
     @Bean
+    @Conditional(JolokiaCondition.class)
+    public JolokiaNotificationController jolokiaNotificationController(
+        final Config config,
+        final DistributedNativeConnectionProvider nativeConnectionProvider,
+        final IpTranslator ipTranslator
+    )
+    {
+        LOG.info("Creating JolokiaNotificationController");
+        return getJolokiaNotificationController(config, nativeConnectionProvider, jmxSecurity::get, ipTranslator);
+    }
+
+    private JolokiaNotificationController getJolokiaNotificationController(
+        final Config config,
+        final DistributedNativeConnectionProvider nativeConnectionProvider,
+        final Supplier<Security.JmxSecurity> securitySupplier,
+        final IpTranslator ipTranslator
+    )
+    {
+        Supplier<TLSConfig> jmxTlsSupplier = () -> securitySupplier.get().getJmxTlsConfig();
+        CertificateHandler certificateHandler = null;
+        if (jmxTlsSupplier.get().isEnabled() && jmxTlsSupplier.get().isCertificateConfigured())
+        {
+            LOG.info("Creating Certificate handler for JMX with PEM certificates");
+            certificateHandler = createCertificateHandler(jmxTlsSupplier);
+        }
+        return JolokiaNotificationController.newBuilder()
+            .withNativeConnection(nativeConnectionProvider)
+            .withJolokiaPort(config.getConnectionConfig().getJmxConnection().getJolokiaConfig().getPort())
+            .withJolokiaPEM(config.getConnectionConfig().getJmxConnection().getJolokiaConfig().usePem())
+            .withReverseDNSResolution(config.getConnectionConfig().getJmxConnection().getReseverseDNSResolution())
+            .withRunDelay(config.getConnectionConfig().getJmxConnection().getRunDelay())
+            .withIpTranslator(ipTranslator)
+            .withCertificateHandler(certificateHandler)
+            .build();
+    }
+
+    @Bean
     public RetrySchedulerService retrySchedulerService(final Config config,
                                                        final DistributedJmxConnectionProvider jmxConnectionProvider,
                                                        final EccNodesSync eccNodesSync,
@@ -337,14 +376,8 @@ public class BeanConfigurator
             final IpTranslator ipTranslator) throws IOException
     {
         Supplier<TLSConfig> jmxTlsSupplier = () -> securitySupplier.get().getJmxTlsConfig();
-        CertificateHandler certificateHandler = null;
-        if (jmxTlsSupplier.get().isEnabled() && jmxTlsSupplier.get().isCertificateConfigured())
-        {
-            LOG.info("Creating Certificate handler for JMX with PEM certificates");
-            certificateHandler = createCertificateHandler(jmxTlsSupplier);
-        }
         return new AgentJmxConnectionProvider(
-                config, securitySupplier, distributedNativeConnectionProvider, eccNodesSync, certificateHandler, ipTranslator);
+                config, securitySupplier, distributedNativeConnectionProvider, eccNodesSync, ipTranslator);
     }
 
     private void refreshSecurityConfig(
