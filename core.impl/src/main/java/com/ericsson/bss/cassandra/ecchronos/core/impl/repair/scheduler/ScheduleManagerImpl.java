@@ -40,6 +40,8 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.management.RuntimeMBeanException;
+
 /**
  * ScheduleManager handles the run scheduler and update scheduler.
  */
@@ -334,7 +336,19 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
             {
                 if (e.getCause() != null)
                 {
-                    LOG.warn("Unable to get schedule lock on task {} in node {}", task, nodeID, e);
+                    if (e instanceof RuntimeMBeanException
+                            && e.getCause() != null
+                            && e.getCause() instanceof IllegalStateException
+                            && e.getCause().getMessage() != null
+                            && e.getCause().getMessage().contains("More than one key found"))
+                    {
+                        LOG.debug("Unable to get schedule lock on task {} in node {}, this is probably due to "
+                                + "a connection to a version of the Jolokia Agent 2.3.0 or older", task, nodeID, e);
+                    }
+                    else
+                    {
+                        LOG.warn("Unable to get schedule lock on task {} in node {}", task, nodeID, e);
+                    }
                 }
                 return false;
             }
