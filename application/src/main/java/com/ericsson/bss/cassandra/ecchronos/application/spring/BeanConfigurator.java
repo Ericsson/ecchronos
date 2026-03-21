@@ -375,7 +375,6 @@ public class BeanConfigurator
             final EccNodesSync eccNodesSync,
             final IpTranslator ipTranslator) throws IOException
     {
-        Supplier<TLSConfig> jmxTlsSupplier = () -> securitySupplier.get().getJmxTlsConfig();
         return new AgentJmxConnectionProvider(
                 config, securitySupplier, distributedNativeConnectionProvider, eccNodesSync, ipTranslator);
     }

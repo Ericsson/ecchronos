@@ -65,6 +65,7 @@ import java.util.Base64;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+@SuppressWarnings("PMD.GodClass")
 public class ReloadingCertificateHandler implements CertificateHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger(ReloadingCertificateHandler.class);

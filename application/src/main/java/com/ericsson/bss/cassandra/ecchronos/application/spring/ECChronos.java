@@ -38,6 +38,8 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionP
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.JolokiaNotificationController;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.RepairStatsProviderImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorkerManager;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandStatus;
@@ -80,7 +82,7 @@ public class ECChronos implements Closeable
             final RepairFaultReporter repairFaultReporter,
             final MeterRegistry eccCompositeMeterRegistry,
             final IpTranslator ipTranslator,
-            final JolokiaNotificationController notificationController) throws ConfigurationException
+            @Autowired(required = false) @Nullable final JolokiaNotificationController notificationController) throws ConfigurationException
     {
         myECChronosInternals = new ECChronosInternals(
                 configuration,
