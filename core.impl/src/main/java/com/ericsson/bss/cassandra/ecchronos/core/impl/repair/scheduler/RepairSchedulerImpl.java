@@ -229,8 +229,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
             }
             catch (RuntimeMBeanException e)
             {
-                if (e.getCause() != null
-                        && e.getCause() instanceof IllegalStateException
+                if (e.getCause() instanceof IllegalStateException
                         && e.getCause().getMessage() != null
                         && e.getCause().getMessage().contains("More than one key found"))
                 {
