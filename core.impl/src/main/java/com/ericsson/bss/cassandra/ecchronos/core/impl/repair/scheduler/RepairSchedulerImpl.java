@@ -60,6 +60,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.management.RuntimeMBeanException;
+
 /**
  * Class used to construct repair scheduler.
  */
@@ -223,6 +225,21 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
                 else
                 {
                     LOG.info("No configuration changes for table {} in node {}", tableReference, node.getHostId());
+                }
+            }
+            catch (RuntimeMBeanException e)
+            {
+                if (e.getCause() instanceof IllegalStateException
+                        && e.getCause().getMessage() != null
+                        && e.getCause().getMessage().contains("More than one key found"))
+                {
+                    LOG.error("Unexpected error during schedule change of {} on node {}, this is probably due to "
+                            + "a connection to a version of the Jolokia Agent 2.3.0 or older", tableReference, node.getHostId());
+                    LOG.debug("Unexpected error during schedule change of {}:", tableReference, e);
+                }
+                else
+                {
+                    LOG.error("Unexpected error during schedule change of {}:", tableReference, e);
                 }
             }
             catch (Exception e)
