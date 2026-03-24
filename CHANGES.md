@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Jolokia connection does not reload certificates after expiry - Issue #1441
 * Catch exception from older versions of Jolokia Agents - Issue #1440
 * Rework the i, n, and j flags to keep backward compatibility - Issue #1430
 * Add missing error messages in ecctool - Issue #1431
