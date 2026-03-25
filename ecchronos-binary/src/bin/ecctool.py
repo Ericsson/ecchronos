@@ -88,23 +88,23 @@ ARG_FOREGROUND = {
 ARG_FULL = {
     "flags": ["-f", "--full"],
     "action": "store_true",
-    "help": "show full schedules with configuration and vnode state (requires -i/--id)",
+    "help": "show full schedules with configuration and vnode state (requires -n/--node)",
     "default": False,
 }
 ARG_ID = {
-    "flags": ["-i", "--id"],
+    "flags": ["-n", "--node"],
     "type": str,
-    "help": "only matching id (mutually exclusive with -k/--keyspace and -t/--table)",
+    "help": "only matching node id (mutually exclusive with -k/--keyspace and -t/--table)",
 }
 ARG_JOB_ID = {
-    "flags": ["-j", "--job"],
+    "flags": ["-i", "--id"],
     "type": str,
     "help": "only matching job id (mutually exclusive with -k/--keyspace and -t/--table)",
 }
 ARG_KEYSPACE = {"flags": ["-k", "--keyspace"], "type": str, "help": "keyspace"}
 ARG_LIMIT = {"flags": ["-l", "--limit"], "type": int, "help": "limit output rows (use -1 for no limit)", "default": -1}
 ARG_NODE_ID = {
-    "flags": ["-i", "--id"],
+    "flags": ["-n", "--node"],
     "type": str,
     "help": "only matching node id",
 }
@@ -184,11 +184,11 @@ def add_repairs_subcommand(sub_parsers):
     add_common_arg(parser_repairs, ARG_COLUMNS)
 
     keyspace_arg = ARG_KEYSPACE.copy()
-    keyspace_arg["help"] = "keyspace (mutually exclusive with -i/--id)"
+    keyspace_arg["help"] = "keyspace (mutually exclusive with -n/--node)"
     add_common_arg(parser_repairs, keyspace_arg)
 
     table_arg = ARG_TABLE.copy()
-    table_arg["help"] = "table (requires -k/--keyspace and is mutually exclusive with -i/--id)"
+    table_arg["help"] = "table (requires -k/--keyspace and is mutually exclusive with -n/--node)"
     add_common_arg(parser_repairs, table_arg)
 
     add_common_arg(parser_repairs, ARG_URL)
@@ -208,14 +208,14 @@ def add_schedules_subcommand(sub_parsers):
     add_common_arg(parser_schedules, ARG_JOB_ID)
 
     keyspace_arg = ARG_KEYSPACE.copy()
-    keyspace_arg["help"] = "keyspace (mutually exclusive with -i/--id)"
+    keyspace_arg["help"] = "keyspace (mutually exclusive with -n/--node)"
     add_common_arg(parser_schedules, keyspace_arg)
 
     add_common_arg(parser_schedules, ARG_LIMIT)
     add_common_arg(parser_schedules, ARG_OUTPUT_JSON_TABLE)
 
     table_arg = ARG_TABLE.copy()
-    table_arg["help"] = "table (requires -k/--keyspace and is mutually exclusive with -i/--id)"
+    table_arg["help"] = "table (requires -k/--keyspace and is mutually exclusive with -n/--node)"
     add_common_arg(parser_schedules, table_arg)
 
     add_common_arg(parser_schedules, ARG_URL)
@@ -480,11 +480,17 @@ def rejections(arguments):
         _get_rejections(arguments)
     elif arguments.rejections_action == "update":
         _update_rejections(arguments)
+    else:
+        print("Specify a valid action (create, delete, get or update) for subcommand 'rejections'.")
+        sys.exit(1)
 
 
 def state(arguments):
     if arguments.state_subcommand == "nodes":
         _state_nodes(arguments)
+    else:
+        print("Specify a valid action (nodes) for subcommand 'state'.")
+        sys.exit(1)
 
 
 def _state_nodes(arguments):
@@ -505,28 +511,29 @@ def schedules(arguments):
     request = rest.RepairSchedulerRequest(base_url=arguments.url)
     full = False
     result = None
-    if arguments.id:
-        if arguments.full and arguments.job is not None:
+    if arguments.node or arguments.id:
+        node = arguments.node or "all"
+        if arguments.full and arguments.id is not None:
             result = request.get_schedule(
-                node_id=arguments.id,
+                node_id=node,
                 keyspace=arguments.keyspace,
                 table=arguments.table,
-                job_id=arguments.job,
+                job_id=arguments.id,
                 full=True,
             )
             full = True
-        elif arguments.job is not None:
+        elif arguments.id is not None:
             result = request.get_schedule(
-                node_id=arguments.id,
+                node_id=node,
                 keyspace=arguments.keyspace,
                 table=arguments.table,
-                job_id=arguments.job,
+                job_id=arguments.id,
                 full=False,
             )
         else:
-            result = request.get_schedule(node_id=arguments.id, keyspace=arguments.keyspace, table=arguments.table)
+            result = request.get_schedule(node_id=node, keyspace=arguments.keyspace, table=arguments.table)
     elif arguments.full:
-        print("Must specify --id and --job with --full.")
+        print("Must specify --node and/or --job with --full.")
         sys.exit(1)
     elif arguments.table:
         if not arguments.keyspace:
@@ -551,8 +558,9 @@ def schedules(arguments):
 
 def repairs(arguments):
     request = rest.RepairSchedulerRequest(base_url=arguments.url)
-    if arguments.id:
-        result = request.get_repair(node_id=arguments.id, job_id=arguments.job)
+    if arguments.node or arguments.id:
+        node = arguments.node or "all"
+        result = request.get_repair(node_id=node, job_id=arguments.id)
         if result.is_successful():
             table_printer.print_repairs(
                 result.data, arguments.limit, columns=arguments.columns, output=arguments.output
@@ -563,7 +571,7 @@ def repairs(arguments):
         if not arguments.keyspace:
             print("--keyspace is required.")
             sys.exit(1)
-        result = request.list_repairs(keyspace=arguments.keyspace, table=arguments.table, host_id=arguments.id)
+        result = request.list_repairs(keyspace=arguments.keyspace, table=arguments.table, host_id=arguments.node)
         if result.is_successful():
             table_printer.print_repairs(
                 result.data, arguments.limit, columns=arguments.columns, output=arguments.output
@@ -571,7 +579,7 @@ def repairs(arguments):
         else:
             print(result.format_exception())
     else:
-        result = request.list_repairs(keyspace=arguments.keyspace, host_id=arguments.id)
+        result = request.list_repairs(keyspace=arguments.keyspace, host_id=arguments.node)
         if result.is_successful():
             table_printer.print_repairs(
                 result.data, arguments.limit, columns=arguments.columns, output=arguments.output
@@ -585,11 +593,11 @@ def run_repair(arguments):
     if not arguments.keyspace and arguments.table:
         print("--keyspace must be specified if --table is specified.")
         sys.exit(1)
-    if not (arguments.id or arguments.all) or (arguments.id and arguments.all):
-        print("--id or --all must be specified, but not both.")
+    if not (arguments.node or arguments.all) or (arguments.node and arguments.all):
+        print("--node or --all must be specified, but not both.")
         sys.exit(1)
     result = request.post(
-        node_id=arguments.id,
+        node_id=arguments.node,
         keyspace=arguments.keyspace,
         table=arguments.table,
         repair_type=arguments.repair_type,
@@ -606,8 +614,8 @@ def run_repair(arguments):
 
 def repair_info(arguments):
     request = rest.RepairSchedulerRequest(base_url=arguments.url)
-    if not arguments.id:
-        print("--id must be specified.")
+    if not arguments.node:
+        print("--node must be specified.")
         sys.exit(1)
     if not arguments.keyspace and arguments.table:
         print("--keyspace must be specified if --table is specified.")
@@ -622,7 +630,7 @@ def repair_info(arguments):
             sys.exit(1)
         duration = arguments.duration.upper()
     result = request.get_repair_info(
-        node_id=arguments.id,
+        node_id=arguments.node,
         keyspace=arguments.keyspace,
         table=arguments.table,
         since=arguments.since,

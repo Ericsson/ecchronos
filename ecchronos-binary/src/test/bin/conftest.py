@@ -80,7 +80,7 @@ class EcchronosFixture:
         ecchronos_config.modify_configuration()
         volumes = self._define_volumes(ecchronos_config.container_mounts)
         try:
-            logger.info("Starting ecChronos")
+            logger.info(f"Starting ecChronos-agent-{suffix}")
             env = {"SERVER_ADDRESS": "0.0.0.0"}
             if global_vars.LOCAL != "true":
                 client_cert = f"{global_vars.CONTAINER_CERTIFICATE_PATH}/clientcert.crt"
@@ -198,7 +198,7 @@ def install_cassandra_cluster():
             logger.error(f"Error stopping Cassandra cluster during cleanup: {e}")
 
 
-def build_behave_command() -> list[str]:
+def build_behave_command(cassandra_address=global_vars.DEFAULT_INITIAL_CONTACT_POINT) -> list[str]:
     """Build behave command for execution inside container"""
 
     base_command = [
@@ -206,7 +206,7 @@ def build_behave_command() -> list[str]:
         "--define",
         f"ecctool={global_vars.CONTAINER_BASE_DIR}/bin/ecctool",
         "--define",
-        f"cassandra_address={global_vars.DEFAULT_INITIAL_CONTACT_POINT}",
+        f"cassandra_address={cassandra_address}",
         "--define",
         "cql_user=eccuser",
         "--define",
@@ -235,12 +235,20 @@ def build_behave_command() -> list[str]:
     return base_command
 
 
-def run_ecctool_state(params):
-    return run_ecctool(["state"] + params)
+def run_ecctool_state(params, container_name="ecchronos-agent-cluster-wide"):
+    return run_ecctool(["state"] + params, container_name)
 
 
-def run_ecctool_state_nodes():
-    return run_ecctool_state(["nodes"])
+def run_ecctool_state_nodes(container_name="ecchronos-agent-cluster-wide"):
+    return run_ecctool_state(["nodes"], container_name)
+
+
+def run_ecctool_run_repair(params, container_name="ecchronos-agent-cluster-wide"):
+    return run_ecctool(["run-repair"] + params, container_name)
+
+
+def run_ecctool_repairs(params, container_name="ecchronos-agent-cluster-wide"):
+    return run_ecctool(["repairs"] + params, container_name)
 
 
 def run_ecctool(params, container_name="ecchronos-agent-cluster-wide"):

@@ -18,7 +18,7 @@ permissions: read-all
 
 jobs:
   tests:
-    runs-on: ubuntu-22.04 
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -47,6 +47,10 @@ jobs:
             java_version: 17
             test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
+          - name: "DatacenterAware Multi-Agent integration tests - Java 17"
+            java_version: 17
+            test_suite: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -DskipUTs'
+            artifacts_dir: "ecchronos-binary/target"
             
           # Java 21 tests
           - name: "Unit tests - Java 21"
@@ -71,12 +75,12 @@ jobs:
             java_version: 21
             test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
+          - name: "DatacenterAware Multi-Agent integration tests - Java 21"
+            java_version: 21
+            test_suite: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -DskipUTs'
+            artifacts_dir: "ecchronos-binary/target"
 
           # Java 17 Jolokia tests
-          - name: "Jolokia Standalone integration 4.1 - Java 17"
-            java_version: 17
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=4.1 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
-            artifacts_dir: "standalone-integration/target"
           - name: "Jolokia Standalone integration 5.0 - Java 17"
             java_version: 17
             test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
@@ -97,12 +101,17 @@ jobs:
             java_version: 17
             test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
+          - name: "Jolokia DatacenterAware Multi-Agent integration tests - Java 17"
+            java_version: 17
+            test_suite: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -Dit.jolokia.enabled=true -DskipUTs'
+            artifacts_dir: "ecchronos-binary/target"
+          - name: "Jolokia DatacenterAware Multi-Agent integration tests - Java 17 - PEM"
+            java_version: 17
+            test_suite: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=17 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
+            artifacts_dir: "ecchronos-binary/target"
+
 
           # Java 21 Jolokia tests
-          - name: "Jolokia Standalone integration 4.1 - Java 21"
-            java_version: 21
-            test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=4.1 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs'
-            artifacts_dir: "standalone-integration/target"
           - name: "Jolokia Standalone integration 5.0 - Java 21"
             java_version: 21
             test_suite: 'verify -P standalone-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs'
@@ -122,6 +131,14 @@ jobs:
           - name: "Jolokia Topology integration - Java 21 - PEM"
             java_version: 21
             test_suite: 'verify -P topology-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
+            artifacts_dir: "ecchronos-binary/target"
+          - name: "Jolokia DatacenterAware Multi-Agent integration tests - Java 21"
+            java_version: 21
+            test_suite: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -Dit.jolokia.enabled=true -DskipUTs'
+            artifacts_dir: "ecchronos-binary/target"
+          - name: "Jolokia DatacenterAware Multi-Agent integration tests - Java 21 - PEM"
+            java_version: 17
+            test_suite: 'verify -P multi-agent-datacenter-aware-integration-tests -Dit.cassandra.version=5.0.4 -Djava.version=21 -Dit.jolokia.enabled=true -Dit.jmx.pem.enabled=true -DskipUTs'
             artifacts_dir: "ecchronos-binary/target"
 
     steps:
@@ -162,6 +179,11 @@ jobs:
           echo "MAX_HEAP_SIZE=1536M" >> $GITHUB_ENV
           echo "HEAP_NEWSIZE=200M" >> $GITHUB_ENV
 
+      - name: Set up Docker Compose
+        uses: KengoTODA/actions-setup-docker-compose@477353946803dd64eaa44008b865b6bfc88cab4e # v1.2.4
+        with:
+          version: '2.31.0'
+
       - run: mvn $TEST_SUITE -B
         id: tests
         env:
@@ -169,10 +191,10 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ failure() && steps.tests.conclusion == 'failure' }}
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: ${{ matrix.name }}-ecchronos-logs
-          path: ./ecchronos-binary/target/test/ecchronos-binary-agent-1.0.0-SNAPSHOT/logs/ecchronos.log
+          path: ./ecchronos-binary/target/test/ecchronos-binary-agent-1.0.0-SNAPSHOT/logs/
           if-no-files-found: 'ignore'
 
       - name: Upload coverage to Codecov
@@ -184,5 +206,8 @@ jobs:
             ./rest/target/site/jacoco/jacoco.xml,
             ./application/target/site/jacoco/jacoco.xml,
             ./core/target/site/jacoco/jacoco.xml,
-            ./fm.impl/target/site/jacoco/jacoco.xml,
-            ./connection/target/site/jacoco/jacoco.xml
+            ./fault.manager.impl/target/site/jacoco/jacoco.xml,
+            ./connection.impl/target/site/jacoco/jacoco.xml,
+            ./core.impl/target/site/jacoco/jacoco.xml,
+            ./data/target/site/jacoco/jacoco.xml,
+            ./utils/target/site/jacoco/jacoco.xml

@@ -2,8 +2,19 @@
 
 ## Version 1.0.0 (Not yet Released)
 
-## Version 1.0.0-beta2
+* Catch exception from older versions of Jolokia Agents - Issue #1440
+* Rework the i, n, and j flags to keep backward compatibility - Issue #1430
+* Add missing error messages in ecctool - Issue #1431
 
+## Version 1.0.0-beta3
+
+* Jolokia connection fails when TLS is enabled - Issue #1415
+* Log yaml config at startup
+* Improve concurrency in IpTranslator
+* Create DatacenterAware Integration tests with Multi Agent setup - Issue #1382
+* Strip port number from internal ip address in IpTranslator
+* Fix stale JMX connections when a node restarts with a new IP address - Issue #1400
+* Reftresh translation map in IpTranslator if maping is missing - Issue #1393
 * Refactor Test Infrastructure to Support Multiple ecChronos Agent Instances - Issue #1371
 * Migrate old test strategy to use containers instead of in host process - Issue #1349
 * Add JSON output and columns filtering - Issue #1225
@@ -11,6 +22,9 @@
 * Ensure Jolokia connection does not hang forever during connection - Issue #1337
 * Add Configurable Option to Disable TLS Hostname Verification in JMX/Jolokia Connections - Issue #1333
 * Add ignore-unreplicated-keyspaces to avoid nothing to repair error message - Issue #1323
+
+## Version 1.0.0-beta2
+
 * Fix nullpointer issues in IpTranslator
 * Make sure to close CqlSessions if can't get a fully working connection to the cluster
 * Add option to translate broadcastRPCAddress to RPCAddress for jmx connections - Issue #1283

@@ -194,6 +194,18 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
     @Override
     public void add(final Node node) throws IOException
     {
+        UUID nodeId = node.getHostId();
+        if (myJMXConnections.containsKey(nodeId))
+        {
+            try
+            {
+                close(nodeId);
+            }
+            catch (IOException e)
+            {
+                LOG.warn("Failed to close stale JMX connection for node {}: {}", nodeId, e.getMessage());
+            }
+        }
         try
         {
             myDistributedJmxBuilder.reconnect(node);
@@ -202,6 +214,5 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
         {
             LOG.warn("Unable to connect with node {} connection refused: {}", node.getHostId(), e.getMessage());
         }
-
     }
 }

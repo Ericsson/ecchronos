@@ -23,6 +23,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.security.Security
 import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.connection.impl.builders.DistributedJmxBuilder;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedJmxConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
@@ -91,18 +92,31 @@ public class AgentJmxConnectionProvider implements DistributedJmxConnectionProvi
         }
 
         Map<String, String> config = new HashMap<>();
-        if (tlsConfig.getProtocol() != null)
+        if (!tlsConfig.isCertificateConfigured())
         {
-            config.put("com.sun.management.jmxremote.ssl.enabled.protocols", tlsConfig.getProtocol());
+            config.put(DistributedJmxBuilder.ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY, String.valueOf(false));
+            if (tlsConfig.getProtocol() != null)
+                {
+                    config.put("com.sun.management.jmxremote.ssl.enabled.protocols", tlsConfig.getProtocol());
+                }
+                if (tlsConfig.getCipherSuites() != null)
+                {
+                    config.put("com.sun.management.jmxremote.ssl.enabled.cipher.suites", tlsConfig.getCipherSuitesAsString());
+                }
+                config.put("javax.net.ssl.keyStore", tlsConfig.getKeyStorePath());
+                config.put("javax.net.ssl.keyStorePassword", tlsConfig.getKeyStorePassword());
+                config.put("javax.net.ssl.trustStore", tlsConfig.getTrustStorePath());
+                config.put("javax.net.ssl.trustStorePassword", tlsConfig.getTrustStorePassword());
         }
-        if (tlsConfig.getCipherSuites() != null)
+        else
         {
-            config.put("com.sun.management.jmxremote.ssl.enabled.cipher.suites", tlsConfig.getCipherSuitesAsString());
+            config.put(DistributedJmxBuilder.ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY, String.valueOf(true));
+            config.put(DistributedJmxBuilder.JOLOKIA_CA_CERTIFICATE_PROPERTY, tlsConfig.getTrustCertificatePath().orElse(null));
+            config.put(DistributedJmxBuilder.JOLOKIA_CLIENT_CERTIFICATE_PROPERTY, tlsConfig.getCertificatePath().orElse(null));
+            config.put(DistributedJmxBuilder.JOLOKIA_CLIENT_KEY_CERTIFICATE_PROPERTY, tlsConfig.getCertificatePrivateKeyPath().orElse(null));
+            config.put(DistributedJmxBuilder.JOLOKIA_CLIENT_KEY_ALGORITHM_CERTIFICATE_PROPERTY, tlsConfig.getAlgorithm().orElse(null));
+            config.put(DistributedJmxBuilder.JDK_DISABLE_HOSTNAME_VERIFICATION_PROPERTY, String.valueOf(!tlsConfig.requiresEndpointVerification()));
         }
-        config.put("javax.net.ssl.keyStore", tlsConfig.getKeyStorePath());
-        config.put("javax.net.ssl.keyStorePassword", tlsConfig.getKeyStorePassword());
-        config.put("javax.net.ssl.trustStore", tlsConfig.getTrustStorePath());
-        config.put("javax.net.ssl.trustStorePassword", tlsConfig.getTrustStorePassword());
 
         return config;
     }

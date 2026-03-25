@@ -372,6 +372,10 @@ public class DefaultRepairConfigurationProvider extends NodeStateListenerBase im
         }
         else
         {
+            LOG.info("Node {} came back up, refreshing JMX connection in case endpoint changed", node.getHostId());
+            NodeAddedAction callable = new NodeAddedAction(myEccNodesSync, myJmxConnectionProvider,
+                    myAgentNativeConnectionProvider, node);
+            myService.submit(callable);
             if (myScheduleManager != null)
             {
                 myScheduleManager.createScheduleFutureForNode(node.getHostId());
