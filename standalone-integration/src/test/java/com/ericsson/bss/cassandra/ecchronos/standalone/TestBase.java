@@ -26,6 +26,7 @@ import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnecti
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedJmxConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedNativeConnectionProviderImpl;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.DistributedJmxProxyFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.JolokiaNotificationController;
 import com.ericsson.bss.cassandra.ecchronos.core.table.TableReference;
 import com.ericsson.bss.cassandra.ecchronos.data.iptranslator.IpTranslator;
 import com.ericsson.bss.cassandra.ecchronos.data.sync.EccNodesSync;
@@ -73,6 +74,7 @@ abstract public class TestBase
 
     private static DistributedJmxConnectionProvider myJmxConnectionProvider;
     private static DistributedJmxProxyFactoryImpl myJmxProxyFactory;
+    private static JolokiaNotificationController myJolokiaNotificationController;
     protected static EccNodesSync myEccNodesSync;
 
     protected static Node MyLocalNode;
@@ -136,12 +138,23 @@ abstract public class TestBase
                 .build();
 
         Map<UUID, Node> nodesMap = myNativeConnectionProvider.getCqlSession().getMetadata().getNodes();
+
+        if (myJolokiaEnabled)
+        {
+            myJolokiaNotificationController = JolokiaNotificationController.newBuilder()
+                    .withNativeConnection(myNativeConnectionProvider)
+                    .withJolokiaPort(8778)
+                    .withIpTranslator(new IpTranslator())
+                    .build();
+        }
+
         myJmxProxyFactory = DistributedJmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(myJmxConnectionProvider)
                 .withEccNodesSync(myEccNodesSync)
                 .withNodesMap(nodesMap)
                 .withJolokiaEnabled(myJolokiaEnabled)
                 .withIpTranslator(new IpTranslator())
+                .withJolokiaNotificationController(myJolokiaNotificationController)
                 .build();
         MyLocalNode = getNativeConnectionProvider()
             .getNodes()
@@ -156,6 +169,10 @@ abstract public class TestBase
     @AfterClass
     public static void cleanup() throws IOException
     {
+        if (myJolokiaNotificationController != null)
+        {
+            myJolokiaNotificationController.close();
+        }
         if (myJmxConnectionProvider != null)
         {
             myJmxConnectionProvider.close();

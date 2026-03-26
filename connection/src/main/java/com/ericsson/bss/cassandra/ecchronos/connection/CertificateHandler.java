@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.connection;
 import com.datastax.oss.driver.api.core.metadata.EndPoint;
 import com.datastax.oss.driver.api.core.ssl.SslEngineFactory;
 
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
 /**
@@ -31,4 +32,6 @@ public interface CertificateHandler extends SslEngineFactory
     void close() throws Exception;
 
     void setDefaultSSLContext();
+
+    SSLContext getSSLContext();
 }

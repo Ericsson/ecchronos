@@ -52,7 +52,6 @@ import org.slf4j.LoggerFactory;
  */
 public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProxyFactory
 {
-    private static final int DEFAULT_JOLOKIA_PORT = 8778;
     private static final Logger LOG = LoggerFactory.getLogger(DistributedJmxProxyFactoryImpl.class);
     private static final String SS_OBJ_NAME = "org.apache.cassandra.db:type=StorageService";
     private static final String RS_OBJ_NAME = "org.apache.cassandra.db:type=RepairService";
@@ -66,12 +65,8 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
     private final Map<UUID, Node> nodesMap;
     private final EccNodesSync eccNodesSync;
     private final boolean isJolokiaEnabled;
-    private final int jolokiaPort;
-    private final boolean jolokiaPEMEnabled;
-    private final boolean myReverseDNSResolution;
-    private final Integer myRunDelay;
     private final Integer myHeathCheckInterval;
-    private final IpTranslator myIpTranslator;
+    private final JolokiaNotificationController myJolokiaNotificationController;
 
     private DistributedJmxProxyFactoryImpl(final Builder builder)
     {
@@ -79,12 +74,8 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         nodesMap = builder.myNodesMap;
         eccNodesSync = builder.myEccNodesSync;
         isJolokiaEnabled = builder.isJolokiaEnabled;
-        jolokiaPort = builder.myJolokiaPort;
-        jolokiaPEMEnabled = builder.myJolokiaPEMEnabled;
-        myReverseDNSResolution = builder.myReverseDNSResolution;
-        myRunDelay = builder.myRunDelay;
         myHeathCheckInterval = builder.myHeathCheckInterval;
-        myIpTranslator = builder.myIpTranslator;
+        myJolokiaNotificationController = builder.myJolokiaController;
     }
 
     @Override
@@ -97,11 +88,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
                     nodesMap,
                     eccNodesSync,
                     isJolokiaEnabled,
-                    jolokiaPort,
-                    jolokiaPEMEnabled,
-                    myReverseDNSResolution,
-                    myRunDelay,
-                    myIpTranslator);
+                    myJolokiaNotificationController);
         }
         catch (MalformedObjectNameException e)
         {
@@ -124,18 +111,13 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         private final ObjectName myStorageServiceObject;
         private final ObjectName myRepairServiceObject;
         private final JolokiaNotificationController myJolokiaNotificationController;
-        private final boolean myReverseDNSResolution;
 
         private InternalDistributedJmxProxy(
                 final DistributedJmxConnectionProvider distributedJmxConnectionProvider,
                 final Map<UUID, Node> nodesMap,
                 final EccNodesSync eccNodesSync,
                 final boolean jolokiaEnabled,
-                final int jolokiaPortValue,
-                final boolean jolokiaPEMEnabled,
-                final boolean reverseDNSResolution,
-                final Integer runDelay,
-                final IpTranslator ipTranslator) throws MalformedObjectNameException
+                final JolokiaNotificationController jolokiaNotificationController) throws MalformedObjectNameException
         {
             myDistributedJmxConnectionProvider = distributedJmxConnectionProvider;
             myNodesMap = nodesMap;
@@ -143,15 +125,13 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
             myStorageServiceObject = new ObjectName(SS_OBJ_NAME);
             myRepairServiceObject = new ObjectName(RS_OBJ_NAME);
             isJolokiaEnabled = jolokiaEnabled;
-            myReverseDNSResolution = reverseDNSResolution;
-            myJolokiaNotificationController = new JolokiaNotificationController(myNodesMap, jolokiaPortValue, jolokiaPEMEnabled, myReverseDNSResolution, runDelay, ipTranslator);
+            myJolokiaNotificationController = jolokiaNotificationController;
         }
 
         @Override
         public void close()
         {
-            // Cancel all notification monitors
-            myJolokiaNotificationController.close();
+            // NOOP - JolokiaNotificationController lifecycle is managed externally
         }
 
         @Override
@@ -719,12 +699,9 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         private Map<UUID, Node> myNodesMap;
         private EccNodesSync myEccNodesSync;
         private boolean isJolokiaEnabled = false;
-        private int myJolokiaPort = DEFAULT_JOLOKIA_PORT;
-        private boolean myJolokiaPEMEnabled = false;
-        private boolean myReverseDNSResolution = false;
-        private Integer myRunDelay = DEFAULT_RUN_DELAY;
         private Integer myHeathCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
         private IpTranslator myIpTranslator;
+        private JolokiaNotificationController myJolokiaController;
 
         /**
          * Build with JMX connection provider.
@@ -775,52 +752,6 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         }
 
         /**
-         * Build with Jolokia Agent.
-         *
-         * @param jolokiaPort Define what is the Jolokia port.
-         * @return Builder
-         */
-        public Builder withJolokiaPort(final int jolokiaPort)
-        {
-            myJolokiaPort = jolokiaPort;
-            return this;
-        }
-
-        /**
-         * Build with PEM option.
-         *
-         * @param jolokiaPEM Define if https should be used with jolokia-adapter.
-         * @return Builder
-         */
-        public Builder withJolokiaPEM(final boolean jolokiaPEM)
-        {
-            myJolokiaPEMEnabled = jolokiaPEM;
-            return this;
-        }
-
-        /**
-         * Build with Reverse DNS option.
-         *
-         * @param reverseDNS Define if Reverse DNS should be used to build connection.
-         * @return Builder
-         */
-        public Builder withReverseDNSResolution(final boolean reverseDNS)
-        {
-            myReverseDNSResolution = reverseDNS;
-            return this;
-        }
-        /**
-         * Build with runDelay.
-         *
-         * @param runDelay Integer
-         * @return Builder
-         */
-        public Builder withRunDelay(final Integer runDelay)
-        {
-            myRunDelay = runDelay;
-            return this;
-        }
-        /**
          * Build with heathCheckInterval.
          *
          * @param heathCheckInterval Integer
@@ -841,6 +772,18 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         public Builder withIpTranslator(final IpTranslator ipTranslator)
         {
             myIpTranslator = ipTranslator;
+            return this;
+        }
+
+        /**
+         * Build with JolokiaNotificationController.
+         *
+         * @param jolokiaNotificationController The Custom Notification Controller responsible for managing notifications in jolokia.
+         * @return Builder
+         */
+        public Builder withJolokiaNotificationController(final JolokiaNotificationController jolokiaNotificationController)
+        {
+            myJolokiaController = jolokiaNotificationController;
             return this;
         }
 

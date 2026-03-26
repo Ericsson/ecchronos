@@ -36,7 +36,10 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.connection.Thread
 import com.ericsson.bss.cassandra.ecchronos.application.config.repair.FileBasedRepairConfiguration;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.JolokiaNotificationController;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.RepairStatsProviderImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads.NodeWorkerManager;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.DefaultRepairConfigurationProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.OnDemandStatus;
@@ -78,7 +81,8 @@ public class ECChronos implements Closeable
             final RepairHistoryService repairHistoryService,
             final RepairFaultReporter repairFaultReporter,
             final MeterRegistry eccCompositeMeterRegistry,
-            final IpTranslator ipTranslator) throws ConfigurationException
+            final IpTranslator ipTranslator,
+            @Autowired(required = false) @Nullable final JolokiaNotificationController notificationController) throws ConfigurationException
     {
         myECChronosInternals = new ECChronosInternals(
                 configuration,
@@ -86,7 +90,8 @@ public class ECChronos implements Closeable
                 jmxConnectionProvider,
                 eccNodesSync,
                 eccCompositeMeterRegistry,
-                ipTranslator);
+                ipTranslator,
+                notificationController);
 
         CqlSession session = nativeConnectionProvider.getCqlSession();
 

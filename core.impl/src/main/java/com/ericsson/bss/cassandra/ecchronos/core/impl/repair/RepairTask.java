@@ -33,7 +33,10 @@ import javax.management.Notification;
 import javax.management.NotificationListener;
 import javax.management.remote.JMXConnectionNotification;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -65,6 +68,8 @@ public abstract class RepairTask implements NotificationListener // NOPMD Possib
     private volatile ScheduledJobException myLastError;
     private volatile boolean hasLostNotification = false;
     private volatile int myCommand;
+    private volatile boolean myCommandReady = false;
+    private final List<Notification> myPendingNotifications = Collections.synchronizedList(new ArrayList<>());
     private volatile Set<LongTokenRange> myFailedRanges = new HashSet<>();
     private volatile Set<LongTokenRange> mySuccessfulRanges = new HashSet<>();
 
@@ -139,15 +144,29 @@ public abstract class RepairTask implements NotificationListener // NOPMD Possib
     {
         // NOOP
     }
-    @SuppressWarnings("PMD.CyclomaticComplexity")
+    @SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.CognitiveComplexity"})
     private void repair(final DistributedJmxProxy proxy) throws ScheduledJobException
     {
         LOG.debug("repair starting for table {} on node {}", myTableReference, nodeID);
         if (proxy.addStorageServiceListener(nodeID, this))
         {
+            myCommandReady = false;
+            myPendingNotifications.clear();
             myCommand = proxy.repairAsync(nodeID, myTableReference.getKeyspace(), getOptions());
+            myCommandReady = true;
             if (myCommand > 0)
             {
+                // Process any notifications that arrived before myCommand was set
+                if (!myPendingNotifications.isEmpty())
+                {
+                    LOG.debug("Processing {} pending notifications for table {} on node {}",
+                            myPendingNotifications.size(), myTableReference, nodeID);
+                    for (Notification pending : new ArrayList<>(myPendingNotifications))
+                    {
+                        handleNotification(pending, null);
+                    }
+                    myPendingNotifications.clear();
+                }
                 try
                 {
                     LOG.debug("waiting for latch for table {} on node {}", myTableReference, nodeID);
@@ -261,6 +280,12 @@ public abstract class RepairTask implements NotificationListener // NOPMD Possib
         case "progress":
             rescheduleHangPrevention();
             String tag = (String) notification.getSource();
+            if (!myCommandReady)
+            {
+                LOG.debug("Notification arrived before command ID is ready, storing as pending: {}", tag);
+                myPendingNotifications.add(notification);
+                break;
+            }
             if (tag.equals("repair:" + myCommand))
             {
                 Map<String, Integer> progress = (Map<String, Integer>) notification.getUserData();
