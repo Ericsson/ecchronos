@@ -144,7 +144,7 @@ public abstract class RepairTask implements NotificationListener // NOPMD Possib
     {
         // NOOP
     }
-    @SuppressWarnings("PMD.CyclomaticComplexity")
+    @SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.CognitiveComplexity"})
     private void repair(final DistributedJmxProxy proxy) throws ScheduledJobException
     {
         LOG.debug("repair starting for table {} on node {}", myTableReference, nodeID);
