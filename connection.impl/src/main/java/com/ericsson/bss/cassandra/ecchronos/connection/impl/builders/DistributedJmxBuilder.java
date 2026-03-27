@@ -20,7 +20,6 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.QueryExecutionException;
-import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.impl.providers.DistributedJmxConnectionProviderImpl;
@@ -73,7 +72,6 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
     private final ConcurrentHashMap<UUID, JMXConnector> myJMXConnections = new ConcurrentHashMap<>();
     private Supplier<String[]> myCredentialsSupplier;
     private Supplier<Map<String, String>> myTLSSupplier;
-    private CertificateHandler myCertificateHandler;
     private boolean isJolokiaEnabled = false;
     private int myJolokiaPort = DEFAULT_JOLOKIA_PORT;
     private EccNodesSync myEccNodesSync;
@@ -129,12 +127,6 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
     public final DistributedJmxBuilder withTLS(final Supplier<Map<String, String>> tlsSupplier)
     {
         myTLSSupplier = tlsSupplier;
-        return this;
-    }
-
-    public final DistributedJmxBuilder withCertificateHandler(final CertificateHandler certificateHandler)
-    {
-        myCertificateHandler = certificateHandler;
         return this;
     }
 
@@ -320,10 +312,6 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
         }
         if (isJolokiaEnabled && String.valueOf(true).equals(tls.get(ECCHRONOS_JOLOKIA_SSL_ENABLED_PROPERTY)))
         {
-            if (myCertificateHandler != null)
-            {
-                myCertificateHandler.setDefaultSSLContext();
-            }
             LOG.info("Setting Jolokia client with PEM certificates");
             String caCert = tls.get(JOLOKIA_CA_CERTIFICATE_PROPERTY);
             String clientCert = tls.get(JOLOKIA_CLIENT_CERTIFICATE_PROPERTY);

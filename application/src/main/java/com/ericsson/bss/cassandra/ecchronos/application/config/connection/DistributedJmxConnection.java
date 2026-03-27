@@ -16,7 +16,6 @@ package com.ericsson.bss.cassandra.ecchronos.application.config.connection;
 
 import com.ericsson.bss.cassandra.ecchronos.application.config.Config;
 import com.ericsson.bss.cassandra.ecchronos.application.providers.AgentJmxConnectionProvider;
-import com.ericsson.bss.cassandra.ecchronos.connection.CertificateHandler;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
@@ -130,7 +129,6 @@ public class DistributedJmxConnection extends Connection<DistributedJmxConnectio
                                 Supplier.class,
                                 DistributedNativeConnectionProvider.class,
                                 EccNodesSync.class,
-                                CertificateHandler.class,
                                 IpTranslator.class
         };
     }

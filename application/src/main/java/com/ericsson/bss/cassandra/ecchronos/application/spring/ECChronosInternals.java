@@ -20,6 +20,7 @@ import com.ericsson.bss.cassandra.ecchronos.application.config.lockfactory.CasLo
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedJmxConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.DistributedJmxProxyFactoryImpl;
+import com.ericsson.bss.cassandra.ecchronos.core.impl.jmx.JolokiaNotificationController;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.locks.CASLockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.metrics.CassandraMetrics;
 import com.ericsson.bss.cassandra.ecchronos.core.impl.repair.scheduler.ScheduleManagerImpl;
@@ -63,6 +64,7 @@ public class ECChronosInternals implements Closeable
     private final TableRepairMetricsImpl myTableRepairMetricsImpl;
     private final CASLockFactory myLockFactory;
     private final MetricInspector myMetricInspector;
+    private final JolokiaNotificationController myJolokiaNotificationController;
 
     public ECChronosInternals(
             final Config configuration,
@@ -70,23 +72,20 @@ public class ECChronosInternals implements Closeable
             final DistributedJmxConnectionProvider jmxConnectionProvider,
             final EccNodesSync eccNodesSync,
             final MeterRegistry meterRegistry,
-            final IpTranslator ipTranslator)
+            final IpTranslator ipTranslator,
+            final JolokiaNotificationController notificationController
+    )
     {
+        myJolokiaNotificationController = notificationController;
         myJmxProxyFactory = DistributedJmxProxyFactoryImpl.builder()
                 .withJmxConnectionProvider(jmxConnectionProvider)
                 .withEccNodesSync(eccNodesSync)
                 .withNodesMap(nativeConnectionProvider.getNodes())
                 .withJolokiaEnabled(configuration
                         .getConnectionConfig().getJmxConnection().getJolokiaConfig().isEnabled())
-                .withJolokiaPort(configuration
-                        .getConnectionConfig().getJmxConnection().getJolokiaConfig().getPort())
-                .withJolokiaPEM(configuration
-                        .getConnectionConfig().getJmxConnection().getJolokiaConfig().usePem())
-                .withReverseDNSResolution(configuration
-                    .getConnectionConfig().getJmxConnection().getReseverseDNSResolution())
-                .withRunDelay(configuration.getConnectionConfig().getJmxConnection().getRunDelay())
                 .withHeathCheckInterval(configuration.getConnectionConfig().getJmxConnection().getHeathCheckInterval())
                 .withIpTranslator(ipTranslator)
+                .withJolokiaNotificationController(myJolokiaNotificationController)
                 .build();
 
         CqlSession session = nativeConnectionProvider.getCqlSession();
@@ -222,6 +221,11 @@ public class ECChronosInternals implements Closeable
         if (myTableStorageStatesImpl != null)
         {
             myTableStorageStatesImpl.close();
+        }
+
+        if (myJolokiaNotificationController != null)
+        {
+            myJolokiaNotificationController.close();
         }
     }
 
