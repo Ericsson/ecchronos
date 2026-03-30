@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Repair schedules not updated when cluster topology changes (scale-out/scale-in) - Issue #1460
 * Return default values if schema changes in Cassandra have not been completed - Issue #1458
 * Jolokia connection does not reload certificates after expiry - Issue #1441
 * Catch exception from older versions of Jolokia Agents - Issue #1440

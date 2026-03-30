@@ -46,7 +46,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 
+import com.datastax.oss.driver.api.core.metadata.Metadata;
+
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -108,8 +111,10 @@ public class TestNodeWorkerManager
         nodes.put(node2UUID, node2);
         threadPool = new NoopThreadPoolTaskExecutor();
 
+        Metadata metadata = mock(Metadata.class);
+        when(metadata.getKeyspaces()).thenReturn(Map.of());
+        when(cqlSession.getMetadata()).thenReturn(metadata);
         when(nativeConnectionProvider.getCqlSession()).thenReturn(cqlSession);
-        when(nativeConnectionProvider.getNodes()).thenReturn(nodes);
         when(nativeConnectionProvider.getNodes()).thenReturn(nodes);
 
         manager = NodeWorkerManager.newBuilder()
