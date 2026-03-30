@@ -16,7 +16,12 @@
 
 import pytest
 import logging
-from conftest import run_ecctool_state_nodes, run_ecctool_schedules, assert_nodes_size_is_equal, assert_schedules_size_is_equal
+from conftest import (
+    run_ecctool_state_nodes,
+    run_ecctool_schedules,
+    assert_nodes_size_is_equal,
+    assert_schedules_size_is_equal,
+)
 
 logger = logging.getLogger(__name__)
 

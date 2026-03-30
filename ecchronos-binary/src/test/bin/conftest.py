@@ -250,8 +250,10 @@ def run_ecctool_run_repair(params, container_name="ecchronos-agent-cluster-wide"
 def run_ecctool_repairs(params, container_name="ecchronos-agent-cluster-wide"):
     return run_ecctool(["repairs"] + params, container_name)
 
+
 def run_ecctool_schedules(container_name="ecchronos-agent-cluster-wide"):
     return run_ecctool(["schedules"], container_name)
+
 
 def run_ecctool(params, container_name="ecchronos-agent-cluster-wide"):
     cmd = [f"{global_vars.CONTAINER_BASE_DIR}/bin/ecctool"] + params
@@ -272,6 +274,7 @@ def assert_nodes_size_is_equal(out, expected_nodes):
     output_data = out.decode("ascii").lstrip().rstrip().split("\n")
     rows = output_data[3:-1]
     assert len(rows) == expected_nodes, f"Expected {expected_nodes} nodes, but found {len(rows)}"
+
 
 def assert_schedules_size_is_equal(out, expected_schedules):
     output_data = out.decode("ascii").lstrip().rstrip().split("\n")
