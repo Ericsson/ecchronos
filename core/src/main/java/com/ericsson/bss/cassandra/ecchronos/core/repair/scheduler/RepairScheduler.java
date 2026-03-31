@@ -65,6 +65,13 @@ public interface RepairScheduler
      * @return the list of the currently scheduled repair jobs for the specified nodeId.
      */
     List<ScheduledRepairJobView> getCurrentRepairJobsByNode(UUID nodeId);
+
+    /**
+     * Remove all repair configurations and deschedule all jobs for the specified node.
+     *
+     * @param nodeId The node to remove all configurations for.
+     */
+    void removeAllConfigurationsForNode(UUID nodeId);
 }
 
 

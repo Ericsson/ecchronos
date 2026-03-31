@@ -15,8 +15,10 @@
 package com.ericsson.bss.cassandra.ecchronos.core.impl.multithreads;
 
 import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.config.RepairConfiguration;
+import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.KeyspaceCreatedEvent;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.multithread.RepairEvent;
 import com.ericsson.bss.cassandra.ecchronos.core.repair.scheduler.RepairScheduler;
 import com.ericsson.bss.cassandra.ecchronos.core.table.ReplicatedTableProvider;
@@ -29,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -80,9 +83,37 @@ public class NodeWorkerManager
                         "Table reference factory must be set"),
                 myRepairConfigurationFunction,
                 myNativeConnectionProvider.getCqlSession());
-        LOG.debug("New worker created for Node {}", node.getHostId());
+        LOG.info("New worker created for Node {}", node.getHostId());
         myWorkers.put(node.getHostId(), worker);
+        int requiredPoolSize = myWorkers.size();
+        if (myThreadPool.getCorePoolSize() < requiredPoolSize)
+        {
+            LOG.info("Increasing thread pool core size from {} to {}",
+                    myThreadPool.getCorePoolSize(), requiredPoolSize);
+            myThreadPool.setCorePoolSize(requiredPoolSize);
+        }
         myThreadPool.submit(worker);
+        Set<KeyspaceCreatedEvent> events = createKeyspacesEventsForNewNode();
+        LOG.info("Created {} KeyspaceCreatedEvents for node {}", events.size(), node.getHostId());
+        events.forEach(event ->
+        {
+            LOG.info("Submitting KeyspaceCreatedEvent for keyspace '{}' to worker of node {}",
+                    event.keyspace().getName().asInternal(), node.getHostId());
+            myWorkers.get(node.getHostId()).submitEvent(event);
+        });
+    }
+
+    private Set<KeyspaceCreatedEvent> createKeyspacesEventsForNewNode()
+    {
+        Set<KeyspaceCreatedEvent> events = new HashSet<>();
+        Collection<KeyspaceMetadata> keyspaces = myNativeConnectionProvider.getCqlSession().getMetadata().getKeyspaces().values();
+        LOG.info("Found {} keyspaces in metadata for new node events", keyspaces.size());
+        keyspaces.forEach(ks ->
+        {
+            LOG.info("Creating KeyspaceCreatedEvent for keyspace '{}'", ks.getName().asInternal());
+            events.add(new KeyspaceCreatedEvent(ks));
+        });
+        return events;
     }
 
     public final synchronized void addNode(final Node node)
@@ -108,8 +139,9 @@ public class NodeWorkerManager
         {
             if (myWorkers.containsKey(node.getHostId()))
             {
-                NodeWorker nodeWorker = myWorkers.get(node.getHostId());
-                myWorkers.remove(node.getHostId());
+                LOG.info("Removing node {} and descheduling all its jobs", node.getHostId());
+                myRepairScheduler.removeAllConfigurationsForNode(node.getHostId());
+                NodeWorker nodeWorker = myWorkers.remove(node.getHostId());
                 myThreadPool.stop(nodeWorker);
             }
         }

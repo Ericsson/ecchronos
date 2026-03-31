@@ -16,7 +16,12 @@
 
 import pytest
 import logging
-from conftest import run_ecctool_state_nodes, assert_nodes_size_is_equal
+from conftest import (
+    run_ecctool_state_nodes,
+    run_ecctool_schedules,
+    assert_nodes_size_is_equal,
+    assert_schedules_size_is_equal,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +39,8 @@ def test_install_ecchronos(install_cassandra_cluster, test_environment):
     test_environment.wait_for_ecchronos_ready()
     out, _ = run_ecctool_state_nodes()
     assert_nodes_size_is_equal(out, 4)
+    out, _ = run_ecctool_schedules()
+    assert_schedules_size_is_equal(out, 42)
 
 
 @pytest.mark.dependency(name="test_add_node", depends=["test_install_ecchronos"])
@@ -43,6 +50,8 @@ def test_add_node(install_cassandra_cluster, test_environment):
     assert install_cassandra_cluster.verify_node_count(5)
     out, _ = run_ecctool_state_nodes()
     assert_nodes_size_is_equal(out, 5)
+    out, _ = run_ecctool_schedules()
+    assert_schedules_size_is_equal(out, 52)
 
 
 @pytest.mark.dependency(name="test_remove_node", depends=["test_add_node"])
@@ -52,3 +61,5 @@ def test_remove_node(install_cassandra_cluster, test_environment):
     assert install_cassandra_cluster.verify_node_count(4)
     out, _ = run_ecctool_state_nodes()
     assert_nodes_size_is_equal(out, 4)
+    out, _ = run_ecctool_schedules()
+    assert_schedules_size_is_equal(out, 42)

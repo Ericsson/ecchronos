@@ -328,6 +328,36 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         }
     }
 
+    @Override
+    public void removeAllConfigurationsForNode(final UUID nodeId)
+    {
+        myExecutor.execute(() -> nodeConfigurationRemoved(nodeId));
+    }
+
+    private void nodeConfigurationRemoved(final UUID nodeId)
+    {
+        synchronized (myLock)
+        {
+            try
+            {
+                Map<TableReference, Set<ScheduledRepairJob>> tableJobs = myScheduledJobs.remove(nodeId);
+                if (tableJobs == null)
+                {
+                    LOG.info("No scheduled jobs found for node {}", nodeId);
+                    return;
+                }
+                tableJobs.values().stream()
+                        .flatMap(Set::stream)
+                        .forEach(job -> descheduleTableJob(nodeId, job));
+                LOG.info("All scheduled jobs removed for node {}", nodeId);
+            }
+            catch (Exception e)
+            {
+                LOG.error("Unexpected error during schedule removal for node {}:", nodeId, e);
+            }
+        }
+    }
+
     private void descheduleTableJob(final UUID nodeID, final ScheduledJob job)
     {
         if (job != null)
