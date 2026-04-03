@@ -42,7 +42,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import com.ericsson.bss.cassandra.ecchronos.core.exceptions.LockException;
 
-@RunWith (MockitoJUnitRunner.Silent.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class TestScheduleManager
 {
     @Mock
@@ -149,7 +149,7 @@ public class TestScheduleManager
         assertThat(myScheduler.getQueueSize()).isEqualTo(1);
     }
 
-    @Test (timeout = 2000L)
+    @Test(timeout = 2000L)
     public void testRunningTwoJobsInParallelShouldFail() throws InterruptedException
     {
         CountDownLatch job1Latch = new CountDownLatch(1);
@@ -226,7 +226,7 @@ public class TestScheduleManager
         verify(myLockFactory, times(3)).tryLock(any(), anyString(), anyInt(), anyMap());
     }
 
-    @Test (timeout = 2000L)
+    @Test(timeout = 2000L)
     public void testDescheduleRunningJob() throws InterruptedException
     {
         CountDownLatch jobCdl = new CountDownLatch(1);
@@ -276,8 +276,6 @@ public class TestScheduleManager
                 jobId,
                 latch);
         myScheduler.schedule(testJob);
-        new Thread(() -> myScheduler.run()).start();
-        myScheduler.schedule(nodeID1, job1);
 
         // Deterministic: do NOT start the scheduler thread here.
         // This test asserts the idle-state contract (no running job => empty status),
@@ -285,9 +283,10 @@ public class TestScheduleManager
         assertThat(myScheduler.getCurrentJobStatus()).isEqualTo("");
         latch.countDown();
     }
+
     private void waitForJobStarted(TestJob job) throws InterruptedException
     {
-        while(!job.hasStarted())
+        while (!job.hasStarted())
         {
             Thread.sleep(10);
         }
@@ -295,7 +294,7 @@ public class TestScheduleManager
 
     private void waitForJobFinished(TestJob job) throws InterruptedException
     {
-        while(!job.hasRun())
+        while (!job.hasRun())
         {
             Thread.sleep(10);
         }
@@ -309,7 +308,6 @@ public class TestScheduleManager
         private final AtomicInteger taskRuns = new AtomicInteger();
         private final int numTasks;
         private final Runnable onCompletion;
-
 
         public TestJob(Priority priority, CountDownLatch cdl)
         {
@@ -399,23 +397,28 @@ public class TestScheduleManager
     public class TestScheduledJob extends ScheduledJob
     {
         private final CountDownLatch taskCompletionLatch;
+
         public TestScheduledJob(Configuration configuration, UUID id, CountDownLatch taskCompletionLatch)
         {
             super(configuration, id);
             this.taskCompletionLatch = taskCompletionLatch;
         }
+
         @Override
         public Iterator<ScheduledTask> iterator()
         {
-            return Collections.<ScheduledTask> singleton(new ControllableTask(taskCompletionLatch)).iterator();
+            return Collections.<ScheduledTask>singleton(new ControllableTask(taskCompletionLatch)).iterator();
         }
+
         class ControllableTask extends ScheduledTask
         {
             private final CountDownLatch latch;
+
             public ControllableTask(CountDownLatch latch)
             {
                 this.latch = latch;
             }
+
             @Override
             public boolean execute()
             {

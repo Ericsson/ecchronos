@@ -6,6 +6,7 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
@@ -16,7 +17,6 @@
 #
 
 import re
-import tempfile
 
 import yaml
 
@@ -26,31 +26,6 @@ import global_variables as global_vars
 class EcchronosConfig:
     def __init__(self, context):
         self.context = context
-    def __init__(
-        self,
-        datacenter_aware=None,
-        local_dc=global_vars.DC1,
-        agent_type=global_vars.DEFAULT_AGENT_TYPE,
-        initial_contact_point=global_vars.DEFAULT_INITIAL_CONTACT_POINT,
-        instance_name=global_vars.DEFAULT_INSTANCE_NAME,
-        schedule_interval_time=None,
-        schedule_interval_unit=None,
-        schedule_initial_delay_time=None,
-        schedule_initial_delay_unit=None,
-    ):
-        self.container_mounts = {}
-        self.datacenter_aware = (
-            [{"name": global_vars.DC1}, {"name": global_vars.DC2}] if datacenter_aware is None else datacenter_aware
-        )
-        self.local_dc = local_dc
-        self.agent_type = agent_type
-        self.initial_contact_point = initial_contact_point
-        self.instance_name = instance_name
-
-        self.schedule_interval_time = schedule_interval_time
-        self.schedule_interval_unit = schedule_interval_unit
-        self.schedule_initial_delay_time = schedule_initial_delay_time
-        self.schedule_initial_delay_unit = schedule_initial_delay_unit
 
     def modify_configuration(self):
         self._uncomment_head_options()
@@ -61,56 +36,6 @@ class EcchronosConfig:
         if self.context.local != "true":
             self._modify_security_configuration()
             self._modify_application_configuration()
-        self.container_mounts["certificates"] = {
-            "host": global_vars.CERTIFICATE_DIRECTORY,
-            "container": global_vars.CONTAINER_CERTIFICATE_PATH,
-        }
-
-        self.container_mounts["logs"] = {
-            "host": f"{global_vars.HOST_LOGS_PATH}/{self.instance_name}",
-            "container": global_vars.CONTAINER_LOGS_PATH,
-        }
-
-    def _modify_ecc_yaml_file(self):
-        data = self._read_yaml_data(global_vars.ECC_YAML_FILE_PATH)
-        data = self._modify_connection_configuration(data)
-        data = self._modify_scheduler_configuration(data)
-        data = self._modify_twcs_configuration(data)
-
-        if global_vars.JOLOKIA_ENABLED == "true":
-            data = self._modify_jolokia_configuration(data)
-
-        self.container_mounts["ecc"] = {
-            "host": self.write_tmp(data),
-            "container": global_vars.CONTAINER_ECC_YAML_PATH,
-        }
-
-    def _modify_connection_configuration(self, data):
-        data["connection"]["cql"]["contactPoints"] = [{"host": self.initial_contact_point, "port": 9042}]
-        data["connection"]["cql"]["datacenterAware"]["datacenters"] = self.datacenter_aware
-        data["connection"]["cql"]["instanceName"] = self.instance_name
-        data["connection"]["cql"]["localDatacenter"] = self.local_dc
-        return data
-
-    def _modify_scheduler_configuration(self, data):
-        return data
-
-    def _modify_twcs_configuration(self, data):
-        data["repair"]["ignore_twcs_tables"] = True
-        return data
-
-    def _modify_jolokia_configuration(self, data):
-        data["connection"]["jmx"]["jolokia"]["enabled"] = True
-        if global_vars.PEM_ENABLED == "true":
-            data["connection"]["jmx"]["jolokia"]["port"] = 8443
-            data["connection"]["jmx"]["jolokia"]["usePem"] = True
-        return data
-
-    def _modify_security_yaml_file(self):
-        data = self._read_yaml_data(global_vars.SECURITY_YAML_FILE_PATH)
-        if global_vars.LOCAL != "true":
-            data = self._modify_security_configuration(data)
->>>>>>> 8c6159a2 (test: only mount custom schedule config when overrides are requested)
         else:
             self._modify_cql_configuration()
 
@@ -173,13 +98,9 @@ class EcchronosConfig:
         self._modify_yaml_data(global_vars.SECURITY_YAML_FILE_PATH, data)
 
     def _modify_application_configuration(self):
-    def _modify_application_yaml_file(self):
         data = self._read_yaml_data(global_vars.APPLICATION_YAML_FILE_PATH)
 
-        if "server" not in data:
-            data["server"] = {}
-        if "ssl" not in data["server"]:
-            data["server"]["ssl"] = {}
+        data.setdefault("server", {}).setdefault("ssl", {})
 
         data["server"]["ssl"]["enabled"] = True
         data["server"]["ssl"]["key-store"] = f"{global_vars.CERTIFICATE_DIRECTORY}/serverkeystore"
@@ -189,6 +110,7 @@ class EcchronosConfig:
         data["server"]["ssl"]["trust-store"] = f"{global_vars.CERTIFICATE_DIRECTORY}/servertruststore"
         data["server"]["ssl"]["trust-store-password"] = "ecctest"
         data["server"]["ssl"]["client-auth"] = "need"
+
         self._modify_yaml_data(global_vars.APPLICATION_YAML_FILE_PATH, data)
 
     def _modify_spring_doc_configuration(self):
@@ -196,20 +118,6 @@ class EcchronosConfig:
         data["springdoc"]["api-docs"]["enabled"] = True
         data["springdoc"]["api-docs"]["show-actuator"] = True
         self._modify_yaml_data(global_vars.APPLICATION_YAML_FILE_PATH, data)
-        return data
-
-    def _uncomment_head_options(self):
-        pattern = re.compile(r"^#\s*(-X.*)")
-        with open(global_vars.JVM_OPTIONS_FILE_PATH, "r", encoding="utf-8") as file:
-            lines = file.readlines()
-
-        result = [pattern.match(line).group(1) + "\n" if pattern.match(line) else line for line in lines]
-
-        self.container_mounts["jvm"] = {
-            "host": self.write_tmp(result, ".options"),
-            "container": global_vars.CONTAINER_JVM_OPTION_PATH,
-        }
->>>>>>> 8c6159a2 (test: only mount custom schedule config when overrides are requested)
 
     def _modify_logback_configuration(self):
         with open(global_vars.LOGBACK_FILE_PATH, "r", encoding="utf-8") as file:
@@ -217,21 +125,23 @@ class EcchronosConfig:
 
         pattern = re.compile(r'^(\s*)(<appender-ref ref="STDOUT" />)\s*$')
 
-        with open(global_vars.LOGBACK_FILE_PATH, "w") as file:
+        with open(global_vars.LOGBACK_FILE_PATH, "w", encoding="utf-8") as file:
             for line in lines:
                 match = pattern.match(line)
                 if match:
                     indent = match.group(1)
                     content = match.group(2)
-                    new_line = f"{indent}<!-- {content} -->\n"
-                    file.write(new_line)
+                    file.write(f"{indent}<!-- {content} -->\n")
                 else:
                     file.write(line)
 
     def _modify_schedule_configuration(self):
         data = self._read_yaml_data(global_vars.SCHEDULE_YAML_FILE_PATH)
 
-        # Fix: preserve upstream/default schedule.yaml unless an explicit override is requested.
+        if data is None:
+            return
+
+        # Preserve upstream/default schedule.yaml unless an explicit override is requested.
         if getattr(self.context, "schedule_override", False):
             data["keyspaces"] = [
                 {
@@ -281,76 +191,9 @@ class EcchronosConfig:
         self._modify_yaml_data(global_vars.SCHEDULE_YAML_FILE_PATH, data)
 
     def _read_yaml_data(self, filename):
-        with open(filename, "r") as f:
-            data = yaml.safe_load(f)
-            return data
-
-    def _modify_yaml_data(self, filename, data):
-        with open(filename, "w") as file:
-            yaml.dump(data, file, sort_keys=False)
-=======
-        self.container_mounts["logback"] = {
-            "host": self.write_tmp(result, ".xml"),
-            "container": global_vars.CONTAINER_LOGBACK_FILE_PATH,
-        }
-
-    def _has_schedule_overrides(self):
-        return any(
-            value is not None
-            for value in (
-                self.schedule_interval_time,
-                self.schedule_interval_unit,
-                self.schedule_initial_delay_time,
-                self.schedule_initial_delay_unit,
-            )
-        )
-
-    def _modify_schedule_configuration(self):
-        data = self._read_yaml_data(global_vars.SCHEDULE_YAML_FILE_PATH)
-
-        if data is None:
-            data = {}
-
-        if self._has_schedule_overrides() and isinstance(data, dict):
-            for keyspace in data.get("keyspaces") or []:
-                if not isinstance(keyspace, dict):
-                    continue
-                if keyspace.get("name") != "test":
-                    continue
-
-                for table in keyspace.get("tables") or []:
-                    if not isinstance(table, dict):
-                        continue
-                    if table.get("name") != "table1":
-                        continue
-
-                    if self.schedule_interval_time is not None:
-                        table.setdefault("interval", {})["time"] = self.schedule_interval_time
-                    if self.schedule_interval_unit is not None:
-                        table.setdefault("interval", {})["unit"] = self.schedule_interval_unit
-
-                    if self.schedule_initial_delay_time is not None:
-                        table.setdefault("initial_delay", {})["time"] = self.schedule_initial_delay_time
-                    if self.schedule_initial_delay_unit is not None:
-                        table.setdefault("initial_delay", {})["unit"] = self.schedule_initial_delay_unit
-
-                    break
-
-        self.container_mounts["schedule"] = {
-            "host": self.write_tmp(data),
-            "container": global_vars.CONTAINER_SCHEDULE_YAML_PATH,
-        }
-
-    def _read_yaml_data(self, filename):
         with open(filename, "r", encoding="utf-8") as file:
             return yaml.safe_load(file)
 
-    def write_tmp(self, data, suffix=".yaml") -> str:
-        tmp = tempfile.NamedTemporaryFile(mode="w", suffix=suffix, delete=False, encoding="utf-8")
-        if suffix == ".yaml":
-            yaml.safe_dump(data, tmp)
-        else:
-            tmp.writelines(data)
-        tmp.close()
-        return tmp.name
->>>>>>> 8c6159a2 (test: only mount custom schedule config when overrides are requested)
+    def _modify_yaml_data(self, filename, data):
+        with open(filename, "w", encoding="utf-8") as file:
+            yaml.dump(data, file, sort_keys=False)
