@@ -226,7 +226,7 @@ class EcchronosConfig:
         data = self._read_yaml_data(global_vars.SCHEDULE_YAML_FILE_PATH)
 
         if data is None:
-            data = {}
+            return
 
         if self._has_schedule_overrides() and isinstance(data, dict):
             for keyspace in data.get("keyspaces") or []:
