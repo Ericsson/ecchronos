@@ -30,7 +30,6 @@ class EcchronosConfig:
         agent_type=global_vars.DEFAULT_AGENT_TYPE,
         initial_contact_point=global_vars.DEFAULT_INITIAL_CONTACT_POINT,
         instance_name=global_vars.DEFAULT_INSTANCE_NAME,
-        # NEW: schedule knobs (OPT-IN only)
         schedule_interval_time=None,
         schedule_interval_unit=None,
         schedule_initial_delay_time=None,
@@ -45,7 +44,6 @@ class EcchronosConfig:
         self.initial_contact_point = initial_contact_point
         self.instance_name = instance_name
 
-        # Optional overrides (None = do not modify schedule)
         self.schedule_interval_time = schedule_interval_time
         self.schedule_interval_unit = schedule_interval_unit
         self.schedule_initial_delay_time = schedule_initial_delay_time
@@ -64,15 +62,11 @@ class EcchronosConfig:
             "container": global_vars.CONTAINER_CERTIFICATE_PATH,
         }
 
-        # Per-instance logs (multi-agent safe)
         self.container_mounts["logs"] = {
             "host": f"{global_vars.HOST_LOGS_PATH}/{self.instance_name}",
             "container": global_vars.CONTAINER_LOGS_PATH,
         }
 
-    # --------------------------------------------------
-    # ECC YAML
-    # --------------------------------------------------
     def _modify_ecc_yaml_file(self):
         data = self._read_yaml_data(global_vars.ECC_YAML_FILE_PATH)
         data = self._modify_connection_configuration(data)
@@ -95,7 +89,6 @@ class EcchronosConfig:
         return data
 
     def _modify_scheduler_configuration(self, data):
-        #
         return data
 
     def _modify_twcs_configuration(self, data):
@@ -109,9 +102,6 @@ class EcchronosConfig:
             data["connection"]["jmx"]["jolokia"]["usePem"] = True
         return data
 
-    # --------------------------------------------------
-    # SECURITY YAML
-    # --------------------------------------------------
     def _modify_security_yaml_file(self):
         data = self._read_yaml_data(global_vars.SECURITY_YAML_FILE_PATH)
         if global_vars.LOCAL != "true":
@@ -160,9 +150,6 @@ class EcchronosConfig:
         data["cql"]["credentials"]["password"] = "cassandra"
         return data
 
-    # --------------------------------------------------
-    # APPLICATION YAML
-    # --------------------------------------------------
     def _modify_application_yaml_file(self):
         data = self._read_yaml_data(global_vars.APPLICATION_YAML_FILE_PATH)
         if global_vars.LOCAL != "true":
@@ -193,9 +180,6 @@ class EcchronosConfig:
         data["springdoc"]["api-docs"]["show-actuator"] = True
         return data
 
-    # --------------------------------------------------
-    # JVM / LOGGING
-    # --------------------------------------------------
     def _uncomment_head_options(self):
         pattern = re.compile(r"^#\s*(-X.*)")
         with open(global_vars.JVM_OPTIONS_FILE_PATH, "r", encoding="utf-8") as file:
@@ -227,9 +211,6 @@ class EcchronosConfig:
             "container": global_vars.CONTAINER_LOGBACK_FILE_PATH,
         }
 
-    # --------------------------------------------------
-    # SAFE SCHEDULE PATCH (non-global)
-    # --------------------------------------------------
     def _has_schedule_overrides(self):
         return any(
             value is not None
@@ -242,18 +223,12 @@ class EcchronosConfig:
         )
 
     def _modify_schedule_configuration(self):
-        # Leave the upstream schedule.yaml untouched unless this instance
-        # explicitly requests schedule overrides.
-        if not self._has_schedule_overrides():
-            return
-
         data = self._read_yaml_data(global_vars.SCHEDULE_YAML_FILE_PATH)
 
-        # safe_load may return None for an empty file
         if data is None:
             data = {}
 
-        if isinstance(data, dict):
+        if self._has_schedule_overrides() and isinstance(data, dict):
             for keyspace in data.get("keyspaces") or []:
                 if not isinstance(keyspace, dict):
                     continue
@@ -266,8 +241,6 @@ class EcchronosConfig:
                     if table.get("name") != "table1":
                         continue
 
-                    # Only patch timing-related schedule fields.
-                    # Do not touch repair type or unrelated schedule entries.
                     if self.schedule_interval_time is not None:
                         table.setdefault("interval", {})["time"] = self.schedule_interval_time
                     if self.schedule_interval_unit is not None:
@@ -285,7 +258,6 @@ class EcchronosConfig:
             "container": global_vars.CONTAINER_SCHEDULE_YAML_PATH,
         }
 
-    # --------------------------------------------------
     def _read_yaml_data(self, filename):
         with open(filename, "r", encoding="utf-8") as file:
             return yaml.safe_load(file)
