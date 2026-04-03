@@ -72,7 +72,7 @@ class EcchronosConfig:
         return data
 
     def _modify_scheduler_configuration(self, data):
-        # 
+        #
         return data
 
     def _modify_twcs_configuration(self, data):
