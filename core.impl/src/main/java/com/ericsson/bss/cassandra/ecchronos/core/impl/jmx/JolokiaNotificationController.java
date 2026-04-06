@@ -54,6 +54,9 @@ public class JolokiaNotificationController
     private static final int SHUTDOWN_TIMEOUT_SECONDS = 1;
     private static final int HTTP_TIMEOUT_SECONDS = 5;
     private static final int HTTP_REQUEST_TIMEOUT_SECONDS = 10;
+    private static final int MAX_RETRIES = 3;
+    private static final long INITIAL_RETRY_DELAY_IN_MS = 500;
+    private static final int MAX_CONSECUTIVE_FAILURES = 5;
     private static final String CLIENT_ID_PROPERTY = "clientID";
     private static final String SS_OBJ_NAME = "org.apache.cassandra.db:type=StorageService";
     public static final String NO_BROADCAST_ADDRESS = "0.0.0.0"; //NOPMD AvoidUsingHardCodedIP
@@ -154,6 +157,7 @@ public class JolokiaNotificationController
         private final UUID myNodeID;
         private final String myNotificationID;
         private final Set<Integer> notificationController = new HashSet<>();
+        private int consecutiveFailures = 0;
 
         private NotificationRunTask(final UUID nodeID, final String notificationID)
         {
@@ -166,7 +170,7 @@ public class JolokiaNotificationController
         {
             try
             {
-                String response = checkForNotifications(myNodeID, myNotificationID);
+                String response = checkForNotificationsWithRetry(myNodeID, myNotificationID);
                 NotificationListenerResponse notificationListenerResponse = objectMapper.readValue(response,
                         NotificationListenerResponse.class);
 
@@ -180,11 +184,44 @@ public class JolokiaNotificationController
                         createNotification(notificationObj);
                     }
                 }
-
+                consecutiveFailures = 0;
             }
             catch (Exception e)
             {
-                LOG.error("Error monitoring notifications for node {} and notificationID {}: {}", myNodeID, myNotificationID, e.getMessage());
+                consecutiveFailures++;
+                if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES)
+                {
+                    LOG.error("Notification check failed {} consecutive times for node {} and notificationID {}. "
+                            + "Signaling connection failure.", consecutiveFailures, myNodeID, myNotificationID);
+                    signalConnectionFailure();
+                }
+                else
+                {
+                    LOG.warn("Transient notification check failure ({}/{}) for node {} and notificationID {}: {}",
+                            consecutiveFailures, MAX_CONSECUTIVE_FAILURES, myNodeID, myNotificationID, e.getMessage());
+                }
+            }
+        }
+
+        private void signalConnectionFailure()
+        {
+            synchronized (myNodeListenersMap)
+            {
+                Map<String, NotificationListener> nodeListeners = myNodeListenersMap.get(myNodeID);
+                if (nodeListeners != null)
+                {
+                    NotificationListener listener = nodeListeners.get(myNotificationID);
+                    if (listener != null)
+                    {
+                        Notification failNotification = new Notification(
+                                "jmx.remote.connection.failed",
+                                "JolokiaNotificationController",
+                                System.currentTimeMillis(),
+                                "Jolokia communication failed after " + MAX_CONSECUTIVE_FAILURES + " consecutive attempts"
+                        );
+                        listener.handleNotification(failNotification, null);
+                    }
+                }
             }
         }
 
@@ -358,37 +395,66 @@ public class JolokiaNotificationController
         return myURLPrefix + "://" + host + ":" + myJolokiaPort + "/jolokia";
     }
 
-    private String checkForNotifications(final UUID nodeID, final String notificationID)
+    private String checkForNotificationsWithRetry(final UUID nodeID, final String notificationID)
+            throws IOException, InterruptedException
     {
-        try
+        IOException lastException = null;
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++)
         {
-            synchronized (myClientIdMap)
+            try
             {
-                Map<String, String> clientInfo = myClientIdMap.get(nodeID);
-                if (clientInfo == null)
+                return checkForNotifications(nodeID, notificationID);
+            }
+            catch (IOException e)
+            {
+                lastException = e;
+                LOG.debug("Notification check attempt {}/{} failed for node {}: {}",
+                        attempt, MAX_RETRIES, nodeID, e.getMessage());
+                if (attempt < MAX_RETRIES)
                 {
-                    LOG.debug("No client info found for node {}, skipping notification check", nodeID);
-                    return "{}";
+                    long delay = INITIAL_RETRY_DELAY_IN_MS * (1L << (attempt - 1));
+                    Thread.sleep(delay);
                 }
-
-                String url = mountJolokiaBaseURL(nodeID) + "/exec/" + clientInfo.get("store") + "/pull/"
-                    + clientInfo.get(CLIENT_ID_PROPERTY) + "/" + notificationID;
-
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(url))
-                        .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
-                        .GET()
-                        .build();
-
-                HttpResponse<String> response = buildHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-                return decodeHtmlEntities(response.body());
             }
         }
-        catch (Exception e)
+        // All retries failed — attempt to re-register client and try once more
+        LOG.debug("All {} retries failed for node {}, attempting client re-registration", MAX_RETRIES, nodeID);
+        try
         {
-            LOG.warn("Error checking notifications for node {} and notificationID {}: {}", nodeID, notificationID, e.getMessage());
+            registerClientId(nodeID);
+            return checkForNotifications(nodeID, notificationID);
         }
-        return "{}";
+        catch (IOException e)
+        {
+            LOG.warn("Re-registration attempt also failed for node {}: {}", nodeID, e.getMessage());
+        }
+        throw lastException;
+    }
+
+    private String checkForNotifications(final UUID nodeID, final String notificationID)
+            throws IOException, InterruptedException
+    {
+        synchronized (myClientIdMap)
+        {
+            Map<String, String> clientInfo = myClientIdMap.get(nodeID);
+            if (clientInfo == null)
+            {
+                LOG.debug("No client info found for node {}, skipping notification check", nodeID);
+                return "{}";
+            }
+
+            String url = mountJolokiaBaseURL(nodeID) + "/exec/" + clientInfo.get("store") + "/pull/"
+                + clientInfo.get(CLIENT_ID_PROPERTY) + "/" + notificationID;
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(java.time.Duration.ofSeconds(HTTP_REQUEST_TIMEOUT_SECONDS))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = buildHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+            return decodeHtmlEntities(response.body());
+        }
     }
 
     private String decodeHtmlEntities(final String input)

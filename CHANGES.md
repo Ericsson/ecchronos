@@ -2,6 +2,8 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Intermittent Jolokia Communication Failures Cause Ecchronos to Incorrectly Mark Repairs as Failed - Issue #1473
+
 ## Version 1.0.0-beta4
 
 * Repair schedules not updated when cluster topology changes (scale-out/scale-in) - Issue #1460
