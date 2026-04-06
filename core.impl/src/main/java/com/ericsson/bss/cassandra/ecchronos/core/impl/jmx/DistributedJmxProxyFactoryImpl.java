@@ -177,7 +177,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
             UUID nodeIdConnection = nodeID;
             if (!myNodesMap.containsKey(nodeID))
             {
-                LOG.info("Node {} is not managed by local instance, using random connection to get live nodes", nodeID);
+                LOG.debug("Node {} is not managed by local instance, using random connection to get live nodes", nodeID);
                 nodeIdConnection = myDistributedJmxConnectionProvider.getJmxConnections().keySet().stream().findFirst().get();
                 nodeConnection = myDistributedJmxConnectionProvider.getJmxConnector(nodeIdConnection);
             }
@@ -220,7 +220,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
             UUID nodeIdConnection = nodeID;
             if (!myNodesMap.containsKey(nodeID))
             {
-                LOG.info("Node {} is not managed by local instance, using random connection to get unreachable nodes", nodeID);
+                LOG.debug("Node {} is not managed by local instance, using random connection to get unreachable nodes", nodeID);
                 nodeIdConnection = myDistributedJmxConnectionProvider.getJmxConnections().keySet().stream().findFirst().get();
                 nodeConnection = myDistributedJmxConnectionProvider.getJmxConnector(nodeIdConnection);
             }

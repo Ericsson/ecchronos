@@ -2,6 +2,8 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Reduce log noise: downgrade "Node not managed by local instance" messages from INFO to DEBUG - Issue #1469
+
 ## Version 1.0.0-beta4
 
 * Repair schedules not updated when cluster topology changes (scale-out/scale-in) - Issue #1460
