@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Intermittent Jolokia Communication Failures Cause Ecchronos to Incorrectly Mark Repairs as Failed - Issue #1473
 * Reduce log noise: downgrade "Node not managed by local instance" messages from INFO to DEBUG - Issue #1469
 
 ## Version 1.0.0-beta4
