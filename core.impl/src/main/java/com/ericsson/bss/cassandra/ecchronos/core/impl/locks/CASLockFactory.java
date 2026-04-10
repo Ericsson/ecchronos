@@ -26,6 +26,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.ericsson.bss.cassandra.ecchronos.connection.DistributedNativeConnectionProvider;
 import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory;
 import com.ericsson.bss.cassandra.ecchronos.core.state.HostStates;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockContentionException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -88,10 +89,12 @@ public final class CASLockFactory implements LockFactory, Closeable
 
     CASLockFactory(final CASLockFactoryBuilder builder)
     {
+        Map<UUID, Node> nodes = builder.getNativeConnectionProvider().getNodes();
+        int nodeCount = nodes != null ? Math.max(1, nodes.size()) : 1;
         myCasLockProperties = new CASLockProperties(
                 builder.getNativeConnectionProvider().getConnectionType(),
                 builder.getKeyspaceName(),
-                Executors.newSingleThreadScheduledExecutor(
+                Executors.newScheduledThreadPool(nodeCount,
                         new ThreadFactoryBuilder().setNameFormat("LockRefresher-%d").build()),
                 builder.getConsistencyType(),
                 builder.getNativeConnectionProvider().getCqlSession());
@@ -293,7 +296,7 @@ public final class CASLockFactory implements LockFactory, Closeable
         }
         else
         {
-            throw new LockException(String.format("Unable to lock resource %s in datacenter %s", resource, dataCenter));
+            throw new LockContentionException(String.format("Unable to lock resource %s in datacenter %s", resource, dataCenter));
         }
     }
 

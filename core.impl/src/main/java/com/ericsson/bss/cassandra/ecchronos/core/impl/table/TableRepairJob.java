@@ -130,10 +130,16 @@ public class TableRepairJob extends ScheduledRepairJob
 
         if (msSinceLastRepair >= config.getRepairErrorTimeInMs())
         {
+            LOG.warn("[DIAG] {} on node {} is OVERDUE. Last repaired {}ms ago (error threshold: {}ms, interval: {}ms)",
+                    getTableReference(), getNodeId(), msSinceLastRepair,
+                    config.getRepairErrorTimeInMs(), config.getRepairIntervalInMs());
             return ScheduledRepairJobView.Status.OVERDUE;
         }
         if (msSinceLastRepair >= config.getRepairWarningTimeInMs())
         {
+            LOG.warn("[DIAG] {} on node {} is LATE. Last repaired {}ms ago (warn threshold: {}ms, interval: {}ms)",
+                    getTableReference(), getNodeId(), msSinceLastRepair,
+                    config.getRepairWarningTimeInMs(), config.getRepairIntervalInMs());
             return ScheduledRepairJobView.Status.LATE;
         }
         if (msSinceLastRepair >= (config.getRepairIntervalInMs() - getRunOffset()))

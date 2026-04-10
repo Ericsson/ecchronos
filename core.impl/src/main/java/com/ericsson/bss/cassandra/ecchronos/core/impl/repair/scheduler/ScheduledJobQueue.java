@@ -119,12 +119,16 @@ public class ScheduledJobQueue implements Iterable<ScheduledJob>
     }
 
     @Override
-    public final synchronized Iterator<ScheduledJob> iterator()
+    public final Iterator<ScheduledJob> iterator()
     {
-        myJobQueues.values().forEach(q -> q.forEach(ScheduledJob::refreshState));
-        Iterator<ScheduledJob> baseIterator = new ManyToOneIterator<>(myJobQueues.values(), myComparator);
-
-        return new RunnableJobIterator(baseIterator);
+        myJobQueues.values().parallelStream()
+            .flatMap(q -> q.stream())
+            .forEach(ScheduledJob::refreshState);
+        synchronized (this)
+        {
+            Iterator<ScheduledJob> baseIterator = new ManyToOneIterator<>(myJobQueues.values(), myComparator);
+            return new RunnableJobIterator(baseIterator);
+        }
     }
 
     private class RunnableJobIterator extends AbstractIterator<ScheduledJob>

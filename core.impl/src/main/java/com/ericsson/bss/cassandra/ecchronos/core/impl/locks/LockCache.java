@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.impl.locks;
 
 import com.ericsson.bss.cassandra.ecchronos.core.locks.LockFactory.DistributedLock;
+import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockContentionException;
 import com.ericsson.bss.cassandra.ecchronos.utils.exceptions.LockException;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -76,6 +77,10 @@ public final class LockCache
         {
             return myLockSupplier.getLock(dataCenter, resource, priority, metadata);
         }
+        catch (LockContentionException e)
+        {
+            throw e;
+        }
         catch (LockException e)
         {
             myFailureCache.put(lockKey, e);
@@ -85,7 +90,7 @@ public final class LockCache
 
     private void throwCachedLockException(final LockException e) throws LockException
     {
-        LOG.debug("Encountered cached locking failure, throwing exception", e);
+        LOG.info("[DIAG] Lock blocked by cached failure: {}", e.getMessage());
         throw e;
     }
 

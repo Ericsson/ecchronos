@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
@@ -53,7 +53,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
     private final Map<UUID, ScheduledJobQueue> myQueue = new ConcurrentHashMap<>();
     private final Collection<UUID> myNodeIDList;
-    private final AtomicReference<ScheduledJob> currentExecutingJob = new AtomicReference<>();
+    private final Map<UUID, ScheduledJob> currentExecutingJobs = new ConcurrentHashMap<>();
     private final Set<RunPolicy> myRunPolicies = Sets.newConcurrentHashSet();
     private final Map<UUID, ScheduledFuture<?>> myRunFuture = new ConcurrentHashMap<>();
     private final Map<UUID, JobRunTask> myRunTasks = new ConcurrentHashMap<>();
@@ -127,15 +127,9 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     @Override
     public String getCurrentJobStatus()
     {
-        ScheduledJob job = currentExecutingJob.get();
-        if (job != null)
-        {
-            return job.getJobId().toString();
-        }
-        else
-        {
-            return "";
-        }
+        return currentExecutingJobs.entrySet().stream()
+                .map(e -> e.getKey() + "=" + e.getValue().getJobId())
+                .collect(Collectors.joining("\n"));
     }
 
     /**
@@ -272,19 +266,36 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
         private void tryRunNext()
         {
-            LOG.debug("Looking for Job for Node {}", nodeID);
+            long cycleStart = System.currentTimeMillis();
+            int jobsEvaluated = 0;
+            int jobsValidated = 0;
+            int jobsRejectedByPolicy = 0;
+            boolean jobRan = false;
+            LOG.info("[DIAG] Node {} - Starting scheduler cycle, queue size: {}",
+                    nodeID, myQueue.get(nodeID).size());
             for (ScheduledJob next : myQueue.get(nodeID))
             {
+                jobsEvaluated++;
                 if (validate(next))
                 {
-                    currentExecutingJob.set(next);
+                    jobsValidated++;
+                    currentExecutingJobs.put(nodeID, next);
                     if (tryRunTasks(next))
                     {
+                        jobRan = true;
                         break;
                     }
                 }
+                else
+                {
+                    jobsRejectedByPolicy++;
+                }
             }
-            currentExecutingJob.set(null);
+            long cycleDuration = System.currentTimeMillis() - cycleStart;
+            LOG.info("[DIAG] Node {} - Cycle completed in {}ms. Jobs evaluated: {}, validated: {},"
+                    + " rejected by policy: {}, ran: {}",
+                    nodeID, cycleDuration, jobsEvaluated, jobsValidated, jobsRejectedByPolicy, jobRan);
+            currentExecutingJobs.remove(nodeID);
         }
 
         private boolean validate(final ScheduledJob job)
@@ -305,16 +316,36 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 final ScheduledJob next)
         {
             boolean hasRun = false;
+            int taskCount = 0;
+            int taskSuccess = 0;
+            int taskLockFailed = 0;
+            long jobStart = System.currentTimeMillis();
+            LOG.info("[DIAG] Node {} - Starting tasks for job {} (priority: {})",
+                    nodeID, next, next.getRealPriority());
 
             for (ScheduledTask task : next)
             {
+                taskCount++;
                 if (!validate(next))
                 {
-                    LOG.debug("Job {} was stopped, will continue later", next);
+                    LOG.info("[DIAG] Node {} - Job {} stopped by policy after {} tasks",
+                            nodeID, next, taskCount);
                     break;
                 }
-                hasRun |= tryRunTask(next, task);
+                boolean taskRan = tryRunTask(next, task);
+                if (taskRan)
+                {
+                    taskSuccess++;
+                }
+                else
+                {
+                    taskLockFailed++;
+                }
+                hasRun |= taskRan;
             }
+            long jobDuration = System.currentTimeMillis() - jobStart;
+            LOG.info("[DIAG] Node {} - Job {} finished in {}ms. Tasks: {}, success: {}, lock failed: {}",
+                    nodeID, next, jobDuration, taskCount, taskSuccess, taskLockFailed);
 
             return hasRun;
         }
@@ -323,36 +354,41 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
                 final ScheduledJob job,
                 final ScheduledTask task)
         {
-            LOG.debug("Trying to run task {} in node {}", task, nodeID);
-            LOG.debug("Trying to acquire lock for {}", task);
+            long lockStart = System.currentTimeMillis();
             try (LockFactory.DistributedLock lock = task.getLock(myLockFactory, nodeID))
             {
-                LOG.debug("Lock has been acquired on node with Id {} with lock {}", nodeID, lock);
+                long lockTime = System.currentTimeMillis() - lockStart;
+                LOG.info("[DIAG] Node {} - Lock acquired for {} in {}ms", nodeID, task, lockTime);
+                long taskStart = System.currentTimeMillis();
                 boolean successful = runTask(task);
+                long taskDuration = System.currentTimeMillis() - taskStart;
+                LOG.info("[DIAG] Node {} - Task {} executed in {}ms, successful: {}",
+                        nodeID, task, taskDuration, successful);
                 job.postExecute(successful, task);
                 return true;
             }
             catch (RuntimeMBeanException e)
             {
+                long lockTime = System.currentTimeMillis() - lockStart;
                 if (e.getCause() instanceof IllegalStateException
                         && e.getCause().getMessage() != null
                         && e.getCause().getMessage().contains("More than one key found"))
                 {
-                    LOG.debug("Unable to get schedule lock on task {} in node {}, this is probably due to "
-                            + "a connection to a version of the Jolokia Agent 2.3.0 or older", task, nodeID, e);
+                    LOG.info("[DIAG] Node {} - Lock failed for {} in {}ms (Jolokia compat issue)",
+                            nodeID, task, lockTime);
                 }
                 else
                 {
-                    LOG.warn("Unable to get schedule lock on task {} in node {}", task, nodeID, e);
+                    LOG.warn("[DIAG] Node {} - Lock failed for {} in {}ms: {}",
+                            nodeID, task, lockTime, e.getMessage());
                 }
                 return false;
             }
             catch (Exception e)
             {
-                if (e.getCause() != null)
-                {
-                    LOG.warn("Unable to get schedule lock on task {} in node {}", task, nodeID, e);
-                }
+                long lockTime = System.currentTimeMillis() - lockStart;
+                LOG.warn("[DIAG] Node {} - Lock failed for {} in {}ms: {}",
+                        nodeID, task, lockTime, e.getMessage());
                 return false;
             }
         }
