@@ -66,7 +66,10 @@ public abstract class ScheduledJob implements Iterable<ScheduledTask>
         if (successful)
         {
             myLastSuccessfulRun = System.currentTimeMillis();
-            myNextRunTime = -1;
+
+            // Fix: do not make the job immediately runnable again after a successful execution.
+            // Respect the configured run interval before the next run.
+            myNextRunTime = myLastSuccessfulRun + myRunIntervalInMs;
         }
         else
         {
