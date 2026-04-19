@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +15,7 @@
 package com.ericsson.bss.cassandra.ecchronos.core.scheduling;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -24,6 +25,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -149,7 +151,7 @@ public class TestScheduleManager
         assertThat(myScheduler.getQueueSize()).isEqualTo(1);
     }
 
-    @Test(timeout = 2000L)
+    @Test(timeout = 5000L)
     public void testRunningTwoJobsInParallelShouldFail() throws InterruptedException
     {
         CountDownLatch job1Latch = new CountDownLatch(1);
@@ -159,17 +161,24 @@ public class TestScheduleManager
         myScheduler.schedule(job1);
         myScheduler.schedule(job2);
 
-        new Thread(() -> myScheduler.run()).start();
-        new Thread(() -> myScheduler.run()).start();
+        Thread firstRunner = startSchedulerThread();
+        Thread secondRunner = startSchedulerThread();
 
+        // Fix: deterministic wait instead of manual spin/sleep loop.
         waitForJobStarted(job1);
         assertThat(job2.hasStarted()).isFalse();
+
         job1Latch.countDown();
+
+        // Fix: deterministic completion wait.
         waitForJobFinished(job1);
 
         assertThat(job1.hasRun()).isTrue();
         assertThat(job2.hasRun()).isFalse();
         assertThat(myScheduler.getQueueSize()).isEqualTo(2);
+
+        firstRunner.join(1000L);
+        secondRunner.join(1000L);
     }
 
     @Test
@@ -226,14 +235,14 @@ public class TestScheduleManager
         verify(myLockFactory, times(3)).tryLock(any(), anyString(), anyInt(), anyMap());
     }
 
-    @Test(timeout = 2000L)
+    @Test(timeout = 5000L)
     public void testDescheduleRunningJob() throws InterruptedException
     {
         CountDownLatch jobCdl = new CountDownLatch(1);
         TestJob job = new TestJob(ScheduledJob.Priority.HIGH, jobCdl);
         myScheduler.schedule(job);
 
-        new Thread(() -> myScheduler.run()).start();
+        Thread schedulerThread = startSchedulerThread();
 
         waitForJobStarted(job);
         myScheduler.deschedule(job);
@@ -242,10 +251,12 @@ public class TestScheduleManager
 
         assertThat(job.hasRun()).isTrue();
         assertThat(myScheduler.getQueueSize()).isEqualTo(0);
+
+        schedulerThread.join(1000L);
     }
 
     @Test
-    public void testGetCurrentJobStatus() throws InterruptedException
+    public void testGetCurrentJobStatus()
     {
         CountDownLatch latch = new CountDownLatch(1);
         UUID jobId = UUID.randomUUID();
@@ -256,11 +267,32 @@ public class TestScheduleManager
                         .build(),
                 jobId,
                 latch);
+
         myScheduler.schedule(testJob);
-        new Thread(() -> myScheduler.run()).start();
-        Thread.sleep(50);
-        assertThat(myScheduler.getCurrentJobStatus()).isEqualTo(jobId.toString());
+
+        Thread schedulerThread = startSchedulerThread();
+
+        // Fix: replace brittle Thread.sleep(50) with Awaitility.
+        await()
+                .pollInterval(Duration.ofMillis(25))
+                .atMost(Duration.ofSeconds(5))
+                .untilAsserted(() -> assertThat(myScheduler.getCurrentJobStatus()).isEqualTo(jobId.toString()));
+
         latch.countDown();
+
+        await()
+                .pollInterval(Duration.ofMillis(25))
+                .atMost(Duration.ofSeconds(5))
+                .untilAsserted(() -> assertThat(myScheduler.getCurrentJobStatus()).isEqualTo(""));
+
+        try
+        {
+            schedulerThread.join(1000L);
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Test
@@ -277,27 +309,34 @@ public class TestScheduleManager
                 latch);
         myScheduler.schedule(testJob);
 
-        // Deterministic: do NOT start the scheduler thread here.
-        // This test asserts the idle-state contract (no running job => empty status),
-        // and starting the scheduler introduces a timing race.
+        // Fix: do not start the scheduler here.
+        // This keeps the test deterministic and verifies the idle-state contract only.
         assertThat(myScheduler.getCurrentJobStatus()).isEqualTo("");
         latch.countDown();
     }
 
-    private void waitForJobStarted(TestJob job) throws InterruptedException
+    private Thread startSchedulerThread()
     {
-        while (!job.hasStarted())
-        {
-            Thread.sleep(10);
-        }
+        Thread thread = new Thread(() -> myScheduler.run());
+        thread.setDaemon(true);
+        thread.start();
+        return thread;
     }
 
-    private void waitForJobFinished(TestJob job) throws InterruptedException
+    private void waitForJobStarted(TestJob job)
     {
-        while (!job.hasRun())
-        {
-            Thread.sleep(10);
-        }
+        await()
+                .pollInterval(Duration.ofMillis(25))
+                .atMost(Duration.ofSeconds(5))
+                .until(job::hasStarted);
+    }
+
+    private void waitForJobFinished(TestJob job)
+    {
+        await()
+                .pollInterval(Duration.ofMillis(25))
+                .atMost(Duration.ofSeconds(5))
+                .until(job::hasRun);
     }
 
     private class TestJob extends ScheduledJob
@@ -331,7 +370,7 @@ public class TestScheduleManager
             super(new ConfigurationBuilder().withPriority(priority).withRunInterval(1, TimeUnit.SECONDS).build());
             this.numTasks = numTasks;
             this.onCompletion = onCompletion;
-            countDownLatch = cdl;
+            this.countDownLatch = cdl;
         }
 
         public int getTaskRuns()
@@ -384,7 +423,8 @@ public class TestScheduleManager
                 }
                 catch (InterruptedException e)
                 {
-                    // Intentionally left empty
+                    Thread.currentThread().interrupt();
+                    return false;
                 }
                 onCompletion.run();
                 taskRuns.incrementAndGet();

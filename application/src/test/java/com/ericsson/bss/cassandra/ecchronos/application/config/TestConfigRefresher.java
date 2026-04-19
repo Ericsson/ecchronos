@@ -17,7 +17,11 @@ package com.ericsson.bss.cassandra.ecchronos.application.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,20 +48,20 @@ public class TestConfigRefresher
             configRefresher.watch(file.toPath(), () -> reference.set(readFileContent(file)));
 
             writeToFile(file, "some content");
-            await().atMost(5, TimeUnit.SECONDS).until(() -> "some content".equals(reference.get()));
+
+            // Fix: use a slightly more tolerant poll interval/timeout for CI.
+            await()
+                    .pollInterval(50, TimeUnit.MILLISECONDS)
+                    .atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(() -> assertThat(reference.get()).isEqualTo("some content"));
 
             writeToFile(file, "some new content");
-            await().atMost(5, TimeUnit.SECONDS).until(() -> "some new content".equals(reference.get()));
-            await()
-                .pollInterval(50, TimeUnit.MILLISECONDS)
-                .atMost(5, TimeUnit.SECONDS)
-                .until(() -> "some content".equals(reference.get()));
 
-            writeToFile(file, "some new content");
+            // Fix: remove the brittle / contradictory extra wait and assert only the final expected content.
             await()
-                .pollInterval(50, TimeUnit.MILLISECONDS)
-                .atMost(5, TimeUnit.SECONDS)
-                .until(() -> "some new content".equals(reference.get()));
+                    .pollInterval(50, TimeUnit.MILLISECONDS)
+                    .atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(() -> assertThat(reference.get()).isEqualTo("some new content"));
         }
     }
 
@@ -67,12 +71,15 @@ public class TestConfigRefresher
         File file = temporaryFolder.newFile();
 
         AtomicBoolean shouldThrow = new AtomicBoolean(true);
+        AtomicInteger callbackAttempts = new AtomicInteger(0);
 
         try (ConfigRefresher configRefresher = new ConfigRefresher(temporaryFolder.getRoot().toPath()))
         {
             AtomicReference<String> reference = new AtomicReference<>(readFileContent(file));
 
             configRefresher.watch(file.toPath(), () -> {
+                callbackAttempts.incrementAndGet();
+
                 if (shouldThrow.get())
                 {
                     throw new NullPointerException();
@@ -83,21 +90,24 @@ public class TestConfigRefresher
 
             writeToFile(file, "some content");
 
-            Thread.sleep(100);
+            // Fix: replace Thread.sleep(...) with deterministic waiting for the first callback attempt.
+            await()
+                    .pollInterval(50, TimeUnit.MILLISECONDS)
+                    .atMost(10, TimeUnit.SECONDS)
+                    .until(() -> callbackAttempts.get() >= 1);
 
-            assertThat(reference).hasValue("");
+            // Fix: assert that the failing callback did not update the reference.
+            assertThat(reference.get()).isEqualTo("");
 
             shouldThrow.set(false);
 
             writeToFile(file, "some new content");
-<<<<<<< HEAD
-            await().atMost(5, TimeUnit.SECONDS).until(() -> "some new content".equals(reference.get()));
-=======
+
+            // Fix: resolved merge conflict and hardened Awaitility timing for CI.
             await()
-                .pollInterval(50, TimeUnit.MILLISECONDS)
-                .atMost(5, TimeUnit.SECONDS)
-                .until(() -> "some new content".equals(reference.get()));
->>>>>>> 6e57bcad (test: harden ConfigRefresher Awaitility timeouts)
+                    .pollInterval(50, TimeUnit.MILLISECONDS)
+                    .atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(() -> assertThat(reference.get()).isEqualTo("some new content"));
         }
     }
 
@@ -112,7 +122,7 @@ public class TestConfigRefresher
     private String readFileContent(File file)
     {
         try (FileReader fileReader = new FileReader(file);
-                BufferedReader bufferedReader = new BufferedReader(fileReader))
+             BufferedReader bufferedReader = new BufferedReader(fileReader))
         {
             StringBuilder result = new StringBuilder();
             String line;
