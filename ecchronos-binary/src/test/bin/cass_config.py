@@ -24,7 +24,9 @@ from time import sleep
 import logging
 import subprocess
 
-DEFAULT_WAIT_TIME_IN_SECS = 60
+# Fix: increase cluster startup wait time for slower CI environments,
+# especially for 4-node Cassandra 5.x startup in GitHub Actions.
+DEFAULT_WAIT_TIME_IN_SECS = 120
 
 COMPOSE_FILE_NAME = "docker-compose.yml"
 CASSANDRA_SEED_DC1_RC1_ND1 = "cassandra-seed-dc1-rack1-node1"
