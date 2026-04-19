@@ -124,6 +124,7 @@
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <executions>
@@ -183,8 +184,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-
         </plugins>
     </build>
 
@@ -198,7 +197,6 @@
             <id>python-integration-tests</id>
             <build>
                 <plugins>
-                    <!-- Integration tests -->
                     <plugin>
                         <artifactId>maven-dependency-plugin</artifactId>
                         <executions>
@@ -287,7 +285,7 @@
                                 <configuration>
                                     <executable>python</executable>
                                     <arguments>
-                                    <argument>-m</argument>
+                                        <argument>-m</argument>
                                         <argument>pytest</argument>
                                         <argument>test_ecchronos.py</argument>
                                         <argument>-s</argument>
@@ -302,14 +300,11 @@
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                     </environmentVariables>
-                                    <redirectOutput>true</redirectOutput>
-                                    <redirectErrorStream>true</redirectErrorStream>
                                 </configuration>
                             </execution>
                         </executions>
                     </plugin>
 
-                    <!-- Docker -->
                     <plugin>
                         <groupId>io.fabric8</groupId>
                         <artifactId>docker-maven-plugin</artifactId>
@@ -317,6 +312,7 @@
                 </plugins>
             </build>
         </profile>
+
         <profile>
             <activation>
                 <property>
@@ -326,7 +322,6 @@
             <id>local-python-integration-tests</id>
             <build>
                 <plugins>
-                    <!-- Integration tests -->
                     <plugin>
                         <artifactId>maven-dependency-plugin</artifactId>
                         <executions>
@@ -350,6 +345,7 @@
                             </execution>
                         </executions>
                     </plugin>
+
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
@@ -394,8 +390,6 @@
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                     </environmentVariables>
-                                    <redirectOutput>true</redirectOutput>
-                                    <redirectErrorStream>true</redirectErrorStream>
                                 </configuration>
                             </execution>
                         </executions>
