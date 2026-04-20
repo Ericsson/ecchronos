@@ -183,8 +183,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-
         </plugins>
     </build>
 
@@ -287,7 +285,7 @@
                                 <configuration>
                                     <executable>python</executable>
                                     <arguments>
-                                    <argument>-m</argument>
+                                        <argument>-m</argument>
                                         <argument>pytest</argument>
                                         <argument>test_ecchronos.py</argument>
                                         <argument>-s</argument>
@@ -302,8 +300,6 @@
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                     </environmentVariables>
-                                    <redirectOutput>true</redirectOutput>
-                                    <redirectErrorStream>true</redirectErrorStream>
                                 </configuration>
                             </execution>
                         </executions>
@@ -394,8 +390,6 @@
                                         <BASE_DIR>${project.basedir}</BASE_DIR>
                                         <CASSANDRA_VERSION>${it.cassandra.version}</CASSANDRA_VERSION>
                                     </environmentVariables>
-                                    <redirectOutput>true</redirectOutput>
-                                    <redirectErrorStream>true</redirectErrorStream>
                                 </configuration>
                             </execution>
                         </executions>
