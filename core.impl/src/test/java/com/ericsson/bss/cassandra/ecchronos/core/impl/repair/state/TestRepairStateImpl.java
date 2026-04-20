@@ -98,7 +98,7 @@ public class TestRepairStateImpl
                 myReplicaRepairGroupFactory, myPostUpdateHook);
 
         // verify - constructor calls update() which should call postUpdateHook
-        verify(myPostUpdateHook).postUpdate(any());
+        verify(myPostUpdateHook).postUpdate(any(), any());
     }
 
     @Test
@@ -120,7 +120,7 @@ public class TestRepairStateImpl
                 myReplicaRepairGroupFactory, myPostUpdateHook);
 
         // verify - constructor calls update() -> postUpdateHook called once
-        verify(myPostUpdateHook, times(1)).postUpdate(any());
+        verify(myPostUpdateHook, times(1)).postUpdate(any(), any());
 
         // act - second update() should throw exception
         boolean exceptionThrown = false;
@@ -134,7 +134,7 @@ public class TestRepairStateImpl
         }
 
         // verify - postUpdateHook should still be called despite the exception
-        verify(myPostUpdateHook, times(2)).postUpdate(any());
+        verify(myPostUpdateHook, times(2)).postUpdate(any(), any());
         assertThat(exceptionThrown).isTrue();
     }
 

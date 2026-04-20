@@ -14,6 +14,8 @@
  */
 package com.ericsson.bss.cassandra.ecchronos.core.state;
 
+import java.util.UUID;
+
 /**
  * Interface for injecting code to be executed after {@link RepairState#update()}.
  */
@@ -24,6 +26,7 @@ public interface PostUpdateHook
      * Runs each time the {@link RepairState} is updated.
      *
      * @param repairStateSnapshot The current repair state snapshot
+     * @param hostId
      */
-    void postUpdate(RepairStateSnapshot repairStateSnapshot);
+    void postUpdate(RepairStateSnapshot repairStateSnapshot, UUID hostId);
 }
