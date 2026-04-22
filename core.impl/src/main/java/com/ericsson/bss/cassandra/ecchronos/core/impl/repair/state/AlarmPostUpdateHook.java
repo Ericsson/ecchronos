@@ -24,6 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -50,19 +51,20 @@ public class AlarmPostUpdateHook implements PostUpdateHook
      * Post update.
      *
      * @param repairStateSnapshot The current repair state snapshot
+     * @param hostId
      */
     @Override
-    public void postUpdate(final RepairStateSnapshot repairStateSnapshot)
+    public void postUpdate(final RepairStateSnapshot repairStateSnapshot, final UUID hostId)
     {
         long lastRepaired = repairStateSnapshot.lastCompletedAt();
 
         if (lastRepaired != VnodeRepairState.UNREPAIRED)
         {
-            sendOrCeaseAlarm(lastRepaired);
+            sendOrCeaseAlarm(lastRepaired, hostId);
         }
     }
 
-    private void sendOrCeaseAlarm(final long lastRepairedAt)
+    private void sendOrCeaseAlarm(final long lastRepairedAt, final UUID hostId)
     {
         long msSinceLastRepair = myClock.get().millis() - lastRepairedAt;
         RepairFaultReporter.FaultCode faultCode = null;
@@ -76,6 +78,7 @@ public class AlarmPostUpdateHook implements PostUpdateHook
             faultCode = RepairFaultReporter.FaultCode.REPAIR_WARNING;
         }
         Map<String, Object> data = new HashMap<>();
+        data.put(RepairFaultReporter.FAULT_NODE_ID, hostId);
         data.put(RepairFaultReporter.FAULT_KEYSPACE, myTableReference.getKeyspace());
         data.put(RepairFaultReporter.FAULT_TABLE, myTableReference.getTable());
 

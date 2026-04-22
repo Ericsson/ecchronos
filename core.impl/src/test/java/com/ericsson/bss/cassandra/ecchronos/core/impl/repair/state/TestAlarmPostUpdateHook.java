@@ -76,6 +76,7 @@ public class TestAlarmPostUpdateHook
         long lastRepaired = start - TimeUnit.DAYS.toMillis(daysSinceLastRepair);
 
         Map<String, Object> expectedData = new HashMap<>();
+        expectedData.put(RepairFaultReporter.FAULT_NODE_ID, null);
         expectedData.put(RepairFaultReporter.FAULT_KEYSPACE, keyspaceName);
         expectedData.put(RepairFaultReporter.FAULT_TABLE, tableName);
 
@@ -83,7 +84,7 @@ public class TestAlarmPostUpdateHook
         doReturn(lastRepaired).when(myRepairStateSnapshot).lastCompletedAt();
         when(myClock.millis()).thenReturn(start);
 
-        myPostUpdateHook.postUpdate(myRepairStateSnapshot);
+        myPostUpdateHook.postUpdate(myRepairStateSnapshot, null);
 
         // verify - not repaired
         verify(myFaultReporter).raise(eq(RepairFaultReporter.FaultCode.REPAIR_WARNING), eq(expectedData));
@@ -96,13 +97,13 @@ public class TestAlarmPostUpdateHook
         doReturn(lastRepaired).when(myRepairStateSnapshot).lastCompletedAt();
         when(myClock.millis()).thenReturn(start);
 
-        myPostUpdateHook.postUpdate(myRepairStateSnapshot);
+        myPostUpdateHook.postUpdate(myRepairStateSnapshot, null);
 
         // verify alarm ceased in preValidate
         verify(myFaultReporter).cease(eq(RepairFaultReporter.FaultCode.REPAIR_WARNING), eq(expectedData));
         reset(myFaultReporter);
 
-        myPostUpdateHook.postUpdate(myRepairStateSnapshot);
+        myPostUpdateHook.postUpdate(myRepairStateSnapshot, null);
 
         // verify - repaired
         verify(myFaultReporter).cease(eq(RepairFaultReporter.FaultCode.REPAIR_WARNING), eq(expectedData));
@@ -117,6 +118,7 @@ public class TestAlarmPostUpdateHook
         long lastRepaired = start - TimeUnit.DAYS.toMillis(daysSinceLastRepair);
 
         Map<String, Object> expectedData = new HashMap<>();
+        expectedData.put(RepairFaultReporter.FAULT_NODE_ID, null);
         expectedData.put(RepairFaultReporter.FAULT_KEYSPACE, keyspaceName);
         expectedData.put(RepairFaultReporter.FAULT_TABLE, tableName);
 
@@ -124,7 +126,7 @@ public class TestAlarmPostUpdateHook
         doReturn(lastRepaired).when(myRepairStateSnapshot).lastCompletedAt();
         when(myClock.millis()).thenReturn(start);
 
-        myPostUpdateHook.postUpdate(myRepairStateSnapshot);
+        myPostUpdateHook.postUpdate(myRepairStateSnapshot, null);
 
         // verify - not repaired
         verify(myFaultReporter).raise(eq(RepairFaultReporter.FaultCode.REPAIR_ERROR), eq(expectedData));
@@ -137,7 +139,7 @@ public class TestAlarmPostUpdateHook
         doReturn(lastRepaired).when(myRepairStateSnapshot).lastCompletedAt();
         when(myClock.millis()).thenReturn(start);
 
-        myPostUpdateHook.postUpdate(myRepairStateSnapshot);
+        myPostUpdateHook.postUpdate(myRepairStateSnapshot, null);
 
         // verify - repaired
         verify(myFaultReporter).cease(eq(RepairFaultReporter.FaultCode.REPAIR_WARNING), eq(expectedData));
