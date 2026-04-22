@@ -20,6 +20,7 @@ public interface RepairFaultReporter
 {
     String FAULT_KEYSPACE = "KEYSPACE";
     String FAULT_TABLE = "TABLE";
+    String FAULT_NODE_ID = "NODE_ID";
 
     enum FaultCode
     {

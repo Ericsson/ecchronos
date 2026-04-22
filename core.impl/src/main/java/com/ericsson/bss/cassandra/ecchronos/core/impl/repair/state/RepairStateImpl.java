@@ -131,7 +131,7 @@ public class RepairStateImpl implements RepairState
             RepairStateSnapshot snapshot = myRepairStateSnapshot.get();
             if (snapshot != null)
             {
-                myPostUpdateHook.postUpdate(snapshot);
+                myPostUpdateHook.postUpdate(snapshot, myNode.getHostId());
             }
         }
     }
