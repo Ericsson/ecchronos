@@ -122,6 +122,24 @@ public class TestScheduleManager
     }
 
     @Test
+    public void testRunningMultipleJobsInSingleTick()
+    {
+        DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW, nodeID1);
+        DummyJob job2 = new DummyJob(ScheduledJob.Priority.LOW, nodeID1);
+        DummyJob job3 = new DummyJob(ScheduledJob.Priority.LOW, nodeID1);
+        myScheduler.schedule(nodeID1, job1);
+        myScheduler.schedule(nodeID1, job2);
+        myScheduler.schedule(nodeID1, job3);
+
+        myScheduler.run(nodeID1);
+
+        assertThat(job1.hasRun()).isTrue();
+        assertThat(job2.hasRun()).isTrue();
+        assertThat(job3.hasRun()).isTrue();
+        assertThat(myScheduler.getQueueSize(nodeID1)).isEqualTo(3);
+    }
+
+    @Test
     public void testRunningJobWithFailingRunPolicy()
     {
         DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW, nodeID1);
