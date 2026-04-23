@@ -72,7 +72,7 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
         }
         catch (IOException | NullPointerException e)
         {
-            LOG.debug("JMX connection validation failed: {}", e.getMessage());
+            LOG.debug("JMX connection validation failed", e);
             return false;
         }
     }
@@ -149,7 +149,7 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
         }
         catch (EcChronosException e)
         {
-            LOG.error("Failed to connect to node {}: {}", node.getHostId(), e.getMessage());
+            LOG.error("Failed to connect to node {}", node.getHostId(), e);
         }
         return connector;
     }
@@ -203,7 +203,7 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
             }
             catch (IOException e)
             {
-                LOG.warn("Failed to close stale JMX connection for node {}: {}", nodeId, e.getMessage());
+                LOG.warn("Failed to close stale JMX connection for node {}", nodeId, e);
             }
         }
         try
@@ -212,7 +212,7 @@ public class DistributedJmxConnectionProviderImpl implements DistributedJmxConne
         }
         catch (EcChronosException e)
         {
-            LOG.warn("Unable to connect with node {} connection refused: {}", node.getHostId(), e.getMessage());
+            LOG.warn("Unable to connect with node {} connection refused", node.getHostId(), e);
         }
     }
 }

@@ -148,7 +148,7 @@ public class RepairGroup extends ScheduledTask
             }
             catch (ScheduledJobException e)
             {
-                LOG.warn("Encountered issue when running repair task {}, {}", repairTask, e.getMessage());
+                LOG.warn("Encountered issue when running repair task {}", repairTask, e);
                 LOG.debug("", e);
                 successful = false;
                 if (e.getCause() instanceof InterruptedException)
