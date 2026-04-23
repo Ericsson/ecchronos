@@ -63,8 +63,7 @@ public class JolokiaNotificationController
 
     private final Map<NotificationListener, String> myJolokiaRelationshipListeners = new HashMap<>();
 
-    private final ScheduledExecutorService myNotificationExecutor = Executors.newSingleThreadScheduledExecutor(
-            new ThreadFactoryBuilder().setNameFormat("NotificationRefresher-%d").build());
+    private final ScheduledExecutorService myNotificationExecutor;
 
     private final Map<UUID, Map<String, String>> myClientIdMap = new ConcurrentHashMap<>();
     private final Map<UUID, Map<String, NotificationListener>> myNodeListenersMap = new ConcurrentHashMap<>();
@@ -91,6 +90,10 @@ public class JolokiaNotificationController
         myRunDelay = builder.myRunDelay;
         myIpTranslator = builder.myIpTranslator;
         myCertificateHandler = builder.myCertificateHandler;
+        int nodeCount = myNativeConnectionProvider.getNodes().size();
+        myNotificationExecutor = Executors.newScheduledThreadPool(
+                Math.max(nodeCount, 1),
+                new ThreadFactoryBuilder().setNameFormat("NotificationRefresher-%d").setDaemon(true).build());
     }
 
     private HttpClient buildHttpClient()

@@ -208,13 +208,13 @@ public class NodeWorker implements Runnable
             final String keyspaceName,
             final BiConsumer<TableReference, TableMetadata> consumer)
     {
-        for (TableMetadata tableMetadata : Metadata.getKeyspace(mySession, keyspaceName).get().getTables().values())
-        {
-            String tableName = tableMetadata.getName().asInternal();
-            TableReference tableReference = myTableReferenceFactory.forTable(keyspaceName, tableName);
-
-            consumer.accept(tableReference, tableMetadata);
-        }
+        Metadata.getKeyspace(mySession, keyspaceName).get().getTables().values().parallelStream()
+                .forEach(tableMetadata ->
+                {
+                    String tableName = tableMetadata.getName().asInternal();
+                    TableReference tableReference = myTableReferenceFactory.forTable(keyspaceName, tableName);
+                    consumer.accept(tableReference, tableMetadata);
+                });
     }
 
     /**

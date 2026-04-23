@@ -49,7 +49,6 @@ import java.util.UUID;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.AbstractMap;
 import java.util.Collection;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -68,11 +67,12 @@ import javax.management.RuntimeMBeanException;
 public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 {
     private static final int DEFAULT_TERMINATION_WAIT_IN_SECONDS = 10;
+    private static final int DEFAULT_THREAD_POOL_SIZE = 4;
 
     private static final Logger LOG = LoggerFactory.getLogger(RepairSchedulerImpl.class);
 
     private final Map<UUID, Map<TableReference, Set<ScheduledRepairJob>>> myScheduledJobs = new ConcurrentHashMap<>();
-    private final Object myLock = new Object();
+    private final ConcurrentHashMap<UUID, Object> myNodeLocks = new ConcurrentHashMap<>();
 
     private final ExecutorService myExecutor;
     private final TableRepairMetrics myTableRepairMetrics;
@@ -107,7 +107,8 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
     private RepairSchedulerImpl(final Builder builder)
     {
-        myExecutor = Executors.newSingleThreadScheduledExecutor(
+        int poolSize = Math.max(DEFAULT_THREAD_POOL_SIZE, builder.myThreadPoolSize);
+        myExecutor = Executors.newFixedThreadPool(poolSize,
                 new ThreadFactoryBuilder().setNameFormat("RepairScheduler-%d").build());
         myFaultReporter = builder.myFaultReporter;
         myTableRepairMetrics = builder.myTableRepairMetrics;
@@ -129,6 +130,11 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         return myScheduleManager.getCurrentJobStatus();
     }
 
+    private Object getNodeLock(final UUID nodeID)
+    {
+        return myNodeLocks.computeIfAbsent(nodeID, k -> new Object());
+    }
+
     @Override
     public void close()
     {
@@ -146,18 +152,16 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
             Thread.currentThread().interrupt();
         }
 
-        synchronized (myLock)
+        myScheduledJobs.forEach((nodeID, tableJobs) ->
         {
-            myScheduledJobs.entrySet().stream()
-                    .flatMap(nodeEntry -> nodeEntry.getValue().entrySet().stream()
-                            .flatMap(tableEntry -> tableEntry.getValue().stream()
-                                    .map(job -> new AbstractMap.SimpleEntry<>(nodeEntry.getKey(), job))
-                            )
-                    )
-                    .forEach(entry -> descheduleTableJob(entry.getKey(), entry.getValue()));
-
-            myScheduledJobs.clear();
-        }
+            synchronized (getNodeLock(nodeID))
+            {
+                tableJobs.values().stream()
+                        .flatMap(Set::stream)
+                        .forEach(job -> descheduleTableJob(nodeID, job));
+            }
+        });
+        myScheduledJobs.clear();
     }
 
     @Override
@@ -178,28 +182,31 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
     @Override
     public List<ScheduledRepairJobView> getCurrentRepairJobs()
     {
-        synchronized (myLock)
-        {
-            return myScheduledJobs.values().stream()
-                    .flatMap(tableJobs -> tableJobs.values().stream())
-                    .flatMap(Set::stream)
-                    .map(ScheduledRepairJob::getView)
-                    .collect(Collectors.toList());
-        }
+        return myScheduledJobs.entrySet().stream()
+                .flatMap(nodeEntry ->
+                {
+                    synchronized (getNodeLock(nodeEntry.getKey()))
+                    {
+                        return nodeEntry.getValue().values().stream()
+                                .flatMap(Set::stream)
+                                .map(ScheduledRepairJob::getView)
+                                .collect(Collectors.toList())
+                                .stream();
+                    }
+                })
+                .collect(Collectors.toList());
     }
 
     @Override
     public List<ScheduledRepairJobView> getCurrentRepairJobsByNode(final UUID nodeId)
     {
-        synchronized (myLock)
+        Map<TableReference, Set<ScheduledRepairJob>> tableJobs = myScheduledJobs.get(nodeId);
+        if (tableJobs == null)
         {
-            Map<TableReference, Set<ScheduledRepairJob>> tableJobs = myScheduledJobs.get(nodeId);
-
-            if (tableJobs == null)
-            {
-                return Collections.emptyList();
-            }
-
+            return Collections.emptyList();
+        }
+        synchronized (getNodeLock(nodeId))
+        {
             return tableJobs.values().stream()
                     .flatMap(Set::stream)
                     .map(ScheduledRepairJob::getView)
@@ -213,7 +220,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
             final TableReference tableReference,
             final Set<RepairConfiguration> repairConfigurations)
     {
-        synchronized (myLock)
+        synchronized (getNodeLock(node.getHostId()))
         {
             try
             {
@@ -311,7 +318,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
     private void tableConfigurationRemoved(final Node node, final TableReference tableReference)
     {
-        synchronized (myLock)
+        synchronized (getNodeLock(node.getHostId()))
         {
             try
             {
@@ -336,7 +343,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 
     private void nodeConfigurationRemoved(final UUID nodeId)
     {
-        synchronized (myLock)
+        synchronized (getNodeLock(nodeId))
         {
             try
             {
@@ -448,6 +455,7 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         private TableStorageStates myTableStorageStates;
         private RepairLockType myRepairLockType;
         private TimeBasedRunPolicy myTimeBasedRunPolicy;
+        private int myThreadPoolSize = DEFAULT_THREAD_POOL_SIZE;
 
         /**
          * RepairSchedulerImpl build with repair lock type.
@@ -590,6 +598,18 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         public Builder withTimeBasedRunPolicy(final TimeBasedRunPolicy timeBasedRunPolicy)
         {
             myTimeBasedRunPolicy = timeBasedRunPolicy;
+            return this;
+        }
+
+        /**
+         * RepairSchedulerImpl build with thread pool size.
+         *
+         * @param threadPoolSize Thread pool size for parallel configuration processing.
+         * @return Builder
+         */
+        public Builder withThreadPoolSize(final int threadPoolSize)
+        {
+            myThreadPoolSize = threadPoolSize;
             return this;
         }
 

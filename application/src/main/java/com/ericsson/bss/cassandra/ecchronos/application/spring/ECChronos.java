@@ -121,6 +121,7 @@ public class ECChronos implements Closeable
                 .withTableStorageStates(myECChronosInternals.getTableStorageStates())
                 .withRepairLockType(configuration.getRepairConfig().getRepairLockType())
                 .withTimeBasedRunPolicy(myTimeBasedRunPolicy)
+                .withThreadPoolSize(nativeConnectionProvider.getNodes().size())
                 .build();
 
         AbstractRepairConfigurationProvider repairConfigurationProvider = new FileBasedRepairConfiguration(applicationContext);

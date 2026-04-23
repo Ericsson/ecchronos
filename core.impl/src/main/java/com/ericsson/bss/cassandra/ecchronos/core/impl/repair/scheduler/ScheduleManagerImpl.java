@@ -28,11 +28,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
@@ -45,6 +49,7 @@ import javax.management.RuntimeMBeanException;
 /**
  * ScheduleManager handles the run scheduler and update scheduler.
  */
+@SuppressWarnings("PMD.GodClass")
 public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ScheduleManagerImpl.class);
@@ -53,89 +58,113 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
 
     private final Map<UUID, ScheduledJobQueue> myQueue = new ConcurrentHashMap<>();
     private final Collection<UUID> myNodeIDList;
-    private final AtomicReference<ScheduledJob> currentExecutingJob = new AtomicReference<>();
+    private final Map<UUID, ScheduledJob> currentExecutingJobs = new ConcurrentHashMap<>();
     private final Set<RunPolicy> myRunPolicies = Sets.newConcurrentHashSet();
-    private final Map<UUID, ScheduledFuture<?>> myRunFuture = new ConcurrentHashMap<>();
-    private final Map<UUID, JobRunTask> myRunTasks = new ConcurrentHashMap<>();
+    private final Set<UUID> myRegisteredNodes = Sets.newConcurrentHashSet();
     private final CASLockFactory myLockFactory;
     private final DistributedNativeConnectionProvider myNativeConnectionProvider;
 
-    private final ScheduledThreadPoolExecutor myExecutor;
+    private final BlockingQueue<UUID> myWorkQueue = new LinkedBlockingQueue<>();
+    private final ExecutorService myWorkerPool;
+    private final ScheduledExecutorService myProducer;
+    private ScheduledFuture<?> myProducerFuture;
     private final long myRunIntervalInMs;
 
     private ScheduleManagerImpl(final Builder builder)
     {
         myNodeIDList = builder.myNodeIDList;
         myNativeConnectionProvider = builder.myNativeConnectionProvider;
-        myExecutor  = new ScheduledThreadPoolExecutor(
-                myNodeIDList.size(), new ThreadFactoryBuilder().setNameFormat("TaskExecutor-%d").build());
+        myWorkerPool = Executors.newFixedThreadPool(
+                myNodeIDList.size(),
+                new ThreadFactoryBuilder().setNameFormat("TaskExecutor-%d").build());
+        myProducer = Executors.newSingleThreadScheduledExecutor(
+                new ThreadFactoryBuilder().setNameFormat("TaskProducer").setDaemon(true).build());
         myLockFactory = builder.myLockFactory;
         myRunIntervalInMs = builder.myRunIntervalInMs;
     }
 
     /**
-     * Create a ScheduledFuture for each of the nodes in the nodeIDList.
+     * Create workers for each of the nodes in the nodeIDList and start the producer.
      * @param nodeIDList
      */
     @Override
     public void createScheduleFutureForNodeIDList(final Collection<UUID> nodeIDList)
     {
-        myExecutor.setCorePoolSize(nodeIDList.size());
         LOG.debug("Total nodes found: {}", nodeIDList.size());
-        for (UUID nodeID : nodeIDList)
-        {
-            if (myRunTasks.get(nodeID) == null)
-            {
-                JobRunTask myRunTask = new JobRunTask(nodeID);
-                ScheduledFuture<?> scheduledFuture = myExecutor.scheduleWithFixedDelay(myRunTask,
-                        myRunIntervalInMs,
-                        myRunIntervalInMs,
-                        TimeUnit.MILLISECONDS);
-                myRunTasks.put(nodeID, myRunTask);
-                myRunFuture.put(nodeID, scheduledFuture);
-                LOG.debug("JobRunTask created for node {}", nodeID);
-            }
-        }
+        nodeIDList.forEach(this::registerNode);
+        startProducer();
+        startWorkers();
     }
 
     /**
-     * Create a ScheduledFuture for  the nodeID.
+     * Register a new node for scheduling.
      * @param nodeID
      */
     @Override
     public void createScheduleFutureForNode(final UUID nodeID)
     {
-        if (myRunTasks.get(nodeID) == null)
-        {
-            JobRunTask myRunTask = new JobRunTask(nodeID);
-            myExecutor.setCorePoolSize(myRunTasks.size());
+        registerNode(nodeID);
+    }
 
-            ScheduledFuture<?> scheduledFuture = myExecutor.scheduleWithFixedDelay(myRunTask,
-                    myRunIntervalInMs,
-                    myRunIntervalInMs,
-                    TimeUnit.MILLISECONDS);
-            myRunTasks.put(nodeID, myRunTask);
-            myRunFuture.put(nodeID, scheduledFuture);
-            myExecutor.setCorePoolSize(myRunTasks.size());
-            LOG.debug("JobRunTask created for new node {}", nodeID);
-        }
-        else
+    private void registerNode(final UUID nodeID)
+    {
+        if (myRegisteredNodes.add(nodeID))
         {
-            LOG.debug("JobRunTask already exists for new node {}", nodeID);
+            LOG.debug("Node {} registered for scheduling", nodeID);
+        }
+    }
+
+    private void startProducer()
+    {
+        if (myProducerFuture == null)
+        {
+            myProducerFuture = myProducer.scheduleAtFixedRate(
+                    this::produceWork, 0, myRunIntervalInMs, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private void startWorkers()
+    {
+        for (int i = 0; i < myRegisteredNodes.size(); i++)
+        {
+            myWorkerPool.submit(this::workerLoop);
+        }
+    }
+
+    private void produceWork()
+    {
+        for (UUID nodeID : myRegisteredNodes)
+        {
+            myWorkQueue.offer(nodeID);
+        }
+    }
+
+    private void workerLoop()
+    {
+        while (!Thread.currentThread().isInterrupted())
+        {
+            try
+            {
+                UUID nodeID = myWorkQueue.take();
+                runForNode(nodeID);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+                break;
+            }
+            catch (Exception e)
+            {
+                LOG.error("Exception in worker loop", e);
+            }
         }
     }
     @Override
     public String getCurrentJobStatus()
     {
-        ScheduledJob job = currentExecutingJob.get();
-        if (job != null)
-        {
-            return job.getJobId().toString();
-        }
-        else
-        {
-            return "";
-        }
+        return currentExecutingJobs.entrySet().stream()
+                .map(e -> e.getKey() + "=" + e.getValue().getJobId())
+                .collect(Collectors.joining("\n"));
     }
 
     /**
@@ -185,11 +214,12 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     @Override
     public void close()
     {
-        for (ScheduledFuture<?> future : myRunFuture.values())
+        if (myProducerFuture != null)
         {
-            future.cancel(false);
+            myProducerFuture.cancel(false);
         }
-        myExecutor.shutdown();
+        myProducer.shutdown();
+        myWorkerPool.shutdownNow();
         myRunPolicies.clear();
     }
 
@@ -201,7 +231,7 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     @VisibleForTesting
     public void run(final UUID nodeID)
     {
-        myRunTasks.get(nodeID).run();
+        runForNode(nodeID);
     }
 
     /**
@@ -232,146 +262,126 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
     }
 
 
-    /**
-     * Internal run task that is scheduled by the {@link ScheduleManagerImpl}.
-     * <p>
-     * Retrieves a job from the queue and tries to run it provided that it's possible to get the required locks.
-     */
-    private final class JobRunTask implements Runnable
+    private void runForNode(final UUID nodeID)
     {
-        private final UUID nodeID;
-        private final Node myNode;
-
-        private JobRunTask(final UUID currentNodeID)
+        try
         {
-            nodeID = currentNodeID;
-            myNode = myNativeConnectionProvider.getNodes().get(nodeID);
-        }
-
-        @Override
-        public void run()
-        {
-            try
+            LOG.debug("Running for Node {}", nodeID);
+            ScheduledJobQueue queue = myQueue.get(nodeID);
+            if (queue != null)
             {
-                LOG.debug("In JobRunTask.run for Node {}", nodeID);
-                if (myQueue.get(nodeID) != null)
+                boolean didWork = tryRunNext(nodeID, queue);
+                if (didWork)
                 {
-                    tryRunNext();
-                }
-                else
-                {
-                    LOG.info("There is no ScheduledJob for this node {} to run ", nodeID);
-                }
-
-            }
-            catch (Exception e)
-            {
-                LOG.error("Exception while running job in node {}", nodeID, e);
-            }
-        }
-
-        private void tryRunNext()
-        {
-            LOG.debug("Looking for Job for Node {}", nodeID);
-            for (ScheduledJob next : myQueue.get(nodeID))
-            {
-                if (validate(next))
-                {
-                    currentExecutingJob.set(next);
-                    if (tryRunTasks(next))
-                    {
-                        break;
-                    }
+                    myWorkQueue.offer(nodeID);
                 }
             }
-            currentExecutingJob.set(null);
-        }
-
-        private boolean validate(final ScheduledJob job)
-        {
-            LOG.trace("Validating job {}", job);
-            long nextRun = validateJob(job, myNode);
-
-            if (nextRun != -1L)
+            else
             {
-                job.setRunnableIn(nextRun);
-                return false;
+                LOG.info("There is no ScheduledJob for this node {} to run", nodeID);
             }
-
-            return true;
         }
-
-        private boolean tryRunTasks(
-                final ScheduledJob next)
+        catch (Exception e)
         {
-            boolean hasRun = false;
+            LOG.error("Exception while running job in node {}", nodeID, e);
+        }
+    }
 
-            for (ScheduledTask task : next)
+    private boolean tryRunNext(final UUID nodeID, final ScheduledJobQueue queue)
+    {
+        Node node = myNativeConnectionProvider.getNodes().get(nodeID);
+        LOG.debug("Looking for Job for Node {}", nodeID);
+        boolean jobRan = false;
+        for (ScheduledJob next : queue)
+        {
+            if (validate(next, node))
             {
-                if (!validate(next))
+                currentExecutingJobs.put(nodeID, next);
+                if (tryRunTasks(nodeID, node, next))
                 {
-                    LOG.debug("Job {} was stopped, will continue later", next);
+                    jobRan = true;
                     break;
                 }
-                hasRun |= tryRunTask(next, task);
-            }
-
-            return hasRun;
-        }
-
-        private boolean tryRunTask(
-                final ScheduledJob job,
-                final ScheduledTask task)
-        {
-            LOG.debug("Trying to run task {} in node {}", task, nodeID);
-            LOG.debug("Trying to acquire lock for {}", task);
-            try (LockFactory.DistributedLock lock = task.getLock(myLockFactory, nodeID))
-            {
-                LOG.debug("Lock has been acquired on node with Id {} with lock {}", nodeID, lock);
-                boolean successful = runTask(task);
-                job.postExecute(successful, task);
-                return true;
-            }
-            catch (RuntimeMBeanException e)
-            {
-                if (e.getCause() instanceof IllegalStateException
-                        && e.getCause().getMessage() != null
-                        && e.getCause().getMessage().contains("More than one key found"))
-                {
-                    LOG.debug("Unable to get schedule lock on task {} in node {}, this is probably due to "
-                            + "a connection to a version of the Jolokia Agent 2.3.0 or older", task, nodeID, e);
-                }
-                else
-                {
-                    LOG.warn("Unable to get schedule lock on task {} in node {}", task, nodeID, e);
-                }
-                return false;
-            }
-            catch (Exception e)
-            {
-                if (e.getCause() != null)
-                {
-                    LOG.warn("Unable to get schedule lock on task {} in node {}", task, nodeID, e);
-                }
-                return false;
             }
         }
+        currentExecutingJobs.remove(nodeID);
+        return jobRan;
+    }
 
-        private boolean runTask(
-                final ScheduledTask task)
+    private boolean validate(final ScheduledJob job, final Node node)
+    {
+        LOG.trace("Validating job {}", job);
+        long nextRun = validateJob(job, node);
+        if (nextRun != -1L)
         {
-            try
-            {
-                LOG.info("Running task: {}, for node {}", task, nodeID);
-                return task.execute(nodeID);
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Unable to run task: {} in node: {}", task, nodeID, e);
-            }
-
+            job.setRunnableIn(nextRun);
             return false;
         }
+        return true;
+    }
+
+    private boolean tryRunTasks(final UUID nodeID, final Node node, final ScheduledJob next)
+    {
+        boolean hasRun = false;
+        for (ScheduledTask task : next)
+        {
+            if (!validate(next, node))
+            {
+                LOG.debug("Job {} was stopped, will continue later", next);
+                break;
+            }
+            hasRun |= tryRunTask(nodeID, next, task);
+        }
+        return hasRun;
+    }
+
+    private boolean tryRunTask(final UUID nodeID, final ScheduledJob job, final ScheduledTask task)
+    {
+        LOG.debug("Trying to run task {} in node {}", task, nodeID);
+        try (LockFactory.DistributedLock lock = task.getLock(myLockFactory, nodeID))
+        {
+            LOG.debug("Lock acquired on node {} with lock {}", nodeID, lock);
+            boolean successful = runTask(nodeID, task);
+            job.postExecute(successful, task);
+            return true;
+        }
+        catch (RuntimeMBeanException e)
+        {
+            if (e.getCause() instanceof IllegalStateException
+                    && e.getCause().getMessage() != null
+                    && e.getCause().getMessage().contains("More than one key found"))
+            {
+                LOG.debug("Unable to get schedule lock on task {} in node {}, this is probably due to "
+                        + "a connection to a version of the Jolokia Agent 2.3.0 or older", task, nodeID, e);
+            }
+            else
+            {
+                LOG.warn("Unable to get schedule lock on task {} in node {}", task, nodeID, e);
+            }
+            return false;
+        }
+        catch (Exception e)
+        {
+            if (e.getCause() != null)
+            {
+                LOG.warn("Unable to get schedule lock on task {} in node {}", task, nodeID, e);
+            }
+            return false;
+        }
+    }
+
+    private boolean runTask(final UUID nodeID, final ScheduledTask task)
+    {
+        try
+        {
+            LOG.info("Running task: {}, for node {}", task, nodeID);
+            return task.execute(nodeID);
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Unable to run task: {} in node: {}", task, nodeID, e);
+        }
+        return false;
     }
 
     /**
