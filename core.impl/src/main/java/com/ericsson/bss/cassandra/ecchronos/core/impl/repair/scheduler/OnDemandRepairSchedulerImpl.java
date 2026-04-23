@@ -61,7 +61,6 @@ import org.slf4j.LoggerFactory;
 public final class OnDemandRepairSchedulerImpl implements OnDemandRepairScheduler, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(OnDemandRepairSchedulerImpl.class);
-    private static final String ON_DEMAND_JOB_FAIL = "Failed to get ongoing on demand jobs: {}, automatic retry in {}s";
     private static final int ONGOING_JOBS_PERIOD_SECONDS = 10;
 
     private final Map<UUID, OnDemandRepairJob> myScheduledJobs = new HashMap<>();
@@ -113,9 +112,7 @@ public final class OnDemandRepairSchedulerImpl implements OnDemandRepairSchedule
 
     private static void logFailureMessage(final Exception e)
     {
-        LOG.warn(ON_DEMAND_JOB_FAIL,
-                e.getMessage(),
-                ONGOING_JOBS_PERIOD_SECONDS);
+        LOG.warn("Failed to get ongoing on demand jobs, automatic retry in {}s", ONGOING_JOBS_PERIOD_SECONDS, e);
     }
 
     /**

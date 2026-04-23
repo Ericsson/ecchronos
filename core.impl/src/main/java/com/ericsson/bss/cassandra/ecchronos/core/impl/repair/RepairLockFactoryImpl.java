@@ -103,10 +103,10 @@ public class RepairLockFactoryImpl implements RepairLockFactory
                 }
                 catch (LockException e)
                 {
-                    LOG.debug("{} - Unable to get repair resource lock '{}', releasing previously acquired locks - {}",
+                    LOG.debug("{} - Unable to get repair resource lock '{}', releasing previously acquired locks",
                             this,
                             repairResource,
-                            e.getMessage());
+                            e);
                     throw e;
                 }
             }
@@ -143,10 +143,10 @@ public class RepairLockFactoryImpl implements RepairLockFactory
         }
         catch (LockException e)
         {
-            LOG.debug("Lock ({} in datacenter {}) got error {}",
+            LOG.debug("Lock ({} in datacenter {}) got error",
                     resource,
                     dataCenter,
-                    e.getMessage());
+                    e);
             throw e;
         }
     }

@@ -194,7 +194,7 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
             }
             catch (EcChronosException e)
             {
-                LOG.info("Unable to connect with node {} connection refused: {}", node.getHostId(), e.getMessage());
+                LOG.info("Unable to connect with node {} connection refused", node.getHostId(), e);
             }
         }
     }
@@ -295,7 +295,7 @@ public class DistributedJmxBuilder //NOPMD Possible God Class
         (
                 AllNodesFailedException | QueryExecutionException | IOException | SecurityException e)
         {
-            LOG.error("Failed to create JMX connection with node {} because of {}", node.getHostId(), e.getMessage());
+            LOG.error("Failed to create JMX connection with node {} because of", node.getHostId(), e);
             myEccNodesSync.updateNodeStatus(NodeStatus.UNAVAILABLE, node.getDatacenter(), node.getHostId());
         }
     }
