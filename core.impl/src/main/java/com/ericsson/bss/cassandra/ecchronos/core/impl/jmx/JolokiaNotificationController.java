@@ -197,8 +197,8 @@ public class JolokiaNotificationController
                 }
                 else
                 {
-                    LOG.warn("Transient notification check failure ({}/{}) for node {} and notificationID {}: {}",
-                            consecutiveFailures, MAX_CONSECUTIVE_FAILURES, myNodeID, myNotificationID, e.getMessage());
+                    LOG.warn("Transient notification check failure ({}/{}) for node {} and notificationID {}",
+                            consecutiveFailures, MAX_CONSECUTIVE_FAILURES, myNodeID, myNotificationID, e);
                 }
             }
         }
@@ -284,7 +284,7 @@ public class JolokiaNotificationController
         }
         catch (IOException | InterruptedException e)
         {
-            LOG.error("Unable to register Jolokia Client in node with ID {} because of {}", nodeID, e.getMessage());
+            LOG.error("Unable to register Jolokia Client in node with ID {}", nodeID, e);
         }
     }
 
@@ -320,8 +320,8 @@ public class JolokiaNotificationController
         }
         catch (IOException | InterruptedException e)
         {
-            LOG.error("Error trying to remove NotificationListener with ID {} in node {}, because of {}",
-                    notificationID, nodeID, e.getMessage());
+            LOG.error("Error trying to remove NotificationListener with ID {} in node {}",
+                    notificationID, nodeID, e);
         }
     }
 
@@ -347,7 +347,7 @@ public class JolokiaNotificationController
         }
         catch (JsonProcessingException e)
         {
-            LOG.error("Unable to serialize notification options for node {} because of {}", nodeID, e.getMessage());
+            LOG.error("Unable to serialize notification options for node {}", nodeID, e);
         }
         return "";
     }
@@ -366,8 +366,8 @@ public class JolokiaNotificationController
         }
         catch (JsonProcessingException e)
         {
-            LOG.error("Unable to serialize Jolokia Notification Options for node {} because of {}", nodeID,
-                    e.getMessage());
+            LOG.error("Unable to serialize Jolokia Notification Options for node {}", nodeID,
+                    e);
         }
         return "";
     }
@@ -408,8 +408,8 @@ public class JolokiaNotificationController
             catch (IOException e)
             {
                 lastException = e;
-                LOG.debug("Notification check attempt {}/{} failed for node {}: {}",
-                        attempt, MAX_RETRIES, nodeID, e.getMessage());
+                LOG.debug("Notification check attempt {}/{} failed for node {}",
+                        attempt, MAX_RETRIES, nodeID, e);
                 if (attempt < MAX_RETRIES)
                 {
                     long delay = INITIAL_RETRY_DELAY_IN_MS * (1L << (attempt - 1));
@@ -426,7 +426,7 @@ public class JolokiaNotificationController
         }
         catch (IOException e)
         {
-            LOG.warn("Re-registration attempt also failed for node {}: {}", nodeID, e.getMessage());
+            LOG.warn("Re-registration attempt also failed for node {}", nodeID, e);
         }
         throw lastException;
     }
