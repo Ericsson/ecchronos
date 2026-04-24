@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Process multiple jobs per scheduler tick to improve throughput - Issue #1479
 * Add host id to alarms - Issue #1491
 * Fix alarm not raised when CQL session is broken - Issue #1477
 * Intermittent Jolokia Communication Failures Cause Ecchronos to Incorrectly Mark Repairs as Failed - Issue #1473

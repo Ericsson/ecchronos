@@ -273,15 +273,17 @@ public final class ScheduleManagerImpl implements ScheduleManager, Closeable
         private void tryRunNext()
         {
             LOG.debug("Looking for Job for Node {}", nodeID);
+            long tickStart = System.currentTimeMillis();
             for (ScheduledJob next : myQueue.get(nodeID))
             {
+                if (System.currentTimeMillis() - tickStart > myRunIntervalInMs)
+                {
+                    break;
+                }
                 if (validate(next))
                 {
                     currentExecutingJob.set(next);
-                    if (tryRunTasks(next))
-                    {
-                        break;
-                    }
+                    tryRunTasks(next);
                 }
             }
             currentExecutingJob.set(null);
