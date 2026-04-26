@@ -283,15 +283,11 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <!-- FIX: use venv python instead of system python so pytest is available in CI -->
-                                    <executable>${project.build.directory}/test/venv/bin/python</executable>
+                                    <!-- FIX: run pytest from venv and expose venv/bin on PATH so subprocess tools like behave are found -->
+                                    <executable>bash</executable>
                                     <arguments>
-                                        <argument>-m</argument>
-                                        <argument>pytest</argument>
-                                        <argument>test_ecchronos.py</argument>
-                                        <argument>-s</argument>
-                                        <argument>-v</argument>
-                                        <argument>--tb=short</argument>
+                                        <argument>-c</argument>
+                                        <argument>export PATH="$PWD/venv/bin:$PATH" &amp;&amp; ./venv/bin/python -m pytest test_ecchronos.py -s -v --tb=short</argument>
                                     </arguments>
                                     <workingDirectory>${project.build.directory}/test</workingDirectory>
                                     <environmentVariables>
