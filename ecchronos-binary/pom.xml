@@ -283,7 +283,8 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>python</executable>
+                                    <!-- FIX: use venv python instead of system python so pytest is available in CI -->
+                                    <executable>${project.build.directory}/test/venv/bin/python</executable>
                                     <arguments>
                                         <argument>-m</argument>
                                         <argument>pytest</argument>
