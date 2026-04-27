@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-# vi: syntax=python
 #
-# Copyright 2025 Telefonaktiebolaget LM Ericsson
+# Copyright 2024 Telefonaktiebolaget LM Ericsson
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +14,10 @@
 # limitations under the License.
 #
 
-import yaml
 import re
+
+import yaml
+
 import global_variables as global_vars
 
 
@@ -97,10 +98,7 @@ class EcchronosConfig:
     def _modify_application_configuration(self):
         data = self._read_yaml_data(global_vars.APPLICATION_YAML_FILE_PATH)
 
-        if "server" not in data:
-            data["server"] = {}
-        if "ssl" not in data["server"]:
-            data["server"]["ssl"] = {}
+        data.setdefault("server", {}).setdefault("ssl", {})
 
         data["server"]["ssl"]["enabled"] = True
         data["server"]["ssl"]["key-store"] = f"{global_vars.CERTIFICATE_DIRECTORY}/serverkeystore"
@@ -110,6 +108,7 @@ class EcchronosConfig:
         data["server"]["ssl"]["trust-store"] = f"{global_vars.CERTIFICATE_DIRECTORY}/servertruststore"
         data["server"]["ssl"]["trust-store-password"] = "ecctest"
         data["server"]["ssl"]["client-auth"] = "need"
+
         self._modify_yaml_data(global_vars.APPLICATION_YAML_FILE_PATH, data)
 
     def _modify_spring_doc_configuration(self):
@@ -119,72 +118,80 @@ class EcchronosConfig:
         self._modify_yaml_data(global_vars.APPLICATION_YAML_FILE_PATH, data)
 
     def _modify_logback_configuration(self):
-        with open(global_vars.LOGBACK_FILE_PATH, "r") as file:
+        with open(global_vars.LOGBACK_FILE_PATH, "r", encoding="utf-8") as file:
             lines = file.readlines()
 
         pattern = re.compile(r'^(\s*)(<appender-ref ref="STDOUT" />)\s*$')
 
-        with open(global_vars.LOGBACK_FILE_PATH, "w") as file:
+        with open(global_vars.LOGBACK_FILE_PATH, "w", encoding="utf-8") as file:
             for line in lines:
                 match = pattern.match(line)
                 if match:
                     indent = match.group(1)
                     content = match.group(2)
-                    new_line = f"{indent}<!-- {content} -->\n"
-                    file.write(new_line)
+                    file.write(f"{indent}<!-- {content} -->\n")
                 else:
                     file.write(line)
 
     def _modify_schedule_configuration(self):
         data = self._read_yaml_data(global_vars.SCHEDULE_YAML_FILE_PATH)
-        data["keyspaces"] = [
-            {
-                "name": "test",
-                "tables": [
-                    {
-                        "name": "table1",
-                        "interval": {"time": 1, "unit": "days"},
-                        "initial_delay": {"time": 1, "unit": "hours"},
-                        "unwind_ratio": 0.1,
-                        "alarm": {"warn": {"time": 4, "unit": "days"}, "error": {"time": 8, "unit": "days"}},
-                    }
-                ],
-            },
-            {
-                "name": "test2",
-                "tables": [
-                    {"name": "table1", "repair_type": "incremental"},
-                    {"name": "table2", "repair_type": "parallel_vnode"},
-                ],
-            },
-            {
-                "name": "system_auth",
-                "tables": [
-                    {"name": "network_permissions", "enabled": False},
-                    {"name": "resource_role_permissons_index", "enabled": False},
-                    {"name": "role_members", "enabled": False},
-                    {"name": "role_permissions", "enabled": False},
-                    {"name": "roles", "enabled": False},
-                ],
-            },
-            {
-                "name": "ecchronos",
-                "tables": [
-                    {"name": "lock", "enabled": False},
-                    {"name": "lock_priority", "enabled": False},
-                    {"name": "on_demand_repair_status", "enabled": False},
-                    {"name": "reject_configuration", "enabled": False},
-                    {"name": "repair_history", "enabled": False},
-                ],
-            },
-        ]
+
+        if data is None:
+            return
+
+        # Preserve upstream/default schedule.yaml unless an explicit override is requested.
+        if getattr(self.context, "schedule_override", False):
+            data["keyspaces"] = [
+                {
+                    "name": "test",
+                    "tables": [
+                        {
+                            "name": "table1",
+                            "interval": {"time": 1, "unit": "days"},
+                            "initial_delay": {"time": 1, "unit": "hours"},
+                            "unwind_ratio": 0.1,
+                            "alarm": {
+                                "warn": {"time": 4, "unit": "days"},
+                                "error": {"time": 8, "unit": "days"},
+                            },
+                        }
+                    ],
+                },
+                {
+                    "name": "test2",
+                    "tables": [
+                        {"name": "table1", "repair_type": "incremental"},
+                        {"name": "table2", "repair_type": "parallel_vnode"},
+                    ],
+                },
+                {
+                    "name": "system_auth",
+                    "tables": [
+                        {"name": "network_permissions", "enabled": False},
+                        {"name": "resource_role_permissons_index", "enabled": False},
+                        {"name": "role_members", "enabled": False},
+                        {"name": "role_permissions", "enabled": False},
+                        {"name": "roles", "enabled": False},
+                    ],
+                },
+                {
+                    "name": "ecchronos",
+                    "tables": [
+                        {"name": "lock", "enabled": False},
+                        {"name": "lock_priority", "enabled": False},
+                        {"name": "on_demand_repair_status", "enabled": False},
+                        {"name": "reject_configuration", "enabled": False},
+                        {"name": "repair_history", "enabled": False},
+                    ],
+                },
+            ]
+
         self._modify_yaml_data(global_vars.SCHEDULE_YAML_FILE_PATH, data)
 
     def _read_yaml_data(self, filename):
-        with open(filename, "r") as f:
-            data = yaml.safe_load(f)
-            return data
+        with open(filename, "r", encoding="utf-8") as file:
+            return yaml.safe_load(file)
 
     def _modify_yaml_data(self, filename, data):
-        with open(filename, "w") as file:
+        with open(filename, "w", encoding="utf-8") as file:
             yaml.dump(data, file, sort_keys=False)
