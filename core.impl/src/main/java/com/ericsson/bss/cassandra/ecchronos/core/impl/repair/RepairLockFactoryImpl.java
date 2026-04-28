@@ -47,7 +47,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
      */
     public static void configure(final int locksPerResource)
     {
-        if (locksPerResource < 1)
+        if (locksPerResource < DEFAULT_LOCKS_PER_RESOURCE)
         {
             throw new IllegalArgumentException("locksPerResource must be at least 1");
         }
