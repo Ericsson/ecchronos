@@ -2,6 +2,8 @@
 
 ## Version 6.1.8
 
+* Make HangPreventingTask check actual repair status - Issue #1501
+
 ## Version 6.1.7
 
 ## Version 6.1.6

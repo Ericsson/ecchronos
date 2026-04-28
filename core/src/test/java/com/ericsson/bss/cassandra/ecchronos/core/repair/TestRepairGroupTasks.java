@@ -131,17 +131,23 @@ public class TestRepairGroupTasks
         Map<String, String> metadata = new HashMap<>();
         metadata.put("keyspace", keyspaceName);
         metadata.put("table", tableName);
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(withNode("127.0.0.1")), ImmutableList.of(range(1, 2)),
-                System.currentTimeMillis());
-        Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1", "my-resource"));
+        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(withNode("127.0.0.1")),
+                ImmutableList.of(range(1, 2)), System.currentTimeMillis());
+        Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1",
+                "my-resource"));
 
-        when(mockJmxProxyFactory.connect()).thenReturn(new CustomJmxProxy((notificationListener, i) -> progressAndComplete(notificationListener, range(1, 2))));
+        when(mockJmxProxyFactory.connect()).thenReturn(
+                new CustomJmxProxy(
+                        (notificationListener,i) -> progressAndComplete(notificationListener,
+                                range(1, 2))));
 
         when(mockRepairResourceFactory.getRepairResources(eq(replicaRepairGroup))).thenReturn(repairResources);
-        when(mockRepairLockFactory.getLock(eq(mockLockFactory), eq(repairResources), eq(metadata), eq(priority))).thenReturn(new DummyLock());
+        when(mockRepairLockFactory.getLock(eq(mockLockFactory), eq(repairResources), eq(metadata),
+                eq(priority))).thenReturn(new DummyLock());
         when(myTimeBasedRunPolicy.shouldRun(any(TableReference.class))).thenReturn(true);
 
-        RepairGroup repairGroup = builderFor(replicaRepairGroup).withTimeBasedRunPolicy(myTimeBasedRunPolicy).withRepairPolicies(myRepairPolicies).build(priority);
+        RepairGroup repairGroup = builderFor(replicaRepairGroup)
+                .withTimeBasedRunPolicy(myTimeBasedRunPolicy).withRepairPolicies(myRepairPolicies).build(priority);
 
         assertThat(repairGroup.execute()).isTrue();
 
@@ -155,15 +161,20 @@ public class TestRepairGroupTasks
         Map<String, String> metadata = new HashMap<>();
         metadata.put("keyspace", keyspaceName);
         metadata.put("table", tableName);
-        ReplicaRepairGroup replicaRepairGroup = new ReplicaRepairGroup(ImmutableSet.of(withNode("127.0.0.1")), ImmutableList.of(range(1, 2), range(2, 3)), System.currentTimeMillis());
-        Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1", "my-resource"));
+        ReplicaRepairGroup replicaRepairGroup =
+                new ReplicaRepairGroup(ImmutableSet.of(withNode("127.0.0.1")),
+                        ImmutableList.of(range(1, 2), range(2, 3)), System.currentTimeMillis());
+        Set<RepairResource> repairResources = Sets.newHashSet(new RepairResource("DC1",
+                "my-resource"));
         final AtomicBoolean shouldRun = new AtomicBoolean(true);
 
         when(mockRepairResourceFactory.getRepairResources(eq(replicaRepairGroup))).thenReturn(repairResources);
-        when(mockRepairLockFactory.getLock(eq(mockLockFactory), eq(repairResources), eq(metadata), eq(priority))).thenReturn(new DummyLock());
+        when(mockRepairLockFactory.getLock(eq(mockLockFactory),
+                eq(repairResources), eq(metadata), eq(priority))).thenReturn(new DummyLock());
         when(myTimeBasedRunPolicy.shouldRun(any(TableReference.class))).thenReturn(shouldRun.get());
 
-        when(mockJmxProxyFactory.connect()).thenReturn(new CustomJmxProxy((notificationListener, i) -> {
+        when(mockJmxProxyFactory.connect()).thenReturn(
+                new CustomJmxProxy((notificationListener, i) -> {
             if (i == 1) // First repair
             {
                 progressAndComplete(notificationListener, range(1, 2));
@@ -209,12 +220,16 @@ public class TestRepairGroupTasks
         // have to use 0
         String repairSession = "repair:0";
 
-        Notification notification = new Notification("progress", repairSession, 0, getRepairMessage(range));
-        notification.setUserData(getNotificationData(RepairTask.ProgressEventType.PROGRESS.ordinal(), 1, 1));
+        Notification notification =
+                new Notification("progress", repairSession, 0, getRepairMessage(range));
+        notification.setUserData(
+                getNotificationData(RepairTask.ProgressEventType.PROGRESS.ordinal(), 1, 1));
         notificationListener.handleNotification(notification, null);
 
-        notification = new Notification("progress", repairSession, 2, "Done with repair");
-        notification.setUserData(getNotificationData(RepairTask.ProgressEventType.COMPLETE.ordinal(), 1, 1));
+        notification =
+                new Notification("progress", repairSession, 2, "Done with repair");
+        notification.setUserData(
+                getNotificationData(RepairTask.ProgressEventType.COMPLETE.ordinal(), 1, 1));
         notificationListener.handleNotification(notification, null);
     }
 
@@ -318,6 +333,12 @@ public class TestRepairGroupTasks
         public String getNodeStatus()
         {
             return "NORMAL";
+        }
+
+        @Override
+        public boolean isRepairActive(int command)
+        {
+            return false;
         }
 
         @Override
