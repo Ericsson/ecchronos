@@ -187,18 +187,6 @@ public class TableRepairJob extends ScheduledRepairJob
     }
 
     /**
-     * Update the state and set if the task was successful.
-     *
-     * @param successful
-     *         If the job ran successfully.
-     */
-    @Override
-    public void postExecute(final boolean successful, final ScheduledTask task)
-    {
-        super.postExecute(successful, task);
-    }
-
-    /**
      * Get last successful run.
      *
      * @return long
