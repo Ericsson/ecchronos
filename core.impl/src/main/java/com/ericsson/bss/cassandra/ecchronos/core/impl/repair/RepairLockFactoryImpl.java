@@ -34,8 +34,8 @@ import org.slf4j.LoggerFactory;
 public class RepairLockFactoryImpl implements RepairLockFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(RepairLockFactoryImpl.class);
-    private static final int DEFAULT_LOCKS_PER_RESOURCE = 1;
-    private static final AtomicInteger CONFIGURED_LOCKS_PER_RESOURCE = new AtomicInteger(DEFAULT_LOCKS_PER_RESOURCE);
+    private static final int MIN_LOCKS_PER_RESOURCE = 1;
+    private static final AtomicInteger CONFIGURED_LOCKS_PER_RESOURCE = new AtomicInteger(MIN_LOCKS_PER_RESOURCE);
 
     private final ThreadLocal<Integer> myLockCounter = ThreadLocal.withInitial(() -> 0);
 
@@ -47,7 +47,7 @@ public class RepairLockFactoryImpl implements RepairLockFactory
      */
     public static void configure(final int locksPerResource)
     {
-        if (locksPerResource < DEFAULT_LOCKS_PER_RESOURCE)
+        if (locksPerResource < MIN_LOCKS_PER_RESOURCE)
         {
             throw new IllegalArgumentException("locksPerResource must be at least 1");
         }
