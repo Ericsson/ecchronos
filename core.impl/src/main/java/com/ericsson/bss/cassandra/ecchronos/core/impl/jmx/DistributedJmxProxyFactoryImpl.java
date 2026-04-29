@@ -668,6 +668,41 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         }
 
         @Override
+        public boolean isRepairActive(final UUID nodeID, final int command)
+        {
+            JMXConnector nodeConnection = myDistributedJmxConnectionProvider.getJmxConnector(nodeID);
+            boolean isConnectionAvailable = validateJmxConnection(nodeConnection);
+            if (isConnectionAvailable)
+            {
+                try
+                {
+                    @SuppressWarnings("unchecked")
+                    List<String> status = (List<String>) nodeConnection
+                            .getMBeanServerConnection().invoke(
+                                    myStorageServiceObject,
+                                    "getParentRepairStatus",
+                                    new Object[]{command},
+                                    new String[]{int.class.getName()});
+
+                    LOG.debug("Parent repair session {} status on node {}: {}", command, nodeID, status);
+
+                    return status != null && "IN_PROGRESS".equals(status.get(0));
+                }
+                catch (Exception e)
+                {
+                    LOG.warn("Unable to check active repair status for command {} on node {}, assuming still active",
+                            command, nodeID, e);
+                    return true;
+                }
+            }
+            else
+            {
+                markNodeAsUnavailable(nodeID);
+            }
+            return true;
+        }
+
+        @Override
         public boolean validateJmxConnection(final JMXConnector jmxConnector)
         {
             if (!myDistributedJmxConnectionProvider.isConnected(jmxConnector))

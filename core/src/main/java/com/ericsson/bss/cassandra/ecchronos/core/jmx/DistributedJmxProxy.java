@@ -145,4 +145,13 @@ public interface DistributedJmxProxy extends Closeable
      * @return A boolean representing the node's connection status.
      */
     boolean validateJmxConnection(JMXConnector jmxConnector);
+
+    /**
+     * Checks if a repair command is still actively running on a node.
+     *
+     * @param nodeID The nodeID to check.
+     * @param command The repair command number returned by {@link #repairAsync}.
+     * @return true if the repair is still active, false if it has completed or is unknown.
+     */
+    boolean isRepairActive(UUID nodeID, int command);
 }
