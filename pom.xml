@@ -108,11 +108,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Spring boot -->
-        <org.springframework.boot.spring-boot-starter-thymeleaf.version>3.5.13</org.springframework.boot.spring-boot-starter-thymeleaf.version>
-        <org.springframework.boot.spring-boot-starter-web.version>3.5.13</org.springframework.boot.spring-boot-starter-web.version>
-        <org.springframework.spring-context.version>6.2.18</org.springframework.spring-context.version>
-        <org.springframework.spring-boot-test.version>3.5.13</org.springframework.spring-boot-test.version>
-        <org.springframework.spring-test.version>6.2.18</org.springframework.spring-test.version>
+        <org.springframework.boot.spring-boot.version>3.5.1</org.springframework.boot.spring-boot.version>
+        <org.springframework.spring.version>6.2.18</org.springframework.spring.version>
         <org.springdoc.openapi-starter-webmvc-ui.version>2.8.17</org.springdoc.openapi-starter-webmvc-ui.version>
         <jakarta.servlet-api.version>6.1.0</jakarta.servlet-api.version>
         <jakarta.validation-api.version>3.1.1</jakarta.validation-api.version>
@@ -121,9 +118,7 @@
         <!-- Metrics -->
         <io.micrometer.version>1.16.5</io.micrometer.version>
         <io.prometheus.simpleclient.version>0.16.0</io.prometheus.simpleclient.version>
-        <io.prometheus.client-java.version>1.5.1</io.prometheus.client-java.version>
-        <io.prometheus.prometheus-metrics-core.version>1.5.1</io.prometheus.prometheus-metrics-core.version>
-        <io.prometheus.prometheus-metrics-tracer-common.version>1.5.1</io.prometheus.prometheus-metrics-tracer-common.version>
+        <io.prometheus.prometheus-metrics.version>1.6.1</io.prometheus.prometheus-metrics.version>
 
         <!-- Cassandra -->
         <cassandra.driver.core.version>4.19.2</cassandra.driver.core.version>
@@ -134,9 +129,8 @@
         <logback.version>1.5.32</logback.version>
 
         <!-- Jackson -->
-        <com.fasterxml.jackson.core.version>2.21.2</com.fasterxml.jackson.core.version>
+        <com.fasterxml.jackson.version>2.21.2</com.fasterxml.jackson.version>
         <com.fasterxml.jackson.annotations.version>2.21</com.fasterxml.jackson.annotations.version>
-        <com.fasterxml.jackson.dataformat.version>2.21.2</com.fasterxml.jackson.dataformat.version>
         <org.yaml.snakeyaml.version>2.6</org.yaml.snakeyaml.version>
 
         <!-- Other -->
@@ -149,7 +143,7 @@
         <junit.junit.version>4.13.2</junit.junit.version>
         <junit.junit-vintage-engine.version>6.0.3</junit.junit-vintage-engine.version>
         <junit.jupiter.junit-jupiter.version>6.0.3</junit.jupiter.junit-jupiter.version>
-        <org.apache.commons.io.version>2.21.0</org.apache.commons.io.version>
+        <org.apache.commons.io.version>2.22.0</org.apache.commons.io.version>
         <org.apache.commons.commons-compress.version>1.28.0</org.apache.commons.commons-compress.version>
         <equalsverifier.version>4.5</equalsverifier.version>
         <jcip.version>1.0</jcip.version>
@@ -235,19 +229,19 @@
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-thymeleaf</artifactId>
-                <version>${org.springframework.boot.spring-boot-starter-thymeleaf.version}</version>
+                <version>${org.springframework.boot.spring-boot.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-web</artifactId>
-                <version>${org.springframework.boot.spring-boot-starter-web.version}</version>
+                <version>${org.springframework.boot.spring-boot.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-context</artifactId>
-                <version>${org.springframework.spring-context.version}</version>
+                <version>${org.springframework.spring.version}</version>
             </dependency>
 
             <dependency>
@@ -284,19 +278,19 @@
             <dependency>
                 <groupId>io.prometheus</groupId>
                 <artifactId>prometheus-metrics-core</artifactId>
-                <version>${io.prometheus.prometheus-metrics-core.version}</version>
+                <version>${io.prometheus.prometheus-metrics.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>io.prometheus</groupId>
                 <artifactId>prometheus-metrics-exposition-formats</artifactId>
-                <version>${io.prometheus.prometheus-metrics-core.version}</version>
+                <version>${io.prometheus.prometheus-metrics.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>io.prometheus</groupId>
                 <artifactId>prometheus-metrics-tracer-common</artifactId>
-                <version>${io.prometheus.prometheus-metrics-tracer-common.version}</version>
+                <version>${io.prometheus.prometheus-metrics.version}</version>
             </dependency>
 
             <dependency>
@@ -308,7 +302,7 @@
             <dependency>
                 <groupId>io.prometheus</groupId>
                 <artifactId>client_java</artifactId>
-                <version>${io.prometheus.client-java.version}</version>
+                <version>${io.prometheus.prometheus-metrics.version}</version>
             </dependency>
 
             <!-- Cassandra Driver -->
@@ -397,7 +391,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>${com.fasterxml.jackson.core.version}</version>
+                <version>${com.fasterxml.jackson.version}</version>
             </dependency>
 
             <dependency>
@@ -409,13 +403,13 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>${com.fasterxml.jackson.core.version}</version>
+                <version>${com.fasterxml.jackson.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.fasterxml.jackson.dataformat</groupId>
                 <artifactId>jackson-dataformat-yaml</artifactId>
-                <version>${com.fasterxml.jackson.dataformat.version}</version>
+                <version>${com.fasterxml.jackson.version}</version>
             </dependency>
 
             <dependency>
@@ -548,14 +542,14 @@
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-test</artifactId>
-                <version>${org.springframework.spring-test.version}</version>
+                <version>${org.springframework.spring.version}</version>
                 <scope>test</scope>
             </dependency>
 
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-test</artifactId>
-                <version>${org.springframework.spring-boot-test.version}</version>
+                <version>${org.springframework.boot.spring-boot.version}</version>
                 <scope>test</scope>
             </dependency>
 
