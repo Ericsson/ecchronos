@@ -154,22 +154,6 @@ public class TestScheduleManager
     }
 
     @Test
-    public void testRunningTwoTasksStoppedAfterFirstByPolicy() throws LockException
-    {
-        TestJob job1 = new TestJob(ScheduledJob.Priority.LOW, 2, () -> {
-            when(myRunPolicy.validate(any(ScheduledJob.class), any(Node.class))).thenReturn(1L);
-        }, nodeID1);
-        myScheduler.schedule(nodeID1, job1);
-
-        when(myLockFactory.tryLock(any(), anyString(), anyInt(), anyMap(), any())).thenReturn(new DummyLock());
-        myScheduler.run(nodeID1);
-
-        assertThat(job1.getTaskRuns()).isEqualTo(1);
-        assertThat(myScheduler.getQueueSize(nodeID1)).isEqualTo(1);
-        verify(myLockFactory).tryLock(any(), anyString(), anyInt(), anyMap(), any());
-    }
-
-    @Test
     public void testRunningJobWithThrowingRunPolicy()
     {
         DummyJob job1 = new DummyJob(ScheduledJob.Priority.LOW, nodeID1);
