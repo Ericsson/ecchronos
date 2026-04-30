@@ -2,6 +2,7 @@
 
 ## Version 1.0.0 (Not yet Released)
 
+* Repair schedules in LATE/OVERDUE status - Issue #1479
 * Process multiple jobs per scheduler tick to improve throughput - Issue #1479
 * Add host id to alarms - Issue #1491
 * Fix alarm not raised when CQL session is broken - Issue #1477
