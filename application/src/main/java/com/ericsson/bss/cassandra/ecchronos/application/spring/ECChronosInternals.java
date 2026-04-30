@@ -83,7 +83,7 @@ public class ECChronosInternals implements Closeable
                 .withNodesMap(nativeConnectionProvider.getNodes())
                 .withJolokiaEnabled(configuration
                         .getConnectionConfig().getJmxConnection().getJolokiaConfig().isEnabled())
-                .withHeathCheckInterval(configuration.getConnectionConfig().getJmxConnection().getHeathCheckInterval())
+                .withMaxWaitTimeInMinutes(configuration.getConnectionConfig().getJmxConnection().getMaxWaitTimeInMinutes())
                 .withIpTranslator(ipTranslator)
                 .withJolokiaNotificationController(myJolokiaNotificationController)
                 .build();

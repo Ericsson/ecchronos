@@ -66,7 +66,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
     private final Map<UUID, Node> nodesMap;
     private final EccNodesSync eccNodesSync;
     private final boolean isJolokiaEnabled;
-    private final Integer myHeathCheckInterval;
+    private final Integer myMaxWaitTimeInMinutes;
     private final JolokiaNotificationController myJolokiaNotificationController;
 
     private DistributedJmxProxyFactoryImpl(final Builder builder)
@@ -75,7 +75,7 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         nodesMap = builder.myNodesMap;
         eccNodesSync = builder.myEccNodesSync;
         isJolokiaEnabled = builder.isJolokiaEnabled;
-        myHeathCheckInterval = builder.myHeathCheckInterval;
+        myMaxWaitTimeInMinutes = builder.myMaxWaitTimeInMinutes;
         myJolokiaNotificationController = builder.myJolokiaController;
     }
 
@@ -97,9 +97,9 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         }
     }
     @Override
-    public Integer getMyHeathCheckInterval()
+    public Integer getMaxWaitTimeInMinutes()
     {
-        return myHeathCheckInterval;
+        return myMaxWaitTimeInMinutes;
     }
 
     private static final class InternalDistributedJmxProxy implements DistributedJmxProxy
@@ -749,12 +749,12 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
     public static class Builder
     {
         public static final int DEFAULT_RUN_DELAY = 500;
-        public static final int DEFAULT_HEALTH_CHECK_INTERVAL = 10;
+        public static final int DEFAULT_MAX_WAIT_TIME_IN_MINUTES = 40;
         private DistributedJmxConnectionProvider myDistributedJmxConnectionProvider;
         private Map<UUID, Node> myNodesMap;
         private EccNodesSync myEccNodesSync;
         private boolean isJolokiaEnabled = false;
-        private Integer myHeathCheckInterval = DEFAULT_HEALTH_CHECK_INTERVAL;
+        private Integer myMaxWaitTimeInMinutes = DEFAULT_MAX_WAIT_TIME_IN_MINUTES;
         private IpTranslator myIpTranslator;
         private JolokiaNotificationController myJolokiaController;
 
@@ -807,14 +807,14 @@ public final class  DistributedJmxProxyFactoryImpl implements DistributedJmxProx
         }
 
         /**
-         * Build with heathCheckInterval.
+         * Build with maxWaitTimeInMinutes.
          *
-         * @param heathCheckInterval Integer
+         * @param maxWaitTimeInMinutes Integer
          * @return Builder
          */
-        public Builder withHeathCheckInterval(final Integer heathCheckInterval)
+        public Builder withMaxWaitTimeInMinutes(final Integer maxWaitTimeInMinutes)
         {
-            myHeathCheckInterval = heathCheckInterval;
+            myMaxWaitTimeInMinutes = maxWaitTimeInMinutes;
             return this;
         }
 

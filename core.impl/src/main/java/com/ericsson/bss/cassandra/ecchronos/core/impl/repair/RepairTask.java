@@ -82,6 +82,7 @@ public abstract class RepairTask implements NotificationListener // NOPMD Possib
      * @param tableReference the reference to the table that is being repaired. Must not be {@code null}.
      * @param repairConfiguration the configuration specifying how the repair task should be executed. Must not be {@code null}.
      * @param tableRepairMetrics the metrics associated with table repairs for monitoring and tracking purposes. May be {@code null}.
+     * @param maxWaitTime the maximum number of minutes to wait for a repair to complete before forcing termination.
      */
     protected RepairTask(
             final UUID currentNodeID,
@@ -89,7 +90,7 @@ public abstract class RepairTask implements NotificationListener // NOPMD Possib
             final TableReference tableReference,
             final RepairConfiguration repairConfiguration,
             final TableRepairMetrics tableRepairMetrics,
-            final Integer healthCheckInterval
+            final Integer maxWaitTime
     )
     {
         nodeID = currentNodeID;
@@ -97,7 +98,7 @@ public abstract class RepairTask implements NotificationListener // NOPMD Possib
         myTableReference = Preconditions.checkNotNull(tableReference, "Table reference must be set");
         myRepairConfiguration = Preconditions.checkNotNull(repairConfiguration, "Repair configuration must be set");
         myTableRepairMetrics = tableRepairMetrics;
-        maxWaitTimeInMinutes = healthCheckInterval;
+        maxWaitTimeInMinutes = maxWaitTime;
     }
 
     /**
