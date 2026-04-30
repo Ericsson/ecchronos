@@ -17,6 +17,7 @@ package com.ericsson.bss.cassandra.ecchronos.core.utils;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,31 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
 
     private static final String SIMPLE_STRATEGY_REPLICATION_FACTOR = "replication_factor";
 
-    private static final String SYSTEM_AUTH_KEYSPACE = "system_auth";
+    private static final String SYSTEM_KEYSPACE_NAME = "system";
+    private static final String SCHEMA_KEYSPACE_NAME = "system_schema";
+    private static final String METADATA_KEYSPACE_NAME = "system_cluster_metadata";
+
+    private static final String TRACE_KEYSPACE_NAME = "system_traces";
+    private static final String ACCORD_KEYSPACE_NAME = "system_accord";
+    private static final String DISTRIBUTED_KEYSPACE_NAME = "system_distributed";
+
+    private static final String VIRTUAL_SCHEMA = "system_virtual_schema";
+    private static final String VIRTUAL_VIEWS = "system_views";
+    private static final String VIRTUAL_METRICS = "system_metrics";
+    private static final String VIRTUAL_ACCORD_DEBUG = "system_accord_debug";
+    private static final String VIRTUAL_ACCORD_DEBUG_REMOTE = "system_accord_debug_remote";
+    private static final Set<String> IGNORED_SYSTEM_KEYSPACES = ImmutableSet.of(
+            SYSTEM_KEYSPACE_NAME,
+            SCHEMA_KEYSPACE_NAME,
+            METADATA_KEYSPACE_NAME,
+            TRACE_KEYSPACE_NAME,
+            ACCORD_KEYSPACE_NAME,
+            DISTRIBUTED_KEYSPACE_NAME,
+            VIRTUAL_SCHEMA,
+            VIRTUAL_VIEWS,
+            VIRTUAL_METRICS,
+            VIRTUAL_ACCORD_DEBUG,
+            VIRTUAL_ACCORD_DEBUG_REMOTE);
 
     private final Node myLocalNode;
     private final CqlSession mySession;
@@ -71,7 +96,7 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
     @Override
     public boolean accept(final String keyspace)
     {
-        if (keyspace.startsWith("system") && !SYSTEM_AUTH_KEYSPACE.equals(keyspace))
+        if (IGNORED_SYSTEM_KEYSPACES.contains(keyspace))
         {
             return false;
         }
