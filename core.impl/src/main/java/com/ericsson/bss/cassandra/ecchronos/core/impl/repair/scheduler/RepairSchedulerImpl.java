@@ -65,6 +65,7 @@ import javax.management.RuntimeMBeanException;
 /**
  * Class used to construct repair scheduler.
  */
+@SuppressWarnings("PMD.GodClass")
 public final class RepairSchedulerImpl implements RepairScheduler, Closeable
 {
     private static final int DEFAULT_TERMINATION_WAIT_IN_SECONDS = 10;
@@ -315,10 +316,19 @@ public final class RepairSchedulerImpl implements RepairScheduler, Closeable
         {
             try
             {
-                Set<ScheduledRepairJob> jobs = myScheduledJobs.get(node.getHostId()).remove(tableReference);
-                for (ScheduledRepairJob job : jobs)
+                Map<TableReference, Set<ScheduledRepairJob>> tableJobs = myScheduledJobs.get(node.getHostId());
+                if (tableJobs == null)
                 {
-                    descheduleTableJob(node.getHostId(), job);
+                    LOG.warn("No scheduled jobs found for node {} when removing/updating table config {}", node.getHostId(), tableReference);
+                    return;
+                }
+                Set<ScheduledRepairJob> jobs = tableJobs.remove(tableReference);
+                if (jobs != null)
+                {
+                    for (ScheduledRepairJob job : jobs)
+                    {
+                        descheduleTableJob(node.getHostId(), job);
+                    }
                 }
             }
             catch (Exception e)
