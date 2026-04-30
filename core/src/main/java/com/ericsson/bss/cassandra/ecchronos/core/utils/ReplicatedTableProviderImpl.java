@@ -37,19 +37,19 @@ public class ReplicatedTableProviderImpl implements ReplicatedTableProvider
 
     private static final String SIMPLE_STRATEGY_REPLICATION_FACTOR = "replication_factor";
 
-    public static final String SYSTEM_KEYSPACE_NAME = "system";
-    public static final String SCHEMA_KEYSPACE_NAME = "system_schema";
-    public static final String METADATA_KEYSPACE_NAME = "system_cluster_metadata";
+    private static final String SYSTEM_KEYSPACE_NAME = "system";
+    private static final String SCHEMA_KEYSPACE_NAME = "system_schema";
+    private static final String METADATA_KEYSPACE_NAME = "system_cluster_metadata";
 
-    public static final String TRACE_KEYSPACE_NAME = "system_traces";
-    public static final String ACCORD_KEYSPACE_NAME = "system_accord";
-    public static final String DISTRIBUTED_KEYSPACE_NAME = "system_distributed";
+    private static final String TRACE_KEYSPACE_NAME = "system_traces";
+    private static final String ACCORD_KEYSPACE_NAME = "system_accord";
+    private static final String DISTRIBUTED_KEYSPACE_NAME = "system_distributed";
 
-    public static final String VIRTUAL_SCHEMA = "system_virtual_schema";
-    public static final String VIRTUAL_VIEWS = "system_views";
-    public static final String VIRTUAL_METRICS = "system_metrics";
-    public static final String VIRTUAL_ACCORD_DEBUG = "system_accord_debug";
-    public static final String VIRTUAL_ACCORD_DEBUG_REMOTE = "system_accord_debug_remote";
+    private static final String VIRTUAL_SCHEMA = "system_virtual_schema";
+    private static final String VIRTUAL_VIEWS = "system_views";
+    private static final String VIRTUAL_METRICS = "system_metrics";
+    private static final String VIRTUAL_ACCORD_DEBUG = "system_accord_debug";
+    private static final String VIRTUAL_ACCORD_DEBUG_REMOTE = "system_accord_debug_remote";
     private static final Set<String> IGNORED_SYSTEM_KEYSPACES = ImmutableSet.of(
             SYSTEM_KEYSPACE_NAME,
             SCHEMA_KEYSPACE_NAME,
